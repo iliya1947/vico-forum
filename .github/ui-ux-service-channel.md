@@ -3088,3 +3088,23 @@ Owner clarified that signals/reports and the future admin panel are being design
 PR #207 was closed **without merge** and marked superseded. No production/external action was performed.
 
 Next implementation work for these systems starts only from the separately approved signals/reports and admin-panel contracts.
+
+
+---
+
+## Owner correction — this thread continues development — 2026-10-09
+
+The previous phrase that this thread would “wait for” the separately designed signals/reports and admin-panel systems was incorrect. Owner clarified that those systems, including their eventual integration, are handled in their own conversations. This UI/UX/product thread continues normal forum development and simply does not independently implement or redesign those two systems.
+
+### Next independent slice in this thread
+
+Proceed with the already-approved **Help & solutions combined filters** over authoritative persisted state. The signal-dependent expansion of `Needs attention` remains with the separate moderation/signals work; it is not a blocker for filters.
+
+Combined filters are independent because they consume only already-existing authoritative question/answer state:
+
+- Solution: unresolved / solved / needs review / outdated;
+- Answers: no answers / has answers;
+- Quality: normal / needs details;
+- Relation: standalone / duplicate.
+
+They combine with the existing Help modes and must filter at the repository/DB boundary before mode limits/order. Pending user signals are not filter inputs. `Needs review` remains moderator-only and therefore its filter option/result route must preserve the existing `forum.solution.manageAny` visibility boundary. No admin-panel or signal/reports UI changes belong in this slice.
