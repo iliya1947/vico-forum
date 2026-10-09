@@ -1272,6 +1272,31 @@ export class DrizzleForumRepository {
     )`.mapWith(forumTopics.createdAt);
     const matchCount = sql<number>`count(distinct ${forumTopicTags.tagKey})::int`;
     const currentBestAnswer = alias(forumPosts, "help_for_me_current_best_answer");
+    const activeDuplicate = alias(forumHelpDuplicateRelationships, "help_for_me_active_duplicate");
+    const solutionCondition = filters.solution === "open"
+      ? eq(forumTopics.isSolved, false)
+      : filters.solution === "solved"
+        ? eq(forumTopics.isSolved, true)
+        : filters.solution === "needs-review"
+          ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
+          : filters.solution === "outdated"
+            ? eq(currentBestAnswer.solutionModerationStatus, "outdated")
+            : undefined;
+    const qualityCondition = filters.quality === "normal"
+      ? eq(forumTopics.needsDetails, false)
+      : filters.quality === "needs-details"
+        ? eq(forumTopics.needsDetails, true)
+        : undefined;
+    const relationCondition = filters.relation === "standalone"
+      ? isNull(activeDuplicate.id)
+      : filters.relation === "duplicate"
+        ? isNotNull(activeDuplicate.id)
+        : undefined;
+    const answersCondition = filters.answers === "none"
+      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      : filters.answers === "has"
+        ? sql`count(distinct ${forumPosts.id}) > 1`
+        : sql`true`;
 
     const rows = await this.database
       .select({
@@ -1307,10 +1332,17 @@ export class DrizzleForumRepository {
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
       ))
+      .leftJoin(activeDuplicate, and(
+        eq(activeDuplicate.duplicateTopicId, forumTopics.id),
+        isNull(activeDuplicate.removedAt),
+      ))
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
         eq(forumTopics.isSolved, false),
         ne(forumTopics.authorId, userId),
+        solutionCondition,
+        qualityCondition,
+        relationCondition,
       ))
       .groupBy(
         forumTopics.id,
@@ -1320,6 +1352,7 @@ export class DrizzleForumRepository {
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
       )
+      .having(answersCondition)
       .orderBy(desc(matchCount), desc(activityAt), desc(forumTopics.id))
       .limit(HELP_SOLUTIONS_FOR_ME_LIMIT);
 
