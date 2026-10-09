@@ -381,7 +381,15 @@ composition without changing the forum hierarchy or schema:
   already-existing authoritative Help states. This slice intentionally does not expose the visible
   submission forms, author pending-signal presentation or moderator review queue; those remain the
   next bounded step-4 presentation task. Step 5 `Needs attention` expansion and step 6 combined
-  filters are still not pulled forward;
+  filters are still not pulled forward. PR #208 now implements that independent combined-filter
+  slice without coupling it to the separately designed signals/reports or admin-panel systems:
+  `Solution / Answers / Quality / Relation` select only already-persisted authoritative state,
+  combine over every current Help mode at the database boundary before mode limits/order, preserve
+  filters during mode navigation and expose a mode-preserving reset. `Needs review` remains
+  permission-sensitive through existing `forum.solution.manageAny`; pending user signals are not
+  filter inputs. This slice does not expand `Needs attention`, add schema/migrations/permissions,
+  or change signal/admin presentation. EN/RU/HE and responsive representative Pages states are
+  included; CI/Pages/owner acceptance remain pending until actually completed;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
