@@ -213,6 +213,18 @@ export interface ForumHelpSolutionsPage {
   questions: ForumHelpQuestionSummary[];
 }
 
+export type HelpSolutionsSolutionFilter = "open" | "solved" | "needs-review" | "outdated";
+export type HelpSolutionsAnswersFilter = "none" | "has";
+export type HelpSolutionsQualityFilter = "normal" | "needs-details";
+export type HelpSolutionsRelationFilter = "standalone" | "duplicate";
+
+export interface ForumHelpSolutionsFilters {
+  solution?: HelpSolutionsSolutionFilter;
+  answers?: HelpSolutionsAnswersFilter;
+  quality?: HelpSolutionsQualityFilter;
+  relation?: HelpSolutionsRelationFilter;
+}
+
 export interface ForumHelpSimilarQuestionSummary {
   id: string;
   title: string;
@@ -275,14 +287,14 @@ export interface ForumReader {
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
   countUnreadReplyNotifications(userId: string): Promise<number>;
   readTopicPinState(topicId: string): Promise<boolean>;
-  readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsAll(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsOpen(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsActive(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsNeedsAttention(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsSolved(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsMine(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsWantToHelp(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsForMe(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readPendingHelpDuplicateAppeal(topicId: string): Promise<ForumHelpDuplicateAppeal | undefined>;
   readHelpSignal(id: string): Promise<ForumHelpSignal | undefined>;
