@@ -3108,3 +3108,21 @@ Combined filters are independent because they consume only already-existing auth
 - Relation: standalone / duplicate.
 
 They combine with the existing Help modes and must filter at the repository/DB boundary before mode limits/order. Pending user signals are not filter inputs. `Needs review` remains moderator-only and therefore its filter option/result route must preserve the existing `forum.solution.manageAny` visibility boundary. No admin-panel or signal/reports UI changes belong in this slice.
+
+
+---
+
+## PR #208 — Help combined filters ready for owner visual acceptance — 2026-10-09
+
+Implementation head is now frozen at `969ee462f282c9724a78e06a897746ec2694ab23` pending owner visual review.
+
+Verified on this exact head:
+- CI run `37926933433`: `checks` success and `database` success;
+- GitHub Pages run `37927097676`: build and deploy success;
+- ChatGPT whole-PR review: no remaining confirmed current-scope defects after the scoped `Needs details` result-badge correction and final test-fixture alignment;
+- no schema/migration/permission changes;
+- no signal/reports UI/workflow changes;
+- no admin-panel changes;
+- no `Needs attention` expansion.
+
+Representative Pages states include ordinary combined filters, public `Needs details` quality filtering, and manager-only `Needs review` filtering. Owner visual acceptance remains pending. Per AGENTS, manual Codex review has not been started and must wait until owner visual acceptance completes.
