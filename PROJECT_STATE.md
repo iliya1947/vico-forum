@@ -32,8 +32,11 @@ Vico Forum находится в ранней pre-release разработке.
   подключены. Forward migration `0032_forum_profiles` и schema/runtime privilege contracts
   добавлены только для repository/local-CI path. Локально прошли lint, typecheck, 649 tests,
   обе сборки и metadata checks на Node 24.21.0 / pnpm 12.3.4; все 33 migrations и full schema
-  manifest parity дополнительно проверены на PGlite PostgreSQL 17.5. Native PostgreSQL 17 CI,
-  Pages/browser review, owner visual acceptance и финальный независимый review ещё ожидаются.
+  manifest parity дополнительно проверены на PGlite PostgreSQL 17.5. Native PostgreSQL 17 CI
+  (205 database tests, schema/privilege verification и Worker smoke) и Pages build прошли.
+  Собственная browser проверка public/own/edit/error/empty/long-text states, EN/RU/HE,
+  светлой/тёмной темы и Desktop/Tablet/Mobile завершена; owner visual acceptance и финальный
+  независимый review ещё ожидаются.
   Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.

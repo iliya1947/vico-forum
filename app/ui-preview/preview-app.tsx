@@ -1748,16 +1748,11 @@ function topicData(
   };
   const translatedTopic = rtl ? {
     ...baseTopic,
-    authorName: "נועה לוי",
     section: {
       ...baseTopic.section,
       name: "TypeScript וארכיטקטורה",
       category: { id: categoryId, name: "פיתוח" },
     },
-    posts: baseTopic.posts.map((post, index) => ({
-      ...post,
-      authorName: ["נועה לוי", "יואב כהן", "מאיה כהן"][index]!,
-    })),
   } : russian ? {
     ...baseTopic,
     section: {
