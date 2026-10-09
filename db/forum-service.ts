@@ -11,6 +11,8 @@ import {
   type ForumRevisionContent,
   type ForumTag,
   type HelpDuplicateAppealResolution,
+  type HelpSignalKind,
+  type HelpSignalResolution,
   type HelpSolutionModerationStatus,
   type SolutionManagementScope,
 } from "./forum-repository";
@@ -20,6 +22,7 @@ export class InvalidForumContentError extends Error {}
 export type SourceLocaleCorrectionScope = "own" | "any";
 export const HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH = 1000;
 export const HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH = 1000;
+export const HELP_SIGNAL_EXPLANATION_MAX_LENGTH = 1000;
 
 export class ForumService {
   constructor(private readonly repository: DrizzleForumRepository) {}
@@ -258,6 +261,64 @@ export class ForumService {
     return this.repository.resolveHelpDuplicateAppeal(topicId, actorId, resolution);
   }
 
+  createHelpSignal(input: {
+    kind: HelpSignalKind;
+    topicId: string;
+    actorId: string;
+    explanation?: string | null;
+    proposedOriginalTopicId?: string | null;
+  }) {
+    validateEntity(input.topicId, input.actorId);
+    if (
+      input.kind !== "needs-details"
+      && input.kind !== "needs-review"
+      && input.kind !== "solution-outdated"
+      && input.kind !== "duplicate"
+    ) {
+      throw new InvalidForumContentError("Help signal kind is invalid");
+    }
+
+    const explanation = normalizeOptionalHelpSignalExplanation(input.explanation ?? null);
+    const explanationRequired = input.kind !== "duplicate";
+    if (explanationRequired && explanation === null) {
+      throw new InvalidForumContentError("Help signal explanation is required");
+    }
+
+    const proposedOriginalTopicId = input.proposedOriginalTopicId ?? null;
+    if (input.kind === "duplicate") {
+      if (!proposedOriginalTopicId) {
+        throw new InvalidForumContentError("duplicate signal requires a proposed original question");
+      }
+      requireText(proposedOriginalTopicId, "proposed original topic id");
+      if (proposedOriginalTopicId === input.topicId) {
+        throw new InvalidForumContentError("duplicate signal proposed original must differ from the question");
+      }
+    } else if (proposedOriginalTopicId !== null) {
+      throw new InvalidForumContentError("proposed original question is only valid for duplicate signals");
+    }
+
+    return this.repository.createHelpSignal({
+      kind: input.kind,
+      topicId: input.topicId,
+      actorId: input.actorId,
+      explanation,
+      proposedOriginalTopicId,
+    });
+  }
+
+  withdrawHelpSignal(signalId: string, actorId: string) {
+    validateEntity(signalId, actorId);
+    return this.repository.withdrawHelpSignal(signalId, actorId);
+  }
+
+  resolveHelpSignal(signalId: string, actorId: string, resolution: HelpSignalResolution) {
+    validateEntity(signalId, actorId);
+    if (resolution !== "accepted" && resolution !== "rejected") {
+      throw new InvalidForumContentError("Help signal resolution is invalid");
+    }
+    return this.repository.resolveHelpSignal(signalId, actorId, resolution);
+  }
+
   setHelpSolutionModeration(
     topicId: string,
     status: HelpSolutionModerationStatus | null,
@@ -309,6 +370,17 @@ function validateSourceLocaleCorrectionScope(scope: SourceLocaleCorrectionScope)
   if (scope !== "own" && scope !== "any") {
     throw new InvalidForumContentError("source locale correction scope is invalid");
   }
+}
+
+function normalizeOptionalHelpSignalExplanation(value: string | null): string | null {
+  if (value === null) return null;
+  const normalized = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
+  if (!normalized || normalized.length > HELP_SIGNAL_EXPLANATION_MAX_LENGTH) {
+    throw new InvalidForumContentError(
+      `Help signal explanation must be between 1 and ${HELP_SIGNAL_EXPLANATION_MAX_LENGTH} characters when provided`,
+    );
+  }
+  return normalized;
 }
 
 function normalizeCorrectedSourceLocale(value: string): string {
