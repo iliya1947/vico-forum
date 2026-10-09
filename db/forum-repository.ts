@@ -1164,13 +1164,14 @@ export class DrizzleForumRepository {
       throw new RangeError("similar-question limit must be an integer between 1 and 10");
     }
 
-    const titleTerms = helpSimilarTextTerms(normalizedTitle, HELP_SIMILAR_TITLE_TERM_LIMIT);
+    const titleTerms = helpSimilarTitleTerms(normalizedTitle, HELP_SIMILAR_TITLE_TERM_LIMIT);
+    const normalizedTags = helpSimilarNormalizedTags(query.tags);
     const terms = helpSimilarSearchTerms({
       title: normalizedTitle,
       body: query.body,
       tags: query.tags,
     });
-    if (terms.length === 0) return [];
+    if (terms.length === 0 && normalizedTags.length === 0) return [];
 
     const patterns = terms.map((term) => `%${escapeSearchPattern(term)}%`);
     const titlePatterns = terms.map(helpSimilarTitleTokenPattern);
@@ -1178,59 +1179,136 @@ export class DrizzleForumRepository {
       sql<boolean>`${forumTopicTitleRevisions.originalContent} ~* ${pattern}`,
     );
     const tagTermMatches = patterns.map((pattern) =>
-      sql<boolean>`coalesce(${forumTags.name} ilike ${pattern} escape '!', false)
-        or coalesce(${forumTags.key} ilike ${pattern} escape '!', false)`,
+      sql<boolean>`exists (
+        select 1
+        from ${forumTopicTags}
+        inner join ${forumTags} on ${forumTags.key} = ${forumTopicTags.tagKey}
+        where ${forumTopicTags.topicId} = ${forumTopics.id}
+          and (
+            ${forumTags.name} ilike ${pattern} escape '!'
+            or ${forumTags.key} ilike ${pattern} escape '!'
+          )
+      )`,
     );
     const bodyTermMatches = patterns.map((pattern) =>
-      sql<boolean>`coalesce(${forumPostRevisions.originalContent} ilike ${pattern} escape '!', false)`,
+      sql<boolean>`exists (
+        select 1
+        from ${forumPosts}
+        inner join ${forumPostRevisions}
+          on ${forumPostRevisions.postId} = ${forumPosts.id}
+          and ${forumPostRevisions.id} = ${forumPosts.currentRevisionId}
+        where ${forumPosts.topicId} = ${forumTopics.id}
+          and ${forumPostRevisions.originalContent} ilike ${pattern} escape '!'
+      )`,
     );
 
+    const titleQueryMatches = titleTerms.map((term) =>
+      sql<boolean>`${forumTopicTitleRevisions.originalContent} ~* ${helpSimilarTitleTokenPattern(term)}`,
+    );
+    const titleQueryMatchCount = sql<number>`(${sql.join(
+      titleQueryMatches.length > 0
+        ? titleQueryMatches.map((match) => sql`case when ${match} then 1 else 0 end`)
+        : [sql`0`],
+      sql` + `,
+    )})::int`;
     const titleMatchCount = sql<number>`(${sql.join(
-      titleTermMatches.map((match) => sql`case when ${match} then 1 else 0 end`),
+      titleTermMatches.length > 0
+        ? titleTermMatches.map((match) => sql`case when ${match} then 1 else 0 end`)
+        : [sql`0`],
       sql` + `,
     )})::int`;
     const tagMatchCount = sql<number>`(${sql.join(
-      tagTermMatches.map((match) => sql`case when bool_or(${match}) then 1 else 0 end`),
+      tagTermMatches.length > 0
+        ? tagTermMatches.map((match) => sql`case when ${match} then 1 else 0 end`)
+        : [sql`0`],
       sql` + `,
     )})::int`;
     const bodyMatchCount = sql<number>`(${sql.join(
-      bodyTermMatches.map((match) => sql`case when bool_or(${match}) then 1 else 0 end`),
+      bodyTermMatches.length > 0
+        ? bodyTermMatches.map((match) => sql`case when ${match} then 1 else 0 end`)
+        : [sql`0`],
       sql` + `,
     )})::int`;
     const coveredTermCount = sql<number>`(${sql.join(
-      titleTermMatches.map((titleMatch, index) => sql`case
-        when ${titleMatch}
-          or bool_or(${tagTermMatches[index]!})
-          or bool_or(${bodyTermMatches[index]!})
-        then 1 else 0 end`),
+      titleTermMatches.length > 0
+        ? titleTermMatches.map((titleMatch, index) => sql`case
+            when ${titleMatch}
+              or ${tagTermMatches[index]!}
+              or ${bodyTermMatches[index]!}
+            then 1 else 0 end`)
+        : [sql`0`],
       sql` + `,
     )})::int`;
+
+    const exactTitleMatch = sql<boolean>`
+      ${forumTopicTitleRevisions.originalContent} ilike
+      ${escapeSearchPattern(normalizedTitle)} escape '!'
+    `;
+    const exactTagMatch = normalizedTags.length > 0
+      ? sql<boolean>`exists (
+          select 1
+          from ${forumTopicTags}
+          inner join ${forumTags} on ${forumTags.key} = ${forumTopicTags.tagKey}
+          where ${forumTopicTags.topicId} = ${forumTopics.id}
+            and (
+              ${sql.join(
+                normalizedTags.map((tag) => sql`
+                  lower(${forumTags.name}) = ${tag}
+                  or lower(${forumTags.key}) = ${tag}
+                `),
+                sql` or `,
+              )}
+            )
+        )`
+      : sql<boolean>`false`;
+    const requiredTitleMatches = titleTerms.length >= 2 ? 2 : 1;
+    const strongTitleMatch = titleTerms.length > 0
+      ? sql<boolean>`${titleQueryMatchCount} >= ${requiredTitleMatches}`
+      : sql<boolean>`false`;
+
     const relevanceScore = sql<number>`(
-      ${titleMatchCount} * 20
+      case when ${exactTitleMatch} then 1000 else 0 end
+      + case when ${exactTagMatch} then 500 else 0 end
+      + ${titleMatchCount} * 20
       + ${tagMatchCount} * 8
       + ${bodyMatchCount} * 2
     )::int`;
     const matchTier = sql<number>`case
-      when ${titleMatchCount} > 0 then 3
+      when ${exactTitleMatch} then 5
+      when ${exactTagMatch} then 4
+      when ${strongTitleMatch} then 3
       when ${tagMatchCount} > 0 then 2
-      else 1
+      when ${bodyMatchCount} > 0 then 1
+      else 0
     end::int`;
     const matchSource = sql<ForumHelpSimilarMatchSource>`case
-      when ${titleMatchCount} > 0 then 'title'
-      when ${tagMatchCount} > 0 then 'tags'
-      else 'body'
+      when ${exactTitleMatch} or ${strongTitleMatch} then 'title'
+      when ${exactTagMatch} or ${tagMatchCount} > 0 then 'tags'
+      when ${bodyMatchCount} > 0 then 'body'
+      else 'title'
     end`;
-    const minimumCoveredTerms = titleTerms.length >= 3 ? 2 : 1;
+    const postCount = sql<number>`(
+      select count(*)::int
+      from ${forumPosts}
+      where ${forumPosts.topicId} = ${forumTopics.id}
+    )`;
     const activityAt = sql`greatest(
       ${forumTopics.createdAt},
-      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+      coalesce(
+        (
+          select max(${forumPosts.createdAt})
+          from ${forumPosts}
+          where ${forumPosts.topicId} = ${forumTopics.id}
+        ),
+        ${forumTopics.createdAt}
+      )
     )`.mapWith(forumTopics.createdAt);
 
     const rows = await this.database
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        postCount,
         isSolved: forumTopics.isSolved,
         activityAt,
         relevanceScore,
@@ -1243,16 +1321,17 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .leftJoin(forumPostRevisions, and(
-        eq(forumPostRevisions.postId, forumPosts.id),
-        eq(forumPostRevisions.id, forumPosts.currentRevisionId),
+      .where(and(
+        eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        sql`
+          ${exactTitleMatch}
+          or ${exactTagMatch}
+          or ${strongTitleMatch}
+          or ${tagMatchCount} > 0
+          or ${bodyMatchCount} > 0
+          or ${titleMatchCount} > 0
+        `,
       ))
-      .leftJoin(forumTopicTags, eq(forumTopicTags.topicId, forumTopics.id))
-      .leftJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
-      .where(eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id)
-      .having(sql`${coveredTermCount} >= ${minimumCoveredTerms}`)
       .orderBy(
         desc(matchTier),
         desc(coveredTermCount),
@@ -2997,24 +3076,50 @@ const HELP_SIMILAR_TOTAL_TERM_LIMIT = 12;
 const HELP_SIMILAR_BODY_INPUT_LIMIT = 4_000;
 const HELP_SIMILAR_TAG_INPUT_LIMIT = 8;
 const HELP_SIMILAR_TAG_LENGTH_LIMIT = 100;
+const HELP_SIMILAR_SINGLE_LETTER_TECH_TERMS = new Set(["c", "r"]);
 
-function helpSimilarSearchTerms(query: ForumHelpSimilarQuestionQuery): string[] {
-  const ordered = [
-    ...helpSimilarTextTerms(query.title, HELP_SIMILAR_TITLE_TERM_LIMIT),
-    ...query.tags.slice(0, HELP_SIMILAR_TAG_INPUT_LIMIT).flatMap((tag) => {
-      const normalizedTag = tag
+function helpSimilarNormalizedTags(tags: readonly string[]): string[] {
+  return [...new Set(
+    tags
+      .slice(0, HELP_SIMILAR_TAG_INPUT_LIMIT)
+      .map((tag) => tag
         .slice(0, HELP_SIMILAR_TAG_LENGTH_LIMIT)
         .normalize("NFKC")
         .trim()
         .replace(/\s+/gu, " ")
-        .toLowerCase();
-      const tagTerms = helpSimilarTextTerms(normalizedTag, HELP_SIMILAR_TAG_TERM_LIMIT);
-      return normalizedTag ? [normalizedTag, ...tagTerms] : tagTerms;
-    }),
+        .toLowerCase())
+      .filter(Boolean),
+  )];
+}
+
+function helpSimilarSearchTerms(query: ForumHelpSimilarQuestionQuery): string[] {
+  const normalizedTags = helpSimilarNormalizedTags(query.tags);
+  const ordered = [
+    ...helpSimilarTitleTerms(query.title, HELP_SIMILAR_TITLE_TERM_LIMIT),
+    ...normalizedTags.flatMap((tag) => [
+      tag,
+      ...helpSimilarTextTerms(tag, HELP_SIMILAR_TAG_TERM_LIMIT),
+    ]),
     ...helpSimilarTextTerms(query.body.slice(0, HELP_SIMILAR_BODY_INPUT_LIMIT), HELP_SIMILAR_BODY_TERM_LIMIT),
   ];
 
   return [...new Set(ordered)].slice(0, HELP_SIMILAR_TOTAL_TERM_LIMIT);
+}
+
+function helpSimilarTitleTerms(value: string, limit: number): string[] {
+  const normalized = value.normalize("NFKC").toLowerCase();
+  const chunks = normalized.match(/[\p{L}\p{N}][\p{L}\p{N}+#]*/gu) ?? [];
+  const terms: string[] = [];
+  for (const chunk of chunks) {
+    const semanticLength = chunk.match(/[\p{L}\p{N}]/gu)?.length ?? 0;
+    const keep = semanticLength >= 2
+      || /[+#]/u.test(chunk)
+      || HELP_SIMILAR_SINGLE_LETTER_TECH_TERMS.has(chunk);
+    if (!keep || terms.includes(chunk)) continue;
+    terms.push(chunk);
+    if (terms.length >= limit) break;
+  }
+  return terms;
 }
 
 function helpSimilarTextTerms(value: string, limit: number): string[] {
