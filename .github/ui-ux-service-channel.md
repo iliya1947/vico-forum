@@ -3719,3 +3719,51 @@ Owner clarification:
 Other separately designed/integrated tracks also remain separate from this conversation where the
 owner already assigned them: user signals/reports/complaints and the admin-panel system. Their
 existence must not block independent forum development in this conversation.
+
+
+---
+
+## Forum profiles — owner authorization and Codex technical plan — 2026-10-09
+
+### Status and owner scope
+
+1. The owner approved the next independent sequence: forum profiles → online presence → registration.
+2. The current request authorizes starting forum profiles only. Stop after this product block; the later two blocks require the owner's continuation.
+3. Current-main baseline inspected: `fe4d1fc5f425fa3e2e4487c98fd9d9701248aa75`.
+4. Codex has prepared this technical plan only. No profile implementation, migration, implementation PR, tests, CI or acceptance has been completed.
+5. Current `AGENTS.md` assigns implementation to ChatGPT and limits Codex to technical planning/review and this shared communication file.
+
+### Confirmed repository facts
+
+1. `docs/UI_UX_PASS.md` approves forum profiles with avatar, name, short bio, role, join date, message count, best-answer count and optional GitHub/site links.
+2. `db/schema.ts` already has Better Auth `user.id/name/image/createdAt`, current application roles and user-role assignments. There are no bio/GitHub/site profile fields.
+3. `app/routes.ts` has no profile route. `app/auth/auth-controls.tsx` points the account link to `Under development?feature=profiles`; `HeaderAuthUser` currently lacks a stable user ID.
+4. Topic/post projections already carry author IDs, while many discovery summaries carry author names only. New links must use stable IDs, never names or email addresses.
+5. Role assignment has an existing built-in `user` fallback. Application role display is DB-derived; session role claims are not authoritative.
+6. Best answer and solved state are deliberately independent. Historical replaced answers may be marked outdated; a statistics query must follow the current topic best-answer reference rather than count historical moderation markers.
+
+### Recommended bounded implementation
+
+1. Create a fresh implementation branch/PR from current `main`; add a public locale-aware profile route keyed by existing `user.id`. Encode the ID as one path segment; Better Auth IDs are text and must not be assumed UUIDs.
+2. Use existing identity for name, avatar and join date. Render a safe existing avatar with a text fallback for missing/invalid/failed images. This slice does not need uploads, image storage or changes to login/registration.
+3. Add minimal application-owned persistence for short bio and optional GitHub/site links, linked one-to-one to existing identity. A separate profile relation is a suitable simple option: absent row means empty optional fields, not a missing user. Do not duplicate authentication, role or statistics data.
+4. Provide self-service editing of these forum-specific fields. Derive the actor from the server session, enforce ownership and same-origin at the action boundary, validate bounded text and safe external URLs, and preserve submitted values on validation failure. Do not permit changing role, join date, counters, email or authentication records through this form. Name/avatar account editing is not required by the currently approved display contract.
+5. Return an explicit public projection containing only profile presentation fields. Do not serialize auth user objects, email, account/session data, permissions, overrides, pending signals or appeal explanations.
+6. Resolve displayed role from current assignment plus existing default-role semantics; do not call authorization-management listing to build public profiles. Role labels do not grant capabilities.
+7. Derive message count from persisted posts authored by this user, including initial topic/question posts and replies across the forum. Derive best-answer count from current `forum_topics.best_answer_post_id` references whose referenced post has this author; do not add an `isSolved` condition, since selected best answer is independent of solved state. Use independent aggregates so joins cannot multiply counts. Return real zero counts for users without posts.
+8. Connect the header account entry and message-author names/avatars to real profiles. Add author IDs to discovery projections only where needed for profile links; preserve topic-card destinations and avoid nested anchors inside existing full-card links. Reuse the accepted shell and existing public error states.
+9. Add canonical English copy, reviewed RU/HE packs/fingerprints and generic locale/RTL behavior. Show representative Pages profile and owner-edit states through the actual shared presentation.
+10. Update `PROJECT_STATE.md` and relevant UI/UX documentation truthfully in the implementation set; remove `profiles` from the unfinished list only once real functionality exists. For any new relation, update forward migration metadata, schema manifest and existing runtime privilege contract using the repository workflow; no external migration is needed for this local/CI slice.
+
+### Readiness checks
+
+1. Disposable PostgreSQL tests: existing user without optional profile row, populated profile, zero activity, posts in ordinary and Help topics, multiple tags/replies without aggregate inflation, selected best answer on unsolved topic, and replacing the selected best answer moving the count between authors.
+2. Route/action tests: public guest read; missing user → 404; classified storage failure → controlled unavailable; unexpected errors are not suppressed; owner update persists; guest/foreign-origin/cross-user update is rejected; unsafe URL/invalid input is rejected without partial changes; public loader never exposes private identity/auth/moderation fields.
+3. Role tests: default role without assignment, explicit custom role and next-request assignment change. Do not use the public role label as action authorization.
+4. Integration/presentation tests: stable-ID profile links, no nested anchors, missing/broken avatar fallback, validation/pending/success form states, optional empty fields, long Unicode names/bio and safe links.
+5. Exact-head repository checks, including PostgreSQL migration/schema/ACL checks if a relation is added, and Pages/browser review across desktop/mobile/tablet, Light/Dark, LTR/RTL and guest/owner/other-user states.
+6. ChatGPT whole-PR review and owner Pages acceptance before the final manual Codex review of the stable head. No acceptance or CI results are claimed by this planning entry.
+
+### Next step
+
+ChatGPT should implement this bounded profile block in a separate implementation PR and keep status/results in this file. The approved profile scope is independent of outstanding Help work. Editor, signal/report/admin-panel tracks, online presence, registration and paused Stage 6 remain outside this implementation PR.
