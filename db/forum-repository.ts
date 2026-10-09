@@ -189,6 +189,20 @@ export interface ForumHelpSignal {
   resolvedAt: Date | null;
 }
 
+export interface ForumPendingHelpSignal {
+  id: string;
+  kind: HelpSignalKind;
+  topicId: string;
+  targetPostId: string | null;
+  proposedOriginal: ForumHelpDuplicateReference | null;
+  explanation: string | null;
+  createdAt: Date;
+}
+
+export interface ForumReviewableHelpSignal extends ForumPendingHelpSignal {
+  submittedBy: { id: string; name: string };
+}
+
 export interface ForumHelpQuestionSummary {
   id: string;
   title: string;
@@ -227,6 +241,7 @@ const HELP_SOLUTIONS_MINE_LIMIT = 100;
 const HELP_SOLUTIONS_WANT_TO_HELP_LIMIT = 100;
 const HELP_SOLUTIONS_FOR_ME_LIMIT = 100;
 const HELP_SOLUTIONS_FOR_ME_INTEREST_TAG_LIMIT = 100;
+const HELP_SIGNAL_TOPIC_PENDING_LIMIT = 50;
 
 export interface ForumTopicSummary {
   id: string;
@@ -286,6 +301,9 @@ export interface ForumReader {
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readPendingHelpDuplicateAppeal(topicId: string): Promise<ForumHelpDuplicateAppeal | undefined>;
   readHelpSignal(id: string): Promise<ForumHelpSignal | undefined>;
+  readOwnPendingHelpSignals(topicId: string, userId: string): Promise<ForumPendingHelpSignal[]>;
+  readReviewablePendingHelpSignals(topicId: string, kinds: readonly HelpSignalKind[]): Promise<ForumReviewableHelpSignal[]>;
+  hasActiveHelpDuplicateChildren(topicId: string): Promise<boolean>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -1889,6 +1907,107 @@ export class DrizzleForumRepository {
       kind: row.kind as HelpSignalKind,
       status: row.status as HelpSignalStatus,
     };
+  }
+
+  async readOwnPendingHelpSignals(topicId: string, userId: string): Promise<ForumPendingHelpSignal[]> {
+    const proposedTopic = alias(forumTopics, "own_help_signal_proposed_topic");
+    const proposedTitle = alias(forumTopicTitleRevisions, "own_help_signal_proposed_title");
+    const rows = await this.database
+      .select({
+        id: forumHelpSignals.id,
+        kind: forumHelpSignals.kind,
+        topicId: forumHelpSignals.topicId,
+        targetPostId: forumHelpSignals.targetPostId,
+        explanation: forumHelpSignals.explanation,
+        createdAt: forumHelpSignals.createdAt,
+        proposedOriginalId: proposedTopic.id,
+        proposedOriginalTitle: proposedTitle.originalContent,
+      })
+      .from(forumHelpSignals)
+      .leftJoin(proposedTopic, eq(proposedTopic.id, forumHelpSignals.proposedOriginalTopicId))
+      .leftJoin(proposedTitle, and(
+        eq(proposedTitle.topicId, proposedTopic.id),
+        eq(proposedTitle.id, proposedTopic.currentTitleRevisionId),
+      ))
+      .where(and(
+        eq(forumHelpSignals.topicId, topicId),
+        eq(forumHelpSignals.submittedByUserId, userId),
+        eq(forumHelpSignals.status, "pending"),
+      ))
+      .orderBy(asc(forumHelpSignals.createdAt), asc(forumHelpSignals.id))
+      .limit(HELP_SIGNAL_TOPIC_PENDING_LIMIT);
+    return rows.map((row) => ({
+      id: row.id,
+      kind: row.kind as HelpSignalKind,
+      topicId: row.topicId,
+      targetPostId: row.targetPostId,
+      proposedOriginal: row.proposedOriginalId && row.proposedOriginalTitle
+        ? { id: row.proposedOriginalId, title: row.proposedOriginalTitle }
+        : null,
+      explanation: row.explanation,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async readReviewablePendingHelpSignals(
+    topicId: string,
+    kinds: readonly HelpSignalKind[],
+  ): Promise<ForumReviewableHelpSignal[]> {
+    const allowedKinds = [...new Set(kinds)];
+    if (allowedKinds.length === 0) return [];
+    const proposedTopic = alias(forumTopics, "review_help_signal_proposed_topic");
+    const proposedTitle = alias(forumTopicTitleRevisions, "review_help_signal_proposed_title");
+    const rows = await this.database
+      .select({
+        id: forumHelpSignals.id,
+        kind: forumHelpSignals.kind,
+        topicId: forumHelpSignals.topicId,
+        targetPostId: forumHelpSignals.targetPostId,
+        explanation: forumHelpSignals.explanation,
+        createdAt: forumHelpSignals.createdAt,
+        submittedByUserId: forumHelpSignals.submittedByUserId,
+        submittedByName: user.name,
+        proposedOriginalId: proposedTopic.id,
+        proposedOriginalTitle: proposedTitle.originalContent,
+      })
+      .from(forumHelpSignals)
+      .innerJoin(user, eq(user.id, forumHelpSignals.submittedByUserId))
+      .leftJoin(proposedTopic, eq(proposedTopic.id, forumHelpSignals.proposedOriginalTopicId))
+      .leftJoin(proposedTitle, and(
+        eq(proposedTitle.topicId, proposedTopic.id),
+        eq(proposedTitle.id, proposedTopic.currentTitleRevisionId),
+      ))
+      .where(and(
+        eq(forumHelpSignals.topicId, topicId),
+        eq(forumHelpSignals.status, "pending"),
+        inArray(forumHelpSignals.kind, allowedKinds),
+      ))
+      .orderBy(asc(forumHelpSignals.createdAt), asc(forumHelpSignals.id))
+      .limit(HELP_SIGNAL_TOPIC_PENDING_LIMIT);
+    return rows.map((row) => ({
+      id: row.id,
+      kind: row.kind as HelpSignalKind,
+      topicId: row.topicId,
+      targetPostId: row.targetPostId,
+      proposedOriginal: row.proposedOriginalId && row.proposedOriginalTitle
+        ? { id: row.proposedOriginalId, title: row.proposedOriginalTitle }
+        : null,
+      explanation: row.explanation,
+      createdAt: row.createdAt,
+      submittedBy: { id: row.submittedByUserId, name: row.submittedByName },
+    }));
+  }
+
+  async hasActiveHelpDuplicateChildren(topicId: string): Promise<boolean> {
+    const [row] = await this.database
+      .select({ id: forumHelpDuplicateRelationships.id })
+      .from(forumHelpDuplicateRelationships)
+      .where(and(
+        eq(forumHelpDuplicateRelationships.originalTopicId, topicId),
+        isNull(forumHelpDuplicateRelationships.removedAt),
+      ))
+      .limit(1);
+    return Boolean(row);
   }
 
   async createHelpSignal(input: {
