@@ -1317,21 +1317,22 @@ export class DrizzleForumRepository {
         matchSource,
       })
       .from(forumTopics)
+      .innerJoin(forumSections, and(
+        eq(forumSections.id, forumTopics.sectionId),
+        eq(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+      ))
       .innerJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .where(and(
-        eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-        sql`
-          ${exactTitleMatch}
-          or ${exactTagMatch}
-          or ${strongTitleMatch}
-          or ${tagMatchCount} > 0
-          or ${bodyMatchCount} > 0
-          or ${titleMatchCount} > 0
-        `,
-      ))
+      .where(sql`
+        ${exactTitleMatch}
+        or ${exactTagMatch}
+        or ${strongTitleMatch}
+        or ${tagMatchCount} > 0
+        or ${bodyMatchCount} > 0
+        or ${titleMatchCount} > 0
+      `)
       .orderBy(
         desc(matchTier),
         desc(coveredTermCount),
