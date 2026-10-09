@@ -2037,11 +2037,8 @@ export class DrizzleForumRepository {
           submittedByUserId: input.actorId,
           explanation: input.explanation,
         })
-        .onConflictDoNothing()
         .returning();
-      if (!created) {
-        throw new ForumStateConflictError("matching Help signal is already pending");
-      }
+      if (!created) throw new Error("failed to create Help signal");
       return {
         ...created,
         kind: created.kind as HelpSignalKind,
