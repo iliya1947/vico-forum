@@ -13,6 +13,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -561,8 +562,9 @@ export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
   'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
-  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
-  'forum.sourceLocale.correctAny', 'forum.translation.generate',
+  'forum.solution.manageAny', 'forum.helpDuplicate.manage',
+  'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
+  'forum.translation.generate',
   'access.authorization.manage'
 )`)]);
 
@@ -685,6 +687,80 @@ export const forumTopicPins = pgTable(
   },
   (table) => [
     index("forum_topic_pins_order_idx").on(table.pinnedAt, table.topicId),
+  ],
+);
+
+export const forumHelpDuplicateRelationships = pgTable(
+  "forum_help_duplicate_relationships",
+  {
+    id: text("id").primaryKey(),
+    duplicateTopicId: text("duplicate_topic_id").notNull().references(() => forumTopics.id, { onDelete: "cascade" }),
+    originalTopicId: text("original_topic_id").notNull().references(() => forumTopics.id, { onDelete: "cascade" }),
+    confirmedByUserId: text("confirmed_by_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }).notNull().defaultNow(),
+    removedByUserId: text("removed_by_user_id").references(() => user.id, { onDelete: "restrict" }),
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("forum_help_duplicate_relationships_active_duplicate_idx")
+      .on(table.duplicateTopicId)
+      .where(sql`${table.removedAt} is null`),
+    index("forum_help_duplicate_relationships_active_original_idx").on(table.originalTopicId, table.removedAt),
+    check(
+      "forum_help_duplicate_relationships_not_self_check",
+      sql`${table.duplicateTopicId} <> ${table.originalTopicId}`,
+    ),
+    check(
+      "forum_help_duplicate_relationships_removal_check",
+      sql`(
+        ${table.removedAt} is null and ${table.removedByUserId} is null
+      ) or (
+        ${table.removedAt} is not null
+        and ${table.removedByUserId} is not null
+        and ${table.removedAt} >= ${table.confirmedAt}
+      )`,
+    ),
+  ],
+);
+
+export const forumHelpDuplicateAppeals = pgTable(
+  "forum_help_duplicate_appeals",
+  {
+    id: text("id").primaryKey(),
+    relationshipId: text("relationship_id").notNull().references(() => forumHelpDuplicateRelationships.id, { onDelete: "cascade" }),
+    appellantUserId: text("appellant_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+    explanation: text("explanation").notNull(),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedByUserId: text("resolved_by_user_id").references(() => user.id, { onDelete: "restrict" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("forum_help_duplicate_appeals_pending_relationship_idx")
+      .on(table.relationshipId)
+      .where(sql`${table.status} = 'pending'`),
+    index("forum_help_duplicate_appeals_relationship_created_idx").on(table.relationshipId, table.createdAt, table.id),
+    check(
+      "forum_help_duplicate_appeals_explanation_check",
+      sql`btrim(${table.explanation}) <> '' and char_length(${table.explanation}) <= 1000`,
+    ),
+    check(
+      "forum_help_duplicate_appeals_status_check",
+      sql`${table.status} in ('pending', 'rejected', 'accepted')`,
+    ),
+    check(
+      "forum_help_duplicate_appeals_lifecycle_check",
+      sql`(
+        ${table.status} = 'pending'
+        and ${table.resolvedByUserId} is null
+        and ${table.resolvedAt} is null
+      ) or (
+        ${table.status} in ('rejected', 'accepted')
+        and ${table.resolvedByUserId} is not null
+        and ${table.resolvedAt} is not null
+        and ${table.resolvedAt} >= ${table.createdAt}
+      )`,
+    ),
   ],
 );
 

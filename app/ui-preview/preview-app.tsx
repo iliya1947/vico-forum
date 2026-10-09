@@ -320,6 +320,8 @@ const topic = {
   isSolved: true,
   bestAnswerPostId: "answer",
   needsDetails: false,
+  duplicateOf: null,
+  duplicateDisputed: false,
   title: section.topics[0]!.title,
   section: {
     id: sectionId,
@@ -562,13 +564,17 @@ function previewHelpSolutions(locale: PreviewLocale) {
     questions: [
       {
         id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
-        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, createdAt: "2026-09-30T11:30:00.000Z",
+        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+        needsDetails: false,
+        duplicateOf: { id: "help-auth-best-answer", title: titles[1]! },
+        duplicateDisputed: true,
+        createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
       {
         id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
-        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, createdAt: "2026-09-29T09:00:00.000Z",
+        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
@@ -582,20 +588,22 @@ function previewHelpSolutions(locale: PreviewLocale) {
             : "A newer PostgreSQL version changed the behavior of this setting.",
         solutionOutdatedReasonKind: null,
         needsDetails: false,
+        duplicateOf: null,
+        duplicateDisputed: false,
         createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
       },
       {
         id: "help-cloudflare-cache", title: titles[3]!, authorName: "Sam Chen", replyCount: 4,
-        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false,
         createdAt: "2026-09-26T09:15:00.000Z",
         activityAt: "2026-09-29T15:30:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "cache", name: "Cache" }],
       },
       {
         id: "help-neon-pooling", title: titles[4]!, authorName: "Alex Rivera", replyCount: 2,
-        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false,
         createdAt: "2026-09-25T12:20:00.000Z",
         activityAt: "2026-09-28T17:45:00.000Z",
         tags: [{ key: "neon", name: "Neon" }, { key: "postgresql", name: "PostgreSQL" }],
@@ -1167,6 +1175,8 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
         canViewAttention={scenario.identity === "manager"}
+        canViewSolutionModeration={scenario.identity === "manager"}
+        canViewDuplicateDispute={scenario.identity === "manager"}
         actionData={actionData}
       />
     );
@@ -1322,6 +1332,8 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       isSolved: helpQuestion.isSolved,
       bestAnswerPostId,
       needsDetails: helpQuestion.needsDetails,
+      duplicateOf: helpQuestion.duplicateOf,
+      duplicateDisputed: helpQuestion.duplicateDisputed,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -1351,6 +1363,19 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         canManageSolution={scenario.identity !== "guest"}
         canManageAnySolution={scenario.identity === "manager"}
         canModerateHelpSolution={scenario.identity === "manager"}
+        canManageHelpDuplicate={scenario.identity === "manager"}
+        pendingDuplicateAppeal={helpQuestion.duplicateDisputed && scenario.identity !== "guest"
+          ? {
+              id: `${helpQuestion.id}-appeal`,
+              relationshipId: `${helpQuestion.id}-duplicate`,
+              explanation: scenario.locale === "ru"
+                ? "Проблема похожа, но причина и решение отличаются."
+                : scenario.locale === "he"
+                  ? "הבעיה דומה, אבל הסיבה והפתרון שונים."
+                  : "The problem is similar, but the cause and solution are different.",
+              createdAt: "2026-10-08T18:00:00.000Z",
+            }
+          : null}
         isTopicAuthor={scenario.identity === "user"}
         canCorrectTitleSourceLocale={scenario.identity === "manager"}
         canCorrectAnySourceLocale={scenario.identity === "manager"}
@@ -1452,6 +1477,8 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     isSolved: false,
     bestAnswerPostId: null,
     needsDetails: false,
+    duplicateOf: null,
+    duplicateDisputed: false,
     title: matched.topic.title,
     section: {
       id: matched.section.id,

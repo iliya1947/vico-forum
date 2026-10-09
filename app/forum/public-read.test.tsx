@@ -5,6 +5,7 @@ import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -67,7 +68,7 @@ const section = {
 };
 const topic = {
   id: "typed/api", sectionId: "typescript/basics", authorId: "ada", authorName: "Ada", createdAt: new Date("2026-01-01"),
-  isPinned: true, isSolved: false, bestAnswerPostId: null, needsDetails: false,
+  isPinned: true, isSolved: false, bestAnswerPostId: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false,
   title: section.topics[0]!.title,
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
@@ -79,7 +80,7 @@ const topic = {
 
 const helpTopic = {
   id: "help-question", sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "ada", authorName: "Ada",
-  createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer", needsDetails: false,
+  createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer", needsDetails: false, duplicateOf: null, duplicateDisputed: false,
   title: { id: "help-title-r1", originalContent: "Why does my Worker lose auth state?", sourceLocale: "en" },
   section: {
     id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions",
@@ -122,6 +123,8 @@ const helpPage = {
     solutionOutdatedReason: null,
     solutionOutdatedReasonKind: null,
     needsDetails: helpTopic.needsDetails,
+    duplicateOf: helpTopic.duplicateOf,
+    duplicateDisputed: helpTopic.duplicateDisputed,
     createdAt: helpTopic.createdAt,
     activityAt: helpTopic.posts.at(-1)!.createdAt,
     tags: helpTopic.tags,
@@ -248,6 +251,7 @@ const reader: ForumReader = {
   readHelpSolutionsWantToHelp: async () => wantToHelpPage,
   readHelpSolutionsForMe: async () => forMePage,
   searchHelpSolutionsSimilar: async () => [],
+  readPendingHelpDuplicateAppeal: async () => undefined,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
@@ -456,7 +460,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
     expect(screen.getByText("Open")).toBeVisible();
-    expect(screen.getByText("Best answer")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
     expect(screen.getByText("2 replies")).toBeVisible();
     expect(screen.getByText("#Cloudflare")).toBeVisible();
     expect(screen.getByRole("link", { name: /Why does my Worker lose auth state/ }))
@@ -1052,36 +1056,274 @@ describe("Help & solutions modes and authoring", () => {
     expect(readHelpSolutionsMine).not.toHaveBeenCalled();
   });
 
-  it("renders persisted Help solution moderation status and outdated reason", async () => {
-    const moderatedPage = {
-      ...solvedHelpPage,
-      questions: solvedHelpPage.questions.map((question) => ({
-        ...question,
-        solutionModerationStatus: "outdated" as const,
-        solutionOutdatedReason: "The provider removed the API used by this workaround.",
-        solutionOutdatedReasonKind: null,
-      })),
+  it("keeps duplicate appeal details private and disputed badge moderator-only", async () => {
+    const duplicateTopic = {
+      ...helpTopic,
+      bestAnswerPostId: null,
+      duplicateOf: { id: "help-original", title: "Canonical original question" },
+      duplicateDisputed: true,
     };
-    const requestContext = context("en", "ltr");
-    requestContext.set(forumReaderContext, {
-      ...reader,
-      readHelpSolutionsSolved: async () => moderatedPage,
-    });
+    const pendingAppeal = {
+      id: "appeal-1",
+      relationshipId: "duplicate-relation-1",
+      explanation: "Private appeal reason.",
+      createdAt: new Date("2026-10-08T18:00:00Z"),
+    };
 
-    const data = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
-      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
-      context: requestContext,
+    const guestReadAppeal = vi.fn(async () => pendingAppeal);
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: guestReadAppeal,
     });
-    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
-    renderRoute(
-      CategoryRoute,
-      data,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: guestContext,
+    });
+    expect(guestReadAppeal).not.toHaveBeenCalled();
+    const guestView = renderRoute(
+      TopicRoute,
+      guestData,
+      forumTopicPath("en", duplicateTopic.id),
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Solution outdated")).toBeVisible();
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Canonical original question" }))
+      .toHaveAttribute("href", forumTopicPath("en", "help-original"));
+    expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const authorReadAppeal = vi.fn(async () => pendingAppeal);
+    const authorContext = context("en", "ltr");
+    authorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "author-session", token: "author-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    authorContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    authorContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: authorReadAppeal,
+    });
+    const authorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: authorContext,
+    });
+    expect(authorReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    const authorView = renderRoute(
+      TopicRoute,
+      authorData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("This duplicate status is disputed.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Accept dispute and remove duplicate" })).not.toBeInTheDocument();
+    authorView.unmount();
+
+    const managerReadAppeal = vi.fn(async () => pendingAppeal);
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.helpDuplicate.manage"
+          || permission === "forum.solution.manageAny"
+          || permission === "forum.reply.create"
+        ),
+      }),
+    } as never);
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: managerReadAppeal,
+    });
+    const managerData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: managerContext,
+    });
+    expect(managerReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    expect(managerData.canManageHelpDuplicate).toBe(true);
+    expect(managerData.canReply).toBe(true);
+    const managerView = renderRoute(
+      TopicRoute,
+      managerData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.getByText("Started by Ada")).toBeVisible();
+    expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Add reply" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByText("Admin panel"));
+    expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
+    managerView.unmount();
+
+    const degradedAuthorContext = context("en", "ltr");
+    degradedAuthorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "degraded-author-session", token: "degraded-author-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    degradedAuthorContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    degradedAuthorContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: vi.fn(async () => {
+        throw new ForumStorageUnavailableError();
+      }),
+    });
+    const degradedAuthorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: degradedAuthorContext,
+    });
+    const degradedAuthorView = renderRoute(
+      TopicRoute,
+      degradedAuthorData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("This duplicate status is disputed.")).toBeVisible();
+    expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit dispute" })).not.toBeInTheDocument();
+    degradedAuthorView.unmount();
+  });
+
+  it("duplicate-only permission does not expose an empty admin panel on ordinary topics", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "duplicate-manager", name: "Duplicate manager", email: "duplicate@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "duplicate-manager-session", token: "duplicate-manager-token", userId: "duplicate-manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpDuplicate.manage"),
+      }),
+    } as never);
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: requestContext,
+    });
+    expect(data.canManageHelpDuplicate).toBe(false);
+    expect(data.canUseAdminPanel).toBe(false);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", topic.id), "en", "ltr");
+    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
+  });
+
+  it("shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists", async () => {
+    const moderatedPage = {
+      ...helpPage,
+      questions: [
+        {
+          ...solvedHelpPage.questions[0]!,
+          solutionModerationStatus: "outdated" as const,
+          solutionOutdatedReason: "The provider removed the API used by this workaround.",
+          solutionOutdatedReasonKind: null,
+          duplicateOf: null,
+          duplicateDisputed: false,
+        },
+        {
+          ...helpPage.questions[0]!,
+          id: "help-duplicate-list-question",
+          title: "Repeated unresolved question",
+          isSolved: false,
+          hasBestAnswer: false,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+          duplicateOf: { id: "help-original", title: "Canonical original question" },
+          duplicateDisputed: true,
+        },
+      ],
+    };
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsAll: async () => moderatedPage,
+    });
+
+    const guestData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    });
+    if (guestData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    const guestView = renderRoute(
+      CategoryRoute,
+      guestData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.getByText("Solution outdated")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
+    expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsAll: async () => moderatedPage,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.solution.manageAny" || permission === "forum.helpDuplicate.manage"
+        ),
+      }),
+    } as never);
+
+    const managerData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(managerData.canViewSolutionModeration).toBe(true);
+    expect(managerData.canViewDuplicateDispute).toBe(true);
+    renderRoute(
+      CategoryRoute,
+      managerData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.getByText("Solution outdated")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
 
     cleanup();
     const topicContext = context("en", "ltr");
@@ -1109,7 +1351,9 @@ describe("Help & solutions modes and authoring", () => {
     topicContext.set(authorizationContext, {
       forUser: () => ({
         resolve: vi.fn(),
-        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+        has: vi.fn(async (permission) =>
+          permission === "forum.solution.manageAny" || permission === "forum.helpDuplicate.manage"
+        ),
       }),
     } as never);
     const topicData = await topicLoader({
@@ -1133,6 +1377,127 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Confirm duplicate" })).not.toBeInTheDocument();
+  });
+
+  it("keeps needs-review topic badge hidden from public readers and visible to moderators", async () => {
+    const needsReviewTopic = {
+      ...helpTopic,
+      isSolved: true,
+      posts: helpTopic.posts.map((post) => post.id === "help-answer"
+        ? { ...post, solutionModerationStatus: "needs-review" as const }
+        : post),
+    };
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === needsReviewTopic.id ? needsReviewTopic : undefined,
+    });
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: needsReviewTopic.id },
+      context: guestContext,
+    });
+    const guestView = renderRoute(
+      TopicRoute,
+      guestData,
+      forumTopicPath("en", needsReviewTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === needsReviewTopic.id ? needsReviewTopic : undefined,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const managerData = await topicLoader({
+      params: { locale: "en", topicId: needsReviewTopic.id },
+      context: managerContext,
+    });
+    renderRoute(
+      TopicRoute,
+      managerData,
+      forumTopicPath("en", needsReviewTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Needs review")).toBeVisible();
+  });
+
+  it("keeps needs-review hidden from public Help lists and visible to moderators", async () => {
+    const reviewPage = {
+      ...solvedHelpPage,
+      questions: solvedHelpPage.questions.map((question) => ({
+        ...question,
+        solutionModerationStatus: "needs-review" as const,
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+      })),
+    };
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => reviewPage,
+    });
+    const guestData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    });
+    if (guestData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    const guestView = renderRoute(
+      CategoryRoute,
+      guestData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => reviewPage,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const managerData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    renderRoute(
+      CategoryRoute,
+      managerData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Needs review")).toBeVisible();
   });
 
   it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {

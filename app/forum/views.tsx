@@ -1007,6 +1007,8 @@ export function HelpSolutionsView({
   isAuthenticated = false,
   canAskQuestion = false,
   canViewAttention = false,
+  canViewSolutionModeration = false,
+  canViewDuplicateDispute = false,
   actionData,
 }: {
   locale: string;
@@ -1016,6 +1018,8 @@ export function HelpSolutionsView({
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
   canViewAttention?: boolean;
+  canViewSolutionModeration?: boolean;
+  canViewDuplicateDispute?: boolean;
   actionData?: HelpQuestionActionData;
 }) {
   const { t } = useTranslation("common");
@@ -1310,10 +1314,8 @@ export function HelpSolutionsView({
                         <span className={"help-question-status " + (question.isSolved ? "is-solved" : "is-open")}>
                           {t(question.isSolved ? "solved" : "helpSolutionsOpen")}
                         </span>
-                        {question.hasBestAnswer ? (
-                          <span className="help-question-best-answer">{t("bestAnswer")}</span>
-                        ) : null}
-                        {question.solutionModerationStatus ? (
+                        {question.solutionModerationStatus === "outdated"
+                          || (canViewSolutionModeration && question.solutionModerationStatus === "needs-review") ? (
                           <span className={"help-question-solution-moderation is-" + question.solutionModerationStatus}>
                             {t(
                               question.solutionModerationStatus === "needs-review"
@@ -1321,6 +1323,12 @@ export function HelpSolutionsView({
                                 : "helpSolutionOutdated",
                             )}
                           </span>
+                        ) : null}
+                        {question.duplicateOf ? (
+                          <span className="help-question-duplicate">{t("helpDuplicateBadge")}</span>
+                        ) : null}
+                        {canViewDuplicateDispute && question.duplicateDisputed ? (
+                          <span className="help-question-duplicate-disputed">{t("helpDuplicateDisputed")}</span>
                         ) : null}
                       </span>
                       <small>{t("startedBy", { author: question.authorName })}</small>
@@ -1653,6 +1661,8 @@ export function TopicView({
   canManageSolution,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
+  canManageHelpDuplicate = false,
+  pendingDuplicateAppeal = null,
   isTopicAuthor = false,
   canCorrectTitleSourceLocale,
   canCorrectAnySourceLocale = false,
@@ -1670,6 +1680,13 @@ export function TopicView({
   canManageSolution: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
+  canManageHelpDuplicate?: boolean;
+  pendingDuplicateAppeal?: {
+    id: string;
+    relationshipId: string;
+    explanation: string;
+    createdAt: string;
+  } | null;
   isTopicAuthor?: boolean;
   canCorrectTitleSourceLocale: boolean;
   canCorrectAnySourceLocale?: boolean;
@@ -1689,8 +1706,9 @@ export function TopicView({
   const forumWriteError = actionData && !("operation" in actionData)
     ? actionData.error
     : null;
+  const canParticipate = canReply && !topic.duplicateOf;
   const canShowOwnTopicTools =
-    (canManageSolution && !canManageAnySolution && !topic.isSolved)
+    (canManageSolution && !canManageAnySolution && !topic.isSolved && !topic.duplicateOf)
     || (canCorrectTitleSourceLocale && !canCorrectAnySourceLocale);
   const originalPost = topic.posts[0];
   const bestAnswerPost = topic.bestAnswerPostId
@@ -1706,7 +1724,7 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
-  const selectableBestAnswerPosts = canManageSolution
+  const selectableBestAnswerPosts = canManageSolution && !topic.duplicateOf
     ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
     : [];
   const directRepliesByParent = new Map<string, string[]>();
@@ -1873,11 +1891,46 @@ export function TopicView({
                   </Form>
                 ) : null}
 
-                {canManageAnySolution && !topic.isSolved ? (
+                {canManageAnySolution && !topic.isSolved && !topic.duplicateOf ? (
                   <Form method="post" className="solution-form topic-admin-form">
                     <input type="hidden" name="intent" value="markSolved" />
                     <button type="submit">{t("markSolved")}</button>
                   </Form>
+                ) : null}
+
+                {canManageHelpDuplicate && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID ? (
+                  topic.duplicateOf ? (
+                    <>
+                      <Form method="post" className="topic-admin-form help-duplicate-admin-form">
+                        <input type="hidden" name="intent" value="removeHelpDuplicate" />
+                        <button type="submit">{t("helpDuplicateRemove")}</button>
+                      </Form>
+                      {pendingDuplicateAppeal ? (
+                        <section className="help-duplicate-appeal-review">
+                          <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
+                          <div className="help-duplicate-appeal-review-actions">
+                            <Form method="post" className="topic-admin-form">
+                              <input type="hidden" name="intent" value="acceptHelpDuplicateAppeal" />
+                              <button type="submit">{t("helpDuplicateAppealAccept")}</button>
+                            </Form>
+                            <Form method="post" className="topic-admin-form">
+                              <input type="hidden" name="intent" value="rejectHelpDuplicateAppeal" />
+                              <button type="submit">{t("helpDuplicateAppealReject")}</button>
+                            </Form>
+                          </div>
+                        </section>
+                      ) : null}
+                    </>
+                  ) : !topic.isSolved && !topic.bestAnswerPostId ? (
+                    <Form method="post" className="topic-admin-form help-duplicate-admin-form">
+                      <input type="hidden" name="intent" value="confirmHelpDuplicate" />
+                      <label>
+                        {t("helpDuplicateOriginalIdLabel")}
+                        <input name="originalTopicId" required autoComplete="off" />
+                      </label>
+                      <button type="submit">{t("helpDuplicateConfirm")}</button>
+                    </Form>
+                  ) : null
                 ) : null}
 
                 {canCorrectAnySourceLocale ? (
@@ -1947,6 +2000,49 @@ export function TopicView({
 
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
         {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
+
+        {topic.duplicateOf ? (
+          <section className="help-duplicate-notice" aria-label={t("helpDuplicateBadge")}>
+            <div className="help-duplicate-notice-main">
+              <strong>{t("helpDuplicateBadge")}</strong>
+              <span>
+                {t("helpDuplicateOf")}{" "}
+                <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
+                  {topic.duplicateOf.title}
+                </Link>
+              </span>
+              {canManageHelpDuplicate && topic.duplicateDisputed ? (
+                <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>
+              ) : null}
+            </div>
+
+            {canManageHelpDuplicate && pendingDuplicateAppeal ? (
+              <div className="help-duplicate-appeal-pending help-duplicate-appeal-moderator-message">
+                <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
+                <span>{t("startedBy", { author: topic.authorName })}</span>
+                <p>{pendingDuplicateAppeal.explanation}</p>
+              </div>
+            ) : null}
+
+            {isTopicAuthor ? (
+              topic.duplicateDisputed ? (
+                <div className="help-duplicate-appeal-pending">
+                  <strong>{t("helpDuplicateAppealPending")}</strong>
+                  {pendingDuplicateAppeal ? <p>{pendingDuplicateAppeal.explanation}</p> : null}
+                </div>
+              ) : (
+                <Form method="post" className="help-duplicate-appeal-form">
+                  <input type="hidden" name="intent" value="appealHelpDuplicate" />
+                  <label>
+                    {t("helpDuplicateAppealExplanationLabel")}
+                    <textarea name="explanation" required maxLength={1000} rows={3} />
+                  </label>
+                  <button type="submit">{t("helpDuplicateAppealSubmit")}</button>
+                </Form>
+              )
+            ) : null}
+          </section>
+        ) : null}
 
         {promptedBestAnswerPostId && (
           <section id="solution-confirmation" className="solution-confirmation" aria-label={t("problemSolvedPrompt")}>
@@ -2020,7 +2116,7 @@ export function TopicView({
                       {isBestAnswer && (
                         <strong className="best-answer-label">{t("bestAnswer")}</strong>
                       )}
-                      {post.solutionModerationStatus === "needs-review" && (
+                      {canModerateHelpSolution && post.solutionModerationStatus === "needs-review" && (
                         <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong>
                       )}
                       {post.solutionModerationStatus === "outdated" && (
@@ -2063,12 +2159,12 @@ export function TopicView({
                             id={`message-actions-${post.id}`}
                             className="topic-message-mobile-actions-menu"
                           >
-                            {canReply && (
+                            {canParticipate && (
                               <button type="button" onClick={() => targetReply(post.id)}>
                                 {t("replyToMessage")}
                               </button>
                             )}
-                            {canReply && (
+                            {canParticipate && (
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
@@ -2176,7 +2272,7 @@ export function TopicView({
                           feedback={messageLinkFeedback}
                           onCopy={copyMessageLink}
                         />
-                        {canReply && (
+                        {canParticipate && (
                           <div className="topic-message-participation">
                             <div className="topic-message-participation-actions">
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
@@ -2241,7 +2337,7 @@ export function TopicView({
           </ol>
         )}
 
-        {canReply && (
+        {canParticipate && (
           <Form
             method="post"
             className="forum-write-form topic-reply-form"

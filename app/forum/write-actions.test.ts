@@ -39,6 +39,7 @@ const allForumPermissions = [
   "forum.topic.pin",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
+  "forum.helpDuplicate.manage",
   "forum.sourceLocale.correctOwn",
   "forum.sourceLocale.correctAny",
   "forum.translation.generate",
@@ -164,6 +165,10 @@ function writer() {
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     setHelpSolutionModeration: vi.fn(async () => undefined),
+    confirmHelpDuplicate: vi.fn(async () => undefined),
+    removeHelpDuplicate: vi.fn(async () => undefined),
+    appealHelpDuplicate: vi.fn(async () => undefined),
+    resolveHelpDuplicateAppeal: vi.fn(async () => undefined),
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
@@ -650,6 +655,102 @@ describe("forum write route actions", () => {
     });
     expect(invalid).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
+  });
+
+  it("routes Help duplicate management and appeals through separate server boundaries", async () => {
+    const manager = writer();
+    const confirmed = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "confirmHelpDuplicate",
+        originalTopicId: "help-original",
+        actorId: "forged",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(manager, true, ["forum.helpDuplicate.manage"]),
+    });
+    expect(manager.confirmHelpDuplicate).toHaveBeenCalledWith({
+      topicId: "help-duplicate",
+      originalTopicId: "help-original",
+      actorId: "session-user",
+    });
+    if (!(confirmed instanceof Response)) throw new Error("expected duplicate redirect");
+    expect(confirmed.headers.get("Location")).toBe("/en/topics/help-duplicate");
+
+    const denied = writer();
+    const deniedResponse = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "confirmHelpDuplicate",
+        originalTopicId: "help-original",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(denied, true, ["forum.solution.manageAny"]),
+    });
+    expect(deniedResponse).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(denied.confirmHelpDuplicate).not.toHaveBeenCalled();
+
+    const author = writer();
+    const appealed = await topicAction({
+      request: request("/ru/topics/help-duplicate", {
+        intent: "appealHelpDuplicate",
+        explanation: "  Причина отличается.  ",
+        role: "admin",
+      }),
+      params: { locale: "ru", topicId: "help-duplicate" },
+      context: context(author, true, []),
+    });
+    expect(author.appealHelpDuplicate).toHaveBeenCalledWith({
+      topicId: "help-duplicate",
+      actorId: "session-user",
+      explanation: "Причина отличается.",
+    });
+    if (!(appealed instanceof Response)) throw new Error("expected appeal redirect");
+    expect(appealed.headers.get("Location")).toBe("/ru/topics/help-duplicate");
+
+    const invalidAppeal = writer();
+    const invalidResponse = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "appealHelpDuplicate",
+        explanation: "   ",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(invalidAppeal, true, []),
+    });
+    expect(invalidResponse).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
+    expect(invalidAppeal.appealHelpDuplicate).not.toHaveBeenCalled();
+
+    const reviewer = writer();
+    await topicAction({
+      request: request("/he/topics/help-duplicate", { intent: "acceptHelpDuplicateAppeal" }),
+      params: { locale: "he", topicId: "help-duplicate" },
+      context: context(reviewer, true, ["forum.helpDuplicate.manage"]),
+    });
+    expect(reviewer.resolveHelpDuplicateAppeal).toHaveBeenCalledWith({
+      topicId: "help-duplicate",
+      actorId: "session-user",
+      resolution: "accepted",
+    });
+
+    await topicAction({
+      request: request("/he/topics/help-duplicate", { intent: "rejectHelpDuplicateAppeal" }),
+      params: { locale: "he", topicId: "help-duplicate" },
+      context: context(reviewer, true, ["forum.helpDuplicate.manage"]),
+    });
+    expect(reviewer.resolveHelpDuplicateAppeal).toHaveBeenLastCalledWith({
+      topicId: "help-duplicate",
+      actorId: "session-user",
+      resolution: "rejected",
+    });
+
+    const removed = await topicAction({
+      request: request("/en/topics/help-duplicate", { intent: "removeHelpDuplicate" }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(reviewer, true, ["forum.helpDuplicate.manage"]),
+    });
+    expect(reviewer.removeHelpDuplicate).toHaveBeenCalledWith({
+      topicId: "help-duplicate",
+      actorId: "session-user",
+    });
+    if (!(removed instanceof Response)) throw new Error("expected remove redirect");
   });
 
   it("redirects best-answer selection to the selected post when no solved confirmation will render", async () => {

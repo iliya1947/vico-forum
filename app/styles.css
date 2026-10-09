@@ -7785,7 +7785,6 @@ a.topic-tag:focus-visible {
 }
 
 .help-question-status,
-.help-question-best-answer,
 .help-question-solution-moderation {
   display: inline-flex;
   min-height: 1.35rem;
@@ -7808,11 +7807,6 @@ a.topic-tag:focus-visible {
   background: var(--color-accent-soft);
 }
 
-.help-question-best-answer {
-  border: 1px solid var(--color-accent);
-  color: var(--color-accent-hover);
-  background: transparent;
-}
 
 .help-question-solution-moderation,
 .solution-moderation-badge {
@@ -7942,4 +7936,84 @@ a.topic-tag:focus-visible {
     grid-column: 2;
     grid-row: 1 / 4;
   }
+}
+
+
+.help-question-duplicate,
+.help-question-duplicate-disputed,
+.help-duplicate-disputed-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding-inline: 0.48rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.help-question-duplicate-disputed,
+.help-duplicate-disputed-badge {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+}
+
+.help-duplicate-notice {
+  display: grid;
+  gap: 0.8rem;
+  margin-block-end: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-inline-start: 0.28rem solid var(--color-accent);
+  border-radius: 0.55rem;
+  background: var(--color-surface-muted);
+}
+
+.help-duplicate-notice-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.help-duplicate-notice-main > span:not(.help-duplicate-disputed-badge) {
+  min-width: 0;
+}
+
+.help-duplicate-notice a {
+  color: var(--color-accent-hover);
+  font-weight: 700;
+}
+
+.help-duplicate-appeal-form,
+.help-duplicate-appeal-pending,
+.help-duplicate-appeal-review {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.help-duplicate-appeal-form label,
+.help-duplicate-admin-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.help-duplicate-appeal-form textarea,
+.help-duplicate-admin-form input {
+  width: 100%;
+}
+
+.help-duplicate-appeal-pending p,
+.help-duplicate-appeal-review p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.help-duplicate-appeal-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }

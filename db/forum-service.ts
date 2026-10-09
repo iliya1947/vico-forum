@@ -10,6 +10,7 @@ import {
   type DrizzleForumRepository,
   type ForumRevisionContent,
   type ForumTag,
+  type HelpDuplicateAppealResolution,
   type HelpSolutionModerationStatus,
   type SolutionManagementScope,
 } from "./forum-repository";
@@ -18,6 +19,7 @@ export class InvalidForumContentError extends Error {}
 
 export type SourceLocaleCorrectionScope = "own" | "any";
 export const HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH = 1000;
+export const HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH = 1000;
 
 export class ForumService {
   constructor(private readonly repository: DrizzleForumRepository) {}
@@ -217,6 +219,43 @@ export class ForumService {
     requireText(postId, "post id");
     validateSolutionScope(scope);
     return this.repository.selectBestAnswer(topicId, postId, actorId, scope);
+  }
+
+  confirmHelpDuplicate(topicId: string, originalTopicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    requireText(originalTopicId, "original topic id");
+    return this.repository.confirmHelpDuplicate(topicId, originalTopicId, actorId);
+  }
+
+  removeHelpDuplicate(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.removeHelpDuplicate(topicId, actorId);
+  }
+
+  appealHelpDuplicate(topicId: string, actorId: string, explanation: string) {
+    validateEntity(topicId, actorId);
+    const normalizedExplanation = explanation.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (
+      !normalizedExplanation
+      || normalizedExplanation.length > HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH
+    ) {
+      throw new InvalidForumContentError(
+        `duplicate appeal explanation must be between 1 and ${HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH} characters`,
+      );
+    }
+    return this.repository.appealHelpDuplicate(topicId, actorId, normalizedExplanation);
+  }
+
+  resolveHelpDuplicateAppeal(
+    topicId: string,
+    actorId: string,
+    resolution: HelpDuplicateAppealResolution,
+  ) {
+    validateEntity(topicId, actorId);
+    if (resolution !== "accepted" && resolution !== "rejected") {
+      throw new InvalidForumContentError("duplicate appeal resolution is invalid");
+    }
+    return this.repository.resolveHelpDuplicateAppeal(topicId, actorId, resolution);
   }
 
   setHelpSolutionModeration(

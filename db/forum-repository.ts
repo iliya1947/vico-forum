@@ -3,6 +3,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
   forumCategories,
+  forumHelpDuplicateAppeals,
+  forumHelpDuplicateRelationships,
   forumPostRevisions,
   forumPosts,
   forumReplyNotifications,
@@ -155,6 +157,20 @@ export interface ForumCategoryPage {
 export type HelpSolutionModerationStatus = "needs-review" | "outdated";
 export type HelpSolutionOutdatedReasonKind = "best-answer-replaced";
 
+export interface ForumHelpDuplicateReference {
+  id: string;
+  title: string;
+}
+
+export interface ForumHelpDuplicateAppeal {
+  id: string;
+  relationshipId: string;
+  explanation: string;
+  createdAt: Date;
+}
+
+export type HelpDuplicateAppealResolution = "accepted" | "rejected";
+
 export interface ForumHelpQuestionSummary {
   id: string;
   title: string;
@@ -166,6 +182,8 @@ export interface ForumHelpQuestionSummary {
   solutionOutdatedReason: string | null;
   solutionOutdatedReasonKind: HelpSolutionOutdatedReasonKind | null;
   needsDetails: boolean;
+  duplicateOf: ForumHelpDuplicateReference | null;
+  duplicateDisputed: boolean;
   createdAt: Date;
   activityAt: Date;
   tags: ForumTag[];
@@ -217,6 +235,8 @@ export interface ForumThreadPost extends ForumPost {
 export interface ForumTopicPage extends ForumTopic {
   createdAt: Date;
   needsDetails: boolean;
+  duplicateOf: ForumHelpDuplicateReference | null;
+  duplicateDisputed: boolean;
   authorName: string;
   isPinned: boolean;
   section: { id: string; name: string; category: { id: string; name: string } };
@@ -246,6 +266,7 @@ export interface ForumReader {
   readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
+  readPendingHelpDuplicateAppeal(topicId: string): Promise<ForumHelpDuplicateAppeal | undefined>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -422,10 +443,22 @@ export class DrizzleForumRepository {
 
   async createPost(input: CreatePostInput): Promise<ForumPost> {
     return this.database.transaction(async (tx) => {
-      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId));
+        .where(eq(forumTopics.id, input.topicId))
+        .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      const [activeDuplicate] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, input.topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      if (activeDuplicate) {
+        throw new ForumStateConflictError("a confirmed duplicate cannot receive new replies");
+      }
+      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const parentPostId = input.parentPostId ?? null;
       let parentAuthorId: string | null = null;
       if (parentPostId) {
@@ -1259,7 +1292,9 @@ export class DrizzleForumRepository {
       .orderBy(desc(matchCount), desc(activityAt), desc(forumTopics.id))
       .limit(HELP_SOLUTIONS_FOR_ME_LIMIT);
 
-    const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
+    const topicIds = rows.map(({ id }) => id);
+    const tagsByTopic = await this.readTagsForTopics(topicIds);
+    const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
     return {
       ...category,
       questions: rows.map((row) => ({
@@ -1273,6 +1308,8 @@ export class DrizzleForumRepository {
         solutionOutdatedReason: row.solutionOutdatedReason,
         solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         needsDetails: row.needsDetails,
+        duplicateOf: duplicatesByTopic.get(row.id)?.duplicateOf ?? null,
+        duplicateDisputed: duplicatesByTopic.get(row.id)?.duplicateDisputed ?? false,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1378,7 +1415,9 @@ export class DrizzleForumRepository {
           : filter.mode === "help"
             ? await questionQuery.limit(HELP_SOLUTIONS_WANT_TO_HELP_LIMIT)
             : await questionQuery;
-    const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
+    const topicIds = rows.map(({ id }) => id);
+    const tagsByTopic = await this.readTagsForTopics(topicIds);
+    const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
     return {
       ...category,
       questions: rows.map((row) => ({
@@ -1392,12 +1431,76 @@ export class DrizzleForumRepository {
         solutionOutdatedReason: row.solutionOutdatedReason,
         solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         needsDetails: row.needsDetails,
+        duplicateOf: duplicatesByTopic.get(row.id)?.duplicateOf ?? null,
+        duplicateDisputed: duplicatesByTopic.get(row.id)?.duplicateDisputed ?? false,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
       })),
     };
   }
+
+  private async readHelpDuplicatePresentations(
+    topicIds: readonly string[],
+  ): Promise<Map<string, { duplicateOf: ForumHelpDuplicateReference; duplicateDisputed: boolean }>> {
+    if (topicIds.length === 0) return new Map();
+    const originalTopic = alias(forumTopics, "help_duplicate_original_topic");
+    const originalTitle = alias(forumTopicTitleRevisions, "help_duplicate_original_title");
+    const pendingAppeal = alias(forumHelpDuplicateAppeals, "help_duplicate_pending_appeal");
+    const rows = await this.database
+      .select({
+        duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
+        originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
+        originalTitle: originalTitle.originalContent,
+        pendingAppealId: pendingAppeal.id,
+      })
+      .from(forumHelpDuplicateRelationships)
+      .innerJoin(originalTopic, eq(originalTopic.id, forumHelpDuplicateRelationships.originalTopicId))
+      .innerJoin(originalTitle, and(
+        eq(originalTitle.topicId, originalTopic.id),
+        eq(originalTitle.id, originalTopic.currentTitleRevisionId),
+      ))
+      .leftJoin(pendingAppeal, and(
+        eq(pendingAppeal.relationshipId, forumHelpDuplicateRelationships.id),
+        eq(pendingAppeal.status, "pending"),
+      ))
+      .where(and(
+        inArray(forumHelpDuplicateRelationships.duplicateTopicId, [...topicIds]),
+        isNull(forumHelpDuplicateRelationships.removedAt),
+      ));
+
+    return new Map(rows.map((row) => [
+      row.duplicateTopicId,
+      {
+        duplicateOf: { id: row.originalTopicId, title: row.originalTitle },
+        duplicateDisputed: row.pendingAppealId !== null,
+      },
+    ]));
+  }
+
+  async readPendingHelpDuplicateAppeal(topicId: string): Promise<ForumHelpDuplicateAppeal | undefined> {
+    const [row] = await this.database
+      .select({
+        id: forumHelpDuplicateAppeals.id,
+        relationshipId: forumHelpDuplicateAppeals.relationshipId,
+        explanation: forumHelpDuplicateAppeals.explanation,
+        createdAt: forumHelpDuplicateAppeals.createdAt,
+      })
+      .from(forumHelpDuplicateRelationships)
+      .innerJoin(
+        forumHelpDuplicateAppeals,
+        and(
+          eq(forumHelpDuplicateAppeals.relationshipId, forumHelpDuplicateRelationships.id),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+        ),
+      )
+      .where(and(
+        eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+        isNull(forumHelpDuplicateRelationships.removedAt),
+      ));
+    return row;
+  }
+
   async readCategory(id: string, pinnedTopicsPerSection = 10): Promise<ForumCategoryPage | undefined> {
     if (!Number.isInteger(pinnedTopicsPerSection) || pinnedTopicsPerSection < 1 || pinnedTopicsPerSection > 10) {
       throw new RangeError("pinnedTopicsPerSection must be an integer between 1 and 10");
@@ -1652,6 +1755,7 @@ export class DrizzleForumRepository {
       .where(eq(forumTopics.id, id));
     if (!topic) return undefined;
     const tags = await this.readTagsForTopics([id]);
+    const duplicatePresentation = (await this.readHelpDuplicatePresentations([id])).get(id);
     const posts = await this.database
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
@@ -1674,6 +1778,8 @@ export class DrizzleForumRepository {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
       needsDetails: topic.needsDetails,
+      duplicateOf: duplicatePresentation?.duplicateOf ?? null,
+      duplicateDisputed: duplicatePresentation?.duplicateDisputed ?? false,
       isPinned: topic.isPinned,
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
@@ -1780,6 +1886,190 @@ export class DrizzleForumRepository {
     });
   }
 
+  async confirmHelpDuplicate(topicId: string, originalTopicId: string, actorId: string): Promise<void> {
+    if (topicId === originalTopicId) {
+      throw new ForumStateConflictError("question cannot duplicate itself");
+    }
+    await this.database.transaction(async (tx) => {
+      const lockedIds = [topicId, originalTopicId].sort();
+      const topics = await tx
+        .select({
+          id: forumTopics.id,
+          sectionId: forumTopics.sectionId,
+          isSolved: forumTopics.isSolved,
+          bestAnswerPostId: forumTopics.bestAnswerPostId,
+        })
+        .from(forumTopics)
+        .where(inArray(forumTopics.id, lockedIds))
+        .orderBy(asc(forumTopics.id))
+        .for("update");
+      if (topics.length !== 2) throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
+      if (topics.some((topic) => topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
+        throw new ForumStateConflictError("duplicate relationships are only available between Help & solutions questions");
+      }
+      const duplicateTopic = topics.find((topic) => topic.id === topicId);
+      if (!duplicateTopic) {
+        throw new ForumEntityNotFoundError("duplicate question does not exist");
+      }
+      if (duplicateTopic.isSolved || duplicateTopic.bestAnswerPostId) {
+        throw new ForumStateConflictError("a question with its own solution cannot be confirmed as a duplicate");
+      }
+
+      const active = await tx
+        .select({
+          duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
+          originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
+        })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          isNull(forumHelpDuplicateRelationships.removedAt),
+          or(
+            eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+            eq(forumHelpDuplicateRelationships.duplicateTopicId, originalTopicId),
+            eq(forumHelpDuplicateRelationships.originalTopicId, topicId),
+          ),
+        ));
+      if (active.some((row) => row.duplicateTopicId === topicId)) {
+        throw new ForumStateConflictError("question is already a confirmed duplicate");
+      }
+      if (active.some((row) => row.duplicateTopicId === originalTopicId)) {
+        throw new ForumStateConflictError("original question must be a canonical root");
+      }
+      if (active.some((row) => row.originalTopicId === topicId)) {
+        throw new ForumStateConflictError("a canonical original cannot become a duplicate while active duplicates point to it");
+      }
+
+      await tx.insert(forumHelpDuplicateRelationships).values({
+        id: crypto.randomUUID(),
+        duplicateTopicId: topicId,
+        originalTopicId,
+        confirmedByUserId: actorId,
+      });
+    });
+  }
+
+  async removeHelpDuplicate(topicId: string, actorId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx
+        .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        throw new ForumStateConflictError("duplicate relationships are only available for Help & solutions questions");
+      }
+      const [relationship] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .for("update");
+      if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
+
+      const resolvedAt = sql`now()`;
+      await tx.update(forumHelpDuplicateAppeals)
+        .set({ status: "accepted", resolvedByUserId: actorId, resolvedAt })
+        .where(and(
+          eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+        ));
+      await tx.update(forumHelpDuplicateRelationships)
+        .set({ removedByUserId: actorId, removedAt: resolvedAt })
+        .where(eq(forumHelpDuplicateRelationships.id, relationship.id));
+    });
+  }
+
+  async appealHelpDuplicate(topicId: string, actorId: string, explanation: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx
+        .select({ id: forumTopics.id, sectionId: forumTopics.sectionId, authorId: forumTopics.authorId })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
+      }
+      if (topic.authorId !== actorId) {
+        throw new ForumAuthorizationError("only the duplicate question author may appeal");
+      }
+      const [relationship] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .for("update");
+      if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
+      const [pending] = await tx
+        .select({ id: forumHelpDuplicateAppeals.id })
+        .from(forumHelpDuplicateAppeals)
+        .where(and(
+          eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+        ))
+        .for("update");
+      if (pending) throw new ForumStateConflictError("duplicate appeal is already pending");
+
+      await tx.insert(forumHelpDuplicateAppeals).values({
+        id: crypto.randomUUID(),
+        relationshipId: relationship.id,
+        appellantUserId: actorId,
+        explanation,
+      });
+    });
+  }
+
+  async resolveHelpDuplicateAppeal(
+    topicId: string,
+    actorId: string,
+    resolution: HelpDuplicateAppealResolution,
+  ): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx
+        .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
+      }
+      const [relationship] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .for("update");
+      if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
+      const [appeal] = await tx
+        .select({ id: forumHelpDuplicateAppeals.id })
+        .from(forumHelpDuplicateAppeals)
+        .where(and(
+          eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+        ))
+        .for("update");
+      if (!appeal) throw new ForumStateConflictError("duplicate appeal is not pending");
+
+      const resolvedAt = sql`now()`;
+      await tx.update(forumHelpDuplicateAppeals)
+        .set({ status: resolution, resolvedByUserId: actorId, resolvedAt })
+        .where(eq(forumHelpDuplicateAppeals.id, appeal.id));
+      if (resolution === "accepted") {
+        await tx.update(forumHelpDuplicateRelationships)
+          .set({ removedByUserId: actorId, removedAt: resolvedAt })
+          .where(eq(forumHelpDuplicateRelationships.id, relationship.id));
+      }
+    });
+  }
+
   async markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved }).from(forumTopics)
@@ -1787,6 +2077,17 @@ export class DrizzleForumRepository {
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
       if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
+      const [activeDuplicate] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      if (activeDuplicate) {
+        throw new ForumStateConflictError("a confirmed duplicate cannot be marked solved");
+      }
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
     });
   }
@@ -1805,6 +2106,17 @@ export class DrizzleForumRepository {
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
+      const [activeDuplicate] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      if (activeDuplicate) {
+        throw new ForumStateConflictError("a confirmed duplicate cannot have its own best answer");
+      }
       const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
       if (!post) throw new ForumEntityNotFoundError("post does not exist");
       if (post.topicId !== topicId) throw new ForumStateConflictError("post belongs to another topic");

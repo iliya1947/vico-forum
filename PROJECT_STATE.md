@@ -253,8 +253,41 @@ Vico Forum находится в ранней pre-release разработке.
   snapshot changes only `forum_topics`, and Help projections expose the persisted flag without
   adding moderation/filter behavior early. GitHub Pages preview build/deploy for the same reviewed
   implementation revision succeeds; separate owner visual acceptance is not required because this
-  foundation slice adds no visible label/workflow presentation. Repeat Codex review after the
-  material implementation correction is still pending.
+  foundation slice adds no visible label/workflow presentation. Final exact-head Codex review
+  завершён без findings, PR #204 merged.
+- PR #205 реализует третий шаг зафиксированной Help & solutions moderation/filter sequence:
+  persisted Help-specific duplicate → canonical-original relationship и отдельный durable
+  appeal lifecycle. Active relation не допускает self-link, цепочки/циклы и превращение canonical
+  original в duplicate через штатный server-side repository path; confirm/remove/appeal/resolve
+  сериализуются транзакционно. Новая code-backed capability `forum.helpDuplicate.manage`
+  выдаётся initial built-in moderator/admin и защищает authoritative confirm/remove/resolve;
+  обычный author подтверждённого duplicate-вопроса может отдельно подать appeal с обязательным
+  explanation. Pending appeal не снимает authoritative duplicate status: на topic page публично
+  видна нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
+  duplicate-management capability. Reject сохраняет relation; accept или manual removal снимает
+  active duplicate relation. В штатном workflow подтверждённый duplicate и собственное решение
+  взаимоисключаемы: question с `isSolved=true` или выбранным best answer нельзя подтвердить как
+  duplicate; пока active duplicate relation существует, нельзя выбрать ему best answer,
+  пометить его solved или добавить новый reply. При pending appeal duplicate-manager видит
+  explanation автора прямо в duplicate notice на topic page; accept/reject остаются в admin panel. В Help question list публично остаются `Solved` и `Duplicate`;
+  отдельный `Best answer` badge там не показывается. `Solution outdated` публичен;
+  `Needs review` и pending `Disputed` badges видны только соответствующим moderation actors
+  и в списке, и на topic page; author pending appeal при этом видит собственное appeal-сообщение
+  без moderator-only badge. Topic page показывает locale-aware ссылку на canonical
+  original без раскрытия internal service section.
+  General user moderation signals остаются step 4, расширение `Needs attention` — step 5,
+  combined filters — step 6; admin-panel redesign, similar-search refinement и Stage 6 rollout
+  в этот slice не входят. Forward migration `0030_help_duplicate_workflow`, runtime ACL
+  contract, schema manifest, RU/HE localization, focused route/privacy/database coverage и Pages
+  fixtures добавлены. Owner visual acceptance representative Pages states была подтверждена
+  2026-10-09 после corrections duplicate-list statuses, solved-vs-duplicate exclusivity,
+  pending-appeal message visibility и блокировки новых replies у active duplicate. Последующий
+  whole-PR review уточнил moderator-only visibility для `Needs review` / pending `Disputed`
+  badges и на topic page. Короткий owner visual re-test этой последней correction подтверждён
+  2026-10-09: Guest не видит moderator-only badges, author pending appeal видит своё appeal-сообщение
+  без moderator-only badge, Manager видит moderation badges и explanation автора.
+  Final independent Codex review exact implementation head `6aa3115953cbddbdfb8e09f8c193ddc1f242f7fb`
+  завершён 2026-10-09 без major findings.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -464,7 +497,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0029`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0030`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

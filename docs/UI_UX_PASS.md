@@ -358,7 +358,23 @@ composition without changing the forum hierarchy or schema:
   This bounded slice intentionally adds no new mutation, permission or visible moderation
   workflow; user signals/moderator confirmation remain step 4, broader Needs attention logic
   remains step 5, and combined label/reply/solution/relationship filters remain step 6.
-  Duplicate/appeal workflow remains the separate step 3;
+  PR #205 adds the third fixed-sequence step as a Help-specific duplicate relationship workflow.
+  A confirmed duplicate points directly to a canonical original question; manager operations use
+  the dedicated `forum.helpDuplicate.manage` capability. The duplicate-question author can dispute
+  only an already confirmed relationship with a required explanation. Pending dispute preserves
+  the authoritative duplicate relationship: the topic page may show a neutral public `Disputed`
+  marker, while Help question lists keep public `Solved` and `Duplicate`, omit the redundant
+  `Best answer` badge, keep `Solution outdated` public, and expose `Needs review` plus pending
+  `Disputed` badges only to the relevant moderation actors in both lists and topic presentation.
+  The appealing author still sees their own pending-appeal message; the appeal explanation remains
+  private to that author and duplicate managers. Reject preserves
+  the relation, while accepting the dispute removes it. A question with its own selected best
+  answer or solved state cannot be confirmed as a duplicate, and an active duplicate cannot gain
+  its own best answer, solved state or new replies until that relationship is removed. While an
+  appeal is pending, duplicate managers see the author's explanation directly in the duplicate
+  notice; accept/reject controls remain in the admin panel. General user moderation
+  signals remain
+  step 4, Needs attention expansion step 5 and combined relationship filters step 6;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
