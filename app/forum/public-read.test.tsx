@@ -450,7 +450,7 @@ describe("optional homepage presence failures", () => {
     expect(data.categories).toHaveLength(1);
     expect(data.onlinePresence).toBeNull();
     const page = renderRoute(Home, data, "/en", "en", "ltr");
-    expect(screen.getByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
     page.unmount();
   });
 
