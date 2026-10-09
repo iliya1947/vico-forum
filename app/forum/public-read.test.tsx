@@ -1240,6 +1240,216 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
   });
 
+  it("shows only currently applicable Help signal forms and keeps duplicate targeting required", async () => {
+    const openHelpTopic = {
+      ...helpTopic,
+      isSolved: false,
+      bestAnswerPostId: null,
+    };
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "signal-user", name: "Signal user", email: "signal@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "signal-session", token: "signal-token", userId: "signal-user", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpSignal.create"),
+      }),
+    } as never);
+    const readOwnPendingHelpSignals = vi.fn(async () => []);
+    const hasActiveHelpDuplicateChildren = vi.fn(async () => false);
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === openHelpTopic.id ? openHelpTopic : undefined,
+      readOwnPendingHelpSignals,
+      hasActiveHelpDuplicateChildren,
+    });
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: openHelpTopic.id },
+      context: requestContext,
+    });
+    expect(data.canCreateHelpSignal).toBe(true);
+    expect(data.canSignalDuplicate).toBe(true);
+    expect(readOwnPendingHelpSignals).toHaveBeenCalledWith(openHelpTopic.id, "signal-user");
+    expect(hasActiveHelpDuplicateChildren).toHaveBeenCalledWith(openHelpTopic.id);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", openHelpTopic.id), "en", "ltr");
+    fireEvent.click(await screen.findByText("Signal"));
+
+    expect(screen.getByText("Needs details")).toBeVisible();
+    expect(screen.getByText("Duplicate")).toBeVisible();
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument();
+
+    const requiredExplanation = screen.getByRole("textbox", { name: "Explanation" });
+    const proposedOriginal = screen.getByRole("textbox", { name: "Proposed original question ID" });
+    const optionalDuplicateExplanation = screen.getByRole("textbox", { name: "Explanation (optional)" });
+    expect(requiredExplanation).toBeRequired();
+    expect(proposedOriginal).toBeRequired();
+    expect(optionalDuplicateExplanation).not.toBeRequired();
+  });
+
+  it("keeps own pending Help signals withdrawable after create permission is revoked", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "signal-user", name: "Signal user", email: "signal@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "signal-session", token: "signal-token", userId: "signal-user", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readOwnPendingHelpSignals: async () => [{
+        id: "signal-own-1",
+        kind: "needs-details" as const,
+        topicId: helpTopic.id,
+        targetPostId: null,
+        proposedOriginal: null,
+        explanation: "The runtime version is missing.",
+        createdAt: new Date("2026-10-09T08:20:00Z"),
+      }],
+    });
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: requestContext,
+    });
+    expect(data.canCreateHelpSignal).toBe(false);
+    expect(data.ownPendingHelpSignals).toHaveLength(1);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    fireEvent.click(await screen.findByText("Signal"));
+    expect(screen.getByText("Your pending signals")).toBeVisible();
+    expect(screen.getByText("The runtime version is missing.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Withdraw" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send signal" })).not.toBeInTheDocument();
+  });
+
+  it("filters moderator Help signal review by effective capability and opens the admin panel only for reviewable items", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "details-manager", name: "Details manager", email: "details@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "details-session", token: "details-token", userId: "details-manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpNeedsDetails.manage"),
+      }),
+    } as never);
+    const readReviewablePendingHelpSignals = vi.fn(async (_topicId, kinds) => {
+      expect(kinds).toEqual(["needs-details"]);
+      return [{
+        id: "signal-review-1",
+        kind: "needs-details" as const,
+        topicId: helpTopic.id,
+        targetPostId: null,
+        proposedOriginal: null,
+        submittedBy: { id: "noa", name: "Noa" },
+        explanation: "Missing exact error output.",
+        createdAt: new Date("2026-10-09T07:40:00Z"),
+      }];
+    });
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readReviewablePendingHelpSignals,
+    });
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: requestContext,
+    });
+    expect(data.canUseAdminPanel).toBe(true);
+    expect(data.reviewableHelpSignals).toHaveLength(1);
+    expect(readReviewablePendingHelpSignals).toHaveBeenCalledWith(helpTopic.id, ["needs-details"]);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    expect(screen.queryByText("Signal")).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByText("Admin panel"));
+    expect(screen.getByText("Pending signals")).toBeVisible();
+    expect(screen.getByText("Started by Noa")).toBeVisible();
+    expect(screen.getByText("Missing exact error output.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeVisible();
+  });
+
+  it("places the Help signal control immediately before Admin panel for a manager", async () => {
+    const solvedTopic = { ...helpTopic, isSolved: true };
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.helpSignal.create"
+          || permission === "forum.solution.manageAny"
+          || permission === "forum.helpDuplicate.manage"
+          || permission === "forum.helpNeedsDetails.manage"
+        ),
+      }),
+    } as never);
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === solvedTopic.id ? solvedTopic : undefined,
+      readReviewablePendingHelpSignals: async () => [],
+    });
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: solvedTopic.id },
+      context: requestContext,
+    });
+    renderRoute(TopicRoute, data, forumTopicPath("en", solvedTopic.id), "en", "ltr");
+
+    const signal = screen.getByText("Signal").closest("details");
+    const admin = screen.getByText("Admin panel").closest("details");
+    expect(signal).not.toBeNull();
+    expect(admin).not.toBeNull();
+    expect(signal?.nextElementSibling).toBe(admin);
+  });
+
+  it("does not offer a duplicate signal when the question is already a canonical original", async () => {
+    const openHelpTopic = {
+      ...helpTopic,
+      isSolved: false,
+      bestAnswerPostId: null,
+      needsDetails: true,
+    };
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "signal-user", name: "Signal user", email: "signal@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "signal-session", token: "signal-token", userId: "signal-user", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpSignal.create"),
+      }),
+    } as never);
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === openHelpTopic.id ? openHelpTopic : undefined,
+      hasActiveHelpDuplicateChildren: async () => true,
+    });
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: openHelpTopic.id },
+      context: requestContext,
+    });
+    expect(data.canSignalDuplicate).toBe(false);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", openHelpTopic.id), "en", "ltr");
+    expect(screen.queryByText("Signal")).not.toBeInTheDocument();
+  });
+
   it("shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists", async () => {
     const moderatedPage = {
       ...helpPage,
