@@ -1094,7 +1094,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(complaints).toMatchObject({ mode: "complaints", group: "group2", page: null });
     expect(readNeedsAttention).toHaveBeenCalledTimes(calls);
     const complaintView = renderRoute(AttentionRoute, complaints, "/en/attention?mode=complaints&group=group2", "en", "ltr");
-    expect(screen.getByRole("link", { name: "Group 2" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("link", { name: "Group 2" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("This section is not connected yet.")).toBeVisible();
     expect(screen.queryByText("Pending signals: 2")).not.toBeInTheDocument();
     complaintView.unmount();
