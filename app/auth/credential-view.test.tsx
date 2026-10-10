@@ -136,9 +136,9 @@ describe("credential registration and sign-in", () => {
       render(<I18nextProvider i18n={runtime()}><RouterProvider router={router} /></I18nextProvider>);
       const user = userEvent.setup();
       if (mode === "sign-up") {
-        await user.type(screen.getByRole("textbox", { name: "Display name" }), "Alice");
+        await user.type(await screen.findByRole("textbox", { name: "Display name" }), "Alice");
       }
-      await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
+      await user.type(await screen.findByRole("textbox", { name: "Email" }), "alice@example.org");
       await user.type(screen.getByLabelText("Password"), "correct horse");
       await user.click(screen.getByRole("button", { name: mode === "sign-up" ? "Create account" : "Sign in with email" }));
       expect(await screen.findByText("Signed in as Alice")).toBeInTheDocument();
