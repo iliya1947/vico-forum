@@ -575,7 +575,12 @@ describe("Help & solutions modes and authoring", () => {
     expect(askButton).toHaveAttribute("aria-expanded", "true");
     const form = await screen.findByRole("form", { name: "Ask a question" });
     expect(within(form).getByLabelText("Question title")).toBeRequired();
-    expect(within(form).getByLabelText("Question details")).toBeRequired();
+    const questionDetails = within(form).getByLabelText("Question details");
+    expect(questionDetails).toBeRequired();
+    expect(within(form).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(form).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    fireEvent.change(questionDetails, { target: { value: "Draft body with **Markdown**." } });
+    expect(new FormData(form as HTMLFormElement).get("body")).toBe("Draft body with **Markdown**.");
     expect(within(form).getByLabelText("Tags")).not.toBeRequired();
     const similarButton = within(form).getByRole("button", { name: "Check similar questions" });
     expect(similarButton).toBeEnabled();
@@ -2087,6 +2092,11 @@ describe("forum read states", () => {
     expect(await screen.findByText("Replying to Message #1")).toBeInTheDocument();
     expect(replyForm.querySelector('input[name="parentPostId"]')).toHaveValue("question");
 
+    const replyBody = within(replyForm).getByLabelText("Reply");
+    const replyEditor = replyBody.closest(".markdown-editor");
+    fireEvent.click(within(replyForm).getByRole("button", { name: "Preview" }));
+    expect(replyEditor).toHaveAttribute("data-mode", "preview");
+
     const bodyElement = questionCard!.querySelector("[data-message-body]");
     if (!bodyElement) throw new Error("message body selection target missing");
     vi.spyOn(window, "getSelection").mockReturnValue({
@@ -2100,7 +2110,9 @@ describe("forum read states", () => {
     } as unknown as Selection);
 
     fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
-    expect(screen.getByLabelText("Reply")).toHaveValue("> Selected words\n\n");
+    expect(replyEditor).toHaveAttribute("data-mode", "write");
+    expect(replyBody).toHaveValue("> Selected words\n\n");
+    expect(replyBody).toHaveFocus();
 
     vi.spyOn(window, "getSelection").mockReturnValue({
       rangeCount: 0,
@@ -2501,6 +2513,8 @@ describe("forum read states", () => {
     expect(createTopicForm).toHaveClass("section-create-form");
     expect(createTopicForm.querySelector('input[name="intent"]')).toHaveValue("createTopic");
     expect(screen.getByLabelText("Topic title")).toHaveAttribute("aria-describedby", "create-topic-title-help");
+    expect(within(createTopicForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(createTopicForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
     expect(screen.getByText("Markdown and fenced code blocks are supported.")).toBeInTheDocument();
     authenticatedView.unmount();
 
@@ -2509,6 +2523,8 @@ describe("forum read states", () => {
     expect(replyForm).toHaveClass("topic-reply-form");
     expect(replyForm.querySelector('input[name="intent"]')).toHaveValue("reply");
     expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
+    expect(within(replyForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(replyForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
   });
 

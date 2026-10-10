@@ -45,6 +45,7 @@ import {
   ContentGenerationUnitStatus,
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
+import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 
 export function HomeView({
   locale,
@@ -1297,14 +1298,14 @@ export function HelpSolutionsView({
 
               <div className="forum-write-field">
                 <label htmlFor="help-question-body">{t("helpSolutionsQuestionBodyLabel")}</label>
-                <textarea
+                <MarkdownEditor
                   id="help-question-body"
                   name="body"
                   required
                   rows={8}
                   defaultValue={similarAction?.draft.body}
                   disabled={isQuestionFormBusy}
-                  aria-describedby="help-question-body-help"
+                  describedBy="help-question-body-help"
                 />
                 <small id="help-question-body-help">{t("messageBodyHelp")}</small>
               </div>
@@ -1678,13 +1679,13 @@ export function SectionView({
 
             <div className="forum-write-field">
               <label htmlFor="create-topic-body">{t("initialPostLabel")}</label>
-              <textarea
+              <MarkdownEditor
                 id="create-topic-body"
                 name="body"
                 required
                 rows={8}
                 disabled={isCreateTopicSubmitting}
-                aria-describedby="create-topic-body-help"
+                describedBy="create-topic-body-help"
               />
               <small id="create-topic-body-help">{t("messageBodyHelp")}</small>
             </div>
@@ -1847,7 +1848,7 @@ export function TopicView({
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
   const messageLinkRequestId = useRef(0);
-  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const replyEditorRef = useRef<MarkdownEditorHandle>(null);
   const navigation = useNavigation();
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
@@ -1889,7 +1890,7 @@ export function TopicView({
 
 
   function focusReplyForm() {
-    replyTextareaRef.current?.focus();
+    replyEditorRef.current?.focus();
     const heading = document.getElementById("reply-heading");
     if (typeof heading?.scrollIntoView === "function") {
       heading.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -1928,12 +1929,9 @@ export function TopicView({
       .map((line) => `> ${line}`)
       .join("\n") + "\n\n";
 
-    const textarea = replyTextareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? start;
-    textarea.setRangeText(quote, start, end, "end");
-    textarea.focus();
+    const editor = replyEditorRef.current;
+    if (!editor) return;
+    editor.insertText(quote);
     const heading = document.getElementById("reply-heading");
     if (typeof heading?.scrollIntoView === "function") {
       heading.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -2458,7 +2456,7 @@ export function TopicView({
                   onClick={() => {
                     setReplyTargetPostId(null);
                     setQuoteSelectionErrorPostId(null);
-                    replyTextareaRef.current?.focus();
+                    replyEditorRef.current?.focus();
                   }}
                 >
                   {t("clearReplyTarget")}
@@ -2469,14 +2467,14 @@ export function TopicView({
             <div className="forum-write-fields">
               <div className="forum-write-field">
                 <label htmlFor="reply-body">{t("replyBodyLabel")}</label>
-                <textarea
-                  ref={replyTextareaRef}
+                <MarkdownEditor
+                  ref={replyEditorRef}
                   id="reply-body"
                   name="body"
                   required
                   rows={8}
                   disabled={isReplySubmitting}
-                  aria-describedby="reply-body-help"
+                  describedBy="reply-body-help"
                 />
                 <small id="reply-body-help">{t("messageBodyHelp")}</small>
               </div>
