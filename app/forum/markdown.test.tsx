@@ -146,6 +146,25 @@ const longValue = "code";
     expect(highlightCode(dense, "ts")).toEqual([{ text: dense }]);
   });
 
+  it("keeps code-block Wrap state when the Markdown source changes", async () => {
+    const initial = "```ts\nconst answer = 1;\n```";
+    const { container, rerender } = renderMarkdown(initial);
+    const block = container.querySelector(".forum-code-block");
+    await userEvent.click(screen.getByRole("button", { name: "Wrap lines" }));
+    expect(block).toHaveAttribute("data-wrap", "true");
+
+    rerender(
+      <I18nextProvider i18n={runtime()}>
+        <div>
+          <ForumMarkdown>{"```ts\nconst answer = 12;\n```"}</ForumMarkdown>
+        </div>
+      </I18nextProvider>,
+    );
+
+    expect(container.querySelector(".forum-code-block")).toBe(block);
+    expect(block).toHaveAttribute("data-wrap", "true");
+  });
+
   it("leaves unknown languages readable without syntax classes", () => {
     const tokens = highlightCode("alpha beta", "made-up-language");
     expect(tokens).toEqual([{ text: "alpha beta" }]);

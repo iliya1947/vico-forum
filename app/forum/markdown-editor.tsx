@@ -33,7 +33,7 @@ interface PendingSelection {
 type EditorMode = "write" | "preview" | "split";
 
 function normalizedCodeLanguage(value: string): string {
-  return value.trim().replace(/[^a-z0-9_+.-]/giu, "").slice(0, 32);
+  return value.trim().replace(/[^a-z0-9_+.#-]/giu, "").slice(0, 32);
 }
 
 function longestBacktickRun(value: string): number {
@@ -123,7 +123,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const selectionEnd = textarea.selectionEnd ?? selectionStart;
 
       if (selectionStart === selectionEnd) {
-        const lineStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1;
+        const lineStart = selectionStart === 0 ? 0 : value.lastIndexOf("\n", selectionStart - 1) + 1;
         const prefix = prefixForLine(0);
         const nextValue = value.slice(0, lineStart) + prefix + value.slice(lineStart);
         const caret = selectionStart + prefix.length;
@@ -132,7 +132,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         return;
       }
 
-      const lineStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1;
+      const lineStart = selectionStart === 0 ? 0 : value.lastIndexOf("\n", selectionStart - 1) + 1;
       const effectiveEnd = selectionEnd > selectionStart && value[selectionEnd - 1] === "\n"
         ? selectionEnd - 1
         : selectionEnd;

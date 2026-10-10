@@ -117,6 +117,23 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveFocus();
   });
 
+  it("preserves language identifiers with hashes in fenced code", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" defaultValue="var example = 1;" />
+      </>,
+    );
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, textarea.value.length);
+    await userEvent.type(screen.getByRole("textbox", { name: "Code language" }), "c#");
+    await userEvent.click(screen.getByRole("button", { name: "Code block" }));
+    expect(textarea).toHaveValue("```c#\nvar example = 1;\n```");
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(screen.getByText("c#")).toBeInTheDocument();
+  });
+
   it("preserves selected backticks when inserting inline code", async () => {
     renderEditor(
       <>
@@ -281,6 +298,15 @@ describe("MarkdownEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(submitted).toHaveBeenCalledWith("Text with **Markdown** and `code()`.");
+  });
+
+  it("formats the leading empty line when caret starts at offset zero", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={"\nbeta"} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, 0);
+    await userEvent.click(screen.getByRole("button", { name: "Bulleted list" }));
+    expect(textarea).toHaveValue("- \nbeta");
   });
 
   it("does not format the next line when selection ends at a newline", async () => {

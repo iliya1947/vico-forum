@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 
 type SyntaxTokenKind = "comment" | "keyword" | "literal" | "number" | "string";
 
@@ -205,34 +205,34 @@ function ForumCodeBlock({
   );
 }
 
+const markdownComponents: Components = {
+  img: () => null,
+  a: ({ children: linkChildren, href, title }) => (
+    <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
+  ),
+  pre: ({ children: preChildren }) => <>{preChildren}</>,
+  code: ({ children: codeChildren, className }) => {
+    const source = String(codeChildren);
+    const language = className?.match(/(?:^|\s)language-([^\s]+)/u)?.[1];
+    const block = Boolean(language) || source.includes("\n");
+
+    if (!block) {
+      return <code className={className}>{codeChildren}</code>;
+    }
+
+    return (
+      <ForumCodeBlock
+        code={source.replace(/\n$/u, "")}
+        language={language}
+      />
+    );
+  },
+};
+
 export function ForumMarkdown({ children }: { children: string }) {
   return (
     <div className="post-body">
-      <ReactMarkdown
-        components={{
-          img: () => null,
-          a: ({ children: linkChildren, href, title }) => (
-            <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
-          ),
-          pre: ({ children: preChildren }) => <>{preChildren}</>,
-          code: ({ children: codeChildren, className }) => {
-            const source = String(codeChildren);
-            const language = className?.match(/(?:^|\s)language-([^\s]+)/u)?.[1];
-            const block = Boolean(language) || source.includes("\n");
-
-            if (!block) {
-              return <code className={className}>{codeChildren}</code>;
-            }
-
-            return (
-              <ForumCodeBlock
-                code={source.replace(/\n$/u, "")}
-                language={language}
-              />
-            );
-          },
-        }}
-      >
+      <ReactMarkdown components={markdownComponents}>
         {children}
       </ReactMarkdown>
     </div>
