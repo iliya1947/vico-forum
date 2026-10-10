@@ -203,6 +203,7 @@ export interface ForumHelpAttentionState {
   signals: Partial<Record<HelpSignalKind, number>>;
   totalSignals: number;
   appeal: boolean;
+  reviewRequired?: boolean;
 }
 
 export interface ForumHelpQuestionSummary {
@@ -1678,6 +1679,9 @@ export class DrizzleForumRepository {
           and ${forumHelpDuplicateAppeals.status} = 'pending'
         )`
       : sql`false`;
+    const reviewAttentionCondition = visibleSignalKinds.includes("needs-review")
+      ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
+      : sql`false`;
     const answersCondition = filters.answers === "none"
       ? sql`count(distinct ${forumPosts.id}) <= 1`
       : filters.answers === "has"
@@ -1742,7 +1746,9 @@ export class DrizzleForumRepository {
         solutionCondition,
         qualityCondition,
         relationCondition,
-        filter.mode === "attention" ? or(signalAttentionCondition, appealAttentionCondition) : undefined,
+        filter.mode === "attention"
+          ? or(signalAttentionCondition, appealAttentionCondition, reviewAttentionCondition)
+          : undefined,
       ))
       .groupBy(
         forumTopics.id,
@@ -1812,6 +1818,15 @@ export class DrizzleForumRepository {
         state.totalSignals += 1;
       }
       for (const appeal of appeals) entryFor(appeal.topicId).appeal = true;
+      // The authoritative Needs review status is itself unfinished moderation work;
+      // resolved labels such as Needs details or Solution outdated are not.
+      if (visibleSignalKinds.includes("needs-review")) {
+        for (const row of rows) {
+          if (row.solutionModerationStatus === "needs-review") {
+            entryFor(row.id).reviewRequired = true;
+          }
+        }
+      }
     }
     return {
       ...category,
