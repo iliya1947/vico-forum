@@ -1525,27 +1525,6 @@ export class DrizzleForumRepository {
       : filters.relation === "duplicate"
         ? isNotNull(activeDuplicate.id)
         : undefined;
-    const visibleSignalKinds = filter.mode === "attention" ? [...(attentionVisibility?.signalKinds ?? [])] : [];
-    // Correlated EXISTS selects actionable cases before applying the 100-question bound.
-    // A denied signal/appeal capability must not leak its cases into this private queue.
-    const signalAttentionCondition = visibleSignalKinds.length
-      ? sql`exists (
-          select 1 from ${forumHelpSignals}
-          where ${forumHelpSignals.topicId} = ${forumTopics.id}
-          and ${forumHelpSignals.status} = 'pending'
-          and ${inArray(forumHelpSignals.kind, visibleSignalKinds)}
-        )`
-      : sql`false`;
-    const appealAttentionCondition = attentionVisibility?.appeals
-      ? sql`exists (
-          select 1 from ${forumHelpDuplicateRelationships}
-          inner join ${forumHelpDuplicateAppeals}
-            on ${forumHelpDuplicateAppeals.relationshipId} = ${forumHelpDuplicateRelationships.id}
-          where ${forumHelpDuplicateRelationships.duplicateTopicId} = ${forumTopics.id}
-          and ${forumHelpDuplicateRelationships.removedAt} is null
-          and ${forumHelpDuplicateAppeals.status} = 'pending'
-        )`
-      : sql`false`;
     const answersCondition = filters.answers === "none"
       ? sql`count(distinct ${forumPosts.id}) <= 1`
       : filters.answers === "has"
@@ -1597,7 +1576,6 @@ export class DrizzleForumRepository {
         solutionCondition,
         qualityCondition,
         relationCondition,
-        filter.mode === "attention" ? or(signalAttentionCondition, appealAttentionCondition) : undefined,
       ))
       .groupBy(
         forumTopics.id,
@@ -1611,6 +1589,186 @@ export class DrizzleForumRepository {
       .orderBy(desc(matchCount), desc(activityAt), desc(forumTopics.id))
       .limit(HELP_SOLUTIONS_FOR_ME_LIMIT);
 
+    const topicIds = rows.map(({ id }) => id);
+    const tagsByTopic = await this.readTagsForTopics(topicIds);
+    const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
+    return {
+      ...category,
+      questions: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        authorName: row.authorName,
+        replyCount: Math.max(0, row.postCount - 1),
+        isSolved: row.isSolved,
+        hasBestAnswer: row.bestAnswerPostId !== null,
+        solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
+        solutionOutdatedReason: row.solutionOutdatedReason,
+        solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
+        needsDetails: row.needsDetails,
+        duplicateOf: duplicatesByTopic.get(row.id)?.duplicateOf ?? null,
+        duplicateDisputed: duplicatesByTopic.get(row.id)?.duplicateDisputed ?? false,
+        createdAt: row.createdAt,
+        activityAt: row.activityAt,
+        tags: tagsByTopic.get(row.id) ?? [],
+      })),
+    };
+  }
+
+  private async readHelpSolutionsPage(
+    filter:
+      | { mode: "all" }
+      | { mode: "open" }
+      | { mode: "active" }
+      | { mode: "attention" }
+      | { mode: "solved" }
+      | { mode: "mine"; authorId: string }
+      | { mode: "help"; excludedAuthorId: string },
+    filters: ForumHelpSolutionsFilters = {},
+    attentionVisibility?: ForumHelpAttentionVisibility,
+  ): Promise<ForumHelpSolutionsPage | undefined> {
+    const [category] = await this.database
+      .select({ id: forumCategories.id, name: forumCategories.name })
+      .from(forumCategories)
+      .where(eq(forumCategories.id, HELP_SOLUTIONS_CATEGORY_ID));
+    if (!category) return undefined;
+
+    const activityAt = sql`greatest(
+      ${forumTopics.createdAt},
+      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+    )`.mapWith(forumTopics.createdAt);
+    const currentBestAnswer = alias(forumPosts, "help_page_current_best_answer");
+    const activeDuplicate = alias(forumHelpDuplicateRelationships, "help_page_active_duplicate");
+    const solutionCondition = filters.solution === "open"
+      ? eq(forumTopics.isSolved, false)
+      : filters.solution === "solved"
+        ? eq(forumTopics.isSolved, true)
+        : filters.solution === "needs-review"
+          ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
+          : filters.solution === "outdated"
+            ? eq(currentBestAnswer.solutionModerationStatus, "outdated")
+            : undefined;
+    const qualityCondition = filters.quality === "normal"
+      ? eq(forumTopics.needsDetails, false)
+      : filters.quality === "needs-details"
+        ? eq(forumTopics.needsDetails, true)
+        : undefined;
+    const relationCondition = filters.relation === "standalone"
+      ? isNull(activeDuplicate.id)
+      : filters.relation === "duplicate"
+        ? isNotNull(activeDuplicate.id)
+        : undefined;
+    const visibleSignalKinds = filter.mode === "attention" ? [...(attentionVisibility?.signalKinds ?? [])] : [];
+    // Correlated EXISTS selects actionable cases before applying the 100-question bound.
+    // A denied signal/appeal capability must not leak its cases into this private queue.
+    const signalAttentionCondition = visibleSignalKinds.length
+      ? sql`exists (
+          select 1 from ${forumHelpSignals}
+          where ${forumHelpSignals.topicId} = ${forumTopics.id}
+          and ${forumHelpSignals.status} = 'pending'
+          and ${inArray(forumHelpSignals.kind, visibleSignalKinds)}
+        )`
+      : sql`false`;
+    const appealAttentionCondition = attentionVisibility?.appeals
+      ? sql`exists (
+          select 1 from ${forumHelpDuplicateRelationships}
+          inner join ${forumHelpDuplicateAppeals}
+            on ${forumHelpDuplicateAppeals.relationshipId} = ${forumHelpDuplicateRelationships.id}
+          where ${forumHelpDuplicateRelationships.duplicateTopicId} = ${forumTopics.id}
+          and ${forumHelpDuplicateRelationships.removedAt} is null
+          and ${forumHelpDuplicateAppeals.status} = 'pending'
+        )`
+      : sql`false`;
+    const answersCondition = filters.answers === "none"
+      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      : filters.answers === "has"
+        ? sql`count(distinct ${forumPosts.id}) > 1`
+        : sql`true`;
+
+    const questionQuery = this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        isSolved: forumTopics.isSolved,
+        bestAnswerPostId: forumTopics.bestAnswerPostId,
+        solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
+        solutionOutdatedReason: currentBestAnswer.solutionOutdatedReason,
+        solutionOutdatedReasonKind: currentBestAnswer.solutionOutdatedReasonKind,
+        needsDetails: forumTopics.needsDetails,
+        createdAt: forumTopics.createdAt,
+        activityAt,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(currentBestAnswer, and(
+        eq(currentBestAnswer.topicId, forumTopics.id),
+        eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+      ))
+      .leftJoin(activeDuplicate, and(
+        eq(activeDuplicate.duplicateTopicId, forumTopics.id),
+        isNull(activeDuplicate.removedAt),
+      ))
+      .where(and(
+        filter.mode === "solved"
+          ? and(
+              eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+              eq(forumTopics.isSolved, true),
+            )
+          : filter.mode === "open"
+            ? and(
+                eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+                eq(forumTopics.isSolved, false),
+              )
+            : filter.mode === "attention"
+              ? eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID)
+            : filter.mode === "mine"
+              ? and(
+                  eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+                  eq(forumTopics.authorId, filter.authorId),
+                )
+              : filter.mode === "help"
+                ? and(
+                    eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+                    eq(forumTopics.isSolved, false),
+                    ne(forumTopics.authorId, filter.excludedAuthorId),
+                  )
+                : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        solutionCondition,
+        qualityCondition,
+        relationCondition,
+        filter.mode === "attention" ? or(signalAttentionCondition, appealAttentionCondition) : undefined,
+      ))
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        currentBestAnswer.solutionModerationStatus,
+        currentBestAnswer.solutionOutdatedReason,
+        currentBestAnswer.solutionOutdatedReasonKind,
+      )
+      .having(and(
+        filter.mode === "active"
+          ? sql`count(distinct ${forumPosts.id}) > 1`
+          : sql`true`,
+        answersCondition,
+      ))
+      .orderBy(desc(activityAt), desc(forumTopics.id));
+
+    const rows = filter.mode === "active"
+      ? await questionQuery.limit(HELP_SOLUTIONS_ACTIVE_LIMIT)
+      : filter.mode === "attention"
+        ? await questionQuery.limit(HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT)
+        : filter.mode === "mine"
+          ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
+          : filter.mode === "help"
+            ? await questionQuery.limit(HELP_SOLUTIONS_WANT_TO_HELP_LIMIT)
+            : await questionQuery;
     const topicIds = rows.map(({ id }) => id);
     const tagsByTopic = await this.readTagsForTopics(topicIds);
     const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
@@ -1671,162 +1829,6 @@ export class DrizzleForumRepository {
         duplicateOf: duplicatesByTopic.get(row.id)?.duplicateOf ?? null,
         duplicateDisputed: duplicatesByTopic.get(row.id)?.duplicateDisputed ?? false,
         ...(filter.mode === "attention" ? { attention: attentionByTopic.get(row.id) } : {}),
-        createdAt: row.createdAt,
-        activityAt: row.activityAt,
-        tags: tagsByTopic.get(row.id) ?? [],
-      })),
-    };
-  }
-
-  private async readHelpSolutionsPage(
-    filter:
-      | { mode: "all" }
-      | { mode: "open" }
-      | { mode: "active" }
-      | { mode: "attention" }
-      | { mode: "solved" }
-      | { mode: "mine"; authorId: string }
-      | { mode: "help"; excludedAuthorId: string },
-    filters: ForumHelpSolutionsFilters = {},
-    attentionVisibility?: ForumHelpAttentionVisibility,
-  ): Promise<ForumHelpSolutionsPage | undefined> {
-    const [category] = await this.database
-      .select({ id: forumCategories.id, name: forumCategories.name })
-      .from(forumCategories)
-      .where(eq(forumCategories.id, HELP_SOLUTIONS_CATEGORY_ID));
-    if (!category) return undefined;
-
-    const activityAt = sql`greatest(
-      ${forumTopics.createdAt},
-      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
-    )`.mapWith(forumTopics.createdAt);
-    const currentBestAnswer = alias(forumPosts, "help_page_current_best_answer");
-    const activeDuplicate = alias(forumHelpDuplicateRelationships, "help_page_active_duplicate");
-    const solutionCondition = filters.solution === "open"
-      ? eq(forumTopics.isSolved, false)
-      : filters.solution === "solved"
-        ? eq(forumTopics.isSolved, true)
-        : filters.solution === "needs-review"
-          ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
-          : filters.solution === "outdated"
-            ? eq(currentBestAnswer.solutionModerationStatus, "outdated")
-            : undefined;
-    const qualityCondition = filters.quality === "normal"
-      ? eq(forumTopics.needsDetails, false)
-      : filters.quality === "needs-details"
-        ? eq(forumTopics.needsDetails, true)
-        : undefined;
-    const relationCondition = filters.relation === "standalone"
-      ? isNull(activeDuplicate.id)
-      : filters.relation === "duplicate"
-        ? isNotNull(activeDuplicate.id)
-        : undefined;
-    const answersCondition = filters.answers === "none"
-      ? sql`count(distinct ${forumPosts.id}) <= 1`
-      : filters.answers === "has"
-        ? sql`count(distinct ${forumPosts.id}) > 1`
-        : sql`true`;
-
-    const questionQuery = this.database
-      .select({
-        id: forumTopics.id,
-        title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
-        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
-        isSolved: forumTopics.isSolved,
-        bestAnswerPostId: forumTopics.bestAnswerPostId,
-        solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
-        solutionOutdatedReason: currentBestAnswer.solutionOutdatedReason,
-        solutionOutdatedReasonKind: currentBestAnswer.solutionOutdatedReasonKind,
-        needsDetails: forumTopics.needsDetails,
-        createdAt: forumTopics.createdAt,
-        activityAt,
-      })
-      .from(forumTopics)
-      .innerJoin(forumTopicTitleRevisions, and(
-        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
-        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
-      ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .leftJoin(currentBestAnswer, and(
-        eq(currentBestAnswer.topicId, forumTopics.id),
-        eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
-      ))
-      .leftJoin(activeDuplicate, and(
-        eq(activeDuplicate.duplicateTopicId, forumTopics.id),
-        isNull(activeDuplicate.removedAt),
-      ))
-      .where(and(
-        filter.mode === "solved"
-          ? and(
-              eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-              eq(forumTopics.isSolved, true),
-            )
-          : filter.mode === "open" || filter.mode === "attention"
-            ? and(
-                eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-                eq(forumTopics.isSolved, false),
-              )
-            : filter.mode === "mine"
-              ? and(
-                  eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-                  eq(forumTopics.authorId, filter.authorId),
-                )
-              : filter.mode === "help"
-                ? and(
-                    eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-                    eq(forumTopics.isSolved, false),
-                    ne(forumTopics.authorId, filter.excludedAuthorId),
-                  )
-                : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-        solutionCondition,
-        qualityCondition,
-        relationCondition,
-      ))
-      .groupBy(
-        forumTopics.id,
-        forumTopicTitleRevisions.id,
-        user.name,
-        currentBestAnswer.solutionModerationStatus,
-        currentBestAnswer.solutionOutdatedReason,
-        currentBestAnswer.solutionOutdatedReasonKind,
-      )
-      .having(and(
-        filter.mode === "active"
-          ? sql`count(distinct ${forumPosts.id}) > 1`
-          : sql`true`,
-        answersCondition,
-      ))
-      .orderBy(desc(activityAt), desc(forumTopics.id));
-
-    const rows = filter.mode === "active"
-      ? await questionQuery.limit(HELP_SOLUTIONS_ACTIVE_LIMIT)
-      : filter.mode === "attention"
-        ? await questionQuery.limit(HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT)
-        : filter.mode === "mine"
-          ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
-          : filter.mode === "help"
-            ? await questionQuery.limit(HELP_SOLUTIONS_WANT_TO_HELP_LIMIT)
-            : await questionQuery;
-    const topicIds = rows.map(({ id }) => id);
-    const tagsByTopic = await this.readTagsForTopics(topicIds);
-    const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
-    return {
-      ...category,
-      questions: rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        authorName: row.authorName,
-        replyCount: Math.max(0, row.postCount - 1),
-        isSolved: row.isSolved,
-        hasBestAnswer: row.bestAnswerPostId !== null,
-        solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
-        solutionOutdatedReason: row.solutionOutdatedReason,
-        solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
-        needsDetails: row.needsDetails,
-        duplicateOf: duplicatesByTopic.get(row.id)?.duplicateOf ?? null,
-        duplicateDisputed: duplicatesByTopic.get(row.id)?.duplicateDisputed ?? false,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
