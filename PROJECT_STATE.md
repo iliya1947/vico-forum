@@ -78,7 +78,12 @@ Vico Forum находится в ранней pre-release разработке.
   with temporary Group 1–3 switches, deliberately without events/data/permission
   workflows pending definition in their own chats. No schema or migration,
   notification bell semantics, complaint processing, editor, or Stage 6 action
-  changes. Tests/CI and preview acceptance for this revised head pending.
+  changes. The revised implementation head `ebb72df8` passed CI
+  #38082349666: 702 application tests, 217 native PostgreSQL 17 tests,
+  lint/typecheck and builds. A single unrelated transaction-serialization
+  concurrency test needed one successful failed-DB-job rerun with no code
+  changes. Pages #38082518153 built and deployed the same revision.
+  Owner visual acceptance and independent Codex review remain pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
