@@ -1509,6 +1509,11 @@ function HelpQuestionCards({
                           <span className="help-question-duplicate-disputed">{t("helpDuplicateDisputed")}</span>
                         ) : null}
                       </span>
+                      {question.attention && question.attention.totalSignals > 0 ? (
+                        <span className="help-attention-pending-count">
+                          {t("helpAttentionPendingSignals", { count: question.attention.totalSignals })}
+                        </span>
+                      ) : null}
                       <small>{t("startedBy", { author: question.authorName })}</small>
                       {question.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
