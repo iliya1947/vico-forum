@@ -8107,6 +8107,20 @@ a.topic-tag:focus-visible {
   font-weight: 700;
 }
 
+.attention-center-page .help-solutions-heading {
+  flex-wrap: wrap;
+}
+
+.attention-center-page .help-solutions-heading h1 {
+  margin: 0;
+}
+
+.attention-center-page .help-solutions-heading .attention-mode-nav {
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
 .attention-center-toolbar {
   display: flex;
   align-items: stretch;
@@ -8125,8 +8139,8 @@ a.topic-tag:focus-visible {
 }
 
 .attention-mode-nav {
-  flex: 0 0 auto;
-  margin-inline-start: auto !important;
+  flex: 0 1 auto;
+  margin-inline-start: auto;
 }
 
 .attention-center-toolbar .help-solutions-mode:focus-visible,
@@ -8157,12 +8171,19 @@ a.topic-tag:focus-visible {
   .attention-group-nav {
     flex-basis: 100%;
   }
-  .attention-mode-nav {
-    margin-inline-start: auto !important;
+  .attention-center-page .help-solutions-heading .attention-mode-nav {
+    margin-inline-start: auto;
   }
 }
 @media (max-width: 29.99rem) {
   .attention-center-toolbar { margin-inline: 0.75rem; }
+  .attention-center-page .help-solutions-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .attention-center-page .help-solutions-heading .attention-mode-nav {
+    margin-inline-start: 0;
+  }
 }
 
 .help-solutions-modes {
