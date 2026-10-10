@@ -33,7 +33,7 @@ import type {
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
 import { ForumAvatar } from "./avatar";
-import { forumProfilePath, forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath } from "./paths";
+import { forumAttentionPath, forumProfilePath, forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath } from "./paths";
 import type { HomepageCategoryOverview } from "./homepage";
 import {
   PostBodyContent,
@@ -1022,19 +1022,17 @@ export function HelpSolutionsView({
   referenceTime,
   isAuthenticated = false,
   canAskQuestion = false,
-  canViewAttention = false,
   canViewSolutionModeration = false,
   canViewDuplicateDispute = false,
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "help" | "for-me" | "active" | "attention" | "solutions" | "mine";
+  mode: "all" | "open" | "help" | "for-me" | "active" | "solutions" | "mine";
   filters?: ForumHelpSolutionsFilters;
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
-  canViewAttention?: boolean;
   canViewSolutionModeration?: boolean;
   canViewDuplicateDispute?: boolean;
   actionData?: HelpQuestionActionData;
@@ -1058,7 +1056,7 @@ export function HelpSolutionsView({
   const isQuestionFormBusy = isQuestionSubmitting || isSimilarChecking;
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const helpPathForMode = (
-    nextMode: "all" | "open" | "help" | "for-me" | "active" | "attention" | "solutions" | "mine",
+    nextMode: "all" | "open" | "help" | "for-me" | "active" | "solutions" | "mine",
     keepFilters = true,
   ) => {
     const params = new URLSearchParams();
@@ -1077,7 +1075,6 @@ export function HelpSolutionsView({
   const helpPath = helpPathForMode("help");
   const forMePath = helpPathForMode("for-me");
   const activePath = helpPathForMode("active");
-  const attentionPath = helpPathForMode("attention");
   const solutionsPath = helpPathForMode("solutions");
   const minePath = helpPathForMode("mine");
   const resetFiltersPath = helpPathForMode(mode, false);
@@ -1087,7 +1084,6 @@ export function HelpSolutionsView({
   const helpMode = mode === "help";
   const forMeMode = mode === "for-me";
   const activeMode = mode === "active";
-  const attentionMode = mode === "attention";
   const solutionsMode = mode === "solutions";
   const mineMode = mode === "mine";
   const listHeading = t(
@@ -1099,8 +1095,6 @@ export function HelpSolutionsView({
           ? "helpSolutionsForMeHeading"
           : activeMode
             ? "helpSolutionsActiveHeading"
-            : attentionMode
-              ? "helpSolutionsNeedsAttentionHeading"
           : solutionsMode
             ? "helpSolutionsSolutionsHeading"
             : mineMode
@@ -1116,49 +1110,12 @@ export function HelpSolutionsView({
           ? "helpSolutionsForMeEmpty"
           : activeMode
             ? "helpSolutionsActiveEmpty"
-            : attentionMode
-              ? "helpSolutionsNeedsAttentionEmpty"
           : solutionsMode
             ? "helpSolutionsSolutionsEmpty"
             : mineMode
               ? "helpSolutionsMineEmpty"
               : "helpSolutionsEmpty",
   );
-
-  const attentionGroups = [
-    {
-      id: "needs-details",
-      label: t("helpSolutionsFilterNeedsDetails"),
-      questions: page.questions.filter((question) => Boolean(question.attention?.signals["needs-details"])),
-    },
-    {
-      id: "needs-review",
-      label: t("helpSolutionNeedsReview"),
-      questions: page.questions.filter((question) =>
-        Boolean(question.attention?.signals["needs-review"] || question.attention?.reviewRequired)
-      ),
-    },
-    {
-      id: "solution-outdated",
-      label: t("helpSolutionOutdated"),
-      questions: page.questions.filter((question) => Boolean(question.attention?.signals["solution-outdated"])),
-    },
-    {
-      id: "duplicate",
-      label: t("helpDuplicateBadge"),
-      questions: page.questions.filter((question) => Boolean(question.attention?.signals.duplicate)),
-    },
-    {
-      id: "appeals",
-      label: t("helpAttentionAppeals"),
-      questions: page.questions.filter((question) => question.attention?.appeal),
-    },
-    {
-      id: "mixed",
-      label: t("helpAttentionMixed"),
-      questions: page.questions.filter((question) => (question.attention?.totalSignals ?? 0) > 1),
-    },
-  ];
 
   return (
     <ForumShell locale={locale} variant="category">
@@ -1215,15 +1172,7 @@ export function HelpSolutionsView({
           >
             {t("helpSolutionsActiveMode")}
           </Link>
-          {canViewAttention ? (
-            <Link
-              className={"help-solutions-mode" + (attentionMode ? " is-active" : "")}
-              to={attentionPath}
-              aria-current={attentionMode ? "page" : undefined}
-            >
-              {t("helpSolutionsNeedsAttentionMode")}
-            </Link>
-          ) : null}
+
           <Link
             className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
             to={solutionsPath}
@@ -1433,25 +1382,6 @@ export function HelpSolutionsView({
           <h2 id="help-solutions-mode-heading">{listHeading}</h2>
           {page.questions.length === 0 ? (
             <EmptyState>{emptyCopy}</EmptyState>
-          ) : attentionMode ? (
-            <div className="help-attention-groups">
-              {attentionGroups.map((group) => (
-                <section className="help-attention-group" key={group.id} aria-labelledby={`help-attention-${group.id}`}>
-                  <h3 id={`help-attention-${group.id}`}>
-                    {group.label} <span className="help-attention-group-count">({group.questions.length})</span>
-                  </h3>
-                  {group.questions.length > 0 ? (
-                    <HelpQuestionCards
-                      questions={group.questions}
-                      locale={locale}
-                      referenceTime={referenceTime}
-                      canViewSolutionModeration={canViewSolutionModeration}
-                      canViewDuplicateDispute={canViewDuplicateDispute}
-                    />
-                  ) : null}
-                </section>
-              ))}
-            </div>
           ) : (
             <HelpQuestionCards
               questions={page.questions}
