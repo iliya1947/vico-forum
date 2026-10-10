@@ -336,20 +336,25 @@ composition without changing the forum hierarchy or schema:
   `?mode=active`: questions with at least one persisted reply are selected server-side from the
   hidden service section, include both open and solved states, reuse existing latest-activity
   ordering, and are bounded to the first 100 results. The current bounded follow-up adds
-  permission-gated `Needs attention / Требуют внимания` as `?mode=attention`. Merged PR #197
-  initially selected unsolved questions without replies; the later moderator-queue revision
-  replaces that obsolete criterion with **pending Help signals, unresolved confirmed-duplicate
-  appeals, and authoritative current-best-answer Needs review state**, regardless of whether a
-  question has replies or is solved. Only actual outstanding moderator actions are included,
-  with six ordered overlapping card groups: Needs details,
-  Needs review, Solution outdated, Duplicate, Appeals, Mixed (2+ pending signals). Mixed items
-  remain visible in their matching signal groups; appeals remain visible independently.
-  Selection is server-side before the existing 100-question bound and uses existing Q&A cards.
-  Dynamic effective permissions for the relevant Help management actions govern queue access
-  and which pending kinds can appear; other users neither see nor load private queue data.
-  Signal submission/review UI, appeals actions, and admin-panel redesign are separate systems,
-  not part of this view-only integration. PR #198 adds authenticated
-  `Want to help / Хочу помочь` as `?mode=help`: server-side selection returns only unsolved
+  **Owner revision (2026-10-10):** `Needs attention / Требуют внимания` is not a Help
+  category mode. It is an independent moderator-only `/:locale/attention` center,
+  linked from the upper account row beside the regular notification bell. The former
+  Help `?mode=attention` link redirects to the new standalone page.
+  The center has three distinct modes: `Signals`, `Complaints`, `Security`.
+  The mode switcher is on the **right of the same toolbar** where each mode's own
+  groups appear on the left. In Signals there are six ordered groups:
+  Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
+  These are switches rather than vertically stacked sections, each showing actual
+  persisted pending moderation cases; Mixed repeats questions with 2+ pending
+  visible signals in their other applicable groups, and appeals remain independent.
+  Complaints and Security are isolated empty **scaffolds**, each with Group 1,
+  Group 2, Group 3 switches. Those groups are temporary labels, **no synthetic
+  notifications and no invented complaint/security backend**. Their real categories,
+  data sources, permissions, and actions are to be defined in the respective
+  subsystem chats. Only users with existing Help moderation permissions can
+  currently access this foundation. Existing 100-question signal query bound and
+  per-capability filtering remain. PR #198 adds authenticated
+ server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
   projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
   mode and direct guest access uses the existing unauthenticated route state; actual reply
