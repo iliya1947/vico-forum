@@ -1125,6 +1125,39 @@ export function HelpSolutionsView({
               : "helpSolutionsEmpty",
   );
 
+  const attentionGroups = [
+    {
+      id: "needs-details",
+      label: t("helpSolutionsFilterNeedsDetails"),
+      questions: page.questions.filter((question) => Boolean(question.attention?.signals["needs-details"])),
+    },
+    {
+      id: "needs-review",
+      label: t("helpSolutionNeedsReview"),
+      questions: page.questions.filter((question) => Boolean(question.attention?.signals["needs-review"])),
+    },
+    {
+      id: "solution-outdated",
+      label: t("helpSolutionOutdated"),
+      questions: page.questions.filter((question) => Boolean(question.attention?.signals["solution-outdated"])),
+    },
+    {
+      id: "duplicate",
+      label: t("helpDuplicateBadge"),
+      questions: page.questions.filter((question) => Boolean(question.attention?.signals.duplicate)),
+    },
+    {
+      id: "appeals",
+      label: t("helpAttentionAppeals"),
+      questions: page.questions.filter((question) => question.attention?.appeal),
+    },
+    {
+      id: "mixed",
+      label: t("helpAttentionMixed"),
+      questions: page.questions.filter((question) => (question.attention?.totalSignals ?? 0) > 1),
+    },
+  ];
+
   return (
     <ForumShell locale={locale} variant="category">
       <div className="help-solutions-page">
@@ -1398,9 +1431,56 @@ export function HelpSolutionsView({
           <h2 id="help-solutions-mode-heading">{listHeading}</h2>
           {page.questions.length === 0 ? (
             <EmptyState>{emptyCopy}</EmptyState>
+          ) : attentionMode ? (
+            <div className="help-attention-groups">
+              {attentionGroups.map((group) => (
+                <section className="help-attention-group" key={group.id} aria-labelledby={`help-attention-${group.id}`}>
+                  <h3 id={`help-attention-${group.id}`}>
+                    {group.label} <span className="help-attention-group-count">({group.questions.length})</span>
+                  </h3>
+                  {group.questions.length > 0 ? (
+                    <HelpQuestionCards
+                      questions={group.questions}
+                      locale={locale}
+                      referenceTime={referenceTime}
+                      canViewSolutionModeration={canViewSolutionModeration}
+                      canViewDuplicateDispute={canViewDuplicateDispute}
+                    />
+                  ) : null}
+                </section>
+              ))}
+            </div>
           ) : (
+            <HelpQuestionCards
+              questions={page.questions}
+              locale={locale}
+              referenceTime={referenceTime}
+              canViewSolutionModeration={canViewSolutionModeration}
+              canViewDuplicateDispute={canViewDuplicateDispute}
+            />
+          )}
+        </section>
+      </div>
+    </ForumShell>
+  );
+}
+function HelpQuestionCards({
+  questions,
+  locale,
+  referenceTime,
+  canViewSolutionModeration,
+  canViewDuplicateDispute,
+}: {
+  questions: readonly HelpSolutionsQuestionPresentation[];
+  locale: string;
+  referenceTime: string;
+  canViewSolutionModeration: boolean;
+  canViewDuplicateDispute: boolean;
+}) {
+  const { t } = useTranslation("common");
+  return (
             <ul className="help-question-list">
-              {page.questions.map((question) => (
+              {questions.map((question) => (
                 <li key={question.id}>
                   <Link className="help-question-card" to={forumTopicPath(locale, question.id)}>
                     <span className="help-question-main">
@@ -1456,12 +1536,10 @@ export function HelpSolutionsView({
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-      </div>
-    </ForumShell>
   );
 }
+
+
 export function CategoryView({
   locale,
   category,
