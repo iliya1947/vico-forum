@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { type Components } from "react-markdown";
+
+const HIGHLIGHTED_POST_LENGTH_LIMIT = 12_000;
+const HighlightBudgetContext = createContext(true);
 
 type SyntaxTokenKind = "comment" | "keyword" | "literal" | "number" | "string";
 
@@ -151,7 +154,8 @@ function ForumCodeBlock({
   const [copyState, setCopyState] = useState<"copied" | "error" | null>(null);
   const [wrap, setWrap] = useState(false);
   const displayLanguage = language?.trim() || null;
-  const tokens = highlightCode(code, displayLanguage ?? undefined);
+  const allowHighlight = useContext(HighlightBudgetContext);
+  const tokens = allowHighlight ? highlightCode(code, displayLanguage ?? undefined) : [{ text: code }];
 
   async function copyCode() {
     setCopyState(null);
@@ -232,9 +236,11 @@ const markdownComponents: Components = {
 export function ForumMarkdown({ children }: { children: string }) {
   return (
     <div className="post-body">
-      <ReactMarkdown components={markdownComponents}>
-        {children}
-      </ReactMarkdown>
+      <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
+        <ReactMarkdown components={markdownComponents}>
+          {children}
+        </ReactMarkdown>
+      </HighlightBudgetContext.Provider>
     </div>
   );
 }

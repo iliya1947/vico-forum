@@ -165,6 +165,16 @@ const longValue = "code";
     expect(block).toHaveAttribute("data-wrap", "true");
   });
 
+  it("limits highlighting across all code blocks in a long post without hiding their text", () => {
+    const fenced = ["```ts", "const value = 1;\n".repeat(110), "```"].join("\n");
+    const message = Array.from({ length: 7 }, () => fenced).join("\n\n");
+    expect(message.length).toBeGreaterThan(12_000);
+    const { container } = renderMarkdown(message);
+    expect(container.querySelectorAll(".forum-code-block")).toHaveLength(7);
+    expect(container.querySelectorAll(".syntax-keyword")).toHaveLength(0);
+    expect(container.querySelector("pre")?.textContent).toContain("const value = 1;");
+  });
+
   it("leaves unknown languages readable without syntax classes", () => {
     const tokens = highlightCode("alpha beta", "made-up-language");
     expect(tokens).toEqual([{ text: "alpha beta" }]);
