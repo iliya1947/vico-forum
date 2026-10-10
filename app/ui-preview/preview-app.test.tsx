@@ -17,6 +17,18 @@ describe("UI preview state catalog", () => {
     }
   });
 
+  it("keeps dedicated editor states for create-topic, reply, and Help draft review", () => {
+    expect(scenarios).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "editor-create-topic", view: "section" }),
+      expect.objectContaining({ id: "editor-reply", view: "topic" }),
+      expect.objectContaining({
+        id: "editor-help-draft",
+        view: "category",
+        variant: "help-solutions-similar-results",
+      }),
+    ]));
+  });
+
   it("selects the preview role separately from State", async () => {
     render(<PreviewController />);
 
