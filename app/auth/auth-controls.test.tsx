@@ -127,6 +127,14 @@ describe("forum header auth controls", () => {
       .toHaveAttribute("href", "/en/sign-up?returnTo=%2Fen%2Ftopics%2Fone%3Ffrom%3Dlist");
   });
 
+  it("preserves the permanent message anchor in both auth entry links", async () => {
+    renderControls(null, actions(), "/en/topics/one?from=list#post-post-42");
+    expect(await screen.findByRole("link", { name: "Sign in" }))
+      .toHaveAttribute("href", "/en/sign-in?returnTo=%2Fen%2Ftopics%2Fone%3Ffrom%3Dlist%23post-post-42");
+    expect(screen.getByRole("link", { name: "Sign up" }))
+      .toHaveAttribute("href", "/en/sign-up?returnTo=%2Fen%2Ftopics%2Fone%3Ffrom%3Dlist%23post-post-42");
+  });
+
   it("keeps a safe locale-scoped return destination in credential links", async () => {
     const client = actions();
     renderControls(null, client);
@@ -182,6 +190,7 @@ describe("forum header auth controls", () => {
 describe("safeForumReturnPath", () => {
   it("keeps only local paths inside the canonical locale", () => {
     expect(safeForumReturnPath("en", "/en/sections/one", "?page=2")).toBe("/en/sections/one?page=2");
+    expect(safeForumReturnPath("en", "/en/topics/t", "?page=2", "#post-p3")).toBe("/en/topics/t?page=2#post-p3");
     expect(safeForumReturnPath("en", "//evil.example/en")).toBe("/en");
     expect(safeForumReturnPath("en", "/fr/topics/one")).toBe("/en");
   });

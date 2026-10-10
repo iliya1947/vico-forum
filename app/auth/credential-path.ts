@@ -1,10 +1,10 @@
 export type CredentialMode = "sign-in" | "sign-up";
 
-export function safeForumReturnPath(locale: string, pathname: string, search = ""): string {
+export function safeForumReturnPath(locale: string, pathname: string, search = "", hash = ""): string {
   const localeRoot = `/${encodeURIComponent(locale)}`;
   const localPath = pathname.startsWith("/") && !pathname.startsWith("//")
     && (pathname === localeRoot || pathname.startsWith(`${localeRoot}/`));
-  return localPath ? `${pathname}${search.startsWith("?") ? search : ""}` : localeRoot;
+  return localPath ? `${pathname}${search.startsWith("?") ? search : ""}${hash.startsWith("#") ? hash : ""}` : localeRoot;
 }
 
 export function credentialPagePath(locale: string, mode: CredentialMode, returnTo: string): string {
@@ -18,7 +18,7 @@ export function credentialReturnPath(locale: string, requested: string | null): 
   try {
     const url = new URL(requested, "https://forum.invalid");
     if (url.origin !== "https://forum.invalid") return fallback;
-    return safeForumReturnPath(locale, url.pathname, url.search);
+    return safeForumReturnPath(locale, url.pathname, url.search, url.hash);
   } catch {
     return fallback;
   }

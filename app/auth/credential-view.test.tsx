@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createMemoryRouter, RouterProvider, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -27,13 +27,18 @@ function runtime() {
   });
 }
 
-function show(mode: "sign-up" | "sign-in", emailActions: EmailAuthActions, googleActions: AuthClientActions) {
-  const target = "/en/topics/welcome?from=home";
+function ReturnDestination() {
+  const location = useLocation();
+  return <><p>Returned to the topic</p><output data-testid="return-fragment">{location.hash}</output></>;
+}
+
+function show(mode: "sign-up" | "sign-in", emailActions: EmailAuthActions, googleActions: AuthClientActions,
+  target = "/en/topics/welcome?from=home") {
   const element = <CredentialView locale="en" mode={mode} returnTo={target}
     emailActions={emailActions} googleActions={googleActions} />;
   const router = createMemoryRouter([
     { path: "/en/:mode", element },
-    { path: "/en/topics/:id", element: <p>Returned to the topic</p> },
+    { path: "/en/topics/:id", element: <ReturnDestination /> },
   ], { initialEntries: [`/en/${mode}`] });
   return render(
     <I18nextProvider i18n={runtime()}>
@@ -74,6 +79,7 @@ describe("credential registration and sign-in", () => {
     const a = actions();
     show("sign-in", a.emailActions, a.googleActions);
     const user = userEvent.setup();
+    expect(screen.getByRole("textbox", { name: "Email" })).toHaveAttribute("dir", "ltr");
     expect(screen.getByRole("link", { name: "Need an account? Sign up" }))
       .toHaveAttribute("href", "/en/sign-up?returnTo=%2Fen%2Ftopics%2Fwelcome%3Ffrom%3Dhome");
     await user.click(screen.getByRole("button", { name: "Continue with Google" }));
@@ -83,6 +89,17 @@ describe("credential registration and sign-in", () => {
     await user.click(screen.getByRole("button", { name: "Sign in with email" }));
     await waitFor(() => expect(a.emailActions.signInWithEmail).toHaveBeenCalledWith("alice@example.org", "correct horse"));
     expect(await screen.findByText("Returned to the topic")).toBeInTheDocument();
+  });
+
+  it("returns to the exact message anchor after email sign-in", async () => {
+    const a = actions();
+    show("sign-in", a.emailActions, a.googleActions, "/en/topics/welcome?from=home#post-post-42");
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
+    await user.type(screen.getByLabelText("Password"), "correct horse");
+    await user.click(screen.getByRole("button", { name: "Sign in with email" }));
+    expect(await screen.findByText("Returned to the topic")).toBeInTheDocument();
+    expect(screen.getByTestId("return-fragment")).toHaveTextContent("#post-post-42");
   });
 
   it("shows a generic failure without leaking provider errors or navigating", async () => {
@@ -102,9 +119,11 @@ describe("credential registration and sign-in", () => {
 describe("credential callback safety", () => {
   it("accepts only relative return paths within the active locale", () => {
     expect(credentialReturnPath("en", "/en/topics/t?from=search")).toBe("/en/topics/t?from=search");
+    expect(credentialReturnPath("en", "/en/topics/t?from=search#post-p3")).toBe("/en/topics/t?from=search#post-p3");
+    expect(credentialReturnPath("en", "/en/topics/t#post-p3")).toBe("/en/topics/t#post-p3");
     expect(credentialReturnPath("en", "//evil.example/en")).toBe("/en");
     expect(credentialReturnPath("en", "https://evil.example")).toBe("/en");
-    expect(credentialReturnPath("en", "/he/topics/t")).toBe("/en");
+    expect(credentialReturnPath("en", "/he/topics/t#post-p3")).toBe("/en");
     expect(credentialReturnPath("he", "/he/sections/start")).toBe("/he/sections/start");
   });
 });

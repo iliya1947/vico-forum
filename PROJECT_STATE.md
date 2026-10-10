@@ -37,8 +37,16 @@ Vico Forum находится в ранней pre-release разработке.
   GitHub Pages preview build/deploy succeeded. Full deployed browser screenshot and
   owner-specific visual acceptance were not independently verified; static mock Pages
   does not demonstrate external OAuth or production runtime. Independent Codex review
-  completed on `c94382f` on 2026-10-10 without new findings. There are no known
-  unresolved current-MVP blockers; no production rollout occurred.
+  completed on `c94382f` on 2026-10-10 without new findings. Main later merged
+  editor PR #210, and registration PR #214 integrated that main revision on `a2d9816`.
+  Combined-head CI passed with 696 application tests, 211 native PostgreSQL 17
+  database tests and local Worker/schema/privilege checks; Pages preview also passed.
+  Independent review of the combined head identified three current-scope corrections:
+  reconcile PROJECT.md auth baseline, preserve message URL fragments during
+  credential redirects, and isolate the email input as LTR in RTL locales. This
+  follow-up revision includes those bounded corrections and regression tests.
+  Updated-head CI/Pages and renewed independent review have not yet been verified.
+  No production rollout occurred.
 
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable

@@ -76,7 +76,7 @@ export function CredentialView({
             </label>
           ) : null}
           <label>{t("authEmailAddress")}
-            <input name="email" type="email" autoComplete="email" required maxLength={320} disabled={pending} />
+            <input name="email" type="email" autoComplete="email" dir="ltr" required maxLength={320} disabled={pending} />
           </label>
           <label>{t("authEmailPassword")}
             <input name="password" type="password" autoComplete={registration ? "new-password" : "current-password"}

@@ -90,7 +90,7 @@ export function AuthControls({ locale, actions = authClientActions }: {
   const returnTo = location.pathname === `/${encodeURIComponent(locale)}/sign-in`
     || location.pathname === `/${encodeURIComponent(locale)}/sign-up`
     ? credentialReturnPath(locale, new URLSearchParams(location.search).get("returnTo"))
-    : safeForumReturnPath(locale, location.pathname, location.search);
+    : safeForumReturnPath(locale, location.pathname, location.search, location.hash);
 
   return (
     <div className="auth-controls" data-state={presentationState} aria-busy={pending || undefined}>

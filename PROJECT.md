@@ -27,9 +27,11 @@
 
 ## Авторизация и права доступа
 
-Пользовательская авторизация планируется через Google OAuth / Better Auth. Better Auth отвечает
-за authentication/session и authoritative identity пользователя; application permissions
-разрешаются отдельно server-side.
+Пользовательская авторизация использует Better Auth с Google OAuth и регистрацией/входом
+по email и паролю. По решению владельца от 2026-10-10 подтверждение email пока не
+обязательно; отправка писем, подтверждение адреса и восстановление пароля отложены.
+Better Auth отвечает за authentication/session и authoritative identity пользователя;
+application permissions разрешаются отдельно server-side.
 
 Права доступа строятся как dynamic permission-based authorization:
 
@@ -53,7 +55,7 @@
 - React Router v8 Framework Mode + SSR + TypeScript;
 - Cloudflare Workers;
 - PostgreSQL + Drizzle ORM;
-- Better Auth + Google OAuth.
+- Better Auth + Google OAuth + email/password.
 
 ## Мультиязычность и переводы
 

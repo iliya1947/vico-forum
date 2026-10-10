@@ -22,7 +22,7 @@ feature PR**.
 
 1. Не менять без отдельного решения baseline: модульный монолит, React Router v8 Framework
    Mode + SSR + TypeScript, Cloudflare Workers, PostgreSQL + Drizzle ORM, Better Auth +
-   Google OAuth.
+   Google OAuth и email/password по решению владельца 2026-10-10.
 2. Перед использованием внешних API/библиотек проверять официальную документацию именно
    используемой версии.
 3. Все внешние/пользовательские данные валидировать runtime на соответствующей границе;
@@ -404,7 +404,7 @@ infrastructure diagnostics в production прекращаются; рисков�
 - классическая структура `категория → раздел → тема → сообщения`;
 - публичное чтение;
 - участие зарегистрированного пользователя;
-- Google OAuth;
+- Google OAuth и email/password (подтверждение email и восстановление пароля — последующие задачи);
 - Markdown/text/code;
 - solved topic + best answer;
 - dynamic DB-backed roles/permissions: built-in defaults `user/moderator/admin`, custom role
