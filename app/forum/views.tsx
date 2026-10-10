@@ -1134,7 +1134,9 @@ export function HelpSolutionsView({
     {
       id: "needs-review",
       label: t("helpSolutionNeedsReview"),
-      questions: page.questions.filter((question) => Boolean(question.attention?.signals["needs-review"])),
+      questions: page.questions.filter((question) =>
+        Boolean(question.attention?.signals["needs-review"] || question.attention?.reviewRequired)
+      ),
     },
     {
       id: "solution-outdated",
