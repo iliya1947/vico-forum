@@ -171,7 +171,7 @@ function ForumCodeBlock({
   return (
     <figure className="forum-code-block" data-wrap={wrap ? "true" : "false"}>
       <figcaption className="forum-code-toolbar">
-        <span className="forum-code-language">
+        <span className="forum-code-language" dir={displayLanguage ? "ltr" : undefined}>
           {displayLanguage || t("codeLanguagePlainText")}
         </span>
         <span className="forum-code-actions">

@@ -315,6 +315,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               <span>{t("editorCodeLanguage")}</span>
               <input
                 type="text"
+                dir="ltr"
                 value={codeLanguage}
                 maxLength={32}
                 disabled={disabled}

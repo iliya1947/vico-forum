@@ -139,6 +139,13 @@ const longValue = "code";
     expect(container.querySelector(".forum-code-block pre")).toHaveAttribute("dir", "ltr");
   });
 
+  it("keeps symbolic technical language labels LTR inside RTL while leaving controls RTL", () => {
+    const { container } = renderMarkdown(["```c#", "Console.WriteLine(1);", "```"].join("\n"), "rtl");
+    expect(container.querySelector(".forum-code-language")).toHaveAttribute("dir", "ltr");
+    expect(container.querySelector(".forum-code-language")).toHaveTextContent("c#");
+    expect(container.querySelector(".forum-code-toolbar")).not.toHaveAttribute("dir", "ltr");
+  });
+
   it("falls back to plain text for oversized or token-heavy code", () => {
     const huge = "const x = 1;".repeat(2000);
     expect(highlightCode(huge, "ts")).toEqual([{ text: huge }]);

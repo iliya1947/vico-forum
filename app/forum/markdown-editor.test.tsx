@@ -134,6 +134,13 @@ describe("MarkdownEditor", () => {
     expect(screen.getByText("c#")).toBeInTheDocument();
   });
 
+  it("isolates the code language input direction in RTL authoring", () => {
+    renderEditor(
+      <div dir="rtl"><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" /></div>,
+    );
+    expect(screen.getByRole("textbox", { name: "Code language" })).toHaveAttribute("dir", "ltr");
+  });
+
   it("preserves selected backticks when inserting inline code", async () => {
     renderEditor(
       <>
