@@ -1196,7 +1196,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                                   ? { signals: { "solution-outdated": 1 }, totalSignals: 1, appeal: false }
                                   : index === 3
                                     ? { signals: { duplicate: 1 }, totalSignals: 1, appeal: false }
-                                    : { signals: { "needs-details": 1 }, totalSignals: 1, appeal: false },
+                                    : { signals: {}, totalSignals: 0, appeal: false, reviewRequired: true },
                           })),
                         }
                 : mode === "solutions"
