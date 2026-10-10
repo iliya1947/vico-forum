@@ -25,12 +25,10 @@ export async function loader({ request, params, context }: {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
-  let canViewSolutionModeration = false;
-  let canViewDuplicateDispute = false;
-  let canManageNeedsDetails = false;
+  let permissions: [boolean, boolean, boolean];
   try {
     const authorization = authorizationForRequest(context).forUser(session.user.id);
-    [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails] = await Promise.all([
+    permissions = await Promise.all([
       authorization.has("forum.solution.manageAny"),
       authorization.has("forum.helpDuplicate.manage"),
       authorization.has("forum.helpNeedsDetails.manage"),
@@ -41,6 +39,7 @@ export async function loader({ request, params, context }: {
     }
     throw error;
   }
+  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails] = permissions;
   if (!canViewSolutionModeration && !canViewDuplicateDispute && !canManageNeedsDetails) {
     throw new Response("Forbidden", { status: 403 });
   }
