@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
+import { forumAttentionPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
@@ -195,7 +195,7 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "profile" | "system";
+  variant?: "attention" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "profile" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
@@ -204,6 +204,7 @@ export function ForumShell({
     || variant === "popular"
     || variant === "unanswered"
     || variant === "unread"
+    || variant === "attention"
     || variant === "notifications"
     || variant === "tags"
     || variant === "category"
@@ -215,7 +216,9 @@ export function ForumShell({
 
   return (
     <main className={
-      variant === "home"
+      variant === "attention"
+        ? "forum-shell home-shell attention-shell"
+        : variant === "home"
         ? "forum-shell home-shell"
         : variant === "search"
           ? "forum-shell home-shell search-shell"
@@ -326,6 +329,15 @@ export function ForumShell({
             )}
           </nav>
           <div className="site-account-actions">
+            {authUser?.canViewModerationAttention ? (
+              <Link
+                className="header-attention-link"
+                to={forumAttentionPath(locale)}
+                title={t("helpSolutionsNeedsAttentionMode")}
+              >
+                {t("helpSolutionsNeedsAttentionMode")}
+              </Link>
+            ) : null}
             {authUser ? (
               <Link
                 className="header-icon-link notification-link"
