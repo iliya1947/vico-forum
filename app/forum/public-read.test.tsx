@@ -138,10 +138,8 @@ const needsAttentionHelpPage = {
   ...helpPage,
   questions: helpPage.questions.map((question) => ({
     ...question,
-    replyCount: 0,
-    isSolved: false,
-    hasBestAnswer: false,
-    activityAt: question.createdAt,
+    // Questions with replies are actionable only because a pending moderation signal exists.
+    attention: { signals: { "needs-details": 1, duplicate: 1 }, totalSignals: 2, appeal: true },
   })),
 };
 const wantToHelpPage = {
@@ -1095,8 +1093,12 @@ describe("Help & solutions modes and authoring", () => {
     expect(data.mode).toBe("attention");
     expect(data.canViewAttention).toBe(true);
     expect(data.page.questions).toEqual([
-      expect.objectContaining({ id: helpTopic.id, replyCount: 0, isSolved: false }),
+      expect.objectContaining({ id: helpTopic.id, replyCount: 2, isSolved: false }),
     ]);
+    expect(readNeedsAttention).toHaveBeenCalledWith({}, {
+      signalKinds: ["needs-review", "solution-outdated"],
+      appeals: false,
+    });
 
     const attentionView = renderRoute(
       CategoryRoute,
@@ -1106,8 +1108,13 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByRole("link", { name: "Needs attention" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("heading", { level: 2, name: "Questions needing attention" })).toBeVisible();
-    expect(screen.getByText("0 replies")).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Questions needing moderation" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 3, name: "Needs details (1)" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 3, name: "Duplicate (1)" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 3, name: "Appeals (1)" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 3, name: "Mixed (1)" })).toBeVisible();
+    expect(screen.getAllByText("Pending signals: 2")).toHaveLength(4);
+    expect(screen.getAllByText("2 replies")).toHaveLength(4);
     attentionView.unmount();
 
     const emptyContext = context("en", "ltr");
@@ -1131,7 +1138,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("There are no questions needing attention right now.")).toBeVisible();
+    expect(await screen.findByText("No pending moderation cases.")).toBeVisible();
   });
 
   it("shows My questions only to authenticated users and binds it to the session identity", async () => {
