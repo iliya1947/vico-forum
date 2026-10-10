@@ -1396,6 +1396,88 @@ export function HelpSolutionsView({
     </ForumShell>
   );
 }
+
+export type AttentionMode = "signals" | "complaints" | "security";
+export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "group1" | "group2" | "group3";
+
+export function AttentionCenterView({ locale, mode, group, page, referenceTime, canViewSolutionModeration, canViewDuplicateDispute }: {
+  locale: string;
+  mode: AttentionMode;
+  group: AttentionGroup;
+  page: HelpSolutionsPagePresentation | null;
+  referenceTime: string;
+  canViewSolutionModeration: boolean;
+  canViewDuplicateDispute: boolean;
+}) {
+  const { t } = useTranslation("common");
+  const pathFor = (nextMode: AttentionMode, nextGroup?: string) => {
+    const params = new URLSearchParams({ mode: nextMode });
+    if (nextGroup) params.set("group", nextGroup);
+    return `${forumAttentionPath(locale)}?${params}`;
+  };
+  const questions = page?.questions ?? [];
+  const groups = mode === "signals" ? [
+    { id: "needs-details", label: t("helpSolutionsFilterNeedsDetails"), questions: questions.filter(q => Boolean(q.attention?.signals["needs-details"])) },
+    { id: "needs-review", label: t("helpSolutionNeedsReview"), questions: questions.filter(q => Boolean(q.attention?.signals["needs-review"] || q.attention?.reviewRequired)) },
+    { id: "solution-outdated", label: t("helpSolutionOutdated"), questions: questions.filter(q => Boolean(q.attention?.signals["solution-outdated"])) },
+    { id: "duplicate", label: t("helpDuplicateBadge"), questions: questions.filter(q => Boolean(q.attention?.signals.duplicate)) },
+    { id: "appeals", label: t("helpAttentionAppeals"), questions: questions.filter(q => q.attention?.appeal) },
+    { id: "mixed", label: t("helpAttentionMixed"), questions: questions.filter(q => (q.attention?.totalSignals ?? 0) > 1) },
+  ] : [
+    { id: "group1", label: t("attentionPlaceholderGroup1"), questions: [] },
+    { id: "group2", label: t("attentionPlaceholderGroup2"), questions: [] },
+    { id: "group3", label: t("attentionPlaceholderGroup3"), questions: [] },
+  ];
+  const activeGroup = groups.find(item => item.id === group) ?? groups[0]!;
+  return (
+    <ForumShell locale={locale} variant="attention">
+      <div className="help-solutions-page attention-center-page">
+        <Breadcrumbs locale={locale} items={[{ label: t("helpSolutionsNeedsAttentionMode") }]} />
+        <header className="help-solutions-heading">
+          <div>
+            <p className="eyebrow">{t("attentionModerationLabel")}</p>
+            <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
+          </div>
+        </header>
+        <div className="attention-center-toolbar">
+          <nav className="help-solutions-modes attention-group-nav" aria-label={t("attentionGroupNavigation")}>
+            {groups.map(item => (
+              <Link key={item.id}
+                className={"help-solutions-mode" + (activeGroup.id === item.id ? " is-active" : "")}
+                to={pathFor(mode, item.id)} aria-current={activeGroup.id === item.id ? "page" : undefined}>
+                {item.label}{mode === "signals" ? ` (${item.questions.length})` : ""}
+              </Link>
+            ))}
+          </nav>
+          <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
+            {(["signals", "complaints", "security"] as const).map(item => (
+              <Link key={item}
+                className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
+                to={pathFor(item)} aria-current={mode === item ? "page" : undefined}>
+                {t(item === "signals" ? "attentionModeSignals"
+                  : item === "complaints" ? "attentionModeComplaints" : "attentionModeSecurity")}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <section className="help-solutions-questions" aria-labelledby="attention-group-heading">
+          <h2 id="attention-group-heading">{activeGroup.label}</h2>
+          {mode !== "signals" ? (
+            <EmptyState>{t("attentionPlaceholderEmpty")}</EmptyState>
+          ) : activeGroup.questions.length === 0 ? (
+            <EmptyState>{t("helpSolutionsNeedsAttentionEmpty")}</EmptyState>
+          ) : (
+            <HelpQuestionCards questions={activeGroup.questions} locale={locale}
+              referenceTime={referenceTime}
+              canViewSolutionModeration={canViewSolutionModeration}
+              canViewDuplicateDispute={canViewDuplicateDispute} />
+          )}
+        </section>
+      </div>
+    </ForumShell>
+  );
+}
+
 function HelpQuestionCards({
   questions,
   locale,
