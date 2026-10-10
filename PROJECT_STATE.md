@@ -31,7 +31,13 @@ Vico Forum находится в ранней pre-release разработке.
   available and reuse Better Auth user/account/session/rate-limit tables and dynamic
   forum authorizations. The email sender, verification and password reset are deliberately
   deferred by owner decision 2026-10-10; no email provider or new DB schema introduced.
-  CI/Pages, browser review and independent Codex review remain pending; no production rollout.
+  Exact implementation-head CI succeeded on `2dbea7c`: 671 application tests,
+  211 native PostgreSQL 17 tests including a real Better Auth HTTP registration/login
+  round-trip, all migrations/schema/privilege/Workers smoke, lint/typecheck/build.
+  GitHub Pages preview build/deploy succeeded. Full deployed browser screenshot and
+  owner-specific visual acceptance were not independently verified; static mock Pages
+  does not demonstrate external OAuth or production runtime. Independent Codex review
+  of the stable implementation remains pending; no production rollout.
 
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
