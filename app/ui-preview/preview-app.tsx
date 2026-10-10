@@ -89,8 +89,7 @@ interface Scenario {
 
 export const scenarios: readonly Scenario[] = [
   { id: "credentials-sign-in", label: "Email sign-in", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-in", view: "credentials", allowedIdentities: ["guest"] },
-  { id: "credentials-register-ru", label: "Registration · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/sign-up", view: "credentials", allowedIdentities: ["guest"] },
-  { id: "credentials-register-he", label: "Registration · RTL", locale: "he", direction: "rtl", identity: "guest", path: "/he/sign-up", view: "credentials", allowedIdentities: ["guest"] },
+  { id: "credentials-register", label: "Registration", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-up", view: "credentials", allowedIdentities: ["guest"] },
   { id: "profile-public", label: "Profile", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile" },
   { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
