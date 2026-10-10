@@ -5,6 +5,7 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest } from "../forum/request-context";
 import type {
   ForumHelpSolutionsFilters,
+  HelpSignalKind,
   HelpSolutionsAnswersFilter,
   HelpSolutionsQualityFilter,
   HelpSolutionsRelationFilter,
@@ -77,15 +78,17 @@ export async function loader({ request, params, context }: {
     let canViewAttention = false;
     let canViewSolutionModeration = false;
     let canViewDuplicateDispute = false;
+    let canManageNeedsDetails = false;
     if (session) {
       try {
         const resolver = authorizationForRequest(context).forUser(session.user.id);
-        [canAskQuestion, canViewSolutionModeration, canViewDuplicateDispute] = await Promise.all([
+        [canAskQuestion, canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails] = await Promise.all([
           resolver.has("forum.topic.create"),
           resolver.has("forum.solution.manageAny"),
           resolver.has("forum.helpDuplicate.manage"),
+          resolver.has("forum.helpNeedsDetails.manage"),
         ]);
-        canViewAttention = canViewSolutionModeration;
+        canViewAttention = canViewSolutionModeration || canViewDuplicateDispute || canManageNeedsDetails;
       } catch (error) {
         if (!(error instanceof AuthorizationUnavailableError)) throw error;
         if (mode === "attention" || needsReviewFilter) throw new Response("Unavailable", { status: 503 });
@@ -99,6 +102,11 @@ export async function loader({ request, params, context }: {
       throw new Response("Forbidden", { status: 403 });
     }
 
+    const attentionKinds: HelpSignalKind[] = [
+      ...(canManageNeedsDetails ? ["needs-details" as const] : []),
+      ...(canViewSolutionModeration ? ["needs-review" as const, "solution-outdated" as const] : []),
+      ...(canViewDuplicateDispute ? ["duplicate" as const] : []),
+    ];
     let helpSolutions;
     if (mode === "mine") {
       helpSolutions = await reader.readHelpSolutionsMine(session!.user.id, filters);
@@ -112,7 +120,10 @@ export async function loader({ request, params, context }: {
         : mode === "active"
           ? await reader.readHelpSolutionsActive(filters)
           : mode === "attention"
-            ? await reader.readHelpSolutionsNeedsAttention(filters)
+            ? await reader.readHelpSolutionsNeedsAttention(filters, {
+                signalKinds: attentionKinds,
+                appeals: canViewDuplicateDispute,
+              })
             : mode === "solutions"
               ? await reader.readHelpSolutionsSolved(filters)
               : await reader.readHelpSolutionsAll(filters);
