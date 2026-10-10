@@ -1078,7 +1078,10 @@ describe("Help & solutions modes and authoring", () => {
       forUser: () => ({
         resolve: vi.fn(),
         has: vi.fn(async (permission) =>
-          permission === "forum.topic.create" || permission === "forum.solution.manageAny"
+          permission === "forum.topic.create"
+          || permission === "forum.solution.manageAny"
+          || permission === "forum.helpNeedsDetails.manage"
+          || permission === "forum.helpDuplicate.manage"
         ),
       }),
     } as never);
@@ -1096,8 +1099,8 @@ describe("Help & solutions modes and authoring", () => {
       expect.objectContaining({ id: helpTopic.id, replyCount: 2, isSolved: false }),
     ]);
     expect(readNeedsAttention).toHaveBeenCalledWith({}, {
-      signalKinds: ["needs-review", "solution-outdated"],
-      appeals: false,
+      signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+      appeals: true,
     });
 
     const attentionView = renderRoute(
