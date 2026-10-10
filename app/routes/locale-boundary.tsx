@@ -18,6 +18,7 @@ import {
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { OnlinePresenceHeartbeat } from "../forum/online-presence-heartbeat";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
@@ -112,6 +113,8 @@ export async function loader(args: LocaleBoundaryArgs) {
     activeLocales,
     authUser: session
       ? {
+          id: session.user.id,
+          image: session.user.image ?? null,
           name: session.user.name,
           canManageAuthorization,
           ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
@@ -126,7 +129,10 @@ export default function LocaleBoundary() {
   return (
     <I18nextProvider i18n={i18n} defaultNS="common">
       <LocaleNavigationProvider locales={snapshot.activeLocales}>
-        <HeaderAuthProvider initialUser={snapshot.authUser}><Outlet /></HeaderAuthProvider>
+        <HeaderAuthProvider initialUser={snapshot.authUser}>
+          <OnlinePresenceHeartbeat />
+          <Outlet />
+        </HeaderAuthProvider>
       </LocaleNavigationProvider>
     </I18nextProvider>
   );

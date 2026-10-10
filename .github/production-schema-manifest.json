@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0031_help_user_moderation_signals",
+  "targetMigration": "0033_forum_online_presence",
   "tables": {
     "account": {
       "columns": [
@@ -1433,6 +1433,89 @@
           ]
         }
       ]
+    },
+    "forum_profiles": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "bio",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "676219f025870b893c0df8670464cfdae5f5cc073c6c44841e35f1805c6b81ce"
+        },
+        {
+          "name": "github_url",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "website_url",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_profiles_pkey",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_profiles_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_profiles_bio_length",
+          "columns": [
+            "bio"
+          ],
+          "definitionSha256": "b34fbe4fb944e3ac603b9f6a940b7beecb5c19f3652018e058047fdd11dd0891"
+        },
+        {
+          "name": "forum_profiles_github_url",
+          "columns": [
+            "github_url"
+          ],
+          "definitionSha256": "657e95f13cb8573c696525c3d51b229da7475b5e734ff2c2bc32b3095304da69"
+        },
+        {
+          "name": "forum_profiles_website_url",
+          "columns": [
+            "website_url"
+          ],
+          "definitionSha256": "c7c905293793d4be32bec9f8615c58efdcfd0e2b422fb5177436446e84adffce"
+        }
+      ],
+      "indexes": []
     },
     "forum_sections": {
       "columns": [
@@ -4308,6 +4391,62 @@
             },
             {
               "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_online_presence": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_online_presence_pkey",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_online_presence_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_online_presence_seen_at_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "last_seen_at",
               "order": "asc",
               "nulls": "last"
             }

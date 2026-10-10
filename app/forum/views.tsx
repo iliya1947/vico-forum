@@ -6,6 +6,7 @@ import type {
   ForumHelpSolutionsFilters,
   ForumHelpSolutionsPage,
   ForumPopularPeriod,
+  ForumOnlinePresence,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
   ForumSearchResult,
@@ -31,7 +32,8 @@ import type {
   HelpSimilarQuestionsActionData,
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
-import { forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
+import { ForumAvatar } from "./avatar";
+import { forumProfilePath, forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath } from "./paths";
 import type { HomepageCategoryOverview } from "./homepage";
 import {
   PostBodyContent,
@@ -48,9 +50,11 @@ import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 export function HomeView({
   locale,
   categories,
+  onlinePresence = { count: 0, members: [] },
 }: {
   locale: string;
   categories: readonly HomepageCategoryOverview[];
+  onlinePresence?: ForumOnlinePresence | null;
 }) {
   const { t } = useTranslation("common");
   const totals = categories.reduce(
@@ -81,8 +85,17 @@ export function HomeView({
       <section className="home-information" aria-label={t("forumStatisticsHeading")}>
         <article className="home-information-card home-online-card">
           <h2>{t("whosOnlineHeading")}</h2>
-          <p>{t("onlinePresencePending")}</p>
-          <Link to={underDevelopmentPath(locale, "online-presence")}>{t("viewDevelopmentStatus")}</Link>
+          {onlinePresence ? <>
+            <p>{t("onlineActiveCount", { count: onlinePresence.count })}</p>
+            {onlinePresence.members.length ? (
+              <ul className="home-online-members">
+                {onlinePresence.members.map((member) => <li key={member.id}>
+                  <Link to={forumProfilePath(locale, member.id)}><bdi dir="auto">{member.name}</bdi></Link>
+                </li>)}
+              </ul>
+            ) : <p>{t("onlineNoMembers")}</p>}
+          </> : <p role="status">{t("onlinePresenceUnavailable")}</p>}
+          <p className="home-online-scope">{t("onlineMembersOnly")}</p>
         </article>
         <article className="home-information-card home-statistics-card">
           <h2>{t("forumStatisticsHeading")}</h2>
@@ -2179,12 +2192,10 @@ export function TopicView({
                   key={post.id}
                 >
                   <header className="topic-message-author">
-                    <span className="topic-message-avatar" aria-hidden="true">
-                      {post.authorName.trim().slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="topic-message-author-copy">
-                      <strong>{post.authorName}</strong>
-                    </span>
+                    <Link className="topic-message-profile-link" to={forumProfilePath(locale, post.authorId)}>
+                      <ForumAvatar name={post.authorName} image={post.authorImage} className="topic-message-avatar" />
+                      <span className="topic-message-author-copy"><strong dir="auto">{post.authorName}</strong></span>
+                    </Link>
                     <span className="topic-message-author-statuses">
                       {isOriginalQuestion && (
                         <strong className="original-question-label">{t("originalQuestion")}</strong>

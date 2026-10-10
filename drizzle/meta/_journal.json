@@ -225,6 +225,20 @@
       "when": 1791514800000,
       "tag": "0031_help_user_moderation_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791577526584,
+      "tag": "0032_forum_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791635400000,
+      "tag": "0033_forum_online_presence",
+      "breakpoints": true
     }
   ]
 }

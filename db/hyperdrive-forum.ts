@@ -7,6 +7,7 @@ import {
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
+import type { ProfileFields } from "../app/forum/profile";
 import type { ForumReader } from "./forum-repository";
 import type {
   HelpDuplicateAppealResolution,
@@ -21,6 +22,8 @@ import { ForumService, type SourceLocaleCorrectionScope } from "./forum-service"
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 
 export interface ForumWriter {
+  updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
+  recordOnlinePresence(userId: string): Promise<void>;
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[] }): Promise<{ topicId: string }>;
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
@@ -71,6 +74,8 @@ export function createHyperdriveForumReader(
   }
 
   return {
+    readOnlinePresence: () => read((repository) => repository.readOnlinePresence()),
+    readProfile: (userId) => read((repository) => repository.readProfile(userId)),
     listCategories: () => read((repository) => repository.listCategories()),
     readHomepage: () => read((repository) => repository.readHomepage()),
     readPopular: (referenceTime, limitPerPeriod) => read((repository) => repository.readPopular(referenceTime, limitPerPeriod)),
@@ -130,6 +135,26 @@ export function createHyperdriveForumWriter(
   }
 
   return {
+    recordOnlinePresence: async (userId) => {
+      const client = clientFactory();
+      try {
+        await client.connect();
+        await new DrizzleForumRepository(drizzle(client)).recordOnlinePresence(userId);
+      } catch (error) {
+        if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
+        throw error;
+      } finally { bestEffortDiscardClient(client); }
+    },
+    updateProfile: async ({ actorId, fields }) => {
+      const client = clientFactory();
+      try {
+        await client.connect();
+        await new DrizzleForumRepository(drizzle(client)).updateProfile(actorId, fields);
+      } catch (error) {
+        if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
+        throw error;
+      } finally { bestEffortDiscardClient(client); }
+    },
     createTopic: ({ sectionId, authorId, title, body, tags = [] }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
       await forum.createTopicWithInitialPost({

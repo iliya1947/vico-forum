@@ -1,6 +1,14 @@
 import { generatePath } from "react-router";
 import type { UnderDevelopmentFeatureId } from "./under-development";
 
+export function forumPresencePath(locale: string) {
+  return `/${encodeURIComponent(locale)}/presence`;
+}
+
+export function forumProfilePath(locale: string, userId: string) {
+  return `/${encodeURIComponent(locale)}/users/${encodeURIComponent(userId)}`;
+}
+
 export function forumIndexPath(locale: string) {
   return generatePath("/:locale", { locale });
 }

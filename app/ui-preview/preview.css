@@ -102,6 +102,11 @@ body.ui-preview-controller {
   background: #eef1f4;
 }
 
+.preview-frame-wrap[data-viewport="tablet"] .preview-frame {
+  width: 768px;
+  max-width: 100%;
+}
+
 .preview-frame-wrap[data-viewport="mobile"] .preview-frame {
   width: 390px;
   max-width: 100%;

@@ -16,6 +16,7 @@ import {
 } from "../../db/forum-identifiers";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
+import { ProfileView } from "../forum/profile-view";
 import { ForumRouteError } from "../forum/ui";
 import {
   CategoryView,
@@ -40,7 +41,7 @@ import { localeRegistry } from "../localization/registry";
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
-type PreviewView = "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
@@ -66,7 +67,10 @@ type PreviewVariant =
   | "help-solutions-similar-invalid"
   | "help-solutions-similar-unavailable"
   | "help-solution-outdated"
-  | "category-no-pins";
+  | "category-no-pins"
+  | "profile-empty"
+  | "profile-error"
+  | "profile-long";
 
 interface Scenario {
   id: string;
@@ -82,6 +86,12 @@ interface Scenario {
 }
 
 export const scenarios: readonly Scenario[] = [
+  { id: "profile-public", label: "Profile", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile" },
+  { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
+  { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
+  { id: "profile-error", label: "Profile · validation error", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", variant: "profile-error", allowedIdentities: ["user", "manager"] },
+  { id: "profile-long", label: "Profile · long text", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile", variant: "profile-long" },
+  { id: "profile-empty", label: "Profile · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/sam", view: "profile", variant: "profile-empty" },
   { id: "home-guest", label: "Home", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "auth-pending", label: "Authentication · pending", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending", allowedIdentities: ["guest"] },
   { id: "auth-error", label: "Authentication · failed", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error", allowedIdentities: ["guest"] },
@@ -783,9 +793,9 @@ function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
   if (scenario.identity === "manager") {
-    return { name: "Maya Cohen", canManageAuthorization: true, unreadNotificationCount };
+    return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, unreadNotificationCount };
   }
-  return { name: "Alex Rivera", unreadNotificationCount };
+  return { id: "alex", name: "Alex Rivera", unreadNotificationCount };
 }
 
 function previewNotifications(locale: PreviewLocale) {
@@ -837,7 +847,7 @@ function previewNotifications(locale: PreviewLocale) {
 export function PreviewController() {
   const [identity, setIdentity] = useState<PreviewIdentity>("guest");
   const [scenarioId, setScenarioId] = useState(scenarios[0]!.id);
-  const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
+  const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const availableScenarios = scenarios.filter((scenario) => supportsPreviewIdentity(scenario, identity));
   const selected = availableScenarios.find((scenario) => scenario.id === scenarioId) ?? availableScenarios[0]!;
 
@@ -886,6 +896,7 @@ export function PreviewController() {
           <fieldset className="preview-viewport-controls">
             <legend>Viewport</legend>
             <button type="button" aria-pressed={viewport === "desktop"} onClick={() => setViewport("desktop")}>Desktop</button>
+            <button type="button" aria-pressed={viewport === "tablet"} onClick={() => setViewport("tablet")}>Tablet</button>
             <button type="button" aria-pressed={viewport === "mobile"} onClick={() => setViewport("mobile")}>Mobile</button>
           </fieldset>
         </div>
@@ -1024,6 +1035,10 @@ function previewRouter(scenario: Scenario) {
     {
       path: "/:locale/unread",
       element: <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />,
+    },
+    {
+      path: "/:locale/users/:userId",
+      element: <PreviewProfileRoute scenario={scenario} />,
     },
     {
       path: "/:locale/notifications",
@@ -1570,6 +1585,24 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
   );
 }
 
+function PreviewProfileRoute({ scenario }: { scenario: Scenario }) {
+  const { userId = "alex" } = useParams();
+  const [query] = useSearchParams();
+  const identity = previewUser(scenario);
+  // The own-profile fixture follows the separately selected preview identity.
+  const id = scenario.id.startsWith("profile-") && scenario.allowedIdentities && userId === "alex"
+    ? identity?.id ?? userId : userId;
+  const empty = scenario.variant === "profile-empty" || id === "sam";
+  const name = scenario.variant === "profile-long" ? "Maya Cohen · מפתחת קהילה · DeveloperWithALongUnbrokenDisplayNameForReflowVerification" : id === "maya" ? "Maya Cohen" : id === "alex" ? "Alex Rivera" : id === "sam" ? "Sam Chen" : "Forum member";
+  const bio = scenario.locale === "ru" ? "Создаю веб-приложения с AI-инструментами. Помогаю разбирать TypeScript и API.\nУчусь вместе с форумом." : scenario.locale === "he" ? "בונה יישומי אינטרנט בעזרת כלי AI. משתף ידע על TypeScript ו־API.\nלומד יחד עם חברי הפורום." : "Building web apps with AI tools. Sharing practical TypeScript and API answers.\nLearning with the forum.";
+  return <ProfileView locale={scenario.locale} isOwner={identity?.id === id} editing={query.get("edit") === "1"}
+    profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", bio: empty ? "" : scenario.variant === "profile-long" ? `${bio}\n${"TypeScript_שלום_".repeat(16)}` : bio,
+      githubUrl: empty ? null : "https://github.com/octocat", websiteUrl: empty ? null : "https://example.com/",
+      role: { slug: id === "maya" ? "admin" : "user", displayName: id === "maya" ? "Administrator" : "User", isSystem: true },
+      messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
+    feedback={scenario.variant === "profile-error" ? { error: "invalid", draft: { bio, githubUrl: "https://github.com/octocat/repo", websiteUrl: "https://example.com/" } } : undefined} />;
+}
+
 function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
   const [searchParams] = useSearchParams();
   return (
@@ -1582,11 +1615,17 @@ function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
 
 function previewElement(scenario: Scenario) {
   switch (scenario.view) {
+    case "profile":
+      return <PreviewProfileRoute scenario={scenario} />;
     case "home":
       return (
         <HomeView
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
+          onlinePresence={{ count: 2, members: [
+            { id: "alex", name: "Alex", image: null },
+            { id: "maya", name: "Maya Cohen", image: null },
+          ] }}
         />
       );
     case "search":
@@ -1716,16 +1755,11 @@ function topicData(
   };
   const translatedTopic = rtl ? {
     ...baseTopic,
-    authorName: "נועה לוי",
     section: {
       ...baseTopic.section,
       name: "TypeScript וארכיטקטורה",
       category: { id: categoryId, name: "פיתוח" },
     },
-    posts: baseTopic.posts.map((post, index) => ({
-      ...post,
-      authorName: ["נועה לוי", "יואב כהן", "מאיה כהן"][index]!,
-    })),
   } : russian ? {
     ...baseTopic,
     section: {

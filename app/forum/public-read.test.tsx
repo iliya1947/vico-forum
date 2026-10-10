@@ -161,6 +161,7 @@ const forMePage = {
 };
 
 const reader: ForumReader = {
+  readProfile: async () => undefined,
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
   readHomepage: async () => [{
     id: category.id,
@@ -239,6 +240,7 @@ const reader: ForumReader = {
     firstUnreadPostId: topic.posts[0]!.id,
     latestPostId: topic.posts.at(-1)!.id,
   } : undefined,
+  readOnlinePresence: async () => ({ count: 1, members: [{ id: "lin", name: "Lin", image: null }] }),
   readReplyNotifications: async () => [],
   countUnreadReplyNotifications: async () => 0,
   readTopicPinState: async (id) => id === topic.id,
@@ -390,6 +392,7 @@ describe.each([
     const topicData = await topicLoader({ params: { locale, topicId: topic.id }, context: requestContext });
 
     expect(home.categories).toHaveLength(1);
+    expect(home.onlinePresence).toMatchObject({ count: 1, members: [{ id: "lin", name: "Lin" }] });
     expect(categoryData.kind).toBe("category");
     if (categoryData.kind !== "category") throw new Error("expected regular category page");
     expect(categoryData.category.sections).toHaveLength(1);
@@ -403,6 +406,8 @@ describe.each([
     expect(screen.getByRole("link", { name: /TypeScript/ }))
       .toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(screen.queryByRole("button", { name: "Development" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lin" })).toHaveAttribute("href", `/${locale}/users/lin`);
+    expect(document.querySelector(".home-online-members")).toHaveTextContent("Lin");
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
     homeView.unmount();
 
@@ -424,6 +429,39 @@ describe.each([
     expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
     expect(await screen.findByRole("link", { name: "TypeScript" })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(await screen.findByText("Start with an explicit response type.")).toBeInTheDocument();
+    const messageAuthor = document.querySelector(".topic-shell .topic-message .topic-message-author");
+    const authorLink = messageAuthor?.querySelector(".topic-message-profile-link");
+    expect(authorLink).toHaveAttribute("href", `/${locale}/users/lin`);
+    expect(authorLink).toHaveClass("topic-message-profile-link");
+    expect(authorLink?.querySelector(".topic-message-avatar")).toBeInTheDocument();
+    expect(authorLink?.querySelector(".topic-message-author-copy > strong")).toHaveTextContent("Lin");
+    expect(messageAuthor?.querySelector(".topic-message-author-statuses")).toBeInTheDocument();
+  });
+});
+
+describe("optional homepage presence failures", () => {
+  it("keeps categories available when online presence storage is temporarily unavailable", async () => {
+    const ctx = context();
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readOnlinePresence: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const data = await homeLoader({ params: { locale: "en" }, context: ctx });
+    expect(data.categories).toHaveLength(1);
+    expect(data.onlinePresence).toBeNull();
+    const page = renderRoute(Home, data, "/en", "en", "ltr");
+    expect(await screen.findByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
+    page.unmount();
+  });
+
+  it("does not swallow unexpected online reader defects", async () => {
+    const ctx = context();
+    const bug = new Error("unexpected");
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readOnlinePresence: async () => { throw bug; },
+    });
+    await expect(homeLoader({ params: { locale: "en" }, context: ctx })).rejects.toBe(bug);
   });
 });
 

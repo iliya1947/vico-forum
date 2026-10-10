@@ -480,6 +480,25 @@ export const user = pgTable("user", {
   locale: text("locale"),
 });
 
+export const forumProfiles = pgTable("forum_profiles", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  bio: text("bio").notNull().default(""),
+  githubUrl: text("github_url"),
+  websiteUrl: text("website_url"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("forum_profiles_bio_length", sql`char_length(${table.bio}) <= 500`),
+  check("forum_profiles_github_url", sql`${table.githubUrl} is null or (${table.githubUrl} ~ '^https://github[.]com/[A-Za-z0-9][A-Za-z0-9-]{0,38}$')`),
+  check("forum_profiles_website_url", sql`${table.websiteUrl} is null or (char_length(${table.websiteUrl}) <= 2048 and ${table.websiteUrl} ~ '^https?://')`),
+]);
+
+export const forumOnlinePresence = pgTable("forum_online_presence", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("forum_online_presence_seen_at_idx").on(table.lastSeenAt),
+]);
+
 export const session = pgTable(
   "session",
   {

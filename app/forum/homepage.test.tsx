@@ -177,7 +177,7 @@ describe("homepage category map", () => {
 
   it("shows Unread in homepage navigation only for an authenticated user", async () => {
     renderView(
-      <HeaderAuthProvider initialUser={{ name: "Ada Lovelace" }}>
+      <HeaderAuthProvider initialUser={{ id: "fixture-user", name: "Ada Lovelace" }}>
         <HomeView
           locale="en"
           categories={[]}
@@ -203,5 +203,36 @@ describe("under development page", () => {
     expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
     expect(screen.getAllByText("Drafts and autosave").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Back to the forum" })).toHaveAttribute("href", "/en");
+  });
+});
+
+describe("homepage online presence", () => {
+  it("shows actual members with stable profile links instead of an unfinished destination", async () => {
+    renderView(<HomeView locale="en" categories={[]} onlinePresence={{
+      count: 2, members: [
+        { id: "member/id", name: "Maya Cohen", image: null },
+        { id: "member-b", name: "שלום", image: null },
+      ],
+    }} />);
+    expect(screen.getByText("Signed-in members active in the last 5 minutes: 2")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Maya Cohen" }))
+      .toHaveAttribute("href", "/en/users/member%2Fid");
+    expect(screen.getByRole("link", { name: "שלום" }))
+      .toHaveAttribute("href", "/en/users/member-b");
+    expect(screen.queryByRole("link", { name: "View development status" })).not.toBeInTheDocument();
+    expect(screen.getByText("Only signed-in members are counted; guests are not tracked.")).toBeInTheDocument();
+  });
+  it("does not misreport a transiently unavailable presence reader as zero members", () => {
+    renderView(<HomeView locale="en" categories={[]} onlinePresence={null} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
+    expect(screen.queryByText("No signed-in members active recently.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Signed-in members active in the last 5 minutes: 0")).not.toBeInTheDocument();
+  });
+
+  it("shows a truthful zero and empty state", () => {
+    renderView(<HomeView locale="en" categories={[]} onlinePresence={{ count: 0, members: [] }} />);
+    expect(screen.getByText("Signed-in members active in the last 5 minutes: 0")).toBeInTheDocument();
+    expect(screen.getByText("No signed-in members active recently.")).toBeInTheDocument();
+    expect(document.querySelector(".home-online-members")).toBeNull();
   });
 });

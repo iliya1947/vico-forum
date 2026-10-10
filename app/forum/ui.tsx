@@ -195,7 +195,7 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "system";
+  variant?: "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "profile" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
@@ -209,6 +209,7 @@ export function ForumShell({
     || variant === "category"
     || variant === "section"
     || variant === "topic"
+    || variant === "profile"
     || variant === "admin"
     || variant === "system";
 
@@ -236,6 +237,8 @@ export function ForumShell({
               ? "forum-shell home-shell topic-shell"
               : variant === "admin"
                 ? "forum-shell home-shell admin-shell"
+                : variant === "profile"
+                  ? "forum-shell home-shell profile-shell"
                 : variant === "system"
                   ? "forum-shell home-shell system-shell"
                   : "forum-shell"
