@@ -65,7 +65,8 @@ Vico Forum находится в ранней pre-release разработке.
 
 - PR #217 (in progress; not merged) replaces the obsolete Help & solutions `Needs attention`
   definition (`unresolved + no replies`) with a permission-scoped moderator work queue
-  from persisted pending user signals and active pending duplicate appeals. Six ordered
+  from persisted pending user signals, active pending duplicate appeals and current
+  best-answer `Needs review` moderation state. Six ordered
   overlapping groups: `Needs details`, `Needs review`, `Solution outdated`,
   `Duplicate`, `Appeals`, `Mixed` (at least two visible pending signals). A case
   with multiple signals is repeated in matching signal groups, and appeals are
