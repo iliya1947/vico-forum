@@ -194,6 +194,17 @@ export interface ForumHelpSignal {
   resolvedAt: Date | null;
 }
 
+export interface ForumHelpAttentionVisibility {
+  signalKinds: readonly HelpSignalKind[];
+  appeals: boolean;
+}
+
+export interface ForumHelpAttentionState {
+  signals: Partial<Record<HelpSignalKind, number>>;
+  totalSignals: number;
+  appeal: boolean;
+}
+
 export interface ForumHelpQuestionSummary {
   id: string;
   title: string;
@@ -207,6 +218,7 @@ export interface ForumHelpQuestionSummary {
   needsDetails: boolean;
   duplicateOf: ForumHelpDuplicateReference | null;
   duplicateDisputed: boolean;
+  attention?: ForumHelpAttentionState;
   createdAt: Date;
   activityAt: Date;
   tags: ForumTag[];
@@ -312,7 +324,7 @@ export interface ForumReader {
   readHelpSolutionsAll(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsOpen(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsActive(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsNeedsAttention(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsNeedsAttention(filters: ForumHelpSolutionsFilters, visibility: ForumHelpAttentionVisibility): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsWantToHelp(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
@@ -1437,8 +1449,11 @@ export class DrizzleForumRepository {
     return this.readHelpSolutionsPage({ mode: "active" }, filters);
   }
 
-  async readHelpSolutionsNeedsAttention(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "attention" }, filters);
+  async readHelpSolutionsNeedsAttention(
+    filters: ForumHelpSolutionsFilters,
+    visibility: ForumHelpAttentionVisibility,
+  ): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "attention" }, filters, visibility);
   }
 
   async readHelpSolutionsSolved(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
@@ -1510,6 +1525,27 @@ export class DrizzleForumRepository {
       : filters.relation === "duplicate"
         ? isNotNull(activeDuplicate.id)
         : undefined;
+    const visibleSignalKinds = filter.mode === "attention" ? [...(attentionVisibility?.signalKinds ?? [])] : [];
+    // Correlated EXISTS selects actionable cases before applying the 100-question bound.
+    // A denied signal/appeal capability must not leak its cases into this private queue.
+    const signalAttentionCondition = visibleSignalKinds.length
+      ? sql`exists (
+          select 1 from ${forumHelpSignals}
+          where ${forumHelpSignals.topicId} = ${forumTopics.id}
+          and ${forumHelpSignals.status} = 'pending'
+          and ${inArray(forumHelpSignals.kind, visibleSignalKinds)}
+        )`
+      : sql`false`;
+    const appealAttentionCondition = attentionVisibility?.appeals
+      ? sql`exists (
+          select 1 from ${forumHelpDuplicateRelationships}
+          inner join ${forumHelpDuplicateAppeals}
+            on ${forumHelpDuplicateAppeals.relationshipId} = ${forumHelpDuplicateRelationships.id}
+          where ${forumHelpDuplicateRelationships.duplicateTopicId} = ${forumTopics.id}
+          and ${forumHelpDuplicateRelationships.removedAt} is null
+          and ${forumHelpDuplicateAppeals.status} = 'pending'
+        )`
+      : sql`false`;
     const answersCondition = filters.answers === "none"
       ? sql`count(distinct ${forumPosts.id}) <= 1`
       : filters.answers === "has"
@@ -1561,6 +1597,7 @@ export class DrizzleForumRepository {
         solutionCondition,
         qualityCondition,
         relationCondition,
+        filter.mode === "attention" ? or(signalAttentionCondition, appealAttentionCondition) : undefined,
       ))
       .groupBy(
         forumTopics.id,
@@ -1577,9 +1614,50 @@ export class DrizzleForumRepository {
     const topicIds = rows.map(({ id }) => id);
     const tagsByTopic = await this.readTagsForTopics(topicIds);
     const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
+    const attentionByTopic = new Map<string, ForumHelpAttentionState>();
+    if (filter.mode === "attention" && topicIds.length > 0) {
+      const [signals, appeals] = await Promise.all([
+        visibleSignalKinds.length
+          ? this.database.select({ topicId: forumHelpSignals.topicId, kind: forumHelpSignals.kind })
+              .from(forumHelpSignals)
+              .where(and(
+                inArray(forumHelpSignals.topicId, topicIds),
+                eq(forumHelpSignals.status, "pending"),
+                inArray(forumHelpSignals.kind, visibleSignalKinds),
+              ))
+          : Promise.resolve([]),
+        attentionVisibility?.appeals
+          ? this.database.select({ topicId: forumHelpDuplicateRelationships.duplicateTopicId })
+              .from(forumHelpDuplicateRelationships)
+              .innerJoin(forumHelpDuplicateAppeals, and(
+                eq(forumHelpDuplicateAppeals.relationshipId, forumHelpDuplicateRelationships.id),
+                eq(forumHelpDuplicateAppeals.status, "pending"),
+              ))
+              .where(and(
+                inArray(forumHelpDuplicateRelationships.duplicateTopicId, topicIds),
+                isNull(forumHelpDuplicateRelationships.removedAt),
+              ))
+          : Promise.resolve([]),
+      ]);
+      const entryFor = (topicId: string) => {
+        let entry = attentionByTopic.get(topicId);
+        if (!entry) {
+          entry = { signals: {}, totalSignals: 0, appeal: false };
+          attentionByTopic.set(topicId, entry);
+        }
+        return entry;
+      };
+      for (const signal of signals) {
+        const state = entryFor(signal.topicId);
+        const kind = signal.kind as HelpSignalKind;
+        state.signals[kind] = (state.signals[kind] ?? 0) + 1;
+        state.totalSignals += 1;
+      }
+      for (const appeal of appeals) entryFor(appeal.topicId).appeal = true;
+    }
     return {
       ...category,
-      questions: rows.map((row) => ({
+      questions: rows.filter((row) => filter.mode !== "attention" || attentionByTopic.has(row.id)).map((row) => ({
         id: row.id,
         title: row.title,
         authorName: row.authorName,
@@ -1592,6 +1670,7 @@ export class DrizzleForumRepository {
         needsDetails: row.needsDetails,
         duplicateOf: duplicatesByTopic.get(row.id)?.duplicateOf ?? null,
         duplicateDisputed: duplicatesByTopic.get(row.id)?.duplicateDisputed ?? false,
+        ...(filter.mode === "attention" ? { attention: attentionByTopic.get(row.id) } : {}),
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1609,6 +1688,7 @@ export class DrizzleForumRepository {
       | { mode: "mine"; authorId: string }
       | { mode: "help"; excludedAuthorId: string },
     filters: ForumHelpSolutionsFilters = {},
+    attentionVisibility?: ForumHelpAttentionVisibility,
   ): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
@@ -1715,9 +1795,7 @@ export class DrizzleForumRepository {
       .having(and(
         filter.mode === "active"
           ? sql`count(distinct ${forumPosts.id}) > 1`
-          : filter.mode === "attention"
-            ? sql`count(distinct ${forumPosts.id}) <= 1`
-            : sql`true`,
+          : sql`true`,
         answersCondition,
       ))
       .orderBy(desc(activityAt), desc(forumTopics.id));
