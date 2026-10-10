@@ -338,9 +338,10 @@ composition without changing the forum hierarchy or schema:
   ordering, and are bounded to the first 100 results. The current bounded follow-up adds
   permission-gated `Needs attention / Требуют внимания` as `?mode=attention`. Merged PR #197
   initially selected unsolved questions without replies; the later moderator-queue revision
-  replaces that obsolete criterion with **pending Help signals and unresolved confirmed-duplicate
-  appeals**, regardless of whether a question has replies or is solved. Only actual pending
-  moderator decisions are included, with six ordered overlapping card groups: Needs details,
+  replaces that obsolete criterion with **pending Help signals, unresolved confirmed-duplicate
+  appeals, and authoritative current-best-answer Needs review state**, regardless of whether a
+  question has replies or is solved. Only actual outstanding moderator actions are included,
+  with six ordered overlapping card groups: Needs details,
   Needs review, Solution outdated, Duplicate, Appeals, Mixed (2+ pending signals). Mixed items
   remain visible in their matching signal groups; appeals remain visible independently.
   Selection is server-side before the existing 100-question bound and uses existing Q&A cards.
