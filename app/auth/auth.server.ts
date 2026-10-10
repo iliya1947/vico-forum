@@ -1,5 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
@@ -29,7 +29,7 @@ export const betterAuthEmailPasswordOptions = {
   maxPasswordLength: 128,
 } as const;
 
-export const betterAuthRegistrationHooks = {
+export const betterAuthRegistrationHooks: NonNullable<BetterAuthOptions["hooks"]> = {
   before: createAuthMiddleware(async (ctx) => {
     if (ctx.path !== "/sign-up/email") return;
     const suppliedName = ctx.body?.name;
@@ -55,7 +55,7 @@ export const betterAuthIpAddressOptions = {
 };
 export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions };
 
-export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvironment) {
+export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvironment): BetterAuthOptions {
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,

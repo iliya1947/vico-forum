@@ -22,13 +22,13 @@ const runtime = createHyperdriveAuthRuntime(databaseUrl, credentials, (connectio
   new Client({ connectionString, options: `-c search_path=${schema}` }),
 );
 
-function request(endpoint: string, body: Record<string, string>) {
+function request(endpoint: string, body: Record<string, string>, ip = "203.0.113.71") {
   return new Request(`http://localhost:3000/api/auth/${endpoint}`, {
     method: "POST",
     headers: {
       Origin: "http://localhost:3000",
       "Content-Type": "application/json",
-      "cf-connecting-ip": "203.0.113.71",
+      "cf-connecting-ip": ip,
     },
     body: JSON.stringify(body),
   });
@@ -95,7 +95,7 @@ describe("Better Auth email/password registration and login on PostgreSQL 17", (
     const email = `invalid-name-${_kind.replaceAll(" ", "-")}@example.org`;
     const response = await runtime.handle(request("sign-up/email", {
       name, email, password: "strong secret 123",
-    }));
+    }, _kind === "blank" ? "203.0.113.72" : "203.0.113.73"));
     expect(response.status).toBe(400);
     const result = await setup.query<{ count: string }>(
       `select count(*)::text as count from ${schema}."user" where email = $1`, [email],
@@ -107,7 +107,7 @@ describe("Better Auth email/password registration and login on PostgreSQL 17", (
     const email = "trimmed-registration@example.org";
     const response = await runtime.handle(request("sign-up/email", {
       name: "  Trimmed Member  ", email, password: "strong secret 123",
-    }));
+    }, "203.0.113.74"));
     expect(response.status).toBe(200);
     const result = await setup.query<{ name: string }>(
       `select name from ${schema}."user" where email = $1`, [email],
