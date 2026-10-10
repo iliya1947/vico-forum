@@ -1126,6 +1126,33 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
   };
 }
 
+
+function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
+  const [params] = useSearchParams();
+  const requestedMode = params.get("mode");
+  const mode = requestedMode === "complaints" || requestedMode === "security" ? requestedMode : "signals";
+  const selected = params.get("group");
+  const group = mode === "signals"
+    ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
+      ? selected : "needs-details"
+    : selected === "group2" || selected === "group3" ? selected : "group1";
+  const base = previewHelpSolutions(scenario.locale);
+  const questions = base.questions.map((question, index) => ({
+    ...question,
+    attention: index === 0
+      ? { signals: { "needs-details": 1, duplicate: 2 }, totalSignals: 3, appeal: true }
+      : index === 1 ? { signals: { "needs-review": 1 }, totalSignals: 1, appeal: false }
+      : index === 2 ? { signals: { "solution-outdated": 1 }, totalSignals: 1, appeal: false }
+      : index === 3 ? { signals: { duplicate: 1 }, totalSignals: 1, appeal: false }
+      : { signals: {}, totalSignals: 0, appeal: false, reviewRequired: true },
+  }));
+  return <AttentionCenterView
+    locale={scenario.locale} mode={mode} group={group}
+    page={mode === "signals" ? { ...base, questions: scenario.variant === "attention-empty" ? [] : questions } : null}
+    referenceTime={previewReferenceTime} canViewSolutionModeration canViewDuplicateDispute
+  />;
+}
+
 function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
   const { categoryId: routeCategoryId } = useParams();
   const [searchParams] = useSearchParams();
