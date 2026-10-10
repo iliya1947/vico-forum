@@ -1184,7 +1184,21 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                   : mode === "active"
                     ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
                     : mode === "attention"
-                      ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
+                      ? {
+                          ...page,
+                          questions: page.questions.map((question, index) => ({
+                            ...question,
+                            attention: index === 0
+                              ? { signals: { "needs-details": 1, duplicate: 2 }, totalSignals: 3, appeal: true }
+                              : index === 1
+                                ? { signals: { "needs-review": 1 }, totalSignals: 1, appeal: false }
+                                : index === 2
+                                  ? { signals: { "solution-outdated": 1 }, totalSignals: 1, appeal: false }
+                                  : index === 3
+                                    ? { signals: { duplicate: 1 }, totalSignals: 1, appeal: false }
+                                    : { signals: { "needs-details": 1 }, totalSignals: 1, appeal: false },
+                          })),
+                        }
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
                   : mode === "mine"
