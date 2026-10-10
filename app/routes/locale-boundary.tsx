@@ -87,11 +87,19 @@ export async function loader(args: LocaleBoundaryArgs) {
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;
+  let canViewModerationAttention = false;
   let unreadNotificationCount: number | undefined;
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      canManageAuthorization = await resolver.has("access.authorization.manage");
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage] = await Promise.all([
+        resolver.has("access.authorization.manage"),
+        resolver.has("forum.solution.manageAny"),
+        resolver.has("forum.helpDuplicate.manage"),
+        resolver.has("forum.helpNeedsDetails.manage"),
+      ]);
+      canManageAuthorization = authorizationManage;
+      canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage;
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // The header link is presentation-only; the protected admin route checks permission independently.
@@ -117,6 +125,7 @@ export async function loader(args: LocaleBoundaryArgs) {
           image: session.user.image ?? null,
           name: session.user.name,
           canManageAuthorization,
+          canViewModerationAttention,
           ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
         }
       : null,
