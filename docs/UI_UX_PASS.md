@@ -341,8 +341,9 @@ composition without changing the forum hierarchy or schema:
   linked from the upper account row beside the regular notification bell. The former
   Help `?mode=attention` link redirects to the new standalone page.
   The center has three distinct modes: `Signals`, `Complaints`, `Security`.
-  The mode switcher is on the **right of the same toolbar** where each mode's own
-  groups appear on the left. In Signals there are six ordered groups:
+  The mode switcher is on the **right side of the page heading** next to
+  `Needs attention`; the redundant moderation eyebrow is omitted. Each mode's
+  groups appear in their own toolbar below. In Signals there are six ordered groups:
   Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
   These are switches rather than vertically stacked sections, each showing actual
   persisted pending moderation cases; Mixed repeats questions with 2+ pending
