@@ -2,7 +2,9 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { Link, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumAvatar } from "../forum/avatar";
-import { forumProfilePath, underDevelopmentPath } from "../forum/paths";
+import { forumProfilePath } from "../forum/paths";
+import { credentialPagePath, safeForumReturnPath } from "./credential-path";
+export { safeForumReturnPath } from "./credential-path";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
 export interface HeaderAuthUser {
@@ -40,13 +42,6 @@ export function HeaderAuthProvider({ initialUser, initialPresentationState = "id
   );
 }
 
-export function safeForumReturnPath(locale: string, pathname: string, search = ""): string {
-  const localeRoot = `/${encodeURIComponent(locale)}`;
-  const localPath = pathname.startsWith("/") && !pathname.startsWith("//")
-    && (pathname === localeRoot || pathname.startsWith(`${localeRoot}/`));
-  return localPath ? `${pathname}${search.startsWith("?") ? search : ""}` : localeRoot;
-}
-
 export function AuthControls({ locale, actions = authClientActions }: {
   locale: string;
   actions?: AuthClientActions;
@@ -79,9 +74,6 @@ export function AuthControls({ locale, actions = authClientActions }: {
     return !error;
   };
 
-  const signIn = () => run((handlers) => actions.signInWithGoogle(
-    safeForumReturnPath(locale, location.pathname, location.search), handlers,
-  ));
   const signOut = async () => {
     let succeeded = false;
     await run((handlers) => actions.signOut({
@@ -110,17 +102,21 @@ export function AuthControls({ locale, actions = authClientActions }: {
             {t("authorizationNav")}
           </Link>
         ) : null}
-        <button
-          className={user ? "auth-action auth-sign-out" : "auth-action auth-sign-in"}
-          type="button"
-          disabled={pending}
-          onClick={user ? signOut : signIn}
-        >
-          {pending ? <span className="auth-spinner" aria-hidden="true" /> : null}
-          <span>{pending ? t("authPending") : user ? t("signOut") : t("signInGoogle")}</span>
-        </button>
+        {user || pending ? (
+          <button className={user ? "auth-action auth-sign-out" : "auth-action auth-sign-in"}
+            type="button" disabled={pending} onClick={user ? signOut : undefined}>
+            {pending ? <span className="auth-spinner" aria-hidden="true" /> : null}
+            <span>{pending ? t("authPending") : t("signOut")}</span>
+          </button>
+        ) : (
+          <Link className="auth-action auth-sign-in"
+            to={credentialPagePath(locale, "sign-in", safeForumReturnPath(locale, location.pathname, location.search))}>
+            {t("signInGoogle")}
+          </Link>
+        )}
         {!user ? (
-          <Link className="auth-action auth-sign-up" to={underDevelopmentPath(locale, "registration")}>
+          <Link className="auth-action auth-sign-up"
+            to={credentialPagePath(locale, "sign-up", safeForumReturnPath(locale, location.pathname, location.search))}>
             {t("signUp")}
           </Link>
         ) : null}

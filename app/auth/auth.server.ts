@@ -21,6 +21,13 @@ export interface BetterAuthEnvironment {
 }
 
 export const betterAuthSchema = { user, session, account, verification, rateLimit };
+export const betterAuthEmailPasswordOptions = {
+  enabled: true,
+  requireEmailVerification: false,
+  minPasswordLength: 8,
+  maxPasswordLength: 128,
+} as const;
+
 export const betterAuthRateLimitOptions = {
   enabled: true,
   storage: "database" as const,
@@ -41,6 +48,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
       schema: betterAuthSchema,
     }),
     user: { additionalFields: betterAuthUserAdditionalFields },
+    emailAndPassword: betterAuthEmailPasswordOptions,
     socialProviders: {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,
