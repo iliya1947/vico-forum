@@ -4020,3 +4020,16 @@ The owner explicitly clarified and confirmed the intended semantics for Help & s
 Open product question for subsequent discussion: should multiple pending signals concerning one Help topic appear as separate queue items or be grouped into a single question/case with individual signals inside? The answer should be owner-approved before any UI/data shape is locked in.
 
 This product decision supersedes the previously documented older `unsolved + zero replies` criterion and clarifies that earlier decisions placing the step-5 integration exclusively in a different thread have been superseded by the owner's direct request to discuss this moderation-attention view here, while respecting the separate subsystem ownership.
+
+
+## Owner revision to PR #217: attention center moves outside Help & solutions — 2026-10-10
+
+The owner corrected the visual/product scope **after reviewing the first Pages preview**:
+
+- **Needs attention** is a standalone, permission-protected moderation attention center, reached through a button on the site header's second row **beside regular notifications**, not a Help & solutions category tab. Help's obsolete `?mode=attention` redirects to `/:locale/attention`.
+- There are **three mutually exclusive modes**: **Signals**, **Complaints**, **Security**. Their mode selector sits **to the right of the groups on the same toolbar row**, and the current mode's groups are at left. On narrower screens responsive wrapping/scrolling is acceptable.
+- **Signals preserves exactly six switchable groups, in owner-approved order**: Needs details; Needs review; Solution outdated; Duplicate; Appeals; Mixed. The previous vertical display of all groups is replaced by selected-group cards; Mixed duplicates cases in their other corresponding groups. Existing persisted pending signals, pending appeals and active Needs review moderation decisions remain the authoritative signal source.
+- **Complaints** and **Security** each get their **own isolated empty starter groups** labeled Group 1, Group 2, Group 3. These are temporary visual/route placeholders. Do not merge data across modes, invent complaint/security event semantics, counts, actions or storage. Their actual groups/notification designs are reserved for the owner's other subsystem chats.
+- Ordinary bell notifications remain distinct. Existing role/effective-authorization checks protect the attention center. The currently available Help moderator permissions gate this initial foundation; other subsystem permissions await their future designs.
+- ChatGPT is revising **the same implementation PR #217**, not creating a new implementation PR. Owner visual acceptance for this revised design and independent Codex review still pending. The owner did not ask to implement the real complaint/security systems.
+
