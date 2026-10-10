@@ -4004,3 +4004,19 @@ After explicitly consulting the separate 2026-10-10 final-editor design conversa
 **The owner's agreed editor design:** local save on Space, Enter, paste, focus/tab switch and toolbar formatting (no separate continuous-typing save mechanism); changed-version server synchronization every 60 seconds; local persistence offline with later sync; on local/server version conflict the owner chooses the version and the other is retained as a backup; owner-only 'My drafts' covering topics, replies and Help & solutions, opening a draft at its originating composer; cleanup after confirmed successful publication or explicit deletion of both server/local copies; expiration after 30 days since last edit and deletion of both copies. These are *design decisions*, not evidence of merged implementation.
 
 **Ownership and next action:** the final-editor/drafts work remains exclusively in the separate editor chat/workstream. Do not create a narrower Help-only drafts PR or build competing storage/synchronization machinery. Before selecting any other authoring task, inspect current implementation to avoid duplicate work. The prior ChatGPT Help-only plan is canceled in full.
+
+
+## Owner-approved product definition: “Needs attention” is a moderator action queue — 2026-10-10
+
+The owner explicitly clarified and confirmed the intended semantics for Help & solutions **“Needs attention / Требуют внимания”**:
+
+- This mode is for authorized moderators/administrators to handle **all pending matters that require a moderator's actual decision/action, including submitted user signals**.
+- It is **not** a general list of unanswered or unsolved Help questions. Those belong under the existing public “Needs help / Нужна помощь” mode. In particular, the current implementation of `?mode=attention` (`unsolved && zero replies`) is **obsolete as a product rule and must be replaced when implementation is authorized**.
+- Current actionable categories may include pending signal adjudication, pending duplicate appeals/disputes, and other pending moderator decisions. A published/persisted label (e.g. `Needs details`, `Solution outdated`) **without an outstanding moderation decision** is not in itself a new task.
+- Items leave the active attention queue when their required moderator action is resolved; preserving relevant audit/history is separate from active queue membership.
+- **No code implementation yet**: owner explicitly instructed discussing and deciding the behavior first. Do not create an implementation PR until the user explicitly authorizes it.
+- Existing `forum.solution.manageAny` access boundary is implemented for the current mode; future action and signal visibility must be designed against effective dynamic permissions rather than a hard-coded role name, without preempting separately designed signal/complaint/admin systems.
+
+Open product question for subsequent discussion: should multiple pending signals concerning one Help topic appear as separate queue items or be grouped into a single question/case with individual signals inside? The answer should be owner-approved before any UI/data shape is locked in.
+
+This product decision supersedes the previously documented older `unsolved + zero replies` criterion and clarifies that earlier decisions placing the step-5 integration exclusively in a different thread have been superseded by the owner's direct request to discuss this moderation-attention view here, while respecting the separate subsystem ownership.
