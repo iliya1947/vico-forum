@@ -121,6 +121,12 @@ describe("forum header auth controls", () => {
     expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "error");
   });
 
+  it("preserves the original topic return path when switching between credential pages", async () => {
+    renderControls(null, actions(), "/en/sign-in?returnTo=%2Fen%2Ftopics%2Fone%3Ffrom%3Dlist");
+    expect(await screen.findByRole("link", { name: "Sign up" }))
+      .toHaveAttribute("href", "/en/sign-up?returnTo=%2Fen%2Ftopics%2Fone%3Ffrom%3Dlist");
+  });
+
   it("keeps a safe locale-scoped return destination in credential links", async () => {
     const client = actions();
     renderControls(null, client);

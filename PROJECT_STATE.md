@@ -24,6 +24,15 @@
 
 Vico Forum находится в ранней pre-release разработке.
 
+- Registration/email login implementation in progress (separate MVP PR): existing Better Auth 1.7.4
+  enables sign-up and sign-in with email/password, default auto-session and 8–128 character
+  password validation without mandatory email verification. Locale-prefixed guest routes
+  `sign-in` and `sign-up` preserve an origin-safe forum-local returnTo, leave Google OAuth
+  available and reuse Better Auth user/account/session/rate-limit tables and dynamic
+  forum authorizations. The email sender, verification and password reset are deliberately
+  deferred by owner decision 2026-10-10; no email provider or new DB schema introduced.
+  CI/Pages, browser review and independent Codex review remain pending; no production rollout.
+
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz

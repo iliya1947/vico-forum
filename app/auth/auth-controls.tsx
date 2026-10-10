@@ -3,7 +3,7 @@ import { Link, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumAvatar } from "../forum/avatar";
 import { forumProfilePath } from "../forum/paths";
-import { credentialPagePath, safeForumReturnPath } from "./credential-path";
+import { credentialPagePath, credentialReturnPath, safeForumReturnPath } from "./credential-path";
 export { safeForumReturnPath } from "./credential-path";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
@@ -87,6 +87,10 @@ export function AuthControls({ locale, actions = authClientActions }: {
   };
 
   const presentationState = pending ? "pending" : error ? "error" : user ? "signed-in" : "guest";
+  const returnTo = location.pathname === `/${encodeURIComponent(locale)}/sign-in`
+    || location.pathname === `/${encodeURIComponent(locale)}/sign-up`
+    ? credentialReturnPath(locale, new URLSearchParams(location.search).get("returnTo"))
+    : safeForumReturnPath(locale, location.pathname, location.search);
 
   return (
     <div className="auth-controls" data-state={presentationState} aria-busy={pending || undefined}>
@@ -110,13 +114,13 @@ export function AuthControls({ locale, actions = authClientActions }: {
           </button>
         ) : (
           <Link className="auth-action auth-sign-in"
-            to={credentialPagePath(locale, "sign-in", safeForumReturnPath(locale, location.pathname, location.search))}>
+            to={credentialPagePath(locale, "sign-in", returnTo)}>
             {t("signInGoogle")}
           </Link>
         )}
         {!user ? (
           <Link className="auth-action auth-sign-up"
-            to={credentialPagePath(locale, "sign-up", safeForumReturnPath(locale, location.pathname, location.search))}>
+            to={credentialPagePath(locale, "sign-up", returnTo)}>
             {t("signUp")}
           </Link>
         ) : null}
