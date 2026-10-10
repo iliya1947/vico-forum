@@ -1,5 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import type { AuthRuntime, AuthSession } from "./request-context";
@@ -28,6 +29,21 @@ export const betterAuthEmailPasswordOptions = {
   maxPasswordLength: 128,
 } as const;
 
+export const betterAuthRegistrationHooks = {
+  before: createAuthMiddleware(async (ctx) => {
+    if (ctx.path !== "/sign-up/email") return;
+    const suppliedName = ctx.body?.name;
+    if (typeof suppliedName !== "string") {
+      throw new APIError("BAD_REQUEST", { message: "Invalid display name" });
+    }
+    const name = suppliedName.trim();
+    if (!name || name.length > 100) {
+      throw new APIError("BAD_REQUEST", { message: "Invalid display name" });
+    }
+    return { context: { ...ctx, body: { ...ctx.body, name } } };
+  }),
+};
+
 export const betterAuthRateLimitOptions = {
   enabled: true,
   storage: "database" as const,
@@ -49,6 +65,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
     }),
     user: { additionalFields: betterAuthUserAdditionalFields },
     emailAndPassword: betterAuthEmailPasswordOptions,
+    hooks: betterAuthRegistrationHooks,
     socialProviders: {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,

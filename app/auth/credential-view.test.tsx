@@ -2,11 +2,11 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, RouterProvider, useLocation } from "react-router";
+import { createMemoryRouter, Outlet, RouterProvider, useLoaderData, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
-import { HeaderAuthProvider } from "./auth-controls";
+import { HeaderAuthProvider, useHeaderAuthUser } from "./auth-controls";
 import { credentialReturnPath } from "./credential-path";
 import { CredentialView } from "./credential-view";
 import type { AuthClientActions, EmailAuthActions } from "./auth-client";
@@ -101,6 +101,62 @@ describe("credential registration and sign-in", () => {
     expect(await screen.findByText("Returned to the topic")).toBeInTheDocument();
     expect(screen.getByTestId("return-fragment")).toHaveTextContent("#post-post-42");
   });
+
+  it.each(["sign-in", "sign-up"] as const)(
+    "refreshes the shared header user after successful %s",
+    async (mode) => {
+      let serverUser: { id: string; name: string } | null = null;
+      const a = actions();
+      a.emailActions.signInWithEmail = vi.fn(async () => {
+        serverUser = { id: "alice", name: "Alice" };
+        return true;
+      });
+      a.emailActions.signUpWithEmail = vi.fn(async () => {
+        serverUser = { id: "alice", name: "Alice" };
+        return true;
+      });
+      function Boundary() {
+        const data = useLoaderData() as { authUser: { id: string; name: string } | null };
+        return <HeaderAuthProvider initialUser={data.authUser}><Outlet /></HeaderAuthProvider>;
+      }
+      function HomeAuthStatus() {
+        const user = useHeaderAuthUser();
+        return <p>{user ? `Signed in as ${user.name}` : "Still guest"}</p>;
+      }
+      const router = createMemoryRouter([{
+        path: "/en",
+        loader: () => ({ authUser: serverUser }),
+        Component: Boundary,
+        children: [
+          { path: mode, element: <CredentialView locale="en" mode={mode} returnTo="/en"
+            emailActions={a.emailActions} googleActions={a.googleActions} /> },
+          { index: true, element: <HomeAuthStatus /> },
+        ],
+      }], { initialEntries: [`/en/${mode}`] });
+      render(<I18nextProvider i18n={runtime()}><RouterProvider router={router} /></I18nextProvider>);
+      const user = userEvent.setup();
+      if (mode === "sign-up") {
+        await user.type(screen.getByRole("textbox", { name: "Display name" }), "Alice");
+      }
+      await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
+      await user.type(screen.getByLabelText("Password"), "correct horse");
+      await user.click(screen.getByRole("button", { name: mode === "sign-up" ? "Create account" : "Sign in with email" }));
+      expect(await screen.findByText("Signed in as Alice")).toBeInTheDocument();
+      expect(screen.queryByText("Still guest")).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(["sign-in", "sign-up"] as const)(
+    "shows a generic provider failure instead of credential advice on %s",
+    async (mode) => {
+      const a = actions();
+      a.googleActions.signInWithGoogle = vi.fn(async (_url, handlers) => handlers.onError());
+      show(mode, a.emailActions, a.googleActions);
+      await userEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent("Authentication failed. Please try again.");
+      expect(screen.queryByText("Unable to sign in.")).not.toBeInTheDocument();
+    },
+  );
 
   it("shows a generic failure without leaking provider errors or navigating", async () => {
     const a = actions();

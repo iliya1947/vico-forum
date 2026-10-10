@@ -88,4 +88,31 @@ describe("Better Auth email/password registration and login on PostgreSQL 17", (
     expect(valid.status).toBe(200);
     expect(valid.headers.getSetCookie().join("; ")).toContain("session_token");
   });
+  it.each([
+    ["blank", "   "],
+    ["too long", "x".repeat(101)],
+  ])("rejects %s registration names at the public server endpoint", async (_kind, name) => {
+    const email = `invalid-name-${_kind.replaceAll(" ", "-")}@example.org`;
+    const response = await runtime.handle(request("sign-up/email", {
+      name, email, password: "strong secret 123",
+    }));
+    expect(response.status).toBe(400);
+    const result = await setup.query<{ count: string }>(
+      `select count(*)::text as count from ${schema}."user" where email = $1`, [email],
+    );
+    expect(result.rows[0]?.count).toBe("0");
+  });
+
+  it("normalizes valid registration names before persistence", async () => {
+    const email = "trimmed-registration@example.org";
+    const response = await runtime.handle(request("sign-up/email", {
+      name: "  Trimmed Member  ", email, password: "strong secret 123",
+    }));
+    expect(response.status).toBe(200);
+    const result = await setup.query<{ name: string }>(
+      `select name from ${schema}."user" where email = $1`, [email],
+    );
+    expect(result.rows[0]?.name).toBe("Trimmed Member");
+  });
+
 });

@@ -45,7 +45,16 @@ Vico Forum находится в ранней pre-release разработке.
   reconcile PROJECT.md auth baseline, preserve message URL fragments during
   credential redirects, and isolate the email input as LTR in RTL locales. This
   follow-up revision includes those bounded corrections and regression tests.
-  Updated-head CI/Pages and renewed independent review have not yet been verified.
+  Corrected-head CI passed on `0555d39` (698 application tests, 211 PostgreSQL
+  17 tests, schema/privileges/Workers checks); Pages preview passed. A further
+  independent Codex review identified three current-MVP auth issues: stale shared
+  header/presence state after email authentication, absent server-side sign-up
+  name validation, and misleading credential-specific feedback for Google errors.
+  This follow-up implements explicit post-auth session-loader revalidation, a
+  sign-up-only Better Auth before-hook that trims and validates names (1–100
+  characters), and a generic Google failure message; regression tests cover
+  both credential forms, OAuth error handling, and native PostgreSQL 17 rejection
+  of invalid names. New head CI/Pages and final independent review are pending.
   No production rollout occurred.
 
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,

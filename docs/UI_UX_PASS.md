@@ -26,7 +26,9 @@ permissions и data-integrity дефекты текущего scope исправ
 ## Email/password registration MVP (owner decision 2026-10-10)
 
 Use existing Better Auth user/account/session identity and password hashing. Alongside Google OAuth,
-offer localized sign-in and registration with a display name, email and 8–128-character password.
+offer localized sign-in and registration with a trimmed, nonblank display name of at most 100
+characters, email and 8–128-character password; enforce registration-name validation at the
+Better Auth server boundary, not just in the browser.
 Verification emails and password recovery are intentionally deferred; the interface must disclose
 that neither is available yet. Redirect after success only to a safe locale-scoped forum path,
 preserving query parameters and message fragments (`#post-*`); never place passwords in URLs. Header links and Page fixtures are a minimal usable version, not a polished

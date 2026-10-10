@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "../forum/ui";
 import { authClientActions, emailAuthClientActions, type AuthClientActions, type EmailAuthActions } from "./auth-client";
@@ -16,8 +16,9 @@ export function CredentialView({
 }) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<"email" | "google" | null>(null);
   const registration = mode === "sign-up";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -28,22 +29,23 @@ export function CredentialView({
     const email = String(fields.get("email") ?? "").trim();
     const password = String(fields.get("password") ?? "");
     if ((registration && !name) || !email || password.length < 8 || password.length > 128) {
-      setError(true);
+      setError("email");
       return;
     }
     setPending(true);
-    setError(false);
+    setError(null);
     try {
       const succeeded = registration
         ? await emailActions.signUpWithEmail(name, email, password)
         : await emailActions.signInWithEmail(email, password);
       if (succeeded) {
-        void navigate(returnTo, { replace: true });
+        await navigate(returnTo, { replace: true });
+        void revalidator.revalidate();
         return;
       }
-      setError(true);
+      setError("email");
     } catch {
-      setError(true);
+      setError("email");
     } finally {
       setPending(false);
     }
@@ -52,14 +54,14 @@ export function CredentialView({
   async function googleSignIn() {
     if (pending) return;
     setPending(true);
-    setError(false);
+    setError(null);
     try {
       await googleActions.signInWithGoogle(returnTo, {
         onSuccess() { /* Better Auth handles the provider redirect. */ },
-        onError() { setError(true); },
+        onError() { setError("google"); },
       });
     } catch {
-      setError(true);
+      setError("google");
     } finally {
       setPending(false);
     }
@@ -88,7 +90,7 @@ export function CredentialView({
           </button>
         </form>
         {error ? <p role="alert" className="auth-feedback credential-error">
-          {t(registration ? "authRegisterFailure" : "authEmailFailure")}
+          {t(error === "google" ? "authError" : registration ? "authRegisterFailure" : "authEmailFailure")}
         </p> : null}
         <div className="credential-alternatives">
           <button type="button" className="auth-action credential-google" onClick={googleSignIn} disabled={pending}>
