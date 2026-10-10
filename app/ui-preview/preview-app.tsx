@@ -21,6 +21,7 @@ import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
 import { ForumRouteError } from "../forum/ui";
 import {
+  AttentionCenterView,
   CategoryView,
   HelpSolutionsView,
   HomeView,
@@ -43,7 +44,7 @@ import { localeRegistry } from "../localization/registry";
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
-type PreviewView = "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
@@ -62,7 +63,7 @@ type PreviewVariant =
   | "help-solutions-active-empty"
   | "help-solutions-want-empty"
   | "help-solutions-for-me-empty"
-  | "help-solutions-attention-empty"
+  | "attention-empty"
   | "help-solutions-mine-empty"
   | "help-solutions-similar-results"
   | "help-solutions-similar-empty"
@@ -126,8 +127,12 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-for-me-guest", label: "Help & solutions · For me · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=for-me", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
-  { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
-  { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
+  { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-signals-ru", label: "Модерация · Сигналы", locale: "ru", direction: "ltr", identity: "manager", path: "/ru/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-signals-rtl", label: "Moderation · Signals · RTL", locale: "he", direction: "rtl", identity: "manager", path: "/he/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-complaints", label: "Moderation · Complaints placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-security", label: "Moderation · Security placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
   { id: "help-solutions-filters-needs-details", label: "Help & solutions · Needs details filter", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?answers=has&quality=needs-details&relation=standalone", view: "category" },
@@ -797,7 +802,7 @@ function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
   if (scenario.identity === "manager") {
-    return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, unreadNotificationCount };
+    return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, canViewModerationAttention: true, unreadNotificationCount };
   }
   return { id: "alex", name: "Alex Rivera", unreadNotificationCount };
 }
@@ -1019,6 +1024,10 @@ function previewRouter(scenario: Scenario) {
     { path: "/:locale/sign-in", element: previewCredential(scenario.locale, "sign-in") },
     { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
     {
+      path: "/:locale/attention",
+      element: <PreviewAttentionRoute scenario={scenario} />,
+    },
+    {
       path: "/:locale/categories/:categoryId",
       element: <PreviewCategoryRoute scenario={scenario} />,
     },
@@ -1130,8 +1139,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
           ? "for-me"
           : requestedMode === "active"
             ? "active"
-            : requestedMode === "attention"
-          ? "attention"
           : requestedMode === "solutions"
             ? "solutions"
             : requestedMode === "mine"
@@ -1164,8 +1171,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
           ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-active-empty" && mode === "active"
             ? { ...page, questions: [] }
-            : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
-              ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
             ? { ...page, questions: [] }
             : mode === "open"
@@ -1183,22 +1188,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                     }
                   : mode === "active"
                     ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
-                    : mode === "attention"
-                      ? {
-                          ...page,
-                          questions: page.questions.map((question, index) => ({
-                            ...question,
-                            attention: index === 0
-                              ? { signals: { "needs-details": 1, duplicate: 2 }, totalSignals: 3, appeal: true }
-                              : index === 1
-                                ? { signals: { "needs-review": 1 }, totalSignals: 1, appeal: false }
-                                : index === 2
-                                  ? { signals: { "solution-outdated": 1 }, totalSignals: 1, appeal: false }
-                                  : index === 3
-                                    ? { signals: { duplicate: 1 }, totalSignals: 1, appeal: false }
-                                    : { signals: {}, totalSignals: 0, appeal: false, reviewRequired: true },
-                          })),
-                        }
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
                   : mode === "mine"
@@ -1268,7 +1257,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         referenceTime={previewReferenceTime}
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
-        canViewAttention={scenario.identity === "manager"}
         canViewSolutionModeration={scenario.identity === "manager"}
         canViewDuplicateDispute={scenario.identity === "manager"}
         actionData={actionData}
