@@ -8,6 +8,8 @@ import {
   type HeaderAuthUser,
 } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
+import { CredentialView } from "../auth/credential-view";
+import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
 import { AuthorizationAdminView } from "../authorization/admin-view";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
 import {
@@ -41,7 +43,7 @@ import { localeRegistry } from "../localization/registry";
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
-type PreviewView = "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
@@ -86,6 +88,8 @@ interface Scenario {
 }
 
 export const scenarios: readonly Scenario[] = [
+  { id: "credentials-sign-in", label: "Email sign-in", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-in", view: "credentials", allowedIdentities: ["guest"] },
+  { id: "credentials-register", label: "Registration", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-up", view: "credentials", allowedIdentities: ["guest"] },
   { id: "profile-public", label: "Profile", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile" },
   { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
@@ -974,6 +978,20 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
   );
 }
 
+const previewEmailActions: EmailAuthActions = {
+  signInWithEmail: async () => false,
+  signUpWithEmail: async () => false,
+};
+const previewGoogleActions: AuthClientActions = {
+  signInWithGoogle: async () => undefined,
+  signOut: async () => undefined,
+};
+
+function previewCredential(locale: PreviewLocale, mode: "sign-in" | "sign-up") {
+  return <CredentialView locale={locale} mode={mode} returnTo={`/${locale}`}
+    emailActions={previewEmailActions} googleActions={previewGoogleActions} />;
+}
+
 function previewRouter(scenario: Scenario) {
   if (scenario.view === "not-found") {
     return createMemoryRouter([{
@@ -998,6 +1016,8 @@ function previewRouter(scenario: Scenario) {
   }
 
   return createMemoryRouter([
+    { path: "/:locale/sign-in", element: previewCredential(scenario.locale, "sign-in") },
+    { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
     {
       path: "/:locale/categories/:categoryId",
       element: <PreviewCategoryRoute scenario={scenario} />,
@@ -1615,6 +1635,8 @@ function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
 
 function previewElement(scenario: Scenario) {
   switch (scenario.view) {
+    case "credentials":
+      return previewCredential(scenario.locale, scenario.path.includes("sign-up") ? "sign-up" : "sign-in");
     case "profile":
       return <PreviewProfileRoute scenario={scenario} />;
     case "home":

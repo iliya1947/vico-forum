@@ -24,6 +24,45 @@
 
 Vico Forum находится в ранней pre-release разработке.
 
+- Registration/email login implementation in progress (separate MVP PR): existing Better Auth 1.7.4
+  enables sign-up and sign-in with email/password, default auto-session and 8–128 character
+  password validation without mandatory email verification. Locale-prefixed guest routes
+  `sign-in` and `sign-up` preserve an origin-safe forum-local returnTo, leave Google OAuth
+  available and reuse Better Auth user/account/session/rate-limit tables and dynamic
+  forum authorizations. The email sender, verification and password reset are deliberately
+  deferred by owner decision 2026-10-10; no email provider or new DB schema introduced.
+  Exact implementation-head CI succeeded on `2dbea7c`: 671 application tests,
+  211 native PostgreSQL 17 tests including a real Better Auth HTTP registration/login
+  round-trip, all migrations/schema/privilege/Workers smoke, lint/typecheck/build.
+  GitHub Pages preview build/deploy succeeded. Full deployed browser screenshot and
+  owner-specific visual acceptance were not independently verified; static mock Pages
+  does not demonstrate external OAuth or production runtime. Independent Codex review
+  completed on `c94382f` on 2026-10-10 without new findings. Main later merged
+  editor PR #210, and registration PR #214 integrated that main revision on `a2d9816`.
+  Combined-head CI passed with 696 application tests, 211 native PostgreSQL 17
+  database tests and local Worker/schema/privilege checks; Pages preview also passed.
+  Independent review of the combined head identified three current-scope corrections:
+  reconcile PROJECT.md auth baseline, preserve message URL fragments during
+  credential redirects, and isolate the email input as LTR in RTL locales. This
+  follow-up revision includes those bounded corrections and regression tests.
+  Corrected-head CI passed on `0555d39` (698 application tests, 211 PostgreSQL
+  17 tests, schema/privileges/Workers checks); Pages preview passed. A further
+  independent Codex review identified three current-MVP auth issues: stale shared
+  header/presence state after email authentication, absent server-side sign-up
+  name validation, and misleading credential-specific feedback for Google errors.
+  This follow-up implements explicit post-auth session-loader revalidation, a
+  sign-up-only Better Auth before-hook that trims and validates names (1–100
+  characters), and a generic Google failure message; regression tests cover
+  both credential forms, OAuth error handling, and native PostgreSQL 17 rejection
+  of invalid names. Exact combined implementation head `d76db99` passed CI with
+  702 application tests, 214 native PostgreSQL 17 tests, lint/typecheck,
+  migration/schema/privilege checks, Worker smoke and application/preview builds.
+  Pages deployment succeeded. The final independent Codex review of `d76db99`
+  completed 2026-10-10 with no further findings. ChatGPT whole-PR review found
+  no confirmed outstanding defects in the current MVP scope. This PR remains
+  unmerged pending owner action; production/runtime acceptance and email
+  verification/password recovery remain deferred. No production rollout occurred.
+
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz

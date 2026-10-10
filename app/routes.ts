@@ -14,6 +14,8 @@ export default [
     route("unanswered", "routes/unanswered.tsx"),
     route("unread", "routes/unread.tsx"),
     route("users/:userId", "routes/profile.tsx"),
+    route("sign-in", "routes/credential-sign-in.tsx"),
+    route("sign-up", "routes/credential-sign-up.tsx"),
     route("presence", "routes/presence.ts"),
     route("notifications", "routes/notifications.tsx"),
     route("tags", "routes/tags.tsx"),
