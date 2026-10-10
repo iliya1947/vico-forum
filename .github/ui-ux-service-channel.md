@@ -3874,3 +3874,11 @@ ChatGPT should implement this bounded profile block in a separate implementation
 - Manual second Codex review completed on `0470bb1` with no new findings. Four current-stage findings from earlier review fixed; the production rollout migration 0033 evidence gate belongs to Stage 6 and MUST be revisited before the actual production rollout, not forged now.
 - Functional MVP online presence now includes visible-tab authenticated heartbeat, server DB write cooldown, a 5-minute per-user online window, bounded public member list/count, error isolation and authorization recovery. Guests deliberately excluded, explicitly stated in UI. Presentation mock Pages deployed; no remote browser screenshot, owner-specific visual acceptance or live production/runtime acceptance claimed.
 - Technical implementation and checks are ready for owner merge of PR #213. Service PR #147 must remain unmerged. Owner-alone merge; next independent slice after merge is registration by owner's approval.
+
+
+## Owner decision: online presence needs post-MVP refinement — 2026-10-10
+
+- Owner confirmed PR #213 merged. Verified GitHub: `merged=true`, merged at `2026-10-10T07:44:17Z`, merge commit `4d0395ddc83802631615afe581a9abea44f91f93`.
+- **Owner decision: current Online presence / «Кто сейчас на форуме» is an initial MVP functional foundation, not a finished final version. It MUST be revisited and refined later.** Track as deferred product/UX refinement together with the post-MVP refinement pass; do not mistake technical green CI/Code Review and merge for final owner acceptance of the feature's usability or all desired behavior.
+- Precise scope of later improvements **has not yet been decided by owner**. Do not invent confirmed requirements or prematurely rebuild it. Reassess its UX, presentation and any owner-requested mechanics in a dedicated future task. Continue next agreed MVP feature (registration) without blocking on cosmetic/unspecified Online presence improvements; confirmed current-stage functional defects remain immediately actionable.
+- Existing functional constraints remain truthful in the meantime: active signed-in members only, last-five-minute window, at most 12 linked public members; guests are not counted. Real deployed runtime/production acceptance remains separate Stage 6.
