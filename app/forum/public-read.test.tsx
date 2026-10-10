@@ -1085,6 +1085,7 @@ describe("Help & solutions modes and authoring", () => {
         ),
       }),
     } as never);
+    managerContext.set(forumReaderContext, { ...reader, readHelpSolutionsNeedsAttention: readNeedsAttention });
     const data = await categoryLoader({
       request: new Request(attentionUrl),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
