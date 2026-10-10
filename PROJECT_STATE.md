@@ -52,10 +52,13 @@ Vico Forum находится в ранней pre-release разработке.
   без отказа всего Home и остановка heartbeat после 401 с revalidation сессии.
   На code head `42c06d8` exact-head CI успешно завершён (661 application tests,
   208 native PostgreSQL 17 tests, migrations, schema parity, privileges, Worker smoke),
-  Pages build/deploy успешен. Финальное независимое Codex review исправленного
-  head ещё ожидается. Production rollout evidence для миграции 0033 остаётся
-  задачей Stage 6: внешняя выкладка не разрешена и не выполнялась.
-  Реальная browser/owner visual acceptance Pages в этом контексте не подтверждена.
+  Pages build/deploy успешен. Повторное независимое Codex review
+  исправленного code head завершилось без новых findings 2026-10-10.
+  Подтверждённых незакрытых дефектов текущего MVP scope не осталось.
+  Production rollout evidence для миграции 0033 остаётся задачей Stage 6:
+  внешняя выкладка не разрешена и не выполнялась. Browser screenshot и
+  явная owner visual acceptance Pages в этом контексте не подтверждены;
+  Pages mock preview не заменяет real-runtime acceptance перед релизом.
 - Bounded блок форумных профилей реализован в текущем implementation set: public
   `/:locale/users/:userId`, данные имени/аватара/даты регистрации из authoritative identity,
   актуальная роль из DB, независимые persisted-message/current-best-answer счётчики,
