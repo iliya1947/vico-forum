@@ -1434,10 +1434,17 @@ export function AttentionCenterView({ locale, mode, group, page, referenceTime, 
       <div className="help-solutions-page attention-center-page">
         <Breadcrumbs locale={locale} items={[{ label: t("helpSolutionsNeedsAttentionMode") }]} />
         <header className="help-solutions-heading">
-          <div>
-            <p className="eyebrow">{t("attentionModerationLabel")}</p>
-            <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
-          </div>
+          <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
+          <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
+            {(["signals", "complaints", "security"] as const).map(item => (
+              <Link key={item}
+                className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
+                to={pathFor(item)} aria-current={mode === item ? "page" : undefined}>
+                {t(item === "signals" ? "attentionModeSignals"
+                  : item === "complaints" ? "attentionModeComplaints" : "attentionModeSecurity")}
+              </Link>
+            ))}
+          </nav>
         </header>
         <div className="attention-center-toolbar">
           <nav className="help-solutions-modes attention-group-nav" aria-label={t("attentionGroupNavigation")}>
@@ -1446,16 +1453,6 @@ export function AttentionCenterView({ locale, mode, group, page, referenceTime, 
                 className={"help-solutions-mode" + (activeGroup.id === item.id ? " is-active" : "")}
                 to={pathFor(mode, item.id)} aria-current={activeGroup.id === item.id ? "page" : undefined}>
                 {item.label}{mode === "signals" ? ` (${item.questions.length})` : ""}
-              </Link>
-            ))}
-          </nav>
-          <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
-            {(["signals", "complaints", "security"] as const).map(item => (
-              <Link key={item}
-                className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
-                to={pathFor(item)} aria-current={mode === item ? "page" : undefined}>
-                {t(item === "signals" ? "attentionModeSignals"
-                  : item === "complaints" ? "attentionModeComplaints" : "attentionModeSecurity")}
               </Link>
             ))}
           </nav>
