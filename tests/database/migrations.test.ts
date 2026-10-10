@@ -273,12 +273,25 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
 
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-review"],
+        appeals: false,
+      })).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          attention: { signals: {}, totalSignals: 0, appeal: false, reviewRequired: true },
+        }],
+      });
       await forum.setHelpSolutionModeration(
         "help-foundation-topic",
         "outdated",
         "  The provider removed   this API.  ",
         "help-foundation-author",
       );
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-review"],
+        appeals: false,
+      })).toMatchObject({ questions: [] });
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
         solutionOutdatedReason: "The provider removed this API.",
