@@ -773,6 +773,7 @@ select {
 
 .forum-code-block {
   margin-block: 0.85rem;
+  margin-inline: 0;
   max-width: 100%;
   overflow: hidden;
   border: 1px solid var(--color-border);
