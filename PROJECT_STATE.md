@@ -74,8 +74,10 @@ Vico Forum находится в ранней pre-release разработке.
   100-question bound. Dynamic effective permissions limit accessible signal types
   and appeals; no new schema/migrations, signal submission UI, complaint system,
   editor or admin-panel workflow added. PostgreSQL and presentation regressions,
-  EN/RU/HE, RTL and Pages fixture changes are included; exact-head CI, Pages and
-  independent Code Review are **not yet confirmed**, and external rollout is not done.
+  EN/RU/HE, RTL and Pages fixture changes are included. CI on implementation
+  head `d258693` passed (application checks and PostgreSQL 17); the Pages
+  build/deployment from the same revision succeeded. Owner visual acceptance and
+  independent Codex review are still pending; external rollout is not done.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
