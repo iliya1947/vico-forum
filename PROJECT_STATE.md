@@ -54,8 +54,14 @@ Vico Forum находится в ранней pre-release разработке.
   sign-up-only Better Auth before-hook that trims and validates names (1–100
   characters), and a generic Google failure message; regression tests cover
   both credential forms, OAuth error handling, and native PostgreSQL 17 rejection
-  of invalid names. New head CI/Pages and final independent review are pending.
-  No production rollout occurred.
+  of invalid names. Exact combined implementation head `d76db99` passed CI with
+  702 application tests, 214 native PostgreSQL 17 tests, lint/typecheck,
+  migration/schema/privilege checks, Worker smoke and application/preview builds.
+  Pages deployment succeeded. The final independent Codex review of `d76db99`
+  completed 2026-10-10 with no further findings. ChatGPT whole-PR review found
+  no confirmed outstanding defects in the current MVP scope. This PR remains
+  unmerged pending owner action; production/runtime acceptance and email
+  verification/password recovery remain deferred. No production rollout occurred.
 
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
