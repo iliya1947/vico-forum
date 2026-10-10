@@ -6,6 +6,7 @@ import {
   authzRoles,
   authzUserRoles,
   forumProfiles,
+  forumOnlinePresence,
   forumCategories,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
@@ -288,7 +289,13 @@ export interface ForumTopicPage extends ForumTopic {
   posts: ForumThreadPost[];
 }
 
+export interface ForumOnlinePresence {
+  count: number;
+  members: { id: string; name: string; image: string | null }[];
+}
+
 export interface ForumReader {
+  readOnlinePresence(): Promise<ForumOnlinePresence>;
   readProfile(userId: string): Promise<ForumProfile | undefined>;
   listCategories(): Promise<ForumCategorySummary[]>;
   readHomepage(): Promise<ForumHomepageCategorySummary[]>;
@@ -385,6 +392,35 @@ export class DrizzleForumRepository {
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
   ) {}
+
+  async readOnlinePresence(): Promise<ForumOnlinePresence> {
+    const recent = sql`${forumOnlinePresence.lastSeenAt} >= now() - interval '5 minutes'`;
+    // A window count keeps the total and the bounded member list on one DB snapshot.
+    const rows = await this.database.select({
+      id: user.id, name: user.name, image: user.image,
+      total: sql<number>`count(*) over ()::int`,
+    })
+      .from(forumOnlinePresence)
+      .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
+      .where(recent)
+      .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
+      .limit(12);
+    return {
+      count: rows[0]?.total ?? 0,
+      members: rows.map((row) => ({ id: row.id, name: row.name, image: row.image })),
+    };
+  }
+
+  async recordOnlinePresence(userId: string): Promise<void> {
+    await this.database.insert(forumOnlinePresence)
+      .values({ userId })
+      .onConflictDoUpdate({
+        target: forumOnlinePresence.userId,
+        set: { lastSeenAt: sql`greatest(${forumOnlinePresence.lastSeenAt}, now())` },
+        // The browser timer is not authoritative: reject excess DB writes per user.
+        setWhere: sql`${forumOnlinePresence.lastSeenAt} < now() - interval '45 seconds'`,
+      });
+  }
 
   async readProfile(userId: string): Promise<ForumProfile | undefined> {
     const [profile] = await this.database.select({

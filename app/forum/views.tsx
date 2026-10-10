@@ -6,6 +6,7 @@ import type {
   ForumHelpSolutionsFilters,
   ForumHelpSolutionsPage,
   ForumPopularPeriod,
+  ForumOnlinePresence,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
   ForumSearchResult,
@@ -32,7 +33,7 @@ import type {
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
 import { ForumAvatar } from "./avatar";
-import { forumProfilePath, forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
+import { forumProfilePath, forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath } from "./paths";
 import type { HomepageCategoryOverview } from "./homepage";
 import {
   PostBodyContent,
@@ -48,9 +49,11 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 export function HomeView({
   locale,
   categories,
+  onlinePresence = { count: 0, members: [] },
 }: {
   locale: string;
   categories: readonly HomepageCategoryOverview[];
+  onlinePresence?: ForumOnlinePresence | null;
 }) {
   const { t } = useTranslation("common");
   const totals = categories.reduce(
@@ -81,8 +84,17 @@ export function HomeView({
       <section className="home-information" aria-label={t("forumStatisticsHeading")}>
         <article className="home-information-card home-online-card">
           <h2>{t("whosOnlineHeading")}</h2>
-          <p>{t("onlinePresencePending")}</p>
-          <Link to={underDevelopmentPath(locale, "online-presence")}>{t("viewDevelopmentStatus")}</Link>
+          {onlinePresence ? <>
+            <p>{t("onlineActiveCount", { count: onlinePresence.count })}</p>
+            {onlinePresence.members.length ? (
+              <ul className="home-online-members">
+                {onlinePresence.members.map((member) => <li key={member.id}>
+                  <Link to={forumProfilePath(locale, member.id)}><bdi dir="auto">{member.name}</bdi></Link>
+                </li>)}
+              </ul>
+            ) : <p>{t("onlineNoMembers")}</p>}
+          </> : <p role="status">{t("onlinePresenceUnavailable")}</p>}
+          <p className="home-online-scope">{t("onlineMembersOnly")}</p>
         </article>
         <article className="home-information-card home-statistics-card">
           <h2>{t("forumStatisticsHeading")}</h2>

@@ -1619,6 +1619,10 @@ function previewElement(scenario: Scenario) {
         <HomeView
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
+          onlinePresence={{ count: 2, members: [
+            { id: "alex", name: "Alex", image: null },
+            { id: "maya", name: "Maya Cohen", image: null },
+          ] }}
         />
       );
     case "search":

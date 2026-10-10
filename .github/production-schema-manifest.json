@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0032_forum_profiles",
+  "targetMigration": "0033_forum_online_presence",
   "tables": {
     "account": {
       "columns": [
@@ -4391,6 +4391,62 @@
             },
             {
               "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_online_presence": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_online_presence_pkey",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_online_presence_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_online_presence_seen_at_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "last_seen_at",
               "order": "asc",
               "nulls": "last"
             }
