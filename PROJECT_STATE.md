@@ -24,7 +24,7 @@
 
 Vico Forum находится в ранней pre-release разработке.
 
-- Registration/email login implementation in progress (separate MVP PR): existing Better Auth 1.7.4
+- Registration/email login merged by owner in PR #214 (2026-10-10): existing Better Auth 1.7.4
   enables sign-up and sign-in with email/password, default auto-session and 8–128 character
   password validation without mandatory email verification. Locale-prefixed guest routes
   `sign-in` and `sign-up` preserve an origin-safe forum-local returnTo, leave Google OAuth
@@ -59,10 +59,22 @@ Vico Forum находится в ранней pre-release разработке.
   migration/schema/privilege checks, Worker smoke and application/preview builds.
   Pages deployment succeeded. The final independent Codex review of `d76db99`
   completed 2026-10-10 with no further findings. ChatGPT whole-PR review found
-  no confirmed outstanding defects in the current MVP scope. This PR remains
-  unmerged pending owner action; production/runtime acceptance and email
-  verification/password recovery remain deferred. No production rollout occurred.
+  no confirmed outstanding defects in the current MVP scope. PR #214 is merged
+  into main; production/runtime acceptance and email verification/password recovery
+  remain deferred. No production rollout occurred.
 
+- PR #217 (in progress; not merged) replaces the obsolete Help & solutions `Needs attention`
+  definition (`unresolved + no replies`) with a permission-scoped moderator work queue
+  from persisted pending user signals and active pending duplicate appeals. Six ordered
+  overlapping groups: `Needs details`, `Needs review`, `Solution outdated`,
+  `Duplicate`, `Appeals`, `Mixed` (at least two visible pending signals). A case
+  with multiple signals is repeated in matching signal groups, and appeals are
+  independent; only outstanding moderation work is selected before the existing
+  100-question bound. Dynamic effective permissions limit accessible signal types
+  and appeals; no new schema/migrations, signal submission UI, complaint system,
+  editor or admin-panel workflow added. PostgreSQL and presentation regressions,
+  EN/RU/HE, RTL and Pages fixture changes are included; exact-head CI, Pages and
+  independent Code Review are **not yet confirmed**, and external rollout is not done.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
