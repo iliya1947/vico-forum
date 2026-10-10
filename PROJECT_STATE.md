@@ -68,8 +68,8 @@ Vico Forum находится в ранней pre-release разработке.
   linked beside the ordinary header notification bell. Owner revision 2026-10-10
   moved it out of Help & solutions (the obsolete Help `?mode=attention` URL
   redirects). The center has three isolated modes `Signals`, `Complaints` and
-  `Security`, switched on the right of a shared toolbar; groups for the active
-  mode occupy the left. Signals show six individually selectable groups:
+  `Security`, switched in the right side of the page heading; groups for the active
+  mode occupy a separate toolbar below. The redundant moderation eyebrow is removed. Signals show six individually selectable groups:
   Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
   The backed queue selects only persisted pending signal/appeal cases and current
   best-answer Needs review status; Mixed (2+ pending visible signals) duplicates
