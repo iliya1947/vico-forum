@@ -86,18 +86,19 @@ function actions(): AuthClientActions {
 }
 
 describe("forum header auth controls", () => {
-  it.each(["ltr", "rtl"] as const)("renders guest Google sign-in and future registration entry in %s", async (direction) => {
+  it.each(["ltr", "rtl"] as const)("renders guest credential sign-in and registration links in %s", async (direction) => {
     const locale = direction === "ltr" ? "en" : "he";
     renderControls(null, actions(), `/${locale}`, direction);
-    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Sign in" }))
+      .toHaveAttribute("href", `/${locale}/sign-in?returnTo=%2F${locale}`);
     expect(screen.getByRole("link", { name: "Sign up" }))
-      .toHaveAttribute("href", `/${locale}/under-development?feature=registration`);
+      .toHaveAttribute("href", `/${locale}/sign-up?returnTo=%2F${locale}`);
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
   });
 
   it("exposes compact guest and signed-in presentation states", async () => {
     const guest = renderControls(null, actions());
-    expect(await screen.findByRole("button", { name: "Sign in" }))
+    expect(await screen.findByRole("link", { name: "Sign in" }))
       .toHaveClass("auth-sign-in");
     expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "guest");
     guest.unmount();
@@ -120,11 +121,12 @@ describe("forum header auth controls", () => {
     expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "error");
   });
 
-  it("uses Google social sign-in with a local locale-aware callback", async () => {
+  it("keeps a safe locale-scoped return destination in credential links", async () => {
     const client = actions();
     renderControls(null, client);
-    await userEvent.click(await screen.findByRole("button", { name: "Sign in" }));
-    expect(client.signInWithGoogle).toHaveBeenCalledWith("/en/topics/one?from=list", expect.any(Object));
+    expect(await screen.findByRole("link", { name: "Sign in" }))
+      .toHaveAttribute("href", "/en/sign-in?returnTo=%2Fen%2Ftopics%2Fone%3Ffrom%3Dlist");
+    expect(client.signInWithGoogle).not.toHaveBeenCalled();
   });
 
   it("shows the SSR user and clears authenticated controls after sign-out", async () => {
@@ -134,7 +136,7 @@ describe("forum header auth controls", () => {
     expect(screen.getByRole("link", { name: "Ada Lovelace" }))
       .toHaveAttribute("href", "/en/users/ada");
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
-    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Sign in" })).toBeVisible();
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
   });
 
@@ -147,7 +149,7 @@ describe("forum header auth controls", () => {
     setAuthUser(null);
     await act(async () => { await router.revalidate(); });
 
-    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Sign in" })).toBeVisible();
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
     expect(client.signOut).not.toHaveBeenCalled();
@@ -156,15 +158,15 @@ describe("forum header auth controls", () => {
   it("disables the control while a request is pending and shows only a safe error", async () => {
     let reject!: () => void;
     const client = actions();
-    client.signInWithGoogle = vi.fn(() => new Promise((_resolve, rejectPromise) => { reject = () => rejectPromise(new Error("raw provider secret")); }));
-    renderControls(null, client);
-    const button = await screen.findByRole("button", { name: "Sign in" });
+    client.signOut = vi.fn(() => new Promise((_resolve, rejectPromise) => { reject = () => rejectPromise(new Error("raw provider secret")); }));
+    renderControls({ name: "Ada Lovelace" }, client);
+    const button = await screen.findByRole("button", { name: "Sign out" });
     await userEvent.click(button);
     expect(screen.getByRole("button", { name: "Please wait…" })).toBeDisabled();
     expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "pending");
     expect(document.querySelector(".auth-controls")).toHaveAttribute("aria-busy", "true");
     await userEvent.click(screen.getByRole("button", { name: "Please wait…" }));
-    expect(client.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(client.signOut).toHaveBeenCalledTimes(1);
     reject();
     expect(await screen.findByRole("alert")).toHaveTextContent("Authentication failed. Please try again.");
     expect(screen.queryByText(/raw provider secret/)).not.toBeInTheDocument();
