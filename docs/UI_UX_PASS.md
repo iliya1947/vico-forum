@@ -336,13 +336,18 @@ composition without changing the forum hierarchy or schema:
   `?mode=active`: questions with at least one persisted reply are selected server-side from the
   hidden service section, include both open and solved states, reuse existing latest-activity
   ordering, and are bounded to the first 100 results. The current bounded follow-up adds
-  permission-gated `Needs attention / Требуют внимания` as `?mode=attention`: only unsolved questions with zero
-  persisted replies are selected server-side from the same hidden service section, reuse the
-  existing Q&A projection/activity ordering, and are bounded to the first 100 results. Access
-  reuses the existing `forum.solution.manageAny` moderation capability, initially granted to
-  built-in moderator/admin but not ordinary user; Guest and actors without effective permission
-  neither see the navigation item nor pass direct-route authorization. Merged PR #197 finalized
-  that boundary without new schema/migration/permission. PR #198 adds authenticated
+  permission-gated `Needs attention / Требуют внимания` as `?mode=attention`. Merged PR #197
+  initially selected unsolved questions without replies; the later moderator-queue revision
+  replaces that obsolete criterion with **pending Help signals and unresolved confirmed-duplicate
+  appeals**, regardless of whether a question has replies or is solved. Only actual pending
+  moderator decisions are included, with six ordered overlapping card groups: Needs details,
+  Needs review, Solution outdated, Duplicate, Appeals, Mixed (2+ pending signals). Mixed items
+  remain visible in their matching signal groups; appeals remain visible independently.
+  Selection is server-side before the existing 100-question bound and uses existing Q&A cards.
+  Dynamic effective permissions for the relevant Help management actions govern queue access
+  and which pending kinds can appear; other users neither see nor load private queue data.
+  Signal submission/review UI, appeals actions, and admin-panel redesign are separate systems,
+  not part of this view-only integration. PR #198 adds authenticated
   `Want to help / Хочу помочь` as `?mode=help`: server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
   projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
