@@ -3900,3 +3900,10 @@ ChatGPT should implement this bounded profile block in a separate implementation
 - Codex manually requested independent Code Review of stable `c94382f` completed at 2026-10-10T08:14:52Z; no inline findings and no submitted review findings. Self-review likewise found no current-scope blocking defects.
 - Sign-in/sign-up forms are localized (EN/RU/HE), server-controlled identity, bounded passwords, safe local redirect, safe generic errors, Google alternative; owner accepted functional-MVP-over-cosmetic policy. Preview is static illustrative fixtures; screenshots and owner's visual acceptance of the registration screen were not independently verified. Real external Worker/OAuth/DNS/email-sender acceptance is Stage 6, not claimed.
 - Before merge ensure final documentation-only head CI and Pages green, GitHub mergeable/not draft; owner only merges. Current email-signup choice deliberately permits unverified-email accounts, so do not silently reverse with mandatory verification before sending service exists. Recovery remains unavailable and is explicitly disclosed in UI. This is not a production launch.
+
+
+## PR #214 — final exact-head merge readiness — 2026-10-10
+
+- Final implementation PR head `53643e4af69fb6ea33bff6413036719466f11144` is documentation-only after independently reviewed code head `c94382f7d74a5ae2d5869a1a4230b02af2812dd2`.
+- Exact-final-head CI https://github.com/iliya1947/vico-forum/actions/runs/38037277423 **success**, including 671 application tests, 211 PostgreSQL 17 tests, migrations/privileges/Worker smoke; Pages https://github.com/iliya1947/vico-forum/actions/runs/38037274695 **success**. Independent Codex completed without findings on code head `c94382f`. PR #214 open, Ready for review (not Draft), GitHub `mergeable=true`; no confirmed current-MVP blockers. Owner only merges.
+- No browser screenshot, owner-specific visual acceptance, live external Worker/OAuth or email delivery validated here. Email verification/reset expressly deferred; no external production actions were taken.
