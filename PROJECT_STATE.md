@@ -63,21 +63,22 @@ Vico Forum находится в ранней pre-release разработке.
   into main; production/runtime acceptance and email verification/password recovery
   remain deferred. No production rollout occurred.
 
-- PR #217 (in progress; not merged) replaces the obsolete Help & solutions `Needs attention`
-  definition (`unresolved + no replies`) with a permission-scoped moderator work queue
-  from persisted pending user signals, active pending duplicate appeals and current
-  best-answer `Needs review` moderation state. Six ordered
-  overlapping groups: `Needs details`, `Needs review`, `Solution outdated`,
-  `Duplicate`, `Appeals`, `Mixed` (at least two visible pending signals). A case
-  with multiple signals is repeated in matching signal groups, and appeals are
-  independent; only outstanding moderation work is selected before the existing
-  100-question bound. Dynamic effective permissions limit accessible signal types
-  and appeals; no new schema/migrations, signal submission UI, complaint system,
-  editor or admin-panel workflow added. PostgreSQL and presentation regressions,
-  EN/RU/HE, RTL and Pages fixture changes are included. CI on implementation
-  head `d258693` passed (application checks and PostgreSQL 17); the Pages
-  build/deployment from the same revision succeeded. Owner visual acceptance and
-  independent Codex review are still pending; external rollout is not done.
+- PR #217 (in progress; not merged) delivers an independently routed,
+  permission-protected moderation attention center at `/:locale/attention`,
+  linked beside the ordinary header notification bell. Owner revision 2026-10-10
+  moved it out of Help & solutions (the obsolete Help `?mode=attention` URL
+  redirects). The center has three isolated modes `Signals`, `Complaints` and
+  `Security`, switched on the right of a shared toolbar; groups for the active
+  mode occupy the left. Signals show six individually selectable groups:
+  Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
+  The backed queue selects only persisted pending signal/appeal cases and current
+  best-answer Needs review status; Mixed (2+ pending visible signals) duplicates
+  items in their category groups. Guests/users without effective moderation
+  permission are rejected. Complaints and Security are empty placeholders
+  with temporary Group 1–3 switches, deliberately without events/data/permission
+  workflows pending definition in their own chats. No schema or migration,
+  notification bell semantics, complaint processing, editor, or Stage 6 action
+  changes. Tests/CI and preview acceptance for this revised head pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
