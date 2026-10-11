@@ -1,6 +1,6 @@
 import { parseForumMarkdown, serializeForumMarkdown } from "../markdown-syntax";
 
-export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt04-commonmark-v1";
+export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt05-strikethrough-v1";
 export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
