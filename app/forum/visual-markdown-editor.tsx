@@ -124,7 +124,10 @@ function VisualTextLeaf({
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
         // A visual text position cannot be used as a source byte offset when
         // escape sequences or multiple DOM nodes make the mapping ambiguous.
-        if (raw !== text || active.startContainer.nodeType !== 3 || active.endContainer.nodeType !== 3) {
+        if (raw !== text || active.startContainer.nodeType !== 3 || active.endContainer.nodeType !== 3
+          || active.startContainer !== active.endContainer
+          || event.currentTarget.childNodes.length !== 1
+          || event.currentTarget.firstChild !== active.startContainer) {
           onPasteFallback();
           return;
         }
