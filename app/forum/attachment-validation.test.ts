@@ -137,7 +137,10 @@ describe("Editor 2.0 server-side attachment type gate", () => {
       size: ATTACHMENT_SNIFF_BYTES + 1,
     })).toMatchObject({ accepted: false, reason: "insufficient-evidence", suspicious: false });
     expect(inspect("../", utf8("hello"))).toMatchObject({
-      accepted: false, reason: "invalid-name",
+      accepted: false, reason: "invalid-name", suspicious: true,
+    });
+    expect(inspect("../../harmless.txt", utf8("hello"))).toMatchObject({
+      accepted: false, reason: "invalid-name", suspicious: true,
     });
     expect(inspect("oops\nfile.txt", utf8("hello"))).toMatchObject({
       accepted: false, reason: "invalid-name",
