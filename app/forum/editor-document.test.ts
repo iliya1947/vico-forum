@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  createEditorHistory, editableVisualTextRanges, editVisualText,
-  recordEditorEdit, redoEditorEdit, undoEditorEdit,
+  applyTextareaEdit, createEditorHistory, editableVisualTextRanges, editVisualText,
+  recordEditorEdit, redoEditorEdit, sourceOffsetToTextareaOffset, textareaMarkdown,
+  textareaOffsetToSourceOffset, undoEditorEdit,
 } from "./editor-document";
 
 describe("Editor 2.0 lossless document foundation", () => {
@@ -12,6 +13,24 @@ describe("Editor 2.0 lossless document foundation", () => {
     editableVisualTextRanges(document.current.markdown);
     expect(document.current.markdown).toBe(source);
     expect(document.past).toHaveLength(0);
+  });
+
+  it("maps textarea LF offsets back to exact source offsets without normalizing CRLF", () => {
+    const source = "first\r\nsecond\rthird\nfourth";
+    expect(textareaMarkdown(source)).toBe("first\nsecond\nthird\nfourth");
+    const secondStart = textareaMarkdown(source).indexOf("second");
+    expect(textareaOffsetToSourceOffset(source, secondStart)).toBe(source.indexOf("second"));
+    expect(sourceOffsetToTextareaOffset(source, source.indexOf("third"))).toBe(
+      textareaMarkdown(source).indexOf("third"),
+    );
+  });
+
+  it("applies a textarea edit only to the changed normalized span", () => {
+    const source = "first\r\nsecond\r\nthird";
+    expect(applyTextareaEdit(source, "first\nSECOND\nthird")).toBe(
+      "first\r\nSECOND\r\nthird",
+    );
+    expect(applyTextareaEdit(source, textareaMarkdown(source))).toBe(source);
   });
 
   it("edits nearby prose without rewriting fenced code, inline code or invalid syntax", () => {
