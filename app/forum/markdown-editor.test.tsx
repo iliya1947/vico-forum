@@ -346,7 +346,7 @@ describe("MarkdownEditor", () => {
 
   it("undoes and redoes exact Markdown across view switches", async () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
-      defaultValue={"**bold**\n\n\`\`\`tsx\nconst a = 1;\n\`\`\`"} /></>);
+      defaultValue={"**bold**\n\n```tsx\nconst a = 1;\n```"} /></>);
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     const original = textarea.value;
     textarea.focus();
