@@ -143,6 +143,30 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
   });
 
+  it("does not overwrite unflushed typing when another tab changes the local copy", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [] });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), {
+      target: { value: "unsaved typing" },
+    });
+    const other = { ownerId: "alice", contextKey, draftId: newId,
+      startedAt: new Date().toISOString(), editedAt: new Date().toISOString(),
+      baseVersion: 0, syncedEditedAt: null, payload: { ...empty, body: "different tab" } };
+    writeLocalEditorDraft(other);
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: "vico:editor:draft:" + encodeURIComponent("alice") + ":" + encodeURIComponent(contextKey),
+        newValue: JSON.stringify(other),
+      }));
+    });
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("unsaved typing");
+    expect(screen.getByText("Draft conflict")).toBeInTheDocument();
+  });
+
   it("ignores a late previous-account response and flushes the previous owner's unsaved typing", async () => {
     let resolveFirst!: (value: Response) => void;
     const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
