@@ -175,9 +175,24 @@ export function visualDomSelection(
   if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
   const fragment = range.cloneContents();
   if (fragment.querySelector?.('[data-visual-protected]')) return null;
-  const start = sourcePointForDomPoint(root, markdown, sourceBase, range.startContainer, range.startOffset);
-  const end = sourcePointForDomPoint(root, markdown, sourceBase, range.endContainer, range.endOffset);
-  return start === null || end === null ? null : { start, end };
+  let start = sourcePointForDomPoint(root, markdown, sourceBase, range.startContainer, range.startOffset);
+  let end = sourcePointForDomPoint(root, markdown, sourceBase, range.endContainer, range.endOffset);
+  if (start === null || end === null) return null;
+
+  for (const inline of root.querySelectorAll<HTMLElement>("[data-source-inline=true]")) {
+    const sourceStart = Number(inline.dataset.sourceStart);
+    const sourceEnd = Number(inline.dataset.sourceEnd);
+    if (!Number.isSafeInteger(sourceStart) || !Number.isSafeInteger(sourceEnd)) continue;
+    const contents = document.createRange();
+    contents.selectNodeContents(inline);
+    const coversStart = range.compareBoundaryPoints(Range.START_TO_START, contents) <= 0;
+    const coversEnd = range.compareBoundaryPoints(Range.END_TO_END, contents) >= 0;
+    if (coversStart && coversEnd) {
+      start = Math.min(start, sourceStart);
+      end = Math.max(end, sourceEnd);
+    }
+  }
+  return { start, end };
 }
 
 function domPointAtTextOffset(leaf: HTMLElement, target: number): { node: Node; offset: number } | null {
@@ -397,8 +412,22 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       if (level === "h6") return <h6>{children}</h6>;
       return <h2>{children}</h2>;
     }
-    case "strong": return <strong>{children}</strong>;
-    case "emphasis": return <em>{children}</em>;
+    case "strong": {
+      const range = sourceRange(node);
+      return <strong
+        data-source-inline="true"
+        data-source-start={range ? range.start + baseOffset : undefined}
+        data-source-end={range ? range.end + baseOffset : undefined}
+      >{children}</strong>;
+    }
+    case "emphasis": {
+      const range = sourceRange(node);
+      return <em
+        data-source-inline="true"
+        data-source-start={range ? range.start + baseOffset : undefined}
+        data-source-end={range ? range.end + baseOffset : undefined}
+      >{children}</em>;
+    }
     case "blockquote": return <blockquote>{children}</blockquote>;
     case "list": return node.ordered ? <ol>{children}</ol> : <ul>{children}</ul>;
     case "listItem": return <li>{children}</li>;
