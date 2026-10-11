@@ -540,6 +540,22 @@ describe("MarkdownEditor", () => {
     expect(document.querySelector(".markdown-editor-visual-table")).not.toBeNull();
   });
 
+  it("keeps existing content when unsupported HTML clipboard has no text fallback", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Keep" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 0);
+    range.setEnd(leaf.firstChild!, 4);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/html" ? "<img src=x>" : "" } });
+    expect(screen.getByLabelText("Body")).toHaveValue("Keep");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
   it("submits the Simple visual authoring form on Ctrl+Enter", () => {
     const submitted = vi.fn();
     renderEditor(<form onSubmit={(event) => { event.preventDefault(); submitted(); }}>
