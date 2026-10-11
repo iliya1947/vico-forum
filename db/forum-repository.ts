@@ -6,6 +6,7 @@ import {
   authzRoles,
   authzUserRoles,
   forumProfiles,
+  forumEditorDrafts,
   forumOnlinePresence,
   forumCategories,
   forumHelpDuplicateAppeals,
@@ -410,6 +411,7 @@ export interface CreateTopicInput {
 }
 
 export interface CreatePostInput {
+  publishedDraft?: { contextKey: string; draftId: string };
   id: string;
   topicId: string;
   authorId: string;
@@ -418,6 +420,7 @@ export interface CreatePostInput {
 }
 
 export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
+  publishedDraft?: { contextKey: string; draftId: string };
   initialPost: CreatePostInput;
 }
 
@@ -564,6 +567,9 @@ export class DrizzleForumRepository {
           tagKey: tag.key,
         })));
       }
+      if (input.publishedDraft) {
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft);
+      }
       return {
         topic: {
           id: input.id,
@@ -645,6 +651,9 @@ export class DrizzleForumRepository {
         });
       }
 
+      if (input.publishedDraft) {
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft);
+      }
       return {
         id: input.id,
         topicId: input.topicId,
@@ -655,6 +664,28 @@ export class DrizzleForumRepository {
         solutionOutdatedReasonKind: null,
         body: input.bodyRevision,
       };
+    });
+  }
+
+  private async finishPublishedDraft(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    ownerId: string,
+    draft: { contextKey: string; draftId: string },
+  ) {
+    if (!/^[0-9a-f-]{36}$/iu.test(draft.draftId)) return;
+    const now = new Date();
+    await tx.insert(forumEditorDrafts).values({
+      ownerId, contextKey: draft.contextKey, draftId: draft.draftId,
+      version: 1, status: "published",
+      payload: { title: "", body: "", tags: "" },
+      editedAt: now, updatedAt: now,
+    }).onConflictDoUpdate({
+      target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
+      set: { status: "published", version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
+      setWhere: and(
+        eq(forumEditorDrafts.status, "active"),
+        eq(forumEditorDrafts.draftId, draft.draftId),
+      ),
     });
   }
 
