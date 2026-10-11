@@ -148,9 +148,11 @@ export function highlightCode(code: string, language: string | undefined): Synta
 function ForumCodeBlock({
   code,
   language,
+  filename,
 }: {
   code: string;
   language?: string;
+  filename?: string;
 }) {
   const { t } = useTranslation("common");
   const [copyState, setCopyState] = useState<"copied" | "error" | null>(null);
@@ -189,6 +191,7 @@ function ForumCodeBlock({
         <span className="forum-code-language" dir={displayLanguage ? "ltr" : undefined}>
           {displayLanguage || t("codeLanguagePlainText")}
         </span>
+        {filename ? <span className="forum-code-filename" dir="ltr">{filename}</span> : null}
         <span className="forum-code-actions">
           <button
             type="button"
@@ -243,9 +246,15 @@ const markdownComponents: Components = {
     <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
   ),
   pre: ({ children: preChildren }) => <>{preChildren}</>,
-  code: ({ children: codeChildren, className }) => {
+  code: ({ children: codeChildren, className, node }) => {
     const source = String(codeChildren);
     const language = className?.match(/(?:^|\s)language-([^\s]+)/u)?.[1];
+    const metadata = node?.data?.meta;
+    const fileMatch = typeof metadata === "string"
+      ? /(?:^|\s)(?:file|filename)=(?:"([^"]+)"|'([^']+)'|([^\s]+))/u.exec(metadata)
+      : null;
+    const name = fileMatch?.[1] ?? fileMatch?.[2] ?? fileMatch?.[3];
+    const filename = name && name.length <= 256 && !/[\u0000-\u001f]/u.test(name) ? name : undefined;
     const block = Boolean(language) || source.includes("\n");
 
     if (!block) {
@@ -256,6 +265,7 @@ const markdownComponents: Components = {
       <ForumCodeBlock
         code={source.replace(/\n$/u, "")}
         language={language}
+        filename={filename}
       />
     );
   },
