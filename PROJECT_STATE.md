@@ -228,6 +228,25 @@ Vico Forum находится в ранней pre-release разработке.
   transient feedback test `Copied` на первом checks-attempt не
   воспроизвёлся при повторном запуске того же exact head. Остальные findings
   полного аудита остаются открытыми.
+  Третий пакет audit-коррекции ядра Simple/Advanced editor (2026-10-11)
+  закрывает visual/source selection, imperative Reply/Quote focus,
+  восстановление caret/selection Undo/Redo и exact-source CRLF/LF. Simple
+  selection теперь отображается в authoritative Markdown offsets для
+  escaped text, split DOM nodes и безопасных multi-leaf inline ranges;
+  fully-selected strong/emphasis включают невидимые Markdown markers, а
+  selection через protected content считается недостоверным и toolbar не
+  применяет команду к концу сообщения. Reply/Quote остаются в текущем
+  authoring mode и возвращают visual caret в Simple. История хранит source
+  selection и восстанавливает её в соответствующей поверхности после
+  Undo/Redo и mode switch. DOM textarea показывает browser-normalized LF,
+  но отдельное exact Markdown form field остаётся authoritative; Advanced
+  edit применяет diff только к изменённому normalized span, сохраняя
+  нетронутые CRLF/CR bytes. Добавлены regressions на escaped/multi-leaf/
+  protected selections, Simple imperative insertion, visual Undo/Redo и
+  CRLF round-trip/edit. Кодовый head `820d050` прошёл CI #38157088641:
+  `checks` и `database` successful, включая 800 application tests,
+  builds и schema parity. Stage 3 tooling/rendering, draft local-save
+  triggers и attachment findings остаются отдельными следующими пакетами.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
