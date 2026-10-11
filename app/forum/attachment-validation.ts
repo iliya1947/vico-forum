@@ -5,7 +5,7 @@
  * caller must keep every object private until this gate (and any configured
  * future mandatory scanner) has succeeded.
  */
-export const DEFAULT_ATTACHMENT_MAX_BYTES = 50 * 1024 * 1024;
+export const DEFAULT_ATTACHMENT_MAX_BYTES = 50_000_000;
 export const ATTACHMENT_SNIFF_BYTES = 4096;
 
 export type AttachmentDetection = "png" | "jpeg" | "gif" | "webp" | "pdf"
