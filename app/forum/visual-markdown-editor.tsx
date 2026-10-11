@@ -20,7 +20,12 @@ interface VisualNode {
 interface VisualEditorProps {
   markdown: string;
   disabled?: boolean;
-  onTextEdit(range: EditorSelection, value: string, selectionAfter?: EditorSelection): void;
+  onTextEdit(
+    range: EditorSelection,
+    value: string,
+    selectionAfter?: EditorSelection,
+    saveLocal?: boolean,
+  ): void;
   onSelection(selection: EditorSelection | null): void;
   onInsertParagraph(offset: number): void;
   onEditTechnical(): void;
@@ -335,7 +340,7 @@ function VisualTextLeaf({
         onTextEdit(range, next, afterStart === null || afterEnd === null ? undefined : {
           start: range.start + afterStart,
           end: range.start + afterEnd,
-        });
+        }, (event.nativeEvent as InputEvent).data === " ");
       }}
       onSelect={reportSelection}
       onKeyUp={reportSelection}
@@ -391,7 +396,7 @@ function VisualTextLeaf({
         active.collapse(true);
         selection.removeAllRanges();
         selection.addRange(active);
-        onTextEdit(range, event.currentTarget.textContent ?? "");
+        onTextEdit(range, event.currentTarget.textContent ?? "", undefined, true);
       }}
     />
   );
