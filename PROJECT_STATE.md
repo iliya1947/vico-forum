@@ -174,6 +174,19 @@ Vico Forum находится в ранней pre-release разработке.
   Исправленный lifecycle прошёл exact-head CI #38133982302
   (`checks` и `database`) на `49fa127f`; тесты PostgreSQL, TypeScript,
   прикладные регрессии и сборки успешны. Pages/browser review не подтверждён.
+  Дополнительный clean-up Stage 4 проверил цепочку ввод → локальный cache →
+  серверная CAS-запись → recovery/conflict → публикация. Убраны устаревшее поле
+  startedAt, дублированное изменяемое состояние CAS версии, fake terminal payload,
+  client timestamp validation/expiry на сервере, неиспользуемые поля draft-list и
+  UI-сравнение локальных/серверных часов. Серверное editedAt задаётся только
+  сервером, expiration purge ограничен владельцем и применяется при content GET,
+  metadata и save. API больше не принимает client-only 'finish': published
+  marking остаётся исключительно в транзакции публикации.
+  Исправлено восстановление parentPostId в Reply composer и очистка local settings
+  вместе с черновиками выбранного аккаунта, включая другую открытую вкладку.
+  Добавлены тесты owner/Origin/API, Reply, TTL, конфликтов, clock skew и
+  удаления локальных данных. Кодовая версия a3a6e46 прошла CI #38136595010
+  (checks + database); финальные документационные изменения ещё проверяются.
   Pages/browser и owner visual acceptance ещё не подтверждены; полный review PR
   намеренно не запущен до завершения редактора.
   Вложения, Security/Attachments ingestion, mentions и полный
