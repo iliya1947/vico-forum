@@ -116,6 +116,12 @@ function VisualTextLeaf({
         if (!selection || selection.rangeCount === 0) return;
         const active = selection.getRangeAt(0);
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
+        // A visual text position cannot be used as a source byte offset when
+        // escape sequences or multiple DOM nodes make the mapping ambiguous.
+        if (raw !== text || active.startContainer.nodeType !== 3 || active.endContainer.nodeType !== 3) {
+          onPasteFallback();
+          return;
+        }
         const selected = {
           start: range.start + Math.max(0, active.startOffset),
           end: range.start + Math.max(active.startOffset, active.endOffset),
