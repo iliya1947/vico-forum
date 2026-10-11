@@ -3150,6 +3150,7 @@ export class DrizzleForumRepository {
     topicId: string,
     actorId: string,
     resolution: HelpDuplicateAppealResolution,
+    expectedAppealId?: string,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
@@ -3178,7 +3179,9 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateAppeals.status, "pending"),
         ))
         .for("update");
-      if (!appeal) throw new ForumStateConflictError("duplicate appeal is not pending");
+      if (!appeal || (expectedAppealId && appeal.id !== expectedAppealId)) {
+        throw new ForumStateConflictError("duplicate appeal is no longer the expected pending appeal");
+      }
 
       const resolvedAt = sql`now()`;
       await tx.update(forumHelpDuplicateAppeals)
