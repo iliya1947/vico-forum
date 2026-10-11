@@ -281,15 +281,16 @@ Vico Forum находится в ранней pre-release разработке.
   CI #38161772563: `checks` и `database` successful, включая
   813 application tests, builds и schema parity.
   Шестой пакет audit-коррекции Clear formatting (2026-10-11) заменяет
-  прежнюю обработку только непосредственных **/_/~~ wrappers общим source-aware
+  прежнюю обработку только непосредственных `**` / `_` / `~~` wrappers общим source-aware
   преобразованием поддерживаемого inline-оформления и explicit Markdown links.
   Команда действует ровно на выделенный диапазон, безопасно разделяет crossing
   wrappers и сохраняет форматирование невыделенного текста; при пустом выделении
   применяется ко всему содержимому редактора. Structural Markdown и protected
   technical content не flatten-ятся. Pure/component regressions покрывают partial
-  strong/link selection и whole-document clear. Attachment type-gate остаётся
-  следующим отдельным подтверждённым finding полного аудита; CI этого пакета
-  фиксируется отдельно.
+  strong/link selection и whole-document clear. Кодовый head `d2266f6` прошёл
+  CI #38165900249: `checks` и `database` successful, включая 817 application
+  tests и 229 native PostgreSQL 17 tests. Attachment type-gate остаётся следующим
+  отдельным подтверждённым finding полного аудита.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
