@@ -420,6 +420,16 @@ describe("MarkdownEditor", () => {
     expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
   });
 
+  it("keeps Markdown block markers as literal text during visual typing", () => {
+    renderEditor(<><label htmlFor="body">Body</label>
+      <MarkdownEditor id="body" name="body" defaultValue="Plain" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = "# Not a heading";
+    fireEvent.input(leaf);
+    expect(screen.getByLabelText("Body")).toHaveValue("\\# Not a heading");
+    expect(document.querySelector(".markdown-editor-visual h1, .markdown-editor-visual h2")).toBeNull();
+  });
+
   it("does not turn visual source switching into a destructive Markdown round-trip", async () => {
     const source = "  text  \r\n\r\n**bold**\r\n\r\n```tsx\nhello();\n```";
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></>);
