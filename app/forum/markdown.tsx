@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { type Components } from "react-markdown";
+import { remarkForumStrikethrough } from "../markdown-syntax";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
 
 const HIGHLIGHTED_POST_LENGTH_LIMIT = 12_000;
@@ -277,13 +278,13 @@ function ForumTable({ table }: { table: MarkdownTable }) {
       <table className="forum-markdown-table">
         <thead><tr>{table.headers.map((cell, index) => (
           <th key={index} scope="col" style={{ textAlign: table.align[index] ?? undefined }}>
-            <ReactMarkdown components={markdownComponents}>{cell.text}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]}>{cell.text}</ReactMarkdown>
           </th>
         ))}</tr></thead>
         <tbody>{table.rows.map((row, index) => <tr key={index}>
           {row.map((cell, column) => (
             <td key={column} style={{ textAlign: table.align[column] ?? undefined }}>
-              <ReactMarkdown components={markdownComponents}>{cell.text}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]}>{cell.text}</ReactMarkdown>
             </td>
           ))}
         </tr>)}</tbody>
@@ -292,23 +293,37 @@ function ForumTable({ table }: { table: MarkdownTable }) {
   );
 }
 
-export function ForumMarkdown({ children }: { children: string }) {
+function ForumMarkdownBody({ children }: { children: string }) {
   const { t } = useTranslation("common");
   const segments = segmentTechnicalMarkdown(children);
   return (
     <div className="post-body">
-      <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
-        {segments.map((segment, index) => {
-          if (segment.kind === "table") return <ForumTable table={segment} key={index} />;
-          if (segment.kind === "spoiler") return (
-            <details className="forum-markdown-spoiler" key={index}>
-              <summary>{segment.title || t("editorSpoiler")}</summary>
-              <ForumMarkdown>{segment.body}</ForumMarkdown>
-            </details>
-          );
-          return <ReactMarkdown components={markdownComponents} key={index}>{segment.source}</ReactMarkdown>;
-        })}
-      </HighlightBudgetContext.Provider>
+      {segments.map((segment, index) => {
+        if (segment.kind === "table") return <ForumTable table={segment} key={index} />;
+        if (segment.kind === "spoiler") return (
+          <details className="forum-markdown-spoiler" key={index}>
+            <summary>{segment.title || t("editorSpoiler")}</summary>
+            <ForumMarkdownBody>{segment.body}</ForumMarkdownBody>
+          </details>
+        );
+        return (
+          <ReactMarkdown
+            components={markdownComponents}
+            key={index}
+            remarkPlugins={[remarkForumStrikethrough]}
+          >
+            {segment.source}
+          </ReactMarkdown>
+        );
+      })}
     </div>
+  );
+}
+
+export function ForumMarkdown({ children }: { children: string }) {
+  return (
+    <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
+      <ForumMarkdownBody>{children}</ForumMarkdownBody>
+    </HighlightBudgetContext.Provider>
   );
 }
