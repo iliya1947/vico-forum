@@ -246,7 +246,7 @@ Vico Forum находится в ранней pre-release разработке.
   CRLF round-trip/edit. Кодовый head `820d050` прошёл CI #38157088641:
   `checks` и `database` successful, включая 800 application tests,
   builds и schema parity. Local-save triggers впоследствии закрыты пятым
-  audit-пакетом; Clear formatting и attachment findings остаются отдельными пакетами.
+  audit-пакетом, Clear formatting — шестым; attachment type-gate остаётся отдельным пакетом.
   Четвёртый пакет audit-коррекции Stage 3 tooling/rendering (2026-10-11)
   закрывает подтверждённые defects strikethrough, общего highlight budget,
   block insertion/caret и code-only keyboard boundary. Согласованный
@@ -280,6 +280,16 @@ Vico Forum находится в ранней pre-release разработке.
   one-line paste и toolbar formatting. Кодовый head `a6af6a0` прошёл
   CI #38161772563: `checks` и `database` successful, включая
   813 application tests, builds и schema parity.
+  Шестой пакет audit-коррекции Clear formatting (2026-10-11) заменяет
+  прежнюю обработку только непосредственных **/_/~~ wrappers общим source-aware
+  преобразованием поддерживаемого inline-оформления и explicit Markdown links.
+  Команда действует ровно на выделенный диапазон, безопасно разделяет crossing
+  wrappers и сохраняет форматирование невыделенного текста; при пустом выделении
+  применяется ко всему содержимому редактора. Structural Markdown и protected
+  technical content не flatten-ятся. Pure/component regressions покрывают partial
+  strong/link selection и whole-document clear. Attachment type-gate остаётся
+  следующим отдельным подтверждённым finding полного аудита; CI этого пакета
+  фиксируется отдельно.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в

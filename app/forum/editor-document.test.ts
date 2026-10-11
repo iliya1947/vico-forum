@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyTextareaEdit, createEditorHistory, editableCodeRanges, editableVisualTextRanges, editVisualText,
+  applyTextareaEdit, clearInlineMarkdownFormatting, createEditorHistory, editableCodeRanges,
+  editableVisualTextRanges, editVisualText,
   recordEditorEdit, redoEditorEdit, sourceOffsetToTextareaOffset, textareaMarkdown,
   textareaOffsetToSourceOffset, undoEditorEdit,
 } from "./editor-document";
@@ -40,6 +41,46 @@ describe("Editor 2.0 lossless document foundation", () => {
       start: oldStart,
       end: oldStart + "old".length,
     });
+  });
+
+  it("clears supported inline formatting across the requested range while preserving technical syntax", () => {
+    const source = "## **bold** _italic_ ~~strike~~ [link](https://example.com) `code`";
+    const result = clearInlineMarkdownFormatting(
+      source,
+      { start: 0, end: source.length },
+    );
+    expect(result.markdown).toBe("## bold italic strike link `code`");
+    expect(result.selection).toEqual({ start: 0, end: result.markdown.length });
+  });
+
+  it("splits formatting at partial selection boundaries without changing unselected text", () => {
+    const strong = "**alpha beta**";
+    const strongStart = strong.indexOf("pha");
+    const strongEnd = strongStart + "pha b".length;
+    const strongResult = clearInlineMarkdownFormatting(
+      strong,
+      { start: strongStart, end: strongEnd },
+    );
+    expect(strongResult.markdown).toBe("**al**pha b**eta**");
+    expect(strongResult.markdown.slice(
+      strongResult.selection.start,
+      strongResult.selection.end,
+    )).toBe("pha b");
+
+    const link = "[alpha beta](https://example.com)";
+    const linkStart = link.indexOf("pha");
+    const linkEnd = linkStart + "pha b".length;
+    const linkResult = clearInlineMarkdownFormatting(
+      link,
+      { start: linkStart, end: linkEnd },
+    );
+    expect(linkResult.markdown).toBe(
+      "[al](https://example.com)pha b[eta](https://example.com)",
+    );
+    expect(linkResult.markdown.slice(
+      linkResult.selection.start,
+      linkResult.selection.end,
+    )).toBe("pha b");
   });
 
   it("excludes fenced code info and closing fence from code-only key ranges", () => {

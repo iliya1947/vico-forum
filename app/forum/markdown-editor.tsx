@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { ForumMarkdown } from "./markdown";
 import {
   applyTextareaEdit,
+  clearInlineMarkdownFormatting,
   createEditorHistory,
   editableCodeRanges,
   editVisualText,
@@ -450,15 +451,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function clearInlineFormatting() {
       const selection = sourceSelection();
       if (!selection) return;
-      const { start, end } = selection;
-      if (start === end) return;
-      for (const marker of ["**", "~~", "_"]) {
-        if (value.slice(start - marker.length, start) !== marker
-          || value.slice(end, end + marker.length) !== marker) continue;
-        const plain = value.slice(start, end);
-        replaceSourceRange({ start: start - marker.length, end: end + marker.length }, plain);
-        return;
-      }
+      const target = selection.start === selection.end
+        ? { start: 0, end: value.length }
+        : selection;
+      const cleared = clearInlineMarkdownFormatting(value, target, selection);
+      if (cleared.markdown === value) return;
+      commitSource(cleared.markdown, selection, cleared.selection);
+      setPasteWarning(false);
     }
 
     function findNext() {

@@ -205,6 +205,183 @@ export function editableCodeRanges(markdown: string): EditorSelection[] {
   return ranges;
 }
 
+interface FormattingDelimiter {
+  depth: number;
+  open: { start: number; end: number; text: string };
+  close: { start: number; end: number; text: string };
+}
+
+interface MarkdownFormattingClearResult {
+  markdown: string;
+  selection: EditorSelection;
+}
+
+const CLEARABLE_INLINE_NODE_TYPES = new Set(["strong", "emphasis", "delete", "link"]);
+
+function nodeRange(node: PositionedNode): EditorSelection | null {
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  return Number.isSafeInteger(start) && Number.isSafeInteger(end) && start! <= end!
+    ? { start: start!, end: end! }
+    : null;
+}
+
+function inlineFormattingDelimiter(
+  markdown: string,
+  node: PositionedNode,
+  depth: number,
+): FormattingDelimiter | null {
+  if (!CLEARABLE_INLINE_NODE_TYPES.has(node.type)) return null;
+  const range = nodeRange(node);
+  const children = (node.children ?? [])
+    .map(nodeRange)
+    .filter((item): item is EditorSelection => item !== null);
+  if (!range || children.length === 0) return null;
+
+  const contentStart = Math.min(...children.map((item) => item.start));
+  const contentEnd = Math.max(...children.map((item) => item.end));
+  if (contentStart <= range.start || contentEnd >= range.end) return null;
+
+  const open = {
+    start: range.start,
+    end: contentStart,
+    text: markdown.slice(range.start, contentStart),
+  };
+  const close = {
+    start: contentEnd,
+    end: range.end,
+    text: markdown.slice(contentEnd, range.end),
+  };
+  if (!open.text || !close.text) return null;
+  if (node.type === "link" && (open.text !== "[" || !close.text.startsWith("]("))) return null;
+  return { depth, open, close };
+}
+
+function mergeDeletionRanges(ranges: EditorSelection[]): EditorSelection[] {
+  const sorted = [...ranges].sort((left, right) => left.start - right.start || left.end - right.end);
+  const merged: EditorSelection[] = [];
+  for (const range of sorted) {
+    const previous = merged[merged.length - 1];
+    if (!previous || range.start > previous.end) {
+      merged.push({ ...range });
+      continue;
+    }
+    previous.end = Math.max(previous.end, range.end);
+  }
+  return merged;
+}
+
+/**
+ * Remove supported inline text formatting from exactly the requested source range.
+ * Structural Markdown and protected technical content stay intact. Formatting which
+ * crosses a selection boundary is split so unselected text keeps its original style.
+ */
+export function clearInlineMarkdownFormatting(
+  markdown: string,
+  targetSelection: EditorSelection,
+  selectionAfter: EditorSelection = targetSelection,
+): MarkdownFormattingClearResult {
+  const target = validSelection(targetSelection, markdown.length);
+  const preserved = validSelection(selectionAfter, markdown.length);
+  if (target.start === target.end || markdown.length === 0) {
+    return { markdown, selection: preserved };
+  }
+
+  const root = parseForumMarkdown(markdown) as PositionedNode;
+  const deletions: EditorSelection[] = [];
+  const closeAtStart: Array<{ depth: number; text: string }> = [];
+  const openAtEnd: Array<{ depth: number; text: string }> = [];
+
+  function visit(node: PositionedNode, depth: number): void {
+    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
+    if (delimiter) {
+      const contentStart = delimiter.open.end;
+      const contentEnd = delimiter.close.start;
+      if (target.start < contentEnd && target.end > contentStart) {
+        if (target.start <= contentStart) {
+          deletions.push({ start: delimiter.open.start, end: delimiter.open.end });
+        } else {
+          closeAtStart.push({ depth, text: delimiter.close.text });
+        }
+
+        if (target.end >= contentEnd) {
+          deletions.push({ start: delimiter.close.start, end: delimiter.close.end });
+        } else {
+          openAtEnd.push({ depth, text: delimiter.open.text });
+        }
+      }
+    }
+    for (const child of node.children ?? []) visit(child, depth + 1);
+  }
+  visit(root, 0);
+
+  const mergedDeletions = mergeDeletionRanges(deletions);
+  const insertions = new Map<number, string>();
+  if (closeAtStart.length > 0) {
+    insertions.set(
+      target.start,
+      closeAtStart
+        .sort((left, right) => right.depth - left.depth)
+        .map((item) => item.text)
+        .join(""),
+    );
+  }
+  if (openAtEnd.length > 0) {
+    const opening = openAtEnd
+      .sort((left, right) => left.depth - right.depth)
+      .map((item) => item.text)
+      .join("");
+    insertions.set(target.end, (insertions.get(target.end) ?? "") + opening);
+  }
+
+  if (mergedDeletions.length === 0 && insertions.size === 0) {
+    return { markdown, selection: preserved };
+  }
+
+  let next = "";
+  let deletionIndex = 0;
+  for (let index = 0; index <= markdown.length; index += 1) {
+    next += insertions.get(index) ?? "";
+    if (index === markdown.length) break;
+    while (
+      deletionIndex < mergedDeletions.length
+      && mergedDeletions[deletionIndex]!.end <= index
+    ) {
+      deletionIndex += 1;
+    }
+    const deletion = mergedDeletions[deletionIndex];
+    if (deletion && deletion.start <= index && index < deletion.end) continue;
+    next += markdown[index]!;
+  }
+
+  function mapOffset(offset: number, includeInsertionAtBoundary: boolean): number {
+    const bounded = Math.min(Math.max(Math.trunc(offset), 0), markdown.length);
+    let mapped = bounded;
+    for (const deletion of mergedDeletions) {
+      if (deletion.end <= bounded) mapped -= deletion.end - deletion.start;
+      else if (deletion.start < bounded) mapped -= bounded - deletion.start;
+    }
+    for (const [position, text] of insertions) {
+      if (position < bounded || (includeInsertionAtBoundary && position === bounded)) {
+        mapped += text.length;
+      }
+    }
+    return mapped;
+  }
+
+  if (preserved.start === preserved.end) {
+    const caret = mapOffset(preserved.start, true);
+    return { markdown: next, selection: { start: caret, end: caret } };
+  }
+  return {
+    markdown: next,
+    selection: {
+      start: mapOffset(preserved.start, true),
+      end: mapOffset(preserved.end, false),
+    },
+  };
+}
+
 /**
  * Return only leaf text spans which a future WYSIWYG surface can edit safely.
  * All Markdown punctuation, links, code, HTML, tables and unknown nodes remain

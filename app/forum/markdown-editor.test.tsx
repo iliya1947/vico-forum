@@ -668,6 +668,39 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveValue("```tsx\na()bc\n```");
   });
 
+  it("clears formatting from the selected Simple content and keeps surrounding formatting", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultValue="**alpha beta**" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 2);
+    range.setEnd(leaf.firstChild!, 7);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+
+    const menus = [...document.querySelectorAll<HTMLDetailsElement>(".markdown-editor-extra-menu")];
+    await userEvent.click(menus[menus.length - 1]!.querySelector("summary")!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+
+    expect(screen.getByLabelText("Body")).toHaveValue("**al**pha b**eta**");
+  });
+
+  it("clears formatting across the whole document when there is no selection", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultAuthoringMode="advanced"
+      defaultValue={"## **Bold** and [link](https://example.com) with `code`"} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    const menus = [...document.querySelectorAll<HTMLDetailsElement>(".markdown-editor-extra-menu")];
+    await userEvent.click(menus[menus.length - 1]!.querySelector("summary")!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+
+    expect(textarea).toHaveValue("## Bold and link with `code`");
+  });
+
   it("finds and replaces literal source text without changing unrelated Markdown", async () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
       defaultAuthoringMode="advanced" defaultValue="one **one**" /></>);
