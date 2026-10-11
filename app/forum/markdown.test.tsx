@@ -55,6 +55,38 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("Editor 2.0 technical rendering", () => {
+  it("renders ordinary Markdown tables in published content safely", () => {
+    const { container } = renderMarkdown("| Name | Value |\n| --- | --- |\n| **A** | [docs](https://example.org) |");
+    expect(container.querySelectorAll(".forum-markdown-table th")).toHaveLength(2);
+    expect(container.querySelectorAll(".forum-markdown-table td")).toHaveLength(2);
+    expect(screen.getByText("A").tagName).toBe("STRONG");
+    expect(screen.getByRole("link", { name: "docs" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+  });
+
+  it("supports a collapsed spoiler without executing inline HTML or opening images", async () => {
+    const { container } = renderMarkdown(":::spoiler Info\n**secret**\n\n<script>alert(1)</script>\n:::");
+    const spoiler = container.querySelector(".forum-markdown-spoiler");
+    expect(spoiler).not.toHaveAttribute("open");
+    expect(spoiler?.querySelector("summary")).toHaveTextContent("Info");
+    expect(spoiler?.querySelector("strong")).toHaveTextContent("secret");
+    expect(container.querySelector("script, img")).toBeNull();
+    await userEvent.click(screen.getByText("Info"));
+    expect(spoiler).toHaveAttribute("open");
+  });
+
+  it("highlights Diff plus and minus while preserving exact copied code", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const source = "+added\n-removed\n unchanged";
+    const { container } = renderMarkdown(String.fromCharCode(96).repeat(3) + "diff\n" + source + "\n" + String.fromCharCode(96).repeat(3));
+    expect(container.querySelector(".syntax-diff-add")).toHaveTextContent("+added");
+    expect(container.querySelector(".syntax-diff-remove")).toHaveTextContent("-removed");
+    await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith(source);
+  });
+});
+
 describe("ForumMarkdown", () => {
   it("renders CommonMark paragraphs, emphasis, lists, inline code, and fenced code", () => {
     const { container } = renderMarkdown(`First *important* paragraph.
