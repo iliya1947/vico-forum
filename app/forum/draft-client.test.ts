@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearDeviceEditorDrafts, clearLocalEditorDraft, draftStorageKey, listLocalEditorDrafts,
-  readLocalEditorDraft, writeLocalEditorDraft } from "./draft-client";
+  readLocalEditorDraft, writeLocalEditorDraft, localDraftNeedsAttention } from "./draft-client";
 
 const first = { ownerId: "alice", contextKey: "topic:123:reply",
   draftId: "bd526b11-71ed-49c1-b9ec-cbb496e86ba9", payload: { title: "", body: "Alice", tags: "" },
@@ -34,5 +34,19 @@ describe("isolated browser draft cache", () => {
     expect(listLocalEditorDrafts("alice")).toHaveLength(1);
     clearLocalEditorDraft("alice", first.contextKey);
     expect(listLocalEditorDrafts("alice")).toHaveLength(0);
+  });  it("uses version and generation, not skewed client/server times, to list drafts", () => {
+    const saved = { ...first, syncedEditedAt: first.editedAt, baseVersion: 5 };
+    const server = {
+      contextKey: saved.contextKey, draftId: saved.draftId, version: 5,
+      status: "active" as const, editedAt: "2090-01-01T00:00:00.000Z",
+      updatedAt: "2090-01-01T00:00:00.000Z", title: "", snippet: "server",
+    };
+    expect(localDraftNeedsAttention(saved, server)).toBe(false);
+    expect(localDraftNeedsAttention({ ...saved, syncedEditedAt: null }, server)).toBe(true);
+    expect(localDraftNeedsAttention(saved, { ...server, version: 6 })).toBe(true);
+    expect(localDraftNeedsAttention(saved, { ...server, draftId: "e7bdbd73-61d4-4b06-bc03-b24b1c217d55" })).toBe(true);
+    expect(localDraftNeedsAttention(saved, { ...server, status: "published" })).toBe(false);
+    expect(localDraftNeedsAttention(saved, { ...server, draftId: "e7bdbd73-61d4-4b06-bc03-b24b1c217d55", status: "published" })).toBe(true);
   });
+
 });
