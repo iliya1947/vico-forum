@@ -96,7 +96,9 @@ export class DrizzleForumEditorDrafts {
       || editedAt.getTime() > Date.now() + 60_000) throw new Error("invalid draft");
     const now = new Date();
     const whereOwner = and(eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey));
-    const changed = expectedVersion === 0
+    const previous = await this.get(ownerId, contextKey);
+    const isNewGeneration = !previous || previous.draftId !== draftId;
+    const changed = isNewGeneration
       ? await this.db.insert(forumEditorDrafts)
         .values({ ownerId, contextKey, draftId, version: 1, status: "active", payload, editedAt, updatedAt: now })
         .onConflictDoUpdate({
