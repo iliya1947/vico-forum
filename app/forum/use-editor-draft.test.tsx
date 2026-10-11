@@ -18,6 +18,7 @@ void i18n.init({
   resources: { en: { common: {
     editorDraftConflict: "Draft conflict", editorDraftThisDevice: "This device",
     editorDraftOtherDevice: "Other device", editorDraftKeepLocal: "Keep local",
+    editorDraftNoRemoteVersion: "This draft was published or deleted.",
     editorDraftKeepServer: "Keep server",
   } } },
 });
@@ -163,6 +164,7 @@ describe("editor draft lifecycle", () => {
     mount();
     await flush();
     expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    expect(screen.getByText("This draft was published or deleted.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
     expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(8);
