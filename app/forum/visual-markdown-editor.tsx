@@ -31,8 +31,9 @@ interface VisualEditorProps {
 }
 
 export function escapeVisualMarkdownText(value: string): string {
-  // Only the changed text leaf is encoded; surrounding markup is never serialized.
-  return value.replace(/\\|`|\*|_|\[|\]|<|>/gu, "\\$&");
+  // Use the same literal-text escaping rule for visual typing and plain paste:
+  // a leading #, >, list marker or rule must not silently become Markdown syntax.
+  return clipboardPlainToMarkdown(value);
 }
 
 function sourceRange(node: VisualNode): EditorSelection | null {
