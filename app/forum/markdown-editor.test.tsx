@@ -238,6 +238,49 @@ describe("MarkdownEditor", () => {
   });
 
 
+  it("keeps imperative Reply focus and Quote insertion in Simple mode", () => {
+    const editorRef = createRef<MarkdownEditorHandle>();
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      ref={editorRef} id="body" name="body" defaultValue="before after" /></>);
+    const editor = document.querySelector(".markdown-editor")!;
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 7);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+
+    act(() => editorRef.current?.insertText("> selected\n\n"));
+
+    expect(editor).toHaveAttribute("data-authoring", "simple");
+    expect(screen.getByLabelText("Body")).toHaveValue("before > selected\n\nafter");
+    expect(document.activeElement).toHaveAttribute("data-visual-text", "true");
+  });
+
+  it("restores the Simple visual selection through Undo and Redo", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Alpha" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 2);
+    range.setEnd(leaf.firstChild!, 4);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("Al**ph**a");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("Alpha");
+    expect(window.getSelection()?.toString()).toBe("ph");
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("Al**ph**a");
+    expect(window.getSelection()?.toString()).toBe("ph");
+  });
+
   it("returns from preview to an editable focused field for imperative Reply/Quote insertion", async () => {
     const editorRef = createRef<MarkdownEditorHandle>();
     renderEditor(
@@ -432,12 +475,27 @@ describe("MarkdownEditor", () => {
 
   it("does not turn visual source switching into a destructive Markdown round-trip", async () => {
     const source = "  text  \r\n\r\n**bold**\r\n\r\n```tsx\nhello();\n```";
-    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></>);
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
     await chooseView("split");
     await chooseView("write");
     await userEvent.click(screen.getByRole("button", { name: "Simple" }));
-    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toBe(source.replace(/\r\n/gu, "\n"));
+    expect(textarea.value).toBe(source.replace(/\r\n/gu, "\n"));
+    expect(new FormData(textarea.form!).get("body")).toBe(source);
+  });
+
+  it("preserves untouched CRLF bytes when Advanced edits only one source span", () => {
+    const source = "first\r\nsecond\r\nthird";
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor
+      defaultAuthoringMode="advanced" id="body" name="body" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("first\nsecond\nthird");
+    fireEvent.change(textarea, {
+      target: { value: "first\nSECOND\nthird", selectionStart: 12, selectionEnd: 12 },
+    });
+    expect(textarea.value).toBe("first\nSECOND\nthird");
+    expect(new FormData(textarea.form!).get("body")).toBe("first\r\nSECOND\r\nthird");
   });
 
   it("isolates preferred editor mode by account on the same device", async () => {
@@ -569,6 +627,53 @@ describe("MarkdownEditor", () => {
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
       format === "text/plain" ? "New\nParagraph" : "" } });
     expect(screen.getByLabelText("Body")).toHaveValue("ANew\nParagrapha");
+  });
+
+  it("formats an escaped Simple selection at its exact source position", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultValue={"\\# literal"} /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    expect(leaf.textContent).toBe("# literal");
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 2);
+    range.setEnd(leaf.firstChild!, 9);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("\\# **literal**");
+  });
+
+  it("maps a safe Simple selection across multiple Markdown leaves", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultValue="Alpha **Beta** Gamma" /></>);
+    const leaves = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]');
+    expect(leaves.length).toBeGreaterThanOrEqual(3);
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaves[0]!.firstChild!, 0);
+    range.setEnd(leaves[1]!.firstChild!, 4);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(document.querySelector<HTMLElement>(".markdown-editor-visual")!);
+    await userEvent.click(screen.getByRole("button", { name: "Link" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("[Alpha **Beta**](https://) Gamma");
+  });
+
+  it("does not mutate the end of the message when a Simple selection crosses protected content", async () => {
+    const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></>);
+    const leaves = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]');
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaves[0]!.firstChild!, 1);
+    range.setEnd(leaves[leaves.length - 1]!.firstChild!, 2);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(document.querySelector<HTMLElement>(".markdown-editor-visual")!);
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(screen.getByLabelText("Body")).toHaveValue(source);
   });
 
   it("maps a toolbar selection across split DOM text nodes to the full visual offset", async () => {
