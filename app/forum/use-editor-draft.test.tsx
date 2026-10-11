@@ -195,6 +195,28 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
   });
 
+  it("does not resurrect a local draft explicitly removed in another tab", async () => {
+    const local = { ownerId: "alice", contextKey, draftId: oldId,
+      editedAt: new Date().toISOString(), baseVersion: 0, syncedEditedAt: null,
+      payload: { ...empty, body: "Delete from this device" } };
+    writeLocalEditorDraft(local);
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [] });
+      throw new Error("Unexpected fetch");
+    }));
+    const rendered = mount();
+    await flush();
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Delete from this device");
+    const key = "vico:editor:draft:alice:" + encodeURIComponent(contextKey);
+    localStorage.removeItem(key);
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", { key, newValue: null }));
+    });
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("");
+    rendered.unmount();
+    expect(readLocalEditorDraft("alice", contextKey)).toBeNull();
+  });
+
   it("ignores a late previous-account response and flushes the previous owner's unsaved typing", async () => {
     let resolveFirst!: (value: Response) => void;
     const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
