@@ -24,6 +24,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const localRef = useRef<LocalEditorDraft | null>(null);
   const conflictRef = useRef<Conflict | null>(null);
+  const finishedMarkerRef = useRef<{ draftId: string; version: number; updatedAt: string } | null>(null);
   const bodyRef = useRef("");
   const busyRef = useRef(false);
   const callbacks = useRef({ readPayload, restore });
@@ -43,9 +44,11 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     const previous = localRef.current;
     if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) return;
     const next: LocalEditorDraft = {
-      ownerId, contextKey, draftId: previous?.draftId ?? draftId, payload,
+      ownerId, contextKey, draftId: previous?.draftId ?? draftId,
+      startedAt: previous?.startedAt ?? new Date().toISOString(), payload,
       editedAt: new Date().toISOString(),
-      baseVersion: previous?.baseVersion ?? 0, syncedEditedAt: previous?.syncedEditedAt ?? null,
+      baseVersion: previous?.baseVersion ?? finishedMarkerRef.current?.version ?? 0,
+      syncedEditedAt: previous?.syncedEditedAt ?? null,
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
     localRef.current = next;
@@ -62,7 +65,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (!ownerId || !contextKey) return;
     const next: LocalEditorDraft = {
       ownerId, contextKey, draftId: draft.draftId,
-      payload: draft.payload, editedAt: draft.editedAt,
+      startedAt: draft.editedAt, payload: draft.payload, editedAt: draft.editedAt,
       baseVersion: draft.version, syncedEditedAt: draft.editedAt,
     };
     localRef.current = next;
@@ -89,8 +92,15 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       if (identityRef.current !== identity) return;
       const local = localRef.current;
       if (meta?.status !== undefined && meta.status !== "active") {
-        // A tombstone is authoritative only for the same working draft.
-        if (!local || local.draftId === meta.draftId) clearFinished();
+        finishedMarkerRef.current = { draftId: meta.draftId, version: meta.version, updatedAt: meta.updatedAt };
+        if (local && (local.draftId === meta.draftId
+          || Date.parse(local.startedAt) <= Date.parse(meta.updatedAt))) {
+          clearFinished();
+        } else if (local) {
+          const next = { ...local, baseVersion: meta.version };
+          localRef.current = next;
+          writeLocalEditorDraft(next);
+        }
         return;
       }
       if (!meta || (local && meta.version === local.baseVersion && meta.draftId === local.draftId)) return;
@@ -158,6 +168,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   }
   useEffect(() => {
     identityRef.current = identity;
+    finishedMarkerRef.current = null;
     chooseConflict(null);
     if (!identity || !ownerId || !contextKey || !locale) {
       localRef.current = null;
