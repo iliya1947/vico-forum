@@ -141,6 +141,21 @@ describe("Help moderator attention queue", () => {
     expect((await forum.readHelpSolutionsNeedsAttention({}, { signalKinds: [], appeals: false }))?.questions).toEqual([]);
   });
 
+  it("counts every visible pending task, while Mixed counts topics", async () => {
+    expect(await forum.readHelpAttentionCounts(all)).toEqual({
+      "needs-details": 2, "needs-review": 0, "solution-outdated": 0,
+      duplicate: 1, appeals: 2, mixed: 1,
+    });
+    expect(await forum.readHelpAttentionCounts({ signalKinds: ["needs-details"], appeals: false })).toEqual({
+      "needs-details": 2, "needs-review": 0, "solution-outdated": 0,
+      duplicate: 0, appeals: 0, mixed: 0,
+    });
+    expect(await forum.readHelpAttentionCounts({ signalKinds: [], appeals: true })).toEqual({
+      "needs-details": 0, "needs-review": 0, "solution-outdated": 0,
+      duplicate: 0, appeals: 2, mixed: 0,
+    });
+  });
+
   it("returns full individual case records and preserves moderator visibility", async () => {
     const details = await forum.readHelpAttentionCases("needs-details", all);
     expect(details.cases.map(({ id }) => id)).toEqual(["s1", "s2"]);
