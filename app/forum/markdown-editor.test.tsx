@@ -526,12 +526,14 @@ describe("MarkdownEditor", () => {
   it("converts spreadsheet text pasted into Simple mode to a Markdown table", () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
     const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
     const selection = window.getSelection()!;
     const range = document.createRange();
     range.setStart(leaf.firstChild!, leaf.textContent!.length);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
+    expect(selection.anchorNode).toBe(leaf.firstChild);
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
       format === "text/plain" ? "A\tB\n1\t2" : "" } });
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("| 1 | 2 |");
