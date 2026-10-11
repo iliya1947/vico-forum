@@ -736,7 +736,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             </button>
             {authoringMode === "simple"
               ? <button type="button" disabled={disabled} aria-pressed={mode === "preview"}
-                  onClick={() => setMode(mode === "preview" ? "write" : "preview")}>{t("editorModePreview")}</button>
+                  onClick={() => {
+                    if (mode === "preview") {
+                      pendingVisualSelectionRef.current =
+                        visualSelectionRef.current ?? historyRef.current.current.selection;
+                      setMode("write");
+                    } else {
+                      rememberSelection(sourceSelection());
+                      setMode("preview");
+                    }
+                  }}>{t("editorModePreview")}</button>
               : <details className="markdown-editor-preview-menu">
                   <summary>{t("editorModePreview")}</summary>
                   <div className="markdown-editor-preview-options">
@@ -768,7 +777,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <VisualMarkdownEditor
               markdown={value} disabled={disabled}
               onTextEdit={updateVisualText}
-              onSelection={(selection) => { visualSelectionRef.current = selection; }}
+              onSelection={(selection) => {
+                visualSelectionKnownRef.current = true;
+                visualSelectionRef.current = selection;
+                rememberSelection(selection);
+              }}
               onInsertParagraph={insertVisualParagraph}
               onEditTechnical={() => switchAuthoring("advanced")}
               onReplaceRange={replaceSourceRange}
@@ -778,18 +791,29 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             />
           ) : null}
           <div className={"markdown-editor-write-pane" + (mode === "preview" ? " is-preview-hidden" : "")}>
+            <input type="hidden" name={name} value={value} disabled={disabled} readOnly />
             <textarea
               ref={textareaRef}
               id={id}
-              name={name}
               required={required}
               tabIndex={mode === "preview" || authoringMode === "simple" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
               aria-describedby={describedBy}
-              value={value}
-              onChange={(event) => commitSource(event.target.value)}
-              onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") draft.saveLocal(); }}
+              value={textareaMarkdown(value)}
+              onChange={(event) => commitTextareaValue(
+                event.currentTarget.value,
+                event.currentTarget.selectionStart ?? event.currentTarget.value.length,
+                event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
+              )}
+              onSelect={(event) => rememberSelection({
+                start: textareaOffsetToSourceOffset(value, event.currentTarget.selectionStart ?? 0),
+                end: textareaOffsetToSourceOffset(value, event.currentTarget.selectionEnd ?? 0),
+              })}
+              onKeyUp={(event) => {
+                rememberSelection(textareaSourceSelection());
+                if (event.key === " " || event.key === "Enter") draft.saveLocal();
+              }}
               onPasteCapture={() => { window.setTimeout(() => draft.saveLocal(), 0); }}
               onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
@@ -810,6 +834,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 }
               }}
               onBeforeInput={(event) => {
+                rememberSelection({
+                  start: textareaOffsetToSourceOffset(value, event.currentTarget.selectionStart ?? 0),
+                  end: textareaOffsetToSourceOffset(value, event.currentTarget.selectionEnd ?? 0),
+                });
                 const inputType = (event.nativeEvent as InputEvent).inputType;
                 if (inputType !== "historyUndo" && inputType !== "historyRedo") return;
                 event.preventDefault();
@@ -817,15 +845,21 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               }}
               onFocus={() => {
                 if (mode === "preview") setMode("write");
+                rememberSelection(textareaSourceSelection());
               }}
               onInvalid={() => {
-                if (mode !== "preview" && authoringMode !== "simple") return;
-                const textarea = textareaRef.current;
-                const start = textarea?.selectionStart ?? value.length;
-                const end = textarea?.selectionEnd ?? start;
-                pendingSelectionRef.current = { start, end };
-                setAuthoringMode("advanced");
-                setMode("write");
+                const selection = textareaSourceSelection();
+                if (authoringMode === "simple") {
+                  pendingVisualSelectionRef.current = selection;
+                  visualSelectionRef.current = selection;
+                  visualSelectionKnownRef.current = true;
+                  setMode("write");
+                  return;
+                }
+                if (mode === "preview") {
+                  pendingSelectionRef.current = selection;
+                  setMode("write");
+                }
               }}
             />
           </div>
