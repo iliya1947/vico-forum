@@ -341,19 +341,25 @@ composition without changing the forum hierarchy or schema:
   linked from the upper account row beside the regular notification bell. The former
   Help `?mode=attention` link redirects to the new standalone page.
   The center has three distinct modes: `Signals`, `Complaints`, `Security`.
-  The mode switcher is on the **right of the same toolbar** where each mode's own
-  groups appear on the left. In Signals there are six ordered groups:
-  Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
-  These are switches rather than vertically stacked sections, each showing actual
-  persisted pending moderation cases; Mixed repeats questions with 2+ pending
-  visible signals in their other applicable groups, and appeals remain independent.
+  The mode switcher is on the **right side of the page heading** and each
+  mode's groups appear in their own toolbar below. The redundant Moderation
+  eyebrow is removed. Signals have six ordered groups: Needs details, Needs review,
+  Solution outdated, Duplicate, Appeals, Mixed. Each group displays actionable
+  individual submissions with author, explanation, timestamp and target links,
+  and Accept/Reject actions protected by the current effective permission.
+  Appeals expose the appellant's reasoning and canonical original; Needs review
+  also contains separately identified authoritative best-answer status tasks
+  (not fake user submissions), linking to the current solution controls.
+  Mixed repeats cases on topics with 2+ pending visible signals in their original
+  group, without duplicating the authoritative records. Each group selects its
+  own cases before paging rather than truncating a global active-topic list.
   Complaints and Security are isolated empty **scaffolds**, each with Group 1,
   Group 2, Group 3 switches. Those groups are temporary labels, **no synthetic
   notifications and no invented complaint/security backend**. Their real categories,
   data sources, permissions, and actions are to be defined in the respective
   subsystem chats. Only users with existing Help moderation permissions can
-  currently access this foundation. Existing 100-question signal query bound and
-  per-capability filtering remain. PR #198 adds authenticated
+  currently access this foundation. Case-level permission filtering remains;
+  moderation cases are no longer constrained by the previous 100-question activity bound. PR #198 adds authenticated
  server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
   projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
