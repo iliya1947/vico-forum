@@ -25,7 +25,7 @@ interface VisualEditorProps {
 
 export function escapeVisualMarkdownText(value: string): string {
   // Only the changed text leaf is encoded; surrounding markup is never serialized.
-  return value.replace(/[\\`*_\[\]<>]/gu, "\\return value.replace(/[\`*_[\]<>\\]/gu, "\\$&");");
+  return value.replace(/[\\`*_\[\]<>]/gu, "\\$&");
 }
 
 function sourceRange(node: VisualNode): EditorSelection | null {
