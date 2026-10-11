@@ -556,6 +556,22 @@ describe("MarkdownEditor", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
+  it("uses literal plain text for Ctrl+Shift+V even if HTML is available", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Plain" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 5);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? "\n# Header" : format === "text/html" ? "<h1>Header</h1>" : "" } });
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\# Header");
+  });
+
   it("submits the Simple visual authoring form on Ctrl+Enter", () => {
     const submitted = vi.fn();
     renderEditor(<form onSubmit={(event) => { event.preventDefault(); submitted(); }}>
