@@ -254,7 +254,7 @@ const markdownComponents: Components = {
       ? /(?:^|\s)(?:file|filename)=(?:"([^"]+)"|'([^']+)'|([^\s]+))/u.exec(metadata)
       : null;
     const name = fileMatch?.[1] ?? fileMatch?.[2] ?? fileMatch?.[3];
-    const filename = name && name.length <= 256 && !/[\u0000-\u001f]/u.test(name) ? name : undefined;
+    const filename = name && name.length <= 256 && ![...name].some((character) => character.charCodeAt(0) < 32) ? name : undefined;
     const block = Boolean(language) || source.includes("\n");
 
     if (!block) {
