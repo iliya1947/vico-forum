@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import type {
   ForumAttentionQueueCase,
+  ForumAttentionQueueCounts,
   ForumHelpSolutionsFilters,
   ForumHelpSolutionsPage,
   ForumPopularPeriod,
@@ -1408,11 +1409,12 @@ type AttentionQueuePresentation = {
   page: number;
 };
 
-export function AttentionCenterView({ locale, mode, group, queue, actionData, isPreview = false }: {
+export function AttentionCenterView({ locale, mode, group, queue, counts, actionData, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
   queue: AttentionQueuePresentation | null;
+  counts?: ForumAttentionQueueCounts | null;
   referenceTime?: string;
   actionData?: ForumMutationError;
   isPreview?: boolean;
@@ -1461,7 +1463,8 @@ export function AttentionCenterView({ locale, mode, group, queue, actionData, is
               <Link key={item.id}
                 className={"help-solutions-mode" + (activeGroup.id === item.id ? " is-active" : "")}
                 to={pathFor(mode, item.id)} aria-current={activeGroup.id === item.id ? "page" : undefined}>
-                {item.label}
+                {item.label}{mode === "signals" && counts
+                  ? ` (${counts[item.id as keyof ForumAttentionQueueCounts]})` : ""}
               </Link>
             ))}
           </nav>
