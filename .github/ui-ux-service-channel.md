@@ -4200,3 +4200,13 @@ Owner's "..." authorized continuing the post-review work. Both findings independ
 2. `PROJECT_STATE.md`: changed document `Последнее обновление` header from `2026-10-10` to `2026-10-11` (finding #4240708140).
 
 Exact implementation PR head: `eec38b0f67b2cade5d6358537a472a7fd93b780e`. [CI #38121847206](https://github.com/iliya1947/vico-forum/actions/runs/38121847206) passed both `checks` and `database`. Both independent Codex review threads `PRRT_kwDOUTDpW86rLaBY` and `PRRT_kwDOUTDpW86rLaBZ` are marked resolved. AGENTS.md does **not** require another manual Codex review for documentation-only changes. PR #217 is now **Ready for review (not Draft)**, still open and mergeable, owner alone merges. The owner-approved later UX/visual refinement of the moderator attention case queue remains deferred and must not block this MVP PR. No production deploy or code change.
+
+## PR #217: focused documentation diff boundary check after owner quality concern — 2026-10-11
+
+Owner raised concern about repeated unrelated documentation damage and needing to repeat reviews. ChatGPT performed a *focused changed-document diff verification*, not a repository-wide document audit: compared current PR #217 `docs/UI_UX_PASS.md` and `PROJECT_STATE.md` against `main` and inspected all removals and replacement boundaries.
+
+- The prior loss of PR #198 `Want to help` clause is restored. No further out-of-scope removed descriptions were found in the two documents' PR patch: UI document removes only the superseded old Help `?mode=attention` description; state changes also reflect merged PR #214.
+- Found two additional stale statements **inside the new PR #217 state paragraph**: modes/groups described as side-by-side on the same toolbar although the actual UI places the mode switch to the right of the heading and groups beneath; and Codex review / final CI incorrectly still marked pending after both completed.
+- Corrected only these two state statements in documentation-only commit `ad2f9794ea06fbbd07fdb7d3c0f07d043a6ef089` (no application/schema/test/code changes). [CI #38122810951](https://github.com/iliya1947/vico-forum/actions/runs/38122810951) passed both `checks` and `database` on exact head. Existing two Codex threads remain resolved; no repeat manual review required for documentation-only change. PR body status updated; PR remains Ready for review, open, not merged. Merge remains owner-only.
+
+Do not overstate this as a complete documentation audit or proof that no other PR defect exists. For future scoped edits, compare intact adjacent paragraphs and all removed lines against `main` before PR review; this incident was caused by overwriting past the intended paragraph boundary and insufficient diff inspection.
