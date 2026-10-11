@@ -4191,3 +4191,12 @@ Independent Codex review completed for exact implementation head `3480fc2964f19c
 2. [Codex finding #4240708140](https://github.com/iliya1947/vico-forum/pull/217#discussion_r4240708140), `PROJECT_STATE.md`: header still says `Последнее обновление: 2026-10-10` even though this PR records owner acceptance, Pages and CI results dated `2026-10-11`. Update document's last-updated date. Low severity metadata inconsistency, but still current-scope.
 
 **Consensus:** both confirmed; minimal documentation-only patch suffices, no backend/UI/schema change. User asked to **verify** the two findings; no implementation patch made during verification. No repeat Codex review required if only documentation changes per `AGENTS.md`. After a separate instruction to continue: apply both doc fixes as a single package, run relevant checks, resolve the two review threads, update shared channel, mark PR ready (owner alone merges). PR remains Draft until then.
+
+## PR #217 — two reviewed documentation findings fixed and merge-ready (2026-10-11)
+
+Owner's "..." authorized continuing the post-review work. Both findings independently confirmed on head `3480fc2` were fixed **without changing implementation code** in real PR #217 branch `chatgpt/help-attention-moderation-queue`:
+
+1. `docs/UI_UX_PASS.md`: restored the existing PR #198 `Want to help / Хочу помочь` as `?mode=help` clause after new attention-center description, with coherent sentence/paragraph separation (finding #4240708139).
+2. `PROJECT_STATE.md`: changed document `Последнее обновление` header from `2026-10-10` to `2026-10-11` (finding #4240708140).
+
+Exact implementation PR head: `eec38b0f67b2cade5d6358537a472a7fd93b780e`. [CI #38121847206](https://github.com/iliya1947/vico-forum/actions/runs/38121847206) passed both `checks` and `database`. Both independent Codex review threads `PRRT_kwDOUTDpW86rLaBY` and `PRRT_kwDOUTDpW86rLaBZ` are marked resolved. AGENTS.md does **not** require another manual Codex review for documentation-only changes. PR #217 is now **Ready for review (not Draft)**, still open and mergeable, owner alone merges. The owner-approved later UX/visual refinement of the moderator attention case queue remains deferred and must not block this MVP PR. No production deploy or code change.
