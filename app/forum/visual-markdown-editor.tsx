@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { EditorSelection } from "./editor-document";
 import { ForumMarkdown } from "./markdown";
 import { segmentTechnicalMarkdown, encodeTableCell, type MarkdownTable } from "./technical-markdown";
+import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
 
 interface VisualNode {
   type: string;
@@ -26,6 +27,7 @@ interface VisualEditorProps {
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
   onPasteTable(range: EditorSelection, plain: string): void;
+  onPasteFallback(): void;
 }
 
 export function escapeVisualMarkdownText(value: string): string {
@@ -42,7 +44,7 @@ function sourceRange(node: VisualNode): EditorSelection | null {
 }
 
 function VisualTextLeaf({
-  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph, onPasteTable,
+  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph, onPasteTable, onReplaceRange, onPasteFallback,
 }: {
   text: string;
   range: EditorSelection;
@@ -52,6 +54,8 @@ function VisualTextLeaf({
   onSelection: VisualEditorProps["onSelection"];
   onInsertParagraph: VisualEditorProps["onInsertParagraph"];
   onPasteTable: VisualEditorProps["onPasteTable"];
+  onReplaceRange: VisualEditorProps["onReplaceRange"];
+  onPasteFallback: VisualEditorProps["onPasteFallback"];
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
@@ -112,10 +116,19 @@ function VisualTextLeaf({
         if (!selection || selection.rangeCount === 0) return;
         const active = selection.getRangeAt(0);
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
+        const selected = {
+          start: range.start + Math.max(0, active.startOffset),
+          end: range.start + Math.max(active.startOffset, active.endOffset),
+        };
         if (plain.includes("\t")) {
-          const start = Math.max(0, active.startOffset);
-          const end = Math.max(start, active.endOffset);
-          onPasteTable({ start: range.start + start, end: range.start + end }, plain);
+          onPasteTable(selected, plain);
+          return;
+        }
+        const html = event.clipboardData.getData("text/html");
+        if (html || plain.includes("\n") || plain.includes("\r")) {
+          const converted = html ? clipboardHtmlToMarkdown(html) : null;
+          onReplaceRange(selected, converted ?? clipboardPlainToMarkdown(plain));
+          if (html && converted === null) onPasteFallback();
           return;
         }
         active.deleteContents();
@@ -134,7 +147,7 @@ function VisualTextLeaf({
 function VisualNodeView({
   node, markdown, disabled, baseOffset, ...actions
 }: { node: VisualNode; markdown: string; disabled: boolean; baseOffset: number } & Pick<
-VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension" | "onPasteTable"
+VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension" | "onPasteTable" | "onPasteFallback"
 >): ReactNode {
   const { t } = useTranslation("common");
   const children = node.children?.map((child, index) =>
@@ -281,7 +294,8 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
           range={{ start: sourceBase + markdown.length, end: sourceBase + markdown.length }}
           disabled={disabled} onTextEdit={actions.onTextEdit}
           onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph}
-          onPasteTable={actions.onPasteTable} /></p>
+          onPasteTable={actions.onPasteTable}
+          onReplaceRange={actions.onReplaceRange} onPasteFallback={actions.onPasteFallback} /></p>
       ) : null}
     </section>
   );
