@@ -144,6 +144,21 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
     case "listItem": return <li>{children}</li>;
     case "thematicBreak": return <hr />;
     case "break": return <br />;
+    case "link": {
+      const range = sourceRange(node);
+      if (range && markdown[range.start] === "[") return (
+        <span className="markdown-editor-protected" data-visual-protected="link-target">
+          <span className="markdown-editor-visual-link">{children}</span>
+          <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+            Markdown ↗
+          </button>
+        </span>
+      );
+      return <span className="markdown-editor-protected" data-visual-protected="link">
+        <code>{node.children?.map((child) => child.value ?? "").join("") ?? ""}</code>
+        <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>Markdown ↗</button>
+      </span>;
+    }
     case "text": {
       const range = sourceRange(node);
       if (!range) return node.value ?? "";
