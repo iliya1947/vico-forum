@@ -234,6 +234,15 @@ describe("Help moderator attention queue", () => {
     })).cases).toEqual([]);
   });
 
+  it("locks appeal identity when a moderator acts on a case", async () => {
+    await expect(forum.resolveHelpDuplicateAppeal("mixed", "manager", "rejected", "another-appeal"))
+      .rejects.toThrow("expected pending appeal");
+    const stillPending = await forum.readPendingHelpDuplicateAppeal("mixed");
+    expect(stillPending?.id).toBe("a1");
+    await forum.resolveHelpDuplicateAppeal("mixed", "manager", "rejected", "a1");
+    expect(await forum.readPendingHelpDuplicateAppeal("mixed")).toBeUndefined();
+  });
+
   it("pages individual signals after filtering by the selected group", async () => {
     await client.query(`
       insert into "user" (id, name, email, email_verified, created_at, updated_at)
