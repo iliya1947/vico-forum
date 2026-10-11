@@ -127,7 +127,7 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
     ({ accepted: false, fileName: name, detected, reason, suspicious, scanStatus: "rejected" });
   const maxBytes = candidate.maxBytes ?? DEFAULT_ATTACHMENT_MAX_BYTES;
   if (!name || name === "." || name === ".." || name.length > 255
-    || /[\u0000-\u001f\u007f]/u.test(name)) return reject("invalid-name", false);
+    || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return reject("invalid-name", false);
   if (!Number.isSafeInteger(candidate.size) || candidate.size <= 0) return reject("empty", false);
   if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || candidate.size > maxBytes) return reject("too-large", false);
   if (candidate.prefix.length < Math.min(candidate.size, ATTACHMENT_SNIFF_BYTES)) return reject("insufficient-evidence", false);
