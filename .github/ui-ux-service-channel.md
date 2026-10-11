@@ -4138,3 +4138,41 @@ https://iliya1947.github.io/vico-forum/?embed=1&scenario=attention-signals&ident
 and confirm updated individual-case cards, actions, and six group totals.
 If Pages serves an old build, diagnose branch workflow/publishing before
 continuing. Production was not deployed; no new review requested yet.
+
+## PR #217: Pages publication root-cause and verified recovery — 2026-10-11
+
+Owner observed stale UI progress preview despite successful CI. Complete chain verified:
+
+- Original PR #217 implementation branch `chatgpt/help-attention-moderation-queue`
+  at code head `492efd6a0a74e2564f04806ba864a0fdedd6edcb`:
+  PR CI #38100711549 checks+database succeeded, but push Pages
+  [#38100709642](https://github.com/iliya1947/vico-forum/actions/runs/38100709642)
+  had successful `build` and **failed `deploy` before any job steps**. The last
+  prior successful Pages [#38087221468](https://github.com/iliya1947/vico-forum/actions/runs/38087221468)
+  was from a different `chatgpt/ui-*` branch, not the implementation PR.
+- The blocker is the Pages deployment environment's branch eligibility:
+  verified operationally by publishing the exact same code commit from a new
+  `chatgpt/ui-pr217-case-preview` mirror branch.
+  [#38101437497](https://github.com/iliya1947/vico-forum/actions/runs/38101437497)
+  completed build+deploy successfully. The exact environment protection rule
+  text was not accessible (the failed deploy job has no steps/logs); don't
+  claim its particular expression is known.
+- Removed the ineffective `chatgpt/help-attention-*` workflow trigger from
+  implementation PR; `chatgpt/ui-*` is the verified preview publication path.
+  PROJECT_STATE and PR body updated with the truth. Implementation PR head now
+  `7351170821a2ef163a99e3c292d83525444fbeee`, preview-only branch fast-forwarded
+  to **the exact same commit**, and Pages
+  [#38101534292](https://github.com/iliya1947/vico-forum/actions/runs/38101534292)
+  **build+deploy successful**. Exact-head CI
+  [#38101530150](https://github.com/iliya1947/vico-forum/actions/runs/38101530150)
+  **checks+database successful**.
+- This is static Pages only; browser DOM/visual acceptance cannot be
+  independently verified with current tools, so owner must confirm that
+  https://iliya1947.github.io/vico-forum/?embed=1&scenario=attention-signals&identity=manager
+  displays individual case cards with explanations and updated 6 group totals.
+  If the implementation PR head changes again before acceptance, resync the
+  preview mirror and verify **new** Pages run success; do not assume CI green
+  guarantees Pages deploy. Do not run Codex review until owner visual acceptance.
+
+No main merge or production deployment. Only a preview branch and bounded
+implementation workflow/documentation changes were performed.
