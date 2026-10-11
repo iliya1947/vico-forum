@@ -20,7 +20,7 @@ interface VisualNode {
 interface VisualEditorProps {
   markdown: string;
   disabled?: boolean;
-  onTextEdit(range: EditorSelection, value: string): void;
+  onTextEdit(range: EditorSelection, value: string, selectionAfter?: EditorSelection): void;
   onSelection(selection: EditorSelection | null): void;
   onInsertParagraph(offset: number): void;
   onEditTechnical(): void;
@@ -50,6 +50,184 @@ function visualSelectionOffsets(element: HTMLElement, selection: Range, text: st
   to.selectNodeContents(element);
   to.setEnd(selection.endContainer, selection.endOffset);
   return { start: from.toString().length, end: to.toString().length };
+}
+
+const ASCII_PUNCTUATION = new Set([...!"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"]);
+
+function decodedReference(source: string): string | null {
+  if (!source.startsWith("&") || !source.endsWith(";") || typeof document === "undefined") return null;
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = source;
+  const decoded = textarea.value;
+  return decoded !== source ? decoded : null;
+}
+
+function sourceVisualBoundaries(raw: string, text: string): Array<number | null> | null {
+  const boundaries: Array<number | null> = Array(text.length + 1).fill(null);
+  boundaries[0] = 0;
+  let source = 0;
+  let visual = 0;
+
+  while (source < raw.length && visual < text.length) {
+    if (raw[source] === "\\" && source + 1 < raw.length
+      && ASCII_PUNCTUATION.has(raw[source + 1]!)
+      && text[visual] === raw[source + 1]) {
+      source += 2;
+      visual += 1;
+      boundaries[visual] = source;
+      continue;
+    }
+
+    if (raw[source] === "&") {
+      const semicolon = raw.indexOf(";", source + 1);
+      if (semicolon > source && semicolon - source <= 32) {
+        const encoded = raw.slice(source, semicolon + 1);
+        const decoded = decodedReference(encoded);
+        if (decoded && text.startsWith(decoded, visual)) {
+          source = semicolon + 1;
+          visual += decoded.length;
+          boundaries[visual] = source;
+          continue;
+        }
+      }
+    }
+
+    if (raw[source] !== text[visual]) return null;
+    source += 1;
+    visual += 1;
+    boundaries[visual] = source;
+  }
+
+  return source === raw.length && visual === text.length ? boundaries : null;
+}
+
+export function visualOffsetToSourceOffset(raw: string, text: string, visualOffset: number): number | null {
+  if (!Number.isSafeInteger(visualOffset) || visualOffset < 0 || visualOffset > text.length) return null;
+  if (raw === text) return visualOffset;
+  return sourceVisualBoundaries(raw, text)?.[visualOffset] ?? null;
+}
+
+export function sourceOffsetToVisualOffset(raw: string, text: string, sourceOffset: number): number | null {
+  if (!Number.isSafeInteger(sourceOffset) || sourceOffset < 0 || sourceOffset > raw.length) return null;
+  if (raw === text) return sourceOffset;
+  const boundaries = sourceVisualBoundaries(raw, text);
+  if (!boundaries) return null;
+  const visual = boundaries.findIndex((offset) => offset === sourceOffset);
+  return visual >= 0 ? visual : null;
+}
+
+function leafForDomPoint(root: HTMLElement, node: Node): HTMLElement | null {
+  const element = node instanceof HTMLElement ? node : node.parentElement;
+  const leaf = element?.closest<HTMLElement>('[data-visual-text="true"]') ?? null;
+  return leaf && root.contains(leaf) ? leaf : null;
+}
+
+function domOffsetWithinLeaf(leaf: HTMLElement, node: Node, offset: number): number | null {
+  if (!leaf.contains(node) && leaf !== node) return null;
+  const range = document.createRange();
+  range.selectNodeContents(leaf);
+  try {
+    range.setEnd(node, offset);
+  } catch {
+    return null;
+  }
+  return range.toString().length;
+}
+
+function sourcePointForDomPoint(
+  root: HTMLElement,
+  markdown: string,
+  sourceBase: number,
+  node: Node,
+  offset: number,
+): number | null {
+  const leaf = leafForDomPoint(root, node);
+  if (!leaf) return null;
+  const start = Number(leaf.dataset.sourceStart);
+  const end = Number(leaf.dataset.sourceEnd);
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || end < start) return null;
+  const localStart = start - sourceBase;
+  const localEnd = end - sourceBase;
+  if (localStart < 0 || localEnd > markdown.length) return null;
+  const raw = markdown.slice(localStart, localEnd);
+  const text = leaf.textContent ?? "";
+  const visualOffset = domOffsetWithinLeaf(leaf, node, offset);
+  if (visualOffset === null) return null;
+  const relative = visualOffsetToSourceOffset(raw, text, visualOffset);
+  return relative === null ? null : start + relative;
+}
+
+export function visualDomSelection(
+  root: HTMLElement,
+  markdown: string,
+  sourceBase = 0,
+): EditorSelection | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
+  const fragment = range.cloneContents();
+  if (fragment.querySelector?.('[data-visual-protected]')) return null;
+  const start = sourcePointForDomPoint(root, markdown, sourceBase, range.startContainer, range.startOffset);
+  const end = sourcePointForDomPoint(root, markdown, sourceBase, range.endContainer, range.endOffset);
+  return start === null || end === null ? null : { start, end };
+}
+
+function domPointAtTextOffset(leaf: HTMLElement, target: number): { node: Node; offset: number } | null {
+  const walker = document.createTreeWalker(leaf, NodeFilter.SHOW_TEXT);
+  let remaining = target;
+  let node = walker.nextNode();
+  while (node) {
+    const length = node.textContent?.length ?? 0;
+    if (remaining <= length) return { node, offset: remaining };
+    remaining -= length;
+    node = walker.nextNode();
+  }
+  return target === 0 ? { node: leaf, offset: 0 } : null;
+}
+
+function leafForSourceOffset(root: HTMLElement, offset: number, preferEnd: boolean): HTMLElement | null {
+  const leaves = [...root.querySelectorAll<HTMLElement>('[data-visual-text="true"]')];
+  const candidates = leaves.filter((leaf) => {
+    const start = Number(leaf.dataset.sourceStart);
+    const end = Number(leaf.dataset.sourceEnd);
+    return Number.isSafeInteger(start) && Number.isSafeInteger(end) && start <= offset && offset <= end;
+  });
+  if (candidates.length === 0) return null;
+  return preferEnd ? candidates[candidates.length - 1]! : candidates[0]!;
+}
+
+export function restoreVisualDomSelection(
+  root: HTMLElement,
+  markdown: string,
+  selection: EditorSelection,
+): boolean {
+  const startLeaf = leafForSourceOffset(root, selection.start, false);
+  const endLeaf = leafForSourceOffset(root, selection.end, true);
+  if (!startLeaf || !endLeaf) return false;
+
+  const point = (leaf: HTMLElement, sourceOffset: number) => {
+    const start = Number(leaf.dataset.sourceStart);
+    const end = Number(leaf.dataset.sourceEnd);
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)) return null;
+    const raw = markdown.slice(start, end);
+    const text = leaf.textContent ?? "";
+    const visual = sourceOffsetToVisualOffset(raw, text, sourceOffset - start);
+    return visual === null ? null : domPointAtTextOffset(leaf, visual);
+  };
+  const start = point(startLeaf, selection.start);
+  const end = point(endLeaf, selection.end);
+  if (!start || !end) return false;
+
+  startLeaf.focus();
+  const domRange = document.createRange();
+  domRange.setStart(start.node, start.offset);
+  domRange.setEnd(end.node, end.offset);
+  const domSelection = window.getSelection();
+  if (!domSelection) return false;
+  domSelection.removeAllRanges();
+  domSelection.addRange(domRange);
+  return true;
 }
 
 function sourceRange(node: VisualNode): EditorSelection | null {
@@ -88,15 +266,23 @@ function VisualTextLeaf({
   const reportSelection = () => {
     const element = ref.current;
     const selection = window.getSelection();
-    if (!element || !selection || !selection.anchorNode || !selection.focusNode
-      || !element.contains(selection.anchorNode) || !element.contains(selection.focusNode)) {
+    if (!element || !selection || selection.rangeCount === 0) {
       onSelection(null);
       return;
     }
-    // Escaped Markdown does not have a one-to-one visual/source offset map.
-    const offsets = raw === text && selection.rangeCount > 0
-      ? visualSelectionOffsets(element, selection.getRangeAt(0), text) : null;
-    onSelection(offsets ? { start: range.start + offsets.start, end: range.start + offsets.end } : null);
+    const offsets = visualSelectionOffsets(element, selection.getRangeAt(0), element.textContent ?? "");
+    if (!offsets) {
+      onSelection(null);
+      return;
+    }
+    const currentText = element.textContent ?? "";
+    const currentRaw = escapeVisualMarkdownText(currentText);
+    const start = visualOffsetToSourceOffset(currentRaw, currentText, offsets.start);
+    const end = visualOffsetToSourceOffset(currentRaw, currentText, offsets.end);
+    onSelection(start === null || end === null ? null : {
+      start: range.start + start,
+      end: range.start + end,
+    });
   };
 
   return (
@@ -109,9 +295,20 @@ function VisualTextLeaf({
       spellCheck
       data-visual-text="true"
       data-source-start={range.start}
+      data-source-end={range.end}
+      onBeforeInput={reportSelection}
       onInput={(event) => {
         const next = (event.currentTarget.textContent ?? "").replace(/[\r\n]+/gu, " ");
-        onTextEdit(range, next);
+        const selection = window.getSelection();
+        const domRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        const offsets = domRange ? visualSelectionOffsets(event.currentTarget, domRange, event.currentTarget.textContent ?? "") : null;
+        const escaped = escapeVisualMarkdownText(next);
+        const afterStart = offsets ? visualOffsetToSourceOffset(escaped, next, offsets.start) : null;
+        const afterEnd = offsets ? visualOffsetToSourceOffset(escaped, next, offsets.end) : null;
+        onTextEdit(range, next, afterStart === null || afterEnd === null ? undefined : {
+          start: range.start + afterStart,
+          end: range.start + afterEnd,
+        });
       }}
       onSelect={reportSelection}
       onKeyUp={reportSelection}
@@ -135,16 +332,18 @@ function VisualTextLeaf({
         if (!selection || selection.rangeCount === 0) return;
         const active = selection.getRangeAt(0);
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
-        // A visual text position cannot be used as a source byte offset when
-        // escape sequences or multiple DOM nodes make the mapping ambiguous.
-        const offsets = raw === text ? visualSelectionOffsets(event.currentTarget, active, text) : null;
-        if (!offsets) {
+        const currentText = event.currentTarget.textContent ?? "";
+        const offsets = visualSelectionOffsets(event.currentTarget, active, currentText);
+        const currentRaw = escapeVisualMarkdownText(currentText);
+        const sourceStart = offsets ? visualOffsetToSourceOffset(currentRaw, currentText, offsets.start) : null;
+        const sourceEnd = offsets ? visualOffsetToSourceOffset(currentRaw, currentText, offsets.end) : null;
+        if (sourceStart === null || sourceEnd === null) {
           onPasteFallback();
           return;
         }
         const selected = {
-          start: range.start + offsets.start,
-          end: range.start + offsets.end,
+          start: range.start + sourceStart,
+          end: range.start + sourceEnd,
         };
         if (plain.includes("\t")) {
           onPasteTable(selected, plain);
@@ -298,8 +497,15 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
   const { markdown, disabled = false, sourceBase = 0, ...actions } = props;
   const { t } = useTranslation("common");
   const segments = segmentTechnicalMarkdown(markdown);
+  const reportSurfaceSelection = (root: HTMLElement) => {
+    actions.onSelection(visualDomSelection(root, markdown, sourceBase));
+  };
   return (
-    <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple">
+    <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
+      onSelect={(event) => reportSurfaceSelection(event.currentTarget)}
+      onMouseUp={(event) => reportSurfaceSelection(event.currentTarget)}
+      onKeyUp={(event) => reportSurfaceSelection(event.currentTarget)}
+      onFocusCapture={(event) => reportSurfaceSelection(event.currentTarget)}>
       {segments.map((segment, index) => {
         if (segment.kind === "table") return <VisualTable key={index} table={segment}
           offset={sourceBase} disabled={disabled} onReplaceRange={actions.onReplaceRange}
