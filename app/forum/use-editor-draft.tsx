@@ -133,9 +133,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       if (meta.status !== "active") {
         if (local?.draftId === meta.draftId) {
           reset(ctx, meta.version); // Same generation was published/deleted elsewhere.
+        } else if (local?.baseVersion === meta.version) {
+          // This is a new generation explicitly based on the terminal marker.
+          ctx.startVersion = meta.version;
+          setExpectedVersion(meta.version);
         } else if (local) {
-          // Different instance may be a new reply or a stale offline copy.
-          // Clocks cannot establish which: require explicit user choice.
+          // Different instance without the terminal CAS base is ambiguous.
           updateConflict(ctx, { local, server: meta });
         } else {
           // New input in this form can start a fresh generation at the next 60s sync.
@@ -232,7 +235,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     const conflictNow = ctx.conflict;
     if (which === "server") {
       if ("payload" in conflictNow.server) applyRemote(ctx, conflictNow.server);
-      else { reset(ctx); ctx.startVersion = conflictNow.server.version; }
+      else reset(ctx, conflictNow.server.version);
     } else {
       // Explicit selection is the only way to replace another generation.
       const local = conflictNow.local;
