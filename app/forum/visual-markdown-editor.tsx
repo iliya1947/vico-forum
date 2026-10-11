@@ -52,7 +52,7 @@ function visualSelectionOffsets(element: HTMLElement, selection: Range, text: st
   return { start: from.toString().length, end: to.toString().length };
 }
 
-const ASCII_PUNCTUATION = new Set([...!"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"]);
+const ASCII_PUNCTUATION = new Set([..."!\"#$%&\'()*+,-./:;<=>?@[\\\\]^_`{|}~"]);
 
 function decodedReference(source: string): string | null {
   if (!source.startsWith("&") || !source.endsWith(";") || typeof document === "undefined") return null;
