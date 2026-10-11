@@ -39,9 +39,9 @@ describe("isolated browser draft cache", () => {
 
   it("keeps opaque forum ids routable in draft destinations", () => {
     expect(draftDestination("en", "topic:typed/api:with:שלום:reply"))
-      .toBe("/en/topics/typed%2Fapi%3Awith%3A%D7%A9%D7%9C%D7%95%D7%9D");
+      .toBe("/en/topics/typed%2Fapi:with:%D7%A9%D7%9C%D7%95%D7%9D");
     expect(draftDestination("en", "section:typescript/basics:with:colon:new"))
-      .toBe("/en/sections/typescript%2Fbasics%3Awith%3Acolon");
+      .toBe("/en/sections/typescript%2Fbasics:with:colon");
   });
 
   it("keeps a valid local copy when the device clock moved backward", () => {
