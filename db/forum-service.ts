@@ -253,12 +253,14 @@ export class ForumService {
     topicId: string,
     actorId: string,
     resolution: HelpDuplicateAppealResolution,
+    expectedAppealId?: string,
   ) {
     validateEntity(topicId, actorId);
+    if (expectedAppealId !== undefined) requireText(expectedAppealId, "expected appeal id");
     if (resolution !== "accepted" && resolution !== "rejected") {
       throw new InvalidForumContentError("duplicate appeal resolution is invalid");
     }
-    return this.repository.resolveHelpDuplicateAppeal(topicId, actorId, resolution);
+    return this.repository.resolveHelpDuplicateAppeal(topicId, actorId, resolution, expectedAppealId);
   }
 
   createHelpSignal(input: {
