@@ -108,6 +108,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }
     }
 
+    const editorRef = useRef<HTMLDivElement>(null);
+    const pendingVisualCaretRef = useRef<number | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
@@ -168,6 +170,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (offset < 0 || offset > value.length) return;
       const next = value.slice(0, offset) + "\n\n" + value.slice(offset);
       const at = offset + 2;
+      pendingVisualCaretRef.current = at;
       pendingSelectionRef.current = { start: at, end: at };
       commitSource(next);
     }
@@ -181,6 +184,24 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       textarea.setSelectionRange(pending.start, pending.end);
       pendingSelectionRef.current = null;
     }, [mode, value, authoringMode]);
+
+    useLayoutEffect(() => {
+      const offset = pendingVisualCaretRef.current;
+      if (offset === null || authoringMode !== "simple" || mode !== "write") return;
+      const elements = [...(editorRef.current?.querySelectorAll<HTMLElement>('[data-visual-text="true"]') ?? [])];
+      const chosen = elements.find((node) => Number(node.dataset.sourceStart) >= offset) ?? elements[elements.length - 1];
+      pendingVisualCaretRef.current = null;
+      if (!chosen) return;
+      chosen.focus();
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.selectNodeContents(chosen);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }, [value, authoringMode, mode]);
 
     function replaceSelection(
       prefix: string,
@@ -314,7 +335,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }), [mode, value, authoringMode]);
 
     return (
-      <div className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
+      <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
         onKeyDownCapture={(event) => {
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
