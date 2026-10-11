@@ -42,15 +42,6 @@ const binaryMime: Readonly<Record<BinaryDetection, string>> = {
   pdf: "application/pdf", zip: "application/zip", "7z": "application/x-7z-compressed",
   gzip: "application/gzip", tar: "application/x-tar", ole: "application/octet-stream",
 };
-const textExtensions = new Set([
-  "txt", "md", "markdown", "log", "json", "jsonl", "yml", "yaml", "xml",
-  "csv", "tsv", "sql", "env", "ini", "conf", "config", "toml", "properties",
-  "js", "mjs", "cjs", "jsx", "ts", "tsx", "py", "php", "c", "h", "cc",
-  "cpp", "cxx", "hpp", "cs", "java", "kt", "kts", "go", "rs", "rb",
-  "swift", "sh", "bash", "zsh", "ps1", "bat", "cmd", "css", "scss",
-  "html", "htm", "svg", "vue", "svelte", "jsx", "tsx", "diff", "patch",
-  "dockerfile", "gitignore", "editorconfig", "gradle", "makefile",
-]);
 const forbiddenExtensions = new Set([
   "exe", "dll", "msi", "msp", "msix", "scr", "com", "pif", "cpl", "sys",
   "ocx", "app", "dmg", "apk", "jar", "class", "wasm", "vbs", "vbe", "wsf",
@@ -129,7 +120,7 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
   const maxBytes = candidate.maxBytes ?? DEFAULT_ATTACHMENT_MAX_BYTES;
   if (hasPath) return reject("invalid-name");
   if (!name || name === "." || name === ".." || name.length > 255
-    || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return reject("invalid-name", false);
+    || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return reject("invalid-name");
   if (!Number.isSafeInteger(candidate.size) || candidate.size <= 0) return reject("empty", false);
   if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || candidate.size > maxBytes) return reject("too-large", false);
   if (candidate.prefix.length < Math.min(candidate.size, ATTACHMENT_SNIFF_BYTES)) return reject("insufficient-evidence", false);
@@ -137,7 +128,9 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
   if (forbiddenMimes.has(mime)) return reject("forbidden-mime");
   if (detected === "executable") return reject("executable-signature");
   const binaryExpected = binaryExtensions[extension];
-  if (!binaryExpected && !textExtensions.has(extension)) return reject("unsupported-extension", false);
+  // Text/source/config formats are intentionally not extension-allowlisted:
+  // any non-forbidden name may pass when the actual sampled content is valid text.
+  // Recognized binary formats still require their matching extension/signature pair.
   if (binaryExpected ? detected !== binaryExpected : detected !== "text") {
     return reject(detected === "unknown" && !binaryExpected ? "binary-content" : "signature-mismatch");
   }

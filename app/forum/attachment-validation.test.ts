@@ -97,9 +97,11 @@ describe("Editor 2.0 server-side attachment type gate", () => {
     });
   });
 
-  it("allows technical source and config files but returns safe plain-text response type", () => {
+  it("allows broad technical source and config files but returns safe plain-text response type", () => {
     for (const name of ["test.tsx", "main.cpp", "Dockerfile", ".env",
-      "analysis.sql", "configuration.yaml", "patch.diff", "page.html", "figure.svg", "script.sh"]) {
+      "analysis.sql", "configuration.yaml", "patch.diff", "page.html", "figure.svg", "script.sh",
+      "plugin.lua", "app.dart", "build.scala", "schema.proto", "query.graphql", "infra.hcl",
+      "LICENSE", "custom.unknown-source"]) {
       // HTML/SVG/source can only be served later with download disposition, never as active origin content.
       expect(inspect(name, utf8("const user = 'שלום';\n"), "text/plain")).toMatchObject({
         accepted: true, responseMime: "text/plain; charset=utf-8", scanStatus: "type-checked",
@@ -143,10 +145,16 @@ describe("Editor 2.0 server-side attachment type gate", () => {
       accepted: false, reason: "invalid-name", suspicious: true,
     });
     expect(inspect("oops\nfile.txt", utf8("hello"))).toMatchObject({
-      accepted: false, reason: "invalid-name",
+      accepted: false, reason: "invalid-name", suspicious: true,
+    });
+    expect(inspect("", utf8("hello"))).toMatchObject({
+      accepted: false, reason: "invalid-name", suspicious: true,
+    });
+    expect(inspect("a".repeat(256) + ".txt", utf8("hello"))).toMatchObject({
+      accepted: false, reason: "invalid-name", suspicious: true,
     });
     expect(inspect("unrecognized.proprietary", utf8("hello"))).toMatchObject({
-      accepted: false, reason: "unsupported-extension",
+      accepted: true, detected: "text", suspicious: false,
     });
   });
 });

@@ -289,8 +289,18 @@ Vico Forum находится в ранней pre-release разработке.
   technical content не flatten-ятся. Pure/component regressions покрывают partial
   strong/link selection и whole-document clear. Кодовый head `d2266f6` прошёл
   CI #38165900249: `checks` и `database` successful, включая 817 application
-  tests и 229 native PostgreSQL 17 tests. Attachment type-gate остаётся следующим
-  отдельным подтверждённым finding полного аудита.
+  tests и 229 native PostgreSQL 17 tests.
+  Седьмой пакет audit-коррекции attachment type-gate (2026-10-11) закрывает
+  последние подтверждённые defects уже реализованной части Stage 5 verification:
+  технические text/source/config файлы больше не ограничены коротким extension
+  allowlist и принимаются по фактически валидному text-content при отсутствии
+  запрещённого extension/MIME; распознанные binary форматы сохраняют строгую
+  extension/signature consistency. Все invalid filename anomalies теперь имеют
+  suspicious=true для будущего Security/Attachments ingestion. Добавлены regressions
+  для Lua/Dart/Scala/Proto/GraphQL/HCL, extensionless/custom source names и
+  malformed filenames. DB refs/upload-download routes/security-event ingestion,
+  cleanup и UI остаются последующими частями Editor 2.0, а не defects уже
+  реализованного type-gate.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
