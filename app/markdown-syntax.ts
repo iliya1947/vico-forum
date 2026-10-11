@@ -42,7 +42,7 @@ export function remarkForumStrikethrough(this: unknown): undefined {
   return undefined;
 }
 
-export function parseForumMarkdown(value: string) {
+export function parseForumMarkdown(value: string): ReturnType<typeof fromMarkdown> {
   return fromMarkdown(value, forumMarkdownFromOptions);
 }
 
