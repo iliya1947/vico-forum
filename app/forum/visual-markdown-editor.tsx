@@ -85,6 +85,7 @@ function VisualTextLeaf({
       suppressContentEditableWarning
       spellCheck
       data-visual-text="true"
+      data-source-start={range.start}
       onInput={(event) => {
         const next = (event.currentTarget.textContent ?? "").replace(/[\r\n]+/gu, " ");
         onTextEdit(range, next);
