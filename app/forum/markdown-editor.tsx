@@ -542,6 +542,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           }
         }}
       >
+        {accountId && draftContextKey ? (
+          <input type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+        ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
           <div className="markdown-editor-formatting">
             <div className="markdown-editor-tool-group">
