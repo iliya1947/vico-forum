@@ -26,6 +26,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   const conflictRef = useRef<Conflict | null>(null);
   const finishedMarkerRef = useRef<{ draftId: string; version: number; updatedAt: string } | null>(null);
   const bodyRef = useRef("");
+  const editingRef = useRef(false);
   const busyRef = useRef(false);
   const callbacks = useRef({ readPayload, restore });
   callbacks.current = { readPayload, restore };
@@ -40,8 +41,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   function flushLocal() {
     if (!identity || !ownerId || !contextKey) return;
     const payload = callbacks.current.readPayload(bodyRef.current);
-    if (!payload.body.trim() && !payload.title.trim() && !payload.tags.trim()) return;
     const previous = localRef.current;
+    if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()) return;
     if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) return;
     const next: LocalEditorDraft = {
       ownerId, contextKey, draftId: previous?.draftId ?? draftId,
@@ -59,6 +60,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   }
   function noteEdit(body: string, immediate = false) {
     bodyRef.current = body;
+    editingRef.current = true;
     if (immediate || /\s$/u.test(body) || body.length === 0) flushLocal();
   }
   function restoreDraft(draft: DraftRemote) {
@@ -73,6 +75,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     setDraftId(draft.draftId);
     callbacks.current.restore(next.payload);
     bodyRef.current = next.payload.body;
+    editingRef.current = false;
     setStatus("restored");
   }
   function clearFinished() {
@@ -90,6 +93,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     try {
       const meta = (await fetchDraftMetadata(locale)).find((entry) => entry.contextKey === contextKey);
       if (identityRef.current !== identity) return;
+      if (editingRef.current) flushLocal();
       const local = localRef.current;
       if (meta?.status !== undefined && meta.status !== "active") {
         finishedMarkerRef.current = { draftId: meta.draftId, version: meta.version, updatedAt: meta.updatedAt };
@@ -180,6 +184,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   }
   useEffect(() => {
     identityRef.current = identity;
+    editingRef.current = false;
     finishedMarkerRef.current = null;
     chooseConflict(null);
     if (!identity || !ownerId || !contextKey || !locale) {
