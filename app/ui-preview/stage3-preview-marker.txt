@@ -1,0 +1,2 @@
+Editor 2.0 stage 3 preview source: 9aa5b90a060771178193c2a92bbf5ba4d0809805
+CI: https://github.com/iliya1947/vico-forum/actions/runs/38129324769
