@@ -336,14 +336,35 @@ composition without changing the forum hierarchy or schema:
   `?mode=active`: questions with at least one persisted reply are selected server-side from the
   hidden service section, include both open and solved states, reuse existing latest-activity
   ordering, and are bounded to the first 100 results. The current bounded follow-up adds
-  permission-gated `Needs attention / Требуют внимания` as `?mode=attention`: only unsolved questions with zero
-  persisted replies are selected server-side from the same hidden service section, reuse the
-  existing Q&A projection/activity ordering, and are bounded to the first 100 results. Access
-  reuses the existing `forum.solution.manageAny` moderation capability, initially granted to
-  built-in moderator/admin but not ordinary user; Guest and actors without effective permission
-  neither see the navigation item nor pass direct-route authorization. Merged PR #197 finalized
-  that boundary without new schema/migration/permission. PR #198 adds authenticated
-  `Want to help / Хочу помочь` as `?mode=help`: server-side selection returns only unsolved
+  **Owner revision (2026-10-10):** `Needs attention / Требуют внимания` is not a Help
+  category mode. It is an independent moderator-only `/:locale/attention` center,
+  linked from the upper account row beside the regular notification bell. The former
+  Help `?mode=attention` link redirects to the new standalone page.
+  The center has three distinct modes: `Signals`, `Complaints`, `Security`.
+  The mode switcher is on the **right side of the page heading** and each
+  mode's groups appear in their own toolbar below. The redundant Moderation
+  eyebrow is removed. Signals have six ordered groups: Needs details, Needs review,
+  Solution outdated, Duplicate, Appeals, Mixed. Each group displays actionable
+  individual submissions with author, explanation, timestamp and target links,
+  and Accept/Reject actions protected by the current effective permission.
+  Appeals expose the appellant's reasoning and canonical original; Needs review
+  also contains separately identified authoritative best-answer status tasks
+  (not fake user submissions), linking to the current solution controls.
+  Mixed repeats cases on topics with 2+ pending visible signals in their original
+  group, without duplicating the authoritative records. Each group selects its
+  own cases before paging rather than truncating a global active-topic list.
+  Complaints and Security are isolated empty **scaffolds**, each with Group 1,
+  Group 2, Group 3 switches. Those groups are temporary labels, **no synthetic
+  notifications and no invented complaint/security backend**. Their real categories,
+  data sources, permissions, and actions are to be defined in the respective
+  subsystem chats. Only users with existing Help moderation permissions can
+  currently access this foundation. Group navigation displays real global
+  permission-scoped pending totals: each signal group counts individual tasks,
+  and Mixed counts topics with 2+ pending visible signals. Totals are queried
+  independently of the current 50-case page and prior 100-topic feed bound.
+  Case-level permission filtering remains;
+  moderation cases are no longer constrained by the previous 100-question activity bound. PR #198 adds authenticated
+ server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
   projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
   mode and direct guest access uses the existing unauthenticated route state; actual reply

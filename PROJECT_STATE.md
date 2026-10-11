@@ -24,7 +24,7 @@
 
 Vico Forum находится в ранней pre-release разработке.
 
-- Registration/email login implementation in progress (separate MVP PR): existing Better Auth 1.7.4
+- Registration/email login merged by owner in PR #214 (2026-10-10): existing Better Auth 1.7.4
   enables sign-up and sign-in with email/password, default auto-session and 8–128 character
   password validation without mandatory email verification. Locale-prefixed guest routes
   `sign-in` and `sign-up` preserve an origin-safe forum-local returnTo, leave Google OAuth
@@ -59,10 +59,65 @@ Vico Forum находится в ранней pre-release разработке.
   migration/schema/privilege checks, Worker smoke and application/preview builds.
   Pages deployment succeeded. The final independent Codex review of `d76db99`
   completed 2026-10-10 with no further findings. ChatGPT whole-PR review found
-  no confirmed outstanding defects in the current MVP scope. This PR remains
-  unmerged pending owner action; production/runtime acceptance and email
-  verification/password recovery remain deferred. No production rollout occurred.
+  no confirmed outstanding defects in the current MVP scope. PR #214 is merged
+  into main; production/runtime acceptance and email verification/password recovery
+  remain deferred. No production rollout occurred.
 
+- PR #217 (in progress; not merged) delivers an independently routed,
+  permission-protected moderation attention center at `/:locale/attention`,
+  linked beside the ordinary header notification bell. Owner revision 2026-10-10
+  moved it out of Help & solutions (the obsolete Help `?mode=attention` URL
+  redirects). The center has three isolated modes `Signals`, `Complaints` and
+  `Security`, switched on the right of a shared toolbar; groups for the active
+  mode occupy the left. Signals show six individually selectable groups:
+  Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
+  The backed queue selects only persisted pending signal/appeal cases and current
+  best-answer Needs review status; Mixed (2+ pending visible signals) duplicates
+  items in their category groups. Guests/users without effective moderation
+  permission are rejected. Complaints and Security are empty placeholders
+  with temporary Group 1–3 switches, deliberately without events/data/permission
+  workflows pending definition in their own chats. No schema or migration,
+  notification bell semantics, complaint processing, editor, or Stage 6 action
+  changes. The revised implementation head `ebb72df8` passed CI
+  #38082349666: 702 application tests, 217 native PostgreSQL 17 tests,
+  lint/typecheck and builds. A single unrelated transaction-serialization
+  concurrency test needed one successful failed-DB-job rerun with no code
+  changes. Pages #38082518153 built and deployed the same revision.
+  User review rejected the topic-list presentation as not actionable. In the first
+  implementation subtask, PR #217 now adds a separate permission-filtered
+  readHelpAttentionCases server reader for individual pending signals and appeals
+  (author, explanation, target answer, proposed/confirmed original, submission
+  date and stable case ID); Needs review includes a distinct authoritative
+  answer-status task instead of pretending it is a user report. Group-specific
+  database selection occurs before pagination (50 cases/page; Mixed paginates
+  topics with 2+ pending visible signals and projects their individual cases).
+  The second subtask replaces topic-only cards with case-specific records,
+  explanations, submitter/context links and protected Accept/Reject actions on
+  `/:locale/attention`. The handler validates Origin, session, current permission
+  and authoritative case-topic identity, returning to the selected group after
+  success; appeal mutation additionally verifies exact case ID under DB locks.
+  Existing Needs-review moderator statuses remain separate tasks linking to
+  the specific answer's moderation controls rather than fabricated user signals.
+  The final whole-PR pass restored group totals from all pending case sources:
+  each category shows the number of visible unresolved actions, including
+  answer-review status tasks; Mixed counts topics with 2+ visible pending signals.
+  Counts apply effective permission filtering before aggregation and do not inherit
+  any 100-topic cap or page-bound truncation.
+  GitHub Pages fixtures now preview realistic independent requests. Mode switches
+  sit beside the page heading and group switches below; redundant Moderation
+  eyebrow is removed. The aggregate topic reader remains available but is no
+  longer used by the attention route; no migrations or complaint/security
+  mechanics were introduced. CI #38100711549 passed on implementation code
+  head 492efd6 (checks + database). A Pages push from the implementation branch
+  built successfully but its deploy job failed before runner steps
+  (#38100709642): this branch cannot publish through the protected Pages
+  environment. The same code head 492efd6 published successfully through
+  the preview-only `chatgpt/ui-pr217-case-preview` branch
+  (Pages #38101437497, build + deploy success). The implementation workflow
+  therefore no longer pretends `chatgpt/help-attention-*` can deploy; preview
+  mirroring must use the allowed `chatgpt/ui-*` branch. Final exact-head CI and
+  Pages checks after these documentation/workflow updates remain pending.
+  Owner browser visual acceptance and independent Codex review remain pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz

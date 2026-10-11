@@ -21,6 +21,7 @@ import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
 import { ForumRouteError } from "../forum/ui";
 import {
+  AttentionCenterView,
   CategoryView,
   HelpSolutionsView,
   HomeView,
@@ -43,7 +44,7 @@ import { localeRegistry } from "../localization/registry";
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
-type PreviewView = "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
@@ -62,7 +63,7 @@ type PreviewVariant =
   | "help-solutions-active-empty"
   | "help-solutions-want-empty"
   | "help-solutions-for-me-empty"
-  | "help-solutions-attention-empty"
+  | "attention-empty"
   | "help-solutions-mine-empty"
   | "help-solutions-similar-results"
   | "help-solutions-similar-empty"
@@ -126,8 +127,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-for-me-guest", label: "Help & solutions · For me · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=for-me", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
-  { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
-  { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
+  { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-complaints", label: "Moderation · Complaints placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-security", label: "Moderation · Security placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
   { id: "help-solutions-filters-needs-details", label: "Help & solutions · Needs details filter", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?answers=has&quality=needs-details&relation=standalone", view: "category" },
@@ -797,7 +800,7 @@ function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
   if (scenario.identity === "manager") {
-    return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, unreadNotificationCount };
+    return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, canViewModerationAttention: true, unreadNotificationCount };
   }
   return { id: "alex", name: "Alex Rivera", unreadNotificationCount };
 }
@@ -1019,6 +1022,10 @@ function previewRouter(scenario: Scenario) {
     { path: "/:locale/sign-in", element: previewCredential(scenario.locale, "sign-in") },
     { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
     {
+      path: "/:locale/attention",
+      element: <PreviewAttentionRoute scenario={scenario} />,
+    },
+    {
       path: "/:locale/categories/:categoryId",
       element: <PreviewCategoryRoute scenario={scenario} />,
     },
@@ -1117,6 +1124,79 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
   };
 }
 
+
+function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
+  const [params] = useSearchParams();
+  const requestedMode = params.get("mode");
+  const mode = requestedMode === "complaints" || requestedMode === "security" ? requestedMode : "signals";
+  const selected = params.get("group");
+  const group = mode === "signals"
+    ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
+      ? selected : "needs-details"
+    : selected === "group2" || selected === "group3" ? selected : "group1";
+  const samples = [
+    {
+      type: "signal" as const, id: "signal-142", kind: "needs-details" as const,
+      topicId: "help-question", topicTitle: "Why does my Worker lose the session after redirect?",
+      submittedByUserId: "reporter", submittedByName: "Alex Rivera",
+      explanation: "Cookie settings and the redirect handler are missing. Without them, the issue cannot be reproduced.",
+      createdAt: "2026-10-10T09:25:00.000Z", targetPostId: null, original: null,
+    },
+    {
+      type: "signal" as const, id: "signal-143", kind: "duplicate" as const,
+      topicId: "help-question", topicTitle: "Why does my Worker lose the session after redirect?",
+      submittedByUserId: "reviewer", submittedByName: "Sam Lee",
+      explanation: "I think this might already be answered in the linked topic.",
+      createdAt: "2026-10-10T10:25:00.000Z", targetPostId: null,
+      original: { id: "canonical-help", title: "Configuring sessions in Cloudflare Workers" },
+    },
+    {
+      type: "signal" as const, id: "signal-144", kind: "needs-review" as const,
+      topicId: "solved-help", topicTitle: "How to deploy a React Router app?",
+      submittedByUserId: "reporter", submittedByName: "Alex Rivera",
+      explanation: "The current best answer no longer works with the latest build.",
+      createdAt: "2026-10-10T11:05:00.000Z", targetPostId: "best-answer", original: null,
+    },
+    {
+      type: "signal" as const, id: "signal-145", kind: "solution-outdated" as const,
+      topicId: "solved-help", topicTitle: "How to deploy a React Router app?",
+      submittedByUserId: "reviewer", submittedByName: "Sam Lee",
+      explanation: "The configuration keys changed in the current release.",
+      createdAt: "2026-10-10T12:05:00.000Z", targetPostId: "best-answer", original: null,
+    },
+    {
+      type: "appeal" as const, id: "appeal-146", kind: "appeal" as const,
+      topicId: "disputed-question", topicTitle: "Why doesn't my database reconnect?",
+      submittedByUserId: "author", submittedByName: "Jordan Chen",
+      explanation: "My issue occurs after a network timeout, not after credential expiry.",
+      createdAt: "2026-10-10T13:05:00.000Z", targetPostId: null,
+      original: { id: "canonical-help", title: "Configuring sessions in Cloudflare Workers" },
+    },
+    {
+      type: "review-status" as const, id: "best-answer", kind: "review-status" as const,
+      topicId: "solved-help", topicTitle: "How to deploy a React Router app?",
+      submittedByUserId: null, submittedByName: null,
+      explanation: null, createdAt: "2026-10-10T14:05:00.000Z",
+      targetPostId: "best-answer", original: null,
+    },
+  ];
+  const selectedCases = group === "mixed"
+    ? samples.filter((item) => item.topicId === "help-question" && item.type === "signal")
+    : samples.filter((item) => item.kind === group ||
+      (group === "needs-review" && item.type === "review-status"));
+  return <AttentionCenterView
+    locale={scenario.locale} mode={mode} group={group}
+    queue={mode === "signals"
+      ? { cases: scenario.variant === "attention-empty" ? [] : selectedCases, hasMore: false, page: 0 }
+      : null}
+    counts={mode === "signals" ? {
+      "needs-details": 1, "needs-review": 2, "solution-outdated": 1,
+      duplicate: 1, appeals: 1, mixed: 1,
+    } : null}
+    isPreview referenceTime={previewReferenceTime}
+  />;
+}
+
 function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
   const { categoryId: routeCategoryId } = useParams();
   const [searchParams] = useSearchParams();
@@ -1130,8 +1210,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
           ? "for-me"
           : requestedMode === "active"
             ? "active"
-            : requestedMode === "attention"
-          ? "attention"
           : requestedMode === "solutions"
             ? "solutions"
             : requestedMode === "mine"
@@ -1164,8 +1242,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
           ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-active-empty" && mode === "active"
             ? { ...page, questions: [] }
-            : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
-              ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
             ? { ...page, questions: [] }
             : mode === "open"
@@ -1183,8 +1259,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                     }
                   : mode === "active"
                     ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
-                    : mode === "attention"
-                      ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
                   : mode === "mine"
@@ -1254,7 +1328,6 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         referenceTime={previewReferenceTime}
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
-        canViewAttention={scenario.identity === "manager"}
         canViewSolutionModeration={scenario.identity === "manager"}
         canViewDuplicateDispute={scenario.identity === "manager"}
         actionData={actionData}

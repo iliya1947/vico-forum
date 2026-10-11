@@ -238,7 +238,10 @@ describe("PostgreSQL 17 locale migrations", () => {
           isSolved: false,
         }],
       });
-      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+        appeals: true,
+      })).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({ questions: [] });
 
       await forum.markTopicSolved("help-foundation-topic", "help-foundation-author");
@@ -270,12 +273,25 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
 
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-review"],
+        appeals: false,
+      })).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          attention: { signals: {}, totalSignals: 0, appeal: false, reviewRequired: true },
+        }],
+      });
       await forum.setHelpSolutionModeration(
         "help-foundation-topic",
         "outdated",
         "  The provider removed   this API.  ",
         "help-foundation-author",
       );
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-review"],
+        appeals: false,
+      })).toMatchObject({ questions: [] });
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
         solutionOutdatedReason: "The provider removed this API.",
@@ -356,7 +372,10 @@ describe("PostgreSQL 17 locale migrations", () => {
           isSolved: true,
         }],
       });
-      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+        appeals: true,
+      })).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsWantToHelp("help-foundation-replier")).toMatchObject({ questions: [] });
 
       await forum.createTopicWithInitialPost({
@@ -385,17 +404,15 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect((await repository.readHelpSolutionsActive())?.questions).toHaveLength(1);
-      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({
-        questions: [{
-          id: "help-foundation-no-replies",
-          replyCount: 0,
-          isSolved: false,
-          solutionModerationStatus: null,
-          solutionOutdatedReason: null,
-          solutionOutdatedReasonKind: null,
-        }],
-      });
-      expect((await repository.readHelpSolutionsNeedsAttention())?.questions).toHaveLength(1);
+      // An unanswered question by itself must not enter the private moderation queue.
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+        appeals: true,
+      })).toMatchObject({ questions: [] });
+      expect((await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+        appeals: true,
+      }))?.questions).toHaveLength(0);
       await expect(
         forum.setHelpSolutionModeration("help-foundation-no-replies", "needs-review", null, "help-foundation-author"),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
@@ -561,7 +578,10 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies")).toBeUndefined();
 
       await forum.markTopicSolved("help-foundation-no-replies", "help-foundation-waiting");
-      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+        appeals: true,
+      })).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsWantToHelp("help-foundation-author")).toMatchObject({ questions: [] });
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
