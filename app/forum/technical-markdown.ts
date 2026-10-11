@@ -168,7 +168,7 @@ export function encodeTableCell(text: string): string {
 
 export function serializeTable(
   headers: readonly string[], rows: readonly (readonly string[])[],
-  align: readonly (("left" | "center" | "right" | null)[]) = [],
+  align: readonly ("left" | "center" | "right" | null)[] = [],
 ): string {
   const row = (cells: readonly string[]) => "| " + cells.map(encodeTableCell).join(" | ") + " |";
   const rules = headers.map((_, i) => align[i] === "center" ? ":---:"
