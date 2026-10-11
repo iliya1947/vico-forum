@@ -311,6 +311,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
           if (authoringMode !== "simple" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
           const key = event.key.toLowerCase();
+          if (key === "b" || key === "i" || key === "k") {
+            event.preventDefault();
+            if (key === "b") replaceSelection("**", "**", 2);
+            if (key === "i") replaceSelection("_", "_", 1);
+            if (key === "k") insertLink();
+            return;
+          }
           if (key === "z" || key === "y") {
             event.preventDefault();
             travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
@@ -323,61 +330,51 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
               <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
             </div>
-              <div className="markdown-editor-tool-group">
-                <button type="button" className="markdown-editor-compact-tool" disabled={disabled} aria-label={t("editorHeading")} title={t("editorHeading")} onClick={() => prefixSelectedLines(() => "## ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-heading">H</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")} onClick={() => replaceSelection("**", "**", 2)}>
-                  <strong aria-hidden="true">B</strong>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")} onClick={() => replaceSelection("_", "_", 1)}>
-                  <em aria-hidden="true">I</em>
-                </button>
-              </div>
-
-              <div className="markdown-editor-tool-group markdown-editor-code-tools">
-                <button
-                  type="button"
-                  disabled={disabled}
-                  aria-label={t("editorInlineCode")}
-                  title={t("editorInlineCode")}
-                  onClick={() => {
-                    const textarea = textareaRef.current;
-                    if (!textarea) return;
-                    const selected = value.slice(
-                      textarea.selectionStart ?? value.length,
-                      textarea.selectionEnd ?? textarea.selectionStart ?? value.length,
-                    );
-                    const { prefix, suffix } = inlineCodeAffixes(selected);
-                    replaceSelection(prefix, suffix, prefix.length);
-                  }}
-                >
-                  <span aria-hidden="true" className="markdown-editor-glyph is-code">&lt;/&gt;</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorCodeBlock")} title={t("editorCodeBlock")} onClick={insertFencedCodeBlock}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-code-block">{"{ }"}</span>
-                </button>
-              </div>
-
-              <div className="markdown-editor-tool-group">
-                <button type="button" disabled={disabled} aria-label={t("editorQuote")} title={t("editorQuote")} onClick={() => prefixSelectedLines(() => "> ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-quote">❞</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")} onClick={insertLink}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-link">↗</span>
-                </button>
-              </div>
-
-              <div className="markdown-editor-tool-group">
-                <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")} onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
-                <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")} onClick={() => prefixSelectedLines(() => "- ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-list">•</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorNumberedList")} title={t("editorNumberedList")} onClick={() => prefixSelectedLines((index) => String(index + 1) + ". ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-list">1.</span>
-                </button>
-              </div>
+            <div className="markdown-editor-tool-group">
+              <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
+                onClick={() => replaceSelection("**", "**", 2)}><strong>B</strong></button>
+              <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")}
+                onClick={() => replaceSelection("_", "_", 1)}><em>I</em></button>
+              <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
+                onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
+              <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")}
+                onClick={insertLink}>↗</button>
+              <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")}
+                onClick={() => prefixSelectedLines(() => "- ")}>•</button>
+              <button type="button" disabled={disabled} aria-label={t("editorNumberedList")} title={t("editorNumberedList")}
+                onClick={() => prefixSelectedLines((index) => String(index + 1) + ". ")}>1.</button>
+              <button type="button" disabled={disabled} aria-label={t("editorQuote")} title={t("editorQuote")}
+                onClick={() => prefixSelectedLines(() => "> ")}>❞</button>
+              <details className="markdown-editor-extra-menu">
+                <summary aria-label={t("editorEmoji")}>☺</summary>
+                <div className="markdown-editor-extra-options">
+                  {["😀", "🙂", "👍", "❤️"].map((emoji) =>
+                    <button type="button" key={emoji} disabled={disabled} onClick={() => replaceSelection(emoji, "", emoji.length)}
+                      aria-label={emoji}>{emoji}</button>,
+                  )}
+                </div>
+              </details>
+              <details className="markdown-editor-extra-menu">
+                <summary aria-label={t("editorMoreTools")}>•••</summary>
+                <div className="markdown-editor-extra-options">
+                  <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "## ")}>H2</button>
+                  <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "### ")}>H3</button>
+                  <button type="button" disabled={disabled} onClick={() => replaceSelection("\n\n---\n\n", "", 5)}>—</button>
+                  {authoringMode === "advanced" ? (
+                    <>
+                      <button type="button" disabled={disabled} aria-label={t("editorInlineCode")} onClick={() => {
+                        const selection = sourceSelection();
+                        const { prefix, suffix } = inlineCodeAffixes(value.slice(selection.start, selection.end));
+                        replaceSelection(prefix, suffix, prefix.length);
+                      }}>{t("editorInlineCode")}</button>
+                      <button type="button" disabled={disabled} aria-label={t("editorCodeBlock")}
+                        onClick={insertFencedCodeBlock}>{t("editorCodeBlock")}</button>
+                    </>
+                  ) : null}
+                </div>
+              </details>
             </div>
+          </div>
 
             <label className="markdown-editor-language">
               <span>{t("editorCodeLanguage")}</span>
