@@ -701,11 +701,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                   setFindOpen(true);
                   return;
                 }
-                if (key === "Enter") {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                  return;
-                }
                 if (key === "z" || key === "y") {
                   event.preventDefault();
                   travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
