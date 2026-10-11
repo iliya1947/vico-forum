@@ -1,6 +1,7 @@
 CREATE TABLE "forum_editor_drafts" (
   "owner_id" text NOT NULL,
   "context_key" text NOT NULL,
+  "draft_id" text NOT NULL,
   "version" integer NOT NULL,
   "status" text NOT NULL,
   "payload" jsonb NOT NULL,
