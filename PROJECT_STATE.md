@@ -332,6 +332,24 @@ Vico Forum находится в ранней pre-release разработке.
   показывает кнопку Table и в Simple; §3.3 при этом разрешает Simple editing
   существующих таблиц, поэтому трактовку создания таблицы нельзя менять без
   решения владельца. Код не исправлялся.
+  Повторный поэтапный аудит Stage 4 (2026-10-11) выявил пять current-scope
+  defects. Draft runtime authoritative хранит только body, а title/tags/parentPostId
+  берёт из live DOM при capture; final cleanup после React commit и same-event
+  Reply/Quote capture могут поэтому сохранить пустые/stale non-body поля. Save-trigger
+  для title/tags также ошибочно зависит от body: при пустом body почти каждый input
+  становится immediate save, а paste в title/tags при непустом body не имеет
+  обязательного немедленного capture. In-flight 60s autosave способен увеличить
+  server CAS version между FormData snapshot и publication transaction той же вкладки,
+  создавая ложный 409 publication conflict без внешнего конкурента. Conflict UI
+  сравнивает полный payload, но показывает только body, поэтому title/tags/parent
+  conflicts нельзя осмысленно сравнить перед окончательным выбором. Наконец,
+  server draft payload ограничен 100000 JS-символов body и request 150000 bytes,
+  тогда как publication boundary такого лимита не имеет; большой/Unicode draft
+  может бесконечно оставаться в состоянии pending с повторными 400/413 sync.
+  Lazy 30-day purge перед metadata/get/save проверен отдельно и в текущей
+  pre-release фазе не классифицирован как defect: просроченный payload не
+  возвращается при следующем обращении, а глобальный physical retention cleanup
+  относится к будущему release/operational path. Код Stage 4 не исправлялся.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
