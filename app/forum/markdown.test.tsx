@@ -64,6 +64,12 @@ describe("Editor 2.0 technical rendering", () => {
     expect(screen.getByRole("link", { name: "docs" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
   });
 
+  it("renders agreed double-tilde strikethrough without enabling unrelated GFM syntax", () => {
+    const { container } = renderMarkdown("Before ~~old~~ after");
+    expect(screen.getByText("old").tagName).toBe("DEL");
+    expect(container.textContent).toContain("Before old after");
+  });
+
   it("supports a collapsed spoiler without executing inline HTML or opening images", async () => {
     const { container } = renderMarkdown(":::spoiler Info\n**secret**\n\n<script>alert(1)</script>\n:::");
     const spoiler = container.querySelector(".forum-markdown-spoiler");
@@ -219,6 +225,20 @@ const longValue = "code";
     const message = Array.from({ length: 7 }, () => fenced).join("\n\n");
     expect(message.length).toBeGreaterThan(12_000);
     const { container } = renderMarkdown(message);
+    expect(container.querySelectorAll(".forum-code-block")).toHaveLength(7);
+    expect(container.querySelectorAll(".syntax-keyword")).toHaveLength(0);
+    expect(container.querySelector("pre")?.textContent).toContain("const value = 1;");
+  });
+
+  it("keeps the full-post highlight budget inside nested spoilers", () => {
+    const code = "const value = 1;\n".repeat(110);
+    const spoiler = (index: number) =>
+      [":::spoiler Part " + index, "```ts", code.trimEnd(), "```", ":::"].join("\n");
+    const message = Array.from({ length: 7 }, (_, index) => spoiler(index)).join("\n\n");
+    expect(message.length).toBeGreaterThan(12_000);
+
+    const { container } = renderMarkdown(message);
+    expect(container.querySelectorAll(".forum-markdown-spoiler")).toHaveLength(7);
     expect(container.querySelectorAll(".forum-code-block")).toHaveLength(7);
     expect(container.querySelectorAll(".syntax-keyword")).toHaveLength(0);
     expect(container.querySelector("pre")?.textContent).toContain("const value = 1;");
