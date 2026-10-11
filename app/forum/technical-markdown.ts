@@ -56,7 +56,7 @@ function splitCells(line: Line): TableCell[] | null {
   raw.push({ start, end: source.length });
   if (source.trimStart().startsWith("|")) raw.shift();
   if (source.trimEnd().endsWith("|")) raw.pop();
-  if (raw.length < 2 || raw.length > 40) return null;
+  if (raw.length < 1 || raw.length > 40) return null;
   return raw.map((span) => {
     const part = source.slice(span.start, span.end);
     const before = part.length - part.trimStart().length;
