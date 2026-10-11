@@ -10,7 +10,7 @@ import {
 import {
   isEditorDraftContextKey,
   parseEditorDraftContextKey,
-} from "../app/forum/editor-draft-context";
+} from "./editor-draft-context";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 
 export { isEditorDraftContextKey };
