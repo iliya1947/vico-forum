@@ -1,7 +1,7 @@
 import type { ForumEditorDraftPayload } from "../../db/schema";
 import { forumCategoryPath, forumSectionPath, forumTopicPath } from "./paths";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
-import { isEditorDraftContextKey, parseEditorDraftContextKey } from "./editor-draft-context";
+import { isEditorDraftContextKey, parseEditorDraftContextKey } from "../../db/editor-draft-context";
 
 export const DRAFT_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 export interface LocalEditorDraft {
