@@ -24,8 +24,8 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 export interface ForumWriter {
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
   recordOnlinePresence(userId: string): Promise<void>;
-  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string }): Promise<{ topicId: string }>;
-  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string }): Promise<{ postId: string }>;
+  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; draftVersion?: number }): Promise<{ topicId: string }>;
+  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; draftVersion?: number }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
   setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string }): Promise<void>;
@@ -157,13 +157,16 @@ export function createHyperdriveForumWriter(
         throw error;
       } finally { bestEffortDiscardClient(client); }
     },
-    createTopic: ({ sectionId, authorId, title, body, tags = [], draftId }) => write(async (forum) => {
+    createTopic: ({ sectionId, authorId, title, body, tags = [], draftId, draftVersion }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
       await forum.createTopicWithInitialPost({
         id: topicId,
         sectionId,
         authorId,
-        publishedDraft: draftId ? { draftId, contextKey: sectionId === "help-solutions-questions" ? "help:new" : `section:${sectionId}:new` } : undefined,
+        publishedDraft: {
+          contextKey: sectionId === "help-solutions-questions" ? "help:new" : `section:${sectionId}:new`,
+          ...(draftId !== undefined || draftVersion !== undefined ? { draftId, expectedVersion: draftVersion } : {}),
+        },
         titleRevision: { id: crypto.randomUUID(), originalContent: title, sourceLocale: "und" },
         tags: tags.map((name) => ({ key: name, name })),
         initialPost: {
@@ -173,11 +176,14 @@ export function createHyperdriveForumWriter(
       });
       return { topicId };
     }),
-    createReply: ({ topicId, authorId, body, parentPostId = null, draftId }) => write(async (forum) => {
+    createReply: ({ topicId, authorId, body, parentPostId = null, draftId, draftVersion }) => write(async (forum) => {
       const postId = crypto.randomUUID();
       await forum.createPost({
         id: postId, topicId, authorId, parentPostId,
-        publishedDraft: draftId ? { draftId, contextKey: `topic:${topicId}:reply` } : undefined,
+        publishedDraft: {
+          contextKey: `topic:${topicId}:reply`,
+          ...(draftId !== undefined || draftVersion !== undefined ? { draftId, expectedVersion: draftVersion } : {}),
+        },
         bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
       });
       return { postId };
