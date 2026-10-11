@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearDeviceEditorDrafts, clearLocalEditorDraft, draftStorageKey, listLocalEditorDrafts,
-  readLocalEditorDraft, writeLocalEditorDraft, localDraftNeedsAttention } from "./draft-client";
+  readLocalEditorDraft, writeLocalEditorDraft, localDraftNeedsAttention, clearDeviceEditorData } from "./draft-client";
 
 const first = { ownerId: "alice", contextKey: "topic:123:reply",
   draftId: "bd526b11-71ed-49c1-b9ec-cbb496e86ba9", payload: { title: "", body: "Alice", tags: "" },
@@ -20,6 +20,22 @@ describe("isolated browser draft cache", () => {
     expect(readLocalEditorDraft("alice", first.contextKey)).toBeNull();
     expect(readLocalEditorDraft("bob", first.contextKey)?.payload.body).toBe("Bob");
   });
+  it("clears drafts and preferences for one account only", () => {
+    writeLocalEditorDraft(first);
+    writeLocalEditorDraft(second);
+    for (const preference of ["mode", "code-wrap", "code-lines"]) {
+      localStorage.setItem("vico:editor:" + preference + ":alice", "true");
+    }
+    localStorage.setItem("vico:editor:mode:bob", "simple");
+    clearDeviceEditorData("alice");
+    expect(readLocalEditorDraft("alice", first.contextKey)).toBeNull();
+    expect(readLocalEditorDraft("bob", first.contextKey)?.payload.body).toBe("Bob");
+    for (const preference of ["mode", "code-wrap", "code-lines"]) {
+      expect(localStorage.getItem("vico:editor:" + preference + ":alice")).toBeNull();
+    }
+    expect(localStorage.getItem("vico:editor:mode:bob")).toBe("simple");
+  });
+
   it("keeps a valid local copy when the device clock moved backward", () => {
     const future = { ...first, editedAt: new Date(Date.now() + 7 * 86_400_000).toISOString() };
     expect(writeLocalEditorDraft(future)).toBe(true);
