@@ -131,7 +131,7 @@ Vico Forum находится в ранней pre-release разработке.
   two documentation findings. Both were corrected and resolved without modifying
   application code; subsequent exact-head CI #38121847206 passed `checks` and
   `database` on `eec38b0`. PR #217 merged 2026-10-11.
-- Editor 2.0: PR #215 остаётся Draft и ещё не готов к merge. После merge #217 в `main`
+- Editor 2.0: PR #215 открыт в обычном режиме и ещё не готов к merge. После merge #217 в `main`
   в первом foundation-срезе добавлены lossless Markdown document/history utilities,
   ограниченное текстовыми AST-диапазонами безопасное visual-edit API (без пересериализации
   исходника и без изменения сложных блоков) и единая Undo/Redo история к существующему
@@ -190,6 +190,21 @@ Vico Forum находится в ранней pre-release разработке.
   также прошёл `checks` и `database`.
   Pages/browser и owner visual acceptance ещё не подтверждены; полный review PR
   намеренно не запущен до завершения редактора.
+  Аудит-коррекция draft lifecycle 2026-10-11 закрыла первый пакет найденных
+  дефектов без перехода к следующим пакетам: публикация теперь передаёт
+  draft ID + CAS-версию и в той же транзакции либо завершает именно ожидаемое
+  поколение, либо откатывает topic/reply с conflict при stale/newer/competing
+  server draft. Client runtime после подтверждённой reply-публикации начинает
+  новое поколение с terminal version, а старые async metadata/save результаты
+  отсекаются generation epoch и не могут очистить новый ввод. Смена
+  account/context сбрасывает body/history/selection, section form remount-ится
+  по section ID, а reply parent используется только если он принадлежит
+  текущей теме. Terminal metadata на следующей навигации очищает совпадающую
+  локальную копию опубликованного draft. PostgreSQL regression подтверждает,
+  что stale publication возвращает conflict и весь новый post transaction
+  откатывается. Кодовый head `893b24d` прошёл CI #38153542321
+  (`checks` + `database`). Остальные findings полного аудита Editor 2.0
+  остаются открыты и исправляются отдельными пакетами.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
