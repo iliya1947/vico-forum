@@ -371,6 +371,7 @@ export const reviewedCommonFingerprints = {
   editorDraftLocalError: "5cd96eb6827b140bd4786f3097130fa4e39ba9f152a2b98fd63c99ec0c835e4b",
   editorDraftThisDevice: "bbc0aa2a6c7b46dd06674ce6b1dd3554839123736dbcebdb18548ac7880ac141",
   editorDraftOtherDevice: "4ca121c79e5b1ae2ae6880220f4594a9e00be2c306abda58268b99e289bcb89b",
+  editorDraftNoRemoteVersion: "0b38bbfb004fc7941bbdd91d5c5f8f0447f1a8c71a77d9ed278d40c7ea84b6a2",
   editorDraftKeepLocal: "163bc2c8ee3977c69937bb9de09142fb782091dda433a1a870171a27b7a3762e",
   editorDraftKeepServer: "23f0c11fb908587b11a984a5e30fea8a48c7ea460130b03f8c7d689d37ae1b34",
   editorMyDrafts: "fd4641cdb3b8c29a29f9f8105ddf17bd37069e831d9393c586676d7eb9e916eb",
