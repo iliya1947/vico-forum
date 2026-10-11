@@ -344,6 +344,44 @@ describe("MarkdownEditor", () => {
     expect(screen.getByRole("button", { name: "Wrap lines" })).toBeInTheDocument();
   });
 
+  it("undoes and redoes exact Markdown across view switches", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue={"**bold**\n\n\`\`\`tsx\nconst a = 1;\n\`\`\`"} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const original = textarea.value;
+    textarea.focus();
+    textarea.setSelectionRange(original.length, original.length);
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+    const formatted = textarea.value;
+    expect(formatted).not.toBe(original);
+    await userEvent.click(screen.getByRole("button", { name: "Split" }));
+    expect(textarea).toHaveValue(formatted);
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
+    expect(textarea).toHaveValue(original);
+    await userEvent.click(screen.getByRole("button", { name: "Write" }));
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true, shiftKey: true });
+    expect(textarea).toHaveValue(formatted);
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
+    expect(textarea).toHaveValue(original);
+    fireEvent.keyDown(textarea, { key: "y", ctrlKey: true });
+    expect(textarea).toHaveValue(formatted);
+  });
+
+  it("undoes imperative quote insertion without changing the form field contract", () => {
+    const ref = createRef<MarkdownEditorHandle>();
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor ref={ref}
+      id="body" name="body" defaultValue="before" /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(6, 6);
+    act(() => ref.current?.insertText("\n> quote"));
+    expect(textarea).toHaveValue("before\n> quote");
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
+    expect(textarea).toHaveValue("before");
+    fireEvent.keyDown(textarea, { key: "y", ctrlKey: true });
+    expect(textarea).toHaveValue("before\n> quote");
+  });
+
   it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
