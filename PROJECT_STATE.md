@@ -350,6 +350,25 @@ Vico Forum находится в ранней pre-release разработке.
   pre-release фазе не классифицирован как defect: просроченный payload не
   возвращается при следующем обращении, а глобальный physical retention cleanup
   относится к будущему release/operational path. Код Stage 4 не исправлялся.
+  Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
+  file-verification/private-R2 slice выявил четыре current-scope defects.
+  Filename validation не классифицирует Unicode bidi/format controls как masking
+  anomaly и может вернуть suspicious=false для визуально манипулируемого имени.
+  Declared-MIME consistency проверяется неполно: неизвестные non-generic MIME
+  игнорируются, а text/ZIP/OLE families схлопываются в coarse kind, поэтому
+  extension↔MIME mismatches внутри одной family проходят accepted без suspicious
+  marker. Text sniff при полном 4096-byte prefix безусловно исключает последние
+  четыре байта из UTF-8 fatal decode, из-за чего invalid bytes внутри самого
+  sniff-window могут быть ошибочно классифицированы как text. Recognized binary
+  verification ограничен magic prefix: заведомо обрезанные JPEG/GIF/PDF/ZIP
+  payloads и произвольный ZIP под Office container name могут получить
+  type-checked acceptance без минимальной structural sanity. Актуальный Cloudflare
+  Workers R2 contract отдельно проверен: ReadableStream put, returned object size
+  и single PUT для текущего 50 MB лимита соответствуют API; подтверждённого
+  defect в one-pass R2 streaming/length fencing не найдено. HTTP upload route,
+  DB attachment lifecycle/references, download/UI, durable Security/Attachments
+  events, antivirus provider и orphan cleanup остаются будущей реализацией и не
+  классифицированы как defects этого уже существующего slice. Код не исправлялся.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
