@@ -14,12 +14,17 @@ export interface MarkdownSpoiler {
   body: string;
   bodyStart: number;
 }
+export interface MarkdownProtected {
+  kind: "protected";
+  span: SourceSpan;
+  source: string;
+}
 export interface MarkdownProse {
   kind: "prose";
   span: SourceSpan;
   source: string;
 }
-export type TechnicalSegment = MarkdownTable | MarkdownSpoiler | MarkdownProse;
+export type TechnicalSegment = MarkdownTable | MarkdownSpoiler | MarkdownProse | MarkdownProtected;
 
 interface Line { text: string; start: number; end: number }
 
@@ -96,6 +101,22 @@ function tableAt(lines: Line[], index: number): { table: MarkdownTable; next: nu
   };
 }
 
+function protectedTableAt(lines: Line[], index: number, source: string):
+  { block: MarkdownProtected; next: number } | null {
+  const header = lines[index]?.text ?? "";
+  const separator = lines[index + 1]?.text ?? "";
+  if (!header.includes("|") || !separator.includes("|")
+    || !/^-?[ |:\t-]*-{3,}[ |:\t-]*$/u.test(separator.trim())) return null;
+  let next = index + 2;
+  while (next < lines.length && lines[next]!.text.trim() && lines[next]!.text.includes("|")) next++;
+  return {
+    block: { kind: "protected",
+      span: { start: lines[index]!.start, end: lines[next - 1]!.end },
+      source: source.slice(lines[index]!.start, lines[next - 1]!.end) },
+    next,
+  };
+}
+
 function spoilerAt(lines: Line[], index: number, source: string): { spoiler: MarkdownSpoiler; next: number } | null {
   const open = /^:::spoiler(?:[ \t]+([^\r\n]*?))?[ \t]*$/u.exec(lines[index]!.text);
   if (!open) return null;
@@ -151,11 +172,12 @@ export function segmentTechnicalMarkdown(source: string): TechnicalSegment[] {
     }
     const spoiler = spoilerAt(lines, i, source);
     const table = spoiler ? null : tableAt(lines, i);
-    const found = spoiler?.spoiler ?? table?.table;
+    const protectedTable = spoiler || table ? null : protectedTableAt(lines, i, source);
+    const found = spoiler?.spoiler ?? table?.table ?? protectedTable?.block;
     if (!found) { i++; continue; }
     emitProse(line.start);
     result.push(found);
-    i = spoiler?.next ?? table!.next;
+    i = spoiler?.next ?? table?.next ?? protectedTable!.next;
     proseStart = found.span.end;
   }
   emitProse(source.length);
