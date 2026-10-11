@@ -1,5 +1,7 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
+import { forumDraftStoreContext } from "../app/forum/draft-request-context";
+import { createHyperdriveForumDraftStore } from "../db/hyperdrive-editor-drafts";
 import {
   contentTranslationPresentationContext,
   contentGenerationActionContext,
@@ -31,6 +33,7 @@ export default {
     const authHeaders = await initializeAuthContext(context, request, auth);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
     context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString));
+    context.set(forumDraftStoreContext, createHyperdriveForumDraftStore(webConnectionString));
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(
