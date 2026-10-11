@@ -502,6 +502,7 @@ export interface ForumEditorDraftPayload {
 export const forumEditorDrafts = pgTable("forum_editor_drafts", {
   ownerId: text("owner_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   contextKey: text("context_key").notNull(),
+  draftId: text("draft_id").notNull(),
   version: integer("version").notNull(),
   status: text("status").notNull(),
   payload: jsonb("payload").$type<ForumEditorDraftPayload>().notNull(),
