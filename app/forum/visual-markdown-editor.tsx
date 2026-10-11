@@ -159,9 +159,17 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
         ? (node.children ?? []).map((item) => item.value ?? "").join("") || source
         : node.type === "image" ? node.alt ?? source
         : node.type === "inlineCode" ? node.value ?? source : source;
+      if (node.type === "code") return (
+        <div className="markdown-editor-protected" data-visual-protected={node.type}>
+          <ForumMarkdown>{source}</ForumMarkdown>
+          <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+            Markdown ↗
+          </button>
+        </div>
+      );
       return (
         <span className="markdown-editor-protected" data-visual-protected={node.type}>
-          {node.type === "code" ? <ForumMarkdown>{source}</ForumMarkdown> : <code>{label}</code>}
+          <code>{label}</code>
           <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
             Markdown ↗
           </button>
