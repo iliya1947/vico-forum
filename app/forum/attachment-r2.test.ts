@@ -120,7 +120,7 @@ describe("bounded one-pass upload stream", () => {
     const body = new ReadableStream<Uint8Array>({
       pull() { throw new Error("must not consume oversized input"); },
       cancel: canceled,
-    });
+    }, { highWaterMark: 0 });
     const result = await storePrivateAttachmentStream(store, {
       fileName: "big.txt", declaredMime: "text/plain", size: 101, body,
     }, 100);
