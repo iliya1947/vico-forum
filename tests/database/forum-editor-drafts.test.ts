@@ -2,7 +2,10 @@ import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
+import {
+  DrizzleForumEditorDrafts,
+  ForumEditorDraftContextNotFoundError,
+} from "../../db/forum-editor-drafts";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -38,6 +41,14 @@ beforeAll(async () => {
   for (const id of ["draft-owner", "draft-other"]) {
     await client.query('insert into "user" (id, name, email) values ($1, $2, $3)', [id,id,`${id}@test.invalid`]);
   }
+  await client.query(
+    'insert into forum_categories (id, name) values ($1, $2)',
+    ["draft-category", "Draft category"],
+  );
+  await client.query(
+    'insert into forum_sections (id, category_id, name) values ($1, $2, $3)',
+    ["draft/opaque:✓", "draft-category", "Opaque draft section"],
+  );
 });
 afterAll(async () => { await client.query(`drop schema if exists ${schema} cascade`); await client.end(); });
 
@@ -74,12 +85,78 @@ describe("account-scoped durable editor drafts", () => {
     expect((await store.save("draft-owner", "help:new", id2, text1, 0)).outcome).toBe("gone");
   });
 
+  it("accepts opaque existing context ids and rejects fabricated new contexts", async () => {
+    const key = "section:draft/opaque:✓:new";
+    const marker = await store.get("draft-owner", key);
+    const saved = await store.save("draft-owner", key, id1, text1, marker?.version ?? 0);
+    expect(saved.outcome).toBe("saved");
+    await expect(
+      store.save("draft-owner", "section:missing/context:new", id2, text1, 0),
+    ).rejects.toBeInstanceOf(ForumEditorDraftContextNotFoundError);
+  });
+
+  it("CAS-deletes only the server generation and version the user actually saw", async () => {
+    const key = "section:draft/opaque:✓:new";
+    const current = await store.get("draft-owner", key);
+    expect(current?.status).toBe("active");
+    expect(await store.delete("draft-owner", key, id1, (current?.version ?? 0) - 1)).toBe(false);
+    expect((await store.get("draft-owner", key))?.status).toBe("active");
+    expect(await store.delete("draft-owner", key, id1, current!.version)).toBe(true);
+    expect((await store.get("draft-owner", key))?.status).toBe("deleted");
+  });
+
   it("expires server-stored edits after 30 days without modification", async () => {
-    const created = await store.save("draft-owner", "topic:abc:reply", id1, text1, 0);
+    const key = "section:draft/opaque:✓:new";
+    const marker = await store.get("draft-owner", key);
+    const created = await store.save("draft-owner", key, id2, text1, marker!.version);
     expect(created.outcome).toBe("saved");
-    await client.query('update forum_editor_drafts set edited_at = now()-interval \'31 days\', updated_at = now()-interval \'31 days\' where owner_id = $1 and context_key = $2', ["draft-owner","topic:abc:reply"]);
+    await client.query(
+      'update forum_editor_drafts set edited_at = now()-interval \'31 days\', updated_at = now()-interval \'31 days\' where owner_id = $1 and context_key = $2',
+      ["draft-owner", key],
+    );
     const expired = await store.metadata("draft-owner");
-    expect(expired.find((draft) => draft.contextKey === "topic:abc:reply")?.status).toBe("deleted");
-    expect((await store.get("draft-owner", "topic:abc:reply"))?.payload.body).toBe("");
+    expect(expired.find((draft) => draft.contextKey === key)?.status).toBe("deleted");
+    expect((await store.get("draft-owner", key))?.payload.body).toBe("");
+  });
+
+  it("never lets terminal tombstones displace a valid active draft from metadata discovery", async () => {
+    const key = "section:draft/opaque:✓:new";
+    const marker = await store.get("draft-owner", key);
+    const active = await store.save("draft-owner", key, id1, text2, marker!.version);
+    expect(active.outcome).toBe("saved");
+    await client.query(
+      'update forum_editor_drafts set edited_at = now()-interval \'20 days\', updated_at = now()-interval \'20 days\' where owner_id = $1 and context_key = $2',
+      ["draft-owner", key],
+    );
+    await client.query(`
+      insert into forum_editor_drafts
+        (owner_id, context_key, draft_id, version, status, payload, edited_at, updated_at)
+      select
+        'draft-owner',
+        'terminal:' || value::text,
+        'terminal-' || value::text,
+        1,
+        'published',
+        '{"title":"","body":"","tags":""}'::jsonb,
+        now() - (value::text || ' seconds')::interval,
+        now() - (value::text || ' seconds')::interval
+      from generate_series(1, 205) value
+    `);
+    await client.query(`
+      insert into forum_editor_drafts
+        (owner_id, context_key, draft_id, version, status, payload, edited_at, updated_at)
+      values
+        ('draft-owner', 'terminal:expired', 'terminal-expired', 1, 'published',
+         '{"title":"","body":"","tags":""}'::jsonb,
+         now() - interval '40 days', now() - interval '40 days')
+    `);
+
+    const metadata = await store.metadata("draft-owner");
+    expect(metadata.find((draft) => draft.contextKey === key)).toMatchObject({
+      status: "active",
+      draftId: id1,
+    });
+    expect(metadata.filter((draft) => draft.contextKey.startsWith("terminal:"))).toHaveLength(205);
+    expect(metadata.some((draft) => draft.contextKey === "terminal:expired")).toBe(false);
   });
 });
