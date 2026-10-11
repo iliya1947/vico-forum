@@ -9171,3 +9171,71 @@ a.topic-tag:focus-visible {
   background: var(--color-surface);
   cursor: pointer;
 }
+
+/* Editor 2.0 drafts — clear local/server status without blocking normal editing. */
+.home-shell .markdown-editor-draft-state {
+  min-height: 1.85rem;
+  padding: .38rem .7rem;
+  border-block-start: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: .75rem;
+}
+.home-shell .markdown-editor-draft-conflict {
+  margin-block-start: .6rem;
+  padding: .7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .4rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.home-shell .markdown-editor-draft-versions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .6rem;
+  margin-block: .65rem;
+}
+.home-shell .markdown-editor-draft-versions section { min-inline-size: 0; }
+.home-shell .markdown-editor-draft-versions pre {
+  max-block-size: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: .65rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+.home-shell .markdown-editor-draft-conflict button,
+.home-shell .editor-drafts-page button {
+  margin-inline-end: .45rem;
+  min-height: 2rem;
+  padding: .3rem .65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .35rem;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.home-shell .editor-drafts-page { max-inline-size: 70rem; margin-inline: auto; }
+.home-shell .editor-drafts-list { list-style: none; padding: 0; display: grid; gap: .7rem; }
+.home-shell .editor-drafts-list li {
+  padding: .85rem;
+  border: 1px solid var(--color-border);
+  border-radius: .5rem;
+  background: var(--color-surface);
+}
+.home-shell .editor-drafts-list li p { overflow-wrap: anywhere; }
+.home-shell .editor-drafts-list li > div { display: flex; gap: .7rem; align-items: center; }
+.home-shell .editor-draft-discovery {
+  display: flex;
+  gap: .7rem;
+  flex-wrap: wrap;
+  padding: .6rem .85rem;
+  margin-block-end: .75rem;
+  border-inline-start: .2rem solid var(--color-accent);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+.home-shell .editor-draft-discovery a { overflow-wrap: anywhere; }
+@media (max-width: 44rem) {
+  .home-shell .markdown-editor-draft-versions { grid-template-columns: minmax(0, 1fr); }
+}
