@@ -2129,7 +2129,7 @@ export function TopicView({
     } catch {
       return;
     }
-    if (!postId || pending.existingPostIds.has(postId) || !messageNumberById.has(postId)) return;
+    if (!postId || pending.existingPostIds.has(postId) || !topic.posts.some((post) => post.id === postId)) return;
     replyEditorRef.current?.acknowledgePublished(
       pending.draftId,
       pending.expectedVersion + 1,
@@ -2137,7 +2137,7 @@ export function TopicView({
     setReplyTargetPostId(null);
     setQuoteSelectionErrorPostId(null);
     replyPublicationRef.current = null;
-  }, [forumWriteError, location.hash, messageNumberById, navigation.state, topic.id]);
+  }, [forumWriteError, location.hash, navigation.state, topic.id, topic.posts]);
 
   useEffect(() => {
     const latestPostId = topicReadState?.latestPostId;
