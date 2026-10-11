@@ -305,26 +305,26 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }), [mode, value, authoringMode]);
 
     return (
-      <div className="markdown-editor" data-mode={mode}>
-        <div className="markdown-editor-modebar">
-          <div className="markdown-editor-modes" role="group" aria-label={t("editorViewMode")}>
-            <button type="button" disabled={disabled} aria-pressed={mode === "write"} onClick={() => setMode("write")}>
-              {t("editorModeWrite")}
-            </button>
-            <button type="button" disabled={disabled} aria-pressed={mode === "preview"} onClick={() => setMode("preview")}>
-              {t("editorModePreview")}
-            </button>
-            <button type="button" disabled={disabled} aria-pressed={mode === "split"} onClick={() => setMode("split")}>
-              {t("editorModeSplit")}
-            </button>
-          </div>
-        </div>
-
-        {mode !== "preview" && (
-          <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
-            <div className="markdown-editor-formatting">
+      <div className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
+        data-mode={mode} data-authoring={authoringMode}
+        onKeyDownCapture={(event) => {
+          if (event.key === "Escape" && fullScreen) setFullScreen(false);
+          if (authoringMode !== "simple" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+          const key = event.key.toLowerCase();
+          if (key === "z" || key === "y") {
+            event.preventDefault();
+            travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
+          }
+        }}
+      >
+        <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
+          <div className="markdown-editor-formatting">
+            <div className="markdown-editor-tool-group">
+              <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
+              <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
+            </div>
               <div className="markdown-editor-tool-group">
-                <button type="button" disabled={disabled} aria-label={t("editorHeading")} title={t("editorHeading")} onClick={() => prefixSelectedLines(() => "## ")}>
+                <button type="button" className="markdown-editor-compact-tool" disabled={disabled} aria-label={t("editorHeading")} title={t("editorHeading")} onClick={() => prefixSelectedLines(() => "## ")}>
                   <span aria-hidden="true" className="markdown-editor-glyph is-heading">H</span>
                 </button>
                 <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")} onClick={() => replaceSelection("**", "**", 2)}>
@@ -335,7 +335,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 </button>
               </div>
 
-              <div className="markdown-editor-tool-group">
+              <div className="markdown-editor-tool-group markdown-editor-code-tools">
                 <button
                   type="button"
                   disabled={disabled}
@@ -369,6 +369,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               </div>
 
               <div className="markdown-editor-tool-group">
+                <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")} onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
                 <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")} onClick={() => prefixSelectedLines(() => "- ")}>
                   <span aria-hidden="true" className="markdown-editor-glyph is-list">•</span>
                 </button>
@@ -393,17 +394,47 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 onChange={(event) => setCodeLanguage(event.target.value)}
               />
             </label>
+          <div className="markdown-editor-controls">
+            <button type="button" disabled={disabled} onClick={() => switchAuthoring(authoringMode === "simple" ? "advanced" : "simple")}>
+              {t(authoringMode === "simple" ? "editorAdvanced" : "editorSimple")}
+            </button>
+            {authoringMode === "simple"
+              ? <button type="button" disabled={disabled} aria-pressed={mode === "preview"}
+                  onClick={() => setMode(mode === "preview" ? "write" : "preview")}>{t("editorModePreview")}</button>
+              : <details className="markdown-editor-preview-menu">
+                  <summary>{t("editorModePreview")}</summary>
+                  <div className="markdown-editor-preview-options">
+                    {(["write", "preview", "split"] as const).map((item) =>
+                      <button type="button" key={item} disabled={disabled} aria-pressed={mode === item}
+                        onClick={() => setMode(item)}>
+                        {t(item === "write" ? "editorModeMarkdown" : item === "preview" ? "editorModePreview" : "editorModeSplit")}
+                      </button>,
+                    )}
+                  </div>
+                </details>}
+            <button type="button" disabled={disabled} aria-pressed={fullScreen}
+              title={t("editorFullScreen")} aria-label={t("editorFullScreen")}
+              onClick={() => setFullScreen((previous) => !previous)}>⛶</button>
           </div>
-        )}
+        </div>
 
         <div className={"markdown-editor-workspace is-" + mode}>
+          {authoringMode === "simple" && mode !== "preview" ? (
+            <VisualMarkdownEditor
+              markdown={value} disabled={disabled}
+              onTextEdit={updateVisualText}
+              onSelection={(selection) => { visualSelectionRef.current = selection; }}
+              onInsertParagraph={insertVisualParagraph}
+              onEditTechnical={() => switchAuthoring("advanced")}
+            />
+          ) : null}
           <div className={"markdown-editor-write-pane" + (mode === "preview" ? " is-preview-hidden" : "")}>
             <textarea
               ref={textareaRef}
               id={id}
               name={name}
               required={required}
-              tabIndex={mode === "preview" ? -1 : undefined}
+              tabIndex={mode === "preview" || authoringMode === "simple" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
               aria-describedby={describedBy}
@@ -427,12 +458,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 if (mode === "preview") setMode("write");
               }}
               onInvalid={() => {
-                if (mode !== "preview") return;
+                if (mode !== "preview" && authoringMode !== "simple") return;
                 const textarea = textareaRef.current;
                 const start = textarea?.selectionStart ?? value.length;
                 const end = textarea?.selectionEnd ?? start;
                 pendingSelectionRef.current = { start, end };
-                setMode("write");
+                switchAuthoring("advanced");
               }}
             />
           </div>
