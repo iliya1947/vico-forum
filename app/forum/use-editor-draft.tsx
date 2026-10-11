@@ -15,7 +15,7 @@ interface Props {
   restore(payload: ForumEditorDraftPayload): void;
 }
 type Status = "idle" | "saved" | "pending" | "saving" | "restored" | "conflict" | "error";
-type Conflict = { local: LocalEditorDraft; server: DraftRemote };
+type Conflict = { local: LocalEditorDraft; server: DraftRemote | DraftMetadata };
 type Runtime = {
   identity: string;
   ownerId: string;
@@ -34,11 +34,6 @@ type Runtime = {
 };
 
 const blank: ForumEditorDraftPayload = { body: "", title: "", tags: "" };
-
-function metadataAsRemote(meta: DraftMetadata): DraftRemote {
-  // A tombstone contains no source text. It is never treated as an editable draft.
-  return { ...meta, payload: blank };
-}
 
 export function useEditorDraft({ ownerId, contextKey, locale, readPayload, restore }: Props) {
   const { t } = useTranslation("common");
@@ -132,7 +127,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         } else if (local) {
           // Different instance may be a new reply or a stale offline copy.
           // Clocks cannot establish which: require explicit user choice.
-          updateConflict(ctx, { local, server: metadataAsRemote(meta) });
+          updateConflict(ctx, { local, server: meta });
         } else {
           // New input in this form can start a fresh generation at the next 60s sync.
           ctx.startVersion = meta.version;
@@ -195,7 +190,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
           ctx.startVersion = meta.version;
         } else if (meta.status !== "active") {
           const latest = ctx.local;
-          if (latest) updateConflict(ctx, { local: latest, server: metadataAsRemote(meta) });
+          if (latest) updateConflict(ctx, { local: latest, server: meta });
         } else {
           const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
           if (!current(ctx) || !remote) return;
@@ -224,7 +219,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (!ctx || !current(ctx) || !ctx.conflict) return;
     const conflictNow = ctx.conflict;
     if (which === "server") {
-      if (conflictNow.server.status === "active") applyRemote(ctx, conflictNow.server);
+      if ("payload" in conflictNow.server) applyRemote(ctx, conflictNow.server);
       else { reset(ctx); ctx.startVersion = conflictNow.server.version; }
     } else {
       // Explicit selection is the only way to replace another generation.
@@ -335,7 +330,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
           <p>{t("editorDraftConflict")}</p>
           <div className="markdown-editor-draft-versions">
             <section><strong>{t("editorDraftThisDevice")}</strong><pre>{conflict.local.payload.body}</pre></section>
-            <section><strong>{t("editorDraftOtherDevice")}</strong><pre>{conflict.server.payload.body}</pre></section>
+            <section><strong>{t("editorDraftOtherDevice")}</strong><pre>{"payload" in conflict.server ? conflict.server.payload.body : t("editorDraftNoRemoteVersion")}</pre></section>
           </div>
           <button type="button" onClick={() => chooseVersion("local")}>{t("editorDraftKeepLocal")}</button>
           <button type="button" onClick={() => chooseVersion("server")}>{t("editorDraftKeepServer")}</button>
