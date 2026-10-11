@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown } from "./markdown";
+import { createEditorHistory, recordEditorEdit, redoEditorEdit, undoEditorEdit } from "./editor-document";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -76,7 +77,30 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const { t } = useTranslation("common");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
+    const historyRef = useRef(createEditorHistory(defaultValue));
     const [value, setValue] = useState(defaultValue);
+
+    function commitSource(nextValue: string) {
+      const textarea = textareaRef.current;
+      const before = {
+        start: textarea?.selectionStart ?? value.length,
+        end: textarea?.selectionEnd ?? value.length,
+      };
+      const after = pendingSelectionRef.current ?? before;
+      historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
+      setValue(nextValue);
+    }
+
+    function travelHistory(direction: "undo" | "redo") {
+      const next = direction === "undo"
+        ? undoEditorEdit(historyRef.current)
+        : redoEditorEdit(historyRef.current);
+      if (next === historyRef.current) return;
+      historyRef.current = next;
+      pendingSelectionRef.current = next.current.selection;
+      if (mode === "preview") setMode("write");
+      setValue(next.current.markdown);
+    }
     const [codeLanguage, setCodeLanguage] = useState("");
     const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "split" : "write");
 
@@ -112,7 +136,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const caret = start + emptySelectionOffset;
         pendingSelectionRef.current = { start: caret, end: caret };
       }
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     function prefixSelectedLines(prefixForLine: (index: number) => string) {
@@ -128,7 +152,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const nextValue = value.slice(0, lineStart) + prefix + value.slice(lineStart);
         const caret = selectionStart + prefix.length;
         pendingSelectionRef.current = { start: caret, end: caret };
-        setValue(nextValue);
+        commitSource(nextValue);
         return;
       }
 
@@ -149,7 +173,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         start: lineStart,
         end: lineStart + transformed.length,
       };
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     function insertLink() {
@@ -176,7 +200,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           end: start + 1 + label.length,
         };
       }
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     function insertFencedCodeBlock() {
@@ -205,7 +229,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const caret = start + fenceStart.length;
         pendingSelectionRef.current = { start: caret, end: caret };
       }
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     useImperativeHandle(forwardedRef, () => ({
@@ -233,7 +257,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const caret = start + text.length;
         pendingSelectionRef.current = { start: caret, end: caret };
         if (mode === "preview") setMode("write");
-        setValue(nextValue);
+        commitSource(nextValue);
       },
     }), [mode, value]);
 
@@ -341,7 +365,21 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               disabled={disabled}
               aria-describedby={describedBy}
               value={value}
-              onChange={(event) => setValue(event.target.value)}
+              onChange={(event) => commitSource(event.target.value)}
+              onKeyDown={(event) => {
+                if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+                const key = event.key.toLowerCase();
+                if (key === "z" || key === "y") {
+                  event.preventDefault();
+                  travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
+                }
+              }}
+              onBeforeInput={(event) => {
+                const inputType = (event.nativeEvent as InputEvent).inputType;
+                if (inputType !== "historyUndo" && inputType !== "historyRedo") return;
+                event.preventDefault();
+                travelHistory(inputType === "historyUndo" ? "undo" : "redo");
+              }}
               onFocus={() => {
                 if (mode === "preview") setMode("write");
               }}
