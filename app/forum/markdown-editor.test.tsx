@@ -551,6 +551,60 @@ describe("MarkdownEditor", () => {
     expect(new FormData((screen.getByLabelText("Body") as HTMLTextAreaElement).form!).get("body")).toContain("| changed | two |");
   });
 
+  it("renders toolbar strikethrough as editable Simple content", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="old" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 0);
+    range.setEnd(leaf.firstChild!, 3);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+
+    await userEvent.click(screen.getByRole("button", { name: "Strikethrough" }));
+
+    expect(screen.getByLabelText("Body")).toHaveValue("~~old~~");
+    expect(document.querySelector("del")).toHaveTextContent("old");
+  });
+
+  it("inserts Spoiler and Table after a selection without deleting selected text", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      defaultAuthoringMode="advanced" id="body" name="body" defaultValue="Keep tail" /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const more = document.querySelector<HTMLDetailsElement>(".markdown-editor-extra-menu:last-of-type")!;
+    await userEvent.click(more.querySelector("summary")!);
+
+    textarea.focus();
+    textarea.setSelectionRange(0, 4);
+    await userEvent.click(screen.getByRole("button", { name: "Spoiler" }));
+    expect(textarea.value).toContain("Keep");
+    expect(textarea.value).toContain(":::spoiler");
+
+    textarea.focus();
+    textarea.setSelectionRange(0, 4);
+    await userEvent.click(screen.getByRole("button", { name: "Table" }));
+    expect(textarea.value.startsWith("Keep")).toBe(true);
+    expect(textarea.value).toContain("| --- | --- |");
+  });
+
+  it("places the caret after a horizontal divider block instead of inside its marker", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      defaultAuthoringMode="advanced" id="body" name="body" defaultValue="before" /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const more = document.querySelector<HTMLDetailsElement>(".markdown-editor-extra-menu:last-of-type")!;
+    await userEvent.click(more.querySelector("summary")!);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    await userEvent.click(screen.getByRole("button", { name: "—" }));
+
+    expect(textarea).toHaveValue("before\n\n---\n\n");
+    expect(textarea).toHaveFocus();
+    expect(textarea.selectionStart).toBe(textarea.value.length);
+    expect(textarea.selectionEnd).toBe(textarea.value.length);
+  });
+
   it("inserts a spoiler block and keeps its source on switching authoring modes", async () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" /></>);
     await userEvent.click(document.querySelector<HTMLDetailsElement>(".markdown-editor-extra-menu:last-of-type summary")!);
@@ -578,6 +632,28 @@ describe("MarkdownEditor", () => {
     textarea.setSelectionRange(indent, indent);
     fireEvent.keyDown(textarea, { key: "Tab", shiftKey: true });
     expect(textarea.value).toContain("\nabc\n");
+  });
+
+  it("does not apply code-only pairing on fenced info or closing fence lines", () => {
+    const source = "```tsx\nabc\n```";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultAuthoringMode="advanced" defaultValue={source} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+
+    textarea.focus();
+    textarea.setSelectionRange(source.indexOf("tsx") + 1, source.indexOf("tsx") + 1);
+    fireEvent.keyDown(textarea, { key: "(" });
+    expect(textarea).toHaveValue(source);
+
+    const codePoint = textarea.value.indexOf("abc") + 1;
+    textarea.setSelectionRange(codePoint, codePoint);
+    fireEvent.keyDown(textarea, { key: "(" });
+    expect(textarea).toHaveValue("```tsx\na()bc\n```");
+
+    const closingPoint = textarea.value.lastIndexOf("```") + 1;
+    textarea.setSelectionRange(closingPoint, closingPoint);
+    fireEvent.keyDown(textarea, { key: "[" });
+    expect(textarea).toHaveValue("```tsx\na()bc\n```");
   });
 
   it("finds and replaces literal source text without changing unrelated Markdown", async () => {
