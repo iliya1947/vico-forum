@@ -85,7 +85,10 @@ function tableAt(lines: Line[], index: number): { table: MarkdownTable; next: nu
     const candidate = lines[next]!;
     if (candidate.text.trim() === "" || /^\s*[:]{3}/u.test(candidate.text)) break;
     const cells = splitCells(candidate);
-    if (!cells || cells.length !== header.length) break;
+    if (!cells || cells.length !== header.length) {
+      if (candidate.text.includes("|")) return null; // complex shape remains protected
+      break;
+    }
     rows.push(cells);
     next++;
   }
