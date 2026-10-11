@@ -3,6 +3,7 @@ import { Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { draftStoreForRequest } from "../forum/draft-request-context";
+import { ForumDraftStorageUnavailableError } from "../../db/hyperdrive-editor-drafts";
 import {
   clearDeviceEditorData, clearLocalEditorDraft, DRAFT_LIFETIME_MS,
   draftDestination, listLocalEditorDrafts, localDraftNeedsAttention, mutateDraft, type DraftMetadata, type LocalEditorDraft,
@@ -18,7 +19,12 @@ export async function loader({ params, context }: {
   const locale = params.locale ?? "en";
   try {
     return { locale, drafts: await draftStoreForRequest(context).metadata(session.user.id) };
-  } catch { throw new Response("Unavailable", { status: 503 }); }
+  } catch (error) {
+    if (error instanceof ForumDraftStorageUnavailableError) {
+      throw new Response("Unavailable", { status: 503 });
+    }
+    throw error;
+  }
 }
 
 interface DraftListItem {
@@ -27,6 +33,8 @@ interface DraftListItem {
   title: string;
   snippet: string;
   editedAt: string;
+  serverDraftId: string | null;
+  serverVersion: number | null;
 }
 
 export default function DraftsRoute() {
@@ -49,16 +57,25 @@ export default function DraftsRoute() {
   const currentRemote = remote.filter((draft) => draft.status === "active");
   const combined = new Map<string, DraftListItem>();
   for (const draft of currentRemote) combined.set(draft.contextKey, {
-    contextKey: draft.contextKey, draftId: draft.draftId, title: draft.title,
-    snippet: draft.snippet, editedAt: draft.editedAt,
+    contextKey: draft.contextKey,
+    draftId: draft.draftId,
+    title: draft.title,
+    snippet: draft.snippet,
+    editedAt: draft.editedAt,
+    serverDraftId: draft.draftId,
+    serverVersion: draft.version,
   });
   for (const draft of local) {
     const server = remote.find((entry) => entry.contextKey === draft.contextKey);
     if (!localDraftNeedsAttention(draft, server)) continue;
     combined.set(draft.contextKey, {
-      contextKey: draft.contextKey, draftId: draft.draftId,
-      title: draft.payload.title, snippet: draft.payload.body.slice(0, 140),
+      contextKey: draft.contextKey,
+      draftId: draft.draftId,
+      title: draft.payload.title,
+      snippet: draft.payload.body.slice(0, 140),
       editedAt: draft.editedAt,
+      serverDraftId: server?.status === "active" ? server.draftId : null,
+      serverVersion: server?.status === "active" ? server.version : null,
     });
   }
   const items = [...combined.values()].sort((a, b) => b.editedAt.localeCompare(a.editedAt));
@@ -66,8 +83,15 @@ export default function DraftsRoute() {
     if (!userId || !window.confirm(t("editorDraftDeleteConfirm"))) return;
     setError(false);
     try {
-      const result = await mutateDraft(locale, { intent: "delete", contextKey: item.contextKey, draftId: item.draftId });
-      if (result.outcome !== "finished") throw new Error("Draft version changed");
+      if (item.serverDraftId && item.serverVersion !== null) {
+        const result = await mutateDraft(locale, {
+          intent: "delete",
+          contextKey: item.contextKey,
+          draftId: item.serverDraftId,
+          expectedVersion: item.serverVersion,
+        });
+        if (result.outcome !== "finished") throw new Error("Draft version changed");
+      }
       clearLocalEditorDraft(userId, item.contextKey);
       setLocal(listLocalEditorDrafts(userId));
       setRemote((prev) => prev.filter((candidate) => candidate.contextKey !== item.contextKey));
