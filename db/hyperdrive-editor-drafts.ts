@@ -8,7 +8,7 @@ export interface ForumDraftStore {
   metadata(ownerId: string): Promise<ForumEditorDraftMetadata[]>;
   get(ownerId: string, contextKey: string): Promise<ForumEditorDraft | null>;
   save(ownerId: string, contextKey: string, draftId: string, payload: ForumEditorDraftPayload, expectedVersion: number, editedAt: Date): Promise<SaveDraftResult>;
-  finish(ownerId: string, contextKey: string, draftId: string, status: "deleted" | "published"): Promise<void>;
+  finish(ownerId: string, contextKey: string, draftId: string, status: "deleted" | "published"): Promise<boolean>;
 }
 
 export function createHyperdriveForumDraftStore(
