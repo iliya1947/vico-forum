@@ -1189,6 +1189,10 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
     queue={mode === "signals"
       ? { cases: scenario.variant === "attention-empty" ? [] : selectedCases, hasMore: false, page: 0 }
       : null}
+    counts={mode === "signals" ? {
+      "needs-details": 1, "needs-review": 2, "solution-outdated": 1,
+      duplicate: 1, appeals: 1, mixed: 1,
+    } : null}
     isPreview referenceTime={previewReferenceTime}
   />;
 }
