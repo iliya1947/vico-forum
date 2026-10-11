@@ -91,7 +91,7 @@ export default function DraftsRoute() {
           </li>;
         })}</ul>
       )}
-      <button type="button" disabled={!userId || local.length === 0}
+      <button type="button" disabled={!userId}
         onClick={() => {
           if (!userId || !window.confirm(t("editorDraftClearDeviceConfirm"))) return;
           clearDeviceEditorData(userId);
