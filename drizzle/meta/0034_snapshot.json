@@ -4113,6 +4113,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "version": {
           "name": "version",
           "type": "integer",
