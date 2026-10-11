@@ -83,6 +83,17 @@ Vico Forum находится в ранней pre-release разработке.
   lint/typecheck and builds. A single unrelated transaction-serialization
   concurrency test needed one successful failed-DB-job rerun with no code
   changes. Pages #38082518153 built and deployed the same revision.
+  User review rejected the topic-list presentation as not actionable. In the first
+  implementation subtask, PR #217 now adds a separate permission-filtered
+  readHelpAttentionCases server reader for individual pending signals and appeals
+  (author, explanation, target answer, proposed/confirmed original, submission
+  date and stable case ID); Needs review includes a distinct authoritative
+  answer-status task instead of pretending it is a user report. Group-specific
+  database selection occurs before pagination (50 cases/page; Mixed paginates
+  topics with 2+ pending visible signals and projects their individual cases).
+  The legacy topic-aggregate reader remains temporarily available for the
+  existing UI until the next subtask wires the actionable queue; no UI acceptance,
+  exact-head CI or deployment is claimed for this intermediate revision.
   Owner visual acceptance and independent Codex review remain pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
