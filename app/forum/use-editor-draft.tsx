@@ -18,212 +18,217 @@ type Status = "idle" | "saved" | "pending" | "saving" | "restored" | "conflict" 
 type Conflict = { local: LocalEditorDraft; server: DraftRemote };
 
 export function useEditorDraft({ ownerId, contextKey, locale, readPayload, restore }: Props) {
+  const { t } = useTranslation("common");
   const [status, setStatus] = useState<Status>("idle");
   const [conflict, setConflict] = useState<Conflict | null>(null);
+  const [draftId, setDraftId] = useState(() => crypto.randomUUID());
   const localRef = useRef<LocalEditorDraft | null>(null);
-  const dirtyBodyRef = useRef("");
-  const hasUnsavedRef = useRef(false);
+  const conflictRef = useRef<Conflict | null>(null);
+  const bodyRef = useRef("");
   const busyRef = useRef(false);
-  const statusRef = useRef<Status>("idle");
   const callbacks = useRef({ readPayload, restore });
   callbacks.current = { readPayload, restore };
   const identity = ownerId && contextKey && locale ? ownerId + ":" + contextKey + ":" + locale : null;
-  const { t } = useTranslation("common");
-
-  function state(next: Status) { statusRef.current = next; setStatus(next); }
-
-  function saveLocal() {
-    if (!ownerId || !contextKey || !identity || conflict) return;
-    const payload = callbacks.current.readPayload(dirtyBodyRef.current);
+  const identityRef = useRef(identity);
+  const renderedIdentityRef = useRef(identity);
+  renderedIdentityRef.current = identity;
+  function chooseConflict(value: Conflict | null) {
+    conflictRef.current = value;
+    setConflict(value);
+  }
+  function flushLocal() {
+    if (!identity || !ownerId || !contextKey) return;
+    const payload = callbacks.current.readPayload(bodyRef.current);
     if (!payload.body.trim() && !payload.title.trim() && !payload.tags.trim()) return;
     const previous = localRef.current;
-    const changed = !previous || JSON.stringify(previous.payload) !== JSON.stringify(payload);
-    if (!changed && !hasUnsavedRef.current) return;
-    const updated: LocalEditorDraft = {
-      ownerId, contextKey, payload,
-      editedAt: changed ? new Date().toISOString() : previous!.editedAt,
-      baseVersion: previous?.baseVersion ?? 0,
-      syncedEditedAt: previous?.syncedEditedAt ?? null,
+    if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) return;
+    const next: LocalEditorDraft = {
+      ownerId, contextKey, draftId: previous?.draftId ?? draftId, payload,
+      editedAt: new Date().toISOString(),
+      baseVersion: previous?.baseVersion ?? 0, syncedEditedAt: previous?.syncedEditedAt ?? null,
     };
-    if (writeLocalEditorDraft(updated)) {
-      localRef.current = updated;
-      hasUnsavedRef.current = false;
-      state(updated.editedAt === updated.syncedEditedAt ? "saved" : "pending");
-    } else state("error");
+    if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
+    localRef.current = next;
+    if (conflictRef.current) {
+      chooseConflict({ ...conflictRef.current, local: next });
+      setStatus("conflict");
+    } else setStatus("pending");
   }
-
   function noteEdit(body: string, immediate = false) {
-    dirtyBodyRef.current = body;
-    hasUnsavedRef.current = true;
-    if (immediate || /\s$/u.test(body) || body.length === 0) saveLocal();
+    bodyRef.current = body;
+    if (immediate || /\s$/u.test(body) || body.length === 0) flushLocal();
   }
-
+  function restoreDraft(draft: DraftRemote) {
+    if (!ownerId || !contextKey) return;
+    const next: LocalEditorDraft = {
+      ownerId, contextKey, draftId: draft.draftId,
+      payload: draft.payload, editedAt: draft.editedAt,
+      baseVersion: draft.version, syncedEditedAt: draft.editedAt,
+    };
+    localRef.current = next;
+    writeLocalEditorDraft(next);
+    setDraftId(draft.draftId);
+    callbacks.current.restore(next.payload);
+    bodyRef.current = next.payload.body;
+    setStatus("restored");
+  }
+  function clearFinished() {
+    if (!ownerId || !contextKey) return;
+    clearLocalEditorDraft(ownerId, contextKey);
+    localRef.current = null;
+    chooseConflict(null);
+    callbacks.current.restore({ title: "", body: "", tags: "" });
+    bodyRef.current = "";
+    setDraftId(crypto.randomUUID());
+    setStatus("idle");
+  }
+  async function checkRemote() {
+    if (!identity || !ownerId || !contextKey || !locale || busyRef.current || conflictRef.current) return;
+    try {
+      const meta = (await fetchDraftMetadata(locale)).find((entry) => entry.contextKey === contextKey);
+      if (identityRef.current !== identity) return;
+      const local = localRef.current;
+      if (meta?.status !== undefined && meta.status !== "active") {
+        // A tombstone is authoritative only for the same working draft.
+        if (!local || local.draftId === meta.draftId) clearFinished();
+        return;
+      }
+      if (!meta || (local && meta.version === local.baseVersion && meta.draftId === local.draftId)) return;
+      const remote = await fetchDraftContent(locale, contextKey);
+      if (identityRef.current !== identity || !remote) return;
+      if (!local || JSON.stringify(local.payload) === JSON.stringify(remote.payload)
+        || local.editedAt === local.syncedEditedAt) {
+        restoreDraft(remote);
+      } else {
+        chooseConflict({ local, server: remote });
+        setStatus("conflict");
+      }
+    } catch {
+      if (identityRef.current === identity && localRef.current) setStatus("pending");
+    }
+  }
   async function sync() {
-    if (!identity || !ownerId || !locale || !contextKey || busyRef.current || conflict) return;
+    if (!identity || !ownerId || !contextKey || !locale || busyRef.current || conflictRef.current) return;
     const local = localRef.current;
     if (!local || local.editedAt === local.syncedEditedAt) return;
     busyRef.current = true;
-    state("saving");
+    setStatus("saving");
     try {
       const result = await mutateDraft(locale, {
-        intent: "save", contextKey,
+        intent: "save", contextKey, draftId: local.draftId,
         payload: local.payload, expectedVersion: local.baseVersion, editedAt: local.editedAt,
       });
+      if (identityRef.current !== identity) return;
       if (result.outcome === "saved" && result.draft) {
         const latest = localRef.current;
-        if (latest && latest.editedAt === local.editedAt) {
-          const saved = { ...latest, baseVersion: result.draft.version, syncedEditedAt: latest.editedAt };
-          localRef.current = saved;
-          writeLocalEditorDraft(saved);
-          state("saved");
-        } else if (latest) {
-          // An older upload cannot mark a newer local edit as synchronized.
-          const updated = { ...latest, baseVersion: result.draft.version };
-          localRef.current = updated;
-          writeLocalEditorDraft(updated);
-          state("pending");
-        }
-      } else if (result.outcome === "gone") {
-        clearLocalEditorDraft(ownerId, contextKey);
-        localRef.current = null;
-        callbacks.current.restore({ body: "", title: "", tags: "" });
-        state("idle");
-      } else if (result.outcome === "conflict") {
-        const remote = await fetchDraftContent(locale, contextKey);
-        if (remote) {
-          setConflict({ local, server: remote });
-          state("conflict");
-        }
-      }
-    } catch { state("pending"); }
-    finally { busyRef.current = false; }
-  }
-
-  async function checkRemote() {
-    if (!ownerId || !contextKey || !locale || busyRef.current || conflict) return;
-    try {
-      const metadata = (await fetchDraftMetadata(locale)).find((draft) => draft.contextKey === contextKey);
-      const local = localRef.current;
-      if (metadata && metadata.status !== "active") {
-        clearLocalEditorDraft(ownerId, contextKey);
-        localRef.current = null;
-        callbacks.current.restore({ body: "", title: "", tags: "" });
-        state("idle");
-        return;
-      }
-      if (!metadata || (local && metadata.version === local.baseVersion)) return;
-      const remote = await fetchDraftContent(locale, contextKey);
-      if (!remote) return;
-      if (!local || JSON.stringify(local.payload) === JSON.stringify(remote.payload)) {
-        const next: LocalEditorDraft = {
-          ownerId, contextKey, payload: remote.payload,
-          editedAt: remote.editedAt, baseVersion: remote.version, syncedEditedAt: remote.editedAt,
-        };
+        if (!latest || latest.draftId !== local.draftId) return;
+        const next: LocalEditorDraft = { ...latest, baseVersion: result.draft.version,
+          syncedEditedAt: latest.editedAt === local.editedAt ? latest.editedAt : local.syncedEditedAt };
         localRef.current = next;
         writeLocalEditorDraft(next);
-        callbacks.current.restore(remote.payload);
-        dirtyBodyRef.current = remote.payload.body;
-        state("restored");
-        return;
+        setStatus(next.editedAt === next.syncedEditedAt ? "saved" : "pending");
+      } else if (result.outcome === "gone") {
+        clearFinished();
+      } else if (result.outcome === "conflict") {
+        const remote = await fetchDraftContent(locale, contextKey);
+        if (identityRef.current === identity && remote) {
+          chooseConflict({ local: localRef.current ?? local, server: remote });
+          setStatus("conflict");
+        }
       }
-      setConflict({ local, server: remote });
-      state("conflict");
-    } catch {
-      // Local edits remain available while disconnected.
-      if (localRef.current) state("pending");
-    }
+    } catch { if (identityRef.current === identity) setStatus("pending"); }
+    finally { busyRef.current = false; }
   }
-
-  function chooseVersion(kind: "local" | "server") {
-    const current = conflict;
+  function chooseVersion(which: "local" | "server") {
+    const current = conflictRef.current;
     if (!current || !ownerId || !contextKey) return;
-    if (kind === "server") {
+    if (which === "server") restoreDraft(current.server);
+    else {
       const next: LocalEditorDraft = {
-        ownerId, contextKey, payload: current.server.payload,
-        editedAt: current.server.editedAt,
-        baseVersion: current.server.version, syncedEditedAt: current.server.editedAt,
+        ...current.local, draftId: current.server.draftId, baseVersion: current.server.version,
       };
       localRef.current = next;
+      setDraftId(next.draftId);
       writeLocalEditorDraft(next);
       callbacks.current.restore(next.payload);
-      dirtyBodyRef.current = next.payload.body;
-      state("restored");
-    } else {
-      const next = { ...current.local, baseVersion: current.server.version };
-      localRef.current = next;
-      writeLocalEditorDraft(next);
-      callbacks.current.restore(next.payload);
-      dirtyBodyRef.current = next.payload.body;
-      state("pending");
+      bodyRef.current = next.payload.body;
+      setStatus("pending");
     }
-    setConflict(null);
+    chooseConflict(null);
   }
-
   useEffect(() => {
+    identityRef.current = identity;
+    chooseConflict(null);
     if (!identity || !ownerId || !contextKey || !locale) {
       localRef.current = null;
-      dirtyBodyRef.current = "";
-      hasUnsavedRef.current = false;
-      state("idle");
+      bodyRef.current = "";
+      setStatus("idle");
       return;
     }
-    let active = true;
+    let live = true;
     const local = readLocalEditorDraft(ownerId, contextKey);
     localRef.current = local;
     if (local) {
       callbacks.current.restore(local.payload);
-      dirtyBodyRef.current = local.payload.body;
-      state("restored");
+      bodyRef.current = local.payload.body;
+      setDraftId(local.draftId);
+      setStatus("restored");
     }
-    void (async () => { if (active) await checkRemote(); })();
-    const persist = () => saveLocal();
-    const onVisibility = () => { if (document.visibilityState === "hidden") persist(); else void checkRemote(); };
+    void checkRemote();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushLocal();
+      else void checkRemote();
+    };
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== draftStorageKey(ownerId, contextKey) || !event.newValue) return;
+      if (event.key !== draftStorageKey(ownerId, contextKey)) return;
       const other = readLocalEditorDraft(ownerId, contextKey);
       const mine = localRef.current;
-      if (other && mine && other.editedAt !== mine.editedAt) {
-        const server: DraftRemote = {
-          ...other.payload, payload: other.payload,
-          title: other.payload.title, snippet: other.payload.body.slice(0, 140),
-          contextKey, version: other.baseVersion, status: "active",
-          updatedAt: other.editedAt, editedAt: other.editedAt,
-        };
-        setConflict({ local: mine, server }); state("conflict");
+      if (!other || other.editedAt === mine?.editedAt) return;
+      if (!mine || mine.editedAt === mine.syncedEditedAt) {
+        localRef.current = other;
+        setDraftId(other.draftId);
+        callbacks.current.restore(other.payload);
+        bodyRef.current = other.payload.body;
+        setStatus("restored");
+        return;
       }
+      chooseConflict({ local: mine, server: {
+        contextKey, draftId: other.draftId, version: other.baseVersion, status: "active",
+        title: other.payload.title, snippet: other.payload.body.slice(0, 140),
+        updatedAt: other.editedAt, editedAt: other.editedAt, payload: other.payload,
+      } });
+      setStatus("conflict");
     };
-    window.addEventListener("pagehide", persist);
+    const onPageHide = () => flushLocal();
+    window.addEventListener("pagehide", onPageHide);
     window.addEventListener("online", onVisibility);
     window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVisibility);
-    const clock = window.setInterval(() => { if (active) { saveLocal(); void sync().then(() => checkRemote()); } }, 60_000);
+    const timer = window.setInterval(() => { if (live) void sync().then(() => checkRemote()); }, 60_000);
     return () => {
-      active = false;
-      persist();
-      window.clearInterval(clock);
-      window.removeEventListener("pagehide", persist);
+      live = false;
+      if (renderedIdentityRef.current === identity) flushLocal();
+      window.clearInterval(timer);
+      window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("online", onVisibility);
       window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  // An account / context switch creates a new isolated working draft.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Rebind draft lifecycle only when account/form identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity]);
 
   const labels: Record<Status, string> = {
-    idle: "", saved: t("editorDraftSaved"),
-    pending: t("editorDraftPending"),
-    saving: t("editorDraftSaving"),
-    restored: t("editorDraftRestored"),
-    conflict: t("editorDraftConflict"),
-    error: t("editorDraftLocalError"),
+    idle: "", saved: t("editorDraftSaved"), pending: t("editorDraftPending"),
+    saving: t("editorDraftSaving"), restored: t("editorDraftRestored"),
+    conflict: t("editorDraftConflict"), error: t("editorDraftLocalError"),
   };
   return {
-    noteEdit, saveLocal, status, conflict, chooseVersion,
+    noteEdit, saveLocal: flushLocal, draftId,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
-        {conflict ? <div className="markdown-editor-draft-conflict" role="alertdialog" aria-label={t("editorDraftConflict")}>
+        {conflict ? <div className="markdown-editor-draft-conflict" role="group" aria-label={t("editorDraftConflict")}>
           <p>{t("editorDraftConflict")}</p>
           <div className="markdown-editor-draft-versions">
             <section><strong>{t("editorDraftThisDevice")}</strong><pre>{conflict.local.payload.body}</pre></section>
