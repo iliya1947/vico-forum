@@ -1286,6 +1286,7 @@ export function HelpSolutionsView({
                 <label htmlFor="help-question-body">{t("helpSolutionsQuestionBodyLabel")}</label>
                 <MarkdownEditor
                   id="help-question-body"
+                  draftContextKey="help:new" draftLocale={locale}
                   name="body"
                   required
                   rows={8}
@@ -1879,6 +1880,7 @@ export function SectionView({
               <label htmlFor="create-topic-body">{t("initialPostLabel")}</label>
               <MarkdownEditor
                 id="create-topic-body"
+                draftContextKey={`section:${section.id}:new`} draftLocale={locale}
                 name="body"
                 required
                 rows={8}
@@ -2668,6 +2670,7 @@ export function TopicView({
                 <MarkdownEditor
                   ref={replyEditorRef}
                   id="reply-body"
+                  draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
                   name="body"
                   required
                   rows={8}
