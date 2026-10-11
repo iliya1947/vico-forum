@@ -232,7 +232,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     } else {
       // Explicit selection is the only way to replace another generation.
       const local = conflictNow.local;
-      const next = { ...local, baseVersion: conflictNow.server.version,
+      const next = { ...local, baseVersion: conflictNow.server.version, syncedEditedAt: null,
         draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : local.draftId };
       ctx.local = next;
       ctx.baseVersion = next.baseVersion;
