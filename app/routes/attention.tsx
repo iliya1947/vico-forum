@@ -3,7 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
-import type { ForumAttentionQueueGroup, ForumAttentionQueueCase, HelpSignalKind } from "../../db/forum-repository";
+import type { ForumAttentionQueueGroup, ForumAttentionQueueCase, ForumAttentionQueueCounts, HelpSignalKind } from "../../db/forum-repository";
 import { forumReaderForRequest } from "../forum/request-context";
 import { forumMutationGuard, mutationFailure, requireForumPermission, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
 import { AttentionCenterView, type AttentionGroup, type AttentionMode } from "../forum/views";
@@ -68,6 +68,7 @@ export async function loader({ request, params, context }: {
     ? pageNumber : 0;
 
   let queue: { cases: (Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string })[]; hasMore: boolean; page: number } | null = null;
+  let counts: ForumAttentionQueueCounts | null = null;
   if (mode === "signals") {
     const kinds: HelpSignalKind[] = [
       ...(canManageNeedsDetails ? ["needs-details" as const] : []),
@@ -75,10 +76,13 @@ export async function loader({ request, params, context }: {
       ...(canViewDuplicateDispute ? ["duplicate" as const] : []),
     ];
     try {
-      const cases = await forumReaderForRequest(context).readHelpAttentionCases(group as ForumAttentionQueueGroup, {
-        signalKinds: kinds,
-        appeals: canViewDuplicateDispute,
-      }, pageIndex);
+      const visibility = { signalKinds: kinds, appeals: canViewDuplicateDispute };
+      const reader = forumReaderForRequest(context);
+      const [cases, groupCounts] = await Promise.all([
+        reader.readHelpAttentionCases(group as ForumAttentionQueueGroup, visibility, pageIndex),
+        reader.readHelpAttentionCounts(visibility),
+      ]);
+      counts = groupCounts;
       queue = {
         ...cases,
         cases: cases.cases.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
@@ -90,7 +94,7 @@ export async function loader({ request, params, context }: {
       throw error;
     }
   }
-  return { locale: params.locale ?? "en", mode, group, queue, referenceTime: new Date().toISOString() };
+  return { locale: params.locale ?? "en", mode, group, queue, counts, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {
