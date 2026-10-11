@@ -5,7 +5,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { draftStoreForRequest } from "../forum/draft-request-context";
 import {
   clearDeviceEditorDrafts, clearLocalEditorDraft, DRAFT_LIFETIME_MS,
-  draftDestination, listLocalEditorDrafts, mutateDraft, type DraftMetadata, type LocalEditorDraft,
+  draftDestination, listLocalEditorDrafts, localDraftNeedsAttention, mutateDraft, type DraftMetadata, type LocalEditorDraft,
 } from "../forum/draft-client";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { ForumShell } from "../forum/ui";
@@ -53,11 +53,7 @@ export default function DraftsRoute() {
   for (const draft of currentRemote) combined.set(draft.contextKey, { ...draft, origin: "server" });
   for (const draft of local) {
     const server = remote.find((entry) => entry.contextKey === draft.contextKey);
-    if (server?.draftId === draft.draftId && server.status !== "active") continue;
-    // Only a matching synchronized generation can be represented by server metadata.
-    // Different IDs/versions are left for explicit resolution in the editor.
-    if (server?.status === "active" && server.draftId === draft.draftId
-      && server.version === draft.baseVersion && draft.editedAt === draft.syncedEditedAt) continue;
+    if (!localDraftNeedsAttention(draft, server)) continue;
     combined.set(draft.contextKey, {
       contextKey: draft.contextKey, draftId: draft.draftId, version: draft.baseVersion,
       title: draft.payload.title, snippet: draft.payload.body.slice(0, 140),
