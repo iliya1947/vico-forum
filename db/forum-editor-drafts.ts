@@ -1,10 +1,11 @@
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, ne, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { forumEditorDrafts, type ForumEditorDraftPayload } from "./schema";
 
 export type ForumEditorDraftStatus = "active" | "published" | "deleted";
 export interface ForumEditorDraftMetadata {
   contextKey: string;
+  draftId: string;
   version: number;
   status: ForumEditorDraftStatus;
   editedAt: string;
@@ -39,7 +40,7 @@ export function validEditorDraftPayload(input: unknown): input is ForumEditorDra
 }
 function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
   return {
-    contextKey: row.contextKey, version: row.version,
+    contextKey: row.contextKey, draftId: row.draftId, version: row.version,
     status: row.status as ForumEditorDraftStatus,
     editedAt: row.editedAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
     title: row.payload.title, snippet: row.payload.body.slice(0, 140),
@@ -58,6 +59,7 @@ export class DrizzleForumEditorDrafts {
     await this.purgeExpired();
     const rows = await this.db.select({
       contextKey: forumEditorDrafts.contextKey,
+      draftId: forumEditorDrafts.draftId,
       version: forumEditorDrafts.version,
       status: forumEditorDrafts.status,
       editedAt: forumEditorDrafts.editedAt,
@@ -78,9 +80,9 @@ export class DrizzleForumEditorDrafts {
       .where(and(eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey))).limit(1);
     return row ? toDraft(row) : null;
   }
-  async save(ownerId: string, contextKey: string, payload: ForumEditorDraftPayload,
+  async save(ownerId: string, contextKey: string, draftId: string, payload: ForumEditorDraftPayload,
     expectedVersion: number, editedAt: Date): Promise<SaveDraftResult> {
-    if (!isEditorDraftContextKey(contextKey) || !validEditorDraftPayload(payload)
+    if (!isEditorDraftContextKey(contextKey) || !/^[0-9a-f-]{36}$/iu.test(draftId) || !validEditorDraftPayload(payload)
       || !Number.isSafeInteger(expectedVersion) || expectedVersion < 0
       || Date.now() - editedAt.getTime() >= EDITOR_DRAFT_EXPIRY_MS
       || editedAt.getTime() > Date.now() + 60_000) throw new Error("invalid draft");
@@ -88,27 +90,31 @@ export class DrizzleForumEditorDrafts {
     const whereOwner = and(eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey));
     const changed = expectedVersion === 0
       ? await this.db.insert(forumEditorDrafts)
-        .values({ ownerId, contextKey, version: 1, status: "active", payload, editedAt, updatedAt: now })
-        .onConflictDoNothing().returning()
+        .values({ ownerId, contextKey, draftId, version: 1, status: "active", payload, editedAt, updatedAt: now })
+        .onConflictDoUpdate({
+          target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
+          set: { draftId, version: sql`${forumEditorDrafts.version}+1`, status: "active", payload, editedAt, updatedAt: now },
+          setWhere: and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId)),
+        }).returning()
       : await this.db.update(forumEditorDrafts)
         .set({ version: sql`${forumEditorDrafts.version}+1`, payload, editedAt, updatedAt: now })
-        .where(and(whereOwner, eq(forumEditorDrafts.version, expectedVersion), eq(forumEditorDrafts.status, "active")))
+        .where(and(whereOwner, eq(forumEditorDrafts.version, expectedVersion), eq(forumEditorDrafts.draftId, draftId), eq(forumEditorDrafts.status, "active")))
         .returning();
     if (changed[0]) return { outcome: "saved", draft: toDraft(changed[0]) };
     const current = await this.get(ownerId, contextKey);
-    if (current?.status !== "active") return { outcome: "gone", version: current?.version ?? 0 };
+    if (current?.status !== "active" || current.draftId !== draftId) return { outcome: "gone", version: current?.version ?? 0 };
     return { outcome: "conflict", version: current.version };
   }
-  async finish(ownerId: string, contextKey: string, status: "deleted" | "published") {
-    if (!isEditorDraftContextKey(contextKey)) throw new Error("invalid draft context");
+  async finish(ownerId: string, contextKey: string, draftId: string, status: "deleted" | "published") {
+    if (!isEditorDraftContextKey(contextKey) || !/^[0-9a-f-]{36}$/iu.test(draftId)) throw new Error("invalid draft context");
     const now = new Date();
     await this.db.insert(forumEditorDrafts).values({
-      ownerId, contextKey, version: 1, status,
+      ownerId, contextKey, draftId, version: 1, status,
       payload: { title: "", body: "", tags: "" }, editedAt: now, updatedAt: now,
     }).onConflictDoUpdate({
       target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
       set: { status, version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
-      setWhere: eq(forumEditorDrafts.status, "active"),
+      setWhere: and(eq(forumEditorDrafts.status, "active"), eq(forumEditorDrafts.draftId, draftId)),
     });
   }
 }
