@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - "chatgpt/ui-*"
-      - "chatgpt/help-attention-*"
       - "!chatgpt/ui-ux-product-pass"
   workflow_dispatch:
 
