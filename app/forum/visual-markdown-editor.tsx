@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { useTranslation } from "react-i18next";
 import type { EditorSelection } from "./editor-document";
 import { ForumMarkdown } from "./markdown";
 
@@ -122,6 +123,7 @@ function VisualNodeView({
 }: { node: VisualNode; markdown: string; disabled: boolean } & Pick<
 VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical"
 >): ReactNode {
+  const { t } = useTranslation("common");
   const children = node.children?.map((child, index) =>
     <VisualNodeView key={index} node={child} markdown={markdown} disabled={disabled} {...actions} />,
   );
@@ -150,13 +152,13 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
         <span className="markdown-editor-protected" data-visual-protected="link-target">
           <span className="markdown-editor-visual-link">{children}</span>
           <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
-            Markdown ↗
+            {t("editorEditInMarkdown")}
           </button>
         </span>
       );
       return <span className="markdown-editor-protected" data-visual-protected="link">
         <code>{node.children?.map((child) => child.value ?? "").join("") ?? ""}</code>
-        <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>Markdown ↗</button>
+        <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>{t("editorEditInMarkdown")}</button>
       </span>;
     }
     case "text": {
@@ -178,7 +180,7 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
         <div className="markdown-editor-protected" data-visual-protected={node.type}>
           <ForumMarkdown>{source}</ForumMarkdown>
           <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
-            Markdown ↗
+            {t("editorEditInMarkdown")}
           </button>
         </div>
       );
@@ -186,7 +188,7 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
         <span className="markdown-editor-protected" data-visual-protected={node.type}>
           <code>{label}</code>
           <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
-            Markdown ↗
+            {t("editorEditInMarkdown")}
           </button>
         </span>
       );
@@ -196,9 +198,10 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
 
 export function VisualMarkdownEditor(props: VisualEditorProps) {
   const { markdown, disabled = false, ...actions } = props;
+  const { t } = useTranslation("common");
   const root = fromMarkdown(markdown) as VisualNode;
   return (
-    <section className="markdown-editor-visual post-body" aria-label="Visual editor" data-authoring="simple">
+    <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple">
       {root.children?.length
         ? <VisualNodeView node={root} markdown={markdown} disabled={disabled} {...actions} />
         : <p><VisualTextLeaf
