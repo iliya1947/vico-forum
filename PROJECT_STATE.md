@@ -98,6 +98,11 @@ Vico Forum находится в ранней pre-release разработке.
   success; appeal mutation additionally verifies exact case ID under DB locks.
   Existing Needs-review moderator statuses remain separate tasks linking to
   the specific answer's moderation controls rather than fabricated user signals.
+  The final whole-PR pass restored group totals from all pending case sources:
+  each category shows the number of visible unresolved actions, including
+  answer-review status tasks; Mixed counts topics with 2+ visible pending signals.
+  Counts apply effective permission filtering before aggregation and do not inherit
+  any 100-topic cap or page-bound truncation.
   GitHub Pages fixtures now preview realistic independent requests. Mode switches
   sit beside the page heading and group switches below; redundant Moderation
   eyebrow is removed. The aggregate topic reader remains available but is no
