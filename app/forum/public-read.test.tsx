@@ -1135,10 +1135,12 @@ describe("Help & solutions modes and authoring", () => {
       headers: { Origin: origin },
       body: new URLSearchParams({ intent: "acceptHelpSignal", caseId: "signal-1", topicId }),
     });
-    expect((await attentionAction({ request: request("help-1", "https://evil.example"), context: ctx })).status).toBe(403);
-    expect((await attentionAction({ request: request("other-topic", "https://forum.example"), context: ctx })).status).toBe(404);
+    expect(await attentionAction({ request: request("help-1", "https://evil.example"), context: ctx })).toMatchObject({ init: { status: 403 } });
+    expect(await attentionAction({ request: request("other-topic", "https://forum.example"), context: ctx })).toMatchObject({ init: { status: 404 } });
     expect(resolveHelpSignal).not.toHaveBeenCalled();
     const success = await attentionAction({ request: request("help-1", "https://forum.example"), context: ctx });
+    expect(success).toBeInstanceOf(Response);
+    if (!(success instanceof Response)) throw new Error("expected redirect response");
     expect(success.status).toBe(302);
     expect(success.headers.get("Location")).toBe("/en/attention?mode=signals&group=needs-details");
     expect(resolveHelpSignal).toHaveBeenCalledWith({
@@ -1146,7 +1148,7 @@ describe("Help & solutions modes and authoring", () => {
     });
     has.mockImplementation(async () => false);
     const denied = await attentionAction({ request: request("help-1", "https://forum.example"), context: ctx });
-    expect(denied.status).toBe(403);
+    expect(denied).toMatchObject({ init: { status: 403 } });
     expect(resolveHelpSignal).toHaveBeenCalledTimes(1);
   });
 
@@ -1174,7 +1176,7 @@ describe("Help & solutions modes and authoring", () => {
         intent: "rejectHelpDuplicateAppeal", topicId: "help-1", caseId: "appeal-stale",
       }),
     });
-    expect((await attentionAction({ request, context: ctx })).status).toBe(409);
+    expect(await attentionAction({ request, context: ctx })).toMatchObject({ init: { status: 409 } });
     expect(resolveHelpDuplicateAppeal).not.toHaveBeenCalled();
   });
 
