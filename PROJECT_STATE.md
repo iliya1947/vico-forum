@@ -319,6 +319,19 @@ Vico Forum находится в ранней pre-release разработке.
   Это нарушает запрет прямого редактирования сложного Markdown в Simple.
   Существующий regression покрывает только ручное Simple-selection через
   protected content. Дефект зафиксирован, но не исправлен.
+  Повторный поэтапный аудит Stage 3 (2026-10-11) выявил три current-scope
+  defects. Действие Edit in Markdown на protected code переключает только
+  authoring mode и не переводит caret/scroll к source span выбранного code block.
+  HTML clipboard conversion для inline <code> не применяет необходимые
+  delimiter-padding правила для текста, начинающегося/заканчивающегося backtick
+  или пробелами, поэтому поддерживаемый inline code может менять содержимое после
+  повторного Markdown parse. tableAt() при более чем 200 data rows принимает
+  только первые 200 строк как table и оставляет хвост того же Markdown-table как
+  prose вместо защиты всего oversized блока. Также найден code/spec conflict:
+  EDITOR_SPEC размещает создание Table только в Advanced menu, текущий UI
+  показывает кнопку Table и в Simple; §3.3 при этом разрешает Simple editing
+  существующих таблиц, поэтому трактовку создания таблицы нельзя менять без
+  решения владельца. Код не исправлялся.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
