@@ -2688,6 +2688,7 @@ export function TopicView({
                   ref={replyEditorRef}
                   id="reply-body"
                   draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
+                  onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
                   required
                   rows={8}
