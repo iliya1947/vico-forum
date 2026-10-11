@@ -4258,3 +4258,42 @@ and not merge-ready because Editor 2.0 implementation continues. Do not request
 independent Codex review yet; AGENTS.md reserves that for the final stable
 implementation head after the remaining work and acceptance.
 
+## PR #215: fifth full-audit package — Stage 4 local-save triggers — 2026-10-11
+
+Owner continuation authorized the next bounded Editor 2.0 audit package. Current
+implementation PR #215 stayed on branch
+`chatgpt/editor-v2-implementation-20261010`; no merge, production action or
+Stage 6 work was performed.
+
+The remaining Stage 4 local-save finding was confirmed and fixed at the event
+boundary rather than by changing the 60-second server synchronization cycle:
+
+- Simple-mode Space now requests local capture from the actual input event, so a
+  space inserted in the middle of a document is saved immediately instead of
+  being inferred from whether the whole Markdown body ends in whitespace.
+- A one-line Simple-mode paste explicitly triggers local capture after the paste
+  mutation.
+- Discrete editor actions using the shared `commitSource` boundary, including
+  Simple Enter, toolbar formatting and imperative Reply/Quote insertion, perform
+  local capture after their mutation. This removes the prior race where form
+  focusout could persist only the pre-toolbar body.
+- Ordinary continuous typing still only marks the runtime dirty. The existing
+  60-second server sync, draft CAS/conflict lifecycle, tombstones and API
+  contracts were not changed.
+
+Focused regression coverage proves mid-document Simple Space and Enter,
+one-line Simple paste, and toolbar formatting all persist the mutated body in
+the local account/context draft immediately.
+
+Code head `a6af6a0d4be5c4b1d5f2bcc70877f854a72baab4` passed
+CI #38161772563 with `checks` and `database` successful, including
+813 application tests. After PROJECT_STATE/EDITOR_SPEC reconciliation, final
+implementation head `7809768e5309e2ae0381244fe634b15c1e8934ac` passed
+CI #38161957939 with both jobs successful.
+
+The full-audit findings still open after this package are the broader
+Clear-formatting semantics and attachment type-gate findings. PR #215 remains
+open, non-Draft and not merge-ready because Editor 2.0 implementation continues.
+Do not request independent Codex review yet; AGENTS.md reserves that for the
+final stable implementation head after remaining work and required acceptance.
+
