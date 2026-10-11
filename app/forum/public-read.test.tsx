@@ -1016,6 +1016,10 @@ describe("Help & solutions modes and authoring", () => {
   it("presents the protected moderator queue as individual actionable cases", async () => {
     const legacyPath = forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention";
     const guestContext = context("en", "ltr");
+    const readQueueCounts = vi.fn(async (_visibility: unknown) => ({
+      "needs-details": 2, "needs-review": 1, "solution-outdated": 0,
+      duplicate: 1, appeals: 1, mixed: 1,
+    }));
     const readQueue = vi.fn(async (_group: string, _visibility: unknown, page = 0) => ({
       cases: [{
         type: "signal" as const, id: "report-123", kind: "needs-details" as const,
@@ -1066,7 +1070,7 @@ describe("Help & solutions modes and authoring", () => {
         ].includes(permission)),
       }),
     } as never);
-    managerContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue });
+    managerContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue, readHelpAttentionCounts: readQueueCounts });
     const signals = await attentionLoader({
       request: new Request("https://forum.example/en/attention?mode=signals&group=needs-details&page=1"),
       params: { locale: "en" }, context: managerContext,
@@ -1082,7 +1086,8 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("navigation", { name: "Attention groups" })).toBeVisible();
     expect(screen.getByRole("navigation", { name: "Attention modes" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Signals" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Mixed" })).toHaveAttribute("href", "/en/attention?mode=signals&group=mixed");
+    expect(screen.getByRole("link", { name: "Mixed (1)" })).toHaveAttribute("href", "/en/attention?mode=signals&group=mixed");
+    expect(screen.getByRole("link", { name: "Needs details (2)" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("Please include the session configuration.")).toBeVisible();
     expect(screen.getByText("Alice")).toBeVisible();
     expect(screen.getByRole("button", { name: "Accept signal" })).toBeEnabled();
@@ -1098,6 +1103,8 @@ describe("Help & solutions modes and authoring", () => {
     });
     expect(complaints).toMatchObject({ mode: "complaints", group: "group2", queue: null });
     expect(readQueue).toHaveBeenCalledTimes(calls);
+    expect(readQueueCounts).toHaveBeenCalledTimes(calls);
+    expect(readQueueCounts).toHaveBeenCalledTimes(calls);
     const complaintView = renderRoute(AttentionRoute, complaints, "/en/attention?mode=complaints&group=group2", "en", "ltr");
     expect(await screen.findByRole("link", { name: "Group 2" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("This section is not connected yet.")).toBeVisible();
