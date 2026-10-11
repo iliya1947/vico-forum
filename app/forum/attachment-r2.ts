@@ -6,9 +6,9 @@ import {
 } from "./attachment-validation";
 
 /**
- * Structural subset of Cloudflare R2's Workers binding.
- * A production caller supplies a private R2 bucket; tests inject a fake.
- * This module does not create buckets, issue public URLs or grant file access.
+ * Structural subset of Cloudflare R2's private Workers bucket binding.
+ * Upload/download authorization and durable references belong to the DB-backed
+ * request boundary, not to the storage object key.
  */
 export interface PrivateAttachmentBucket {
   put(
@@ -24,40 +24,135 @@ export type AttachmentStoreResult =
   | { outcome: "stored"; objectKey: string;
       inspection: Extract<AttachmentInspection, { accepted: true }>; bytes: number };
 
+/** Request-sized, untrusted upload stream; size is an assertion, not evidence. */
+export interface PrivateAttachmentUpload {
+  fileName: string;
+  declaredMime: string;
+  size: number;
+  body: ReadableStream<Uint8Array>;
+}
+
+export class AttachmentLengthMismatchError extends Error {
+  constructor() {
+    super("attachment body length differs from declared size");
+    this.name = "AttachmentLengthMismatchError";
+  }
+}
+
 /**
- * The authenticated upload action must persist the ownership/draft relation
- * after this write and delete the R2 object if its DB transaction fails.
- * It must also durably record a suspicious rejection before responding.
- * Until those boundaries exist, this helper has no exposed HTTP route.
+ * Validates the actual stream prefix before any R2 write, then streams the
+ * remaining bytes with a hard length bound. No request.formData() buffering.
  *
- * R2 remains private; download authorization and response disposition are
- * enforced by the eventual separate reader against the DB relation.
+ * The calling action must durably record ownership and suspicious rejections
+ * before responding. It must keep the object private until all publication
+ * gates pass, and arrange orphan cleanup if a later DB transaction fails.
+ * This helper intentionally does not expose a public upload route.
  */
-export async function storePrivateAttachment(
+export async function storePrivateAttachmentStream(
+  bucket: PrivateAttachmentBucket,
+  upload: PrivateAttachmentUpload,
+  maxBytes = DEFAULT_ATTACHMENT_MAX_BYTES,
+): Promise<AttachmentStoreResult> {
+  const sampleSize = Number.isSafeInteger(upload.size) && upload.size > 0 && upload.size <= maxBytes
+    ? Math.min(upload.size, ATTACHMENT_SNIFF_BYTES)
+    : 0;
+  if (sampleSize === 0) {
+    const inspection = inspectAttachment({
+      fileName: upload.fileName, declaredMime: upload.declaredMime,
+      size: upload.size, prefix: new Uint8Array(), maxBytes,
+    });
+    if (inspection.accepted) throw new Error("invalid attachment preflight");
+    await upload.body.cancel().catch(() => {});
+    return { outcome: "rejected", inspection };
+  }
+
+  const reader = upload.body.getReader();
+  const prefix = new Uint8Array(sampleSize);
+  let prefixBytes = 0;
+  let remainder: Uint8Array | null = null;
+  try {
+    while (prefixBytes < sampleSize) {
+      const next = await reader.read();
+      if (next.done) break;
+      const count = Math.min(next.value.byteLength, sampleSize - prefixBytes);
+      prefix.set(next.value.subarray(0, count), prefixBytes);
+      prefixBytes += count;
+      if (count < next.value.byteLength) {
+        remainder = next.value.subarray(count);
+        break;
+      }
+    }
+
+    const inspection = inspectAttachment({
+      fileName: upload.fileName, declaredMime: upload.declaredMime,
+      size: upload.size, prefix: prefix.subarray(0, prefixBytes), maxBytes,
+    });
+    if (!inspection.accepted) {
+      await reader.cancel().catch(() => {});
+      return { outcome: "rejected", inspection };
+    }
+    if (prefixBytes + (remainder?.byteLength ?? 0) > upload.size) {
+      throw new AttachmentLengthMismatchError();
+    }
+
+    let receivedBytes = prefixBytes + (remainder?.byteLength ?? 0);
+    const pending: Uint8Array[] = [prefix];
+    if (remainder?.byteLength) pending.push(remainder);
+    const content = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        const buffered = pending.shift();
+        if (buffered) {
+          controller.enqueue(buffered);
+          return;
+        }
+        try {
+          const next = await reader.read();
+          if (next.done) {
+            if (receivedBytes !== upload.size) throw new AttachmentLengthMismatchError();
+            controller.close();
+            return;
+          }
+          receivedBytes += next.value.byteLength;
+          if (receivedBytes > upload.size || receivedBytes > maxBytes) {
+            throw new AttachmentLengthMismatchError();
+          }
+          controller.enqueue(next.value);
+        } catch (error) {
+          controller.error(error);
+          await reader.cancel(error).catch(() => {});
+        }
+      },
+      cancel(reason) { return reader.cancel(reason); },
+    });
+
+    const objectKey = "private/" + crypto.randomUUID();
+    try {
+      const stored = await bucket.put(objectKey, content, {
+        httpMetadata: { contentType: "application/octet-stream" },
+      });
+      if (!stored || stored.size !== upload.size) {
+        throw new Error("private attachment storage failed");
+      }
+      return { outcome: "stored", objectKey, inspection, bytes: stored.size };
+    } catch (error) {
+      await reader.cancel(error).catch(() => {});
+      // R2 may have received bytes before a failed upload. Never hand out the key.
+      await bucket.delete(objectKey).catch(() => {});
+      throw error;
+    }
+  } catch (error) {
+    await reader.cancel(error).catch(() => {});
+    throw error;
+  }
+}
+
+/** File adapter for tests and future paste/drop inputs; all paths validate one stream. */
+export function storePrivateAttachment(
   bucket: PrivateAttachmentBucket,
   file: File,
   maxBytes = DEFAULT_ATTACHMENT_MAX_BYTES,
 ): Promise<AttachmentStoreResult> {
-  // Refuse oversized files before even reading the initial header.
-  const sampleBytes = file.size > maxBytes ? 0 : Math.min(file.size, ATTACHMENT_SNIFF_BYTES);
-  const prefix = new Uint8Array(await file.slice(0, sampleBytes).arrayBuffer());
-  const inspection = inspectAttachment({
-    fileName: file.name,
-    declaredMime: file.type,
-    size: file.size,
-    prefix,
-    maxBytes,
-  });
-  if (!inspection.accepted) return { outcome: "rejected", inspection };
-
-  const objectKey = "private/" + crypto.randomUUID();
-  const stored = await bucket.put(objectKey, file.stream(), {
-    httpMetadata: { contentType: "application/octet-stream" },
-  });
-  if (!stored || stored.size !== file.size) {
-    // A failed or partial upload cannot become a publishable attachment.
-    await bucket.delete(objectKey);
-    throw new Error("private attachment storage failed");
-  }
-  return { outcome: "stored", objectKey, inspection, bytes: stored.size };
+  return storePrivateAttachmentStream(bucket, {
+    fileName: file.name, declaredMime: file.type, size: file.size, body: file.stream(),
+  }, maxBytes);
 }
