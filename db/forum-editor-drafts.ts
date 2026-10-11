@@ -50,7 +50,7 @@ function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
 
 export class DrizzleForumEditorDrafts {
   constructor(private readonly db: NodePgDatabase) {}
-  async purgeExpired() {
+  async purgeExpired(ownerId: string) {
     // Keep a tombstone per account/context indefinitely so an offline copy
     // cannot regain create privileges after its 30-day active lifetime ends.
     const now = new Date();
@@ -61,11 +61,11 @@ export class DrizzleForumEditorDrafts {
         version: sql`${forumEditorDrafts.version}+1`,
         updatedAt: now,
       })
-      .where(and(eq(forumEditorDrafts.status, "active"),
+      .where(and(eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.status, "active"),
         lt(forumEditorDrafts.editedAt, new Date(now.getTime() - EDITOR_DRAFT_EXPIRY_MS))));
   }
   async metadata(ownerId: string): Promise<ForumEditorDraftMetadata[]> {
-    await this.purgeExpired();
+    await this.purgeExpired(ownerId);
     const rows = await this.db.select({
       contextKey: forumEditorDrafts.contextKey,
       draftId: forumEditorDrafts.draftId,
@@ -85,30 +85,29 @@ export class DrizzleForumEditorDrafts {
     }));
   }
   async get(ownerId: string, contextKey: string): Promise<ForumEditorDraft | null> {
+    await this.purgeExpired(ownerId);
     const [row] = await this.db.select().from(forumEditorDrafts)
       .where(and(eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey))).limit(1);
     return row ? toDraft(row) : null;
   }
   async save(ownerId: string, contextKey: string, draftId: string, payload: ForumEditorDraftPayload,
-    expectedVersion: number, editedAt: Date): Promise<SaveDraftResult> {
+    expectedVersion: number): Promise<SaveDraftResult> {
     if (!isEditorDraftContextKey(contextKey) || !/^[0-9a-f-]{36}$/iu.test(draftId) || !validEditorDraftPayload(payload)
-      || !Number.isSafeInteger(expectedVersion) || expectedVersion < 0
-      || Date.now() - editedAt.getTime() >= EDITOR_DRAFT_EXPIRY_MS
-      || editedAt.getTime() > Date.now() + 60_000) throw new Error("invalid draft");
+      || !Number.isSafeInteger(expectedVersion) || expectedVersion < 0) throw new Error("invalid draft");
     const now = new Date();
     const whereOwner = and(eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey));
     const previous = await this.get(ownerId, contextKey);
     const isNewGeneration = !previous || previous.draftId !== draftId;
     const changed = isNewGeneration
       ? await this.db.insert(forumEditorDrafts)
-        .values({ ownerId, contextKey, draftId, version: 1, status: "active", payload, editedAt, updatedAt: now })
+        .values({ ownerId, contextKey, draftId, version: 1, status: "active", payload, editedAt: now, updatedAt: now })
         .onConflictDoUpdate({
           target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
-          set: { draftId, version: sql`${forumEditorDrafts.version}+1`, status: "active", payload, editedAt, updatedAt: now },
+          set: { draftId, version: sql`${forumEditorDrafts.version}+1`, status: "active", payload, editedAt: now, updatedAt: now },
           setWhere: and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId), eq(forumEditorDrafts.version, expectedVersion)),
         }).returning()
       : await this.db.update(forumEditorDrafts)
-        .set({ version: sql`${forumEditorDrafts.version}+1`, payload, editedAt, updatedAt: now })
+        .set({ version: sql`${forumEditorDrafts.version}+1`, payload, editedAt: now, updatedAt: now })
         .where(and(whereOwner, eq(forumEditorDrafts.version, expectedVersion), eq(forumEditorDrafts.draftId, draftId), eq(forumEditorDrafts.status, "active")))
         .returning();
     if (changed[0]) return { outcome: "saved", draft: toDraft(changed[0]) };
