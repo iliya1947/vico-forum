@@ -142,11 +142,18 @@ Vico Forum находится в ранней pre-release разработке.
   undo/redo, localized Simple/Advanced controls, Preview menu (Markdown/Preview/Split),
   синхронный Split-scroll и Fullscreen, account-scoped local mode preference, RU/EN/HE,
   responsive toolbar. Markdown body остаётся единственным FormData/source-of-truth.
-  Тесты визуальных правок, формы, account isolation и round-trip добавлены;
-  финальные CI/Pages/owner acceptance для нового head ещё не подтверждены.
-  Полноценные сложные inline/structural editing, таблицы, спойлеры и дополнительные
-  инструменты, черновики, вложения, Security/Attachments ingestion, mentions и
-  publication/edit workflows ещё не реализованы.
+  Тесты визуальных правок, формы, account isolation и round-trip добавлены.
+  Третий технический срез добавляет общий безопасный рендеринг/создание
+  обычных Markdown-таблиц и spoiler disclosure, визуальное редактирование
+  ячеек с source spans, строки/колонки, spreadsheet TSV и ограниченный
+  HTML clipboard import с явной защитой от неподдерживаемых структур,
+  code-only Tab/indent/pairs, literal search/replace, plain/code paste,
+  Diff highlighting, filename metadata и локальные code display preferences.
+  RU/EN/HE, RTL/responsive стили и регрессионные тесты добавлены.
+  Финальный CI/Pages/owner acceptance нового head ещё не подтверждены.
+  Сложные/нестандартные таблицы остаются защищёнными для Markdown-редактирования;
+  будущие черновики, вложения, Security/Attachments ingestion, mentions и
+  publication/edit workflows не входят в этот срез.
   Существующий body/FormData/server contract не изменялся.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
