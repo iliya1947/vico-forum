@@ -1016,7 +1016,7 @@ describe("Help & solutions modes and authoring", () => {
   it("presents the protected moderator queue as individual actionable cases", async () => {
     const legacyPath = forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention";
     const guestContext = context("en", "ltr");
-    const readQueueCounts = vi.fn(async (_visibility: unknown) => ({
+    const readQueueCounts = vi.fn(async () => ({
       "needs-details": 2, "needs-review": 1, "solution-outdated": 0,
       duplicate: 1, appeals: 1, mixed: 1,
     }));
