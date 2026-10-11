@@ -3,6 +3,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { useTranslation } from "react-i18next";
 import type { EditorSelection } from "./editor-document";
 import { ForumMarkdown } from "./markdown";
+import { segmentTechnicalMarkdown, encodeTableCell, type MarkdownTable } from "./technical-markdown";
 
 interface VisualNode {
   type: string;
@@ -22,6 +23,8 @@ interface VisualEditorProps {
   onSelection(selection: EditorSelection | null): void;
   onInsertParagraph(offset: number): void;
   onEditTechnical(): void;
+  onReplaceRange(range: EditorSelection, source: string): void;
+  onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
 }
 
 export function escapeVisualMarkdownText(value: string): string {
@@ -120,13 +123,13 @@ function VisualTextLeaf({
 }
 
 function VisualNodeView({
-  node, markdown, disabled, ...actions
-}: { node: VisualNode; markdown: string; disabled: boolean } & Pick<
-VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical"
+  node, markdown, disabled, baseOffset, ...actions
+}: { node: VisualNode; markdown: string; disabled: boolean; baseOffset: number } & Pick<
+VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension"
 >): ReactNode {
   const { t } = useTranslation("common");
   const children = node.children?.map((child, index) =>
-    <VisualNodeView key={index} node={child} markdown={markdown} disabled={disabled} {...actions} />,
+    <VisualNodeView key={index} node={child} markdown={markdown} disabled={disabled} baseOffset={baseOffset} {...actions} />,
   );
   switch (node.type) {
     case "root": return <>{children}</>;
@@ -167,7 +170,7 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       if (!range) return node.value ?? "";
       return <VisualTextLeaf
         text={node.value ?? ""} raw={markdown.slice(range.start, range.end)}
-        range={range} disabled={disabled} {...actions}
+        range={{ start: range.start + baseOffset, end: range.end + baseOffset }} disabled={disabled} {...actions}
       />;
     }
     default: {
@@ -197,22 +200,76 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
   }
 }
 
-export function VisualMarkdownEditor(props: VisualEditorProps) {
-  const { markdown, disabled = false, ...actions } = props;
+function VisualTable({
+  table, offset, disabled, onReplaceRange, onTableDimension,
+}: {
+  table: MarkdownTable;
+  offset: number;
+  disabled: boolean;
+  onReplaceRange: VisualEditorProps["onReplaceRange"];
+  onTableDimension: VisualEditorProps["onTableDimension"];
+}) {
   const { t } = useTranslation("common");
-  const root = fromMarkdown(markdown) as VisualNode;
+  const cells = (cell: MarkdownTable["headers"][number], key: number, heading: boolean) => {
+    const value = cell.text.replace(/\\([|\\])/gu, "$1");
+    const edit = <input
+      aria-label={t(heading ? "editorTableHeader" : "editorTableCell")}
+      dir="auto"
+      disabled={disabled}
+      value={value}
+      onChange={(event) => onReplaceRange(
+        { start: cell.span.start + offset, end: cell.span.end + offset },
+        encodeTableCell(event.currentTarget.value),
+      )}
+    />;
+    return heading ? <th key={key} scope="col">{edit}</th> : <td key={key}>{edit}</td>;
+  };
+  return <div className="markdown-editor-visual-table">
+    <div className="forum-markdown-table-scroll" tabIndex={0}>
+      <table className="forum-markdown-table">
+        <thead><tr>{table.headers.map((cell, index) => cells(cell, index, true))}</tr></thead>
+        <tbody>{table.rows.map((row, index) => <tr key={index}>
+          {row.map((cell, column) => cells(cell, column, false))}
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <div className="markdown-editor-table-actions">
+      <button type="button" disabled={disabled} onClick={() => onTableDimension({
+        ...table, span: { start: table.span.start + offset, end: table.span.end + offset },
+      }, "row")}>{t("editorAddTableRow")}</button>
+      <button type="button" disabled={disabled} onClick={() => onTableDimension({
+        ...table, span: { start: table.span.start + offset, end: table.span.end + offset },
+      }, "column")}>{t("editorAddTableColumn")}</button>
+    </div>
+  </div>;
+}
+
+export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: number }) {
+  const { markdown, disabled = false, sourceBase = 0, ...actions } = props;
+  const { t } = useTranslation("common");
+  const segments = segmentTechnicalMarkdown(markdown);
   return (
     <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple">
-      {root.children?.length
-        ? <VisualNodeView node={root} markdown={markdown} disabled={disabled} {...actions} />
-        : <p><VisualTextLeaf
-            text="" raw="" range={{ start: 0, end: 0 }} disabled={disabled}
-            onTextEdit={actions.onTextEdit}
-            onSelection={actions.onSelection}
-            onInsertParagraph={actions.onInsertParagraph}
-          /></p>}
-      {root.children?.length && markdown.endsWith("\n\n") ? (
-        <p><VisualTextLeaf text="" raw="" range={{ start: markdown.length, end: markdown.length }}
+      {segments.map((segment, index) => {
+        if (segment.kind === "table") return <VisualTable key={index} table={segment}
+          offset={sourceBase} disabled={disabled} onReplaceRange={actions.onReplaceRange}
+          onTableDimension={actions.onTableDimension} />;
+        if (segment.kind === "spoiler") return (
+          <details className="forum-markdown-spoiler" key={index}>
+            <summary>{segment.title || t("editorSpoiler")}</summary>
+            <VisualMarkdownEditor markdown={segment.body} disabled={disabled}
+              sourceBase={sourceBase + segment.bodyStart} {...actions} />
+          </details>
+        );
+        const root = fromMarkdown(segment.source) as VisualNode;
+        return root.children?.length
+          ? <VisualNodeView key={index} node={root} markdown={segment.source}
+              baseOffset={sourceBase + segment.span.start} disabled={disabled} {...actions} />
+          : null;
+      })}
+      {(!markdown || markdown.endsWith("\n\n")) ? (
+        <p><VisualTextLeaf text="" raw=""
+          range={{ start: sourceBase + markdown.length, end: sourceBase + markdown.length }}
           disabled={disabled} onTextEdit={actions.onTextEdit}
           onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph} /></p>
       ) : null}
