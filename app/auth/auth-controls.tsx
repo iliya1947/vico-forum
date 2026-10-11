@@ -12,6 +12,7 @@ export interface HeaderAuthUser {
   readonly image?: string | null;
   readonly name: string;
   readonly canManageAuthorization?: boolean;
+  readonly canViewModerationAttention?: boolean;
   readonly unreadNotificationCount?: number;
 }
 export type HeaderAuthPresentationState = "idle" | "pending" | "error";

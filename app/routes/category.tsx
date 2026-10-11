@@ -1,4 +1,4 @@
-import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
@@ -13,6 +13,7 @@ import type {
 import type { HelpQuestionActionData } from "../forum/mutations.server";
 import { ForumRouteError } from "../forum/ui";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
+import { forumAttentionPath } from "../forum/paths";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
 
 export { helpSolutionsCategoryAction as action } from "../forum/actions.server";
@@ -48,6 +49,7 @@ export async function loader({ request, params, context }: {
   if (categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
     const searchParams = request ? new URL(request.url).searchParams : new URLSearchParams();
     const requestedMode = searchParams.get("mode");
+    if (requestedMode === "attention") throw redirect(forumAttentionPath(locale));
     const filters = readHelpFilters(searchParams);
     const mode = requestedMode === "open"
       ? "open" as const
@@ -57,8 +59,6 @@ export async function loader({ request, params, context }: {
           ? "for-me" as const
           : requestedMode === "active"
             ? "active" as const
-            : requestedMode === "attention"
-              ? "attention" as const
           : requestedMode === "solutions"
             ? "solutions" as const
             : requestedMode === "mine"
@@ -67,14 +67,13 @@ export async function loader({ request, params, context }: {
     const session = authSessionForRequest(context);
     const needsReviewFilter = filters.solution === "needs-review";
     if (
-      (mode === "mine" || mode === "help" || mode === "for-me" || mode === "attention" || needsReviewFilter)
+      (mode === "mine" || mode === "help" || mode === "for-me" || needsReviewFilter)
       && !session
     ) {
       throw new Response("Unauthorized", { status: 401 });
     }
 
     let canAskQuestion = false;
-    let canViewAttention = false;
     let canViewSolutionModeration = false;
     let canViewDuplicateDispute = false;
     if (session) {
@@ -85,15 +84,11 @@ export async function loader({ request, params, context }: {
           resolver.has("forum.solution.manageAny"),
           resolver.has("forum.helpDuplicate.manage"),
         ]);
-        canViewAttention = canViewSolutionModeration;
       } catch (error) {
         if (!(error instanceof AuthorizationUnavailableError)) throw error;
-        if (mode === "attention" || needsReviewFilter) throw new Response("Unavailable", { status: 503 });
+        if (needsReviewFilter) throw new Response("Unavailable", { status: 503 });
         // Public Q&A reading remains available when optional presentation authorization is unavailable.
       }
-    }
-    if (mode === "attention" && !canViewAttention) {
-      throw new Response("Forbidden", { status: 403 });
     }
     if (needsReviewFilter && !canViewSolutionModeration) {
       throw new Response("Forbidden", { status: 403 });
@@ -111,8 +106,6 @@ export async function loader({ request, params, context }: {
         ? await reader.readHelpSolutionsOpen(filters)
         : mode === "active"
           ? await reader.readHelpSolutionsActive(filters)
-          : mode === "attention"
-            ? await reader.readHelpSolutionsNeedsAttention(filters)
             : mode === "solutions"
               ? await reader.readHelpSolutionsSolved(filters)
               : await reader.readHelpSolutionsAll(filters);
@@ -125,7 +118,6 @@ export async function loader({ request, params, context }: {
       filters,
       isAuthenticated: Boolean(session),
       canAskQuestion,
-      canViewAttention,
       canViewSolutionModeration,
       canViewDuplicateDispute,
       referenceTime,
@@ -177,7 +169,6 @@ export default function CategoryRoute() {
         referenceTime={data.referenceTime}
         isAuthenticated={data.isAuthenticated}
         canAskQuestion={data.canAskQuestion}
-        canViewAttention={data.canViewAttention}
         canViewSolutionModeration={data.canViewSolutionModeration}
         canViewDuplicateDispute={data.canViewDuplicateDispute}
         actionData={actionData}

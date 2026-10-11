@@ -94,6 +94,8 @@ const reader: ForumReader = {
   readHelpSolutionsOpen: async () => undefined,
   readHelpSolutionsActive: async () => undefined,
   readHelpSolutionsNeedsAttention: async () => undefined,
+  readHelpAttentionCases: async (_group, _visibility, page = 0) => ({ cases: [], hasMore: false, page }),
+  readHelpAttentionCounts: async () => ({ "needs-details": 0, "needs-review": 0, "solution-outdated": 0, duplicate: 0, appeals: 0, mixed: 0 }),
   readHelpSolutionsSolved: async () => undefined,
   readHelpSolutionsMine: async () => undefined,
   readHelpSolutionsWantToHelp: async () => undefined,
