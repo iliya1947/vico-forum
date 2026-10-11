@@ -68,8 +68,8 @@ Vico Forum находится в ранней pre-release разработке.
   linked beside the ordinary header notification bell. Owner revision 2026-10-10
   moved it out of Help & solutions (the obsolete Help `?mode=attention` URL
   redirects). The center has three isolated modes `Signals`, `Complaints` and
-  `Security`, switched on the right of a shared toolbar; groups for the active
-  mode occupy the left. Signals show six individually selectable groups:
+  `Security`, switched to the right of the page heading; groups for the active
+  mode appear in a separate toolbar directly below the heading. Signals show six individually selectable groups:
   Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
   The backed queue selects only persisted pending signal/appeal cases and current
   best-answer Needs review status; Mixed (2+ pending visible signals) duplicates
@@ -124,7 +124,10 @@ Vico Forum находится в ранней pre-release разработке.
   Keep separate post-MVP work to improve the moderation case-card layout,
   readability, hierarchy, information density and moderator workflow usability;
   this polish does not block PR #217 or require changes to its current mechanism.
-  Independent Codex review and final exact-head checks are still pending.
+  Independent Codex review completed on implementation head `3480fc2` with
+  two documentation findings. Both were corrected and resolved without modifying
+  application code; subsequent exact-head CI #38121847206 passed `checks` and
+  `database` on `eec38b0`. PR #217 is Ready for review, not yet merged.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
