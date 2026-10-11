@@ -205,6 +205,29 @@ Vico Forum находится в ранней pre-release разработке.
   откатывается. Кодовый head `893b24d` прошёл CI #38153542321
   (`checks` + `database`). Остальные findings полного аудита Editor 2.0
   остаются открыты и исправляются отдельными пакетами.
+  Второй пакет audit-коррекции draft storage/API (2026-10-11) закрывает
+  подтверждённые server/API defects без перехода к другим findings. Draft
+  context keys теперь разбирают forum IDs как opaque text, а создание нового
+  server draft проверяет реальное существование section/topic/post; save
+  дополнительно требует актуальную dynamic capability для соответствующего
+  authoring context. HTTP action ограничивает фактически прочитанный request
+  body, поэтому missing/ложный Content-Length не обходит 150000-byte guard.
+  Metadata discovery больше не ограничивает active drafts общей выборкой с
+  tombstones: все active rows возвращаются, terminal markers включаются только
+  в 30-day local-cache reconciliation window. My Drafts при divergent
+  local/server поколениях удаляет authoritative active server generation по
+  draft ID + CAS-version и затем local copy; local-only copy не создаёт
+  искусственный server tombstone. Storage availability классифицируется
+  отдельно: только известные transport/timeout failures дают controlled 503,
+  programming/schema failures не маскируются. Runtime web ACL для
+  forum_editor_drafts сокращён до реально используемых INSERT/SELECT/UPDATE,
+  без DELETE. Добавлены route/browser/PostgreSQL regressions на opaque IDs,
+  fabricated contexts, реальный byte limit, typed failures, CAS-delete и
+  >200 terminal markers без вытеснения active draft. Кодовый head `6836276`
+  прошёл CI #38155174105 (`checks` + `database`); единичный unrelated
+  transient feedback test `Copied` на первом checks-attempt не
+  воспроизвёлся при повторном запуске того же exact head. Остальные findings
+  полного аудита остаются открытыми.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
