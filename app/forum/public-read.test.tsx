@@ -2182,8 +2182,9 @@ describe("forum read states", () => {
 
     fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
     expect(replyEditor).toHaveAttribute("data-mode", "write");
+    expect(replyEditor).toHaveAttribute("data-authoring", "simple");
     expect(replyBody).toHaveValue("> Selected words\n\n");
-    expect(replyBody).toHaveFocus();
+    expect(document.activeElement).toHaveAttribute("data-visual-text", "true");
 
     vi.spyOn(window, "getSelection").mockReturnValue({
       rangeCount: 0,
