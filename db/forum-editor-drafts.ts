@@ -51,9 +51,17 @@ function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
 export class DrizzleForumEditorDrafts {
   constructor(private readonly db: NodePgDatabase) {}
   async purgeExpired() {
-    // Tombstones remain for the same retention period as all local copies.
-    await this.db.delete(forumEditorDrafts)
-      .where(lt(forumEditorDrafts.updatedAt, new Date(Date.now() - EDITOR_DRAFT_EXPIRY_MS)));
+    // Keep a tombstone per account/context indefinitely so an offline copy
+    // cannot regain create privileges after its 30-day active lifetime ends.
+    const now = new Date();
+    await this.db.update(forumEditorDrafts)
+      .set({
+        status: "deleted",
+        version: sql`${forumEditorDrafts.version}+1`,
+        updatedAt: now,
+      })
+      .where(and(eq(forumEditorDrafts.status, "active"),
+        lt(forumEditorDrafts.editedAt, new Date(now.getTime() - EDITOR_DRAFT_EXPIRY_MS))));
   }
   async metadata(ownerId: string): Promise<ForumEditorDraftMetadata[]> {
     await this.purgeExpired();
@@ -94,7 +102,7 @@ export class DrizzleForumEditorDrafts {
         .onConflictDoUpdate({
           target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
           set: { draftId, version: sql`${forumEditorDrafts.version}+1`, status: "active", payload, editedAt, updatedAt: now },
-          setWhere: and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId)),
+          setWhere: and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId), eq(forumEditorDrafts.version, expectedVersion)),
         }).returning()
       : await this.db.update(forumEditorDrafts)
         .set({ version: sql`${forumEditorDrafts.version}+1`, payload, editedAt, updatedAt: now })
