@@ -1,0 +1,63 @@
+import { type RouterContextProvider } from "react-router";
+import { authSessionForRequest } from "../auth/request-context";
+import { requireSameOrigin } from "../forum/mutations.server";
+import { draftStoreForRequest } from "../forum/draft-request-context";
+import { isEditorDraftContextKey, validEditorDraftPayload } from "../../db/forum-editor-drafts";
+
+const json = (payload: unknown, status = 200) => Response.json(payload, {
+  status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+});
+
+export async function loader({ request, context }: { request: Request; context: RouterContextProvider }) {
+  const session = authSessionForRequest(context);
+  if (!session) return json({ error: "unauthenticated" }, 401);
+  const url = new URL(request.url);
+  const mode = url.searchParams.get("mode") ?? "metadata";
+  try {
+    const store = draftStoreForRequest(context);
+    if (mode === "metadata") return json({ drafts: await store.metadata(session.user.id) });
+    if (mode !== "content") return json({ error: "invalid" }, 400);
+    const key = url.searchParams.get("key") ?? "";
+    if (!isEditorDraftContextKey(key)) return json({ error: "invalid" }, 400);
+    const draft = await store.get(session.user.id, key);
+    if (!draft) return json({ error: "notFound" }, 404);
+    if (draft.status !== "active") return json({ error: "gone", version: draft.version }, 410);
+    return json({ draft });
+  } catch {
+    return json({ error: "unavailable" }, 503);
+  }
+}
+
+export async function action({ request, context }: { request: Request; context: RouterContextProvider }) {
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  const session = authSessionForRequest(context);
+  if (!session) return json({ error: "unauthenticated" }, 401);
+  if (!requireSameOrigin(request)) return json({ error: "origin" }, 403);
+  if (Number(request.headers.get("Content-Length") || 0) > 150_000) return json({ error: "invalid" }, 413);
+  let input: Record<string, unknown>;
+  try {
+    const parsed: unknown = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return json({ error: "invalid" }, 400);
+    input = parsed as Record<string, unknown>;
+  } catch { return json({ error: "invalid" }, 400); }
+  const key = input.contextKey;
+  if (typeof key !== "string" || !isEditorDraftContextKey(key)) return json({ error: "invalid" }, 400);
+  try {
+    const store = draftStoreForRequest(context);
+    if (input.intent === "finish" || input.intent === "delete") {
+      await store.finish(session.user.id, key, input.intent === "finish" ? "published" : "deleted");
+      return json({ outcome: "finished" });
+    }
+    if (input.intent !== "save" || !validEditorDraftPayload(input.payload)
+      || !Number.isSafeInteger(input.expectedVersion) || (input.expectedVersion as number) < 0
+      || typeof input.editedAt !== "string") return json({ error: "invalid" }, 400);
+    const editedAt = new Date(input.editedAt);
+    if (Number.isNaN(editedAt.getTime())) return json({ error: "invalid" }, 400);
+    const result = await store.save(session.user.id, key, input.payload, input.expectedVersion as number, editedAt);
+    if (result.outcome === "saved") return json(result);
+    return json(result, result.outcome === "gone" ? 410 : 409);
+  } catch (error) {
+    if (error instanceof Error && error.message === "invalid draft") return json({ error: "invalid" }, 400);
+    return json({ error: "unavailable" }, 503);
+  }
+}
