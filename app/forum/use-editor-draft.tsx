@@ -91,6 +91,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     ctx.local = null;
     ctx.body = "";
     ctx.hasInput = false;
+    ctx.syncing = false;
+    ctx.reading = false;
     ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
     ctx.conflict = null;
@@ -268,8 +270,6 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       || (ctx.local?.draftId ?? ctx.draftId) !== publishedDraftId
     ) return;
     reset(ctx, publishedVersion);
-    ctx.syncing = false;
-    ctx.reading = false;
   }
 
   useEffect(() => {
