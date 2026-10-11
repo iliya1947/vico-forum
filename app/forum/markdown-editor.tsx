@@ -114,11 +114,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [value, setValue] = useState(defaultValue);
 
     function commitSource(nextValue: string) {
-      const textarea = textareaRef.current;
-      const before = {
-        start: textarea?.selectionStart ?? value.length,
-        end: textarea?.selectionEnd ?? value.length,
-      };
+      const before = sourceSelection();
       const after = pendingSelectionRef.current ?? before;
       historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
       setValue(nextValue);
@@ -130,6 +126,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         : redoEditorEdit(historyRef.current);
       if (next === historyRef.current) return;
       historyRef.current = next;
+      if (authoringMode === "simple" && document.activeElement instanceof HTMLElement
+        && document.activeElement.matches('[data-visual-text="true"]')) {
+        document.activeElement.blur();
+      }
       pendingSelectionRef.current = next.current.selection;
       if (mode === "preview") setMode("write");
       setValue(next.current.markdown);
@@ -460,7 +460,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 const start = textarea?.selectionStart ?? value.length;
                 const end = textarea?.selectionEnd ?? start;
                 pendingSelectionRef.current = { start, end };
-                switchAuthoring("advanced");
+                setAuthoringMode("advanced");
+                setMode("write");
               }}
             />
           </div>
