@@ -9018,3 +9018,19 @@ a.topic-tag:focus-visible {
 
 .home-shell .markdown-editor:not(.is-fullscreen) { overflow: visible; }
 .home-shell .markdown-editor.is-fullscreen .markdown-editor-preview-menu { z-index: 5; }
+
+.home-shell .markdown-editor[data-authoring="advanced"] .markdown-editor-workspace.is-split .markdown-editor-write-pane > textarea,
+.home-shell .markdown-editor[data-authoring="advanced"] .markdown-editor-workspace.is-split .markdown-editor-preview {
+  height: 20rem;
+  min-height: 20rem;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+@media (max-width: 44rem) {
+  .home-shell .markdown-editor[data-authoring="advanced"] .markdown-editor-workspace.is-split .markdown-editor-write-pane > textarea,
+  .home-shell .markdown-editor[data-authoring="advanced"] .markdown-editor-workspace.is-split .markdown-editor-preview {
+    height: 16rem;
+    min-height: 16rem;
+    max-height: 16rem;
+  }
+}
