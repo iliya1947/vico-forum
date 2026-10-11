@@ -510,8 +510,6 @@ export const forumEditorDrafts = pgTable("forum_editor_drafts", {
 }, (table) => [
   primaryKey({ name: "forum_editor_drafts_pk", columns: [table.ownerId, table.contextKey] }),
   index("forum_editor_drafts_owner_edited_idx").on(table.ownerId, table.editedAt),
-  check("forum_editor_drafts_status_check", sql`${table.status} in ('active', 'published', 'deleted')`),
-  check("forum_editor_drafts_version_check", sql`${table.version} >= 1`),
 ]);
 
 export const forumOnlinePresence = pgTable("forum_online_presence", {
