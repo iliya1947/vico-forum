@@ -681,7 +681,7 @@ export class DrizzleForumRepository {
       editedAt: now, updatedAt: now,
     }).onConflictDoUpdate({
       target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
-      set: { status: "published", version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
+      set: { status: "published", payload: { title: "", body: "", tags: "" }, version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
       setWhere: and(
         eq(forumEditorDrafts.status, "active"),
         eq(forumEditorDrafts.draftId, draft.draftId),
