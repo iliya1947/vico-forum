@@ -57,6 +57,7 @@ export class DrizzleForumEditorDrafts {
     await this.db.update(forumEditorDrafts)
       .set({
         status: "deleted",
+        payload: { title: "", body: "", tags: "" },
         version: sql`${forumEditorDrafts.version}+1`,
         updatedAt: now,
       })
@@ -123,7 +124,7 @@ export class DrizzleForumEditorDrafts {
       payload: { title: "", body: "", tags: "" }, editedAt: now, updatedAt: now,
     }).onConflictDoUpdate({
       target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
-      set: { status, version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
+      set: { status, payload: { title: "", body: "", tags: "" }, version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
       setWhere: and(eq(forumEditorDrafts.status, "active"), eq(forumEditorDrafts.draftId, draftId)),
     }).returning();
     return result.length > 0;
