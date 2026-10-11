@@ -130,7 +130,7 @@ export function editVisualText(
   const { start, end } = range;
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) ||
     start < 0 || end < start || end > markdown.length) return null;
-  if (markdown.length !== 0 && !editableVisualTextRanges(markdown)
+  if (markdown.length !== 0 && !(start === markdown.length && end === start && markdown.endsWith("\n\n")) && !editableVisualTextRanges(markdown)
     .some((span) => start >= span.start && end <= span.end)) return null;
   const next = markdown.slice(0, start) + replacement + markdown.slice(end);
   const cursor = start + replacement.length;
