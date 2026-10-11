@@ -4033,3 +4033,32 @@ The owner corrected the visual/product scope **after reviewing the first Pages p
 - Ordinary bell notifications remain distinct. Existing role/effective-authorization checks protect the attention center. The currently available Help moderator permissions gate this initial foundation; other subsystem permissions await their future designs.
 - ChatGPT is revising **the same implementation PR #217**, not creating a new implementation PR. Owner visual acceptance for this revised design and independent Codex review still pending. The owner did not ask to implement the real complaint/security systems.
 
+
+## PR #217: actionable signal queue — server slice — 2026-10-11
+
+Owner rejected the topic-list as non-actionable and approved an individual-case moderation
+queue. Delivery is decomposed: (1) server read model and DB tests; (2) moderator
+interface/actions and realistic Pages fixtures; (3) exact-head acceptance and independent
+Codex review. Pause after each subtask for owner continuation.
+
+**First subtask complete in the actual implementation PR branch**
+`chatgpt/help-attention-moderation-queue`, head `7d651f8d2b3a70dbc667dd0fd696f6466ca3ff8e`.
+`readHelpAttentionCases(group, visibility, page)` returns individually identified
+pending Help signals with author/explanation, target and proposed original, pending duplicate
+appeals with appellant text/confirmed original, plus separate authoritative Needs-review
+status tasks with no invented reporter. Selection and permissions precede pagination.
+Ordinary groups page 50 cases; Mixed pages 50 topics with 2+ pending visible signals,
+preserving each independent case. No schema, permissions, actions or production changes;
+the old aggregate reader/UI remain until subtask 2. Typed ForumReader fixtures updated.
+
+Exact-head CI run [#38099101853](https://github.com/iliya1947/vico-forum/actions/runs/38099101853):
+`checks` and `database` successful. Earlier failure was missing new method in two
+test ForumReader mocks; corrected before final successful run.
+
+**Next only after owner says continue:** wire real per-case queue into
+`app/routes/attention.tsx` and `AttentionCenterView`, reuse protected moderation
+mutations directly from this workspace, display details/actions and refresh the queue;
+provide realistic Pages fixture. Respect six approved Signals groups, two independent
+empty Complaints/Security scaffolds, and user-approved heading-level mode switcher.
+Do not invite Codex review or merge before all remaining slices/acceptance.
+
