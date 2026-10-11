@@ -107,9 +107,17 @@ Vico Forum находится в ранней pre-release разработке.
   sit beside the page heading and group switches below; redundant Moderation
   eyebrow is removed. The aggregate topic reader remains available but is no
   longer used by the attention route; no migrations or complaint/security
-  mechanics were introduced. New exact-head checks, Pages publication and
-  owner acceptance are not yet claimed.
-  Owner visual acceptance and independent Codex review remain pending.
+  mechanics were introduced. CI #38100711549 passed on implementation code
+  head 492efd6 (checks + database). A Pages push from the implementation branch
+  built successfully but its deploy job failed before runner steps
+  (#38100709642): this branch cannot publish through the protected Pages
+  environment. The same code head 492efd6 published successfully through
+  the preview-only `chatgpt/ui-pr217-case-preview` branch
+  (Pages #38101437497, build + deploy success). The implementation workflow
+  therefore no longer pretends `chatgpt/help-attention-*` can deploy; preview
+  mirroring must use the allowed `chatgpt/ui-*` branch. Final exact-head CI and
+  Pages checks after these documentation/workflow updates remain pending.
+  Owner browser visual acceptance and independent Codex review remain pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
