@@ -30,13 +30,14 @@ export interface AttachmentCandidate {
   maxBytes?: number;
 }
 
-const binaryExtensions: Readonly<Record<string, AttachmentDetection>> = {
+type BinaryDetection = Exclude<AttachmentDetection, "text" | "unknown" | "executable">;
+const binaryExtensions: Readonly<Record<string, BinaryDetection>> = {
   png: "png", jpg: "jpeg", jpeg: "jpeg", gif: "gif", webp: "webp",
   pdf: "pdf", zip: "zip", "7z": "7z", gz: "gzip", tgz: "gzip",
   tar: "tar", doc: "ole", xls: "ole", ppt: "ole",
   docx: "zip", xlsx: "zip", pptx: "zip", odt: "zip", ods: "zip",
 };
-const binaryMime: Readonly<Record<Exclude<AttachmentDetection, "text" | "unknown" | "executable">, string>> = {
+const binaryMime: Readonly<Record<BinaryDetection, string>> = {
   png: "image/png", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp",
   pdf: "application/pdf", zip: "application/zip", "7z": "application/x-7z-compressed",
   gzip: "application/gzip", tar: "application/x-tar", ole: "application/octet-stream",
