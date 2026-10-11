@@ -99,7 +99,7 @@ describe("account-scoped durable editor drafts", () => {
     const key = "section:draft/opaque:✓:new";
     const current = await store.get("draft-owner", key);
     expect(current?.status).toBe("active");
-    expect(await store.delete("draft-owner", key, id1, (current?.version ?? 0) - 1)).toBe(false);
+    expect(await store.delete("draft-owner", key, id1, current!.version + 1)).toBe(false);
     expect((await store.get("draft-owner", key))?.status).toBe("active");
     expect(await store.delete("draft-owner", key, id1, current!.version)).toBe(true);
     expect((await store.get("draft-owner", key))?.status).toBe("deleted");
