@@ -1134,20 +1134,62 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
     ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
       ? selected : "needs-details"
     : selected === "group2" || selected === "group3" ? selected : "group1";
-  const base = previewHelpSolutions(scenario.locale);
-  const questions = base.questions.map((question, index) => ({
-    ...question,
-    attention: index === 0
-      ? { signals: { "needs-details": 1, duplicate: 2 }, totalSignals: 3, appeal: true }
-      : index === 1 ? { signals: { "needs-review": 1 }, totalSignals: 1, appeal: false }
-      : index === 2 ? { signals: { "solution-outdated": 1 }, totalSignals: 1, appeal: false }
-      : index === 3 ? { signals: { duplicate: 1 }, totalSignals: 1, appeal: false }
-      : { signals: {}, totalSignals: 0, appeal: false, reviewRequired: true },
-  }));
+  const samples = [
+    {
+      type: "signal" as const, id: "signal-142", kind: "needs-details" as const,
+      topicId: "help-question", topicTitle: "Why does my Worker lose the session after redirect?",
+      submittedByUserId: "reporter", submittedByName: "Alex Rivera",
+      explanation: "Cookie settings and the redirect handler are missing. Without them, the issue cannot be reproduced.",
+      createdAt: "2026-10-10T09:25:00.000Z", targetPostId: null, original: null,
+    },
+    {
+      type: "signal" as const, id: "signal-143", kind: "duplicate" as const,
+      topicId: "help-question", topicTitle: "Why does my Worker lose the session after redirect?",
+      submittedByUserId: "reviewer", submittedByName: "Sam Lee",
+      explanation: "I think this might already be answered in the linked topic.",
+      createdAt: "2026-10-10T10:25:00.000Z", targetPostId: null,
+      original: { id: "canonical-help", title: "Configuring sessions in Cloudflare Workers" },
+    },
+    {
+      type: "signal" as const, id: "signal-144", kind: "needs-review" as const,
+      topicId: "solved-help", topicTitle: "How to deploy a React Router app?",
+      submittedByUserId: "reporter", submittedByName: "Alex Rivera",
+      explanation: "The current best answer no longer works with the latest build.",
+      createdAt: "2026-10-10T11:05:00.000Z", targetPostId: "best-answer", original: null,
+    },
+    {
+      type: "signal" as const, id: "signal-145", kind: "solution-outdated" as const,
+      topicId: "solved-help", topicTitle: "How to deploy a React Router app?",
+      submittedByUserId: "reviewer", submittedByName: "Sam Lee",
+      explanation: "The configuration keys changed in the current release.",
+      createdAt: "2026-10-10T12:05:00.000Z", targetPostId: "best-answer", original: null,
+    },
+    {
+      type: "appeal" as const, id: "appeal-146", kind: "appeal" as const,
+      topicId: "disputed-question", topicTitle: "Why doesn't my database reconnect?",
+      submittedByUserId: "author", submittedByName: "Jordan Chen",
+      explanation: "My issue occurs after a network timeout, not after credential expiry.",
+      createdAt: "2026-10-10T13:05:00.000Z", targetPostId: null,
+      original: { id: "canonical-help", title: "Configuring sessions in Cloudflare Workers" },
+    },
+    {
+      type: "review-status" as const, id: "best-answer", kind: "review-status" as const,
+      topicId: "solved-help", topicTitle: "How to deploy a React Router app?",
+      submittedByUserId: null, submittedByName: null,
+      explanation: null, createdAt: "2026-10-10T14:05:00.000Z",
+      targetPostId: "best-answer", original: null,
+    },
+  ];
+  const selectedCases = group === "mixed"
+    ? samples.filter((item) => item.topicId === "help-question" && item.type === "signal")
+    : samples.filter((item) => item.kind === group ||
+      (group === "needs-review" && item.type === "review-status"));
   return <AttentionCenterView
     locale={scenario.locale} mode={mode} group={group}
-    page={mode === "signals" ? { ...base, questions: scenario.variant === "attention-empty" ? [] : questions } : null}
-    referenceTime={previewReferenceTime} canViewSolutionModeration canViewDuplicateDispute
+    queue={mode === "signals"
+      ? { cases: scenario.variant === "attention-empty" ? [] : selectedCases, hasMore: false, page: 0 }
+      : null}
+    isPreview referenceTime={previewReferenceTime}
   />;
 }
 
