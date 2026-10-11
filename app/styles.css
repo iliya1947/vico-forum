@@ -9034,3 +9034,102 @@ a.topic-tag:focus-visible {
     max-height: 16rem;
   }
 }
+
+
+/* Editor 2.0 technical Markdown: published posts and editing preview share this rendering. */
+.forum-markdown-table-scroll {
+  max-inline-size: 100%;
+  overflow-x: auto;
+  margin-block: .8rem;
+  border: 1px solid var(--color-border);
+  border-radius: .35rem;
+}
+.forum-markdown-table {
+  border-collapse: collapse;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  font-size: .87rem;
+  background: var(--color-surface);
+}
+.forum-markdown-table th,
+.forum-markdown-table td {
+  padding: .45rem .65rem;
+  border: 1px solid var(--color-border);
+  text-align: start;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.forum-markdown-table th {
+  background: var(--color-surface-subtle);
+  font-weight: 700;
+}
+.forum-markdown-table th > p,
+.forum-markdown-table td > p { margin: 0; }
+.forum-markdown-spoiler {
+  margin-block: .75rem;
+  padding: .55rem .7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .4rem;
+  background: var(--color-surface-muted);
+}
+.forum-markdown-spoiler > summary {
+  cursor: pointer;
+  color: var(--color-text);
+  font-weight: 750;
+}
+.forum-markdown-spoiler > .post-body { margin-block-start: .55rem; }
+.forum-markdown-spoiler > .post-body > :first-child { margin-block-start: 0; }
+.forum-code-block .syntax-diff-add { color: #247d40; }
+.forum-code-block .syntax-diff-remove { color: #b32e42; }
+[data-theme="dark"] .forum-code-block .syntax-diff-add { color: #80d3a4; }
+[data-theme="dark"] .forum-code-block .syntax-diff-remove { color: #ffa0ad; }
+.forum-code-block pre[data-line-numbers="true"] { display: flex; gap: .6rem; }
+.forum-code-block pre > code { display: block; flex: 1 1 auto; min-inline-size: 0; }
+.forum-code-line-gutter {
+  order: -1;
+  display: flex;
+  flex: 0 0 2.6rem;
+  flex-direction: column;
+  text-align: end;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  border-inline-end: 1px solid var(--color-border);
+  padding-inline-end: .5rem;
+  user-select: none;
+}
+.forum-code-line-gutter span { line-height: inherit; }
+.home-shell .markdown-editor-visual-table { margin-block: .75rem; }
+.home-shell .markdown-editor-visual-table .forum-markdown-table-scroll { margin-block: 0; }
+.home-shell .markdown-editor-visual-table .forum-markdown-table :is(th,td) { padding: .25rem; }
+.home-shell .markdown-editor-visual-table .forum-markdown-table input {
+  display: block;
+  min-inline-size: 7rem;
+  inline-size: 100%;
+  min-block-size: 2rem;
+  padding: .35rem .45rem;
+  font: inherit;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  border-radius: .2rem;
+}
+.home-shell .markdown-editor-table-actions { display: flex; gap: .45rem; padding-block: .3rem; }
+.home-shell .markdown-editor-table-actions button {
+  min-block-size: 2.1rem;
+  padding-inline: .55rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .3rem;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.home-shell .markdown-editor-visual .forum-markdown-spoiler .markdown-editor-visual {
+  min-height: 2rem;
+  padding: .4rem;
+}
+.home-shell .markdown-editor-paste-warning {
+  margin: 0;
+  padding: .5rem .8rem;
+  color: var(--color-danger);
+  border-block-start: 1px solid var(--color-border);
+}
