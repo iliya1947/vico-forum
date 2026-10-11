@@ -136,7 +136,7 @@ describe("editor draft lifecycle", () => {
     }));
     mount();
     await flush();
-    expect(screen.getByText("Draft conflict")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
     expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(8);
@@ -164,7 +164,7 @@ describe("editor draft lifecycle", () => {
       }));
     });
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("unsaved typing");
-    expect(screen.getByText("Draft conflict")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
   });
 
   it("ignores a late previous-account response and flushes the previous owner's unsaved typing", async () => {
