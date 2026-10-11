@@ -345,6 +345,8 @@ export const reviewedCommonFingerprints = {
   messageBodyHelp: "4251e3a95480df2bcbd14d978f3a0a625c825282c1c5e60032f79443c179659a",
   editorEmoji: "4ccc222f083316ab313647f7465b821747102cd725b9cf6082c829d694bc5c2e",
   editorMoreTools: "876c1bde1512e2169d5507485ae457b558a793f128b417787b3e7bf49651e590",
+  editorVisualSurface: "4bba3739f0ff7cee3a4344fa05eab73fe07ced419d9792d40d7a47c345610d12",
+  editorEditInMarkdown: "49165509800b6697c9f28bbdeb4c826db3c3b2902a795bd1b6ef2368401436bc",
   editorSimple: "03dbc348c380913c678687b4d0915395ce0698c09d613da8db8bc89b0f9b3d00",
   editorAdvanced: "487ee8dbe557dcd2dc3f3eea547e753eb826739bb3c35bffe04db1f9dce8d5d4",
   editorUndo: "a8c1a687999065e7a1c65c1be6e342d8c90a94857a5503fb03ff7d471cbd63eb",
