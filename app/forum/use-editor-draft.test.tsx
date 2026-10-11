@@ -91,7 +91,7 @@ describe("editor draft lifecycle", () => {
   it("discards a published generation despite device clock skew and starts a new one at the tombstone version", async () => {
     vi.useFakeTimers();
     const local = { ownerId: "alice", contextKey, draftId: oldId,
-      startedAt: "2090-01-01T00:00:00.000Z", editedAt: new Date().toISOString(),
+      editedAt: new Date().toISOString(),
       baseVersion: 1, syncedEditedAt: null, payload: { ...empty, body: "Published content " } };
     writeLocalEditorDraft(local);
     const posts: Array<Record<string, unknown>> = [];
@@ -125,7 +125,7 @@ describe("editor draft lifecycle", () => {
   it("preserves both incompatible active drafts until the author explicitly chooses one", async () => {
     writeLocalEditorDraft({
       ownerId: "alice", contextKey, draftId: oldId,
-      startedAt: new Date().toISOString(), editedAt: new Date().toISOString(),
+      editedAt: new Date().toISOString(),
       baseVersion: 1, syncedEditedAt: null,
       payload: { ...empty, body: "Local code" },
     });
@@ -149,7 +149,7 @@ describe("editor draft lifecycle", () => {
 
   it("never picks an unfamiliar local generation against a server tombstone using timestamps", async () => {
     const local = { ownerId: "alice", contextKey, draftId: newId,
-      startedAt: "2000-01-01T00:00:00.000Z", editedAt: new Date().toISOString(),
+      editedAt: new Date().toISOString(),
       baseVersion: 0, syncedEditedAt: null, payload: { ...empty, body: "Distinct local reply " } };
     writeLocalEditorDraft(local);
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
@@ -180,7 +180,7 @@ describe("editor draft lifecycle", () => {
       target: { value: "unsaved typing" },
     });
     const other = { ownerId: "alice", contextKey, draftId: newId,
-      startedAt: new Date().toISOString(), editedAt: new Date().toISOString(),
+      editedAt: new Date().toISOString(),
       baseVersion: 0, syncedEditedAt: null, payload: { ...empty, body: "different tab" } };
     writeLocalEditorDraft(other);
     await act(async () => {
