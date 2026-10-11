@@ -28,10 +28,13 @@ describe("Editor 2.0 lossless document foundation", () => {
   it("refuses edits in protected technical or structural content", () => {
     const source = "Text `code` [link](https://example.com)\n\n```diff\n+new\n-old\n```";
     const document = createEditorHistory(source);
-    for (const needle of ["code", "link", "https://", "+new"]) {
+    for (const needle of ["code", "https://", "+new"]) {
       const start = source.indexOf(needle);
       expect(editVisualText(document, { start, end: start + needle.length }, "removed")).toBeNull();
     }
+    const linkStart = source.indexOf("link");
+    const linkEdit = editVisualText(document, { start: linkStart, end: linkStart + 4 }, "label");
+    expect(linkEdit?.current.markdown).toContain("[label](https://example.com)");
     expect(document.current.markdown).toBe(source);
   });
 
