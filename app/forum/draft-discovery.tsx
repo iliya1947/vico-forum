@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useHeaderAuthUser } from "../auth/auth-controls";
-import { draftDestination, fetchDraftMetadata, type DraftMetadata } from "./draft-client";
+import {
+  clearLocalEditorDraft,
+  draftDestination,
+  fetchDraftMetadata,
+  readLocalEditorDraft,
+  type DraftMetadata,
+} from "./draft-client";
 
 export function DraftDiscovery({ locale }: { locale: string }) {
   const owner = useHeaderAuthUser()?.id ?? null;
@@ -15,13 +21,20 @@ export function DraftDiscovery({ locale }: { locale: string }) {
     const check = () => {
       void fetchDraftMetadata(locale).then((items) => {
         if (!live) return;
+        for (const item of items) {
+          if (item.status === "active") continue;
+          const local = readLocalEditorDraft(owner, item.contextKey);
+          if (local?.draftId === item.draftId) {
+            clearLocalEditorDraft(owner, item.contextKey);
+          }
+        }
         setAvailable(items.find((item) => item.status === "active" && !!draftDestination(locale, item.contextKey)) ?? null);
       }).catch(() => { /* No server connection: local drafts are still usable in the editor. */ });
     };
     check();
     window.addEventListener("focus", check);
     return () => { live = false; window.removeEventListener("focus", check); };
-  }, [locale, owner]);
+  }, [locale, owner, location.key]);
   if (!owner || !available || location.pathname.endsWith("/drafts")) return null;
   const destination = draftDestination(locale, available.contextKey);
   if (!destination) return null;
