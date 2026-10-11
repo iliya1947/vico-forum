@@ -7,6 +7,7 @@ export interface LocalEditorDraft {
   ownerId: string;
   contextKey: string;
   draftId: string;
+  startedAt: string;
   payload: ForumEditorDraftPayload;
   editedAt: string;
   baseVersion: number;
@@ -33,6 +34,7 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
   if (!value || typeof value !== "object") return false;
   const data = value as Partial<LocalEditorDraft>;
   return data.ownerId === ownerId && data.contextKey === contextKey
+    && typeof data.startedAt === "string" && Number.isFinite(Date.parse(data.startedAt))
     && typeof data.editedAt === "string"
     && Number.isFinite(Date.parse(data.editedAt))
     && Date.now() - Date.parse(data.editedAt) < DRAFT_LIFETIME_MS
