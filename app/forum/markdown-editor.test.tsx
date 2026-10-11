@@ -523,6 +523,31 @@ describe("MarkdownEditor", () => {
     expect(screen.getByLabelText("Body")).toHaveValue("two **two**");
   });
 
+  it("converts spreadsheet text pasted into Simple mode to a Markdown table", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, leaf.textContent!.length);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? "A\tB\n1\t2" : "" } });
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("| 1 | 2 |");
+    expect(document.querySelector(".markdown-editor-visual-table")).not.toBeNull();
+  });
+
+  it("submits the Simple visual authoring form on Ctrl+Enter", () => {
+    const submitted = vi.fn();
+    renderEditor(<form onSubmit={(event) => { event.preventDefault(); submitted(); }}>
+      <label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Hello" />
+    </form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    fireEvent.keyDown(leaf, { key: "Enter", ctrlKey: true });
+    expect(submitted).toHaveBeenCalledTimes(1);
+  });
+
   it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
