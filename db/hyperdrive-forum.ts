@@ -32,7 +32,7 @@ export interface ForumWriter {
   confirmHelpDuplicate(input: { topicId: string; originalTopicId: string; actorId: string }): Promise<void>;
   removeHelpDuplicate(input: { topicId: string; actorId: string }): Promise<void>;
   appealHelpDuplicate(input: { topicId: string; actorId: string; explanation: string }): Promise<void>;
-  resolveHelpDuplicateAppeal(input: { topicId: string; actorId: string; resolution: HelpDuplicateAppealResolution }): Promise<void>;
+  resolveHelpDuplicateAppeal(input: { topicId: string; actorId: string; resolution: HelpDuplicateAppealResolution; expectedAppealId?: string }): Promise<void>;
   createHelpSignal(input: { kind: HelpSignalKind; topicId: string; actorId: string; explanation?: string | null; proposedOriginalTopicId?: string | null }): Promise<{ id: string }>;
   withdrawHelpSignal(input: { signalId: string; topicId: string; actorId: string }): Promise<void>;
   resolveHelpSignal(input: { signalId: string; actorId: string; resolution: HelpSignalResolution }): Promise<HelpSignalStatus>;
@@ -193,8 +193,8 @@ export function createHyperdriveForumWriter(
     appealHelpDuplicate: ({ topicId, actorId, explanation }) => writeCorrection(async (forum) => {
       await forum.appealHelpDuplicate(topicId, actorId, explanation);
     }),
-    resolveHelpDuplicateAppeal: ({ topicId, actorId, resolution }) => writeCorrection(async (forum) => {
-      await forum.resolveHelpDuplicateAppeal(topicId, actorId, resolution);
+    resolveHelpDuplicateAppeal: ({ topicId, actorId, resolution, expectedAppealId }) => writeCorrection(async (forum) => {
+      await forum.resolveHelpDuplicateAppeal(topicId, actorId, resolution, expectedAppealId);
     }),
     createHelpSignal: (input) => writeCorrection(async (forum) => {
       const signal = await forum.createHelpSignal(input);
