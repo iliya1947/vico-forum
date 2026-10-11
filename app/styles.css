@@ -9015,3 +9015,6 @@ a.topic-tag:focus-visible {
   box-shadow: 0 .35rem .75rem #0002;
 }
 .home-shell .markdown-editor-extra-options button { justify-content: start; white-space: nowrap; }
+
+.home-shell .markdown-editor:not(.is-fullscreen) { overflow: visible; }
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-preview-menu { z-index: 5; }
