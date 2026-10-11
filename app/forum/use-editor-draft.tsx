@@ -215,7 +215,6 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       document.removeEventListener("visibilitychange", onVisibility);
     };
     // Rebind draft lifecycle only when account/form identity changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity]);
 
   const labels: Record<Status, string> = {
