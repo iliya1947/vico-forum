@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearDeviceEditorDrafts, clearLocalEditorDraft, draftStorageKey, listLocalEditorDrafts,
-  readLocalEditorDraft, writeLocalEditorDraft, localDraftNeedsAttention, clearDeviceEditorData } from "./draft-client";
+  readLocalEditorDraft, writeLocalEditorDraft, localDraftNeedsAttention, clearDeviceEditorData,
+  draftDestination } from "./draft-client";
 
 const first = { ownerId: "alice", contextKey: "topic:123:reply",
   draftId: "bd526b11-71ed-49c1-b9ec-cbb496e86ba9", payload: { title: "", body: "Alice", tags: "" },
@@ -34,6 +35,13 @@ describe("isolated browser draft cache", () => {
       expect(localStorage.getItem("vico:editor:" + preference + ":alice")).toBeNull();
     }
     expect(localStorage.getItem("vico:editor:mode:bob")).toBe("simple");
+  });
+
+  it("keeps opaque forum ids routable in draft destinations", () => {
+    expect(draftDestination("en", "topic:typed/api:with:שלום:reply"))
+      .toBe("/en/topics/typed%2Fapi%3Awith%3A%D7%A9%D7%9C%D7%95%D7%9D");
+    expect(draftDestination("en", "section:typescript/basics:with:colon:new"))
+      .toBe("/en/sections/typescript%2Fbasics%3Awith%3Acolon");
   });
 
   it("keeps a valid local copy when the device clock moved backward", () => {
