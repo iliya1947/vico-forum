@@ -38,7 +38,11 @@ function Harness({ ownerId }: { ownerId: string | null }) {
       draft.noteEdit(event.target.value);
     }} />
     <button type="button" onClick={draft.saveLocal}>Leave editor</button>
+    <button type="button" onClick={() => draft.acknowledgePublished(draft.draftId, draft.expectedVersion + 1)}>
+      Published
+    </button>
     <output data-testid="draft-id">{draft.draftId}</output>
+    <output data-testid="draft-version">{draft.expectedVersion}</output>
     {draft.element}
   </div>;
 }
@@ -169,6 +173,44 @@ describe("editor draft lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
     expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(8);
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
+  });
+
+  it("keeps new typing after publication even when an older metadata request finishes late", async () => {
+    let resolveMetadata!: (value: Response) => void;
+    const metadata = new Promise<Response>((resolve) => { resolveMetadata = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return metadata;
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    const publishedDraftId = screen.getByTestId("draft-id").textContent!;
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "Old reply " } });
+    expect(readLocalEditorDraft("alice", contextKey)?.draftId).toBe(publishedDraftId);
+
+    fireEvent.click(screen.getByRole("button", { name: "Published" }));
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("");
+    expect(screen.getByTestId("draft-version")).toHaveTextContent("1");
+    const nextDraftId = screen.getByTestId("draft-id").textContent!;
+    expect(nextDraftId).not.toBe(publishedDraftId);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "New reply " } });
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
+      draftId: nextDraftId,
+      baseVersion: 1,
+      payload: { body: "New reply " },
+    });
+
+    await act(async () => {
+      resolveMetadata(response({ drafts: [{
+        contextKey, draftId: publishedDraftId, version: 1, status: "published",
+        title: "", snippet: "", editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      }] }));
+    });
+    await flush();
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("New reply ");
+    expect(readLocalEditorDraft("alice", contextKey)?.draftId).toBe(nextDraftId);
+    expect(screen.queryByRole("group", { name: "Draft conflict" })).not.toBeInTheDocument();
   });
 
   it("does not overwrite unflushed typing when another tab changes the local copy", async () => {
