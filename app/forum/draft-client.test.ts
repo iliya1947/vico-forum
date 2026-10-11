@@ -5,7 +5,7 @@ import { clearDeviceEditorDrafts, clearLocalEditorDraft, draftStorageKey, listLo
 
 const first = { ownerId: "alice", contextKey: "topic:123:reply",
   draftId: "bd526b11-71ed-49c1-b9ec-cbb496e86ba9", payload: { title: "", body: "Alice", tags: "" },
-  startedAt: new Date().toISOString(), editedAt: new Date().toISOString(), baseVersion: 1, syncedEditedAt: null };
+  editedAt: new Date().toISOString(), baseVersion: 1, syncedEditedAt: null };
 const second = { ...first, ownerId: "bob", payload: { title: "", body: "Bob", tags: "" } };
 
 afterEach(() => { localStorage.clear(); vi.useRealTimers(); });
