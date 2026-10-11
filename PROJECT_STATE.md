@@ -115,9 +115,16 @@ Vico Forum находится в ранней pre-release разработке.
   the preview-only `chatgpt/ui-pr217-case-preview` branch
   (Pages #38101437497, build + deploy success). The implementation workflow
   therefore no longer pretends `chatgpt/help-attention-*` can deploy; preview
-  mirroring must use the allowed `chatgpt/ui-*` branch. Final exact-head CI and
-  Pages checks after these documentation/workflow updates remain pending.
-  Owner browser visual acceptance and independent Codex review remain pending.
+  mirroring must use the allowed `chatgpt/ui-*` branch. The implementation
+  head `7351170` passed both CI jobs in #38101530150; the exact same revision
+  was built and published successfully to GitHub Pages in #38101534292 from
+  `chatgpt/ui-pr217-case-preview`.
+  Owner visual acceptance was granted on 2026-10-11 for the current usable MVP
+  presentation ("сойдёт"), explicitly with future UX/visual refinement deferred.
+  Keep separate post-MVP work to improve the moderation case-card layout,
+  readability, hierarchy, information density and moderator workflow usability;
+  this polish does not block PR #217 or require changes to its current mechanism.
+  Independent Codex review and final exact-head checks are still pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
