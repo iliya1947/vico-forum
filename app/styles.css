@@ -9133,3 +9133,41 @@ a.topic-tag:focus-visible {
   color: var(--color-danger);
   border-block-start: 1px solid var(--color-border);
 }
+
+.forum-code-filename {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: start;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.home-shell .markdown-editor-find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  padding: .45rem .6rem;
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+.home-shell .markdown-editor-find input {
+  inline-size: min(12rem, 34vw);
+  min-inline-size: 7rem;
+  min-block-size: 2.1rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .35rem;
+  padding-inline: .45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.home-shell .markdown-editor-find button {
+  min-block-size: 2.1rem;
+  padding-inline: .5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .35rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
