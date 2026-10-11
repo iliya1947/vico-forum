@@ -76,6 +76,7 @@ describe("editor draft lifecycle", () => {
     await flush();
     fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "First " } });
     expect(readLocalEditorDraft("alice", contextKey)?.payload.body).toBe("First ");
+    expect(posts).toHaveLength(0); // No eager network write before the 60-second interval.
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
     expect(posts).toHaveLength(1);
     expect(posts[0]?.expectedVersion).toBe(0);
@@ -119,6 +120,31 @@ describe("editor draft lifecycle", () => {
     expect(posts).toHaveLength(1);
     expect(posts[0]?.draftId).not.toBe(oldId);
     expect(posts[0]?.expectedVersion).toBe(2);
+  });
+
+  it("preserves both incompatible active drafts until the author explicitly chooses one", async () => {
+    writeLocalEditorDraft({
+      ownerId: "alice", contextKey, draftId: oldId,
+      startedAt: new Date().toISOString(), editedAt: new Date().toISOString(),
+      baseVersion: 1, syncedEditedAt: null,
+      payload: { ...empty, body: "Local code" },
+    });
+    const other = { contextKey, draftId: oldId, version: 2, status: "active" as const,
+      editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      title: "", snippet: "Remote code", payload: { ...empty, body: "Remote code" } };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [other] });
+      if (uri.includes("mode=content")) return response({ draft: other });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Local code");
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    expect(screen.getByText("Remote code")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Local code");
+    expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(2);
   });
 
   it("never picks an unfamiliar local generation against a server tombstone using timestamps", async () => {
