@@ -35,6 +35,7 @@ export interface MarkdownEditorProps {
   defaultAuthoringMode?: "simple" | "advanced";
   draftContextKey?: string;
   draftLocale?: string;
+  onDraftRestoreParent?: (parentPostId: string | null) => void;
 }
 
 interface PendingSelection {
@@ -85,6 +86,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       defaultAuthoringMode = "simple",
       draftContextKey,
       draftLocale,
+      onDraftRestoreParent,
     },
     forwardedRef,
   ) {
@@ -149,6 +151,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
       restore: (payload) => {
         historyRef.current = createEditorHistory(payload.body);
+        onDraftRestoreParent?.(payload.parentPostId ?? null);
         setValue(payload.body);
         const form = textareaRef.current?.form;
         for (const key of ["title", "tags"] as const) {
