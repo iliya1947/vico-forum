@@ -1,10 +1,11 @@
-import { useLoaderData, type RouterContextProvider } from "react-router";
+import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
-import type { HelpSignalKind } from "../../db/forum-repository";
+import type { ForumAttentionQueueGroup, ForumAttentionQueueCase, HelpSignalKind } from "../../db/forum-repository";
 import { forumReaderForRequest } from "../forum/request-context";
+import { forumMutationGuard, mutationFailure, requireForumPermission, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
 import { AttentionCenterView, type AttentionGroup, type AttentionMode } from "../forum/views";
 import { ForumRouteError } from "../forum/ui";
 
@@ -15,6 +16,14 @@ const PLACEHOLDER_GROUPS = new Set<AttentionGroup>(["group1", "group2", "group3"
 
 export function meta() {
   return [{ title: "Needs attention · Vico Forum" }];
+}
+
+function signalPermission(kind: HelpSignalKind) {
+  return kind === "needs-details"
+    ? "forum.helpNeedsDetails.manage" as const
+    : kind === "duplicate"
+      ? "forum.helpDuplicate.manage" as const
+      : "forum.solution.manageAny" as const;
 }
 
 export async function loader({ request, params, context }: {
@@ -53,10 +62,12 @@ export async function loader({ request, params, context }: {
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
     : mode === "signals" ? "needs-details" : "group1";
+  const pageParam = query.get("page") ?? "0";
+  const pageNumber = Number(pageParam);
+  const pageIndex = Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000
+    ? pageNumber : 0;
 
-  // The other inboxes are intentionally empty shells until their owners define
-  // workflows and permissions; do not read Help signals for those modes.
-  let page = null;
+  let queue: { cases: (Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string })[]; hasMore: boolean; page: number } | null = null;
   if (mode === "signals") {
     const kinds: HelpSignalKind[] = [
       ...(canManageNeedsDetails ? ["needs-details" as const] : []),
@@ -64,18 +75,13 @@ export async function loader({ request, params, context }: {
       ...(canViewDuplicateDispute ? ["duplicate" as const] : []),
     ];
     try {
-      const data = await forumReaderForRequest(context).readHelpSolutionsNeedsAttention({}, {
+      const cases = await forumReaderForRequest(context).readHelpAttentionCases(group as ForumAttentionQueueGroup, {
         signalKinds: kinds,
         appeals: canViewDuplicateDispute,
-      });
-      if (!data) throw new Response("Not Found", { status: 404 });
-      page = {
-        ...data,
-        questions: data.questions.map((question) => ({
-          ...question,
-          createdAt: question.createdAt.toISOString(),
-          activityAt: question.activityAt.toISOString(),
-        })),
+      }, pageIndex);
+      queue = {
+        ...cases,
+        cases: cases.cases.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
       };
     } catch (error) {
       if (error instanceof ForumStorageUnavailableError) {
@@ -84,19 +90,68 @@ export async function loader({ request, params, context }: {
       throw error;
     }
   }
-  return {
-    locale: params.locale ?? "en",
-    mode,
-    group,
-    page,
-    referenceTime: new Date().toISOString(),
-    canViewSolutionModeration,
-    canViewDuplicateDispute,
-  };
+  return { locale: params.locale ?? "en", mode, group, queue, referenceTime: new Date().toISOString() };
+}
+
+export async function action({ request, context }: {
+  request: Request;
+  context: RouterContextProvider;
+}) {
+  const denied = forumMutationGuard(request, context);
+  if (denied) return denied;
+  let formData: FormData;
+  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const intent = requiredFormText(formData, "intent");
+  const topicId = requiredFormText(formData, "topicId");
+  const caseId = requiredFormText(formData, "caseId");
+  if (!topicId || !caseId) return mutationFailure("invalid", 400);
+
+  if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
+    let signal;
+    try {
+      signal = await forumReaderForRequest(context).readHelpSignal(caseId);
+    } catch (error) {
+      if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
+      throw error;
+    }
+    if (!signal || signal.topicId !== topicId) return mutationFailure("notFound", 404);
+    const forbidden = await requireForumPermission(context, signalPermission(signal.kind));
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.resolveHelpSignal({
+        signalId: caseId, actorId,
+        resolution: intent === "acceptHelpSignal" ? "accepted" : "rejected",
+      });
+      const url = new URL(request.url);
+      return redirect(url.pathname + url.search);
+    });
+  }
+
+  if (intent === "acceptHelpDuplicateAppeal" || intent === "rejectHelpDuplicateAppeal") {
+    const forbidden = await requireForumPermission(context, "forum.helpDuplicate.manage");
+    if (forbidden) return forbidden;
+    let appeal;
+    try {
+      appeal = await forumReaderForRequest(context).readPendingHelpDuplicateAppeal(topicId);
+    } catch (error) {
+      if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
+      throw error;
+    }
+    if (!appeal || appeal.id !== caseId) return mutationFailure("conflict", 409);
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.resolveHelpDuplicateAppeal({
+        topicId, actorId,
+        resolution: intent === "acceptHelpDuplicateAppeal" ? "accepted" : "rejected",
+      });
+      const url = new URL(request.url);
+      return redirect(url.pathname + url.search);
+    });
+  }
+  return mutationFailure("invalid", 400);
 }
 
 export default function AttentionRoute() {
-  return <AttentionCenterView {...useLoaderData<typeof loader>()} />;
+  return <AttentionCenterView {...useLoaderData<typeof loader>()} actionData={useActionData<ForumMutationError>()} />;
 }
 
 export const ErrorBoundary = ForumRouteError;
