@@ -24,11 +24,9 @@ export async function loader({ params, context }: {
 interface DraftListItem {
   contextKey: string;
   draftId: string;
-  version: number;
   title: string;
   snippet: string;
   editedAt: string;
-  origin: "server" | "device";
 }
 
 export default function DraftsRoute() {
@@ -50,14 +48,17 @@ export default function DraftsRoute() {
   }, [userId, remote]);
   const currentRemote = remote.filter((draft) => draft.status === "active");
   const combined = new Map<string, DraftListItem>();
-  for (const draft of currentRemote) combined.set(draft.contextKey, { ...draft, origin: "server" });
+  for (const draft of currentRemote) combined.set(draft.contextKey, {
+    contextKey: draft.contextKey, draftId: draft.draftId, title: draft.title,
+    snippet: draft.snippet, editedAt: draft.editedAt,
+  });
   for (const draft of local) {
     const server = remote.find((entry) => entry.contextKey === draft.contextKey);
     if (!localDraftNeedsAttention(draft, server)) continue;
     combined.set(draft.contextKey, {
-      contextKey: draft.contextKey, draftId: draft.draftId, version: draft.baseVersion,
+      contextKey: draft.contextKey, draftId: draft.draftId,
       title: draft.payload.title, snippet: draft.payload.body.slice(0, 140),
-      editedAt: draft.editedAt, origin: "device",
+      editedAt: draft.editedAt,
     });
   }
   const items = [...combined.values()].sort((a, b) => b.editedAt.localeCompare(a.editedAt));
