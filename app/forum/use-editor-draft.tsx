@@ -138,7 +138,19 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         writeLocalEditorDraft(next);
         setStatus(next.editedAt === next.syncedEditedAt ? "saved" : "pending");
       } else if (result.outcome === "gone") {
-        clearFinished();
+        // A new local draft can be created while offline, before it learns
+        // the version of the previously finished generation.
+        const meta = (await fetchDraftMetadata(locale)).find((entry) => entry.contextKey === contextKey);
+        if (identityRef.current !== identity) return;
+        const latest = localRef.current;
+        if (latest && meta && meta.status !== "active" && meta.draftId !== latest.draftId
+          && Date.parse(latest.startedAt) > Date.parse(meta.updatedAt)) {
+          finishedMarkerRef.current = { draftId: meta.draftId, version: meta.version, updatedAt: meta.updatedAt };
+          const next = { ...latest, baseVersion: meta.version };
+          localRef.current = next;
+          writeLocalEditorDraft(next);
+          setStatus("pending");
+        } else clearFinished();
       } else if (result.outcome === "conflict") {
         const remote = await fetchDraftContent(locale, contextKey);
         if (identityRef.current === identity && remote) {
