@@ -28,6 +28,28 @@ describe("Editor 2.0 technical Markdown source boundaries", () => {
     expect(markdown).toContain(":::spoiler");
   });
 
+  it("does not close a spoiler at markers inside fenced code", () => {
+    const fence = "```";
+    const source = [
+      "Before", "",
+      ":::spoiler Secret",
+      fence + "md",
+      ":::",
+      fence,
+      "Still inside", ":::",
+      "",
+      "After",
+    ].join("\n");
+    const segments = segmentTechnicalMarkdown(source);
+    const spoiler = segments.find((part) => part.kind === "spoiler");
+    expect(spoiler?.kind).toBe("spoiler");
+    if (spoiler?.kind !== "spoiler") return;
+    expect(spoiler.body).toBe([fence + "md", ":::", fence, "Still inside"].join("\n") + "\n");
+    expect(source.slice(spoiler.span.start, spoiler.span.end)).toContain("Still inside\n:::");
+    const unclosed = [":::spoiler", fence + "md", ":::", fence].join("\n");
+    expect(segmentTechnicalMarkdown(unclosed).some((part) => part.kind === "spoiler")).toBe(false);
+  });
+
   it("preserves escaped cells and all unrelated source during structural table changes", () => {
     const source = "Top\r\n\r\n| Header | C |\n| --- | --- |\n| a\\|b | raw |\n\nBottom";
     const table = segmentTechnicalMarkdown(source).find((segment) => segment.kind === "table");
