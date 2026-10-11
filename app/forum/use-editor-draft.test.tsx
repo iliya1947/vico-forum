@@ -14,7 +14,7 @@ const empty = { title: "", body: "", tags: "" };
 
 const i18n = createInstance();
 void i18n.init({
-  lng: "en", fallbackLng: false, initImmediate: false,
+  lng: "en", fallbackLng: false,
   resources: { en: { common: {
     editorDraftConflict: "Draft conflict", editorDraftThisDevice: "This device",
     editorDraftOtherDevice: "Other device", editorDraftKeepLocal: "Keep local",
