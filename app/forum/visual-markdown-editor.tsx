@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { fromMarkdown } from "mdast-util-from-markdown";
+import { parseForumMarkdown } from "../markdown-syntax";
 import { useTranslation } from "react-i18next";
 import type { EditorSelection } from "./editor-document";
 import { ForumMarkdown } from "./markdown";
@@ -434,6 +434,14 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
         data-source-end={range ? range.end + baseOffset : undefined}
       >{children}</em>;
     }
+    case "delete": {
+      const range = sourceRange(node);
+      return <del
+        data-source-inline="true"
+        data-source-start={range ? range.start + baseOffset : undefined}
+        data-source-end={range ? range.end + baseOffset : undefined}
+      >{children}</del>;
+    }
     case "blockquote": return <blockquote>{children}</blockquote>;
     case "list": return node.ordered ? <ol>{children}</ol> : <ul>{children}</ul>;
     case "listItem": return <li>{children}</li>;
@@ -565,7 +573,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
             </button>
           </div>
         );
-        const root = fromMarkdown(segment.source) as VisualNode;
+        const root = parseForumMarkdown(segment.source) as VisualNode;
         return root.children?.length
           ? <VisualNodeView key={index} node={root} markdown={segment.source}
               baseOffset={sourceBase + segment.span.start} disabled={disabled} {...actions} />
