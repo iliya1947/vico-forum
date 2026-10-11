@@ -44,7 +44,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   const { t } = useTranslation("common");
   const [status, setStatus] = useState<Status>("idle");
   const [conflict, setConflict] = useState<Conflict | null>(null);
-  const [draftId, setDraftId] = useState(() => crypto.randomUUID());
+  const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ readPayload, restore });
   callbacksRef.current = { readPayload, restore };
