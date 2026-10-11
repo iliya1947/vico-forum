@@ -12,6 +12,7 @@ import { ForumMarkdown } from "./markdown";
 import {
   applyTextareaEdit,
   createEditorHistory,
+  editableCodeRanges,
   editVisualText,
   recordEditorEdit,
   redoEditorEdit,
@@ -32,7 +33,6 @@ import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
 import type { ForumEditorDraftPayload } from "../../db/schema";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
-import { fromMarkdown } from "mdast-util-from-markdown";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -358,26 +358,44 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       replaceSourceRange(selection, leading + text + trailing);
     }
 
-    function codeRegion(caret: number): boolean {
-      const root = fromMarkdown(value) as {
-        children?: Array<{ type: string; position?: { start: { offset?: number }; end: { offset?: number } } }>;
-      };
-      return root.children?.some((node) => node.type === "code"
-        && caret > (node.position?.start.offset ?? Number.POSITIVE_INFINITY)
-        && caret <= (node.position?.end.offset ?? Number.NEGATIVE_INFINITY)) ?? false;
+    function insertBlockAfterSelection(text: string) {
+      const selection = sourceSelection();
+      if (!selection) return;
+      const at = selection.end;
+      const before = value.slice(0, at);
+      const after = value.slice(at);
+      const leading = at === 0 || before.endsWith("\n\n")
+        ? ""
+        : before.endsWith("\n") ? "\n" : "\n\n";
+      const trailing = at === value.length || after.startsWith("\n\n")
+        ? "\n\n"
+        : after.startsWith("\n") ? "\n" : "\n\n";
+      replaceSourceRange({ start: at, end: at }, leading + text + trailing);
     }
 
     function codeKey(key: string, shift: boolean) {
       const textarea = textareaRef.current;
       if (!textarea) return false;
+      const matches: Record<string, string> = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+      const pair = matches[key];
+      if (key !== "Tab" && key !== "Enter" && pair === undefined) return false;
+
       const selection = sourceSelection();
       if (!selection) return false;
       const { start, end } = selection;
-      if (!codeRegion(start) || !codeRegion(end)) return false;
+      const codeRange = editableCodeRanges(value).find((range) =>
+        start >= range.start
+        && end <= range.end
+        && (start !== end || start < range.end)
+      );
+      if (!codeRange) return false;
       if (key === "Tab") {
-        const first = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+        const first = Math.max(
+          value.lastIndexOf("\n", Math.max(0, start - 1)) + 1,
+          codeRange.start,
+        );
         const last = value.indexOf("\n", end);
-        const right = last < 0 ? value.length : last;
+        const right = Math.min(last < 0 ? value.length : last, codeRange.end);
         const block = value.slice(first, right);
         const lines = block.split("\n");
         const edit = shift
@@ -392,9 +410,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         replaceSourceRange({ start, end }, "\n" + indent);
         return true;
       }
-      const matches: Record<string, string> = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
-      if (Object.prototype.hasOwnProperty.call(matches, key) && start === end) {
-        replaceSourceRange({ start, end }, key + matches[key]);
+      if (pair !== undefined && start === end) {
+        replaceSourceRange({ start, end }, key + pair);
         pendingSelectionRef.current = { start: start + 1, end: start + 1 };
         textarea.focus();
         const caret = sourceOffsetToTextareaOffset(value, start + 1);
@@ -685,11 +702,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 <div className="markdown-editor-extra-options">
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "## ")}>H2</button>
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "### ")}>H3</button>
-                  <button type="button" disabled={disabled} onClick={() => replaceSelection("\n\n---\n\n", "", 5)}>—</button>
+                  <button type="button" disabled={disabled} onClick={() => insertBlockAfterSelection("---")}>—</button>
                   <button type="button" disabled={disabled} aria-label={t("editorSpoiler")}
-                    onClick={() => insertTechnicalBlock(":::spoiler\n\n:::")}>{t("editorSpoiler")}</button>
+                    onClick={() => insertBlockAfterSelection(":::spoiler\n\n:::")}>{t("editorSpoiler")}</button>
                   <button type="button" disabled={disabled} aria-label={t("editorTable")}
-                    onClick={() => insertTechnicalBlock("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
+                    onClick={() => insertBlockAfterSelection("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
                   <button type="button" disabled={disabled} aria-label={t("editorClearFormatting")}
                     onClick={clearInlineFormatting}>{t("editorClearFormatting")}</button>
                   <button type="button" disabled={disabled} aria-label={t("editorPastePlain")}
