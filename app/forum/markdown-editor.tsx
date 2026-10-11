@@ -280,7 +280,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (at < 0) at = value.indexOf(findText);
       if (at < 0) return;
       switchAuthoring("advanced");
-      pendingSelectionRef.current = { start: at, end: at + findText.length };
+      textarea?.focus();
+      textarea?.setSelectionRange(at, at + findText.length);
+      pendingSelectionRef.current = null;
     }
 
     function replaceAllMatches() {
@@ -616,7 +618,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onChange={(event) => commitSource(event.target.value)}
               onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
-                if (!disabled && codeKey(event.key, event.shiftKey)) {
+                if (!disabled && !event.ctrlKey && !event.metaKey && !event.altKey && codeKey(event.key, event.shiftKey)) {
                   event.preventDefault();
                   return;
                 }
