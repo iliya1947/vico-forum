@@ -8982,3 +8982,36 @@ a.topic-tag:focus-visible {
   .home-shell .markdown-editor-controls > button:first-child { padding-inline: .3rem; }
   .home-shell .markdown-editor-preview-menu summary { padding-inline: .2rem; }
 }
+
+.home-shell .markdown-editor-extra-menu { position: relative; }
+.home-shell .markdown-editor-extra-menu summary {
+  list-style: none;
+  min-inline-size: 2rem;
+  min-block-size: 2rem;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: .35rem;
+  font-weight: 800;
+  font-size: .78rem;
+}
+.home-shell .markdown-editor-extra-menu summary::-webkit-details-marker { display: none; }
+.home-shell .markdown-editor-extra-menu summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+.home-shell .markdown-editor-extra-options {
+  position: absolute;
+  z-index: 21;
+  inset-inline-start: 0;
+  inset-block-start: 100%;
+  display: grid;
+  gap: .1rem;
+  min-inline-size: 7rem;
+  padding: .3rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .4rem;
+  background: var(--color-surface);
+  box-shadow: 0 .35rem .75rem #0002;
+}
+.home-shell .markdown-editor-extra-options button { justify-content: start; white-space: nowrap; }
