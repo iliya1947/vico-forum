@@ -7,7 +7,12 @@ function escapeText(value: string): string {
 }
 
 function textAsMarkdown(value: string): string {
-  return value.replace(/\r\n/gu, "\n").split("\n").map(escapeText).join("\n");
+  return value.replace(/\r\n/gu, "\n").split("\n").map((line) => {
+    const escaped = escapeText(line);
+    // Plain text must not accidentally become a heading, quote or list item.
+    return escaped.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
+      (_, indent: string, marker: string) => indent + "\\" + marker);
+  }).join("\n");
 }
 
 /**
