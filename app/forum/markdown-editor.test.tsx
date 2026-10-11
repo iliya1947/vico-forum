@@ -623,6 +623,47 @@ describe("MarkdownEditor", () => {
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\# Header");
   });
 
+  it("resets body and history when the draft context changes for the same account", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) {
+        return new Response(JSON.stringify({ drafts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("Unexpected fetch");
+    }));
+    const user = { id: "draft-context-switch-user", name: "Author" };
+    const editor = (contextKey: string) => (
+      <I18nextProvider i18n={runtime()}>
+        <HeaderAuthProvider initialUser={user}>
+          <form>
+            <label htmlFor="draft-context-body">Body</label>
+            <MarkdownEditor
+              id="draft-context-body"
+              name="body"
+              defaultAuthoringMode="advanced"
+              draftContextKey={contextKey}
+              draftLocale="en"
+            />
+          </form>
+        </HeaderAuthProvider>
+      </I18nextProvider>
+    );
+    const rendered = render(editor("topic:first:reply"));
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: "First topic reply " } });
+    const firstDraftId = (document.querySelector('input[name="editorDraftId"]') as HTMLInputElement).value;
+    expect(document.querySelector('input[name="editorDraftVersion"]')).toHaveValue("0");
+
+    rendered.rerender(editor("topic:second:reply"));
+    expect(screen.getByLabelText("Body")).toHaveValue("");
+    const secondDraftId = (document.querySelector('input[name="editorDraftId"]') as HTMLInputElement).value;
+    expect(secondDraftId).not.toBe(firstDraftId);
+    fireEvent.keyDown(screen.getByLabelText("Body"), { key: "z", ctrlKey: true });
+    expect(screen.getByLabelText("Body")).toHaveValue("");
+  });
+
   it("restores a saved reply's parent relation alongside the Markdown body", () => {
     const userId = "draft-reply-restoration-user";
     const contextKey = "topic:abc:reply";
