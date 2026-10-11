@@ -140,7 +140,7 @@ export async function action({ request, context }: {
     if (!appeal || appeal.id !== caseId) return mutationFailure("conflict", 409);
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.resolveHelpDuplicateAppeal({
-        topicId, actorId,
+        topicId, actorId, expectedAppealId: caseId,
         resolution: intent === "acceptHelpDuplicateAppeal" ? "accepted" : "rejected",
       });
       const url = new URL(request.url);
