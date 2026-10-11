@@ -202,7 +202,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const onInput = (event: Event) => {
         const field = event.target;
         if (!(field instanceof HTMLInputElement) || !["title", "tags"].includes(field.name)) return;
-        draft.noteEdit(textareaRef.current?.value ?? value, (event as InputEvent).data === " ");
+        draft.noteEdit(value, (event as InputEvent).data === " ");
       };
       const flush = () => draft.saveLocal();
       form.addEventListener("input", onInput);
@@ -214,9 +214,56 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     });
 
 
-    function commitSource(nextValue: string) {
-      const before = sourceSelection();
-      const after = pendingSelectionRef.current ?? before;
+    function textareaSourceSelection(source = value): EditorSelection {
+      const textarea = textareaRef.current;
+      const displayedLength = textareaMarkdown(source).length;
+      const start = textarea?.selectionStart ?? displayedLength;
+      const end = textarea?.selectionEnd ?? start;
+      return {
+        start: textareaOffsetToSourceOffset(source, start),
+        end: textareaOffsetToSourceOffset(source, end),
+      };
+    }
+
+    function sourceSelection(): EditorSelection | null {
+      if (authoringMode === "simple") {
+        if (visualSelectionKnownRef.current) return visualSelectionRef.current;
+        return { start: value.length, end: value.length };
+      }
+      return textareaSourceSelection();
+    }
+
+    function rememberSelection(selection: EditorSelection | null) {
+      if (!selection) return;
+      historyRef.current = rememberEditorSelection(historyRef.current, selection);
+    }
+
+    function commitSource(
+      nextValue: string,
+      beforeOverride?: EditorSelection | null,
+      afterOverride?: EditorSelection,
+    ) {
+      const before = beforeOverride ?? sourceSelection() ?? historyRef.current.current.selection;
+      const after = afterOverride ?? pendingSelectionRef.current ?? before;
+      historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
+      if (authoringMode === "simple") {
+        pendingVisualSelectionRef.current = after;
+        pendingSelectionRef.current = null;
+        visualSelectionRef.current = after;
+        visualSelectionKnownRef.current = true;
+      }
+      setValue(nextValue);
+      draft.noteEdit(nextValue);
+    }
+
+    function commitTextareaValue(nextDisplayedValue: string, selectionStart: number, selectionEnd: number) {
+      const before = historyRef.current.current.selection;
+      const nextValue = applyTextareaEdit(value, nextDisplayedValue);
+      const after = {
+        start: textareaOffsetToSourceOffset(nextValue, selectionStart),
+        end: textareaOffsetToSourceOffset(nextValue, selectionEnd),
+      };
+      pendingSelectionRef.current = after;
       historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
       setValue(nextValue);
       draft.noteEdit(nextValue);
@@ -228,11 +275,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         : redoEditorEdit(historyRef.current);
       if (next === historyRef.current) return;
       historyRef.current = next;
-      if (authoringMode === "simple" && document.activeElement instanceof HTMLElement
-        && document.activeElement.matches('[data-visual-text="true"]')) {
-        document.activeElement.blur();
+      if (authoringMode === "simple") {
+        if (document.activeElement instanceof HTMLElement
+          && document.activeElement.matches('[data-visual-text="true"]')) {
+          document.activeElement.blur();
+        }
+        pendingVisualSelectionRef.current = next.current.selection;
+        pendingSelectionRef.current = null;
+        visualSelectionRef.current = next.current.selection;
+        visualSelectionKnownRef.current = true;
+      } else {
+        pendingSelectionRef.current = next.current.selection;
+        pendingVisualSelectionRef.current = null;
       }
-      pendingSelectionRef.current = next.current.selection;
       if (mode === "preview") setMode("write");
       setValue(next.current.markdown);
       draft.noteEdit(next.current.markdown, true);
@@ -248,21 +303,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (Math.abs(target.scrollTop - next) > 1) target.scrollTop = next;
     }
 
-    function sourceSelection(): EditorSelection {
-      if (authoringMode === "simple") {
-        return visualSelectionRef.current ?? { start: value.length, end: value.length };
-      }
-      const textarea = textareaRef.current;
-      return {
-        start: textarea?.selectionStart ?? value.length,
-        end: textarea?.selectionEnd ?? value.length,
-      };
-    }
-
-    function updateVisualText(range: EditorSelection, text: string) {
-      const next = editVisualText(historyRef.current, range, escapeVisualMarkdownText(text));
+    function updateVisualText(range: EditorSelection, text: string, selectionAfter?: EditorSelection) {
+      const next = editVisualText(
+        historyRef.current,
+        range,
+        escapeVisualMarkdownText(text),
+        selectionAfter,
+      );
       if (!next) { switchAuthoring("advanced"); return; }
       historyRef.current = next;
+      visualSelectionRef.current = next.current.selection;
+      visualSelectionKnownRef.current = true;
       setValue(next.current.markdown);
       draft.noteEdit(next.current.markdown);
     }
