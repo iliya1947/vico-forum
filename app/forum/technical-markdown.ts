@@ -124,7 +124,24 @@ function spoilerAt(lines: Line[], index: number, source: string): { spoiler: Mar
   const open = /^:::spoiler(?:[ \t]+([^\r\n]*?))?[ \t]*$/u.exec(lines[index]!.text);
   if (!open) return null;
   let next = index + 1;
-  while (next < lines.length && !/^:::[ \t]*$/u.test(lines[next]!.text)) next++;
+  let fenceChar: string | null = null;
+  let fenceWidth = 0;
+  while (next < lines.length) {
+    const text = lines[next]!.text;
+    if (fenceChar) {
+      const close = /^ {0,3}(\x60{3,}|~{3,})[ \t]*$/u.exec(text);
+      if (close && close[1]![0] === fenceChar && close[1]!.length >= fenceWidth) fenceChar = null;
+    } else {
+      const fence = /^ {0,3}(\x60{3,}|~{3,})(.*)$/u.exec(text);
+      if (fence) {
+        fenceChar = fence[1]![0]!;
+        fenceWidth = fence[1]!.length;
+      } else if (/^:::[ \t]*$/u.test(text)) {
+        break;
+      }
+    }
+    next++;
+  }
   if (next === lines.length) return null; // unclosed marker remains literal Markdown
   return {
     spoiler: {
