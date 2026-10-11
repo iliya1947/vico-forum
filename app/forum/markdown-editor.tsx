@@ -109,6 +109,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
     const [value, setValue] = useState(defaultValue);
@@ -136,6 +137,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
     const [codeLanguage, setCodeLanguage] = useState("");
     const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "preview" : "write");
+
+    function syncSplitScroll(source: HTMLElement, target: HTMLElement | null) {
+      if (mode !== "split" || !target) return;
+      const possible = source.scrollHeight - source.clientHeight;
+      const destination = target.scrollHeight - target.clientHeight;
+      const next = possible > 0 ? (source.scrollTop / possible) * destination : 0;
+      if (Math.abs(target.scrollTop - next) > 1) target.scrollTop = next;
+    }
 
     function sourceSelection(): EditorSelection {
       if (authoringMode === "simple") {
@@ -437,6 +446,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               aria-describedby={describedBy}
               value={value}
               onChange={(event) => commitSource(event.target.value)}
+              onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
                 if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
                 const key = event.key.toLowerCase();
@@ -467,7 +477,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           </div>
 
           {mode !== "write" && (
-            <section id={id + "-preview"} className="markdown-editor-preview" aria-label={t("editorPreviewHeading")}>
+            <section ref={previewRef} id={id + "-preview"} className="markdown-editor-preview" aria-label={t("editorPreviewHeading")}
+              onScroll={(event) => syncSplitScroll(event.currentTarget, textareaRef.current)}>
               <header className="markdown-editor-preview-header">
                 <strong>{t("editorPreviewHeading")}</strong>
               </header>
