@@ -494,6 +494,35 @@ describe("MarkdownEditor", () => {
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toBe(source);
   });
 
+  it("indents and outdents only inside code fences in Advanced mode", () => {
+    const fence = String.fromCharCode(96).repeat(3);
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultAuthoringMode="advanced"
+      defaultValue={fence + "ts\nabc\n" + fence} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const point = textarea.value.indexOf("abc") + 1;
+    textarea.focus();
+    textarea.setSelectionRange(point, point);
+    fireEvent.keyDown(textarea, { key: "Tab" });
+    expect(textarea.value).toContain("\n  abc\n");
+    const indent = textarea.value.indexOf("abc") + 1;
+    textarea.setSelectionRange(indent, indent);
+    fireEvent.keyDown(textarea, { key: "Tab", shiftKey: true });
+    expect(textarea.value).toContain("\nabc\n");
+  });
+
+  it("finds and replaces literal source text without changing unrelated Markdown", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultAuthoringMode="advanced" defaultValue="one **one**" /></>);
+    const summaries = [...document.querySelectorAll<HTMLDetailsElement>(".markdown-editor-extra-menu")];
+    await userEvent.click(summaries[summaries.length - 1]!.querySelector("summary")!);
+    await userEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    await userEvent.type(screen.getByRole("textbox", { name: "Replace with" }), "two");
+    await userEvent.click(screen.getByRole("button", { name: "Replace all" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("two **two**");
+  });
+
   it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
