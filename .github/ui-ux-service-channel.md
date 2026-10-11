@@ -4210,3 +4210,51 @@ Owner raised concern about repeated unrelated documentation damage and needing t
 - Corrected only these two state statements in documentation-only commit `ad2f9794ea06fbbd07fdb7d3c0f07d043a6ef089` (no application/schema/test/code changes). [CI #38122810951](https://github.com/iliya1947/vico-forum/actions/runs/38122810951) passed both `checks` and `database` on exact head. Existing two Codex threads remain resolved; no repeat manual review required for documentation-only change. PR body status updated; PR remains Ready for review, open, not merged. Merge remains owner-only.
 
 Do not overstate this as a complete documentation audit or proof that no other PR defect exists. For future scoped edits, compare intact adjacent paragraphs and all removed lines against `main` before PR review; this incident was caused by overwriting past the intended paragraph boundary and insufficient diff inspection.
+
+## PR #215: fourth full-audit package — Stage 3 tooling/rendering — 2026-10-11
+
+Owner continuation authorized the next bounded Editor 2.0 audit package. Current
+implementation PR #215 stayed on branch
+`chatgpt/editor-v2-implementation-20261010`; no merge, production action or
+Stage 6 R2 provisioning was performed.
+
+Confirmed current-scope findings fixed in this package:
+
+- `~~text~~` now uses one focused GFM-strikethrough syntax boundary across
+  Simple mdast parsing, preview/public ReactMarkdown rendering and protected
+  content translation. Full GFM was deliberately not enabled, so unrelated
+  autolink/task-list/table semantics do not change. Content protection policy
+  version advanced to `cnt05-strikethrough-v1` so old translation tasks are
+  stale against the changed AST semantics.
+- The syntax-highlight budget is created once for the whole post and inherited
+  inside spoiler bodies; nested spoilers can no longer reset the post-length
+  budget and re-enable highlighting for an oversized message.
+- Spoiler, Table and horizontal-divider toolbar actions insert a block after
+  the current selection instead of replacing selected text. Divider insertion
+  leaves the caret after the block; Undo history retains the original selection.
+- Ordinary Advanced keydown no longer performs a full Markdown parse. Code-only
+  parsing is reached only for Tab, Enter and bracket/quote pairing, and fenced
+  opening/info/closing lines are excluded from the editable code range.
+
+Focused regressions cover public/Simple/translation strikethrough, nested
+spoiler highlight budget, block insertion/caret and fenced code boundaries.
+The dependency/lockfile uses only
+`mdast-util-gfm-strikethrough@2.0.0` and
+`micromark-extension-gfm-strikethrough@2.1.0`; frozen install and supply-chain
+checks pass.
+
+Code head `cf9dc1022b58082c210583f15cce137075de14c7` passed
+[CI #38160773816](https://github.com/iliya1947/vico-forum/actions/runs/38160773816)
+with `checks` and `database` successful, including 809 application tests.
+After PROJECT_STATE/EDITOR_SPEC status commits, final implementation head
+`ff7696cf9235eaa97a33c4a28a772c59271d37ee` passed exact-head
+[CI #38160968780](https://github.com/iliya1947/vico-forum/actions/runs/38160968780):
+`checks` and `database` successful.
+
+Still open from the existing audit and intentionally not mixed into this
+package: incomplete draft local-save triggers, broader Clear formatting
+semantics, and attachment type-gate findings. PR #215 is still open, not Draft,
+and not merge-ready because Editor 2.0 implementation continues. Do not request
+independent Codex review yet; AGENTS.md reserves that for the final stable
+implementation head after the remaining work and acceptance.
+
