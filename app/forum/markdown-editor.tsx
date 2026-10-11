@@ -9,8 +9,24 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown } from "./markdown";
-import { createEditorHistory, editVisualText, recordEditorEdit, redoEditorEdit, undoEditorEdit, type EditorSelection } from "./editor-document";
-import { VisualMarkdownEditor, escapeVisualMarkdownText } from "./visual-markdown-editor";
+import {
+  applyTextareaEdit,
+  createEditorHistory,
+  editVisualText,
+  recordEditorEdit,
+  redoEditorEdit,
+  rememberEditorSelection,
+  sourceOffsetToTextareaOffset,
+  textareaMarkdown,
+  textareaOffsetToSourceOffset,
+  undoEditorEdit,
+  type EditorSelection,
+} from "./editor-document";
+import {
+  VisualMarkdownEditor,
+  escapeVisualMarkdownText,
+  restoreVisualDomSelection,
+} from "./visual-markdown-editor";
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
@@ -94,6 +110,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const { t } = useTranslation("common");
     const authUser = useHeaderAuthUser();
     const visualSelectionRef = useRef<EditorSelection | null>(null);
+    const visualSelectionKnownRef = useRef(false);
     const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
     const [fullScreen, setFullScreen] = useState(false);
     const [pasteWarning, setPasteWarning] = useState(false);
@@ -116,16 +133,25 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }, [accountId, defaultAuthoringMode]);
 
     function switchAuthoring(next: "simple" | "advanced") {
+      const selection = sourceSelection() ?? historyRef.current.current.selection;
+      if (next === "advanced") {
+        pendingSelectionRef.current = selection;
+        pendingVisualSelectionRef.current = null;
+      } else {
+        pendingVisualSelectionRef.current = selection;
+        pendingSelectionRef.current = null;
+      }
       setAuthoringMode(next);
       setMode("write");
       visualSelectionRef.current = null;
+      visualSelectionKnownRef.current = false;
       if (accountId) {
         try { window.localStorage.setItem("vico:editor:mode:" + accountId, next); } catch { /* private mode */ }
       }
     }
 
     const editorRef = useRef<HTMLDivElement>(null);
-    const pendingVisualCaretRef = useRef<number | null>(null);
+    const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
@@ -137,7 +163,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (previousScopeRef.current === editorScope) return;
       previousScopeRef.current = editorScope;
       visualSelectionRef.current = null;
-      pendingVisualCaretRef.current = null;
+      visualSelectionKnownRef.current = false;
+      pendingVisualSelectionRef.current = null;
       pendingSelectionRef.current = null;
       historyRef.current = createEditorHistory(defaultValue);
       setValue(defaultValue);
