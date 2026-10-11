@@ -30,6 +30,7 @@ type Runtime = {
   syncing: boolean;
   reading: boolean;
   disposed: boolean;
+  epoch: number;
   readPayload(body: string): ForumEditorDraftPayload;
 };
 
@@ -40,6 +41,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   const [status, setStatus] = useState<Status>("idle");
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
+  const [expectedVersion, setExpectedVersion] = useState(0);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ readPayload, restore });
   callbacksRef.current = { readPayload, restore };
@@ -49,6 +51,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
 
   function current(ctx: Runtime) {
     return !ctx.disposed && runtimeRef.current === ctx && identityRef.current === ctx.identity;
+  }
+  function currentAt(ctx: Runtime, epoch: number) {
+    return current(ctx) && ctx.epoch === epoch;
   }
   function updateConflict(ctx: Runtime, next: Conflict | null) {
     if (!current(ctx)) return;
@@ -79,17 +84,20 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (ctx.conflict) updateConflict(ctx, { ...ctx.conflict, local: next });
     else setStatus("pending");
   }
-  function reset(ctx: Runtime) {
+  function reset(ctx: Runtime, startVersion = 0) {
     if (!current(ctx)) return;
+    ctx.epoch++;
     clearLocalEditorDraft(ctx.ownerId, ctx.contextKey);
     ctx.local = null;
     ctx.body = "";
     ctx.hasInput = false;
-    ctx.startVersion = 0;
+    ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
+    ctx.conflict = null;
     callbacksRef.current.restore(blank);
     setDraftId(ctx.draftId);
-    updateConflict(ctx, null);
+    setExpectedVersion(startVersion);
+    setConflict(null);
     setStatus("idle");
   }
   function applyRemote(ctx: Runtime, remote: DraftRemote) {
@@ -106,24 +114,25 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     ctx.body = remote.payload.body;
     ctx.hasInput = false;
     setDraftId(remote.draftId);
+    setExpectedVersion(remote.version);
     callbacksRef.current.restore(remote.payload);
     setStatus("restored");
   }
 
   async function checkRemote(ctx: Runtime) {
     if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
+    const epoch = ctx.epoch;
     ctx.reading = true;
     try {
       const meta = (await fetchDraftMetadata(ctx.locale))
         .find((entry) => entry.contextKey === ctx.contextKey);
-      if (!current(ctx)) return;
+      if (!currentAt(ctx, epoch)) return;
       if (ctx.hasInput) capture(ctx); // Never overwrite unpersisted typing on a late fetch.
       const local = ctx.local;
       if (!meta) return;
       if (meta.status !== "active") {
         if (local?.draftId === meta.draftId) {
-          reset(ctx); // Same generation was published/deleted elsewhere.
-          ctx.startVersion = meta.version;
+          reset(ctx, meta.version); // Same generation was published/deleted elsewhere.
         } else if (local) {
           // Different instance may be a new reply or a stale offline copy.
           // Clocks cannot establish which: require explicit user choice.
@@ -131,12 +140,13 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         } else {
           // New input in this form can start a fresh generation at the next 60s sync.
           ctx.startVersion = meta.version;
+          setExpectedVersion(meta.version);
         }
         return;
       }
       if (local && meta.version === local.baseVersion && meta.draftId === local.draftId) return;
       const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
-      if (!current(ctx) || !remote) return;
+      if (!currentAt(ctx, epoch) || !remote) return;
       if (ctx.hasInput) capture(ctx);
       const latest = ctx.local;
       if (!latest) { applyRemote(ctx, remote); return; }
@@ -149,6 +159,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         ctx.local = next;
         ctx.draftId = remote.draftId;
         setDraftId(remote.draftId);
+        setExpectedVersion(remote.version);
         writeLocalEditorDraft(next);
         setStatus("saved");
         return;
@@ -163,6 +174,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
     const sent = ctx.local;
     if (!sent || sent.editedAt === sent.syncedEditedAt) return;
+    const epoch = ctx.epoch;
     ctx.syncing = true;
     setStatus("saving");
     try {
@@ -170,7 +182,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         intent: "save", contextKey: ctx.contextKey, draftId: sent.draftId,
         payload: sent.payload, expectedVersion: sent.baseVersion,
       });
-      if (!current(ctx)) return;
+      if (!currentAt(ctx, epoch)) return;
       if (result.outcome === "saved" && result.draft) {
         const latest = ctx.local;
         if (!latest || latest.draftId !== sent.draftId) return;
@@ -178,22 +190,22 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
           syncedEditedAt: latest === sent ? sent.editedAt : latest.syncedEditedAt };
         ctx.local = next;
         writeLocalEditorDraft(next);
+        setExpectedVersion(result.draft.version);
         setStatus(next.editedAt === next.syncedEditedAt ? "saved" : "pending");
       } else if (result.outcome === "conflict" || result.outcome === "gone") {
         // Refetch authoritative metadata, not a client clock or an assumed deletion.
         const meta = (await fetchDraftMetadata(ctx.locale))
           .find((entry) => entry.contextKey === ctx.contextKey);
-        if (!current(ctx)) return;
+        if (!currentAt(ctx, epoch)) return;
         if (!meta) return;
         if (meta.status !== "active" && meta.draftId === sent.draftId) {
-          reset(ctx);
-          ctx.startVersion = meta.version;
+          reset(ctx, meta.version);
         } else if (meta.status !== "active") {
           const latest = ctx.local;
           if (latest) updateConflict(ctx, { local: latest, server: meta });
         } else {
           const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
-          if (!current(ctx) || !remote) return;
+          if (!currentAt(ctx, epoch) || !remote) return;
           const latest = ctx.local;
           if (latest) updateConflict(ctx, { local: latest, server: remote });
           else applyRemote(ctx, remote);
@@ -232,10 +244,23 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       ctx.hasInput = false;
       writeLocalEditorDraft(next);
       setDraftId(next.draftId);
+      setExpectedVersion(next.baseVersion);
       callbacksRef.current.restore(next.payload);
       setStatus("pending");
     }
     updateConflict(ctx, null);
+  }
+
+  function acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
+    const ctx = runtimeRef.current;
+    if (
+      !ctx
+      || !current(ctx)
+      || !Number.isSafeInteger(publishedVersion)
+      || publishedVersion < 1
+      || (ctx.local?.draftId ?? ctx.draftId) !== publishedDraftId
+    ) return;
+    reset(ctx, publishedVersion);
   }
 
   useEffect(() => {
@@ -248,11 +273,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     const ctx: Runtime = {
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
       local: null, body: "", hasInput: false, startVersion: 0, conflict: null,
-      syncing: false, reading: false, disposed: false,
+      syncing: false, reading: false, disposed: false, epoch: 0,
       readPayload: callbacksRef.current.readPayload,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
+    setExpectedVersion(0);
     setConflict(null);
     setStatus("idle");
     const local = readLocalEditorDraft(ownerId, contextKey);
@@ -261,6 +287,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       ctx.draftId = local.draftId;
       ctx.body = local.payload.body;
       setDraftId(local.draftId);
+      setExpectedVersion(local.baseVersion);
       callbacksRef.current.restore(local.payload);
       setStatus("restored");
     }
@@ -284,6 +311,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         ctx.hasInput = false;
         callbacksRef.current.restore(other.payload);
         setDraftId(other.draftId);
+        setExpectedVersion(other.baseVersion);
         setStatus("restored");
       } else if (other.draftId !== ctx.local.draftId
         || JSON.stringify(other.payload) !== JSON.stringify(ctx.local.payload)) {
@@ -322,7 +350,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     conflict: t("editorDraftConflict"), error: t("editorDraftLocalError"),
   };
   return {
-    noteEdit, saveLocal, draftId,
+    noteEdit, saveLocal, draftId, expectedVersion, acknowledgePublished,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
