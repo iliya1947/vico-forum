@@ -317,11 +317,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       draft.noteEdit(next.current.markdown);
     }
 
-    function replaceSourceRange(range: EditorSelection, replacement: string) {
+    function replaceSourceRange(
+      range: EditorSelection,
+      replacement: string,
+      historyBefore: EditorSelection = range,
+    ) {
       if (range.start < 0 || range.end > value.length || range.end < range.start) return;
       const next = value.slice(0, range.start) + replacement + value.slice(range.end);
       const after = { start: range.start + replacement.length, end: range.start + replacement.length };
-      historyRef.current = recordEditorEdit(historyRef.current, next, range, after);
+      historyRef.current = recordEditorEdit(historyRef.current, next, historyBefore, after);
       if (authoringMode === "simple") {
         pendingVisualSelectionRef.current = after;
         visualSelectionRef.current = after;
@@ -370,7 +374,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const trailing = at === value.length
         ? "\n\n"
         : after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
-      replaceSourceRange({ start: at, end: at }, leading + text + trailing);
+      replaceSourceRange({ start: at, end: at }, leading + text + trailing, selection);
     }
 
     function codeKey(key: string, shift: boolean) {
