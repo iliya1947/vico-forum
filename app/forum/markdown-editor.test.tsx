@@ -44,6 +44,17 @@ function renderEditor(element: ReactNode) {
   return render(<I18nextProvider i18n={runtime()}>{element}</I18nextProvider>);
 }
 
+async function chooseView(view: "write" | "preview" | "split") {
+  const toggle = document.querySelector<HTMLDetailsElement>(".markdown-editor-preview-menu");
+  if (!toggle) throw new Error("Missing Advanced preview menu");
+  const optionLabels = { write: "Markdown", preview: "Preview", split: "Split" };
+  if (!toggle.open) await userEvent.click(toggle.querySelector("summary")!);
+  const option = [...toggle.querySelectorAll("button")]
+    .find((button) => button.textContent === optionLabels[view]);
+  if (!option) throw new Error("Missing " + view + " view option");
+  await userEvent.click(option);
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -55,7 +66,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue="alpha beta" />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="alpha beta" />
       </>,
     );
 
@@ -75,7 +86,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue={"alpha\nbeta"} />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue={"alpha\nbeta"} />
       </>,
     );
 
@@ -97,7 +108,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue="request(value)" />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="request(value)" />
       </>,
     );
 
@@ -121,7 +132,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue="var example = 1;" />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="var example = 1;" />
       </>,
     );
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
@@ -130,13 +141,13 @@ describe("MarkdownEditor", () => {
     await userEvent.type(screen.getByRole("textbox", { name: "Code language" }), "c#");
     await userEvent.click(screen.getByRole("button", { name: "Code block" }));
     expect(textarea).toHaveValue("```c#\nvar example = 1;\n```");
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     expect(screen.getByText("c#")).toBeInTheDocument();
   });
 
   it("isolates the code language input direction in RTL authoring", () => {
     renderEditor(
-      <div dir="rtl"><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" /></div>,
+      <div dir="rtl"><label htmlFor="body">Body</label><MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" /></div>,
     );
     expect(screen.getByRole("textbox", { name: "Code language" })).toHaveAttribute("dir", "ltr");
   });
@@ -145,7 +156,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue="`hello`" />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="`hello`" />
       </>,
     );
 
@@ -159,7 +170,7 @@ describe("MarkdownEditor", () => {
     expect(textarea.selectionStart).toBe(3);
     expect(textarea.selectionEnd).toBe(10);
 
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     const renderedCode = screen.getByText("`hello`");
     expect(renderedCode.tagName).toBe("CODE");
   });
@@ -168,7 +179,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue="plain()" />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="plain()" />
       </>,
     );
 
@@ -186,7 +197,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue={"```\ninner\n```"} />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue={"```\ninner\n```"} />
       </>,
     );
 
@@ -198,7 +209,7 @@ describe("MarkdownEditor", () => {
 
     expect(textarea).toHaveValue("````\n```\ninner\n```\n````");
 
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     const codeBlocks = document.querySelectorAll(".forum-code-block");
     expect(codeBlocks).toHaveLength(1);
     expect(codeBlocks[0]?.querySelector("pre")?.textContent).toBe("```\ninner\n```");
@@ -209,7 +220,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor ref={editorRef} id="body" name="body" defaultValue="before after" />
+        <MarkdownEditor defaultAuthoringMode="advanced" ref={editorRef} id="body" name="body" defaultValue="before after" />
       </>,
     );
 
@@ -230,7 +241,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor ref={editorRef} id="body" name="body" defaultValue="before" />
+        <MarkdownEditor defaultAuthoringMode="advanced" ref={editorRef} id="body" name="body" defaultValue="before" />
       </>,
     );
 
@@ -239,13 +250,13 @@ describe("MarkdownEditor", () => {
     const writePane = textarea.closest(".markdown-editor-write-pane")!;
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     expect(editor).toHaveAttribute("data-mode", "preview");
     expect(writePane).toHaveClass("is-preview-hidden");
 
     act(() => editorRef.current?.insertText("> quoted\n\n"));
 
-    expect(screen.getByRole("button", { name: "Write" })).toHaveAttribute("aria-pressed", "true");
+    expect(editor).toHaveAttribute("data-mode", "write");
     expect(editor).toHaveAttribute("data-mode", "write");
     expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveFocus();
@@ -256,31 +267,31 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" required />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" required />
       </>,
     );
 
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     const editor = textarea.closest(".markdown-editor")!;
     const writePane = textarea.closest(".markdown-editor-write-pane")!;
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     expect(editor).toHaveAttribute("data-mode", "preview");
     expect(writePane).toHaveClass("is-preview-hidden");
 
     fireEvent.invalid(textarea);
 
-    expect(screen.getByRole("button", { name: "Write" })).toHaveAttribute("aria-pressed", "true");
+    expect(editor).toHaveAttribute("data-mode", "write");
     expect(editor).toHaveAttribute("data-mode", "write");
     expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveFocus();
   });
 
   it("keeps preview textarea out of sequential keyboard focus", async () => {
-    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="text" /></>);
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="text" /></>);
     const textarea = screen.getByLabelText("Body");
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     expect(textarea).toHaveAttribute("tabindex", "-1");
-    await userEvent.click(screen.getByRole("button", { name: "Write" }));
+    await chooseView("write");
     expect(textarea).not.toHaveAttribute("tabindex", "-1");
   });
 
@@ -294,21 +305,21 @@ describe("MarkdownEditor", () => {
         }}
       >
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" required />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" required />
         <button type="submit">Submit</button>
       </form>,
     );
 
     const textarea = screen.getByLabelText("Body");
     await userEvent.type(textarea, "Text with **Markdown** and `code()`.");
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(submitted).toHaveBeenCalledWith("Text with **Markdown** and `code()`.");
   });
 
   it("formats the leading empty line when caret starts at offset zero", async () => {
-    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={"\nbeta"} /></>);
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue={"\nbeta"} /></>);
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     textarea.focus();
     textarea.setSelectionRange(0, 0);
@@ -317,7 +328,7 @@ describe("MarkdownEditor", () => {
   });
 
   it("does not format the next line when selection ends at a newline", async () => {
-    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={"alpha\nbeta"} /></>);
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue={"alpha\nbeta"} /></>);
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     textarea.focus();
     textarea.setSelectionRange(0, 6);
@@ -329,7 +340,7 @@ describe("MarkdownEditor", () => {
     renderEditor(
       <label>
         Body
-        <MarkdownEditor
+        <MarkdownEditor defaultAuthoringMode="advanced"
           id="body"
           name="body"
           defaultPreviewOpen
@@ -345,7 +356,7 @@ describe("MarkdownEditor", () => {
   });
 
   it("undoes and redoes exact Markdown across view switches", async () => {
-    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body"
       defaultValue={"**bold**\n\n```tsx\nconst a = 1;\n```"} /></>);
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     const original = textarea.value;
@@ -354,11 +365,11 @@ describe("MarkdownEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "Bold" }));
     const formatted = textarea.value;
     expect(formatted).not.toBe(original);
-    await userEvent.click(screen.getByRole("button", { name: "Split" }));
+    await chooseView("split");
     expect(textarea).toHaveValue(formatted);
     fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
     expect(textarea).toHaveValue(original);
-    await userEvent.click(screen.getByRole("button", { name: "Write" }));
+    await chooseView("write");
     fireEvent.keyDown(textarea, { key: "z", ctrlKey: true, shiftKey: true });
     expect(textarea).toHaveValue(formatted);
     fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
@@ -369,7 +380,7 @@ describe("MarkdownEditor", () => {
 
   it("undoes imperative quote insertion without changing the form field contract", () => {
     const ref = createRef<MarkdownEditorHandle>();
-    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor ref={ref}
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor defaultAuthoringMode="advanced" ref={ref}
       id="body" name="body" defaultValue="before" /></>);
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     textarea.focus();
@@ -382,29 +393,66 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveValue("before\n> quote");
   });
 
+  it("defaults to source-preserving visual mode and switches to Markdown without rewriting", async () => {
+    const source = "Hello **world**\n\n```ts\nconst a = 1;\n```\n\nAfter";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></>);
+    const editor = document.querySelector(".markdown-editor")!;
+    const textarea = screen.getByLabelText("Body");
+    expect(editor).toHaveAttribute("data-authoring", "simple");
+    expect(textarea).toHaveValue(source);
+    expect(document.querySelector('[data-visual-text="true"]')).not.toBeNull();
+    expect(document.querySelector('[data-visual-protected="code"]')).not.toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    expect(editor).toHaveAttribute("data-authoring", "advanced");
+    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
+    expect(textarea).toHaveValue(source);
+  });
+
+  it("edits a visual prose leaf while keeping code untouched and exact form data", () => {
+    const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const original = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]');
+    const last = original[original.length - 1]!;
+    last.textContent = "Changed";
+    fireEvent.input(last);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea.value).toBe(source.replace("After", "Changed"));
+    expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
+  });
+
+  it("does not turn visual source switching into a destructive Markdown round-trip", async () => {
+    const source = "  text  \r\n\r\n**bold**\r\n\r\n```tsx\nhello();\n```";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></>);
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    await chooseView("split");
+    await chooseView("write");
+    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
+    expect(screen.getByLabelText("Body")).toHaveValue(source);
+  });
+
   it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
-        <MarkdownEditor id="body" name="body" defaultValue="**preview me**" />
+        <MarkdownEditor defaultAuthoringMode="advanced" id="body" name="body" defaultValue="**preview me**" />
       </>,
     );
 
     const textarea = screen.getByLabelText("Body");
     const editor = textarea.closest(".markdown-editor")!;
     const writePane = textarea.closest(".markdown-editor-write-pane")!;
-    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await chooseView("preview");
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
     expect(screen.getByText("preview me").tagName).toBe("STRONG");
     expect(editor).toHaveAttribute("data-mode", "preview");
     expect(writePane).toHaveClass("is-preview-hidden");
 
-    await userEvent.click(screen.getByRole("button", { name: "Split" }));
+    await chooseView("split");
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
     expect(editor).toHaveAttribute("data-mode", "split");
     expect(writePane).not.toHaveClass("is-preview-hidden");
 
-    await userEvent.click(screen.getByRole("button", { name: "Write" }));
+    await chooseView("write");
     expect(screen.queryByRole("region", { name: "Markdown preview" })).not.toBeInTheDocument();
     expect(editor).toHaveAttribute("data-mode", "write");
     expect(writePane).not.toHaveClass("is-preview-hidden");
