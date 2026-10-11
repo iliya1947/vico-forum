@@ -48,6 +48,8 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { fetchDraftMetadata, readLocalEditorDraft } from "./draft-client";
 
 export function HomeView({
   locale,
@@ -1047,6 +1049,21 @@ export function HelpSolutionsView({
       : undefined;
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
+  const draftUser = useHeaderAuthUser();
+  const location = useLocation();
+  useEffect(() => {
+    if (!canAskQuestion || !draftUser) return;
+    if (new URLSearchParams(location.search).has("compose")
+      || readLocalEditorDraft(draftUser.id, "help:new")) setQuestionComposerOpen(true);
+    let live = true;
+    void fetchDraftMetadata(locale).then((drafts) => {
+      if (live && drafts.some((draft) => draft.contextKey === "help:new" && draft.status === "active")) {
+        setQuestionComposerOpen(true);
+      }
+    }).catch(() => { /* Local cache remains available. */ });
+    return () => { live = false; };
+  }, [canAskQuestion, draftUser?.id, location.search, locale]);
+
   const submittingHelpQuestion = navigation.state === "submitting";
   const submittingIntent = navigation.formData?.get("intent");
   const isSimilarChecking =
