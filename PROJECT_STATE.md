@@ -186,7 +186,8 @@ Vico Forum находится в ранней pre-release разработке.
   вместе с черновиками выбранного аккаунта, включая другую открытую вкладку.
   Добавлены тесты owner/Origin/API, Reply, TTL, конфликтов, clock skew и
   удаления локальных данных. Кодовая версия a3a6e46 прошла CI #38136595010
-  (checks + database); финальные документационные изменения ещё проверяются.
+  (checks + database); итоговый exact-head CI #38136726761 на `a36284e`
+  также прошёл `checks` и `database`.
   Pages/browser и owner visual acceptance ещё не подтверждены; полный review PR
   намеренно не запущен до завершения редактора.
   Вложения, Security/Attachments ingestion, mentions и полный
