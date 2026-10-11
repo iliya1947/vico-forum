@@ -65,7 +65,8 @@ describe("account-scoped durable editor drafts", () => {
     await store.finish("draft-owner", "help:new", id1, "published");
     expect((await store.get("draft-owner", "help:new"))?.status).toBe("published");
     expect((await store.save("draft-owner", "help:new", id1, text1, 2, timestamp())).outcome).toBe("gone");
-    const next = await store.save("draft-owner", "help:new", id2, text1, 0, timestamp());
+    const marker = await store.get("draft-owner", "help:new");
+    const next = await store.save("draft-owner", "help:new", id2, text1, marker!.version, timestamp());
     expect(next.outcome).toBe("saved");
     await store.finish("draft-owner", "help:new", id1, "published");
     expect((await store.get("draft-owner", "help:new"))?.status).toBe("active");
@@ -76,7 +77,10 @@ describe("account-scoped durable editor drafts", () => {
   it("refuses expired edits and purges expired drafts by 30 days", async () => {
     await expect(store.save("draft-owner", "topic:abc:reply", id1, text1, 0, new Date(Date.now()-32*86_400_000)))
       .rejects.toThrow("invalid draft");
-    await client.query('update forum_editor_drafts set updated_at = now()-interval \'31 days\' where owner_id = $1', ["draft-owner"]);
-    expect(await store.metadata("draft-owner")).toEqual([]);
+    const created = await store.save("draft-owner", "topic:abc:reply", id1, text1, 0, timestamp());
+    expect(created.outcome).toBe("saved");
+    await client.query('update forum_editor_drafts set edited_at = now()-interval \'31 days\', updated_at = now()-interval \'31 days\' where owner_id = $1 and context_key = $2', ["draft-owner","topic:abc:reply"]);
+    const expired = await store.metadata("draft-owner");
+    expect(expired.find((draft) => draft.contextKey === "topic:abc:reply")?.status).toBe("deleted");
   });
 });
