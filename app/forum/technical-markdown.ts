@@ -12,6 +12,7 @@ export interface MarkdownSpoiler {
   span: SourceSpan;
   title: string;
   body: string;
+  bodyStart: number;
 }
 export interface MarkdownProse {
   kind: "prose";
@@ -106,6 +107,7 @@ function spoilerAt(lines: Line[], index: number, source: string): { spoiler: Mar
       kind: "spoiler",
       span: { start: lines[index]!.start, end: lines[next]!.end },
       title: open[1] ?? "",
+      bodyStart: lines[index]!.end,
       body: source.slice(lines[index]!.end, lines[next]!.start),
     },
     next: next + 1,
@@ -187,7 +189,10 @@ export function addTableDimension(
   } else {
     rows.push(headers.map(() => ""));
   }
-  const normalized = serializeTable(headers, rows, align);
+  // Preserve existing cell escapes verbatim when only the structure changes.
+  const rawRow = (cells: string[]) => "| " + cells.join(" | ") + " |";
+  const rule = align.map((value) => value === "center" ? ":---:" : value === "left" ? ":---" : value === "right" ? "---:" : "---");
+  const normalized = [rawRow(headers), rawRow(rule), ...rows.map(rawRow)].join("\n");
   const hasEol = source.slice(table.span.start, table.span.end).endsWith("\n");
   return source.slice(0, table.span.start) + normalized + (hasEol ? "\n" : "") + source.slice(table.span.end);
 }
