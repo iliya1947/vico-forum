@@ -13,6 +13,8 @@ import { createEditorHistory, editVisualText, recordEditorEdit, redoEditorEdit, 
 import { VisualMarkdownEditor, escapeVisualMarkdownText } from "./visual-markdown-editor";
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
+import { useEditorDraft } from "./use-editor-draft";
+import type { ForumEditorDraftPayload } from "../../db/schema";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
 import { fromMarkdown } from "mdast-util-from-markdown";
 
@@ -31,6 +33,8 @@ export interface MarkdownEditorProps {
   defaultValue?: string;
   defaultPreviewOpen?: boolean;
   defaultAuthoringMode?: "simple" | "advanced";
+  draftContextKey?: string;
+  draftLocale?: string;
 }
 
 interface PendingSelection {
@@ -79,6 +83,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       defaultValue = "",
       defaultPreviewOpen = false,
       defaultAuthoringMode = "simple",
+      draftContextKey,
+      draftLocale,
     },
     forwardedRef,
   ) {
@@ -122,12 +128,61 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
     const [value, setValue] = useState(defaultValue);
+    const previousOwnerRef = useRef(accountId);
+    useEffect(() => {
+      if (previousOwnerRef.current === accountId) return;
+      previousOwnerRef.current = accountId;
+      historyRef.current = createEditorHistory(defaultValue);
+      setValue(defaultValue);
+    }, [accountId, defaultValue]);
+
+    const draft = useEditorDraft({
+      ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
+      readPayload: (body): ForumEditorDraftPayload => {
+        const form = textareaRef.current?.form;
+        const field = (name: string) => {
+          const element = form?.elements.namedItem(name);
+          return element instanceof HTMLInputElement ? element.value : "";
+        };
+        return { body, title: field("title"), tags: field("tags"),
+          parentPostId: field("parentPostId") || null };
+      },
+      restore: (payload) => {
+        historyRef.current = createEditorHistory(payload.body);
+        setValue(payload.body);
+        const form = textareaRef.current?.form;
+        for (const key of ["title", "tags"] as const) {
+          const field = form?.elements.namedItem(key);
+          if (field instanceof HTMLInputElement) field.value = payload[key];
+        }
+      },
+    });
+
+    useEffect(() => {
+      if (!accountId || !draftContextKey) return;
+      const form = textareaRef.current?.form;
+      if (!form) return;
+      const onInput = (event: Event) => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement) || !["title", "tags"].includes(field.name)) return;
+        draft.noteEdit(textareaRef.current?.value ?? value, (event as InputEvent).data === " ");
+      };
+      const flush = () => draft.saveLocal();
+      form.addEventListener("input", onInput);
+      form.addEventListener("focusout", flush);
+      return () => {
+        form.removeEventListener("input", onInput);
+        form.removeEventListener("focusout", flush);
+      };
+    });
+
 
     function commitSource(nextValue: string) {
       const before = sourceSelection();
       const after = pendingSelectionRef.current ?? before;
       historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
       setValue(nextValue);
+      draft.noteEdit(nextValue);
     }
 
     function travelHistory(direction: "undo" | "redo") {
@@ -143,6 +198,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       pendingSelectionRef.current = next.current.selection;
       if (mode === "preview") setMode("write");
       setValue(next.current.markdown);
+      draft.noteEdit(next.current.markdown, true);
     }
     const [codeLanguage, setCodeLanguage] = useState("");
     const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "preview" : "write");
@@ -171,6 +227,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (!next) { switchAuthoring("advanced"); return; }
       historyRef.current = next;
       setValue(next.current.markdown);
+      draft.noteEdit(next.current.markdown);
     }
 
     function replaceSourceRange(range: EditorSelection, replacement: string) {
@@ -179,6 +236,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const position = range.start + replacement.length;
       historyRef.current = recordEditorEdit(historyRef.current, next, range, { start: position, end: position });
       setValue(next);
+      draft.noteEdit(next, true);
       setPasteWarning(false);
     }
 
@@ -186,6 +244,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const next = addTableDimension(value, table, dimension);
       historyRef.current = recordEditorEdit(historyRef.current, next, table.span, table.span);
       setValue(next);
+      draft.noteEdit(next, true);
     }
 
     function pasteSpreadsheet(range: EditorSelection, text: string) {
@@ -621,6 +680,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               aria-describedby={describedBy}
               value={value}
               onChange={(event) => commitSource(event.target.value)}
+              onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") draft.saveLocal(); }}
+              onPasteCapture={() => draft.saveLocal()}
               onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
                 if (!disabled && !event.ctrlKey && !event.metaKey && !event.altKey && codeKey(event.key, event.shiftKey)) {
@@ -680,6 +741,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             </section>
           )}
         </div>
+        {draft.element}
       </div>
     );
   },
