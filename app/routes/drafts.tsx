@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { draftStoreForRequest } from "../forum/draft-request-context";
 import {
-  clearDeviceEditorDrafts, clearLocalEditorDraft, DRAFT_LIFETIME_MS,
+  clearDeviceEditorData, clearLocalEditorDraft, DRAFT_LIFETIME_MS,
   draftDestination, listLocalEditorDrafts, localDraftNeedsAttention, mutateDraft, type DraftMetadata, type LocalEditorDraft,
 } from "../forum/draft-client";
 import { useHeaderAuthUser } from "../auth/auth-controls";
@@ -94,7 +94,7 @@ export default function DraftsRoute() {
       <button type="button" disabled={!userId || local.length === 0}
         onClick={() => {
           if (!userId || !window.confirm(t("editorDraftClearDeviceConfirm"))) return;
-          clearDeviceEditorDrafts(userId);
+          clearDeviceEditorData(userId);
           setLocal([]);
         }}>{t("editorDraftClearDevice")}</button>
     </section>
