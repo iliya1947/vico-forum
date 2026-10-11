@@ -42,6 +42,11 @@ describe("Editor 2.0 technical Markdown source boundaries", () => {
     expect(parsed && parsed.kind === "table" ? parsed.headers.length : null).toBe(3);
   });
 
+  it("protects a table shape that would lose data if converted to ordinary cells", () => {
+    const source = "| A | B |\n| --- | --- |\n| one | two | extra |";
+    expect(segmentTechnicalMarkdown(source).some((segment) => segment.kind === "protected")).toBe(true);
+  });
+
   it("converts rectangular spreadsheet TSV to escaped Markdown; rejects loss-prone shapes", () => {
     expect(spreadsheetToMarkdown("A\tB\n1\t2")).toBe("| A | B |\n| --- | --- |\n| 1 | 2 |");
     expect(spreadsheetToMarkdown("A\tB\nfoo|bar\tx\\y")).toContain("foo\\|bar");
