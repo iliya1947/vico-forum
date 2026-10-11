@@ -41,11 +41,12 @@ export async function action({ request, context }: { request: Request; context: 
     input = parsed as Record<string, unknown>;
   } catch { return json({ error: "invalid" }, 400); }
   const key = input.contextKey;
-  if (typeof key !== "string" || !isEditorDraftContextKey(key)) return json({ error: "invalid" }, 400);
+  const draftId = input.draftId;
+  if (typeof key !== "string" || !isEditorDraftContextKey(key) || typeof draftId !== "string" || !/^[0-9a-f-]{36}$/iu.test(draftId)) return json({ error: "invalid" }, 400);
   try {
     const store = draftStoreForRequest(context);
     if (input.intent === "finish" || input.intent === "delete") {
-      await store.finish(session.user.id, key, input.intent === "finish" ? "published" : "deleted");
+      await store.finish(session.user.id, key, draftId, input.intent === "finish" ? "published" : "deleted");
       return json({ outcome: "finished" });
     }
     if (input.intent !== "save" || !validEditorDraftPayload(input.payload)
@@ -53,7 +54,7 @@ export async function action({ request, context }: { request: Request; context: 
       || typeof input.editedAt !== "string") return json({ error: "invalid" }, 400);
     const editedAt = new Date(input.editedAt);
     if (Number.isNaN(editedAt.getTime())) return json({ error: "invalid" }, 400);
-    const result = await store.save(session.user.id, key, input.payload, input.expectedVersion as number, editedAt);
+    const result = await store.save(session.user.id, key, draftId, input.payload, input.expectedVersion as number, editedAt);
     if (result.outcome === "saved") return json(result);
     return json(result, result.outcome === "gone" ? 410 : 409);
   } catch (error) {
