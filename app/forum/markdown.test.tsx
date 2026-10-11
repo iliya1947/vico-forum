@@ -75,6 +75,16 @@ describe("Editor 2.0 technical rendering", () => {
     expect(spoiler).toHaveAttribute("open");
   });
 
+  it("shows a fenced-code filename separately from copyable source", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const fence = String.fromCharCode(96).repeat(3);
+    renderMarkdown(fence + 'tsx filename="src/main.tsx"\nexport const n = 4;\n' + fence);
+    expect(screen.getByText("src/main.tsx")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith("export const n = 4;");
+  });
+
   it("highlights Diff plus and minus while preserving exact copied code", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
