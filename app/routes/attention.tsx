@@ -13,6 +13,7 @@ const SIGNAL_GROUPS = new Set<AttentionGroup>([
   "needs-details", "needs-review", "solution-outdated", "duplicate", "appeals", "mixed",
 ]);
 const PLACEHOLDER_GROUPS = new Set<AttentionGroup>(["group1", "group2", "group3"]);
+const SECURITY_GROUPS = new Set<AttentionGroup>(["attachments", "group2", "group3"]);
 
 export function meta() {
   return [{ title: "Needs attention · Vico Forum" }];
@@ -58,10 +59,10 @@ export async function loader({ request, params, context }: {
   const mode: AttentionMode = requestedMode === "complaints" || requestedMode === "security"
     ? requestedMode : "signals";
   const requestedGroup = query.get("group") as AttentionGroup | null;
-  const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : PLACEHOLDER_GROUPS;
+  const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : PLACEHOLDER_GROUPS;
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
-    : mode === "signals" ? "needs-details" : "group1";
+    : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : "group1";
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
   const pageIndex = Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000

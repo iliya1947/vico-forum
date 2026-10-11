@@ -1114,8 +1114,25 @@ describe("Help & solutions modes and authoring", () => {
       request: new Request("https://forum.example/en/attention?mode=security"),
       params: { locale: "en" }, context: managerContext,
     });
-    expect(security).toMatchObject({ mode: "security", group: "group1", queue: null });
+    expect(security).toMatchObject({ mode: "security", group: "attachments", queue: null });
     expect(readQueue).toHaveBeenCalledTimes(calls);
+    const securityView = renderRoute(AttentionRoute, security, "/en/attention?mode=security", "en", "ltr");
+    expect(await screen.findByRole("link", { name: "Attachments" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Attachments" })).toHaveAttribute("href", "/en/attention?mode=security&group=attachments");
+    expect(screen.getByRole("link", { name: "Group 2" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Group 3" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Group 1" })).not.toBeInTheDocument();
+    securityView.unmount();
+    const securitySecondGroup = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=security&group=group2"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(securitySecondGroup.group).toBe("group2");
+    const complaintsInvalidGroup = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=complaints&group=attachments"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(complaintsInvalidGroup.group).toBe("group1");
   });
 
   it("requires origin and effective per-kind permission before processing a signal", async () => {

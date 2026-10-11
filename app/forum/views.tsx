@@ -1400,7 +1400,7 @@ export function HelpSolutionsView({
 }
 
 export type AttentionMode = "signals" | "complaints" | "security";
-export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "group1" | "group2" | "group3";
+export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "attachments" | "group1" | "group2" | "group3";
 
 type AttentionCasePresentation = Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string };
 type AttentionQueuePresentation = {
@@ -1433,6 +1433,10 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
     { id: "duplicate", label: t("helpDuplicateBadge") },
     { id: "appeals", label: t("helpAttentionAppeals") },
     { id: "mixed", label: t("helpAttentionMixed") },
+  ] : mode === "security" ? [
+    { id: "attachments", label: t("attentionSecurityAttachments") },
+    { id: "group2", label: t("attentionPlaceholderGroup2") },
+    { id: "group3", label: t("attentionPlaceholderGroup3") },
   ] : [
     { id: "group1", label: t("attentionPlaceholderGroup1") },
     { id: "group2", label: t("attentionPlaceholderGroup2") },

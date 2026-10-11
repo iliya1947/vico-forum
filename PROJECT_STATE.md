@@ -63,7 +63,7 @@ Vico Forum находится в ранней pre-release разработке.
   into main; production/runtime acceptance and email verification/password recovery
   remain deferred. No production rollout occurred.
 
-- PR #217 (in progress; not merged) delivers an independently routed,
+- Merged PR #217 delivers an independently routed,
   permission-protected moderation attention center at `/:locale/attention`,
   linked beside the ordinary header notification bell. Owner revision 2026-10-10
   moved it out of Help & solutions (the obsolete Help `?mode=attention` URL
@@ -74,9 +74,12 @@ Vico Forum находится в ранней pre-release разработке.
   The backed queue selects only persisted pending signal/appeal cases and current
   best-answer Needs review status; Mixed (2+ pending visible signals) duplicates
   items in their category groups. Guests/users without effective moderation
-  permission are rejected. Complaints and Security are empty placeholders
-  with temporary Group 1–3 switches, deliberately without events/data/permission
-  workflows pending definition in their own chats. No schema or migration,
+  permission are rejected. Complaints remains a placeholder with Group 1–3.
+  In Editor 2.0 PR #215, Security first group is renamed **Attachments**
+  (`mode=security&group=attachments`), followed by placeholder Group 2–3.
+  The new group is reserved for future persisted suspicious-upload events,
+  not Help signals or user complaints; no event ingestion or handling is live yet.
+  There is deliberately no synthetic security data or permissions workflow yet. No schema or migration,
   notification bell semantics, complaint processing, editor, or Stage 6 action
   changes. The revised implementation head `ebb72df8` passed CI
   #38082349666: 702 application tests, 217 native PostgreSQL 17 tests,
@@ -127,7 +130,7 @@ Vico Forum находится в ранней pre-release разработке.
   Independent Codex review completed on implementation head `3480fc2` with
   two documentation findings. Both were corrected and resolved without modifying
   application code; subsequent exact-head CI #38121847206 passed `checks` and
-  `database` on `eec38b0`. PR #217 is Ready for review, not yet merged.
+  `database` on `eec38b0`. PR #217 merged 2026-10-11.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz

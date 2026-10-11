@@ -1133,7 +1133,9 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
   const group = mode === "signals"
     ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
       ? selected : "needs-details"
-    : selected === "group2" || selected === "group3" ? selected : "group1";
+    : mode === "security"
+      ? selected === "group2" || selected === "group3" ? selected : "attachments"
+      : selected === "group2" || selected === "group3" ? selected : "group1";
   const samples = [
     {
       type: "signal" as const, id: "signal-142", kind: "needs-details" as const,
