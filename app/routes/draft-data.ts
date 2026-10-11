@@ -3,7 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { draftStoreForRequest } from "../forum/draft-request-context";
-import { parseEditorDraftContextKey } from "../forum/editor-draft-context";
+import { parseEditorDraftContextKey } from "../../db/editor-draft-context";
 import {
   ForumEditorDraftContextNotFoundError,
   InvalidForumEditorDraftError,
