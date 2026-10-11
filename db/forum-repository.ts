@@ -222,6 +222,8 @@ export interface ForumAttentionQueuePage {
   page: number;
 }
 
+export type ForumAttentionQueueCounts = Record<ForumAttentionQueueGroup, number>;
+
 export interface ForumHelpAttentionState {
   signals: Partial<Record<HelpSignalKind, number>>;
   totalSignals: number;
@@ -350,6 +352,7 @@ export interface ForumReader {
   readHelpSolutionsActive(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsNeedsAttention(filters: ForumHelpSolutionsFilters, visibility: ForumHelpAttentionVisibility): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpAttentionCases(group: ForumAttentionQueueGroup, visibility: ForumHelpAttentionVisibility, page?: number): Promise<ForumAttentionQueuePage>;
+  readHelpAttentionCounts(visibility: ForumHelpAttentionVisibility): Promise<ForumAttentionQueueCounts>;
   readHelpSolutionsSolved(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsWantToHelp(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
@@ -1479,6 +1482,64 @@ export class DrizzleForumRepository {
     visibility: ForumHelpAttentionVisibility,
   ): Promise<ForumHelpSolutionsPage | undefined> {
     return this.readHelpSolutionsPage({ mode: "attention" }, filters, visibility);
+  }
+
+  /** Counts reflect pending, visible work across all topics, independently of the current page. */
+  async readHelpAttentionCounts(visibility: ForumHelpAttentionVisibility): Promise<ForumAttentionQueueCounts> {
+    const result: ForumAttentionQueueCounts = {
+      "needs-details": 0, "needs-review": 0,
+      "solution-outdated": 0, "duplicate": 0, appeals: 0, mixed: 0,
+    };
+    const kinds = [...new Set(visibility.signalKinds)];
+    if (kinds.length) {
+      const wherePending = and(
+        eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumHelpSignals.status, "pending"),
+        inArray(forumHelpSignals.kind, kinds),
+      );
+      const [byKind, mixedCount] = await Promise.all([
+        this.database.select({ kind: forumHelpSignals.kind, total: count() })
+          .from(forumHelpSignals)
+          .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+          .where(wherePending).groupBy(forumHelpSignals.kind),
+        this.database.select({ total: count() }).from(
+          this.database.select({ topicId: forumHelpSignals.topicId })
+            .from(forumHelpSignals)
+            .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+            .where(wherePending)
+            .groupBy(forumHelpSignals.topicId)
+            .having(gt(count(), 1))
+            .as("attention_mixed_topics"),
+        ),
+      ]);
+      for (const row of byKind) result[row.kind as HelpSignalKind] = row.total;
+      result.mixed = mixedCount[0]?.total ?? 0;
+    }
+    if (visibility.appeals) {
+      const rows = await this.database.select({ total: count() })
+        .from(forumHelpDuplicateAppeals)
+        .innerJoin(forumHelpDuplicateRelationships,
+          eq(forumHelpDuplicateRelationships.id, forumHelpDuplicateAppeals.relationshipId))
+        .innerJoin(forumTopics, eq(forumTopics.id, forumHelpDuplicateRelationships.duplicateTopicId))
+        .where(and(
+          eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ));
+      result.appeals = rows[0]?.total ?? 0;
+    }
+    if (kinds.includes("needs-review")) {
+      const rows = await this.database.select({ total: count() })
+        .from(forumTopics)
+        .innerJoin(forumPosts, eq(forumPosts.id, forumTopics.bestAnswerPostId))
+        .where(and(
+          eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isSolved, true),
+          eq(forumPosts.solutionModerationStatus, "needs-review"),
+        ));
+      result["needs-review"] += rows[0]?.total ?? 0;
+    }
+    return result;
   }
 
   /** Select actionable cases before pagination, independently of topic activity. */
