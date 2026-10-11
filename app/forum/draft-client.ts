@@ -36,7 +36,6 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && typeof data.editedAt === "string"
     && Number.isFinite(Date.parse(data.editedAt))
     && Date.now() - Date.parse(data.editedAt) < DRAFT_LIFETIME_MS
-    && Date.parse(data.editedAt) < Date.now() + 60_000
     && typeof data.draftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.draftId)
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
     && !!data.payload && typeof data.payload.body === "string"
