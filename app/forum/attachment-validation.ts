@@ -119,6 +119,7 @@ function expectedDeclaredFormat(mime: string): AttachmentDetection | null {
 }
 
 export function inspectAttachment(candidate: AttachmentCandidate): AttachmentInspection {
+  const hasPath = /[/\\]/u.test(candidate.fileName);
   const name = candidate.fileName.split(/[/\\]/u).pop()?.trim() ?? "";
   const extension = name.toLowerCase().split(".").pop() ?? "";
   const mime = candidate.declaredMime.split(";")[0]!.trim().toLowerCase();
@@ -126,6 +127,7 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
   const reject = (reason: AttachmentRejection, suspicious = true): AttachmentInspection =>
     ({ accepted: false, fileName: name, detected, reason, suspicious, scanStatus: "rejected" });
   const maxBytes = candidate.maxBytes ?? DEFAULT_ATTACHMENT_MAX_BYTES;
+  if (hasPath) return reject("invalid-name");
   if (!name || name === "." || name === ".." || name.length > 255
     || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return reject("invalid-name", false);
   if (!Number.isSafeInteger(candidate.size) || candidate.size <= 0) return reject("empty", false);
