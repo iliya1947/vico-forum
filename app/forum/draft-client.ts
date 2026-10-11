@@ -76,6 +76,15 @@ export function clearDeviceEditorDrafts(ownerId: string) {
     for (const key of keys) if (key?.startsWith(start)) localStorage.removeItem(key);
   } catch { /* no storage */ }
 }
+export function clearDeviceEditorData(ownerId: string) {
+  clearDeviceEditorDrafts(ownerId);
+  // These are the actual existing per-account editor preferences, not unrelated site data.
+  try {
+    for (const preference of ["mode", "code-wrap", "code-lines"]) {
+      localStorage.removeItem("vico:editor:" + preference + ":" + ownerId);
+    }
+  } catch { /* Local storage may be unavailable. */ }
+}
 export function listLocalEditorDrafts(ownerId: string): LocalEditorDraft[] {
   try {
     const start = prefix + encodeURIComponent(ownerId) + ":";
