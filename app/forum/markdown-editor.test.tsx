@@ -9,6 +9,7 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { writeLocalEditorDraft, clearLocalEditorDraft } from "./draft-client";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -570,6 +571,30 @@ describe("MarkdownEditor", () => {
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
       format === "text/plain" ? "\n# Header" : format === "text/html" ? "<h1>Header</h1>" : "" } });
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\# Header");
+  });
+
+  it("restores a saved reply's parent relation alongside the Markdown body", () => {
+    const userId = "draft-reply-restoration-user";
+    const contextKey = "topic:abc:reply";
+    const parentId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d50";
+    writeLocalEditorDraft({
+      ownerId: userId, contextKey, draftId: "e7bdbd73-61d4-4b06-bc03-b24b1c217d55",
+      payload: { title: "", body: "Quoted reply", tags: "", parentPostId: parentId },
+      editedAt: new Date().toISOString(), baseVersion: 0, syncedEditedAt: null,
+    });
+    const onRestoreParent = vi.fn();
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-reply-body">Body</label>
+          <MarkdownEditor id="draft-reply-body" name="body" defaultAuthoringMode="advanced"
+            draftContextKey={contextKey} draftLocale="en" onDraftRestoreParent={onRestoreParent} />
+        </form>
+      </HeaderAuthProvider>,
+    );
+    expect(onRestoreParent).toHaveBeenCalledWith(parentId);
+    expect(screen.getByLabelText("Body")).toHaveValue("Quoted reply");
+    clearLocalEditorDraft(userId, contextKey);
   });
 
   it("submits the Simple visual authoring form on Ctrl+Enter", () => {
