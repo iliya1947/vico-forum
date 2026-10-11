@@ -58,6 +58,7 @@ function VisualTextLeaf({
   onPasteFallback: VisualEditorProps["onPasteFallback"];
 }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const forcePlainPasteRef = useRef(false);
   useLayoutEffect(() => {
     const element = ref.current;
     // The browser owns the active editable text node. React never rewrites its
@@ -104,6 +105,9 @@ function VisualTextLeaf({
       onMouseUp={reportSelection}
       onFocus={reportSelection}
       onKeyDown={(event) => {
+        if (event.key.toLowerCase() === "v" && (event.ctrlKey || event.metaKey) && event.shiftKey) {
+          forcePlainPasteRef.current = true;
+        }
         if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey) return;
         event.preventDefault();
         onInsertParagraph(range.end);
@@ -111,6 +115,8 @@ function VisualTextLeaf({
       onPaste={(event) => {
         event.preventDefault();
         const plain = event.clipboardData.getData("text/plain");
+        const forcePlain = forcePlainPasteRef.current;
+        forcePlainPasteRef.current = false;
         const pastedText = plain.replace(/[\r\n]+/gu, " ");
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
@@ -130,7 +136,7 @@ function VisualTextLeaf({
           onPasteTable(selected, plain);
           return;
         }
-        const html = event.clipboardData.getData("text/html");
+        const html = forcePlain ? "" : event.clipboardData.getData("text/html");
         if (html || plain.includes("\n") || plain.includes("\r")) {
           const converted = html ? clipboardHtmlToMarkdown(html) : null;
           if (converted !== null) onReplaceRange(selected, converted);
