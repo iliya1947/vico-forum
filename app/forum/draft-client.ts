@@ -1,6 +1,7 @@
 import type { ForumEditorDraftPayload } from "../../db/schema";
 import { forumCategoryPath, forumSectionPath, forumTopicPath } from "./paths";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
+import { isEditorDraftContextKey, parseEditorDraftContextKey } from "./editor-draft-context";
 
 export const DRAFT_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 export interface LocalEditorDraft {
@@ -41,6 +42,7 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
   if (!value || typeof value !== "object") return false;
   const data = value as Partial<LocalEditorDraft>;
   return data.ownerId === ownerId && data.contextKey === contextKey
+    && isEditorDraftContextKey(contextKey)
     && typeof data.editedAt === "string"
     && Number.isFinite(Date.parse(data.editedAt))
     && Date.now() - Date.parse(data.editedAt) < DRAFT_LIFETIME_MS
@@ -130,10 +132,12 @@ export async function mutateDraft(locale: string, data: Record<string, unknown>)
   }>;
 }
 export function draftDestination(locale: string, contextKey: string): string | null {
-  if (contextKey === "help:new") return forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) + "?compose=1";
-  const match = /^(section|topic|post):([a-zA-Z0-9_-]+):(new|reply|edit)$/u.exec(contextKey);
-  if (!match) return null;
-  if (match[1] === "section" && match[3] === "new") return forumSectionPath(locale, match[2]!);
-  if (match[1] === "topic" && match[3] === "reply") return forumTopicPath(locale, match[2]!);
+  const context = parseEditorDraftContextKey(contextKey);
+  if (!context) return null;
+  if (context.kind === "help") {
+    return forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) + "?compose=1";
+  }
+  if (context.kind === "section") return forumSectionPath(locale, context.id);
+  if (context.kind === "topic") return forumTopicPath(locale, context.id);
   return null; // Post editing is intentionally not routed until the edit workflow exists.
 }
