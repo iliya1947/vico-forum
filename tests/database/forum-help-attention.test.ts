@@ -202,4 +202,57 @@ describe("Help moderator attention queue", () => {
     const remaining = await forum.readHelpSolutionsNeedsAttention({}, all);
     expect(remaining?.questions.map((question) => question.id)).toEqual(["mixed"]);
   });
+
+  it("keeps authoritative Needs review distinct from user submissions", async () => {
+    await forum.createTopicWithInitialPost({
+      id: "review",
+      sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      authorId: "author",
+      titleRevision: { id: "review-title", originalContent: "Review solution", sourceLocale: "en" },
+      initialPost: {
+        id: "review-question", topicId: "review", authorId: "author",
+        bodyRevision: { id: "review-question-body", originalContent: "Question", sourceLocale: "en" },
+      },
+    });
+    await forum.createPost({
+      id: "review-answer", topicId: "review", authorId: "manager",
+      bodyRevision: { id: "review-answer-body", originalContent: "Answer", sourceLocale: "en" },
+    });
+    await forum.selectBestAnswer("review", "review-answer", "author");
+    await forum.markTopicSolved("review", "author");
+    await forum.setHelpSolutionModeration("review", "needs-review", null, "manager");
+
+    const queue = await forum.readHelpAttentionCases("needs-review", all);
+    expect(queue.cases).toContainEqual(expect.objectContaining({
+      type: "review-status", kind: "review-status", id: "review-answer",
+      topicId: "review", topicTitle: "Review solution",
+      submittedByUserId: null, submittedByName: null,
+      explanation: null, targetPostId: "review-answer",
+    }));
+    expect((await forum.readHelpAttentionCases("needs-review", {
+      signalKinds: ["duplicate"], appeals: true,
+    })).cases).toEqual([]);
+  });
+
+  it("pages individual signals after filtering by the selected group", async () => {
+    await client.query(`
+      insert into "user" (id, name, email, email_verified, created_at, updated_at)
+      select 'batch-' || n, 'Batch ' || n, 'batch-' || n || '@example.test', true, now(), now()
+      from generate_series(1, 53) as n
+    `);
+    await client.query(`
+      insert into forum_help_signals (id, kind, topic_id, submitted_by_user_id, explanation)
+      select 'batch-signal-' || n, 'needs-details', 'unanswered', 'batch-' || n, 'Please clarify'
+      from generate_series(1, 53) as n
+    `);
+    const first = await forum.readHelpAttentionCases("needs-details", all);
+    const second = await forum.readHelpAttentionCases("needs-details", all, 1);
+    expect(first.cases).toHaveLength(50);
+    expect(first.hasMore).toBe(true);
+    expect(second.cases).toHaveLength(4);
+    expect(second.hasMore).toBe(false);
+    expect(new Set([...first.cases, ...second.cases].map(({ id }) => id)).size).toBe(54);
+    const mixed = await forum.readHelpAttentionCases("mixed", all);
+    expect(mixed.cases.filter(({ topicId }) => topicId === "unanswered")).toHaveLength(53);
+  });
 });
