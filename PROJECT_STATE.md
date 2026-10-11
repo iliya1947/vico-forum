@@ -131,6 +131,15 @@ Vico Forum находится в ранней pre-release разработке.
   two documentation findings. Both were corrected and resolved without modifying
   application code; subsequent exact-head CI #38121847206 passed `checks` and
   `database` on `eec38b0`. PR #217 merged 2026-10-11.
+- Editor 2.0: PR #215 остаётся Draft и ещё не готов к merge. После merge #217 в `main`
+  в первом foundation-срезе добавлены lossless Markdown document/history utilities,
+  ограниченное текстовыми AST-диапазонами безопасное visual-edit API (без пересериализации
+  исходника и без изменения сложных блоков) и единая Undo/Redo история к существующему
+  shared Markdown editor, включая клавиатурные сочетания и обработку Reply/Quote insertion.
+  Регрессионные тесты добавлены; CI/Pages и независимый Codex review ещё не подтверждены.
+  Простой WYSIWYG, управление режимами и полнофункциональная панель, черновики, вложения,
+  Security/Attachments event ingestion, mentions и publication/edit workflows ещё не реализованы.
+  Существующий body/FormData/server contract не изменялся.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
