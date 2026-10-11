@@ -23,7 +23,7 @@ import {
   registryLoaderContext,
 } from "../localization/request-context";
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
-import AttentionRoute, { loader as attentionLoader } from "../routes/attention";
+import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as popularLoader } from "../routes/popular";
 import SearchRoute, { loader as searchLoader } from "../routes/search";
@@ -34,7 +34,7 @@ import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
 import { forumAttentionPath, forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
-import { forumReaderContext } from "./request-context";
+import { forumReaderContext, forumWriterContext } from "./request-context";
 
 const category = {
   id: "development/core",
@@ -1108,6 +1108,74 @@ describe("Help & solutions modes and authoring", () => {
     });
     expect(security).toMatchObject({ mode: "security", group: "group1", queue: null });
     expect(readQueue).toHaveBeenCalledTimes(calls);
+  });
+
+  it("requires origin and effective per-kind permission before processing a signal", async () => {
+    const ctx = context("en", "ltr");
+    const resolveHelpSignal = vi.fn(async () => {});
+    const sampleSignal = {
+      id: "signal-1", kind: "needs-details" as const,
+      topicId: "help-1", targetPostId: null, proposedOriginalTopicId: null,
+      submittedByUserId: "reporter", explanation: "Needs context",
+      status: "pending" as const, createdAt: new Date(),
+      resolvedByUserId: null, resolvedAt: null,
+    };
+    ctx.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "m@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "m-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    const has = vi.fn(async (permission: string) => permission === "forum.helpNeedsDetails.manage");
+    ctx.set(authorizationContext, { forUser: () => ({ has, resolve: vi.fn() }) } as never);
+    ctx.set(forumReaderContext, {
+      ...reader, readHelpSignal: async () => sampleSignal,
+    });
+    ctx.set(forumWriterContext, { resolveHelpSignal } as never);
+    const request = (topicId: string, origin: string) => new Request("https://forum.example/en/attention?mode=signals&group=needs-details", {
+      method: "POST",
+      headers: { Origin: origin },
+      body: new URLSearchParams({ intent: "acceptHelpSignal", caseId: "signal-1", topicId }),
+    });
+    expect((await attentionAction({ request: request("help-1", "https://evil.example"), context: ctx })).status).toBe(403);
+    expect((await attentionAction({ request: request("other-topic", "https://forum.example"), context: ctx })).status).toBe(404);
+    expect(resolveHelpSignal).not.toHaveBeenCalled();
+    const success = await attentionAction({ request: request("help-1", "https://forum.example"), context: ctx });
+    expect(success.status).toBe(302);
+    expect(success.headers.get("Location")).toBe("/en/attention?mode=signals&group=needs-details");
+    expect(resolveHelpSignal).toHaveBeenCalledWith({
+      signalId: "signal-1", actorId: "manager", resolution: "accepted",
+    });
+    has.mockImplementation(async () => false);
+    const denied = await attentionAction({ request: request("help-1", "https://forum.example"), context: ctx });
+    expect(denied.status).toBe(403);
+    expect(resolveHelpSignal).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects stale appeal ids before issuing a moderation mutation", async () => {
+    const ctx = context("en", "ltr");
+    ctx.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "m@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "m-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    ctx.set(authorizationContext, {
+      forUser: () => ({ has: vi.fn(async () => true), resolve: vi.fn() }),
+    } as never);
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readPendingHelpDuplicateAppeal: async () => ({
+        id: "appeal-current", relationshipId: "rel-1",
+        explanation: "Disputed", createdAt: new Date(),
+      }),
+    });
+    const resolveHelpDuplicateAppeal = vi.fn(async () => {});
+    ctx.set(forumWriterContext, { resolveHelpDuplicateAppeal } as never);
+    const request = new Request("https://forum.example/en/attention?mode=signals&group=appeals", {
+      method: "POST", headers: { Origin: "https://forum.example" },
+      body: new URLSearchParams({
+        intent: "rejectHelpDuplicateAppeal", topicId: "help-1", caseId: "appeal-stale",
+      }),
+    });
+    expect((await attentionAction({ request, context: ctx })).status).toBe(409);
+    expect(resolveHelpDuplicateAppeal).not.toHaveBeenCalled();
   });
 
   it("shows My questions only to authenticated users and binds it to the session identity", async () => {
