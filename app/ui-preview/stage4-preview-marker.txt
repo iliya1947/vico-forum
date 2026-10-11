@@ -1,0 +1,2 @@
+Editor 2.0 stage 4 preview (draft autosave) source: c43e54c2e9c1276639d5ed5b7699c3508e527ddf
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/215
