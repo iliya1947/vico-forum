@@ -566,7 +566,7 @@ describe("MarkdownEditor", () => {
     selection.removeAllRanges();
     selection.addRange(range);
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
-      format === "text/plain" ? "New\\nParagraph" : "" } });
+      format === "text/plain" ? "New\nParagraph" : "" } });
     expect(screen.getByLabelText("Body")).toHaveValue("ANew\nParagrapha");
   });
 
