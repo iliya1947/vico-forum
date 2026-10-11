@@ -40,20 +40,29 @@ export default function DraftsRoute() {
   const [error, setError] = useState(false);
   useEffect(() => {
     if (!userId) { setLocal([]); return; }
+    const copies = listLocalEditorDrafts(userId);
+    for (const draft of copies) {
+      const published = remote.find((item) => item.contextKey === draft.contextKey
+        && item.draftId === draft.draftId && item.status !== "active");
+      if (published) clearLocalEditorDraft(userId, draft.contextKey);
+    }
     setLocal(listLocalEditorDrafts(userId));
-  }, [userId]);
+  }, [userId, remote]);
   const currentRemote = remote.filter((draft) => draft.status === "active");
   const combined = new Map<string, DraftListItem>();
   for (const draft of currentRemote) combined.set(draft.contextKey, { ...draft, origin: "server" });
   for (const draft of local) {
-    const existing = combined.get(draft.contextKey);
-    if (!existing || existing.draftId !== draft.draftId || draft.editedAt > existing.editedAt) {
-      combined.set(draft.contextKey, {
-        contextKey: draft.contextKey, draftId: draft.draftId, version: draft.baseVersion,
-        title: draft.payload.title, snippet: draft.payload.body.slice(0, 140),
-        editedAt: draft.editedAt, origin: "device",
-      });
-    }
+    const server = remote.find((entry) => entry.contextKey === draft.contextKey);
+    if (server?.draftId === draft.draftId && server.status !== "active") continue;
+    // Only a matching synchronized generation can be represented by server metadata.
+    // Different IDs/versions are left for explicit resolution in the editor.
+    if (server?.status === "active" && server.draftId === draft.draftId
+      && server.version === draft.baseVersion && draft.editedAt === draft.syncedEditedAt) continue;
+    combined.set(draft.contextKey, {
+      contextKey: draft.contextKey, draftId: draft.draftId, version: draft.baseVersion,
+      title: draft.payload.title, snippet: draft.payload.body.slice(0, 140),
+      editedAt: draft.editedAt, origin: "device",
+    });
   }
   const items = [...combined.values()].sort((a, b) => b.editedAt.localeCompare(a.editedAt));
   async function discard(item: DraftListItem) {
