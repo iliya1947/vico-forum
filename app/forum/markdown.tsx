@@ -223,7 +223,7 @@ function ForumCodeBlock({
       </figcaption>
       <pre tabIndex={0} dir="ltr" data-line-numbers={lineNumbers ? "true" : "false"}>
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
-          {displayLanguage?.toLowerCase() === "diff"
+          {displayLanguage?.toLowerCase() === "diff" && code.length <= 20_000
             ? code.split("\n").map((line, index, rows) => (
               <span className={line.startsWith("+") ? "syntax-diff-add" : line.startsWith("-") ? "syntax-diff-remove" : undefined} key={index}>
                 {line}{index < rows.length - 1 ? "\n" : ""}
