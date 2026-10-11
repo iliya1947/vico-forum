@@ -7,7 +7,7 @@ import type { ForumEditorDraftPayload } from "./schema";
 export interface ForumDraftStore {
   metadata(ownerId: string): Promise<ForumEditorDraftMetadata[]>;
   get(ownerId: string, contextKey: string): Promise<ForumEditorDraft | null>;
-  save(ownerId: string, contextKey: string, draftId: string, payload: ForumEditorDraftPayload, expectedVersion: number, editedAt: Date): Promise<SaveDraftResult>;
+  save(ownerId: string, contextKey: string, draftId: string, payload: ForumEditorDraftPayload, expectedVersion: number): Promise<SaveDraftResult>;
   finish(ownerId: string, contextKey: string, draftId: string, status: "deleted" | "published"): Promise<boolean>;
 }
 
@@ -27,8 +27,8 @@ export function createHyperdriveForumDraftStore(
   return {
     metadata: (ownerId) => apply((store) => store.metadata(ownerId)),
     get: (ownerId, key) => apply((store) => store.get(ownerId, key)),
-    save: (ownerId, key, draftId, payload, version, editedAt) =>
-      apply((store) => store.save(ownerId, key, draftId, payload, version, editedAt)),
+    save: (ownerId, key, draftId, payload, version) =>
+      apply((store) => store.save(ownerId, key, draftId, payload, version)),
     finish: (ownerId, key, draftId, status) => apply((store) => store.finish(ownerId, key, draftId, status)),
   };
 }
