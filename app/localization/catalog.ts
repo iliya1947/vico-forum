@@ -424,6 +424,8 @@ export const canonicalEnglishCatalog = {
     messageBodyHelp: message("messageBodyHelp", "Markdown and fenced code blocks are supported.", "Help text below forum message textareas."),
     editorEmoji: message("editorEmoji", "Emoji", "Choose an emoji for the message."),
     editorMoreTools: message("editorMoreTools", "More tools", "Open extra editor formatting commands."),
+    editorVisualSurface: message("editorVisualSurface", "Visual editor", "Accessible label for visual editing surface."),
+    editorEditInMarkdown: message("editorEditInMarkdown", "Edit in Markdown", "Switch to Markdown mode to edit this technical block."),
     editorSimple: message("editorSimple", "Simple", "Switch editor to visual Simple mode."),
     editorAdvanced: message("editorAdvanced", "Advanced", "Switch editor to Markdown Advanced mode."),
     editorUndo: message("editorUndo", "Undo", "Undo last editor text change."),
