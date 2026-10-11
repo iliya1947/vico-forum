@@ -154,8 +154,19 @@ Vico Forum находится в ранней pre-release разработке.
   application tests, builds и native PostgreSQL DB проверки успешны.
   Pages/owner visual acceptance этапа и финальное whole-PR review ещё предстоят.
   Сложные/нестандартные таблицы остаются защищёнными для Markdown-редактирования;
-  будущие черновики, вложения, Security/Attachments ingestion, mentions и
-  publication/edit workflows не входят в этот срез.
+  четвёртый срез реализует account/context-scoped локальное сохранение после
+  Space/Enter/paste/форматирования/ухода со страницы, 60-секундную синхронизацию
+  только локально сохранённого, metadata-first recovery по аккаунту и контексту,
+  страницу «Мои черновики», конфликт выбора версий side-by-side и локальную очистку.
+  Добавлены PostgreSQL-таблица миграции 0034, owner-only API и CAS-version+draft-ID
+  с tombstones для опубликованных/удалённых/истёкших черновиков. Публикация
+  темы/ответа отмечает соответствующий черновик завершённым в той же DB-транзакции.
+  30-дневный срок, RU/EN/HE, тесты PostgreSQL и локального кэша включены.
+  CI #38131698427 на code head df65c374: checks/database успешны.
+  Pages/browser и owner visual acceptance ещё не подтверждены; полный review PR
+  намеренно не запущен до завершения редактора.
+  Вложения, Security/Attachments ingestion, mentions и полный
+  publication/edit workflow остаются следующими этапами.
   Существующий body/FormData/server contract не изменялся.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
