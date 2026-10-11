@@ -29,8 +29,9 @@ interface RemarkParserData {
  * Full GFM is intentionally not enabled because it would also change links,
  * task lists, tables, and footnotes.
  */
-export function remarkForumStrikethrough(this: { data(): RemarkParserData }): undefined {
-  const data = this.data();
+export function remarkForumStrikethrough(this: unknown): undefined {
+  const processor = this as { data(): RemarkParserData };
+  const data = processor.data();
   const micromarkExtensions =
     data.micromarkExtensions ?? (data.micromarkExtensions = []);
   const fromMarkdownExtensions =
