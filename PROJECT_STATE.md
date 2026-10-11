@@ -265,6 +265,21 @@ Vico Forum находится в ранней pre-release разработке.
   nested spoiler budget, block insertion и fenced boundaries. Кодовый head
   `cf9dc10` прошёл CI #38160773816: `checks` и `database` successful,
   включая 809 application tests, builds и schema parity.
+  Пятый пакет audit-коррекции Stage 4 local-save triggers (2026-10-11)
+  закрывает оставшийся дефект локального сохранения черновика на явных
+  пользовательских событиях. Причина была в том, что Simple-mode input
+  определял Space по последнему символу всего body, поэтому пробел в середине
+  документа не давал немедленного local capture; однострочный Simple paste
+  также не имел собственного save-trigger, а toolbar focusout мог сохранить
+  состояние до самой formatting mutation. Теперь Simple передаёт явный
+  local-save trigger для фактического Space и однострочного paste, а все
+  discrete editor actions через общий commitSource (включая Enter, toolbar
+  formatting и imperative Reply/Quote insertion) выполняют local capture
+  после mutation. Серверный 60-секундный sync, CAS/conflict lifecycle и API
+  не менялись. Добавлены regressions для mid-document Space/Enter,
+  one-line paste и toolbar formatting. Кодовый head `a6af6a0` прошёл
+  CI #38161772563: `checks` и `database` successful, включая
+  813 application tests, builds и schema parity.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
