@@ -1012,25 +1012,29 @@ describe("Help & solutions modes and authoring", () => {
     expect(await screen.findByText("There are no active questions right now.")).toBeVisible();
   });
 
-  it("moves moderator attention to a protected standalone inbox with three isolated modes", async () => {
+  it("presents the protected moderator queue as individual actionable cases", async () => {
     const legacyPath = forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention";
     const guestContext = context("en", "ltr");
-    const readNeedsAttention = vi.fn(async () => needsAttentionHelpPage);
-    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsNeedsAttention: readNeedsAttention });
+    const readQueue = vi.fn(async (_group: string, _visibility: unknown, page = 0) => ({
+      cases: [{
+        type: "signal" as const, id: "report-123", kind: "needs-details" as const,
+        topicId: "help/topic", topicTitle: "Why are sessions lost?",
+        submittedByUserId: "alice", submittedByName: "Alice",
+        explanation: "Please include the session configuration.",
+        createdAt: new Date("2026-10-10T12:00:00Z"),
+        targetPostId: null, original: null,
+      }],
+      hasMore: true, page,
+    }));
+    guestContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue });
     await expect(categoryLoader({
       request: new Request(`https://forum.example${legacyPath}`),
-      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
-      context: guestContext,
-    })).rejects.toMatchObject({
-      status: 302,
-      headers: expect.objectContaining({}),
-    });
-    expect(readNeedsAttention).not.toHaveBeenCalled();
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: guestContext,
+    })).rejects.toMatchObject({ status: 302 });
 
     await expect(attentionLoader({
       request: new Request("https://forum.example/en/attention"),
-      params: { locale: "en" },
-      context: guestContext,
+      params: { locale: "en" }, context: guestContext,
     })).rejects.toMatchObject({ status: 401 });
 
     const regularContext = context("en", "ltr");
@@ -1039,17 +1043,14 @@ describe("Help & solutions modes and authoring", () => {
       session: { id: "user-session", token: "u-token", userId: "regular-user", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
     });
     regularContext.set(authorizationContext, {
-      forUser: () => ({
-        resolve: vi.fn(),
-        has: vi.fn(async (permission) => permission === "forum.topic.create"),
-      }),
+      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async (permission) => permission === "forum.topic.create") }),
     } as never);
+    regularContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue });
     await expect(attentionLoader({
       request: new Request("https://forum.example/en/attention"),
-      params: { locale: "en" },
-      context: regularContext,
+      params: { locale: "en" }, context: regularContext,
     })).rejects.toMatchObject({ status: 403 });
-    expect(readNeedsAttention).not.toHaveBeenCalled();
+    expect(readQueue).not.toHaveBeenCalled();
 
     const managerContext = context("en", "ltr");
     managerContext.set(authSessionContext, {
@@ -1064,49 +1065,49 @@ describe("Help & solutions modes and authoring", () => {
         ].includes(permission)),
       }),
     } as never);
-    managerContext.set(forumReaderContext, { ...reader, readHelpSolutionsNeedsAttention: readNeedsAttention });
+    managerContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue });
     const signals = await attentionLoader({
-      request: new Request("https://forum.example/en/attention?mode=signals"),
-      params: { locale: "en" },
-      context: managerContext,
+      request: new Request("https://forum.example/en/attention?mode=signals&group=needs-details&page=1"),
+      params: { locale: "en" }, context: managerContext,
     });
     expect(signals.mode).toBe("signals");
-    expect(readNeedsAttention).toHaveBeenCalledWith({}, {
+    expect(readQueue).toHaveBeenCalledWith("needs-details", {
       signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
       appeals: true,
-    });
-    const view = renderRoute(AttentionRoute, signals, forumAttentionPath("en") + "?mode=signals", "en", "ltr");
+    }, 1);
+    const view = renderRoute(AttentionRoute, signals, "/en/attention?mode=signals&group=needs-details&page=1", "en", "ltr");
     expect(await screen.findByRole("heading", { level: 1, name: "Needs attention" })).toBeVisible();
+    expect(screen.queryByText("Moderation")).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Attention groups" })).toBeVisible();
     expect(screen.getByRole("navigation", { name: "Attention modes" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Signals" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Complaints" })).toHaveAttribute("href", "/en/attention?mode=complaints");
-    expect(screen.getByRole("link", { name: "Security" })).toHaveAttribute("href", "/en/attention?mode=security");
-    expect(screen.getByRole("link", { name: "Mixed (1)" })).toHaveAttribute("href", "/en/attention?mode=signals&group=mixed");
-    expect(screen.getByText("Pending signals: 2")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Mixed" })).toHaveAttribute("href", "/en/attention?mode=signals&group=mixed");
+    expect(screen.getByText("Please include the session configuration.")).toBeVisible();
+    expect(screen.getByText("Alice")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept signal" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reject signal" })).toBeEnabled();
+    expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute("href", "/en/attention?mode=signals&group=needs-details&page=2");
+    expect(screen.getByRole("link", { name: "Previous" })).toHaveAttribute("href", "/en/attention?mode=signals&group=needs-details");
     view.unmount();
 
-    const calls = readNeedsAttention.mock.calls.length;
+    const calls = readQueue.mock.calls.length;
     const complaints = await attentionLoader({
       request: new Request("https://forum.example/en/attention?mode=complaints&group=group2"),
-      params: { locale: "en" },
-      context: managerContext,
+      params: { locale: "en" }, context: managerContext,
     });
-    expect(complaints).toMatchObject({ mode: "complaints", group: "group2", page: null });
-    expect(readNeedsAttention).toHaveBeenCalledTimes(calls);
+    expect(complaints).toMatchObject({ mode: "complaints", group: "group2", queue: null });
+    expect(readQueue).toHaveBeenCalledTimes(calls);
     const complaintView = renderRoute(AttentionRoute, complaints, "/en/attention?mode=complaints&group=group2", "en", "ltr");
     expect(await screen.findByRole("link", { name: "Group 2" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("This section is not connected yet.")).toBeVisible();
-    expect(screen.queryByText("Pending signals: 2")).not.toBeInTheDocument();
     complaintView.unmount();
 
     const security = await attentionLoader({
       request: new Request("https://forum.example/en/attention?mode=security"),
-      params: { locale: "en" },
-      context: managerContext,
+      params: { locale: "en" }, context: managerContext,
     });
-    expect(security).toMatchObject({ mode: "security", group: "group1", page: null });
-    expect(readNeedsAttention).toHaveBeenCalledTimes(calls);
+    expect(security).toMatchObject({ mode: "security", group: "group1", queue: null });
+    expect(readQueue).toHaveBeenCalledTimes(calls);
   });
 
   it("shows My questions only to authenticated users and binds it to the session identity", async () => {
