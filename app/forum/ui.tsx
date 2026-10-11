@@ -3,6 +3,7 @@ import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRou
 import { useTranslation } from "react-i18next";
 import { forumAttentionPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
+import { DraftDiscovery } from "./draft-discovery";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
 import vicoForumLogoLight from "../assets/vico-forum-logo-light.webp";
@@ -360,6 +361,7 @@ export function ForumShell({
       </header>
 
       <div className="forum-content" id="forum-content" tabIndex={-1}>
+        <DraftDiscovery locale={locale} />
         {children}
       </div>
 
