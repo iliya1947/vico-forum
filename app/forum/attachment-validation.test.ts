@@ -119,7 +119,7 @@ describe("Editor 2.0 server-side attachment type gate", () => {
 
   it("enforces a configurable per-file limit from server-owned actual size", () => {
     const text = utf8("hello");
-    expect(DEFAULT_ATTACHMENT_MAX_BYTES).toBe(50 * 1024 * 1024);
+    expect(DEFAULT_ATTACHMENT_MAX_BYTES).toBe(50_000_000);
     expect(inspect("ok.txt", text, "text/plain", {
       size: DEFAULT_ATTACHMENT_MAX_BYTES + 1,
     })).toMatchObject({ accepted: false, reason: "too-large", suspicious: false });
