@@ -551,7 +551,7 @@ describe("MarkdownEditor", () => {
     expect(document.querySelector(".markdown-editor-visual-table")).not.toBeNull();
   });
 
-  it("refuses a multiline paste across split DOM text nodes rather than corrupting source offsets", () => {
+  it("maps multiline paste across split DOM text nodes to exact Markdown positions", () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Alpha" /></>);
     const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
     leaf.textContent = "";
@@ -567,8 +567,26 @@ describe("MarkdownEditor", () => {
     selection.addRange(range);
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
       format === "text/plain" ? "New\\nParagraph" : "" } });
-    expect(screen.getByLabelText("Body")).toHaveValue("Alpha");
-    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("Body")).toHaveValue("ANew\nParagrapha");
+  });
+
+  it("maps a toolbar selection across split DOM text nodes to the full visual offset", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Alpha" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = "";
+    const first = document.createTextNode("Al");
+    const second = document.createTextNode("pha");
+    leaf.append(first, second);
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(first, 1);
+    range.setEnd(second, 2);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("A**lph**a");
   });
 
   it("keeps existing content when unsupported HTML clipboard has no text fallback", () => {
