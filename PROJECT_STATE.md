@@ -245,8 +245,26 @@ Vico Forum находится в ранней pre-release разработке.
   protected selections, Simple imperative insertion, visual Undo/Redo и
   CRLF round-trip/edit. Кодовый head `820d050` прошёл CI #38157088641:
   `checks` и `database` successful, включая 800 application tests,
-  builds и schema parity. Stage 3 tooling/rendering, draft local-save
-  triggers и attachment findings остаются отдельными следующими пакетами.
+  builds и schema parity. Draft local-save, оставшийся Clear formatting
+  и attachment findings остаются отдельными следующими пакетами.
+  Четвёртый пакет audit-коррекции Stage 3 tooling/rendering (2026-10-11)
+  закрывает подтверждённые defects strikethrough, общего highlight budget,
+  block insertion/caret и code-only keyboard boundary. Согласованный
+  `~~text~~` теперь разбирается одной общей narrow GFM-strikethrough
+  границей в Simple AST, preview/public renderer и content-translation
+  pipeline; полный GFM не включён. Версия защиты переводимого Markdown
+  поднята до `cnt05-strikethrough-v1`, поэтому старые translation tasks
+  корректно считаются устаревшими относительно новой AST-семантики.
+  Highlight budget вычисляется один раз по полному сообщению и наследуется
+  внутри spoiler, не сбрасываясь на его коротком body. Toolbar-команды
+  Spoiler/Table/горизонтального разделителя вставляют блок после selection,
+  не удаляют выделенный текст; divider оставляет caret после блока.
+  Обычный Advanced keydown больше не парсит весь Markdown: parser вызывается
+  только для Tab/Enter/pairing, а fenced opening/info/closing lines исключены
+  из code-only range. Добавлены regressions на renderer/Simple/translation,
+  nested spoiler budget, block insertion и fenced boundaries. Кодовый head
+  `cf9dc10` прошёл CI #38160773816: `checks` и `database` successful,
+  включая 809 application tests, builds и schema parity.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
