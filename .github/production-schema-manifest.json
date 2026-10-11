@@ -970,6 +970,12 @@
           "defaultSha256": null
         },
         {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
           "name": "version",
           "type": "integer",
           "nullable": false,
