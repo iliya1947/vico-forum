@@ -363,7 +363,14 @@ composition without changing the forum hierarchy or schema:
   and Mixed counts topics with 2+ pending visible signals. Totals are queried
   independently of the current 50-case page and prior 100-topic feed bound.
   Case-level permission filtering remains;
-  moderation cases are no longer constrained by the previous 100-question activity bound. PR #198 adds authenticated
+  moderation cases are no longer constrained by the previous 100-question activity bound.
+  **Owner acceptance 2026-10-11:** the new actionable case queue is visually
+  acceptable for the current MVP, but not final ("сойдёт"). A later dedicated
+  UX/refinement pass must revisit individual-case card composition, scanability,
+  visual hierarchy, information density and handling convenience. Do not
+  reopen the functioning mechanism or delay this PR solely for that polish.
+  Final real-runtime validation before public launch remains separate.
+ PR #198 adds authenticated
  server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
   projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
