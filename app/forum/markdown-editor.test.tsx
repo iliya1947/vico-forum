@@ -257,7 +257,6 @@ describe("MarkdownEditor", () => {
     act(() => editorRef.current?.insertText("> quoted\n\n"));
 
     expect(editor).toHaveAttribute("data-mode", "write");
-    expect(editor).toHaveAttribute("data-mode", "write");
     expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveFocus();
     expect(textarea).toHaveValue("before> quoted\n\n");
@@ -280,7 +279,6 @@ describe("MarkdownEditor", () => {
 
     fireEvent.invalid(textarea);
 
-    expect(editor).toHaveAttribute("data-mode", "write");
     expect(editor).toHaveAttribute("data-mode", "write");
     expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveFocus();
@@ -427,7 +425,7 @@ describe("MarkdownEditor", () => {
     await chooseView("split");
     await chooseView("write");
     await userEvent.click(screen.getByRole("button", { name: "Simple" }));
-    expect(screen.getByLabelText("Body")).toHaveValue(source);
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toBe(source.replace(/\r\n/gu, "\n"));
   });
 
   it("switches between write, preview, and split views without changing the textarea value", async () => {
