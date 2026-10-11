@@ -173,7 +173,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     try {
       const result = await mutateDraft(ctx.locale, {
         intent: "save", contextKey: ctx.contextKey, draftId: sent.draftId,
-        payload: sent.payload, expectedVersion: sent.baseVersion, editedAt: sent.editedAt,
+        payload: sent.payload, expectedVersion: sent.baseVersion,
       });
       if (!current(ctx)) return;
       if (result.outcome === "saved" && result.draft) {
