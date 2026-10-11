@@ -169,8 +169,10 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       }
       updateConflict(ctx, { local: latest, server: remote });
     } catch {
-      if (current(ctx) && ctx.local && !ctx.conflict) setStatus("pending");
-    } finally { ctx.reading = false; }
+      if (currentAt(ctx, epoch) && ctx.local && !ctx.conflict) setStatus("pending");
+    } finally {
+      if (ctx.epoch === epoch) ctx.reading = false;
+    }
   }
 
   async function sync(ctx: Runtime) {
@@ -214,8 +216,10 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
           else applyRemote(ctx, remote);
         }
       }
-    } catch { if (current(ctx) && !ctx.conflict) setStatus("pending"); }
-    finally { ctx.syncing = false; }
+    } catch { if (currentAt(ctx, epoch) && !ctx.conflict) setStatus("pending"); }
+    finally {
+      if (ctx.epoch === epoch) ctx.syncing = false;
+    }
   }
 
   function noteEdit(body: string, immediate = false) {
@@ -264,6 +268,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       || (ctx.local?.draftId ?? ctx.draftId) !== publishedDraftId
     ) return;
     reset(ctx, publishedVersion);
+    ctx.syncing = false;
+    ctx.reading = false;
   }
 
   useEffect(() => {
