@@ -1,4 +1,4 @@
-import { fromMarkdown } from "mdast-util-from-markdown";
+import { parseForumMarkdown } from "../markdown-syntax";
 
 /**
  * The exact Markdown string is authoritative. Parsed nodes are only a read-only
@@ -155,7 +155,7 @@ export function redoEditorEdit(history: EditorHistory): EditorHistory {
  * untouched. Unrecognized syntax is never reserialized or silently discarded.
  */
 export function editableVisualTextRanges(markdown: string): EditorSelection[] {
-  const root = fromMarkdown(markdown) as PositionedNode;
+  const root = parseForumMarkdown(markdown) as PositionedNode;
   const ranges: EditorSelection[] = [];
   function visit(node: PositionedNode): void {
     if (node.type === "text") {
@@ -176,7 +176,7 @@ export function editableVisualTextRanges(markdown: string): EditorSelection[] {
     }
     // Only containers explicitly known to be plain/ordinary Markdown may be traversed.
     if (!new Set([
-      "root", "paragraph", "heading", "emphasis", "strong", "blockquote",
+      "root", "paragraph", "heading", "emphasis", "strong", "delete", "blockquote",
       "list", "listItem",
     ]).has(node.type)) return;
     for (const child of node.children ?? []) visit(child);
