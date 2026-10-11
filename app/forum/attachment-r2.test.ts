@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { storePrivateAttachment, type PrivateAttachmentBucket } from "./attachment-r2";
+import { AttachmentLengthMismatchError, storePrivateAttachment, storePrivateAttachmentStream, type PrivateAttachmentBucket } from "./attachment-r2";
 
 function file(name: string, bytes: Uint8Array, type = "application/octet-stream"): File {
   return {
@@ -77,5 +77,91 @@ describe("private R2 attachment write contract", () => {
     await expect(storePrivateAttachment(store,
       file("work.js", new TextEncoder().encode("const a = 1;"))))
       .rejects.toThrow("R2 service unavailable");
+  });
+});
+
+function chunked(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk);
+      controller.close();
+    },
+  });
+}
+
+describe("bounded one-pass upload stream", () => {
+  it("validates a fragmented prefix and uploads exact bytes without buffering the whole file", async () => {
+    const store = bucket();
+    const bytes = new TextEncoder().encode("hello from a fragmented stream");
+    const chunks = [bytes.subarray(0, 1), bytes.subarray(1, 8), bytes.subarray(8)];
+    const stored = await storePrivateAttachmentStream(store, {
+      fileName: "notes.md", declaredMime: "text/plain", size: bytes.length, body: chunked(chunks),
+    });
+    expect(stored).toMatchObject({ outcome: "stored", bytes: bytes.length });
+    expect(store.put).toHaveBeenCalledOnce();
+    expect(store.delete).not.toHaveBeenCalled();
+  });
+
+  it("rejects an executable even when its magic bytes cross chunk boundaries", async () => {
+    const store = bucket();
+    const uploaded = await storePrivateAttachmentStream(store, {
+      fileName: "readme.txt", declaredMime: "text/plain", size: 5,
+      body: chunked([Uint8Array.from([0x4d]), Uint8Array.from([0x5a, 0x90, 0x00, 0x01])]),
+    });
+    expect(uploaded).toMatchObject({
+      outcome: "rejected", inspection: { reason: "executable-signature", suspicious: true },
+    });
+    expect(store.put).not.toHaveBeenCalled();
+  });
+
+  it("rejects oversized declared content before touching R2 or consuming the body", async () => {
+    const store = bucket();
+    const canceled = vi.fn();
+    const body = new ReadableStream<Uint8Array>({
+      pull() { throw new Error("must not consume oversized input"); },
+      cancel: canceled,
+    });
+    const result = await storePrivateAttachmentStream(store, {
+      fileName: "big.txt", declaredMime: "text/plain", size: 101, body,
+    }, 100);
+    expect(result).toMatchObject({ outcome: "rejected", inspection: { reason: "too-large" } });
+    expect(canceled).toHaveBeenCalledOnce();
+    expect(store.put).not.toHaveBeenCalled();
+  });
+
+  it("fails closed and removes the object when the actual body is shorter than claimed", async () => {
+    const store = bucket();
+    const bytes = new TextEncoder().encode("a".repeat(4096));
+    await expect(storePrivateAttachmentStream(store, {
+      fileName: "notes.txt", declaredMime: "text/plain", size: 5000, body: chunked([bytes]),
+    })).rejects.toBeInstanceOf(AttachmentLengthMismatchError);
+    expect(store.put).toHaveBeenCalledOnce();
+    expect(store.delete).toHaveBeenCalledOnce();
+  });
+
+  it("fails closed and removes the object when actual streaming bytes exceed the claim", async () => {
+    const store = bucket();
+    const first = new TextEncoder().encode("a".repeat(4096));
+    const extra = new TextEncoder().encode("extra");
+    await expect(storePrivateAttachmentStream(store, {
+      fileName: "notes.txt", declaredMime: "text/plain",
+      size: 4096, body: chunked([first, extra]),
+    })).rejects.toBeInstanceOf(AttachmentLengthMismatchError);
+    expect(store.put).toHaveBeenCalledOnce();
+    expect(store.delete).toHaveBeenCalledOnce();
+  });
+
+  it("fails without exposing a key when R2 rejects after receiving part of the stream", async () => {
+    const store = bucket();
+    store.put.mockImplementationOnce(async (_key, body) => {
+      const reader = body.getReader();
+      await reader.read();
+      throw new Error("R2 interrupted");
+    });
+    await expect(storePrivateAttachmentStream(store, {
+      fileName: "notes.txt", declaredMime: "text/plain",
+      size: 5, body: chunked([new TextEncoder().encode("hello")]),
+    })).rejects.toThrow("R2 interrupted");
+    expect(store.delete).toHaveBeenCalledOnce();
   });
 });
