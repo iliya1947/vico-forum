@@ -20,6 +20,12 @@ describe("isolated browser draft cache", () => {
     expect(readLocalEditorDraft("alice", first.contextKey)).toBeNull();
     expect(readLocalEditorDraft("bob", first.contextKey)?.payload.body).toBe("Bob");
   });
+  it("keeps a valid local copy when the device clock moved backward", () => {
+    const future = { ...first, editedAt: new Date(Date.now() + 7 * 86_400_000).toISOString() };
+    expect(writeLocalEditorDraft(future)).toBe(true);
+    expect(readLocalEditorDraft("alice", first.contextKey)?.payload.body).toBe("Alice");
+  });
+
   it("expires 30-day-old copies but preserves new drafts", () => {
     writeLocalEditorDraft({ ...first, editedAt: new Date(Date.now()-31*86_400_000).toISOString() });
     expect(readLocalEditorDraft("alice", first.contextKey)).toBeNull();
