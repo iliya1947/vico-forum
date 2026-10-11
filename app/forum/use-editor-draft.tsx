@@ -284,6 +284,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       if (event.key !== draftStorageKey(ownerId, contextKey)) return;
       const other = readLocalEditorDraft(ownerId, contextKey);
       if (!other) { void checkRemote(ctx); return; }
+      // Storage events can arrive while this tab has unflushed typing.
+      // Never restore the other tab over that still-live editor buffer.
+      if (ctx.hasInput) capture(ctx);
       if (!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt) {
         ctx.local = other;
         ctx.body = other.payload.body;
