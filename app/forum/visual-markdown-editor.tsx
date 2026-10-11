@@ -133,7 +133,9 @@ function VisualTextLeaf({
         const html = event.clipboardData.getData("text/html");
         if (html || plain.includes("\n") || plain.includes("\r")) {
           const converted = html ? clipboardHtmlToMarkdown(html) : null;
-          onReplaceRange(selected, converted ?? clipboardPlainToMarkdown(plain));
+          if (converted !== null) onReplaceRange(selected, converted);
+          else if (plain) onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          // HTML-only unsupported clipboard entries must never erase a selection.
           if (html && converted === null) onPasteFallback();
           return;
         }
