@@ -245,8 +245,8 @@ Vico Forum находится в ранней pre-release разработке.
   protected selections, Simple imperative insertion, visual Undo/Redo и
   CRLF round-trip/edit. Кодовый head `820d050` прошёл CI #38157088641:
   `checks` и `database` successful, включая 800 application tests,
-  builds и schema parity. Draft local-save, оставшийся Clear formatting
-  и attachment findings остаются отдельными следующими пакетами.
+  builds и schema parity. Local-save triggers впоследствии закрыты пятым
+  audit-пакетом; Clear formatting и attachment findings остаются отдельными пакетами.
   Четвёртый пакет audit-коррекции Stage 3 tooling/rendering (2026-10-11)
   закрывает подтверждённые defects strikethrough, общего highlight budget,
   block insertion/caret и code-only keyboard boundary. Согласованный
