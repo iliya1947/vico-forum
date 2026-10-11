@@ -22,6 +22,8 @@ function textAsMarkdown(value: string): string {
  */
 export function clipboardHtmlToMarkdown(html: string): string | null {
   if (html.length > 100_000 || typeof DOMParser === "undefined") return null;
+  // DOMParser may relocate <script> into the document head before traversal.
+  if (/<\s*\/?\s*(?:script|style|svg|iframe|object|embed|form|img)\b/iu.test(html)) return null;
   const doc = new DOMParser().parseFromString(html, "text/html");
   let valid = true;
   function plain(element: Node): string {
