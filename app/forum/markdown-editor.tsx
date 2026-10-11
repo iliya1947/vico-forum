@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -8,7 +9,9 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown } from "./markdown";
-import { createEditorHistory, recordEditorEdit, redoEditorEdit, undoEditorEdit } from "./editor-document";
+import { createEditorHistory, editVisualText, recordEditorEdit, redoEditorEdit, undoEditorEdit, type EditorSelection } from "./editor-document";
+import { VisualMarkdownEditor, escapeVisualMarkdownText } from "./visual-markdown-editor";
+import { useHeaderAuthUser } from "../auth/auth-controls";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -24,6 +27,7 @@ export interface MarkdownEditorProps {
   describedBy?: string;
   defaultValue?: string;
   defaultPreviewOpen?: boolean;
+  defaultAuthoringMode?: "simple" | "advanced";
 }
 
 interface PendingSelection {
@@ -71,10 +75,39 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       describedBy,
       defaultValue = "",
       defaultPreviewOpen = false,
+      defaultAuthoringMode = "simple",
     },
     forwardedRef,
   ) {
     const { t } = useTranslation("common");
+    const authUser = useHeaderAuthUser();
+    const visualSelectionRef = useRef<EditorSelection | null>(null);
+    const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
+    const [fullScreen, setFullScreen] = useState(false);
+    const accountId = authUser?.id ?? null;
+
+    useEffect(() => {
+      if (!accountId) {
+        setAuthoringMode(defaultAuthoringMode);
+        return;
+      }
+      try {
+        const stored = window.localStorage.getItem("vico:editor:mode:" + accountId);
+        setAuthoringMode(stored === "advanced" || stored === "simple" ? stored : defaultAuthoringMode);
+      } catch {
+        setAuthoringMode(defaultAuthoringMode);
+      }
+    }, [accountId, defaultAuthoringMode]);
+
+    function switchAuthoring(next: "simple" | "advanced") {
+      setAuthoringMode(next);
+      setMode("write");
+      visualSelectionRef.current = null;
+      if (accountId) {
+        try { window.localStorage.setItem("vico:editor:mode:" + accountId, next); } catch { /* private mode */ }
+      }
+    }
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
@@ -102,28 +135,50 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(next.current.markdown);
     }
     const [codeLanguage, setCodeLanguage] = useState("");
-    const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "split" : "write");
+    const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "preview" : "write");
+
+    function sourceSelection(): EditorSelection {
+      if (authoringMode === "simple") {
+        return visualSelectionRef.current ?? { start: value.length, end: value.length };
+      }
+      const textarea = textareaRef.current;
+      return {
+        start: textarea?.selectionStart ?? value.length,
+        end: textarea?.selectionEnd ?? value.length,
+      };
+    }
+
+    function updateVisualText(range: EditorSelection, text: string) {
+      const next = editVisualText(historyRef.current, range, escapeVisualMarkdownText(text));
+      if (!next) { switchAuthoring("advanced"); return; }
+      historyRef.current = next;
+      setValue(next.current.markdown);
+    }
+
+    function insertVisualParagraph(offset: number) {
+      if (offset < 0 || offset > value.length) return;
+      const next = value.slice(0, offset) + "\n\n" + value.slice(offset);
+      const at = offset + 2;
+      pendingSelectionRef.current = { start: at, end: at };
+      commitSource(next);
+    }
 
     useLayoutEffect(() => {
       const pending = pendingSelectionRef.current;
       const textarea = textareaRef.current;
-      if (!pending || !textarea || mode === "preview") return;
+      if (!pending || !textarea || mode === "preview" || authoringMode !== "advanced") return;
 
       textarea.focus();
       textarea.setSelectionRange(pending.start, pending.end);
       pendingSelectionRef.current = null;
-    }, [mode, value]);
+    }, [mode, value, authoringMode]);
 
     function replaceSelection(
       prefix: string,
       suffix: string,
       emptySelectionOffset = prefix.length,
     ) {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
+      const { start, end } = sourceSelection();
       const selected = value.slice(start, end);
       const nextValue = value.slice(0, start) + prefix + selected + suffix + value.slice(end);
 
@@ -140,11 +195,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function prefixSelectedLines(prefixForLine: (index: number) => string) {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const selectionStart = textarea.selectionStart ?? value.length;
-      const selectionEnd = textarea.selectionEnd ?? selectionStart;
+      const { start: selectionStart, end: selectionEnd } = sourceSelection();
 
       if (selectionStart === selectionEnd) {
         const lineStart = selectionStart === 0 ? 0 : value.lastIndexOf("\n", selectionStart - 1) + 1;
@@ -177,11 +228,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function insertLink() {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
+      const { start, end } = sourceSelection();
       const selected = value.slice(start, end);
       const label = selected || t("editorLink");
       const destination = "https://";
@@ -204,11 +251,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function insertFencedCodeBlock() {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
+      const { start, end } = sourceSelection();
       const selected = value.slice(start, end);
       const language = normalizedCodeLanguage(codeLanguage);
       const needsLeadingBreak = start > 0 && value[start - 1] !== "\n";
@@ -239,9 +282,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         const start = textarea.selectionStart ?? value.length;
         const end = textarea.selectionEnd ?? start;
-        if (mode === "preview") {
+        if (authoringMode === "simple" || mode === "preview") {
           pendingSelectionRef.current = { start, end };
-          setMode("write");
+          switchAuthoring("advanced");
           return;
         }
 
@@ -256,10 +299,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const nextValue = value.slice(0, start) + text + value.slice(end);
         const caret = start + text.length;
         pendingSelectionRef.current = { start: caret, end: caret };
-        if (mode === "preview") setMode("write");
+        if (mode === "preview" || authoringMode === "simple") switchAuthoring("advanced");
         commitSource(nextValue);
       },
-    }), [mode, value]);
+    }), [mode, value, authoringMode]);
 
     return (
       <div className="markdown-editor" data-mode={mode}>
