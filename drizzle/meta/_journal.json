@@ -239,6 +239,13 @@
       "when": 1791635400000,
       "tag": "0033_forum_online_presence",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791717600000,
+      "tag": "0034_forum_editor_drafts",
+      "breakpoints": true
     }
   ]
 }
