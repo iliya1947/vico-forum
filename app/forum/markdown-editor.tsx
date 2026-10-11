@@ -684,7 +684,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               value={value}
               onChange={(event) => commitSource(event.target.value)}
               onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") draft.saveLocal(); }}
-              onPasteCapture={() => draft.saveLocal()}
+              onPasteCapture={() => { window.setTimeout(() => draft.saveLocal(), 0); }}
               onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
                 if (!disabled && !event.ctrlKey && !event.metaKey && !event.altKey && codeKey(event.key, event.shiftKey)) {
