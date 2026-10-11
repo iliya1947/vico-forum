@@ -276,9 +276,8 @@ function VisualTextLeaf({
       return;
     }
     const currentText = element.textContent ?? "";
-    const currentRaw = escapeVisualMarkdownText(currentText);
-    const start = visualOffsetToSourceOffset(currentRaw, currentText, offsets.start);
-    const end = visualOffsetToSourceOffset(currentRaw, currentText, offsets.end);
+    const start = visualOffsetToSourceOffset(raw, currentText, offsets.start);
+    const end = visualOffsetToSourceOffset(raw, currentText, offsets.end);
     onSelection(start === null || end === null ? null : {
       start: range.start + start,
       end: range.start + end,
@@ -334,9 +333,8 @@ function VisualTextLeaf({
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
         const currentText = event.currentTarget.textContent ?? "";
         const offsets = visualSelectionOffsets(event.currentTarget, active, currentText);
-        const currentRaw = escapeVisualMarkdownText(currentText);
-        const sourceStart = offsets ? visualOffsetToSourceOffset(currentRaw, currentText, offsets.start) : null;
-        const sourceEnd = offsets ? visualOffsetToSourceOffset(currentRaw, currentText, offsets.end) : null;
+        const sourceStart = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.start) : null;
+        const sourceEnd = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.end) : null;
         if (sourceStart === null || sourceEnd === null) {
           onPasteFallback();
           return;
