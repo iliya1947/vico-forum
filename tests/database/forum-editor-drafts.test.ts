@@ -64,6 +64,7 @@ describe("account-scoped durable editor drafts", () => {
   it("published and deleted drafts cannot be overwritten by their stale IDs", async () => {
     await store.finish("draft-owner", "help:new", id1, "published");
     expect((await store.get("draft-owner", "help:new"))?.status).toBe("published");
+    expect((await store.get("draft-owner", "help:new"))?.payload.body).toBe("");
     expect((await store.save("draft-owner", "help:new", id1, text1, 2, timestamp())).outcome).toBe("gone");
     const marker = await store.get("draft-owner", "help:new");
     const next = await store.save("draft-owner", "help:new", id2, text1, marker!.version, timestamp());
@@ -82,5 +83,6 @@ describe("account-scoped durable editor drafts", () => {
     await client.query('update forum_editor_drafts set edited_at = now()-interval \'31 days\', updated_at = now()-interval \'31 days\' where owner_id = $1 and context_key = $2', ["draft-owner","topic:abc:reply"]);
     const expired = await store.metadata("draft-owner");
     expect(expired.find((draft) => draft.contextKey === "topic:abc:reply")?.status).toBe("deleted");
+    expect((await store.get("draft-owner", "topic:abc:reply"))?.payload.body).toBe("");
   });
 });
