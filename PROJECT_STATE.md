@@ -327,11 +327,12 @@ Vico Forum находится в ранней pre-release разработке.
   или пробелами, поэтому поддерживаемый inline code может менять содержимое после
   повторного Markdown parse. tableAt() при более чем 200 data rows принимает
   только первые 200 строк как table и оставляет хвост того же Markdown-table как
-  prose вместо защиты всего oversized блока. Также найден code/spec conflict:
-  EDITOR_SPEC размещает создание Table только в Advanced menu, текущий UI
-  показывает кнопку Table и в Simple; §3.3 при этом разрешает Simple editing
-  существующих таблиц, поэтому трактовку создания таблицы нельзя менять без
-  решения владельца. Код не исправлялся.
+  prose вместо защиты всего oversized блока. Ранее найденный code/spec conflict
+  по созданию таблиц разрешён владельцем 2026-10-12 в пользу последовательного
+  Simple UX: обычную Markdown-таблицу можно создать визуальной командой в Simple,
+  затем редактировать там же; Advanced используется для ручного Markdown и
+  сложных/нестандартных таблиц. Текущий UI с Table в Simple корректен, поэтому
+  код для этого пункта менять не требуется. Остальные три Stage 3 defects не исправлялись.
   Повторный поэтапный аудит Stage 4 (2026-10-11) выявил пять current-scope
   defects. Draft runtime authoritative хранит только body, а title/tags/parentPostId
   берёт из live DOM при capture; final cleanup после React commit и same-event
