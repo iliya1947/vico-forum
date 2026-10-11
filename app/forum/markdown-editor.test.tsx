@@ -557,7 +557,8 @@ describe("MarkdownEditor", () => {
     leaf.textContent = "";
     const first = document.createTextNode("Al");
     const second = document.createTextNode("pha");
-    leaf.append(first, second);
+    leaf.appendChild(first);
+    leaf.appendChild(second);
     leaf.focus();
     const selection = window.getSelection()!;
     const range = document.createRange();
@@ -576,7 +577,8 @@ describe("MarkdownEditor", () => {
     leaf.textContent = "";
     const first = document.createTextNode("Al");
     const second = document.createTextNode("pha");
-    leaf.append(first, second);
+    leaf.appendChild(first);
+    leaf.appendChild(second);
     leaf.focus();
     const selection = window.getSelection()!;
     const range = document.createRange();
