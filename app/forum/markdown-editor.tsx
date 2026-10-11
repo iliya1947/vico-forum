@@ -13,6 +13,8 @@ import { createEditorHistory, editVisualText, recordEditorEdit, redoEditorEdit, 
 import { VisualMarkdownEditor, escapeVisualMarkdownText } from "./visual-markdown-editor";
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
+import { clipboardPlainToMarkdown } from "./clipboard-markdown";
+import { fromMarkdown } from "mdast-util-from-markdown";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -86,6 +88,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
     const [fullScreen, setFullScreen] = useState(false);
     const [pasteWarning, setPasteWarning] = useState(false);
+    const [findOpen, setFindOpen] = useState(false);
+    const [findText, setFindText] = useState("");
+    const [replaceText, setReplaceText] = useState("");
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
@@ -197,6 +202,90 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const leading = selection.start > 0 && value[selection.start - 1] !== "\n" ? "\n\n" : "";
       const trailing = selection.end < value.length && value[selection.end] !== "\n" ? "\n\n" : "";
       replaceSourceRange(selection, leading + text + trailing);
+    }
+
+    function codeRegion(caret: number): boolean {
+      const root = fromMarkdown(value) as {
+        children?: Array<{ type: string; position?: { start: { offset?: number }; end: { offset?: number } } }>;
+      };
+      return root.children?.some((node) => node.type === "code"
+        && caret > (node.position?.start.offset ?? Number.POSITIVE_INFINITY)
+        && caret <= (node.position?.end.offset ?? Number.NEGATIVE_INFINITY)) ?? false;
+    }
+
+    function codeKey(key: string, shift: boolean) {
+      const textarea = textareaRef.current;
+      if (!textarea) return false;
+      const { start, end } = sourceSelection();
+      if (!codeRegion(start) || !codeRegion(end)) return false;
+      if (key === "Tab") {
+        const first = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+        const last = value.indexOf("\n", end);
+        const right = last < 0 ? value.length : last;
+        const block = value.slice(first, right);
+        const lines = block.split("\n");
+        const edit = shift
+          ? lines.map((line) => line.startsWith("  ") ? line.slice(2) : line.startsWith(" ") ? line.slice(1) : line).join("\n")
+          : lines.map((line) => "  " + line).join("\n");
+        replaceSourceRange({ start: first, end: right }, edit);
+        return true;
+      }
+      if (key === "Enter") {
+        const startOfLine = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+        const indent = /^ */u.exec(value.slice(startOfLine, start))?.[0] ?? "";
+        replaceSourceRange({ start, end }, "\n" + indent);
+        return true;
+      }
+      const matches: Record<string, string> = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+      if (Object.prototype.hasOwnProperty.call(matches, key) && start === end) {
+        replaceSourceRange({ start, end }, key + matches[key]);
+        pendingSelectionRef.current = { start: start + 1, end: start + 1 };
+        textarea.focus();
+        textarea.setSelectionRange(start + 1, start + 1);
+        return true;
+      }
+      return false;
+    }
+
+    async function pasteFromClipboard(format: "plain" | "code") {
+      try {
+        if (!navigator.clipboard?.readText) throw new Error("Clipboard unsupported");
+        const text = await navigator.clipboard.readText();
+        if (format === "plain") {
+          replaceSourceRange(sourceSelection(), clipboardPlainToMarkdown(text));
+          return;
+        }
+        const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
+        insertTechnicalBlock(fence + normalizedCodeLanguage(codeLanguage) + "\n" + text + "\n" + fence);
+      } catch { setPasteWarning(true); }
+    }
+
+    function clearInlineFormatting() {
+      const { start, end } = sourceSelection();
+      if (start === end) return;
+      for (const marker of ["**", "~~", "_"]) {
+        if (value.slice(start - marker.length, start) !== marker
+          || value.slice(end, end + marker.length) !== marker) continue;
+        const plain = value.slice(start, end);
+        replaceSourceRange({ start: start - marker.length, end: end + marker.length }, plain);
+        return;
+      }
+    }
+
+    function findNext() {
+      if (!findText) return;
+      const textarea = textareaRef.current;
+      const current = textarea?.selectionEnd ?? 0;
+      let at = value.indexOf(findText, current);
+      if (at < 0) at = value.indexOf(findText);
+      if (at < 0) return;
+      switchAuthoring("advanced");
+      pendingSelectionRef.current = { start: at, end: at + findText.length };
+    }
+
+    function replaceAllMatches() {
+      if (!findText || !value.includes(findText)) return;
+      replaceSourceRange({ start: 0, end: value.length }, value.split(findText).join(replaceText));
     }
 
     function insertVisualParagraph(offset: number) {
@@ -427,6 +516,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     onClick={() => insertTechnicalBlock(":::spoiler\n\n:::")}>{t("editorSpoiler")}</button>
                   <button type="button" disabled={disabled} aria-label={t("editorTable")}
                     onClick={() => insertTechnicalBlock("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorClearFormatting")}
+                    onClick={clearInlineFormatting}>{t("editorClearFormatting")}</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorPastePlain")}
+                    onClick={() => void pasteFromClipboard("plain")}>{t("editorPastePlain")}</button>
                   {authoringMode === "advanced" ? (
                     <>
                       <button type="button" disabled={disabled} aria-label={t("editorInlineCode")} onClick={() => {
@@ -436,6 +529,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                       }}>{t("editorInlineCode")}</button>
                       <button type="button" disabled={disabled} aria-label={t("editorCodeBlock")}
                         onClick={insertFencedCodeBlock}>{t("editorCodeBlock")}</button>
+                      <button type="button" disabled={disabled} aria-label={t("editorPasteCode")}
+                        onClick={() => void pasteFromClipboard("code")}>{t("editorPasteCode")}</button>
+                      <button type="button" disabled={disabled} aria-label={t("editorFindReplace")}
+                        onClick={() => setFindOpen((open) => !open)}>{t("editorFindReplace")}</button>
                     </>
                   ) : null}
                 </div>
@@ -482,6 +579,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           </div>
         </div>
 
+        {authoringMode === "advanced" && findOpen ? (
+          <div className="markdown-editor-find" role="group" aria-label={t("editorFindReplace")}>
+            <input aria-label={t("editorFind")} value={findText} onChange={(event) => setFindText(event.target.value)} />
+            <input aria-label={t("editorReplacement")} value={replaceText} onChange={(event) => setReplaceText(event.target.value)} />
+            <button type="button" onClick={findNext}>{t("editorFindNext")}</button>
+            <button type="button" onClick={replaceAllMatches}>{t("editorReplaceAll")}</button>
+            <button type="button" onClick={() => setFindOpen(false)}>{t("profileCancel")}</button>
+          </div>
+        ) : null}
         <div className={"markdown-editor-workspace is-" + mode}>
           {authoringMode === "simple" && mode !== "preview" ? (
             <VisualMarkdownEditor
@@ -510,8 +616,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onChange={(event) => commitSource(event.target.value)}
               onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
+                if (!disabled && codeKey(event.key, event.shiftKey)) {
+                  event.preventDefault();
+                  return;
+                }
                 if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
                 const key = event.key.toLowerCase();
+                if (key === "f" && authoringMode === "advanced") {
+                  event.preventDefault();
+                  setFindOpen(true);
+                  return;
+                }
+                if (key === "Enter") {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                  return;
+                }
                 if (key === "z" || key === "y") {
                   event.preventDefault();
                   travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
