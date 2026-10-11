@@ -23,5 +23,6 @@ describe("Editor 2.0 clipboard import", () => {
 
   it("preserves multiline Unicode when plain clipboard text is escaped", () => {
     expect(clipboardPlainToMarkdown("שלום\n**literal**")).toBe("שלום\n\\*\\*literal\\*\\*");
+    expect(clipboardPlainToMarkdown("# Title\n- item")).toBe("\\# Title\n\\- item");
   });
 });
