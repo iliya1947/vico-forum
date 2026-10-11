@@ -106,6 +106,14 @@ export function editableVisualTextRanges(markdown: string): EditorSelection[] {
       }
       return;
     }
+    // Link labels are editable only for explicit [label](target) links.
+    if (node.type === "link") {
+      const start = node.position?.start.offset;
+      if (start !== undefined && markdown[start] === "[") {
+        for (const child of node.children ?? []) visit(child);
+      }
+      return;
+    }
     // Only containers explicitly known to be plain/ordinary Markdown may be traversed.
     if (!new Set([
       "root", "paragraph", "heading", "emphasis", "strong", "blockquote",
