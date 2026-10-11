@@ -25,6 +25,7 @@ interface VisualEditorProps {
   onEditTechnical(): void;
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
+  onPasteTable(range: EditorSelection, plain: string): void;
 }
 
 export function escapeVisualMarkdownText(value: string): string {
@@ -41,7 +42,7 @@ function sourceRange(node: VisualNode): EditorSelection | null {
 }
 
 function VisualTextLeaf({
-  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph,
+  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph, onPasteTable,
 }: {
   text: string;
   range: EditorSelection;
@@ -50,6 +51,7 @@ function VisualTextLeaf({
   onTextEdit: VisualEditorProps["onTextEdit"];
   onSelection: VisualEditorProps["onSelection"];
   onInsertParagraph: VisualEditorProps["onInsertParagraph"];
+  onPasteTable: VisualEditorProps["onPasteTable"];
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
@@ -104,11 +106,18 @@ function VisualTextLeaf({
       }}
       onPaste={(event) => {
         event.preventDefault();
-        const text = event.clipboardData.getData("text/plain").replace(/[\r\n]+/gu, " ");
+        const plain = event.clipboardData.getData("text/plain");
+        const text = plain.replace(/[\r\n]+/gu, " ");
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
         const active = selection.getRangeAt(0);
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
+        if (plain.includes("\t")) {
+          const start = Math.max(0, active.startOffset);
+          const end = Math.max(start, active.endOffset);
+          onPasteTable({ start: range.start + start, end: range.start + end }, plain);
+          return;
+        }
         active.deleteContents();
         const leaf = document.createTextNode(text);
         active.insertNode(leaf);
@@ -125,7 +134,7 @@ function VisualTextLeaf({
 function VisualNodeView({
   node, markdown, disabled, baseOffset, ...actions
 }: { node: VisualNode; markdown: string; disabled: boolean; baseOffset: number } & Pick<
-VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension"
+VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension" | "onPasteTable"
 >): ReactNode {
   const { t } = useTranslation("common");
   const children = node.children?.map((child, index) =>
@@ -271,7 +280,8 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         <p><VisualTextLeaf text="" raw=""
           range={{ start: sourceBase + markdown.length, end: sourceBase + markdown.length }}
           disabled={disabled} onTextEdit={actions.onTextEdit}
-          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph} /></p>
+          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph}
+          onPasteTable={actions.onPasteTable} /></p>
       ) : null}
     </section>
   );
