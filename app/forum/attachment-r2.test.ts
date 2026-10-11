@@ -16,12 +16,17 @@ function file(name: string, bytes: Uint8Array, type = "application/octet-stream"
   } as File;
 }
 function bucket() {
-  const put = vi.fn(async (_key: string, body: ReadableStream<Uint8Array>,
-    _options: { httpMetadata: { contentType: string } }) => {
+  const put = vi.fn(async (key: string, body: ReadableStream<Uint8Array>,
+    options: { httpMetadata: { contentType: string } }) => {
+    if (!key.startsWith("private/") || options.httpMetadata.contentType !== "application/octet-stream") {
+      throw new Error("unprotected object write");
+    }
     const result = new Uint8Array(await new Response(body).arrayBuffer());
     return { size: result.length };
   });
-  const del = vi.fn(async (_key: string) => {});
+  const del = vi.fn(async (key: string) => {
+    if (!key.startsWith("private/")) throw new Error("unprotected object deletion");
+  });
   return { put, delete: del } satisfies PrivateAttachmentBucket;
 }
 
