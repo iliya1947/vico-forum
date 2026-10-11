@@ -6,6 +6,7 @@ export const DRAFT_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 export interface LocalEditorDraft {
   ownerId: string;
   contextKey: string;
+  draftId: string;
   payload: ForumEditorDraftPayload;
   editedAt: string;
   baseVersion: number;
@@ -13,6 +14,7 @@ export interface LocalEditorDraft {
 }
 export interface DraftMetadata {
   contextKey: string;
+  draftId: string;
   version: number;
   status: "active" | "deleted" | "published";
   title: string;
@@ -35,6 +37,7 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && Number.isFinite(Date.parse(data.editedAt))
     && Date.now() - Date.parse(data.editedAt) < DRAFT_LIFETIME_MS
     && Date.parse(data.editedAt) < Date.now() + 60_000
+    && typeof data.draftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.draftId)
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
     && !!data.payload && typeof data.payload.body === "string"
     && typeof data.payload.title === "string" && typeof data.payload.tags === "string";
