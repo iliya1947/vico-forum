@@ -34,6 +34,66 @@ function validSelection(selection: EditorSelection, length: number): EditorSelec
   return { start, end };
 }
 
+export function textareaMarkdown(markdown: string): string {
+  return markdown.replace(/\r\n?|\n/gu, "\n");
+}
+
+export function textareaOffsetToSourceOffset(markdown: string, offset: number): number {
+  const target = Math.min(Math.max(Math.trunc(offset), 0), textareaMarkdown(markdown).length);
+  let source = 0;
+  let visible = 0;
+  while (source < markdown.length && visible < target) {
+    if (markdown[source] === "\r" && markdown[source + 1] === "\n") source += 2;
+    else source += 1;
+    visible += 1;
+  }
+  return source;
+}
+
+export function sourceOffsetToTextareaOffset(markdown: string, offset: number): number {
+  const target = Math.min(Math.max(Math.trunc(offset), 0), markdown.length);
+  let source = 0;
+  let visible = 0;
+  while (source < target) {
+    if (markdown[source] === "\r" && markdown[source + 1] === "\n") {
+      if (source + 1 >= target) break;
+      source += 2;
+    } else {
+      source += 1;
+    }
+    visible += 1;
+  }
+  return visible;
+}
+
+/**
+ * Textarea DOM values normalize line endings to LF. Apply only the edited
+ * normalized span back to the exact source so untouched CRLF/CR fragments stay byte-identical.
+ */
+export function applyTextareaEdit(markdown: string, nextTextareaValue: string): string {
+  const previous = textareaMarkdown(markdown);
+  if (previous === nextTextareaValue) return markdown;
+
+  let prefix = 0;
+  while (
+    prefix < previous.length
+    && prefix < nextTextareaValue.length
+    && previous[prefix] === nextTextareaValue[prefix]
+  ) prefix += 1;
+
+  let suffix = 0;
+  while (
+    suffix < previous.length - prefix
+    && suffix < nextTextareaValue.length - prefix
+    && previous[previous.length - 1 - suffix] === nextTextareaValue[nextTextareaValue.length - 1 - suffix]
+  ) suffix += 1;
+
+  const sourceStart = textareaOffsetToSourceOffset(markdown, prefix);
+  const sourceEnd = textareaOffsetToSourceOffset(markdown, previous.length - suffix);
+  const inserted = nextTextareaValue.slice(prefix, nextTextareaValue.length - suffix);
+  return markdown.slice(0, sourceStart) + inserted + markdown.slice(sourceEnd);
+}
+
 export function createEditorHistory(markdown = ""): EditorHistory {
   return { current: { markdown, selection: { start: 0, end: 0 } }, past: [], future: [] };
 }
@@ -133,6 +193,7 @@ export function editVisualText(
   history: EditorHistory,
   range: EditorSelection,
   replacement: string,
+  selectionAfter?: EditorSelection,
 ): EditorHistory | null {
   const markdown = history.current.markdown;
   const { start, end } = range;
@@ -142,5 +203,13 @@ export function editVisualText(
     .some((span) => start >= span.start && end <= span.end)) return null;
   const next = markdown.slice(0, start) + replacement + markdown.slice(end);
   const cursor = start + replacement.length;
-  return recordEditorEdit(history, next, range, { start: cursor, end: cursor });
+  const before = history.current.selection.start >= start && history.current.selection.end <= end
+    ? history.current.selection
+    : range;
+  return recordEditorEdit(
+    history,
+    next,
+    before,
+    selectionAfter ?? { start: cursor, end: cursor },
+  );
 }
