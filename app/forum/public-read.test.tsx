@@ -247,6 +247,7 @@ const reader: ForumReader = {
   readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsActive: async () => helpPage,
   readHelpSolutionsNeedsAttention: async () => needsAttentionHelpPage,
+  readHelpAttentionCases: async (_group, _visibility, page = 0) => ({ cases: [], hasMore: false, page }),
   readHelpSolutionsSolved: async () => solvedHelpPage,
   readHelpSolutionsMine: async () => helpPage,
   readHelpSolutionsWantToHelp: async () => wantToHelpPage,
