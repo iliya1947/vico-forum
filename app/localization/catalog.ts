@@ -135,7 +135,7 @@ export const canonicalEnglishCatalog = {
     attentionPlaceholderGroup2: message("attentionPlaceholderGroup2", "Group 2", "Second temporary group in complaints and security modes."),
     attentionPlaceholderGroup3: message("attentionPlaceholderGroup3", "Group 3", "Third temporary group in complaints and security modes."),
     attentionPlaceholderEmpty: message("attentionPlaceholderEmpty", "This section is not connected yet.", "Empty message for future moderation inboxes without implemented workflows."),
-    attentionCaseReporter: message("attentionCaseReporter", "Reported by", "Moderator queue case submitter."),
+    attentionCaseReporter: message("attentionCaseReporter", "Submitted by", "Moderator queue case submitter."),
     attentionCaseModeratorStatus: message("attentionCaseModeratorStatus", "Moderator-assigned solution status", "Status task distinct from a submitted user signal."),
     attentionCaseTargetAnswer: message("attentionCaseTargetAnswer", "View reported answer", "Permanent link to a reported best-answer message."),
     attentionCaseExplanation: message("attentionCaseExplanation", "User's explanation", "Explanation on a pending moderation case."),
