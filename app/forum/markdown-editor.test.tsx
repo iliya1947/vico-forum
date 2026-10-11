@@ -627,6 +627,16 @@ describe("MarkdownEditor", () => {
     expect(submitted).toHaveBeenCalledTimes(1);
   });
 
+  it("submits Advanced Markdown exactly once on Ctrl+Enter", () => {
+    const submitted = vi.fn();
+    renderEditor(<form onSubmit={(event) => { event.preventDefault(); submitted(); }}>
+      <label htmlFor="body">Body</label>
+      <MarkdownEditor id="body" name="body" defaultAuthoringMode="advanced" defaultValue="Reply" />
+    </form>);
+    fireEvent.keyDown(screen.getByLabelText("Body"), { key: "Enter", ctrlKey: true });
+    expect(submitted).toHaveBeenCalledTimes(1);
+  });
+
   it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
