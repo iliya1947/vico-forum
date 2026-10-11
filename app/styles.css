@@ -8872,3 +8872,113 @@ a.topic-tag:focus-visible {
   .profile-statistics dd { text-align: end; }
   .profile-identity > .profile-button { inline-size: 100%; }
 }
+
+
+/* Editor 2.0 — source-preserving Simple/Advanced authoring surfaces. */
+.home-shell .markdown-editor[data-authoring="simple"] .markdown-editor-code-tools,
+.home-shell .markdown-editor[data-authoring="simple"] .markdown-editor-language {
+  display: none;
+}
+.home-shell .markdown-editor-toolbar {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+.home-shell .markdown-editor-formatting {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.home-shell .markdown-editor-tool-group { flex: 0 0 auto; }
+.home-shell .markdown-editor-controls {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: .22rem;
+  margin-inline-start: auto;
+}
+.home-shell .markdown-editor-controls > button:first-child { padding-inline: .7rem; }
+.home-shell .markdown-editor-preview-menu { position: relative; font: inherit; }
+.home-shell .markdown-editor-preview-menu summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.05rem;
+  cursor: pointer;
+  padding-inline: .5rem;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.home-shell .markdown-editor-preview-options {
+  position: absolute;
+  z-index: 20;
+  inset-inline-end: 0;
+  inset-block-start: 100%;
+  display: grid;
+  min-inline-size: 9rem;
+  padding: .25rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .35rem;
+  background: var(--color-surface);
+  box-shadow: 0 .35rem .75rem #0002;
+}
+.home-shell .markdown-editor-preview-options button { justify-content: start; white-space: nowrap; }
+.home-shell .markdown-editor-preview-options button[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+}
+.home-shell .markdown-editor-workspace:has(> .markdown-editor-visual) { position: relative; }
+.home-shell .markdown-editor[data-authoring="simple"] .markdown-editor-write-pane {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.home-shell .markdown-editor-visual {
+  min-height: 14rem;
+  min-width: 0;
+  padding: .85rem .9rem;
+  overflow-wrap: anywhere;
+}
+.home-shell .markdown-editor-visual [data-visual-text="true"] {
+  border-radius: .15rem;
+  min-inline-size: .15rem;
+  white-space: pre-wrap;
+  cursor: text;
+}
+.home-shell .markdown-editor-visual [data-visual-text="true"]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.home-shell .markdown-editor-protected { display: inline-block; max-inline-size: 100%; }
+.home-shell .markdown-editor-protected > button {
+  margin-inline-start: .35rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  border-radius: .3rem;
+  cursor: pointer;
+}
+.home-shell .markdown-editor-protected:has(.forum-code-block) {
+  display: block;
+}
+.home-shell .markdown-editor.is-fullscreen {
+  position: fixed;
+  z-index: 150;
+  inset: 0;
+  border-radius: 0;
+  height: 100dvh;
+  overflow: auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--color-surface);
+}
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-workspace { min-height: 0; overflow: auto; }
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-visual,
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-write-pane > textarea {
+  min-height: calc(100dvh - 5rem);
+}
+@media (max-width: 44rem) {
+  .home-shell .markdown-editor-toolbar { gap: .25rem; padding: .35rem; }
+  .home-shell .markdown-editor-controls > button:first-child { padding-inline: .3rem; }
+  .home-shell .markdown-editor-preview-menu summary { padding-inline: .2rem; }
+}
