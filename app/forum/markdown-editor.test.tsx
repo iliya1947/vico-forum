@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { HeaderAuthProvider } from "../auth/auth-controls";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -426,6 +427,48 @@ describe("MarkdownEditor", () => {
     await chooseView("write");
     await userEvent.click(screen.getByRole("button", { name: "Simple" }));
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toBe(source.replace(/\r\n/gu, "\n"));
+  });
+
+  it("isolates preferred editor mode by account on the same device", async () => {
+    const firstId = "editor-mode-uid-a";
+    const secondId = "editor-mode-uid-b";
+    window.localStorage.removeItem("vico:editor:mode:" + firstId);
+    window.localStorage.removeItem("vico:editor:mode:" + secondId);
+    const first = renderEditor(
+      <HeaderAuthProvider initialUser={{ id: firstId, name: "First" }}>
+        <MarkdownEditor id="body" name="body" />
+      </HeaderAuthProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    expect(window.localStorage.getItem("vico:editor:mode:" + firstId)).toBe("advanced");
+    first.unmount();
+    const second = renderEditor(
+      <HeaderAuthProvider initialUser={{ id: secondId, name: "Second" }}>
+        <MarkdownEditor id="body2" name="body" />
+      </HeaderAuthProvider>,
+    );
+    expect(document.querySelector(".markdown-editor")).toHaveAttribute("data-authoring", "simple");
+    expect(window.localStorage.getItem("vico:editor:mode:" + secondId)).toBeNull();
+    second.unmount();
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: firstId, name: "First" }}>
+        <MarkdownEditor id="body3" name="body" />
+      </HeaderAuthProvider>,
+    );
+    expect(document.querySelector(".markdown-editor")).toHaveAttribute("data-authoring", "advanced");
+    window.localStorage.removeItem("vico:editor:mode:" + firstId);
+  });
+
+  it("inserts text in a new visual paragraph without losing native submission", () => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="First" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    fireEvent.keyDown(leaf, { key: "Enter" });
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea).toHaveValue("First\n\n");
+    const newLeaf = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')[1]!;
+    newLeaf.textContent = "Second";
+    fireEvent.input(newLeaf);
+    expect(new FormData(textarea.form!).get("body")).toBe("First\n\nSecond");
   });
 
   it("switches between write, preview, and split views without changing the textarea value", async () => {
