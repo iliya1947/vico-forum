@@ -141,6 +141,52 @@ describe("Help moderator attention queue", () => {
     expect((await forum.readHelpSolutionsNeedsAttention({}, { signalKinds: [], appeals: false }))?.questions).toEqual([]);
   });
 
+  it("returns full individual case records and preserves moderator visibility", async () => {
+    const details = await forum.readHelpAttentionCases("needs-details", all);
+    expect(details.cases.map(({ id }) => id)).toEqual(["s1", "s2"]);
+    expect(details.cases[0]).toMatchObject({
+      type: "signal", id: "s1", kind: "needs-details",
+      submittedByUserId: "reporter", submittedByName: "reporter",
+      topicId: "single", topicTitle: "Question single", explanation: "Please clarify",
+      targetPostId: null, original: null,
+    });
+    expect(details.hasMore).toBe(false);
+    expect(details.cases[0]?.createdAt).toBeInstanceOf(Date);
+
+    const duplicate = await forum.readHelpAttentionCases("duplicate", all);
+    expect(duplicate.cases).toHaveLength(1);
+    expect(duplicate.cases[0]).toMatchObject({
+      type: "signal", id: "s3", kind: "duplicate",
+      submittedByUserId: "manager",
+      original: { id: "unanswered", title: "Question unanswered" },
+    });
+
+    const appeals = await forum.readHelpAttentionCases("appeals", all);
+    expect(appeals.cases.map(({ id }) => id)).toEqual(["a1", "a2"]);
+    expect(appeals.cases[0]).toMatchObject({
+      type: "appeal", kind: "appeal", submittedByUserId: "author",
+      explanation: "I dispute this duplicate",
+      original: { id: "unanswered", title: "Question unanswered" },
+    });
+
+    const mixed = await forum.readHelpAttentionCases("mixed", all);
+    expect(mixed.cases.map(({ id }) => id)).toEqual(["s2", "s3"]);
+    expect((await forum.readHelpAttentionCases("mixed", {
+      signalKinds: ["needs-details"], appeals: false,
+    })).cases).toEqual([]);
+    expect((await forum.readHelpAttentionCases("duplicate", {
+      signalKinds: ["needs-details"], appeals: true,
+    })).cases).toEqual([]);
+    expect((await forum.readHelpAttentionCases("appeals", {
+      signalKinds: ["duplicate"], appeals: false,
+    })).cases).toEqual([]);
+    expect((await forum.readHelpAttentionCases("needs-review", {
+      signalKinds: [], appeals: false,
+    })).cases).toEqual([]);
+    await expect(forum.readHelpAttentionCases("needs-details", all, -1))
+      .rejects.toThrow(RangeError);
+  });
+
   it("honors combined filters before attention selection and drops resolved tasks", async () => {
     expect((await forum.readHelpSolutionsNeedsAttention({ solution: "solved" }, all))?.questions).toEqual([]);
     await client.query(`
