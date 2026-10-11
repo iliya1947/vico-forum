@@ -492,6 +492,28 @@ export const forumProfiles = pgTable("forum_profiles", {
   check("forum_profiles_website_url", sql`${table.websiteUrl} is null or (char_length(${table.websiteUrl}) <= 2048 and ${table.websiteUrl} ~ '^https?://')`),
 ]);
 
+export interface ForumEditorDraftPayload {
+  body: string;
+  title: string;
+  tags: string;
+  parentPostId?: string | null;
+}
+
+export const forumEditorDrafts = pgTable("forum_editor_drafts", {
+  ownerId: text("owner_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  contextKey: text("context_key").notNull(),
+  version: integer("version").notNull(),
+  status: text("status").notNull(),
+  payload: jsonb("payload").$type<ForumEditorDraftPayload>().notNull(),
+  editedAt: timestamp("edited_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  primaryKey({ name: "forum_editor_drafts_pk", columns: [table.ownerId, table.contextKey] }),
+  index("forum_editor_drafts_owner_edited_idx").on(table.ownerId, table.editedAt),
+  check("forum_editor_drafts_status_check", sql`${table.status} in ('active', 'published', 'deleted')`),
+  check("forum_editor_drafts_version_check", sql`${table.version} >= 1`),
+]);
+
 export const forumOnlinePresence = pgTable("forum_online_presence", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
