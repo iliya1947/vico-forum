@@ -150,7 +150,9 @@ Vico Forum находится в ранней pre-release разработке.
   code-only Tab/indent/pairs, literal search/replace, plain/code paste,
   Diff highlighting, filename metadata и локальные code display preferences.
   RU/EN/HE, RTL/responsive стили и регрессионные тесты добавлены.
-  Финальный CI/Pages/owner acceptance нового head ещё не подтверждены.
+  Кодовый head `f63b364` прошёл CI #38129324769: lint, typecheck,
+  application tests, builds и native PostgreSQL DB проверки успешны.
+  Pages/owner visual acceptance этапа и финальное whole-PR review ещё предстоят.
   Сложные/нестандартные таблицы остаются защищёнными для Markdown-редактирования;
   будущие черновики, вложения, Security/Attachments ingestion, mentions и
   publication/edit workflows не входят в этот срез.
