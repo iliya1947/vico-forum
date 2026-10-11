@@ -28,7 +28,6 @@ const id1 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d55";
 const id2 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d56";
 const text1 = { title: "first", body: "Draft **one**", tags: "typescript" };
 const text2 = { title: "second", body: "Draft **two**", tags: "" };
-const timestamp = () => new Date();
 
 beforeAll(async () => {
   await client.connect();
@@ -44,7 +43,7 @@ afterAll(async () => { await client.query(`drop schema if exists ${schema} casca
 
 describe("account-scoped durable editor drafts", () => {
   it("saves and retrieves only the requesting owner's context, with metadata not bodies", async () => {
-    const saved = await store.save("draft-owner", "help:new", id1, text1, 0, timestamp());
+    const saved = await store.save("draft-owner", "help:new", id1, text1, 0);
     expect(saved.outcome).toBe("saved");
     expect((await store.get("draft-other", "help:new"))).toBeNull();
     const list = await store.metadata("draft-owner");
@@ -54,31 +53,29 @@ describe("account-scoped durable editor drafts", () => {
   });
 
   it("blocks conflicting versions and preserves both contents for explicit selection", async () => {
-    const updated = await store.save("draft-owner", "help:new", id1, text2, 1, timestamp());
+    const updated = await store.save("draft-owner", "help:new", id1, text2, 1);
     expect(updated.outcome).toBe("saved");
-    expect((await store.save("draft-owner", "help:new", id1, text1, 1, timestamp())).outcome).toBe("conflict");
+    expect((await store.save("draft-owner", "help:new", id1, text1, 1)).outcome).toBe("conflict");
     expect((await store.get("draft-owner", "help:new"))?.payload.body).toBe(text2.body);
-    expect((await store.save("draft-owner", "help:new", id2, text1, 0, timestamp())).outcome).toBe("gone");
+    expect((await store.save("draft-owner", "help:new", id2, text1, 0)).outcome).toBe("gone");
   });
 
   it("published and deleted drafts cannot be overwritten by their stale IDs", async () => {
     await store.finish("draft-owner", "help:new", id1, "published");
     expect((await store.get("draft-owner", "help:new"))?.status).toBe("published");
     expect((await store.get("draft-owner", "help:new"))?.payload.body).toBe("");
-    expect((await store.save("draft-owner", "help:new", id1, text1, 2, timestamp())).outcome).toBe("gone");
+    expect((await store.save("draft-owner", "help:new", id1, text1, 2)).outcome).toBe("gone");
     const marker = await store.get("draft-owner", "help:new");
-    const next = await store.save("draft-owner", "help:new", id2, text1, marker!.version, timestamp());
+    const next = await store.save("draft-owner", "help:new", id2, text1, marker!.version);
     expect(next.outcome).toBe("saved");
     await store.finish("draft-owner", "help:new", id1, "published");
     expect((await store.get("draft-owner", "help:new"))?.status).toBe("active");
     await store.finish("draft-owner", "help:new", id2, "deleted");
-    expect((await store.save("draft-owner", "help:new", id2, text1, 0, timestamp())).outcome).toBe("gone");
+    expect((await store.save("draft-owner", "help:new", id2, text1, 0)).outcome).toBe("gone");
   });
 
-  it("refuses expired edits and purges expired drafts by 30 days", async () => {
-    await expect(store.save("draft-owner", "topic:abc:reply", id1, text1, 0, new Date(Date.now()-32*86_400_000)))
-      .rejects.toThrow("invalid draft");
-    const created = await store.save("draft-owner", "topic:abc:reply", id1, text1, 0, timestamp());
+  it("expires server-stored edits after 30 days without modification", async () => {
+    const created = await store.save("draft-owner", "topic:abc:reply", id1, text1, 0);
     expect(created.outcome).toBe("saved");
     await client.query('update forum_editor_drafts set edited_at = now()-interval \'31 days\', updated_at = now()-interval \'31 days\' where owner_id = $1 and context_key = $2', ["draft-owner","topic:abc:reply"]);
     const expired = await store.metadata("draft-owner");
