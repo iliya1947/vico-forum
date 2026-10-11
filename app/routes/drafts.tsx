@@ -60,7 +60,8 @@ export default function DraftsRoute() {
     if (!userId || !window.confirm(t("editorDraftDeleteConfirm"))) return;
     setError(false);
     try {
-      await mutateDraft(locale, { intent: "delete", contextKey: item.contextKey, draftId: item.draftId });
+      const result = await mutateDraft(locale, { intent: "delete", contextKey: item.contextKey, draftId: item.draftId });
+      if (result.outcome !== "finished") throw new Error("Draft version changed");
       clearLocalEditorDraft(userId, item.contextKey);
       setLocal(listLocalEditorDrafts(userId));
       setRemote((prev) => prev.filter((candidate) => candidate.contextKey !== item.contextKey));
