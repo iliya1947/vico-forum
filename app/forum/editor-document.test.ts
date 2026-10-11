@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyTextareaEdit, createEditorHistory, editableVisualTextRanges, editVisualText,
+  applyTextareaEdit, createEditorHistory, editableCodeRanges, editableVisualTextRanges, editVisualText,
   recordEditorEdit, redoEditorEdit, sourceOffsetToTextareaOffset, textareaMarkdown,
   textareaOffsetToSourceOffset, undoEditorEdit,
 } from "./editor-document";
@@ -31,6 +31,24 @@ describe("Editor 2.0 lossless document foundation", () => {
       "first\r\nSECOND\r\nthird",
     );
     expect(applyTextareaEdit(source, textareaMarkdown(source))).toBe(source);
+  });
+
+  it("treats strikethrough text as an editable visual range", () => {
+    const source = "Before ~~old~~ after";
+    const oldStart = source.indexOf("old");
+    expect(editableVisualTextRanges(source)).toContainEqual({
+      start: oldStart,
+      end: oldStart + "old".length,
+    });
+  });
+
+  it("excludes fenced code info and closing fence from code-only key ranges", () => {
+    const source = "```tsx\nabc\n```";
+    const ranges = editableCodeRanges(source);
+    expect(ranges).toHaveLength(1);
+    expect(source.slice(ranges[0]!.start, ranges[0]!.end)).toBe("abc\n");
+    expect(ranges[0]!.start).toBe(source.indexOf("abc"));
+    expect(ranges[0]!.end).toBe(source.lastIndexOf("```"));
   });
 
   it("edits nearby prose without rewriting fenced code, inline code or invalid syntax", () => {
