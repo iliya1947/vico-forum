@@ -1,5 +1,5 @@
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
-import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
@@ -199,6 +199,29 @@ export interface ForumHelpAttentionVisibility {
   appeals: boolean;
 }
 
+export type ForumAttentionQueueGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed";
+
+export interface ForumAttentionQueueCase {
+  type: "signal" | "appeal" | "review-status";
+  id: string;
+  kind: HelpSignalKind | "appeal" | "review-status";
+  topicId: string;
+  topicTitle: string;
+  submittedByUserId: string | null;
+  submittedByName: string | null;
+  explanation: string | null;
+  createdAt: Date;
+  targetPostId: string | null;
+  original: { id: string; title: string } | null;
+}
+
+export interface ForumAttentionQueuePage {
+  cases: ForumAttentionQueueCase[];
+  /** Mixed pages count topics; all other pages count individual tasks. */
+  hasMore: boolean;
+  page: number;
+}
+
 export interface ForumHelpAttentionState {
   signals: Partial<Record<HelpSignalKind, number>>;
   totalSignals: number;
@@ -326,6 +349,7 @@ export interface ForumReader {
   readHelpSolutionsOpen(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsActive(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsNeedsAttention(filters: ForumHelpSolutionsFilters, visibility: ForumHelpAttentionVisibility): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpAttentionCases(group: ForumAttentionQueueGroup, visibility: ForumHelpAttentionVisibility, page?: number): Promise<ForumAttentionQueuePage>;
   readHelpSolutionsSolved(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsWantToHelp(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
@@ -1455,6 +1479,158 @@ export class DrizzleForumRepository {
     visibility: ForumHelpAttentionVisibility,
   ): Promise<ForumHelpSolutionsPage | undefined> {
     return this.readHelpSolutionsPage({ mode: "attention" }, filters, visibility);
+  }
+
+  /** Select actionable cases before pagination, independently of topic activity. */
+  async readHelpAttentionCases(
+    group: ForumAttentionQueueGroup,
+    visibility: ForumHelpAttentionVisibility,
+    page = 0,
+  ): Promise<ForumAttentionQueuePage> {
+    if (!Number.isSafeInteger(page) || page < 0 || page > 10000) {
+      throw new RangeError("invalid attention queue page");
+    }
+    const pageSize = 50;
+    const offset = page * pageSize;
+    const kinds = [...new Set(visibility.signalKinds)];
+    const empty = (): ForumAttentionQueuePage => ({ cases: [], hasMore: false, page });
+    const compare = (a: ForumAttentionQueueCase, b: ForumAttentionQueueCase) =>
+      a.createdAt.getTime() - b.createdAt.getTime()
+      || (a.type + ":" + a.id).localeCompare(b.type + ":" + b.id, "en");
+
+    const original = alias(forumTopics, "attention_original_topic");
+    const originalRevision = alias(forumTopicTitleRevisions, "attention_original_revision");
+    const readSignals = async (selected: HelpSignalKind[], limit?: number, skip = 0, topicIds?: string[]) => {
+      if (!selected.length || (topicIds && !topicIds.length)) return [] as ForumAttentionQueueCase[];
+      const query = this.database.select({
+        id: forumHelpSignals.id, kind: forumHelpSignals.kind,
+        topicId: forumHelpSignals.topicId,
+        topicTitle: forumTopicTitleRevisions.originalContent,
+        targetPostId: forumHelpSignals.targetPostId,
+        originalId: original.id, originalTitle: originalRevision.originalContent,
+        submittedByUserId: forumHelpSignals.submittedByUserId,
+        submittedByName: user.name,
+        explanation: forumHelpSignals.explanation, createdAt: forumHelpSignals.createdAt,
+      }).from(forumHelpSignals)
+        .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+        .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
+        .innerJoin(user, eq(user.id, forumHelpSignals.submittedByUserId))
+        .leftJoin(original, eq(original.id, forumHelpSignals.proposedOriginalTopicId))
+        .leftJoin(originalRevision, eq(originalRevision.id, original.currentTitleRevisionId))
+        .where(and(
+          eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumHelpSignals.status, "pending"),
+          inArray(forumHelpSignals.kind, selected),
+          topicIds ? inArray(forumHelpSignals.topicId, topicIds) : undefined,
+        )).orderBy(asc(forumHelpSignals.createdAt), asc(forumHelpSignals.id))
+        .$dynamic();
+      const rows = await (limit === undefined ? query : query.limit(limit).offset(skip));
+      return rows.map((row): ForumAttentionQueueCase => ({
+        type: "signal", id: row.id, kind: row.kind as HelpSignalKind,
+        topicId: row.topicId, topicTitle: row.topicTitle,
+        submittedByUserId: row.submittedByUserId, submittedByName: row.submittedByName,
+        explanation: row.explanation, createdAt: row.createdAt,
+        targetPostId: row.targetPostId,
+        original: row.originalId && row.originalTitle
+          ? { id: row.originalId, title: row.originalTitle } : null,
+      }));
+    };
+
+    if (group === "mixed") {
+      if (!kinds.length) return empty();
+      const topics = await this.database.select({ topicId: forumHelpSignals.topicId })
+        .from(forumHelpSignals)
+        .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+        .where(and(
+          eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumHelpSignals.status, "pending"),
+          inArray(forumHelpSignals.kind, kinds),
+        ))
+        .groupBy(forumHelpSignals.topicId)
+        .having(gt(count(), 1))
+        .orderBy(asc(min(forumHelpSignals.createdAt)), asc(forumHelpSignals.topicId))
+        .limit(pageSize + 1).offset(offset);
+      const cases = await readSignals(kinds, undefined, 0,
+        topics.slice(0, pageSize).map((row) => row.topicId));
+      return { cases: cases.sort(compare), hasMore: topics.length > pageSize, page };
+    }
+
+    if (group === "appeals") {
+      if (!visibility.appeals) return empty();
+      const duplicate = alias(forumTopics, "attention_appeal_original");
+      const duplicateTitle = alias(forumTopicTitleRevisions, "attention_appeal_original_revision");
+      const rows = await this.database.select({
+        id: forumHelpDuplicateAppeals.id,
+        topicId: forumHelpDuplicateRelationships.duplicateTopicId,
+        topicTitle: forumTopicTitleRevisions.originalContent,
+        originalId: duplicate.id, originalTitle: duplicateTitle.originalContent,
+        submittedByUserId: forumHelpDuplicateAppeals.appellantUserId,
+        submittedByName: user.name, explanation: forumHelpDuplicateAppeals.explanation,
+        createdAt: forumHelpDuplicateAppeals.createdAt,
+      }).from(forumHelpDuplicateAppeals)
+        .innerJoin(forumHelpDuplicateRelationships,
+          eq(forumHelpDuplicateRelationships.id, forumHelpDuplicateAppeals.relationshipId))
+        .innerJoin(forumTopics, eq(forumTopics.id, forumHelpDuplicateRelationships.duplicateTopicId))
+        .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
+        .innerJoin(duplicate, eq(duplicate.id, forumHelpDuplicateRelationships.originalTopicId))
+        .innerJoin(duplicateTitle, eq(duplicateTitle.id, duplicate.currentTitleRevisionId))
+        .innerJoin(user, eq(user.id, forumHelpDuplicateAppeals.appellantUserId))
+        .where(and(
+          eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        )).orderBy(asc(forumHelpDuplicateAppeals.createdAt), asc(forumHelpDuplicateAppeals.id))
+        .limit(pageSize + 1).offset(offset);
+      return {
+        cases: rows.slice(0, pageSize).map((row): ForumAttentionQueueCase => ({
+          type: "appeal", id: row.id, kind: "appeal",
+          topicId: row.topicId, topicTitle: row.topicTitle,
+          submittedByUserId: row.submittedByUserId, submittedByName: row.submittedByName,
+          explanation: row.explanation, createdAt: row.createdAt,
+          targetPostId: null, original: { id: row.originalId, title: row.originalTitle },
+        })),
+        hasMore: rows.length > pageSize, page,
+      };
+    }
+
+    if (!kinds.includes(group)) return empty();
+    if (group !== "needs-review") {
+      const rows = await readSignals([group], pageSize + 1, offset);
+      return { cases: rows.slice(0, pageSize), hasMore: rows.length > pageSize, page };
+    }
+
+    // A moderator-assigned status is not a user signal. Both work sources
+    // remain distinct despite sharing the Needs review navigation group.
+    const countThroughPage = offset + pageSize + 1;
+    const [signals, reviewRows] = await Promise.all([
+      readSignals(["needs-review"], countThroughPage),
+      this.database.select({
+        id: forumPosts.id, topicId: forumTopics.id,
+        topicTitle: forumTopicTitleRevisions.originalContent,
+        createdAt: forumPosts.createdAt,
+      }).from(forumTopics)
+        .innerJoin(forumPosts, eq(forumPosts.id, forumTopics.bestAnswerPostId))
+        .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
+        .where(and(
+          eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isSolved, true),
+          eq(forumPosts.solutionModerationStatus, "needs-review"),
+        )).orderBy(asc(forumPosts.createdAt), asc(forumPosts.id))
+        .limit(countThroughPage),
+    ]);
+    const cases: ForumAttentionQueueCase[] = [
+      ...signals,
+      ...reviewRows.map((row): ForumAttentionQueueCase => ({
+        type: "review-status", id: row.id, kind: "review-status",
+        topicId: row.topicId, topicTitle: row.topicTitle,
+        submittedByUserId: null, submittedByName: null,
+        explanation: null, createdAt: row.createdAt,
+        targetPostId: row.id, original: null,
+      })),
+    ];
+    cases.sort(compare);
+    return { cases: cases.slice(offset, offset + pageSize),
+      hasMore: cases.length > offset + pageSize, page };
   }
 
   async readHelpSolutionsSolved(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
