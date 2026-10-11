@@ -253,7 +253,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         visualSelectionKnownRef.current = true;
       }
       setValue(nextValue);
-      draft.noteEdit(nextValue);
+      // commitSource is used only by discrete editor actions (Enter, toolbar,
+      // imperative Reply/Quote), all of which are explicit local-save triggers.
+      draft.noteEdit(nextValue, true);
     }
 
     function commitTextareaValue(nextDisplayedValue: string, selectionStart: number, selectionEnd: number) {
@@ -302,7 +304,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (Math.abs(target.scrollTop - next) > 1) target.scrollTop = next;
     }
 
-    function updateVisualText(range: EditorSelection, text: string, selectionAfter?: EditorSelection) {
+    function updateVisualText(
+      range: EditorSelection,
+      text: string,
+      selectionAfter?: EditorSelection,
+      saveLocal = false,
+    ) {
       const next = editVisualText(
         historyRef.current,
         range,
@@ -314,7 +321,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       visualSelectionRef.current = next.current.selection;
       visualSelectionKnownRef.current = true;
       setValue(next.current.markdown);
-      draft.noteEdit(next.current.markdown);
+      draft.noteEdit(next.current.markdown, saveLocal);
     }
 
     function replaceSourceRange(
