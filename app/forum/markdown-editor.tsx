@@ -493,6 +493,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onReplaceRange={replaceSourceRange}
               onTableDimension={extendTable}
               onPasteTable={pasteSpreadsheet}
+              onPasteFallback={() => setPasteWarning(true)}
             />
           ) : null}
           <div className={"markdown-editor-write-pane" + (mode === "preview" ? " is-preview-hidden" : "")}>
