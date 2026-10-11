@@ -3,6 +3,7 @@ import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router
 import { useTranslation } from "react-i18next";
 
 import type {
+  ForumAttentionQueueCase,
   ForumHelpSolutionsFilters,
   ForumHelpSolutionsPage,
   ForumPopularPeriod,
@@ -1400,55 +1401,49 @@ export function HelpSolutionsView({
 export type AttentionMode = "signals" | "complaints" | "security";
 export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "group1" | "group2" | "group3";
 
-export function AttentionCenterView({ locale, mode, group, page, referenceTime, canViewSolutionModeration, canViewDuplicateDispute }: {
+type AttentionCasePresentation = Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string };
+type AttentionQueuePresentation = {
+  cases: AttentionCasePresentation[];
+  hasMore: boolean;
+  page: number;
+};
+
+export function AttentionCenterView({ locale, mode, group, queue, actionData, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
-  page: HelpSolutionsPagePresentation | null;
-  referenceTime: string;
-  canViewSolutionModeration: boolean;
-  canViewDuplicateDispute: boolean;
+  queue: AttentionQueuePresentation | null;
+  referenceTime?: string;
+  actionData?: ForumMutationError;
+  isPreview?: boolean;
 }) {
   const { t } = useTranslation("common");
-  const pathFor = (nextMode: AttentionMode, nextGroup?: string) => {
+  const pathFor = (nextMode: AttentionMode, nextGroup?: string, nextPage?: number) => {
     const params = new URLSearchParams({ mode: nextMode });
     if (nextGroup) params.set("group", nextGroup);
+    if (nextPage && nextPage > 0) params.set("page", String(nextPage));
     return `${forumAttentionPath(locale)}?${params}`;
   };
-  const questions = page?.questions ?? [];
   const groups = mode === "signals" ? [
-    { id: "needs-details", label: t("helpSolutionsFilterNeedsDetails"), questions: questions.filter(q => Boolean(q.attention?.signals["needs-details"])) },
-    { id: "needs-review", label: t("helpSolutionNeedsReview"), questions: questions.filter(q => Boolean(q.attention?.signals["needs-review"] || q.attention?.reviewRequired)) },
-    { id: "solution-outdated", label: t("helpSolutionOutdated"), questions: questions.filter(q => Boolean(q.attention?.signals["solution-outdated"])) },
-    { id: "duplicate", label: t("helpDuplicateBadge"), questions: questions.filter(q => Boolean(q.attention?.signals.duplicate)) },
-    { id: "appeals", label: t("helpAttentionAppeals"), questions: questions.filter(q => q.attention?.appeal) },
-    { id: "mixed", label: t("helpAttentionMixed"), questions: questions.filter(q => (q.attention?.totalSignals ?? 0) > 1) },
+    { id: "needs-details", label: t("helpSolutionsFilterNeedsDetails") },
+    { id: "needs-review", label: t("helpSolutionNeedsReview") },
+    { id: "solution-outdated", label: t("helpSolutionOutdated") },
+    { id: "duplicate", label: t("helpDuplicateBadge") },
+    { id: "appeals", label: t("helpAttentionAppeals") },
+    { id: "mixed", label: t("helpAttentionMixed") },
   ] : [
-    { id: "group1", label: t("attentionPlaceholderGroup1"), questions: [] },
-    { id: "group2", label: t("attentionPlaceholderGroup2"), questions: [] },
-    { id: "group3", label: t("attentionPlaceholderGroup3"), questions: [] },
+    { id: "group1", label: t("attentionPlaceholderGroup1") },
+    { id: "group2", label: t("attentionPlaceholderGroup2") },
+    { id: "group3", label: t("attentionPlaceholderGroup3") },
   ];
   const activeGroup = groups.find(item => item.id === group) ?? groups[0]!;
+  const cases = queue?.cases ?? [];
   return (
     <ForumShell locale={locale} variant="attention">
       <div className="help-solutions-page attention-center-page">
         <Breadcrumbs locale={locale} items={[{ label: t("helpSolutionsNeedsAttentionMode") }]} />
-        <header className="help-solutions-heading">
-          <div>
-            <p className="eyebrow">{t("attentionModerationLabel")}</p>
-            <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
-          </div>
-        </header>
-        <div className="attention-center-toolbar">
-          <nav className="help-solutions-modes attention-group-nav" aria-label={t("attentionGroupNavigation")}>
-            {groups.map(item => (
-              <Link key={item.id}
-                className={"help-solutions-mode" + (activeGroup.id === item.id ? " is-active" : "")}
-                to={pathFor(mode, item.id)} aria-current={activeGroup.id === item.id ? "page" : undefined}>
-                {item.label}{mode === "signals" ? ` (${item.questions.length})` : ""}
-              </Link>
-            ))}
-          </nav>
+        <header className="help-solutions-heading attention-center-heading">
+          <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
           <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
             {(["signals", "complaints", "security"] as const).map(item => (
               <Link key={item}
@@ -1459,22 +1454,121 @@ export function AttentionCenterView({ locale, mode, group, page, referenceTime, 
               </Link>
             ))}
           </nav>
+        </header>
+        <div className="attention-center-toolbar">
+          <nav className="help-solutions-modes attention-group-nav" aria-label={t("attentionGroupNavigation")}>
+            {groups.map(item => (
+              <Link key={item.id}
+                className={"help-solutions-mode" + (activeGroup.id === item.id ? " is-active" : "")}
+                to={pathFor(mode, item.id)} aria-current={activeGroup.id === item.id ? "page" : undefined}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
         <section className="help-solutions-questions" aria-labelledby="attention-group-heading">
           <h2 id="attention-group-heading">{activeGroup.label}</h2>
+          {actionData?.error ? (
+            <p className="attention-case-error" role="alert">
+              {t(actionData.error === "conflict" || actionData.error === "notFound"
+                ? "attentionCaseNoLongerPending" : "attentionCaseActionFailed")}
+            </p>
+          ) : null}
           {mode !== "signals" ? (
             <EmptyState>{t("attentionPlaceholderEmpty")}</EmptyState>
-          ) : activeGroup.questions.length === 0 ? (
+          ) : cases.length === 0 ? (
             <EmptyState>{t("helpSolutionsNeedsAttentionEmpty")}</EmptyState>
           ) : (
-            <HelpQuestionCards questions={activeGroup.questions} locale={locale}
-              referenceTime={referenceTime}
-              canViewSolutionModeration={canViewSolutionModeration}
-              canViewDuplicateDispute={canViewDuplicateDispute} />
+            <ul className="attention-case-list">
+              {cases.map(item => <li key={item.type + ":" + item.id}>
+                <AttentionCaseCard item={item} locale={locale} isPreview={isPreview} />
+              </li>)}
+            </ul>
           )}
+          {mode === "signals" && queue && (queue.page > 0 || queue.hasMore) ? (
+            <nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>
+              {queue.page > 0 ? <Link to={pathFor(mode, group, queue.page - 1)}>{t("attentionCasePrevious")}</Link> : null}
+              <span>{queue.page + 1}</span>
+              {queue.hasMore ? <Link to={pathFor(mode, group, queue.page + 1)}>{t("attentionCaseNext")}</Link> : null}
+            </nav>
+          ) : null}
         </section>
       </div>
     </ForumShell>
+  );
+}
+
+function AttentionCaseCard({ item, locale, isPreview }: {
+  item: AttentionCasePresentation;
+  locale: string;
+  isPreview: boolean;
+}) {
+  const { t } = useTranslation("common");
+  const label = item.kind === "appeal" ? t("helpAttentionAppeals")
+    : item.kind === "review-status" ? t("attentionCaseReviewStatus")
+    : item.kind === "needs-details" ? t("helpSolutionsFilterNeedsDetails")
+    : item.kind === "needs-review" ? t("helpSolutionNeedsReview")
+    : item.kind === "solution-outdated" ? t("helpSolutionOutdated")
+    : t("helpDuplicateBadge");
+  const url = forumTopicPath(locale, item.topicId);
+  const pending = useNavigation();
+  const pendingThis = pending.state !== "idle" && pending.formData?.get("caseId") === item.id
+    && pending.formData?.get("topicId") === item.topicId;
+  const dateLabel = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+  }).format(new Date(item.createdAt));
+  return (
+    <article className="attention-case">
+      <div className="attention-case-heading">
+        <span className="attention-case-kind">{label}</span>
+        <span className="attention-case-id">#{item.id}</span>
+        <time dateTime={item.createdAt}>{dateLabel} UTC</time>
+      </div>
+      <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>
+      <div className="attention-case-metadata">
+        {item.submittedByUserId && item.submittedByName ? (
+          <span>{t("attentionCaseReporter")}: <Link to={forumProfilePath(locale, item.submittedByUserId)}>
+            <bdi dir="auto">{item.submittedByName}</bdi>
+          </Link></span>
+        ) : <span>{t("attentionCaseModeratorStatus")}</span>}
+        {item.targetPostId ? (
+          <Link to={`${url}#post-${encodeURIComponent(item.targetPostId)}`}>
+            {t("attentionCaseTargetAnswer")}
+          </Link>
+        ) : null}
+      </div>
+      {item.explanation ? (
+        <div className="attention-case-explanation">
+          <strong>{t("attentionCaseExplanation")}</strong>
+          <p dir="auto">{item.explanation}</p>
+        </div>
+      ) : null}
+      {item.original ? (
+        <p className="attention-case-original">
+          {t("attentionCaseOriginal")}: <Link to={forumTopicPath(locale, item.original.id)}>
+            <bdi dir="auto">{item.original.title}</bdi>
+          </Link>
+        </p>
+      ) : null}
+      {item.type === "review-status" ? (
+        <p className="attention-case-guidance">{t("attentionCaseReviewGuidance")}</p>
+      ) : (
+        <Form method="post" className="attention-case-actions">
+          <input type="hidden" name="topicId" value={item.topicId} />
+          <input type="hidden" name="caseId" value={item.id} />
+          <button type="submit" name="intent"
+            value={item.type === "appeal" ? "rejectHelpDuplicateAppeal" : "rejectHelpSignal"}
+            disabled={isPreview || pendingThis}>
+            {t(item.type === "appeal" ? "helpDuplicateAppealReject" : "attentionCaseReject")}
+          </button>
+          <button type="submit" name="intent"
+            value={item.type === "appeal" ? "acceptHelpDuplicateAppeal" : "acceptHelpSignal"}
+            disabled={isPreview || pendingThis} className="attention-case-accept">
+            {pendingThis ? t("attentionCaseProcessing") : t(item.type === "appeal" ? "helpDuplicateAppealAccept" : "attentionCaseAccept")}
+          </button>
+        </Form>
+      )}
+    </article>
   );
 }
 
