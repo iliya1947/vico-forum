@@ -25,7 +25,7 @@ interface VisualEditorProps {
 
 export function escapeVisualMarkdownText(value: string): string {
   // Only the changed text leaf is encoded; surrounding markup is never serialized.
-  return value.replace(/[\`*_[\]<>\\]/gu, "\\$&");
+  return value.replace(/[\\`*_\[\]<>]/gu, "\\return value.replace(/[\`*_[\]<>\\]/gu, "\\$&");");
 }
 
 function sourceRange(node: VisualNode): EditorSelection | null {
@@ -184,6 +184,11 @@ export function VisualMarkdownEditor(props: VisualEditorProps) {
             onSelection={actions.onSelection}
             onInsertParagraph={actions.onInsertParagraph}
           /></p>}
+      {root.children?.length && markdown.endsWith("\n\n") ? (
+        <p><VisualTextLeaf text="" raw="" range={{ start: markdown.length, end: markdown.length }}
+          disabled={disabled} onTextEdit={actions.onTextEdit}
+          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph} /></p>
+      ) : null}
     </section>
   );
 }
