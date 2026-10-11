@@ -1522,7 +1522,7 @@ function AttentionCaseCard({ item, locale, isPreview }: {
       <div className="attention-case-heading">
         <span className="attention-case-kind">{label}</span>
         <span className="attention-case-id">#{item.id}</span>
-        <time dateTime={item.createdAt}>{dateLabel} UTC</time>
+        {item.type !== "review-status" ? <time dateTime={item.createdAt}>{dateLabel} UTC</time> : null}
       </div>
       <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>
       <div className="attention-case-metadata">
