@@ -4062,3 +4062,42 @@ provide realistic Pages fixture. Respect six approved Signals groups, two indepe
 empty Complaints/Security scaffolds, and user-approved heading-level mode switcher.
 Do not invite Codex review or merge before all remaining slices/acceptance.
 
+
+## PR #217: actionable attention cases — second subtask complete — 2026-10-11
+
+Owner's continuation via "..." authorized the second bounded subtask. The actual
+implementation PR head is `f88f3d19377323fb000a5a173f1c913b1216fe2f`
+(`chatgpt/help-attention-moderation-queue`), not the old unrelated
+`chatgpt/ui-help-attention-pr217` branch.
+
+`/:locale/attention` now loads the real `readHelpAttentionCases` result of the
+selected group/page, renders individual signal and appeal cards with submitter,
+explanation, stable case identity, current target answer and original topic links,
+and provides in-queue Accept/Reject using existing writer operations. Handler
+verifies same-Origin, session, effective permission, authoritative case/topic
+identity and returns to the same queue. Duplicate appeals additionally verify
+the exact expected appeal ID inside the existing transactional writer, so a
+stale form cannot accidentally resolve a replacement appeal. Needs-review
+moderator status is a separate non-user task linking to the actual answer.
+Heading has no redundant Moderation label; Signals/Complaints/Security are right
+of the heading and group switches alone remain below. User-approved 6 signal
+groups and independent blank Complaints/Security scaffolds are intact.
+EN/RU/HE catalog/manual values/fingerprints and responsive/RTL styles updated.
+Pages fixtures show distinct realistic cases, not topic-status/fake-count lists;
+mock mutation buttons are disabled instead of pretending to work. Existing
+topic aggregate reader remains for compatibility; current attention route does
+not use it. No DB schema/migration/provider/production change.
+
+Full CI run [#38100161712](https://github.com/iliya1947/vico-forum/actions/runs/38100161712)
+is green: `checks` and `database` completed successfully on `f88f3d1`.
+The Pages workflow branch matcher was updated to include
+`chatgpt/help-attention-*` so future PR pushes can publish from the **actual**
+implementation head, but Pages deployment success and browser visual check
+are **not independently verified in this session**; do not claim publication
+success or owner visual acceptance. PR #217 remains Draft.
+
+**Third subtask, only on new owner continuation:** check current exact head,
+Pages availability and owner visual acceptance; whole-PR review, remaining
+current-stage defects and one independent Codex review according to AGENTS.
+Do not merge; owner handles merge.
+
