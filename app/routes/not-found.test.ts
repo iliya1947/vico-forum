@@ -19,6 +19,7 @@ describe("localized route shape", () => {
       expect.objectContaining({ path: "sign-up", file: "routes/credential-sign-up.tsx" }),
       expect.objectContaining({ path: "presence", file: "routes/presence.ts" }),
       expect.objectContaining({ path: "notifications", file: "routes/notifications.tsx" }),
+      expect.objectContaining({ path: "attention", file: "routes/attention.tsx" }),
       expect.objectContaining({ path: "tags", file: "routes/tags.tsx" }),
       expect.objectContaining({ path: "tags/:tagKey", file: "routes/tag.tsx" }),
       expect.objectContaining({ path: "admin/authorization", file: "routes/authorization-admin.tsx" }),

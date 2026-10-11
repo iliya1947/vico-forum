@@ -18,6 +18,7 @@ export default [
     route("sign-up", "routes/credential-sign-up.tsx"),
     route("presence", "routes/presence.ts"),
     route("notifications", "routes/notifications.tsx"),
+    route("attention", "routes/attention.tsx"),
     route("tags", "routes/tags.tsx"),
     route("tags/:tagKey", "routes/tag.tsx"),
     route("admin/authorization", "routes/authorization-admin.tsx"),
