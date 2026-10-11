@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { ForumMarkdown } from "./markdown";
 import { createEditorHistory, editVisualText, recordEditorEdit, redoEditorEdit, undoEditorEdit, type EditorSelection } from "./editor-document";
 import { VisualMarkdownEditor, escapeVisualMarkdownText } from "./visual-markdown-editor";
+import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 
 export interface MarkdownEditorHandle {
@@ -84,6 +85,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const visualSelectionRef = useRef<EditorSelection | null>(null);
     const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
     const [fullScreen, setFullScreen] = useState(false);
+    const [pasteWarning, setPasteWarning] = useState(false);
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
@@ -164,6 +166,37 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (!next) { switchAuthoring("advanced"); return; }
       historyRef.current = next;
       setValue(next.current.markdown);
+    }
+
+    function replaceSourceRange(range: EditorSelection, replacement: string) {
+      if (range.start < 0 || range.end > value.length || range.end < range.start) return;
+      const next = value.slice(0, range.start) + replacement + value.slice(range.end);
+      const position = range.start + replacement.length;
+      historyRef.current = recordEditorEdit(historyRef.current, next, range, { start: position, end: position });
+      setValue(next);
+      setPasteWarning(false);
+    }
+
+    function extendTable(table: MarkdownTable, dimension: "row" | "column") {
+      const next = addTableDimension(value, table, dimension);
+      historyRef.current = recordEditorEdit(historyRef.current, next, table.span, table.span);
+      setValue(next);
+    }
+
+    function pasteSpreadsheet(range: EditorSelection, text: string) {
+      const converted = spreadsheetToMarkdown(text);
+      if (!converted) {
+        setPasteWarning(true);
+        return;
+      }
+      replaceSourceRange(range, "\n\n" + converted + "\n\n");
+    }
+
+    function insertTechnicalBlock(text: string) {
+      const selection = sourceSelection();
+      const leading = selection.start > 0 && value[selection.start - 1] !== "\n" ? "\n\n" : "";
+      const trailing = selection.end < value.length && value[selection.end] !== "\n" ? "\n\n" : "";
+      replaceSourceRange(selection, leading + text + trailing);
     }
 
     function insertVisualParagraph(offset: number) {
@@ -390,6 +423,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "## ")}>H2</button>
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "### ")}>H3</button>
                   <button type="button" disabled={disabled} onClick={() => replaceSelection("\n\n---\n\n", "", 5)}>—</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorSpoiler")}
+                    onClick={() => insertTechnicalBlock(":::spoiler\n\n:::")}>{t("editorSpoiler")}</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorTable")}
+                    onClick={() => insertTechnicalBlock("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
                   {authoringMode === "advanced" ? (
                     <>
                       <button type="button" disabled={disabled} aria-label={t("editorInlineCode")} onClick={() => {
@@ -453,6 +490,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onSelection={(selection) => { visualSelectionRef.current = selection; }}
               onInsertParagraph={insertVisualParagraph}
               onEditTechnical={() => switchAuthoring("advanced")}
+              onReplaceRange={replaceSourceRange}
+              onTableDimension={extendTable}
+              onPasteTable={pasteSpreadsheet}
             />
           ) : null}
           <div className={"markdown-editor-write-pane" + (mode === "preview" ? " is-preview-hidden" : "")}>
@@ -497,6 +537,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             />
           </div>
 
+          {pasteWarning ? <p className="markdown-editor-paste-warning" role="alert">{t("editorPasteTableWarning")}</p> : null}
           {mode !== "write" && (
             <section ref={previewRef} id={id + "-preview"} className="markdown-editor-preview" aria-label={t("editorPreviewHeading")}
               onScroll={(event) => syncSplitScroll(event.currentTarget, textareaRef.current)}>
