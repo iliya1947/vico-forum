@@ -111,7 +111,7 @@ function VisualTextLeaf({
       onPaste={(event) => {
         event.preventDefault();
         const plain = event.clipboardData.getData("text/plain");
-        const text = plain.replace(/[\r\n]+/gu, " ");
+        const pastedText = plain.replace(/[\r\n]+/gu, " ");
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
         const active = selection.getRangeAt(0);
@@ -138,7 +138,7 @@ function VisualTextLeaf({
           return;
         }
         active.deleteContents();
-        const leaf = document.createTextNode(text);
+        const leaf = document.createTextNode(pastedText);
         active.insertNode(leaf);
         active.setStartAfter(leaf);
         active.collapse(true);
