@@ -289,6 +289,14 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
               sourceBase={sourceBase + segment.bodyStart} {...actions} />
           </details>
         );
+        if (segment.kind === "protected") return (
+          <div key={index} className="markdown-editor-protected" data-visual-protected="table">
+            <pre dir="ltr">{segment.source}</pre>
+            <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+              {t("editorEditInMarkdown")}
+            </button>
+          </div>
+        );
         const root = fromMarkdown(segment.source) as VisualNode;
         return root.children?.length
           ? <VisualNodeView key={index} node={root} markdown={segment.source}
