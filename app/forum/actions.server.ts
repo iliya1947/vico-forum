@@ -30,6 +30,11 @@ import {
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
 
+function validatedDraftId(form: FormData): string | undefined {
+  const value = form.get("editorDraftId");
+  return typeof value === "string" && /^[0-9a-f-]{36}$/iu.test(value) ? value : undefined;
+}
+
 export async function helpSolutionsCategoryAction({ request, params, context }: {
   request: Request;
   params: { locale?: string; categoryId?: string };
@@ -85,6 +90,7 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
       title,
       body,
       tags,
+      draftId: validatedDraftId(formData),
     });
     return redirect(forumTopicPath(locale, created.topicId));
   });
@@ -137,7 +143,7 @@ export async function sectionAction({ request, params, context }: {
     ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
     : [];
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body, tags });
+    const created = await writer.createTopic({ sectionId, authorId, title, body, tags, draftId: validatedDraftId(formData) });
     return redirect(forumTopicPath(locale, created.topicId));
   });
 }
@@ -435,7 +441,7 @@ export async function topicAction({ request, params, context }: {
     ? rawParentPostId.trim()
     : null;
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createReply({ topicId, authorId, body, parentPostId });
+    const created = await writer.createReply({ topicId, authorId, body, parentPostId, draftId: validatedDraftId(formData) });
     return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(created.postId));
   });
 }
