@@ -9,7 +9,7 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 import { HeaderAuthProvider } from "../auth/auth-controls";
-import { writeLocalEditorDraft, clearLocalEditorDraft } from "./draft-client";
+import { readLocalEditorDraft, writeLocalEditorDraft, clearLocalEditorDraft } from "./draft-client";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -44,6 +44,18 @@ function runtime() {
 
 function renderEditor(element: ReactNode) {
   return render(<I18nextProvider i18n={runtime()}>{element}</I18nextProvider>);
+}
+
+function stubEmptyDraftMetadata() {
+  vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+    if (!options?.method && uri.includes("mode=metadata")) {
+      return new Response(JSON.stringify({ drafts: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    throw new Error("Unexpected fetch");
+  }));
 }
 
 async function chooseView(view: "write" | "preview" | "split") {
@@ -802,6 +814,112 @@ describe("MarkdownEditor", () => {
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
       format === "text/plain" ? "\n# Header" : format === "text/html" ? "<h1>Header</h1>" : "" } });
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\# Header");
+  });
+
+  it("captures a Simple-mode space in the middle of the document immediately", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-trigger-space-user";
+    const contextKey = "topic:space:reply";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-space-body">Body</label>
+          <MarkdownEditor id="draft-space-body" name="body" defaultValue="AlphaBeta"
+            draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = "Alpha Beta";
+    fireEvent.input(leaf, { data: " ", inputType: "insertText" });
+
+    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe("Alpha Beta");
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("captures Simple-mode Enter before later document content immediately", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-trigger-enter-user";
+    const contextKey = "topic:enter:reply";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-enter-body">Body</label>
+          <MarkdownEditor id="draft-enter-body" name="body" defaultValue={"First\n\nSecond"}
+            draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    const firstLeaf = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')[0]!;
+    fireEvent.keyDown(firstLeaf, { key: "Enter" });
+    const body = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
+
+    expect(body.endsWith("Second")).toBe(true);
+    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe(body);
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("captures a one-line Simple paste immediately", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-trigger-paste-user";
+    const contextKey = "topic:paste:reply";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-paste-body">Body</label>
+          <MarkdownEditor id="draft-paste-body" name="body" defaultValue="BeforeAfter"
+            draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, "Before".length);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? " pasted " : "" } });
+
+    const body = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
+    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe(body);
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("captures toolbar formatting after focusout instead of saving only the pre-command body", async () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-trigger-format-user";
+    const contextKey = "topic:format:reply";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-format-body">Body</label>
+          <MarkdownEditor id="draft-format-body" name="body" defaultValue="alpha beta"
+            draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 0);
+    range.setEnd(leaf.firstChild!, 5);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+
+    expect(screen.getByLabelText("Body")).toHaveValue("**alpha** beta");
+    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe("**alpha** beta");
+    clearLocalEditorDraft(userId, contextKey);
   });
 
   it("resets body and history when the draft context changes for the same account", async () => {
