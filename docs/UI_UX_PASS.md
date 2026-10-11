@@ -370,8 +370,9 @@ composition without changing the forum hierarchy or schema:
   visual hierarchy, information density and handling convenience. Do not
   reopen the functioning mechanism or delay this PR solely for that polish.
   Final real-runtime validation before public launch remains separate.
- PR #198 adds authenticated
- server-side selection returns only unsolved
+
+  PR #198 adds authenticated
+  `Want to help / Хочу помочь` as `?mode=help`: server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
   projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
   mode and direct guest access uses the existing unauthenticated route state; actual reply
