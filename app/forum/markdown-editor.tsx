@@ -463,6 +463,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         data-mode={mode} data-authoring={authoringMode}
         onKeyDownCapture={(event) => {
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            editorRef.current?.closest("form")?.requestSubmit();
+            return;
+          }
           if (authoringMode !== "simple" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
           const key = event.key.toLowerCase();
           if (key === "b" || key === "i" || key === "k") {
