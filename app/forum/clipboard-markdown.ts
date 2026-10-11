@@ -74,7 +74,7 @@ export function clipboardHtmlToMarkdown(html: string): string | null {
     }
     if (name === "a") {
       const href = element.getAttribute("href") ?? "";
-      if (!/^https?:\/\//iu.test(href) || /[\s()<>\u0000-\u001f]/u.test(href)) { valid = false; return plain(element); }
+      if (!/^https?:\/\//iu.test(href) || (/[\s()<>]/u.test(href) || [...href].some((character) => character.charCodeAt(0) < 32))) { valid = false; return plain(element); }
       return "[" + inner() + "](" + href + ")";
     }
     if (name === "br") return "\n";
