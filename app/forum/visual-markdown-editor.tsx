@@ -36,6 +36,22 @@ export function escapeVisualMarkdownText(value: string): string {
   return clipboardPlainToMarkdown(value);
 }
 
+/** Resolve DOM ranges relative to the whole visual leaf, not to one text node.
+ * Browsers may split contentEditable text into several adjacent text nodes on paste.
+ * Offsets use UTF-16 units, matching JavaScript/Markdown source span indices.
+ */
+function visualSelectionOffsets(element: HTMLElement, selection: Range, text: string): EditorSelection | null {
+  if (element.textContent !== text || !element.contains(selection.startContainer)
+    || !element.contains(selection.endContainer)) return null;
+  const from = document.createRange();
+  from.selectNodeContents(element);
+  from.setEnd(selection.startContainer, selection.startOffset);
+  const to = document.createRange();
+  to.selectNodeContents(element);
+  to.setEnd(selection.endContainer, selection.endOffset);
+  return { start: from.toString().length, end: to.toString().length };
+}
+
 function sourceRange(node: VisualNode): EditorSelection | null {
   const start = node.position?.start.offset;
   const end = node.position?.end.offset;
@@ -77,14 +93,10 @@ function VisualTextLeaf({
       onSelection(null);
       return;
     }
-    // Nontrivial raw escapes do not correspond 1:1 with visual offsets.
-    if (raw !== text) {
-      onSelection(null);
-      return;
-    }
-    const start = Math.min(selection.anchorOffset, selection.focusOffset);
-    const end = Math.max(selection.anchorOffset, selection.focusOffset);
-    onSelection({ start: range.start + start, end: range.start + end });
+    // Escaped Markdown does not have a one-to-one visual/source offset map.
+    const offsets = raw === text && selection.rangeCount > 0
+      ? visualSelectionOffsets(element, selection.getRangeAt(0), text) : null;
+    onSelection(offsets ? { start: range.start + offsets.start, end: range.start + offsets.end } : null);
   };
 
   return (
@@ -125,16 +137,14 @@ function VisualTextLeaf({
         if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
         // A visual text position cannot be used as a source byte offset when
         // escape sequences or multiple DOM nodes make the mapping ambiguous.
-        if (raw !== text || active.startContainer.nodeType !== 3 || active.endContainer.nodeType !== 3
-          || active.startContainer !== active.endContainer
-          || event.currentTarget.childNodes.length !== 1
-          || event.currentTarget.firstChild !== active.startContainer) {
+        const offsets = raw === text ? visualSelectionOffsets(event.currentTarget, active, text) : null;
+        if (!offsets) {
           onPasteFallback();
           return;
         }
         const selected = {
-          start: range.start + Math.max(0, active.startOffset),
-          end: range.start + Math.max(active.startOffset, active.endOffset),
+          start: range.start + offsets.start,
+          end: range.start + offsets.end,
         };
         if (plain.includes("\t")) {
           onPasteTable(selected, plain);
