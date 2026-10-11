@@ -118,13 +118,14 @@ export class DrizzleForumEditorDrafts {
   async finish(ownerId: string, contextKey: string, draftId: string, status: "deleted" | "published") {
     if (!isEditorDraftContextKey(contextKey) || !/^[0-9a-f-]{36}$/iu.test(draftId)) throw new Error("invalid draft context");
     const now = new Date();
-    await this.db.insert(forumEditorDrafts).values({
+    const result = await this.db.insert(forumEditorDrafts).values({
       ownerId, contextKey, draftId, version: 1, status,
       payload: { title: "", body: "", tags: "" }, editedAt: now, updatedAt: now,
     }).onConflictDoUpdate({
       target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
       set: { status, version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
       setWhere: and(eq(forumEditorDrafts.status, "active"), eq(forumEditorDrafts.draftId, draftId)),
-    });
+    }).returning();
+    return result.length > 0;
   }
 }
