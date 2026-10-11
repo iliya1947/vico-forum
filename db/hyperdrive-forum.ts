@@ -92,6 +92,7 @@ export function createHyperdriveForumReader(
     readHelpSolutionsOpen: (filters) => read((repository) => repository.readHelpSolutionsOpen(filters)),
     readHelpSolutionsActive: (filters) => read((repository) => repository.readHelpSolutionsActive(filters)),
     readHelpSolutionsNeedsAttention: (filters, visibility) => read((repository) => repository.readHelpSolutionsNeedsAttention(filters, visibility)),
+    readHelpAttentionCases: (group, visibility, page) => read((repository) => repository.readHelpAttentionCases(group, visibility, page)),
     readHelpSolutionsSolved: (filters) => read((repository) => repository.readHelpSolutionsSolved(filters)),
     readHelpSolutionsMine: (userId, filters) => read((repository) => repository.readHelpSolutionsMine(userId, filters)),
     readHelpSolutionsWantToHelp: (userId, filters) => read((repository) => repository.readHelpSolutionsWantToHelp(userId, filters)),
