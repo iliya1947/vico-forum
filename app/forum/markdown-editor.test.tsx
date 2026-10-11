@@ -471,6 +471,29 @@ describe("MarkdownEditor", () => {
     expect(new FormData(textarea.form!).get("body")).toBe("First\n\nSecond");
   });
 
+  it("edits ordinary table cells and adds rows while preserving the body source", async () => {
+    const source = "| A | B |\n| --- | --- |\n| one | two |";
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const input = screen.getAllByRole("textbox", { name: "Table cell" })[0] as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "changed" } });
+    expect(screen.getByLabelText("Body")).toHaveValue(source.replace("one", "changed"));
+    await userEvent.click(screen.getByRole("button", { name: "Add row" }));
+    expect(screen.getAllByRole("textbox", { name: "Table cell" })).toHaveLength(4);
+    expect(new FormData((screen.getByLabelText("Body") as HTMLTextAreaElement).form!).get("body")).toContain("| changed | two |");
+  });
+
+  it("inserts a spoiler block and keeps its source on switching authoring modes", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" /></>);
+    await userEvent.click(document.querySelector<HTMLDetailsElement>(".markdown-editor-extra-menu:last-of-type summary")!);
+    await userEvent.click(screen.getByRole("button", { name: "Spoiler" }));
+    const source = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
+    expect(source).toContain(":::spoiler");
+    expect(document.querySelector(".forum-markdown-spoiler")).not.toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toBe(source);
+  });
+
   it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
