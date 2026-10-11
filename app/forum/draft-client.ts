@@ -24,6 +24,14 @@ export interface DraftMetadata {
 }
 export type DraftRemote = DraftMetadata & { payload: ForumEditorDraftPayload };
 
+/** A local copy wins display priority only while it needs recovery or conflict resolution. */
+export function localDraftNeedsAttention(local: LocalEditorDraft, server?: DraftMetadata): boolean {
+  if (!server) return true;
+  if (server.status !== "active") return local.draftId !== server.draftId;
+  return local.draftId !== server.draftId || local.baseVersion !== server.version
+    || local.editedAt !== local.syncedEditedAt;
+}
+
 const prefix = "vico:editor:draft:";
 
 export function draftStorageKey(ownerId: string, contextKey: string) {
