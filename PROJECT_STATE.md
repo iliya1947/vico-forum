@@ -190,6 +190,17 @@ Vico Forum находится в ранней pre-release разработке.
   также прошёл `checks` и `database`.
   Pages/browser и owner visual acceptance ещё не подтверждены; полный review PR
   намеренно не запущен до завершения редактора.
+  Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
+  подтвердила и исправила текущие функциональные дефекты: двойной
+  requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
+  Simple при нескольких DOM text nodes (теперь абсолютные UTF-16 позиции
+  выводятся из DOM Range для paste и toolbar); превращение введённого
+  обычного текста с '#' / list marker в неявную Markdown-разметку
+  (используются те же literal escape правила, что у plain-text paste);
+  преждевременное закрытие :::spoiler по ':::' внутри fenced code.
+  Добавлены регрессионные тесты на эти переходы и сохранение Markdown.
+  Кодовый head a29197b прошёл CI #38137784787 (checks + database);
+  Pages/browser acceptance и полный PR review по-прежнему впереди.
   Вложения, Security/Attachments ingestion, mentions и полный
   publication/edit workflow остаются следующими этапами.
   Существующий body/FormData/server contract не изменялся.
