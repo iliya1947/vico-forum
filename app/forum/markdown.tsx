@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
@@ -153,7 +154,20 @@ function ForumCodeBlock({
 }) {
   const { t } = useTranslation("common");
   const [copyState, setCopyState] = useState<"copied" | "error" | null>(null);
+  const accountId = useHeaderAuthUser()?.id ?? null;
   const [wrap, setWrap] = useState(false);
+  const [lineNumbers, setLineNumbers] = useState(false);
+  useEffect(() => {
+    try {
+      setWrap(accountId ? localStorage.getItem("vico:editor:code-wrap:" + accountId) === "true" : false);
+      setLineNumbers(accountId ? localStorage.getItem("vico:editor:code-lines:" + accountId) === "true" : false);
+    } catch { setWrap(false); setLineNumbers(false); }
+  }, [accountId]);
+
+  function setPreference(key: "code-wrap" | "code-lines", enabled: boolean) {
+    if (!accountId) return;
+    try { localStorage.setItem("vico:editor:" + key + ":" + accountId, String(enabled)); } catch { /* Storage denied. */ }
+  }
   const displayLanguage = language?.trim() || null;
   const allowHighlight = useContext(HighlightBudgetContext);
   const tokens = allowHighlight ? highlightCode(code, displayLanguage ?? undefined) : [{ text: code }];
@@ -179,10 +193,17 @@ function ForumCodeBlock({
           <button
             type="button"
             aria-pressed={wrap}
-            onClick={() => setWrap((current) => !current)}
+            onClick={() => setWrap((current) => {
+              setPreference("code-wrap", !current);
+              return !current;
+            })}
           >
             {t(wrap ? "codeNoWrap" : "codeWrap")}
           </button>
+          <button type="button" aria-pressed={lineNumbers} onClick={() => setLineNumbers((current) => {
+            setPreference("code-lines", !current);
+            return !current;
+          })}>{t("editorLineNumbers")}</button>
           <button type="button" onClick={() => void copyCode()}>
             {t("codeCopy")}
           </button>
@@ -197,14 +218,20 @@ function ForumCodeBlock({
           </span>
         )}
       </figcaption>
-      <pre tabIndex={0} dir="ltr">
+      <pre tabIndex={0} dir="ltr" data-line-numbers={lineNumbers ? "true" : "false"}>
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
-          {tokens.map((token, index) =>
-            token.kind ? (
-              <span className={`syntax-${token.kind}`} key={index}>{token.text}</span>
-            ) : token.text
-          )}
+          {displayLanguage?.toLowerCase() === "diff"
+            ? code.split("\n").map((line, index, rows) => (
+              <span className={line.startsWith("+") ? "syntax-diff-add" : line.startsWith("-") ? "syntax-diff-remove" : undefined} key={index}>
+                {line}{index < rows.length - 1 ? "\n" : ""}
+              </span>
+            ))
+            : tokens.map((token, index) =>
+              token.kind ? <span className={`syntax-${token.kind}`} key={index}>{token.text}</span> : token.text)}
         </code>
+        {lineNumbers ? <span className="forum-code-line-gutter" aria-hidden="true">
+          {code.split("\n").map((_, index) => <span key={index}>{index + 1}</span>)}
+        </span> : null}
       </pre>
     </figure>
   );
