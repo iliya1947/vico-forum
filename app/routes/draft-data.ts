@@ -46,8 +46,8 @@ export async function action({ request, context }: { request: Request; context: 
   try {
     const store = draftStoreForRequest(context);
     if (input.intent === "finish" || input.intent === "delete") {
-      await store.finish(session.user.id, key, draftId, input.intent === "finish" ? "published" : "deleted");
-      return json({ outcome: "finished" });
+      const finished = await store.finish(session.user.id, key, draftId, input.intent === "finish" ? "published" : "deleted");
+      return finished ? json({ outcome: "finished" }) : json({ outcome: "conflict" }, 409);
     }
     if (input.intent !== "save" || !validEditorDraftPayload(input.payload)
       || !Number.isSafeInteger(input.expectedVersion) || (input.expectedVersion as number) < 0
