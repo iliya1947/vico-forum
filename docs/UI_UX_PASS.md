@@ -358,7 +358,11 @@ composition without changing the forum hierarchy or schema:
   notifications and no invented complaint/security backend**. Their real categories,
   data sources, permissions, and actions are to be defined in the respective
   subsystem chats. Only users with existing Help moderation permissions can
-  currently access this foundation. Case-level permission filtering remains;
+  currently access this foundation. Group navigation displays real global
+  permission-scoped pending totals: each signal group counts individual tasks,
+  and Mixed counts topics with 2+ pending visible signals. Totals are queried
+  independently of the current 50-case page and prior 100-topic feed bound.
+  Case-level permission filtering remains;
   moderation cases are no longer constrained by the previous 100-question activity bound. PR #198 adds authenticated
  server-side selection returns only unsolved
   questions from other authors using the authenticated session identity, keeps the existing Q&A
