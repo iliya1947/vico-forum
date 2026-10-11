@@ -69,6 +69,13 @@ function sourceVisualBoundaries(raw: string, text: string): Array<number | null>
   let visual = 0;
 
   while (source < raw.length && visual < text.length) {
+    if (raw[source] === "\r" && text[visual] === "\n") {
+      source += raw[source + 1] === "\n" ? 2 : 1;
+      visual += 1;
+      boundaries[visual] = source;
+      continue;
+    }
+
     if (raw[source] === "\\" && source + 1 < raw.length
       && ASCII_PUNCTUATION.has(raw[source + 1]!)
       && text[visual] === raw[source + 1]) {
