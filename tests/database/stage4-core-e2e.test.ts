@@ -12,6 +12,7 @@ import { INITIAL_ROLE_GRANTS } from "../../app/authorization/catalog";
 import { createAuthorizationCapability, AuthorizationService } from "../../db/authorization-service";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { DrizzleForumRepository } from "../../db/forum-repository";
+import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS } from "../../db/forum-write-policy";
 
@@ -48,6 +49,9 @@ const migrationFiles = [
     "0029_help_question_needs_details.sql",
     "0030_help_duplicate_workflow.sql",
     "0031_help_user_moderation_signals.sql",
+  "0032_forum_profiles.sql",
+  "0033_forum_online_presence.sql",
+  "0034_forum_editor_drafts.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
@@ -191,10 +195,27 @@ describe("Stage 4 connected forum authorization flow", () => {
     const initialPostId = (await forum.readTopicPage(topicId))?.posts[0]?.id;
     if (!initialPostId) throw new Error("initial post was not persisted");
 
+    const draftStore = new DrizzleForumEditorDrafts(drizzle(client));
+    const replyDraftId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d60";
+    const replyContextKey = `topic:${topicId}:reply`;
+    const replyDraft = await draftStore.save(
+      "e2e-replier",
+      replyContextKey,
+      replyDraftId,
+      { title: "", body: "Connected reply", tags: "", parentPostId: initialPostId },
+      0,
+    );
+    expect(replyDraft).toMatchObject({ outcome: "saved", draft: { version: 1 } });
+
     const replyState = await userContext("e2e-replier", "Replier");
     try {
       const replyResponse = await topicAction({
-        request: formRequest(`/en/topics/${topicId}`, { body: "Connected reply", parentPostId: initialPostId }),
+        request: formRequest(`/en/topics/${topicId}`, {
+          body: "Connected reply",
+          parentPostId: initialPostId,
+          editorDraftId: replyDraftId,
+          editorDraftVersion: "1",
+        }),
         params: { locale: "en", topicId },
         context: replyState.context,
       });
@@ -202,8 +223,53 @@ describe("Stage 4 connected forum authorization flow", () => {
     } finally {
       await replyState.close();
     }
+    expect(await draftStore.get("e2e-replier", replyContextKey)).toMatchObject({
+      draftId: replyDraftId,
+      version: 2,
+      status: "published",
+      payload: { body: "" },
+    });
+
+    const staleDraftId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d61";
+    expect(await draftStore.save(
+      "e2e-replier",
+      replyContextKey,
+      staleDraftId,
+      { title: "", body: "First local revision", tags: "" },
+      2,
+    )).toMatchObject({ outcome: "saved", draft: { version: 3 } });
+    expect(await draftStore.save(
+      "e2e-replier",
+      replyContextKey,
+      staleDraftId,
+      { title: "", body: "Newer server revision", tags: "" },
+      3,
+    )).toMatchObject({ outcome: "saved", draft: { version: 4 } });
+
+    const staleState = await userContext("e2e-replier", "Replier");
+    try {
+      const staleResponse = await topicAction({
+        request: formRequest(`/en/topics/${topicId}`, {
+          body: "Stale publication must roll back",
+          editorDraftId: staleDraftId,
+          editorDraftVersion: "3",
+        }),
+        params: { locale: "en", topicId },
+        context: staleState.context,
+      });
+      expect(responseStatus(staleResponse)).toBe(409);
+    } finally {
+      await staleState.close();
+    }
+    expect(await draftStore.get("e2e-replier", replyContextKey)).toMatchObject({
+      draftId: staleDraftId,
+      version: 4,
+      status: "active",
+      payload: { body: "Newer server revision" },
+    });
 
     const withReply = await forum.readTopicPage(topicId);
+    expect(withReply?.posts.some((post) => post.body.originalContent === "Stale publication must roll back")).toBe(false);
     const reply = withReply?.posts.find((post) => post.authorId === "e2e-replier");
     if (!reply) throw new Error("reply was not persisted");
     expect(reply.parentPostId).toBe(initialPostId);
