@@ -70,7 +70,6 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey,
       draftId: previous?.draftId ?? ctx.draftId,
-      startedAt: previous?.startedAt ?? new Date().toISOString(),
       payload, editedAt: new Date().toISOString(),
       baseVersion: previous?.baseVersion ?? ctx.baseVersion,
       syncedEditedAt: previous?.syncedEditedAt ?? null,
@@ -101,7 +100,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (!current(ctx)) return;
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: remote.draftId,
-      startedAt: remote.editedAt, editedAt: remote.editedAt,
+      editedAt: remote.editedAt,
       baseVersion: remote.version, syncedEditedAt: remote.editedAt,
       payload: remote.payload,
     };
