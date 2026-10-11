@@ -367,9 +367,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const leading = at === 0 || before.endsWith("\n\n")
         ? ""
         : before.endsWith("\n") ? "\n" : "\n\n";
-      const trailing = at === value.length || after.startsWith("\n\n")
+      const trailing = at === value.length
         ? "\n\n"
-        : after.startsWith("\n") ? "\n" : "\n\n";
+        : after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
       replaceSourceRange({ start: at, end: at }, leading + text + trailing);
     }
 
