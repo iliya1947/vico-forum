@@ -21,6 +21,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 export interface MarkdownEditorHandle {
   focus: () => void;
   insertText: (text: string) => void;
+  acknowledgePublished: (draftId: string, publishedVersion: number) => void;
 }
 
 export interface MarkdownEditorProps {
@@ -130,13 +131,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
     const [value, setValue] = useState(defaultValue);
-    const previousOwnerRef = useRef(accountId);
+    const editorScope = JSON.stringify([accountId, draftContextKey ?? null, draftLocale ?? null]);
+    const previousScopeRef = useRef(editorScope);
     useEffect(() => {
-      if (previousOwnerRef.current === accountId) return;
-      previousOwnerRef.current = accountId;
+      if (previousScopeRef.current === editorScope) return;
+      previousScopeRef.current = editorScope;
+      visualSelectionRef.current = null;
+      pendingVisualCaretRef.current = null;
+      pendingSelectionRef.current = null;
       historyRef.current = createEditorHistory(defaultValue);
       setValue(defaultValue);
-    }, [accountId, defaultValue]);
+      setPasteWarning(false);
+      setFindOpen(false);
+    }, [editorScope, defaultValue]);
 
     const draft = useEditorDraft({
       ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
@@ -518,7 +525,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (mode === "preview" || authoringMode === "simple") switchAuthoring("advanced");
         commitSource(nextValue);
       },
-    }), [mode, value, authoringMode]);
+      acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
+        draft.acknowledgePublished(publishedDraftId, publishedVersion);
+      },
+    }), [mode, value, authoringMode, draft]);
 
     return (
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
@@ -546,7 +556,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         }}
       >
         {accountId && draftContextKey ? (
-          <input type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+          <>
+            <input type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+            <input type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+          </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
           <div className="markdown-editor-formatting">
