@@ -30,6 +30,7 @@ type Runtime = {
   syncing: boolean;
   reading: boolean;
   disposed: boolean;
+  readPayload(body: string): ForumEditorDraftPayload;
 };
 
 const blank: ForumEditorDraftPayload = { body: "", title: "", tags: "" };
@@ -60,9 +61,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     setConflict(next);
     if (next) setStatus("conflict");
   }
-  function capture(ctx: Runtime) {
-    if (!current(ctx)) return;
-    const payload = callbacksRef.current.readPayload(ctx.body);
+  function capture(ctx: Runtime, final = false) {
+    if (final ? ctx.disposed : !current(ctx)) return;
+    const payload = (final ? ctx.readPayload : callbacksRef.current.readPayload)(ctx.body);
     const previous = ctx.local;
     if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()) return;
     if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) return;
@@ -74,8 +75,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       baseVersion: previous?.baseVersion ?? ctx.baseVersion,
       syncedEditedAt: previous?.syncedEditedAt ?? null,
     };
-    if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
+    if (!writeLocalEditorDraft(next)) {
+      if (!final && current(ctx)) setStatus("error");
+      return;
+    }
     ctx.local = next;
+    if (final) return;
     if (ctx.conflict) updateConflict(ctx, { ...ctx.conflict, local: next });
     else setStatus("pending");
   }
@@ -253,6 +258,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
       local: null, body: "", hasInput: false, baseVersion: 0, conflict: null,
       syncing: false, reading: false, disposed: false,
+      readPayload: callbacksRef.current.readPayload,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
@@ -306,7 +312,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     }, 60_000);
     return () => {
       // Capture the old owner/context before discarding its runtime.
-      capture(ctx);
+      capture(ctx, true);
       ctx.disposed = true;
       if (runtimeRef.current === ctx) runtimeRef.current = null;
       window.clearInterval(timer);
