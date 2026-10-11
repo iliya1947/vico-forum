@@ -183,11 +183,13 @@ export function visualDomSelection(
     const sourceStart = Number(inline.dataset.sourceStart);
     const sourceEnd = Number(inline.dataset.sourceEnd);
     if (!Number.isSafeInteger(sourceStart) || !Number.isSafeInteger(sourceEnd)) continue;
-    const contents = document.createRange();
-    contents.selectNodeContents(inline);
-    const coversStart = range.compareBoundaryPoints(Range.START_TO_START, contents) <= 0;
-    const coversEnd = range.compareBoundaryPoints(Range.END_TO_END, contents) >= 0;
-    if (coversStart && coversEnd) {
+    const leaves = [...inline.querySelectorAll<HTMLElement>('[data-visual-text="true"]')];
+    const visibleStarts = leaves.map((leaf) => Number(leaf.dataset.sourceStart)).filter(Number.isSafeInteger);
+    const visibleEnds = leaves.map((leaf) => Number(leaf.dataset.sourceEnd)).filter(Number.isSafeInteger);
+    if (visibleStarts.length === 0 || visibleEnds.length === 0) continue;
+    const visibleStart = Math.min(...visibleStarts);
+    const visibleEnd = Math.max(...visibleEnds);
+    if (start <= visibleStart && end >= visibleEnd) {
       start = Math.min(start, sourceStart);
       end = Math.max(end, sourceEnd);
     }
@@ -246,7 +248,11 @@ export function restoreVisualDomSelection(
   domRange.setStart(start.node, start.offset);
   domRange.setEnd(end.node, end.offset);
   const domSelection = window.getSelection();
-  if (!domSelection) return false;
+  if (!domSelection
+    || typeof domSelection.removeAllRanges !== "function"
+    || typeof domSelection.addRange !== "function") {
+    return document.activeElement === startLeaf;
+  }
   domSelection.removeAllRanges();
   domSelection.addRange(domRange);
   return true;
