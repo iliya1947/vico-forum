@@ -411,7 +411,7 @@ export interface CreateTopicInput {
 }
 
 export interface CreatePostInput {
-  publishedDraft?: { contextKey: string; draftId: string };
+  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number };
   id: string;
   topicId: string;
   authorId: string;
@@ -420,7 +420,7 @@ export interface CreatePostInput {
 }
 
 export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
-  publishedDraft?: { contextKey: string; draftId: string };
+  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number };
   initialPost: CreatePostInput;
 }
 
@@ -670,23 +670,96 @@ export class DrizzleForumRepository {
   private async finishPublishedDraft(
     tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
     ownerId: string,
-    draft: { contextKey: string; draftId: string },
+    draft: { contextKey: string; draftId?: string; expectedVersion?: number },
   ) {
-    if (!/^[0-9a-f-]{36}$/iu.test(draft.draftId)) return;
+    const hasFence = draft.draftId !== undefined || draft.expectedVersion !== undefined;
+    if (
+      hasFence
+      && (
+        typeof draft.draftId !== "string"
+        || !/^[0-9a-f-]{36}$/iu.test(draft.draftId)
+        || !Number.isSafeInteger(draft.expectedVersion)
+        || (draft.expectedVersion ?? -1) < 0
+      )
+    ) {
+      throw new ForumStateConflictError("invalid editor draft publication fence");
+    }
+
     const now = new Date();
-    await tx.insert(forumEditorDrafts).values({
-      ownerId, contextKey: draft.contextKey, draftId: draft.draftId,
-      version: 1, status: "published",
-      payload: { title: "", body: "", tags: "" },
-      editedAt: now, updatedAt: now,
-    }).onConflictDoUpdate({
-      target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
-      set: { status: "published", payload: { title: "", body: "", tags: "" }, version: sql`${forumEditorDrafts.version}+1`, updatedAt: now },
-      setWhere: and(
-        eq(forumEditorDrafts.status, "active"),
-        eq(forumEditorDrafts.draftId, draft.draftId),
-      ),
-    });
+    const emptyPayload = { title: "", body: "", tags: "" };
+    if (hasFence) {
+      const draftId = draft.draftId!;
+      const expectedVersion = draft.expectedVersion!;
+      const changed = await tx.update(forumEditorDrafts)
+        .set({
+          draftId,
+          status: "published",
+          payload: emptyPayload,
+          version: sql`${forumEditorDrafts.version}+1`,
+          editedAt: now,
+          updatedAt: now,
+        })
+        .where(and(
+          eq(forumEditorDrafts.ownerId, ownerId),
+          eq(forumEditorDrafts.contextKey, draft.contextKey),
+          eq(forumEditorDrafts.version, expectedVersion),
+          or(
+            and(eq(forumEditorDrafts.status, "active"), eq(forumEditorDrafts.draftId, draftId)),
+            and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId)),
+          ),
+        ))
+        .returning({ version: forumEditorDrafts.version });
+      if (changed.length > 0) return;
+
+      if (expectedVersion === 0) {
+        const inserted = await tx.insert(forumEditorDrafts).values({
+          ownerId,
+          contextKey: draft.contextKey,
+          draftId,
+          version: 1,
+          status: "published",
+          payload: emptyPayload,
+          editedAt: now,
+          updatedAt: now,
+        }).onConflictDoNothing().returning({ version: forumEditorDrafts.version });
+        if (inserted.length > 0) return;
+      }
+      throw new ForumStateConflictError("editor draft changed before publication");
+    }
+
+    // Non-editor callers do not have a client CAS token. They may publish only
+    // when there is no active editor generation to overwrite.
+    const markerDraftId = crypto.randomUUID();
+    const terminal = await tx.update(forumEditorDrafts)
+      .set({
+        draftId: markerDraftId,
+        status: "published",
+        payload: emptyPayload,
+        version: sql`${forumEditorDrafts.version}+1`,
+        editedAt: now,
+        updatedAt: now,
+      })
+      .where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, draft.contextKey),
+        ne(forumEditorDrafts.status, "active"),
+      ))
+      .returning({ version: forumEditorDrafts.version });
+    if (terminal.length > 0) return;
+
+    const inserted = await tx.insert(forumEditorDrafts).values({
+      ownerId,
+      contextKey: draft.contextKey,
+      draftId: markerDraftId,
+      version: 1,
+      status: "published",
+      payload: emptyPayload,
+      editedAt: now,
+      updatedAt: now,
+    }).onConflictDoNothing().returning({ version: forumEditorDrafts.version });
+    if (inserted.length > 0) return;
+
+    throw new ForumStateConflictError("active editor draft must be reconciled before publication");
   }
 
   async listCategories(): Promise<ForumCategorySummary[]> {
