@@ -4101,3 +4101,40 @@ Pages availability and owner visual acceptance; whole-PR review, remaining
 current-stage defects and one independent Codex review according to AGENTS.
 Do not merge; owner handles merge.
 
+
+## PR #217: final-pass code review and pending Pages acceptance — 2026-10-11
+
+Owner resumed third bounded subtask. Whole-PR source review checked the current
+case-level queue, guarded mutations, 6 groups, responsive RTL/navigation, empty
+complaint/security placeholders, database service and UI regression tests.
+Detected and fixed a current-scope regression: group switches in the new
+individual-case inbox lost their pending counters. Added
+`readHelpAttentionCounts(visibility)`, counting all active cases per kind and
+pending appeals, authoritative best-answer needs-review tasks, and topics with
+2+ visible pending signals for Mixed. Counters are effective-permission-filtered
+and unaffected by 50-case pages or the prior 100-topic activity cap.
+Extended PostgreSQL/regression fixtures and UI/UX docs.
+
+Checked all 15 new EN descriptor fingerprints directly against actual SHA-256
+canonical message semantics; every stored `manual-fingerprints.ts` value
+matches, so suspected stale RU/HE translation issue was **not a defect**; no
+localization fingerprint change was made.
+
+**Current actual PR #217 head:** `492efd6a0a74e2564f04806ba864a0fdedd6edcb`.
+Exact-head CI [#38100711549](https://github.com/iliya1947/vico-forum/actions/runs/38100711549):
+both `checks` and `database` succeeded. PR body updated to reflect the new
+card/actions, heading-level mode navigation, counters, updated tests/CI and
+unverified Pages acceptance. PR still Draft, not merged.
+
+**Acceptance boundary:** Unable to independently retrieve the current GitHub
+Pages HTML/visual snapshot or Pages push-workflow status with available tools;
+the GitHub connector's commit-runs endpoint shows only PR-triggered runs,
+and direct public fetches were unavailable. Do not claim latest Pages deployed.
+Actual screenshot/browser review and **fresh owner visual acceptance** of the
+new individual-case queue are outstanding. Per `AGENTS.md`, **do not summon
+independent Codex review or declare merge-ready until this acceptance is
+received**. Next user action is to check
+https://iliya1947.github.io/vico-forum/?embed=1&scenario=attention-signals&identity=manager
+and confirm updated individual-case cards, actions, and six group totals.
+If Pages serves an old build, diagnose branch workflow/publishing before
+continuing. Production was not deployed; no new review requested yet.
