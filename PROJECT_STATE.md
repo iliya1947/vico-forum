@@ -91,9 +91,19 @@ Vico Forum находится в ранней pre-release разработке.
   answer-status task instead of pretending it is a user report. Group-specific
   database selection occurs before pagination (50 cases/page; Mixed paginates
   topics with 2+ pending visible signals and projects their individual cases).
-  The legacy topic-aggregate reader remains temporarily available for the
-  existing UI until the next subtask wires the actionable queue; no UI acceptance,
-  exact-head CI or deployment is claimed for this intermediate revision.
+  The second subtask replaces topic-only cards with case-specific records,
+  explanations, submitter/context links and protected Accept/Reject actions on
+  `/:locale/attention`. The handler validates Origin, session, current permission
+  and authoritative case-topic identity, returning to the selected group after
+  success; appeal mutation additionally verifies exact case ID under DB locks.
+  Existing Needs-review moderator statuses remain separate tasks linking to
+  the specific answer's moderation controls rather than fabricated user signals.
+  GitHub Pages fixtures now preview realistic independent requests. Mode switches
+  sit beside the page heading and group switches below; redundant Moderation
+  eyebrow is removed. The aggregate topic reader remains available but is no
+  longer used by the attention route; no migrations or complaint/security
+  mechanics were introduced. New exact-head checks, Pages publication and
+  owner acceptance are not yet claimed.
   Owner visual acceptance and independent Codex review remain pending.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
