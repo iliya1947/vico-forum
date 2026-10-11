@@ -450,6 +450,7 @@ export const canonicalEnglishCatalog = {
     editorDraftLocalError: message("editorDraftLocalError", "Could not save draft. Your current text remains in the editor.", "Editor draft storage error message."),
     editorDraftThisDevice: message("editorDraftThisDevice", "This device", "Label for locally edited draft version."),
     editorDraftOtherDevice: message("editorDraftOtherDevice", "Other device", "Label for remotely edited draft version."),
+    editorDraftNoRemoteVersion: message("editorDraftNoRemoteVersion", "This draft was published or deleted.", "Placeholder for a terminal server draft, which intentionally has no content to compare."),
     editorDraftKeepLocal: message("editorDraftKeepLocal", "Keep this version", "Choose local draft in explicit conflict."),
     editorDraftKeepServer: message("editorDraftKeepServer", "Keep other version", "Choose remote draft in explicit conflict."),
     editorMyDrafts: message("editorMyDrafts", "My drafts", "Navigation label for authenticated user's drafts."),
