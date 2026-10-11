@@ -1847,6 +1847,7 @@ export function SectionView({
 
       {canCreateTopic && (
         <Form
+          key={section.id}
           id="create-topic"
           method="post"
           className="forum-write-form section-create-form"
@@ -2064,11 +2065,79 @@ export function TopicView({
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
+  const activeReplyTargetPostId =
+    replyTargetPostId && messageNumberById.has(replyTargetPostId) ? replyTargetPostId : null;
   const messageLinkRequestId = useRef(0);
   const replyEditorRef = useRef<MarkdownEditorHandle>(null);
+  const replyPublicationRef = useRef<{
+    topicId: string;
+    draftId: string;
+    expectedVersion: number;
+    existingPostIds: Set<string>;
+  } | null>(null);
   const navigation = useNavigation();
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
+
+  useEffect(() => {
+    setReplyTargetPostId(null);
+    setQuoteSelectionErrorPostId(null);
+    setOpenMessageActionsPostId(null);
+    replyPublicationRef.current = null;
+  }, [topic.id]);
+
+  useEffect(() => {
+    if (
+      navigation.state !== "submitting"
+      || navigation.formData?.get("intent") !== "reply"
+    ) return;
+    const draftId = navigation.formData.get("editorDraftId");
+    const rawVersion = navigation.formData.get("editorDraftVersion");
+    if (
+      typeof draftId !== "string"
+      || !/^[0-9a-f-]{36}$/iu.test(draftId)
+      || typeof rawVersion !== "string"
+      || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
+    ) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    const expectedVersion = Number(rawVersion);
+    if (!Number.isSafeInteger(expectedVersion)) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    replyPublicationRef.current = {
+      topicId: topic.id,
+      draftId,
+      expectedVersion,
+      existingPostIds: new Set(topic.posts.map((post) => post.id)),
+    };
+  }, [navigation.state, navigation.formData, topic.id, topic.posts]);
+
+  useEffect(() => {
+    const pending = replyPublicationRef.current;
+    if (!pending || navigation.state !== "idle") return;
+    if (forumWriteError) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    if (pending.topicId !== topic.id || !location.hash.startsWith("#post-")) return;
+    let postId: string;
+    try {
+      postId = decodeURIComponent(location.hash.slice("#post-".length));
+    } catch {
+      return;
+    }
+    if (!postId || pending.existingPostIds.has(postId) || !messageNumberById.has(postId)) return;
+    replyEditorRef.current?.acknowledgePublished(
+      pending.draftId,
+      pending.expectedVersion + 1,
+    );
+    setReplyTargetPostId(null);
+    setQuoteSelectionErrorPostId(null);
+    replyPublicationRef.current = null;
+  }, [forumWriteError, location.hash, messageNumberById, navigation.state, topic.id]);
 
   useEffect(() => {
     const latestPostId = topicReadState?.latestPostId;
@@ -2655,7 +2724,7 @@ export function TopicView({
             aria-busy={isReplySubmitting}
           >
             <input type="hidden" name="intent" value="reply" />
-            {replyTargetPostId && <input type="hidden" name="parentPostId" value={replyTargetPostId} />}
+            {activeReplyTargetPostId && <input type="hidden" name="parentPostId" value={activeReplyTargetPostId} />}
 
             <header className="forum-write-header">
               <div>
@@ -2665,9 +2734,9 @@ export function TopicView({
               <p>{t("replyHelp")}</p>
             </header>
 
-            {replyTargetPostId && messageNumberById.has(replyTargetPostId) && (
+            {activeReplyTargetPostId && (
               <div className="reply-target-banner">
-                <span>{t("replyingToMessage", { number: messageNumberById.get(replyTargetPostId)! })}</span>
+                <span>{t("replyingToMessage", { number: messageNumberById.get(activeReplyTargetPostId)! })}</span>
                 <button
                   type="button"
                   onClick={() => {
