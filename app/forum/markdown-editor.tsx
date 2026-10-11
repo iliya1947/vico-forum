@@ -263,7 +263,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         start: textareaOffsetToSourceOffset(nextValue, selectionStart),
         end: textareaOffsetToSourceOffset(nextValue, selectionEnd),
       };
-      pendingSelectionRef.current = after;
       historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
       setValue(nextValue);
       draft.noteEdit(nextValue);
@@ -321,8 +320,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function replaceSourceRange(range: EditorSelection, replacement: string) {
       if (range.start < 0 || range.end > value.length || range.end < range.start) return;
       const next = value.slice(0, range.start) + replacement + value.slice(range.end);
-      const position = range.start + replacement.length;
-      historyRef.current = recordEditorEdit(historyRef.current, next, range, { start: position, end: position });
+      const after = { start: range.start + replacement.length, end: range.start + replacement.length };
+      historyRef.current = recordEditorEdit(historyRef.current, next, range, after);
+      if (authoringMode === "simple") {
+        pendingVisualSelectionRef.current = after;
+        visualSelectionRef.current = after;
+        visualSelectionKnownRef.current = true;
+      } else {
+        pendingSelectionRef.current = after;
+      }
       setValue(next);
       draft.noteEdit(next, true);
       setPasteWarning(false);
@@ -589,30 +595,24 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     useImperativeHandle(forwardedRef, () => ({
       focus() {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-
-        const start = textarea.selectionStart ?? value.length;
-        const end = textarea.selectionEnd ?? start;
-        if (authoringMode === "simple" || mode === "preview") {
-          pendingSelectionRef.current = { start, end };
-          switchAuthoring("advanced");
-          return;
+        const selection = sourceSelection() ?? historyRef.current.current.selection;
+        setMode("write");
+        if (authoringMode === "simple") {
+          pendingVisualSelectionRef.current = selection;
+          visualSelectionRef.current = selection;
+          visualSelectionKnownRef.current = true;
+        } else {
+          pendingSelectionRef.current = selection;
         }
-
-        textarea.focus();
       },
       insertText(text: string) {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-
-        const start = textarea.selectionStart ?? value.length;
-        const end = textarea.selectionEnd ?? start;
-        const nextValue = value.slice(0, start) + text + value.slice(end);
-        const caret = start + text.length;
-        pendingSelectionRef.current = { start: caret, end: caret };
-        if (mode === "preview" || authoringMode === "simple") switchAuthoring("advanced");
-        commitSource(nextValue);
+        const selection = sourceSelection() ?? historyRef.current.current.selection;
+        const nextValue = value.slice(0, selection.start) + text + value.slice(selection.end);
+        const caret = selection.start + text.length;
+        const after = { start: caret, end: caret };
+        pendingSelectionRef.current = after;
+        setMode("write");
+        commitSource(nextValue, selection, after);
       },
       acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
         draft.acknowledgePublished(publishedDraftId, publishedVersion);
@@ -698,6 +698,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     <>
                       <button type="button" disabled={disabled} aria-label={t("editorInlineCode")} onClick={() => {
                         const selection = sourceSelection();
+                        if (!selection) return;
                         const { prefix, suffix } = inlineCodeAffixes(value.slice(selection.start, selection.end));
                         replaceSelection(prefix, suffix, prefix.length);
                       }}>{t("editorInlineCode")}</button>
