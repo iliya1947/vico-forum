@@ -68,7 +68,7 @@ describe("protected CommonMark translation", () => {
     const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
 
     expect(restored).toContain("~~deprecated phrase~~");
-    expect(container.querySelector("del")).toHaveTextContent("deprecated phrase");
+    expect(container.querySelector("del")?.textContent).toBe("deprecated phrase");
   });
 
   it("never exposes inline/fenced/indented code, autolink URLs, raw HTML, or image data as segments", () => {
