@@ -346,6 +346,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     function insertTechnicalBlock(text: string) {
       const selection = sourceSelection();
+      if (!selection) return;
       const leading = selection.start > 0 && value[selection.start - 1] !== "\n" ? "\n\n" : "";
       const trailing = selection.end < value.length && value[selection.end] !== "\n" ? "\n\n" : "";
       replaceSourceRange(selection, leading + text + trailing);
@@ -363,7 +364,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function codeKey(key: string, shift: boolean) {
       const textarea = textareaRef.current;
       if (!textarea) return false;
-      const { start, end } = sourceSelection();
+      const selection = sourceSelection();
+      if (!selection) return false;
+      const { start, end } = selection;
       if (!codeRegion(start) || !codeRegion(end)) return false;
       if (key === "Tab") {
         const first = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
@@ -388,7 +391,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         replaceSourceRange({ start, end }, key + matches[key]);
         pendingSelectionRef.current = { start: start + 1, end: start + 1 };
         textarea.focus();
-        textarea.setSelectionRange(start + 1, start + 1);
+        const caret = sourceOffsetToTextareaOffset(value, start + 1);
+        textarea.setSelectionRange(caret, caret);
         return true;
       }
       return false;
@@ -399,7 +403,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (!navigator.clipboard?.readText) throw new Error("Clipboard unsupported");
         const text = await navigator.clipboard.readText();
         if (format === "plain") {
-          replaceSourceRange(sourceSelection(), clipboardPlainToMarkdown(text));
+          const selection = sourceSelection();
+          if (!selection) { setPasteWarning(true); return; }
+          replaceSourceRange(selection, clipboardPlainToMarkdown(text));
           return;
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
@@ -408,7 +414,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function clearInlineFormatting() {
-      const { start, end } = sourceSelection();
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       if (start === end) return;
       for (const marker of ["**", "~~", "_"]) {
         if (value.slice(start - marker.length, start) !== marker
@@ -422,14 +430,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function findNext() {
       if (!findText) return;
       const textarea = textareaRef.current;
-      const current = textarea?.selectionEnd ?? 0;
+      const current = textareaOffsetToSourceOffset(value, textarea?.selectionEnd ?? 0);
       let at = value.indexOf(findText, current);
       if (at < 0) at = value.indexOf(findText);
       if (at < 0) return;
-      switchAuthoring("advanced");
-      textarea?.focus();
-      textarea?.setSelectionRange(at, at + findText.length);
-      pendingSelectionRef.current = null;
+      const selection = { start: at, end: at + findText.length };
+      historyRef.current = rememberEditorSelection(historyRef.current, selection);
+      setMode("write");
+      pendingSelectionRef.current = selection;
     }
 
     function replaceAllMatches() {
@@ -441,7 +449,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (offset < 0 || offset > value.length) return;
       const next = value.slice(0, offset) + "\n\n" + value.slice(offset);
       const at = offset + 2;
-      pendingVisualCaretRef.current = at;
       pendingSelectionRef.current = { start: at, end: at };
       commitSource(next);
     }
@@ -452,26 +459,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (!pending || !textarea || mode === "preview" || authoringMode !== "advanced") return;
 
       textarea.focus();
-      textarea.setSelectionRange(pending.start, pending.end);
+      textarea.setSelectionRange(
+        sourceOffsetToTextareaOffset(value, pending.start),
+        sourceOffsetToTextareaOffset(value, pending.end),
+      );
       pendingSelectionRef.current = null;
     }, [mode, value, authoringMode]);
 
     useLayoutEffect(() => {
-      const offset = pendingVisualCaretRef.current;
-      if (offset === null || authoringMode !== "simple" || mode !== "write") return;
-      const elements = [...(editorRef.current?.querySelectorAll<HTMLElement>('[data-visual-text="true"]') ?? [])];
-      const chosen = elements.find((node) => Number(node.dataset.sourceStart) >= offset) ?? elements[elements.length - 1];
-      pendingVisualCaretRef.current = null;
-      if (!chosen) return;
-      chosen.focus();
-      const selection = window.getSelection();
-      if (selection) {
-        const range = document.createRange();
-        range.selectNodeContents(chosen);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
+      const pending = pendingVisualSelectionRef.current;
+      const editor = editorRef.current;
+      if (!pending || !editor || authoringMode !== "simple" || mode !== "write") return;
+      if (!restoreVisualDomSelection(editor, value, pending)) return;
+      pendingVisualSelectionRef.current = null;
+      visualSelectionRef.current = pending;
+      visualSelectionKnownRef.current = true;
+      historyRef.current = rememberEditorSelection(historyRef.current, pending);
     }, [value, authoringMode, mode]);
 
     function replaceSelection(
@@ -479,7 +482,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       suffix: string,
       emptySelectionOffset = prefix.length,
     ) {
-      const { start, end } = sourceSelection();
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       const selected = value.slice(start, end);
       const nextValue = value.slice(0, start) + prefix + selected + suffix + value.slice(end);
 
@@ -496,7 +501,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function prefixSelectedLines(prefixForLine: (index: number) => string) {
-      const { start: selectionStart, end: selectionEnd } = sourceSelection();
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start: selectionStart, end: selectionEnd } = selection;
 
       if (selectionStart === selectionEnd) {
         const lineStart = selectionStart === 0 ? 0 : value.lastIndexOf("\n", selectionStart - 1) + 1;
@@ -529,7 +536,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function insertLink() {
-      const { start, end } = sourceSelection();
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       const selected = value.slice(start, end);
       const label = selected || t("editorLink");
       const destination = "https://";
@@ -552,7 +561,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function insertFencedCodeBlock() {
-      const { start, end } = sourceSelection();
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       const selected = value.slice(start, end);
       const language = normalizedCodeLanguage(codeLanguage);
       const needsLeadingBreak = start > 0 && value[start - 1] !== "\n";
