@@ -14,7 +14,7 @@ export interface ForumAttachmentMetadata {
   declaredMime: string;
   detectedType: string;
   responseMime: string;
-  declaredByteSize: number;
+  byteSize: number;
   verificationStatus: "type-checked";
   createdAt: string;
 }
@@ -29,7 +29,7 @@ export interface CreateDraftAttachmentInput {
   declaredMime: string;
   detectedType: string;
   responseMime: string;
-  declaredByteSize: number;
+  byteSize: number;
   verificationStatus: "type-checked";
 }
 
@@ -77,8 +77,8 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
     && typeof input.declaredMime === "string"
     && input.detectedType.length > 0
     && input.responseMime.length > 0
-    && Number.isSafeInteger(input.declaredByteSize)
-    && input.declaredByteSize > 0
+    && Number.isSafeInteger(input.byteSize)
+    && input.byteSize > 0
     && input.verificationStatus === "type-checked";
 }
 
@@ -128,7 +128,7 @@ export class DrizzleForumAttachments {
         declaredMime: input.declaredMime,
         detectedType: input.detectedType,
         responseMime: input.responseMime,
-        declaredByteSize: input.declaredByteSize,
+        byteSize: input.byteSize,
         verificationStatus: input.verificationStatus,
         createdAt,
       }).returning();
