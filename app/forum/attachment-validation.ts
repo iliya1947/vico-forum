@@ -88,26 +88,66 @@ export function detectAttachmentContent(bytes: Uint8Array): AttachmentDetection 
   return "text";
 }
 
-function expectedDeclaredFormat(mime: string): AttachmentDetection | null {
-  const map: Readonly<Record<string, AttachmentDetection>> = {
-    "image/png": "png", "image/jpeg": "jpeg", "image/jpg": "jpeg",
-    "image/gif": "gif", "image/webp": "webp", "application/pdf": "pdf",
-    "application/zip": "zip", "application/x-zip-compressed": "zip",
-    "application/x-7z-compressed": "7z", "application/gzip": "gzip",
-    "application/x-gzip": "gzip", "application/x-tar": "tar",
-    "application/msword": "ole", "application/vnd.ms-excel": "ole",
-    "application/vnd.ms-powerpoint": "ole",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "zip",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "zip",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "zip",
-    "application/vnd.oasis.opendocument.text": "zip",
-    "application/vnd.oasis.opendocument.spreadsheet": "zip",
-    "text/plain": "text", "text/html": "text", "text/css": "text",
-    "text/csv": "text", "text/xml": "text", "image/svg+xml": "text",
-    "application/json": "text", "application/xml": "text",
-    "application/javascript": "text", "text/javascript": "text",
-  };
-  return map[mime] ?? (mime.startsWith("text/") ? "text" : null);
+type DeclaredMimeExpectation = {
+  detected: AttachmentDetection;
+  /** Specific semantic claim; absent means a deliberately generic family MIME. */
+  semantic?: string;
+};
+const declaredMimeExpectations: Readonly<Record<string, DeclaredMimeExpectation>> = {
+  "image/png": { detected: "png", semantic: "png" },
+  "image/jpeg": { detected: "jpeg", semantic: "jpeg" },
+  "image/jpg": { detected: "jpeg", semantic: "jpeg" },
+  "image/gif": { detected: "gif", semantic: "gif" },
+  "image/webp": { detected: "webp", semantic: "webp" },
+  "application/pdf": { detected: "pdf", semantic: "pdf" },
+  "application/zip": { detected: "zip" },
+  "application/x-zip-compressed": { detected: "zip" },
+  "application/x-7z-compressed": { detected: "7z", semantic: "7z" },
+  "application/gzip": { detected: "gzip", semantic: "gzip" },
+  "application/x-gzip": { detected: "gzip", semantic: "gzip" },
+  "application/x-tar": { detected: "tar", semantic: "tar" },
+  "application/msword": { detected: "ole", semantic: "doc" },
+  "application/vnd.ms-excel": { detected: "ole", semantic: "xls" },
+  "application/vnd.ms-powerpoint": { detected: "ole", semantic: "ppt" },
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+    detected: "zip", semantic: "docx",
+  },
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+    detected: "zip", semantic: "xlsx",
+  },
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
+    detected: "zip", semantic: "pptx",
+  },
+  "application/vnd.oasis.opendocument.text": { detected: "zip", semantic: "odt" },
+  "application/vnd.oasis.opendocument.spreadsheet": { detected: "zip", semantic: "ods" },
+  "text/plain": { detected: "text" },
+  "text/html": { detected: "text", semantic: "html" },
+  "text/css": { detected: "text", semantic: "css" },
+  "text/csv": { detected: "text", semantic: "csv" },
+  "text/xml": { detected: "text", semantic: "xml" },
+  "image/svg+xml": { detected: "text", semantic: "svg" },
+  "application/json": { detected: "text", semantic: "json" },
+  "application/xml": { detected: "text", semantic: "xml" },
+  "application/javascript": { detected: "text", semantic: "javascript" },
+  "text/javascript": { detected: "text", semantic: "javascript" },
+};
+const extensionSemantics: Readonly<Record<string, string>> = {
+  png: "png", jpg: "jpeg", jpeg: "jpeg", gif: "gif", webp: "webp", pdf: "pdf",
+  zip: "zip", "7z": "7z", gz: "gzip", tgz: "gzip", tar: "tar",
+  doc: "doc", xls: "xls", ppt: "ppt", docx: "docx", xlsx: "xlsx", pptx: "pptx",
+  odt: "odt", ods: "ods", html: "html", htm: "html", css: "css", csv: "csv",
+  xml: "xml", svg: "svg", json: "json", js: "javascript", mjs: "javascript",
+  cjs: "javascript",
+};
+
+function declaredMimeExpectation(mime: string): DeclaredMimeExpectation | "generic" | "unknown" {
+  if (!mime || mime === "application/octet-stream") return "generic";
+  const known = declaredMimeExpectations[mime];
+  if (known) return known;
+  // Keep broad source/config support without pretending an unknown text subtype
+  // identifies a more specific format.
+  if (mime.startsWith("text/")) return { detected: "text" };
+  return "unknown";
 }
 
 export function inspectAttachment(candidate: AttachmentCandidate): AttachmentInspection {
@@ -136,8 +176,22 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
   if (binaryExpected ? detected !== binaryExpected : detected !== "text") {
     return reject(detected === "unknown" && !binaryExpected ? "binary-content" : "signature-mismatch");
   }
-  const mimeExpected = expectedDeclaredFormat(mime);
-  if (mimeExpected && mimeExpected !== detected) return reject("mime-mismatch");
+  const mimeExpected = declaredMimeExpectation(mime);
+  if (mimeExpected !== "generic") {
+    if (mimeExpected === "unknown") {
+      // Unknown application/* is tolerated only for broad text/source names where
+      // neither extension nor content claims a known semantic file format.
+      if (detected !== "text" || extensionSemantics[extension] || !mime.startsWith("application/")) {
+        return reject("mime-mismatch");
+      }
+    } else {
+      if (mimeExpected.detected !== detected) return reject("mime-mismatch");
+      const extensionSemantic = extensionSemantics[extension];
+      if (mimeExpected.semantic && extensionSemantic && mimeExpected.semantic !== extensionSemantic) {
+        return reject("mime-mismatch");
+      }
+    }
+  }
   return {
     accepted: true, fileName: name, detected, scanStatus: "type-checked", suspicious: false,
     // Never render uploaded HTML/SVG/scripts in the forum's origin.

@@ -109,11 +109,36 @@ describe("Editor 2.0 server-side attachment type gate", () => {
     }
   });
 
-  it("treats generic application/octet-stream as unknown, not as proof of a mismatch", () => {
+  it("distinguishes specific MIME semantics inside shared text, ZIP and OLE families", () => {
+    const zip = payload([0x50, 0x4b, 0x03, 0x04]);
+    const ole = payload([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+
+    expect(inspect("bundle.zip", zip,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document")).toMatchObject({
+      accepted: false, reason: "mime-mismatch", suspicious: true,
+    });
+    expect(inspect("legacy.doc", ole, "application/vnd.ms-excel")).toMatchObject({
+      accepted: false, reason: "mime-mismatch", suspicious: true,
+    });
+    expect(inspect("config.json", utf8("{}"), "text/html")).toMatchObject({
+      accepted: false, reason: "mime-mismatch", suspicious: true,
+    });
+
+    // A less-specific family MIME is not contradictory by itself.
+    expect(inspect("doc.docx", zip, "application/zip").accepted).toBe(true);
+    expect(inspect("config.json", utf8("{}"), "text/plain").accepted).toBe(true);
+  });
+
+  it("handles generic and unknown declared MIME without narrowing broad source support", () => {
     expect(inspect("hello.py", utf8("print('ok')"), "application/octet-stream").accepted).toBe(true);
     expect(inspect("hello.py", utf8("print('ok')"), "image/png")).toMatchObject({
       accepted: false, reason: "mime-mismatch", suspicious: true,
     });
+    expect(inspect("config.json", utf8("{}"), "application/x-custom-json")).toMatchObject({
+      accepted: false, reason: "mime-mismatch", suspicious: true,
+    });
+    expect(inspect("custom.unknown-source", utf8("custom source"), "application/x-custom-source").accepted)
+      .toBe(true);
     expect(inspect("notes.md", utf8("Hello"), "application/x-msdownload")).toMatchObject({
       accepted: false, reason: "forbidden-mime", suspicious: true,
     });

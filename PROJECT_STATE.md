@@ -401,11 +401,15 @@ Vico Forum находится в ранней pre-release разработке.
   format controls, теперь отклоняется как invalid-name с suspicious=true; обычные
   Unicode filenames не запрещаются. Это сохраняет будущий Security/Attachments
   сигнал о признаках маскировки без расширения текущего attachment lifecycle.
-  Остались findings №2–4:
-  Declared-MIME consistency проверяется неполно: неизвестные non-generic MIME
-  игнорируются, а text/ZIP/OLE families схлопываются в coarse kind, поэтому
-  extension↔MIME mismatches внутри одной family проходят accepted без suspicious
-  marker. Text sniff при полном 4096-byte prefix безусловно исключает последние
+  Stage 5 finding №2 исправлен отдельно 2026-10-12 без изменения content detector:
+  declared MIME теперь имеет отдельную semantic consistency boundary поверх coarse
+  text/ZIP/OLE detection. Конкретные MIME DOC/DOCX/XLS/XLSX/PPT/PPTX/ODF и
+  JSON/HTML/XML/SVG/CSS/CSV/JavaScript сверяются с известной семантикой расширения;
+  generic application/octet-stream, text/plain и application/zip не считаются
+  доказательством более специфичного типа. Неизвестный non-generic MIME больше не
+  игнорируется для известного semantic extension, при этом custom text/source name
+  без известной семантики сохраняет broad-support path. Остались findings №3–4:
+  Text sniff при полном 4096-byte prefix безусловно исключает последние
   четыре байта из UTF-8 fatal decode, из-за чего invalid bytes внутри самого
   sniff-window могут быть ошибочно классифицированы как text. Recognized binary
   verification ограничен magic prefix: заведомо обрезанные JPEG/GIF/PDF/ZIP
