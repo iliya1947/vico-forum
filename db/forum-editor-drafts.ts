@@ -77,7 +77,7 @@ function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
 export class DrizzleForumEditorDrafts {
   constructor(private readonly db: NodePgDatabase) {}
 
-  private async assertNewContextExists(contextKey: string) {
+  async assertContextExists(contextKey: string) {
     const context = parseEditorDraftContextKey(contextKey);
     if (!context) throw new InvalidForumEditorDraftError();
 
@@ -193,7 +193,7 @@ export class DrizzleForumEditorDrafts {
     );
     const previous = await this.get(ownerId, contextKey);
     const isNewGeneration = !previous || previous.draftId !== draftId;
-    if (isNewGeneration) await this.assertNewContextExists(contextKey);
+    if (isNewGeneration) await this.assertContextExists(contextKey);
 
     const changed = isNewGeneration
       ? await this.db.insert(forumEditorDrafts)
