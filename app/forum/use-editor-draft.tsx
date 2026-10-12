@@ -127,6 +127,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       editedAt: remote.editedAt,
       baseVersion: remote.version, syncedEditedAt: remote.editedAt,
       payload: remote.payload,
+      // Retain attachment provenance when refreshing text within the same generation.
+      attachmentDraftId: ctx.local?.attachmentDraftId === remote.draftId
+        ? ctx.local.attachmentDraftId : undefined,
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
     ctx.local = next;
