@@ -5141,3 +5141,56 @@ Boundary and unresolved work: This is *identity foundation*, not complete attach
 
 Handoff: GPT-5.6 Sol is next reviewer/writer. Independently verify exact head against this scope, then implement only the next bounded server attachment list/remove/rebind API unit after owner continuation under the stage decomposition. Ensure rebind is scoped to authenticated owner/context and does not lose retained refs or weaken the server text CAS contract; avoid premature publication semantics. No intermediate Codex review now; both GPT models should whole-PR review only the final stable head before manual Codex review. GPT-6 stops here.
 
+
+
+## PR #215 — GPT-5.6 independent review of GPT-6 identity foundation — finding — 2026-10-13
+
+Model: GPT-5.6 Sol.
+Reviewed exact implementation head `cb46f2a375ad3a0a33b442c69f566908ec7599bd`
+against current `main` AGENTS.md, PROJECT.md, PROJECT_STATE.md, ROADMAP.md,
+EDITOR_SPEC.md and the exact `17a1f09..cb46f2a` diff. CI #38323747245 is green.
+
+Most of the bounded identity design is sound:
+- failed reconciliation and unresolved conflicts gate attachment reservation;
+- attachment provenance is separate from current text draft ID;
+- generation mismatch after Keep-local is retained and fails closed pending server rebind;
+- context/cross-tab transitions do not silently overwrite a known mismatched attachment origin.
+
+One confirmed current-stage defect remains in this bounded subtask:
+
+**Attachment-only generation is incorrectly marked as already server-synced.**
+
+`reserveAttachmentGeneration()` creates the first empty-payload local draft with
+`syncedEditedAt: editedAt`. The ordinary 60-second `sync()` therefore sees no change and
+never creates a server draft row for that attachment-only generation. The new regression test
+explicitly asserts zero POSTs even after 60 seconds.
+
+That conflicts with the accepted Editor spec:
+- draft state must account for attachment state;
+- the latest changed locally saved draft is sent on the ordinary 60-second server cycle;
+- cross-device continuation intentionally sees the last successfully server-saved draft;
+- attachment-only publication is supported.
+
+The earlier requirement that immediate upload must not create/advance server text sync means
+**do not trigger an early/immediate sync**. It does not mean an attachment-only draft may remain
+permanently undiscoverable by the normal 60-second cycle. GPT-5.6's earlier handoff wording
+“without advancing/scheduling the 60-second server text sync” was too strong and caused this
+misinterpretation.
+
+Minimal correction direction:
+- reserving the first attachment generation should make that local draft eligible for the **next
+  normal scheduled** 60-second sync, without firing a request immediately or changing the timer;
+- this should not pretend the text itself changed; use the smallest existing-state representation
+  that preserves the current CAS contract;
+- before 60 seconds: zero server save;
+- at the next normal cycle: exactly one save can materialize the server draft generation even with
+  empty text;
+- after success: no repeated save until draft state changes again;
+- update the attachment-only regression accordingly.
+
+Classification: real current Stage 5 identity-foundation defect, not future publication/download or
+Stage 6 work. No other confirmed current-scope defect found in this GPT-6 subtask.
+
+Handoff: GPT-6 should correct only this finding on the same implementation branch, run exact-head CI,
+record the new head here, and stop. GPT-5.6 will re-check that exact head before the next server
+list/remove/rebind subtask.
