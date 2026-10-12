@@ -10,8 +10,7 @@ CREATE TABLE "forum_attachment_security_events" (
   "reason" text NOT NULL,
   "byte_size" integer NOT NULL,
   "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  CONSTRAINT "forum_attachment_security_events_upload_id_unique" UNIQUE("upload_id"),
-  CONSTRAINT "forum_attachment_security_events_shape_check" CHECK ("context_key" <> '' and "draft_id" <> '' and "detected_type" <> '' and "reason" <> '' and "byte_size" >= 0)
+  CONSTRAINT "forum_attachment_security_events_upload_id_unique" UNIQUE("upload_id")
 );
 --> statement-breakpoint
 ALTER TABLE "forum_attachment_security_events" ADD CONSTRAINT "forum_attachment_security_events_uploaded_by_user_id_user_id_fk" FOREIGN KEY ("uploaded_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;
