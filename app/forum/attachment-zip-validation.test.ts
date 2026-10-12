@@ -97,6 +97,7 @@ describe("ZIP attachment structural validation", () => {
   it("accepts an ordinary ZIP and rejects truncated or inconsistent central metadata", async () => {
     const zip = buildZip([{ name: "a.txt" }, { name: "b.txt" }]);
     expect(await valid(zip, "zip")).toBe(true);
+    expect(await valid(buildZip([]), "zip")).toBe(true);
     expect(await valid(zip.subarray(0, zip.byteLength - 1), "zip")).toBe(false);
 
     const badCount = zip.slice();
@@ -110,6 +111,15 @@ describe("ZIP attachment structural validation", () => {
     badOffset[central + 44] = 0xff;
     badOffset[central + 45] = 0x7f;
     expect(await valid(badOffset, "zip")).toBe(false);
+
+    const secondLocalMismatch = zip.slice();
+    const secondCentral = secondLocalMismatch.lastIndexOf(0x50, secondLocalMismatch.byteLength - 23);
+    expect(secondCentral).toBeGreaterThan(central);
+    secondLocalMismatch[secondCentral + 42] = 0;
+    secondLocalMismatch[secondCentral + 43] = 0;
+    secondLocalMismatch[secondCentral + 44] = 0;
+    secondLocalMismatch[secondCentral + 45] = 0;
+    expect(await valid(secondLocalMismatch, "zip")).toBe(false);
   });
 
   it("accepts a structurally consistent ZIP64 directory without an arbitrary classic-entry limit", async () => {

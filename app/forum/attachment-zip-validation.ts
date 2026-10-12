@@ -107,7 +107,9 @@ async function findDirectory(source: AttachmentRandomAccessSource): Promise<ZipD
     const needsZip64 = entriesOnDisk === 0xffff || entries === 0xffff
       || directorySize === 0xffffffff || directoryOffset === 0xffffffff;
     if (!needsZip64) {
-      if (entriesOnDisk !== entries || directoryOffset + directorySize !== eocdOffset) return null;
+      const directoryEnd = directoryOffset + directorySize;
+      if (!Number.isSafeInteger(directoryEnd)
+        || entriesOnDisk !== entries || directoryEnd !== eocdOffset) return null;
       return { entries, offset: directoryOffset, size: directorySize };
     }
 
@@ -120,17 +122,22 @@ async function findDirectory(source: AttachmentRandomAccessSource): Promise<ZipD
     const zip64Fixed = await readExact(source, zip64Offset, 56);
     if (!zip64Fixed || !hasSignature(zip64Fixed, 0, ZIP_SIGNATURE.zip64Eocd)) return null;
     const recordPayloadSize = u64Safe(zip64Fixed, 4);
+    const zip64RecordEnd = recordPayloadSize === null ? null : zip64Offset + 12 + recordPayloadSize;
     if (recordPayloadSize === null || recordPayloadSize < 44
-      || zip64Offset + 12 + recordPayloadSize !== locatorOffset
+      || zip64RecordEnd === null || !Number.isSafeInteger(zip64RecordEnd)
+      || zip64RecordEnd !== locatorOffset
       || u32(zip64Fixed, 16) !== 0 || u32(zip64Fixed, 20) !== 0) return null;
 
     const entriesOnDisk64 = u64Safe(zip64Fixed, 24);
     const entries64 = u64Safe(zip64Fixed, 32);
     const directorySize64 = u64Safe(zip64Fixed, 40);
     const directoryOffset64 = u64Safe(zip64Fixed, 48);
+    const directoryEnd64 = directoryOffset64 === null || directorySize64 === null
+      ? null : directoryOffset64 + directorySize64;
     if (entriesOnDisk64 === null || entries64 === null || directorySize64 === null
-      || directoryOffset64 === null || entriesOnDisk64 !== entries64
-      || directoryOffset64 + directorySize64 !== zip64Offset) return null;
+      || directoryOffset64 === null || directoryEnd64 === null
+      || !Number.isSafeInteger(directoryEnd64) || entriesOnDisk64 !== entries64
+      || directoryEnd64 !== zip64Offset) return null;
     return { entries: entries64, offset: directoryOffset64, size: directorySize64 };
   }
   return null;
@@ -168,6 +175,7 @@ function resolveZip64Central(
     if (id === 0x0001) {
       let position = dataStart;
       const take64 = (): number | null => {
+        if (position + 8 > dataEnd) return null;
         const value = u64Safe(extra, position);
         if (value === null) return null;
         position += 8;
@@ -248,7 +256,9 @@ async function localHeaderMatches(
   const nameLength = u16(fixed, 26);
   const extraLength = u16(fixed, 28);
   const end = entry.localOffset + LOCAL_FILE_HEADER_BYTES + nameLength + extraLength;
-  if (end > directoryOffset || u16(fixed, 8) !== entry.method) return null;
+  if (end > directoryOffset || u16(fixed, 6) !== entry.flags || u16(fixed, 8) !== entry.method) {
+    return null;
+  }
   const name = await readExact(source, entry.localOffset + LOCAL_FILE_HEADER_BYTES, nameLength);
   if (!name || !equalBytes(name, entry.name)) return null;
   return { dataOffset: end, extraLength };
@@ -326,7 +336,9 @@ export async function validateZipAttachmentStructure(
     return semantic === "zip" && directory.offset === 0 && directory.size === 0;
   }
   const directoryEnd = directory.offset + directory.size;
-  if (directory.offset < 0 || directoryEnd > source.size || directory.size <= 0) return false;
+  if (!Number.isSafeInteger(directoryEnd) || directory.offset < 0
+    || directoryEnd > source.size || directory.size <= 0
+    || directory.entries > Math.floor(directory.size / CENTRAL_FILE_HEADER_BYTES)) return false;
 
   let cursor = directory.offset;
   const archiveExtra = await readExact(source, cursor, Math.min(8, directory.size));
@@ -353,13 +365,11 @@ export async function validateZipAttachmentStructure(
       return false;
     }
 
-    if (index === 0 || requiredPackageName(semantic, entry.name)) {
-      const local = await localHeaderMatches(source, entry, directory.offset);
-      if (!local) return false;
-      if (requiredPackageName(semantic, entry.name) && (entry.flags & 1) !== 0) return false;
-      if ((semantic === "odt" || semantic === "ods") && nameIs(entry.name, "mimetype")
-        && !await validateOdfMime(source, entry, local, semantic)) return false;
-    }
+    const local = await localHeaderMatches(source, entry, directory.offset);
+    if (!local) return false;
+    if (requiredPackageName(semantic, entry.name) && (entry.flags & 1) !== 0) return false;
+    if ((semantic === "odt" || semantic === "ods") && nameIs(entry.name, "mimetype")
+      && !await validateOdfMime(source, entry, local, semantic)) return false;
     cursor = parsed.next;
   }
 
