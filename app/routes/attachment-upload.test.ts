@@ -74,7 +74,7 @@ function request(
       "X-Vico-Draft-Context": encodeURIComponent(key),
       "X-Vico-Draft-Id": id,
     },
-    body: bytes,
+    body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
   });
 }
 
