@@ -185,7 +185,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     });
 
     const attachments = useEditorAttachments({
-      contextKey: accountId ? draftContextKey : undefined,
+      contextKey: accountId && draft.ready ? draftContextKey : undefined,
       draftId: draft.draftId,
       disabled,
     });
