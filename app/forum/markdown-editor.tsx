@@ -681,14 +681,28 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     useImperativeHandle(forwardedRef, () => ({
       focus() {
         const selection = sourceSelection() ?? historyRef.current.current.selection;
-        setMode("write");
         if (authoringMode === "simple") {
           pendingVisualSelectionRef.current = selection;
           visualSelectionRef.current = selection;
           visualSelectionKnownRef.current = true;
+          if (mode === "write" && editorRef.current
+            && restoreVisualDomSelection(editorRef.current, value, selection)) {
+            pendingVisualSelectionRef.current = null;
+            historyRef.current = rememberEditorSelection(historyRef.current, selection);
+          }
         } else {
           pendingSelectionRef.current = selection;
+          const textarea = textareaRef.current;
+          if (mode === "write" && textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(
+              sourceOffsetToTextareaOffset(value, selection.start),
+              sourceOffsetToTextareaOffset(value, selection.end),
+            );
+            pendingSelectionRef.current = null;
+          }
         }
+        if (mode !== "write") setMode("write");
       },
       insertText(text: string) {
         const selection = sourceSelection() ?? historyRef.current.current.selection;

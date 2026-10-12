@@ -301,13 +301,16 @@ Vico Forum находится в ранней pre-release разработке.
   malformed filenames. DB refs/upload-download routes/security-event ingestion,
   cleanup и UI остаются последующими частями Editor 2.0, а не defects уже
   реализованного type-gate.
-  Повторный поэтапный аудит Stage 1 (2026-10-11) выявил новый current-scope
+  Повторный поэтапный аудит Stage 1 (2026-10-11) выявил current-scope
   regression в imperative focus редактора: `MarkdownEditorHandle.focus()` при уже
-  активном write-state не выполняет DOM focus напрямую, а только записывает pending
-  selection и повторно устанавливает тот же mode, поэтому layout-effect не срабатывает.
-  Reply flow вызывает именно этот API; в результате прокрутка к форме возможна без
-  переноса курсора в редактор. Сопоставимый старый редактор из main выполнял прямой
-  textarea.focus() в таком состоянии. Дефект зафиксирован, но не исправлен.
+  активном write-state не выполнял DOM focus напрямую, а только записывал pending
+  selection и повторно устанавливал тот же mode, поэтому layout-effect не срабатывал.
+  Reply flow вызывает именно этот API; прокрутка к форме могла происходить без переноса
+  курсора в редактор. Исправлено 2026-10-12 локально в imperative boundary: уже открытый
+  Advanced write-mode немедленно фокусирует textarea и восстанавливает source selection,
+  а Simple write-mode немедленно восстанавливает visual DOM selection. Переход из preview
+  сохраняет существующий pending-selection lifecycle. Regression покрывает оба authoring
+  mode без принудительного переключения режима.
   Повторный поэтапный аудит Stage 2 (2026-10-11) выявил отдельный current-scope
   defect protected-content boundary. Ручное выделение в Simple безопасно
   отклоняется, если DOM Range пересекает data-visual-protected, однако

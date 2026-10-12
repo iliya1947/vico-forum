@@ -230,6 +230,65 @@ describe("MarkdownEditor", () => {
     expect(codeBlocks[0]?.querySelector("pre")?.textContent).toBe("```\ninner\n```");
   });
 
+  it("imperatively focuses an already-open Advanced write surface without requiring a mode change", () => {
+    const editorRef = createRef<MarkdownEditorHandle>();
+    renderEditor(
+      <>
+        <button type="button">Outside</button>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor
+          defaultAuthoringMode="advanced"
+          ref={editorRef}
+          id="body"
+          name="body"
+          defaultValue="before after"
+        />
+      </>,
+    );
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(7, 7);
+    screen.getByRole("button", { name: "Outside" }).focus();
+    expect(textarea).not.toHaveFocus();
+
+    act(() => editorRef.current?.focus());
+
+    expect(textarea).toHaveFocus();
+    expect(textarea.selectionStart).toBe(7);
+    expect(textarea.selectionEnd).toBe(7);
+  });
+
+  it("imperatively focuses an already-open Simple write surface without requiring a mode change", () => {
+    const editorRef = createRef<MarkdownEditorHandle>();
+    renderEditor(
+      <>
+        <button type="button">Outside</button>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor ref={editorRef} id="body" name="body" defaultValue="before after" />
+      </>,
+    );
+
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 7);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.mouseUp(leaf);
+
+    screen.getByRole("button", { name: "Outside" }).focus();
+    expect(document.activeElement).not.toBe(leaf);
+
+    act(() => editorRef.current?.focus());
+
+    expect(document.activeElement).toBe(leaf);
+    expect(window.getSelection()?.anchorOffset).toBe(7);
+    expect(window.getSelection()?.focusOffset).toBe(7);
+  });
+
   it("inserts imperative quote text at the current selection and keeps the field focused", () => {
     const editorRef = createRef<MarkdownEditorHandle>();
     renderEditor(
