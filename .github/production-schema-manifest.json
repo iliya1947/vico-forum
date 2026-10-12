@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0035_forum_attachments_foundation",
+  "targetMigration": "0036_forum_attachment_security_events",
   "tables": {
     "account": {
       "columns": [
@@ -994,6 +994,129 @@
             },
             {
               "name": "draft_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_attachment_security_events": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "upload_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "uploaded_by_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "file_name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "declared_mime",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "detected_type",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "byte_size",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_security_events_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_attachment_security_events_upload_id_unique",
+          "columns": [
+            "upload_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_security_events_uploaded_by_user_id_user_id_fk",
+          "columns": [
+            "uploaded_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_attachment_security_events_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
               "order": "asc",
               "nulls": "last"
             }
