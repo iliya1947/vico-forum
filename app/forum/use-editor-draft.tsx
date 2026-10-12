@@ -35,6 +35,7 @@ type Runtime = {
   epoch: number;
   serverCycle: Promise<void> | null;
   publishing: boolean;
+  attachmentVerified: boolean;
 };
 
 const blank = (): ForumEditorDraftPayload => ({ body: "", title: "", tags: "" });
@@ -45,6 +46,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const [expectedVersion, setExpectedVersion] = useState(0);
+  const [attachmentReady, setAttachmentReady] = useState(false);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
   callbacksRef.current = { restore };
@@ -58,11 +60,20 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function currentAt(ctx: Runtime, epoch: number) {
     return current(ctx) && ctx.epoch === epoch;
   }
+  function setAttachmentVerified(ctx: Runtime, verified: boolean) {
+    if (!current(ctx)) return;
+    ctx.attachmentVerified = verified;
+    setAttachmentReady(verified && !ctx.conflict
+      && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === ctx.draftId));
+  }
   function updateConflict(ctx: Runtime, next: Conflict | null) {
     if (!current(ctx)) return;
     ctx.conflict = next;
     setConflict(next);
-    if (next) setStatus("conflict");
+    if (next) {
+      setAttachmentVerified(ctx, false);
+      setStatus("conflict");
+    }
   }
   function capture(ctx: Runtime, final = false) {
     if (final ? ctx.disposed : !current(ctx)) return;
@@ -76,6 +87,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       payload: { ...payload }, editedAt: new Date().toISOString(),
       baseVersion: previous?.baseVersion ?? ctx.startVersion,
       syncedEditedAt: previous?.syncedEditedAt ?? null,
+      attachmentDraftId: previous?.attachmentDraftId,
     };
     if (!writeLocalEditorDraft(next)) {
       if (!final && current(ctx)) setStatus("error");
@@ -90,6 +102,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function reset(ctx: Runtime, startVersion = 0) {
     if (!current(ctx)) return;
     ctx.epoch++;
+    setAttachmentVerified(ctx, false);
     clearLocalEditorDraft(ctx.ownerId, ctx.contextKey);
     ctx.local = null;
     ctx.payload = blank();
@@ -107,15 +120,15 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setConflict(null);
     setStatus("idle");
   }
-  function applyRemote(ctx: Runtime, remote: DraftRemote) {
-    if (!current(ctx)) return;
+  function applyRemote(ctx: Runtime, remote: DraftRemote): boolean {
+    if (!current(ctx)) return false;
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: remote.draftId,
       editedAt: remote.editedAt,
       baseVersion: remote.version, syncedEditedAt: remote.editedAt,
       payload: remote.payload,
     };
-    if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
+    if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
     ctx.local = next;
     ctx.draftId = remote.draftId;
     ctx.payload = { ...remote.payload };
@@ -125,19 +138,21 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setExpectedVersion(remote.version);
     callbacksRef.current.restore(remote.payload);
     setStatus("restored");
+    return true;
   }
 
   async function checkRemote(ctx: Runtime) {
     if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
     const epoch = ctx.epoch;
     ctx.reading = true;
+    setAttachmentVerified(ctx, false);
     try {
       const meta = (await fetchDraftMetadata(ctx.locale))
         .find((entry) => entry.contextKey === ctx.contextKey);
       if (!currentAt(ctx, epoch)) return;
       if (ctx.hasInput) capture(ctx); // Never overwrite unpersisted typing on a late fetch.
       const local = ctx.local;
-      if (!meta) return;
+      if (!meta) { setAttachmentVerified(ctx, true); return; }
       if (meta.status !== "active") {
         if (local?.draftId === meta.draftId) {
           reset(ctx, meta.version); // Same generation was published/deleted elsewhere.
@@ -153,26 +168,40 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
           ctx.startVersion = meta.version;
           setExpectedVersion(meta.version);
         }
+        if (!ctx.conflict) setAttachmentVerified(ctx, true);
         return;
       }
-      if (local && meta.version === local.baseVersion && meta.draftId === local.draftId) return;
+      if (local && meta.version === local.baseVersion && meta.draftId === local.draftId) {
+        setAttachmentVerified(ctx, true);
+        return;
+      }
       const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
       if (!currentAt(ctx, epoch) || !remote) return;
       if (ctx.hasInput) capture(ctx);
       const latest = ctx.local;
-      if (!latest) { applyRemote(ctx, remote); return; }
+      if (!latest) {
+        if (applyRemote(ctx, remote)) setAttachmentVerified(ctx, true);
+        return;
+      }
       if (latest.draftId === remote.draftId && latest.editedAt === latest.syncedEditedAt) {
-        applyRemote(ctx, remote); return;
+        if (applyRemote(ctx, remote)) setAttachmentVerified(ctx, true);
+        return;
       }
       if (JSON.stringify(latest.payload) === JSON.stringify(remote.payload)) {
+        // Equal text does not prove equal attachment generations.
+        if (latest.attachmentDraftId && latest.attachmentDraftId !== remote.draftId) {
+          updateConflict(ctx, { local: latest, server: remote });
+          return;
+        }
         const next = { ...latest, draftId: remote.draftId, baseVersion: remote.version,
           syncedEditedAt: latest.editedAt };
+        if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
         ctx.local = next;
         ctx.draftId = remote.draftId;
         setDraftId(remote.draftId);
         setExpectedVersion(remote.version);
-        writeLocalEditorDraft(next);
         setStatus("saved");
+        setAttachmentVerified(ctx, true);
         return;
       }
       updateConflict(ctx, { local: latest, server: remote });
@@ -210,6 +239,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         writeLocalEditorDraft(next);
         setExpectedVersion(result.draft.version);
         setStatus(next.editedAt === next.syncedEditedAt ? "saved" : "pending");
+        // A successful versioned CAS also verifies the current generation.
+        setAttachmentVerified(ctx, true);
       } else if (result.outcome === "conflict" || result.outcome === "gone") {
         ctx.rejectedSyncEditedAt = null;
         // Refetch authoritative metadata, not a client clock or an assumed deletion.
@@ -317,30 +348,61 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx = runtimeRef.current;
     if (ctx) capture(ctx);
   }
+  function reserveAttachmentGeneration(): string | null {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || !ctx.attachmentVerified || ctx.conflict
+      || ctx.reading || ctx.syncing || ctx.publishing) return null;
+    if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return null;
+    if (ctx.hasInput) {
+      capture(ctx);
+      if (ctx.hasInput && (ctx.payload.body.trim() || ctx.payload.title.trim() || ctx.payload.tags.trim())) {
+        return null; // Local write failed: never upload against an unpersisted generation.
+      }
+    }
+    const now = new Date().toISOString();
+    const next: LocalEditorDraft = ctx.local
+      ? { ...ctx.local, attachmentDraftId: ctx.draftId }
+      : { ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: ctx.draftId,
+          payload: { ...ctx.payload }, editedAt: now, syncedEditedAt: now,
+          baseVersion: ctx.startVersion, attachmentDraftId: ctx.draftId };
+    if (!writeLocalEditorDraft(next)) { setStatus("error"); return null; }
+    ctx.local = next;
+    ctx.hasInput = false;
+    return ctx.draftId;
+  }
+  function retryAttachmentReconciliation() {
+    const ctx = runtimeRef.current;
+    if (ctx && current(ctx)) void checkRemote(ctx);
+  }
   function chooseVersion(which: "local" | "server") {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx) || !ctx.conflict) return;
     const conflictNow = ctx.conflict;
+    let verified = false;
     if (which === "server") {
-      if ("payload" in conflictNow.server) applyRemote(ctx, conflictNow.server);
+      if ("payload" in conflictNow.server) verified = applyRemote(ctx, conflictNow.server);
       else reset(ctx, conflictNow.server.version);
     } else {
       // Explicit selection is the only way to replace another generation.
       const local = conflictNow.local;
       const next = { ...local, baseVersion: conflictNow.server.version, syncedEditedAt: null,
         draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : local.draftId };
+      verified = writeLocalEditorDraft(next);
       ctx.local = next;
       ctx.draftId = next.draftId;
       ctx.payload = { ...next.payload };
       ctx.hasInput = false;
       ctx.rejectedSyncEditedAt = null;
-      writeLocalEditorDraft(next);
       setDraftId(next.draftId);
       setExpectedVersion(next.baseVersion);
       callbacksRef.current.restore(next.payload);
-      setStatus("pending");
+      setStatus(verified ? "pending" : "error");
     }
     updateConflict(ctx, null);
+    setAttachmentVerified(ctx, verified);
+    if (!verified && which === "server" && !("payload" in conflictNow.server)) {
+      void checkRemote(ctx);
+    }
   }
 
   function acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
@@ -358,6 +420,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   useEffect(() => {
     if (!identity || !ownerId || !contextKey || !locale) {
       runtimeRef.current = null;
+      setAttachmentReady(false);
       setStatus("idle");
       setConflict(null);
       return;
@@ -366,13 +429,14 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
       local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
       rejectedSyncEditedAt: null,
-      syncing: false, reading: false, disposed: false, epoch: 0,
+      syncing: false, reading: false, disposed: false, epoch: 0, attachmentVerified: false,
       serverCycle: null, publishing: false,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
     setExpectedVersion(0);
     setConflict(null);
+    setAttachmentReady(false);
     setStatus("idle");
     const local = readLocalEditorDraft(ownerId, contextKey);
     if (local) {
@@ -397,7 +461,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       // Storage events can arrive while this tab has unflushed typing.
       // Never restore the other tab over that still-live editor buffer.
       if (ctx.hasInput) capture(ctx);
-      if (!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt) {
+      if ((!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt)
+        && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === other.draftId)) {
+        setAttachmentVerified(ctx, false);
         ctx.local = other;
         ctx.payload = { ...other.payload };
         ctx.draftId = other.draftId;
@@ -407,6 +473,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         setDraftId(other.draftId);
         setExpectedVersion(other.baseVersion);
         setStatus("restored");
+        void checkRemote(ctx);
       } else if (other.draftId !== ctx.local.draftId
         || JSON.stringify(other.payload) !== JSON.stringify(ctx.local.payload)) {
         updateConflict(ctx, { local: ctx.local, server: {
@@ -462,7 +529,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   );
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
-    preparePublication, releasePublication,
+    preparePublication, releasePublication, attachmentReady,
+    reserveAttachmentGeneration, retryAttachmentReconciliation,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
