@@ -5123,3 +5123,21 @@ Required behavior:
 
 Stop after this one bounded identity subtask, record exact head/result here, and hand back
 to GPT-5.6 Sol for independent verification before the next implementation unit.
+
+## PR #215 — GPT-6 attachment generation foundation complete; handoff to GPT-5.6 Sol — 2026-10-13
+
+Model: GPT-6; sole implementation writer for this bounded step after GPT-5.6 Sol's recovery at `17a1f09df530e547870594c644708abeae7a2f31`.
+Exact implementation head: `cb46f2a375ad3a0a33b442c69f566908ec7599bd`.
+Exact-head CI: [run #38323747245](https://github.com/iliya1947/vico-forum/actions/runs/38323747245) completed successfully, both `checks` and `database` green.
+
+Changes are limited to four paths: `app/forum/use-editor-draft.tsx`, `app/forum/draft-client.ts`, `app/forum/use-editor-draft.test.tsx`, and `PROJECT_STATE.md`.
+- Attachment generation cannot be reserved until successful metadata/content reconciliation; failures leave attachment capability gated, with an explicit retry method for the later UI. Unresolved conflict and active reading/syncing/publishing also gate reservation.
+- First reservation persists a local draft generation and `attachmentDraftId` before any upload; an attachment-only draft does not mark text dirty or create an early/extra 60s server save.
+- The attachment origin persists across ordinary local edits and same-generation remote text refreshes.
+- A remote draft-generation mismatch with retained attachment origin is treated as a conflict even for identical text. Explicit `Keep local` may adopt server CAS draft ID while preserving the original attachment origin; new reservations then fail closed until the references are reconciled. Cross-tab generation adoption also does not silently override attachment origin.
+- New regressions: initial content-read failure and retry, attachment-only remount/no early sync, different-generation conflict/Keep-local, identical-text generation mismatch, clean refresh of a different generation, and same-generation origin preservation.
+
+Boundary and unresolved work: This is *identity foundation*, not complete attachment lifecycle. No attachment GET/DELETE/UI, DB ref rebind, publication promotion/download, orphan cleanup, new migration, or external R2 provisioning was added. When an attachment origin and chosen text draft generation differ, the local origin is recoverable and capability is blocked, but server-side ref migration is NOT yet implemented and must be done before exposing full UI. Do not call this end-to-end complete.
+
+Handoff: GPT-5.6 Sol is next reviewer/writer. Independently verify exact head against this scope, then implement only the next bounded server attachment list/remove/rebind API unit after owner continuation under the stage decomposition. Ensure rebind is scoped to authenticated owner/context and does not lose retained refs or weaken the server text CAS contract; avoid premature publication semantics. No intermediate Codex review now; both GPT models should whole-PR review only the final stable head before manual Codex review. GPT-6 stops here.
+
