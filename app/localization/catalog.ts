@@ -138,7 +138,7 @@ export const canonicalEnglishCatalog = {
     attentionSecurityAttachmentReason: message("attentionSecurityAttachmentReason", "Reason", "Label for the attachment security event reason code."),
     attentionSecurityAttachmentDeclaredType: message("attentionSecurityAttachmentDeclaredType", "Declared type", "Label for the uploader-declared attachment MIME type."),
     attentionSecurityAttachmentDetectedType: message("attentionSecurityAttachmentDetectedType", "Detected type", "Label for the server-detected attachment type."),
-    attentionSecurityAttachmentSize: message("attentionSecurityAttachmentSize", "Size", "Label for the recorded attachment size."),
+    attentionSecurityAttachmentSize: message("attentionSecurityAttachmentSize", "Declared size", "Label for the uploader-declared attachment size."),
     attentionSecurityAttachmentUploadId: message("attentionSecurityAttachmentUploadId", "File ID", "Label for the server upload/file identifier on a security event."),
     attentionSecurityAttachmentUploaderId: message("attentionSecurityAttachmentUploaderId", "Uploader ID", "Label for the uploader user identifier on a security event."),
     attentionSecurityAttachmentContext: message("attentionSecurityAttachmentContext", "Draft context", "Label for the editor draft context associated with a security event."),
