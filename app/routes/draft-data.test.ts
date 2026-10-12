@@ -160,35 +160,32 @@ describe("account-scoped draft API", () => {
     );
   });
 
-  it("enforces the actual request byte limit even when Content-Length is missing or lies", async () => {
+  it("does not reject authoring content solely because it exceeds former draft-only size caps", async () => {
     const env = setup();
-    const oversized = JSON.stringify({
-      intent: "save",
+    const largePayload = {
+      title: "t".repeat(600),
+      tags: "g".repeat(2_100),
+      body: "x".repeat(160_000),
+    };
+    const response = await action({
+      request: request({
+        intent: "save",
+        contextKey,
+        draftId,
+        expectedVersion: 0,
+        payload: largePayload,
+      }),
+      context: env.ctx,
+    });
+
+    expect(response.status).toBe(200);
+    expect(env.save).toHaveBeenCalledWith(
+      "real-user",
       contextKey,
       draftId,
-      expectedVersion: 0,
-      payload: { title: "", tags: "", body: "x".repeat(160_000) },
-    });
-
-    const missingLength = new Request("https://forum.test/en/drafts/data", {
-      method: "POST",
-      headers: { Origin: "https://forum.test", "Content-Type": "application/json" },
-      body: oversized,
-    });
-    missingLength.headers.delete("Content-Length");
-    expect((await action({ request: missingLength, context: env.ctx })).status).toBe(413);
-
-    const lyingLength = new Request("https://forum.test/en/drafts/data", {
-      method: "POST",
-      headers: {
-        Origin: "https://forum.test",
-        "Content-Type": "application/json",
-        "Content-Length": "1",
-      },
-      body: oversized,
-    });
-    expect((await action({ request: lyingLength, context: env.ctx })).status).toBe(413);
-    expect(env.save).not.toHaveBeenCalled();
+      largePayload,
+      0,
+    );
   });
 
   it("fetches only the logged-in user's metadata and content", async () => {

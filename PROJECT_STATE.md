@@ -375,7 +375,14 @@ Vico Forum находится в ранней pre-release разработке.
   показывал только body. Side-by-side comparison теперь также показывает title, tags и
   parent reply target, когда эти поля присутствуют хотя бы в одной версии, поэтому
   non-body conflict визуально различим до выбора. Draft lifecycle/CAS/sync не менялись.
-  Findings №3 и №5 намеренно оставлены без изменений.
+  Stage 4 finding №5 исправлен отдельно 2026-10-12 через восстановление общей authoring
+  boundary: draft foundation больше не вводит собственные caps 100000/500/2000 символов
+  и 150 KB request, которых нет у действующей публикации. Payload по-прежнему проверяется
+  по структуре/типам, а transport использует обычный request JSON path, как publication
+  использует обычный FormData path в том же Worker boundary. Client отдельно различает
+  постоянный 4xx mutation rejection от временной unavailable/network ошибки: один и тот
+  же отклонённый local snapshot не отправляется каждые 60 секунд, но следующая локальная
+  версия получает новую попытку. Finding №3 намеренно оставлен без изменений.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
   Filename validation не классифицирует Unicode bidi/format controls как masking

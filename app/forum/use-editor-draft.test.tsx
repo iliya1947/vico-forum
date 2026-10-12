@@ -20,6 +20,7 @@ void i18n.init({
     editorDraftOtherDevice: "Other device", editorDraftKeepLocal: "Keep local",
     editorDraftNoRemoteVersion: "This draft was published or deleted.",
     editorDraftKeepServer: "Keep server",
+    editorDraftLocalError: "Could not save draft. Your current text remains in the editor.",
     topicTitleLabel: "Topic title", topicTagsLabel: "Tags", replyToMessage: "Reply",
   } } },
 });
@@ -91,6 +92,38 @@ describe("editor draft lifecycle", () => {
     expect(posts[1]?.expectedVersion).toBe(1);
     expect(posts[1]?.draftId).toBe(posts[0]?.draftId);
     expect((posts[1]?.payload as { body: string }).body).toBe("First second ");
+  });
+
+  it("does not retry an unchanged draft snapshot after a permanent mutation rejection", async () => {
+    vi.useFakeTimers();
+    let postCalls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        postCalls++;
+        return response({ error: "invalid" }, 413);
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [] });
+      throw new Error("Unexpected fetch");
+    }));
+
+    mount();
+    await flush();
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), {
+      target: { value: "Rejected snapshot " },
+    });
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(postCalls).toBe(1);
+    expect(screen.getByText("Could not save draft. Your current text remains in the editor.")).toBeInTheDocument();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(postCalls).toBe(1);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), {
+      target: { value: "Changed snapshot " },
+    });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(postCalls).toBe(2);
   });
 
   it("discards a published generation despite device clock skew and starts a new one at the tombstone version", async () => {

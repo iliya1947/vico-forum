@@ -53,9 +53,9 @@ export const EDITOR_DRAFT_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
 export function validEditorDraftPayload(input: unknown): input is ForumEditorDraftPayload {
   if (!input || typeof input !== "object") return false;
   const item = input as Record<string, unknown>;
-  return typeof item.body === "string" && item.body.length <= 100_000
-    && typeof item.title === "string" && item.title.length <= 500
-    && typeof item.tags === "string" && item.tags.length <= 2_000
+  return typeof item.body === "string"
+    && typeof item.title === "string"
+    && typeof item.tags === "string"
     && (item.parentPostId === undefined || item.parentPostId === null
       || typeof item.parentPostId === "string");
 }

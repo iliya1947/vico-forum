@@ -4,6 +4,7 @@ import type { ForumEditorDraftPayload } from "../../db/schema";
 import {
   clearLocalEditorDraft, draftStorageKey, fetchDraftContent, fetchDraftMetadata,
   mutateDraft, readLocalEditorDraft, writeLocalEditorDraft,
+  DraftMutationRejectedError,
   type DraftMetadata, type DraftRemote, type LocalEditorDraft,
 } from "./draft-client";
 
@@ -27,6 +28,7 @@ type Runtime = {
   hasInput: boolean;
   startVersion: number;
   conflict: Conflict | null;
+  rejectedSyncEditedAt: string | null;
   syncing: boolean;
   reading: boolean;
   disposed: boolean;
@@ -95,6 +97,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
     ctx.conflict = null;
+    ctx.rejectedSyncEditedAt = null;
     callbacksRef.current.restore(blank());
     setDraftId(ctx.draftId);
     setExpectedVersion(startVersion);
@@ -114,6 +117,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     ctx.draftId = remote.draftId;
     ctx.payload = { ...remote.payload };
     ctx.hasInput = false;
+    ctx.rejectedSyncEditedAt = null;
     setDraftId(remote.draftId);
     setExpectedVersion(remote.version);
     callbacksRef.current.restore(remote.payload);
@@ -179,7 +183,11 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   async function sync(ctx: Runtime) {
     if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
     const sent = ctx.local;
-    if (!sent || sent.editedAt === sent.syncedEditedAt) return;
+    if (
+      !sent
+      || sent.editedAt === sent.syncedEditedAt
+      || sent.editedAt === ctx.rejectedSyncEditedAt
+    ) return;
     const epoch = ctx.epoch;
     ctx.syncing = true;
     setStatus("saving");
@@ -195,10 +203,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         const next = { ...latest, baseVersion: result.draft.version,
           syncedEditedAt: latest === sent ? sent.editedAt : latest.syncedEditedAt };
         ctx.local = next;
+        ctx.rejectedSyncEditedAt = null;
         writeLocalEditorDraft(next);
         setExpectedVersion(result.draft.version);
         setStatus(next.editedAt === next.syncedEditedAt ? "saved" : "pending");
       } else if (result.outcome === "conflict" || result.outcome === "gone") {
+        ctx.rejectedSyncEditedAt = null;
         // Refetch authoritative metadata, not a client clock or an assumed deletion.
         const meta = (await fetchDraftMetadata(ctx.locale))
           .find((entry) => entry.contextKey === ctx.contextKey);
@@ -217,7 +227,16 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
           else applyRemote(ctx, remote);
         }
       }
-    } catch { if (currentAt(ctx, epoch) && !ctx.conflict) setStatus("pending"); }
+    } catch (error) {
+      if (currentAt(ctx, epoch) && !ctx.conflict) {
+        if (error instanceof DraftMutationRejectedError) {
+          ctx.rejectedSyncEditedAt = sent.editedAt;
+          setStatus("error");
+        } else {
+          setStatus("pending");
+        }
+      }
+    }
     finally {
       if (ctx.epoch === epoch) ctx.syncing = false;
     }
@@ -262,6 +281,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       ctx.draftId = next.draftId;
       ctx.payload = { ...next.payload };
       ctx.hasInput = false;
+      ctx.rejectedSyncEditedAt = null;
       writeLocalEditorDraft(next);
       setDraftId(next.draftId);
       setExpectedVersion(next.baseVersion);
@@ -293,6 +313,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx: Runtime = {
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
       local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
+      rejectedSyncEditedAt: null,
       syncing: false, reading: false, disposed: false, epoch: 0,
     };
     runtimeRef.current = ctx;
@@ -328,6 +349,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         ctx.payload = { ...other.payload };
         ctx.draftId = other.draftId;
         ctx.hasInput = false;
+        ctx.rejectedSyncEditedAt = null;
         callbacksRef.current.restore(other.payload);
         setDraftId(other.draftId);
         setExpectedVersion(other.baseVersion);

@@ -13,10 +13,6 @@ import {
 import { ForumDraftStorageUnavailableError } from "../../db/hyperdrive-editor-drafts";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
-const DRAFT_REQUEST_MAX_BYTES = 150_000;
-
-class DraftRequestTooLargeError extends Error {}
-
 const json = (payload: unknown, status = 200) => Response.json(payload, {
   status,
   headers: {
@@ -25,39 +21,8 @@ const json = (payload: unknown, status = 200) => Response.json(payload, {
   },
 });
 
-async function readBoundedJsonObject(request: Request): Promise<Record<string, unknown>> {
-  const declared = request.headers.get("Content-Length");
-  if (declared && /^\d+$/u.test(declared) && Number(declared) > DRAFT_REQUEST_MAX_BYTES) {
-    throw new DraftRequestTooLargeError();
-  }
-  if (!request.body) throw new SyntaxError("missing request body");
-
-  const reader = request.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  try {
-    while (true) {
-      const part = await reader.read();
-      if (part.done) break;
-      total += part.value.byteLength;
-      if (total > DRAFT_REQUEST_MAX_BYTES) {
-        try { await reader.cancel(); } catch { /* best effort */ }
-        throw new DraftRequestTooLargeError();
-      }
-      chunks.push(part.value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  const parsed: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+async function readJsonObject(request: Request): Promise<Record<string, unknown>> {
+  const parsed: unknown = await request.json();
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new SyntaxError("request body must be an object");
   }
@@ -152,11 +117,8 @@ export async function action({
 
   let input: Record<string, unknown>;
   try {
-    input = await readBoundedJsonObject(request);
-  } catch (error) {
-    if (error instanceof DraftRequestTooLargeError) {
-      return json({ error: "invalid" }, 413);
-    }
+    input = await readJsonObject(request);
+  } catch {
     return json({ error: "invalid" }, 400);
   }
 

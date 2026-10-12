@@ -25,6 +25,13 @@ export interface DraftMetadata {
 }
 export type DraftRemote = DraftMetadata & { payload: ForumEditorDraftPayload };
 
+export class DraftMutationRejectedError extends Error {
+  constructor(readonly status: number) {
+    super("draft mutation rejected");
+    this.name = "DraftMutationRejectedError";
+  }
+}
+
 /** A local copy wins display priority only while it needs recovery or conflict resolution. */
 export function localDraftNeedsAttention(local: LocalEditorDraft, server?: DraftMetadata): boolean {
   if (!server) return true;
@@ -124,7 +131,12 @@ export async function mutateDraft(locale: string, data: Record<string, unknown>)
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (![200, 409, 410].includes(response.status)) throw new Error("draft mutation unavailable");
+  if (![200, 409, 410].includes(response.status)) {
+    if (response.status >= 400 && response.status < 500) {
+      throw new DraftMutationRejectedError(response.status);
+    }
+    throw new Error("draft mutation unavailable");
+  }
   return response.json() as Promise<{
     outcome: "saved" | "conflict" | "gone" | "finished";
     version?: number;
