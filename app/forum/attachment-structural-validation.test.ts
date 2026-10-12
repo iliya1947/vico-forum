@@ -83,6 +83,7 @@ describe("attachment streaming structural validation core", () => {
     expect(validate("jpeg", jpeg, [1, 2, 15, jpeg.byteLength - 1])).toBe(true);
     expect(validate("jpeg", Uint8Array.from([0xff, 0xd8, 0xff]))).toBe(false);
     expect(validate("jpeg", jpeg.subarray(0, jpeg.byteLength - 2))).toBe(false);
+    expect(validate("jpeg", concat(jpeg, [0x00]))).toBe(false);
   });
 
   it("requires GIF logical-screen bytes and final trailer", () => {
@@ -98,6 +99,7 @@ describe("attachment streaming structural validation core", () => {
 
     const truncated = webp.subarray(0, webp.byteLength - 3);
     expect(validate("webp", truncated)).toBe(false);
+    expect(validate("webp", concat(webp, [0, 0]))).toBe(false);
 
     const wrongKind = webp.slice();
     wrongKind.set(utf8("JUNK"), 12);
@@ -109,6 +111,7 @@ describe("attachment streaming structural validation core", () => {
     expect(validate("pdf", pdf, [2, 8, 37, pdf.byteLength - 4])).toBe(true);
     expect(validate("pdf", utf8("%PDF-1.7"))).toBe(false);
     expect(validate("pdf", utf8("%PDF-1.7\n%%EOF\n"))).toBe(false);
+    expect(validate("pdf", concat(pdf, utf8("garbage")))).toBe(false);
   });
 
   it("keeps container and text families outside this bounded subtask", () => {

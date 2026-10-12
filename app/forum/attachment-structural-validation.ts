@@ -252,6 +252,8 @@ class JpegStructuralValidator extends HeadTailStructuralValidator {
     return this.exactLength()
       && this.head[0] === 0xff
       && this.head[1] === 0xd8
+      && this.tail[0] === 0xff
+      && this.tail[1] === 0xd9
       && this.seenFrame
       && this.seenScan
       && this.seenEnd;
@@ -283,7 +285,7 @@ class WebpStructuralValidator extends HeadTailStructuralValidator {
     if (!this.exactLength() || this.head.byteLength < 20) return false;
     if (!asciiAt(this.head, 0, "RIFF") || !asciiAt(this.head, 8, "WEBP")) return false;
     const riffSize = readU32Le(this.head, 4);
-    if (riffSize + 8 > this.expectedSize) return false;
+    if (riffSize + 8 !== this.expectedSize) return false;
 
     const firstChunk = String.fromCharCode(
       this.head[12]!, this.head[13]!, this.head[14]!, this.head[15]!,
@@ -307,7 +309,7 @@ class PdfStructuralValidator extends HeadTailStructuralValidator {
     if (!this.exactLength() || !asciiAt(this.head, 0, "%PDF-")) return false;
     const tailText = String.fromCharCode(...this.tail);
     const eof = tailText.lastIndexOf("%%EOF");
-    if (eof < 0) return false;
+    if (eof < 0 || !/^[\x00\t\n\f\r ]*$/u.test(tailText.slice(eof + 5))) return false;
     const beforeEof = tailText.slice(0, eof);
     const matches = [...beforeEof.matchAll(/startxref\s+(\d+)/gu)];
     const latest = matches.at(-1);
