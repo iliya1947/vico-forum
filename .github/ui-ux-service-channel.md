@@ -4359,3 +4359,35 @@ completed successfully with `checks` and `database` green.
 Stage 5 findings №2–4 remain open and were intentionally not changed in this
 package. Do not proceed to the next finding until owner explicitly continues.
 
+## PR #215: Stage 5 finding №2 — declared MIME consistency fixed — 2026-10-12
+
+Owner continuation authorized only Stage 5 finding №2 from the existing Editor 2.0 audit.
+
+The finding was confirmed in the already implemented attachment type-gate. The previous
+declared-MIME check compared only coarse detected families (`text`, `zip`, `ole`) and
+ignored unknown non-generic MIME values. That allowed contradictory semantic claims inside
+one coarse family, for example generic `.zip` with DOCX MIME, `.doc` with Excel MIME,
+or `.json` with HTML/specific custom MIME.
+
+The bounded fix keeps the content detector unchanged and adds a separate MIME semantic
+consistency boundary:
+- specific Office/OpenXML/ODF and structured-text MIME values are compared with known
+  extension semantics;
+- less-specific `application/octet-stream`, `text/plain` and `application/zip` remain
+  acceptable and are not treated as proof of a more specific format;
+- unknown non-generic MIME is no longer ignored for known semantic extensions;
+- broad custom text/source filenames without a known semantic extension remain supported,
+  so this does not reintroduce a closed source-file allowlist.
+
+Focused regressions cover ZIP↔DOCX, DOC↔Excel, JSON↔HTML/unknown specific MIME,
+generic ZIP/text acceptance, and custom source names with custom text/application MIME.
+
+Final implementation head: `20b4f8032f60bd89eff79159480730d33373421c`.
+Exact-head CI [#38260885414](https://github.com/iliya1947/vico-forum/actions/runs/38260885414)
+completed successfully with `checks` and `database` green.
+
+Stage 5 findings №3–4 remain open and were intentionally not changed. Content-sniff
+tail handling, binary/ZIP structural sanity, R2 lifecycle, upload/DB/download, durable
+Security events, antivirus and cleanup remain outside this package. Do not proceed to
+the next finding until owner explicitly continues.
+
