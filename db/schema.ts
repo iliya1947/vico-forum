@@ -985,7 +985,7 @@ export const forumAttachmentSecurityEvents = pgTable(
     declaredMime: text("declared_mime").notNull(),
     detectedType: text("detected_type").notNull(),
     reason: text("reason").notNull(),
-    byteSize: integer("byte_size").notNull(),
+    declaredByteSize: integer("declared_byte_size").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
