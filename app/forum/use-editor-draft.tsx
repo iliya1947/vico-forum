@@ -241,8 +241,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function startSync(ctx: Runtime): Promise<boolean> | null {
     if (!current(ctx) || ctx.reading || ctx.conflict || ctx.submissionPaused) return null;
     if (ctx.syncPromise) return ctx.syncPromise;
-    let running!: Promise<boolean>;
-    running = syncOnce(ctx).finally(() => {
+    const running = syncOnce(ctx).finally(() => {
       if (ctx.syncPromise === running) ctx.syncPromise = null;
     });
     ctx.syncPromise = running;

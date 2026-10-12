@@ -32,7 +32,6 @@ import {
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
-import type { ForumEditorDraftPayload } from "../../db/schema";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
 
 export interface MarkdownEditorHandle {
