@@ -949,10 +949,7 @@ describe("MarkdownEditor", () => {
     const submittedVersions: string[] = [];
     renderEditor(
       <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          submittedVersions.push(String(new FormData(event.currentTarget).get("editorDraftVersion")));
-        }}>
+        <form>
           <input type="hidden" name="intent" value="createTopic" />
           <label htmlFor="draft-publication-sync-body">Body</label>
           <MarkdownEditor id="draft-publication-sync-body" name="body"
@@ -964,6 +961,12 @@ describe("MarkdownEditor", () => {
     );
 
     await act(async () => { await Promise.resolve(); });
+    const form = screen.getByRole("button", { name: "Publish test" }).closest("form")!;
+    form.addEventListener("submit", (event) => {
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      submittedVersions.push(String(new FormData(form).get("editorDraftVersion")));
+    });
     fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Ready " } });
     act(() => { vi.advanceTimersByTime(60_000); });
     expect(sentSave).not.toBeNull();
@@ -1015,10 +1018,7 @@ describe("MarkdownEditor", () => {
     const submittedVersions: string[] = [];
     renderEditor(
       <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          submittedVersions.push(String(new FormData(event.currentTarget).get("editorDraftVersion")));
-        }}>
+        <form>
           <input type="hidden" name="intent" value="createTopic" />
           <label htmlFor="draft-publication-pause-body">Body</label>
           <MarkdownEditor id="draft-publication-pause-body" name="body"
@@ -1030,6 +1030,12 @@ describe("MarkdownEditor", () => {
     );
 
     await act(async () => { await Promise.resolve(); });
+    const form = screen.getByRole("button", { name: "Publish now" }).closest("form")!;
+    form.addEventListener("submit", (event) => {
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      submittedVersions.push(String(new FormData(form).get("editorDraftVersion")));
+    });
     fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Ready " } });
     fireEvent.click(screen.getByRole("button", { name: "Publish now" }));
     expect(submittedVersions).toEqual(["0"]);
