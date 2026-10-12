@@ -4332,3 +4332,30 @@ not merge-ready because other audited Editor 2.0 stages still have confirmed
 current-scope findings. Do not start the next package or request final Codex
 review until owner explicitly continues.
 
+## PR #215: Stage 5 finding №1 — filename format controls fixed — 2026-10-12
+
+Owner continuation authorized only Stage 5 finding №1 from the existing Editor 2.0 audit.
+
+The finding was confirmed as a defect of the already implemented attachment type-gate,
+not future upload/event scope. The current filename check rejected path separators,
+C0 controls and DEL but accepted Unicode General_Category=Format (Cf), including
+bidi override/isolate and zero-width format controls, so a visually manipulated
+filename could pass with `suspicious: false`.
+
+The bounded fix changes only the filename anomaly boundary:
+- Unicode Cf characters now produce `invalid-name` with `suspicious: true`;
+- ordinary Unicode filenames remain accepted;
+- no MIME, content-sniff, binary structure, R2 writer, DB lifecycle, upload route,
+  Security event ingestion or Stage 6 behavior changed.
+
+Focused regressions cover U+202E RIGHT-TO-LEFT OVERRIDE, U+2066 LEFT-TO-RIGHT
+ISOLATE, U+200B ZERO WIDTH SPACE, plus a normal Hebrew filename to prevent
+accidental blanket non-ASCII rejection.
+
+Implementation head: `53a23c49110245f27588686441d63bec0bdae4a9`.
+Exact-head CI [#38254145977](https://github.com/iliya1947/vico-forum/actions/runs/38254145977)
+completed successfully with `checks` and `database` green.
+
+Stage 5 findings №2–4 remain open and were intentionally not changed in this
+package. Do not proceed to the next finding until owner explicitly continues.
+
