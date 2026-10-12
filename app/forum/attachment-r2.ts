@@ -1,3 +1,10 @@
+import { validateContainerAttachmentStructure, type ContainerStructuralDetection } from "./attachment-container-validation";
+import { createAttachmentStructuralValidator, type AttachmentStructuralValidator } from "./attachment-structural-validation";
+import {
+  validateZipAttachmentStructure,
+  type AttachmentRandomAccessSource,
+  type ZipAttachmentSemantic,
+} from "./attachment-zip-validation";
 import {
   ATTACHMENT_SNIFF_BYTES,
   DEFAULT_ATTACHMENT_MAX_BYTES,
@@ -16,6 +23,10 @@ export interface PrivateAttachmentBucket {
     content: ReadableStream<Uint8Array>,
     options: { httpMetadata: { contentType: string } },
   ): Promise<{ size: number } | null>;
+  get(
+    key: string,
+    options: { range: { offset: number; length: number } },
+  ): Promise<{ size: number; body?: ReadableStream<Uint8Array> } | null>;
   delete(key: string): Promise<void>;
 }
 
@@ -39,9 +50,87 @@ export class AttachmentLengthMismatchError extends Error {
   }
 }
 
+type AcceptedInspection = Extract<AttachmentInspection, { accepted: true }>;
+
+function fileExtension(fileName: string): string {
+  return fileName.toLowerCase().split(".").pop() ?? "";
+}
+
+function zipSemantic(inspection: AcceptedInspection): ZipAttachmentSemantic | null {
+  if (inspection.detected !== "zip") return null;
+  const extension = fileExtension(inspection.fileName);
+  if (extension === "zip" || extension === "docx" || extension === "xlsx"
+    || extension === "pptx" || extension === "odt" || extension === "ods") {
+    return extension;
+  }
+  return null;
+}
+
+function isContainerDetection(
+  detected: AcceptedInspection["detected"],
+): detected is ContainerStructuralDetection {
+  return detected === "7z" || detected === "gzip" || detected === "tar" || detected === "ole";
+}
+
+function structuralRejection(
+  inspection: AcceptedInspection,
+): Extract<AttachmentInspection, { accepted: false }> {
+  return {
+    accepted: false,
+    fileName: inspection.fileName,
+    detected: inspection.detected,
+    reason: "invalid-structure",
+    suspicious: true,
+    scanStatus: "rejected",
+  };
+}
+
+function privateObjectSource(
+  bucket: PrivateAttachmentBucket,
+  objectKey: string,
+  size: number,
+): AttachmentRandomAccessSource {
+  return {
+    size,
+    async read(offset, length) {
+      if (length === 0) return new Uint8Array();
+      const object = await bucket.get(objectKey, { range: { offset, length } });
+      if (!object?.body || object.size !== size) {
+        throw new Error("private attachment structural read failed");
+      }
+      return new Uint8Array(await new Response(object.body).arrayBuffer());
+    },
+  };
+}
+
+async function validateStoredStructure(
+  bucket: PrivateAttachmentBucket,
+  objectKey: string,
+  inspection: AcceptedInspection,
+  size: number,
+  streamValidator: AttachmentStructuralValidator | null,
+): Promise<boolean> {
+  if (streamValidator) return streamValidator.finish();
+  if (inspection.detected === "zip") {
+    const semantic = zipSemantic(inspection);
+    if (!semantic) throw new Error("accepted ZIP attachment has no structural semantic");
+    return validateZipAttachmentStructure(privateObjectSource(bucket, objectKey, size), semantic);
+  }
+  if (isContainerDetection(inspection.detected)) {
+    return validateContainerAttachmentStructure(
+      privateObjectSource(bucket, objectKey, size),
+      inspection.detected,
+    );
+  }
+  if (inspection.detected === "text") return true;
+  throw new Error("accepted attachment has no structural validator");
+}
+
 /**
  * Validates the actual stream prefix before any R2 write, then streams the
- * remaining bytes with a hard length bound. No request.formData() buffering.
+ * remaining bytes with a hard length bound. Recognized binary/container
+ * formats are structurally finalized before their private key can be returned.
+ * No request.formData() or whole-object buffering.
  *
  * The calling action must durably record ownership and suspicious rejections
  * before responding. It must keep the object private until all publication
@@ -95,6 +184,10 @@ export async function storePrivateAttachmentStream(
       throw new AttachmentLengthMismatchError();
     }
 
+    const structuralValidator = createAttachmentStructuralValidator(
+      inspection.detected,
+      upload.size,
+    );
     let receivedBytes = prefixBytes + (remainder?.byteLength ?? 0);
     const pending: Uint8Array[] = [prefix];
     if (remainder?.byteLength) pending.push(remainder);
@@ -102,6 +195,7 @@ export async function storePrivateAttachmentStream(
       async pull(controller) {
         const buffered = pending.shift();
         if (buffered) {
+          structuralValidator?.push(buffered);
           controller.enqueue(buffered);
           return;
         }
@@ -116,6 +210,7 @@ export async function storePrivateAttachmentStream(
           if (receivedBytes > upload.size || receivedBytes > maxBytes) {
             throw new AttachmentLengthMismatchError();
           }
+          structuralValidator?.push(next.value);
           controller.enqueue(next.value);
         } catch (error) {
           controller.error(error);
@@ -133,10 +228,21 @@ export async function storePrivateAttachmentStream(
       if (!stored || stored.size !== upload.size) {
         throw new Error("private attachment storage failed");
       }
+      const structurallyValid = await validateStoredStructure(
+        bucket,
+        objectKey,
+        inspection,
+        stored.size,
+        structuralValidator,
+      );
+      if (!structurallyValid) {
+        await bucket.delete(objectKey).catch(() => {});
+        return { outcome: "rejected", inspection: structuralRejection(inspection) };
+      }
       return { outcome: "stored", objectKey, inspection, bytes: stored.size };
     } catch (error) {
       await reader.cancel(error).catch(() => {});
-      // R2 may have received bytes before a failed upload. Never hand out the key.
+      // R2 may have received bytes before a failed upload/finalization. Never hand out the key.
       await bucket.delete(objectKey).catch(() => {});
       throw error;
     }
