@@ -924,6 +924,121 @@ describe("MarkdownEditor", () => {
     clearLocalEditorDraft(userId, contextKey);
   });
 
+  it("captures title and tags from their own input events without body-derived triggers", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-authoritative-fields-user";
+    const contextKey = "section:fields:new";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-title">Title</label>
+          <input id="draft-title" name="title" />
+          <label htmlFor="draft-tags">Tags</label>
+          <input id="draft-tags" name="tags" />
+          <label htmlFor="draft-fields-body">Body</label>
+          <MarkdownEditor id="draft-fields-body" name="body" defaultValue="Existing body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    fireEvent.input(screen.getByLabelText("Title"), {
+      target: { value: "Pasted title" }, inputType: "insertFromPaste", data: "Pasted title",
+    });
+    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
+      title: "Pasted title", tags: "", body: "Existing body",
+    });
+
+    fireEvent.input(screen.getByLabelText("Tags"), {
+      target: { value: "TypeScript " }, inputType: "insertText", data: " ",
+    });
+    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
+      title: "Pasted title", tags: "TypeScript ", body: "Existing body",
+    });
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("stores the Reply parent before same-event text insertion", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-parent-authoritative-user";
+    const contextKey = "topic:parent:reply";
+    const parentPostId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d50";
+    const ref = createRef<MarkdownEditorHandle>();
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-parent-body">Body</label>
+          <MarkdownEditor ref={ref} id="draft-parent-body" name="body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    act(() => {
+      ref.current?.setDraftParentPostId(parentPostId);
+      ref.current?.insertText("> quoted\n\n");
+    });
+    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
+      body: "> quoted\n\n", parentPostId,
+    });
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("waits for its own in-flight autosave before submitting the publication fence", async () => {
+    vi.useFakeTimers();
+    const userId = "draft-submit-sync-user";
+    const contextKey = "topic:submit-sync:reply";
+    let resolveSave!: (value: Response) => void;
+    const save = new Promise<Response>((resolve) => { resolveSave = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") return save;
+      if (uri.includes("mode=metadata")) {
+        return new Response(JSON.stringify({ drafts: [] }), {
+          status: 200, headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("Unexpected fetch");
+    }));
+    const submittedVersions: string[] = [];
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          submittedVersions.push(String(new FormData(event.currentTarget).get("editorDraftVersion")));
+        }}>
+          <label htmlFor="draft-submit-body">Body</label>
+          <MarkdownEditor id="draft-submit-body" name="body" defaultAuthoringMode="advanced"
+            draftContextKey={contextKey} draftLocale="en" />
+          <button type="submit">Publish test</button>
+        </form>
+      </HeaderAuthProvider>,
+    );
+    await act(async () => { await Promise.resolve(); });
+    const textarea = screen.getByLabelText("Body");
+    fireEvent.change(textarea, { target: { value: "Ready " } });
+    fireEvent.keyUp(textarea, { key: " " });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish test" }));
+    expect(submittedVersions).toEqual([]);
+
+    await act(async () => {
+      resolveSave(new Response(JSON.stringify({
+        outcome: "saved",
+        draft: {
+          contextKey, draftId: (document.querySelector('input[name="editorDraftId"]') as HTMLInputElement).value,
+          version: 1, status: "active", payload: { title: "", body: "Ready ", tags: "" },
+          editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        },
+      }), { status: 200, headers: { "Content-Type": "application/json" } }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(submittedVersions).toEqual(["1"]);
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
   it("captures toolbar formatting after focusout instead of saving only the pre-command body", async () => {
     stubEmptyDraftMetadata();
     const userId = "draft-trigger-format-user";

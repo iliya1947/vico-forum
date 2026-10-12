@@ -38,6 +38,7 @@ import { clipboardPlainToMarkdown } from "./clipboard-markdown";
 export interface MarkdownEditorHandle {
   focus: () => void;
   insertText: (text: string) => void;
+  setDraftParentPostId: (parentPostId: string | null) => void;
   acknowledgePublished: (draftId: string, publishedVersion: number) => void;
 }
 
@@ -154,6 +155,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const editorRef = useRef<HTMLDivElement>(null);
     const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const draftIdInputRef = useRef<HTMLInputElement>(null);
+    const draftVersionInputRef = useRef<HTMLInputElement>(null);
     const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
@@ -175,15 +178,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     const draft = useEditorDraft({
       ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
-      readPayload: (body): ForumEditorDraftPayload => {
-        const form = textareaRef.current?.form;
-        const field = (name: string) => {
-          const element = form?.elements.namedItem(name);
-          return element instanceof HTMLInputElement ? element.value : "";
-        };
-        return { body, title: field("title"), tags: field("tags"),
-          parentPostId: field("parentPostId") || null };
-      },
+      initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null },
       restore: (payload) => {
         historyRef.current = createEditorHistory(payload.body);
         onDraftRestoreParent?.(payload.parentPostId ?? null);
@@ -195,25 +190,65 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         }
       },
     });
+    const draftRuntimeRef = useRef(draft);
+    draftRuntimeRef.current = draft;
 
     useEffect(() => {
       if (!accountId || !draftContextKey) return;
       const form = textareaRef.current?.form;
       if (!form) return;
+      const readField = (fieldName: string) => {
+        const field = form.elements.namedItem(fieldName);
+        return field instanceof HTMLInputElement ? field.value : "";
+      };
+      draftRuntimeRef.current.seedFields({
+        title: readField("title"),
+        tags: readField("tags"),
+        parentPostId: readField("parentPostId") || null,
+      });
       const onInput = (event: Event) => {
         const field = event.target;
-        if (!(field instanceof HTMLInputElement) || !["title", "tags"].includes(field.name)) return;
-        draft.noteEdit(value, (event as InputEvent).data === " ");
+        if (!(field instanceof HTMLInputElement) || (field.name !== "title" && field.name !== "tags")) return;
+        const input = event as InputEvent;
+        const immediate = input.data === " " || input.inputType === "insertFromPaste";
+        draftRuntimeRef.current.noteFields(
+          field.name === "title" ? { title: field.value } : { tags: field.value },
+          immediate,
+        );
       };
-      const flush = () => draft.saveLocal();
+      const flush = () => draftRuntimeRef.current.saveLocal();
+      const onSubmit = (event: SubmitEvent) => {
+        const pending = draftRuntimeRef.current.beginSubmission();
+        if (!pending) return;
+        event.preventDefault();
+        const submitter = event.submitter instanceof HTMLButtonElement
+          || event.submitter instanceof HTMLInputElement
+          ? event.submitter
+          : undefined;
+        void pending.then((ready) => {
+          if (!ready || !form.isConnected) return;
+          const fence = draftRuntimeRef.current.publicationFence();
+          if (!fence) return;
+          if (draftIdInputRef.current) draftIdInputRef.current.value = fence.draftId;
+          if (draftVersionInputRef.current) draftVersionInputRef.current.value = String(fence.expectedVersion);
+          form.requestSubmit(submitter);
+        });
+      };
       form.addEventListener("input", onInput);
       form.addEventListener("focusout", flush);
+      form.addEventListener("submit", onSubmit, true);
       return () => {
         form.removeEventListener("input", onInput);
         form.removeEventListener("focusout", flush);
+        form.removeEventListener("submit", onSubmit, true);
       };
-    });
+    }, [accountId, draftContextKey]);
 
+    const previousDisabledRef = useRef(disabled);
+    useEffect(() => {
+      if (previousDisabledRef.current && !disabled) draftRuntimeRef.current.resumeSubmission();
+      previousDisabledRef.current = disabled;
+    }, [disabled]);
 
     function textareaSourceSelection(source = value): EditorSelection {
       const textarea = textareaRef.current;
@@ -641,6 +676,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         setMode("write");
         commitSource(nextValue, selection, after);
       },
+      setDraftParentPostId(parentPostId: string | null) {
+        draft.noteFields({ parentPostId }, true);
+      },
       acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
         draft.acknowledgePublished(publishedDraftId, publishedVersion);
       },
@@ -673,8 +711,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       >
         {accountId && draftContextKey ? (
           <>
-            <input type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
-            <input type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+            <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+            <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
