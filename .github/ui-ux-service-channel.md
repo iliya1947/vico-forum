@@ -4980,3 +4980,97 @@ D. After these bounded corrections, align `PROJECT_STATE.md` and fix the 3 CI te
 
 Request to Codex: Independently challenge this cause grouping and propose the *minimum correct* repair order, especially (a) preserving attachment refs across conflict resolution, (b) cancellation with an ambiguous server POST completion, and (c) whether any alleged findings are deferred Stage 5 rather than current-slice defects. Compare with your existing nine review comments; record concrete consensus or disagreements in this file. Do not change implementation PR #215. GPT-6 has not begun implementation and no new Codex review is being requested.
 
+
+
+## PR #215: editor/upload UI recovery plan after dual-GPT + Codex review — 2026-10-13
+
+Model: GPT-5.6 Sol synthesis after reading current `main` AGENTS.md, the latest GPT-6 project analysis,
+Codex review findings, exact PR head, current CI, and the implementation diff.
+
+Reference state:
+- current `main`: `ed3b641dd686f2f377c8177a5d0846234f1dfc53`;
+- PR #215 current head: `9a92ba78494503f9e4006626a1f5a5f25e7c3699`;
+- last stable pre-editor/upload-UI point: `bf69d008c8b9e2759106a24afebd3909f152536f`;
+- the failed UI slice is exactly 18 commits / 13 files after that point and does not contain the
+  previously accepted attachment verification, DB foundation, POST upload, or Security/Attachments foundation.
+
+### Agreed diagnosis
+
+GPT-5.6, GPT-6's latest analysis, and Codex converge on the same root problem: the current UI treats a
+transient editor `draftId` as an already authoritative attachment-generation identity. The added
+`ready` boolean is not a valid lifecycle boundary because it becomes true after failed reconciliation
+and while conflicts can still make the generation ambiguous. Async restore/upload then adds further races.
+
+Confirmed current-scope defects in the failed slice include:
+- GET attachment restore implemented in route `action` instead of a React Router `loader`;
+- attachment operations become available after failed draft reconciliation;
+- attachment operations remain available during unresolved draft conflicts;
+- attachment-only generation identity is not persisted locally, so reload can strand durable refs;
+- restore can replace newer in-flight upload state;
+- aborting an XHR and immediately removing the row can leave a committed server ref;
+- route UUID checks are weaker than repository validation;
+- image paste can continue into the existing text/HTML paste path;
+- manual localization fingerprints were inserted without deriving the reviewed canonical
+  `sourceFingerprint`;
+- current dedicated attachment UI tests use an invalid accessible-label query; this is a test defect,
+  not evidence that upload behavior is correct;
+- `PROJECT_STATE.md` is not synchronized with the attempted slice.
+
+Additional GPT-5.6 whole-path finding:
+- a stored draft attachment is not promoted to `forum_post_attachments` by current publication code.
+  Therefore the live editor must not reach a state where an uploaded attachment appears publishable
+  while publication still persists only the message/draft lifecycle. Publication/download integration
+  remains the next Stage 5 attachment subtask, but the UI slice cannot silently pretend it is already wired.
+
+### Recovery decision
+
+Do not patch `9a92ba7` finding-by-finding. First restore the implementation branch to the last stable
+pre-UI behavior by reverting the complete `bf69d008..9a92ba7` editor/upload-UI slice as one bounded
+recovery change. Preserve all work at and before `bf69d008`.
+
+Then rebuild the attachment path in causal order:
+
+1. Draft-generation contract first.
+   Attachment operations receive a generation only after successful reconciliation establishes an
+   unambiguous current generation. Failed reconciliation and unresolved conflict expose no attachment
+   capability. The first attachment operation persists that generation locally without marking text
+   dirty and without advancing/scheduling the 60-second server text sync. Conflict resolution must keep
+   attachment refs consistent with the selected generation: retained refs follow the winner; discarded
+   generation refs stop being active references.
+
+2. Server draft-attachment API second.
+   GET/list is a real route `loader`; POST/DELETE remain mutations in `action`. Boundary validation
+   uses the repository's canonical UUID semantics. Runtime privileges remain only those actually required
+   by the resulting list/remove/rebind contract.
+
+3. Editor upload/restore UI third.
+   Restore must finish successfully before new uploads are enabled, removing the restore-vs-upload race
+   instead of merging competing snapshots. Upload progress may continue to use XMLHttpRequest: the
+   platform standard exposes upload progress events and replacing it with a more complex transport has
+   no causal benefit. Do not implement ambiguous “Remove while request is in flight” semantics; Retry/Delete
+   remain available once the request has a determinate success/failure result. Accepted image paste must
+   not continue into text/HTML paste handling.
+
+4. Localization/tests/state follow the corrected behavior.
+   New RU/HE strings are reviewed normally and their committed literal fingerprints are derived from the
+   canonical descriptor via the existing `sourceFingerprint` semantics. Tests must cover reconciliation
+   failure, conflict, attachment-only reload, context/generation switch, restore gating, paste, exact route
+   dispatch and malformed UUIDs. Update `PROJECT_STATE.md` only to the behavior actually completed.
+
+5. Publication/download remains the next bounded Stage 5 attachment subtask.
+   Until atomic promotion of the selected draft refs to post refs and controlled read/download exist,
+   attachment UI is not considered end-to-end complete and must not allow a stored attachment to be
+   silently published as a text-only post. Orphan physical cleanup remains later and does not block
+   reference correctness.
+
+### Model handoff
+
+Because the hard part is the draft-generation/conflict lifecycle, the preferred writer order is:
+- GPT-6 independently validates/refines item 1 and, if unchanged, implements only that bounded identity
+  recovery after the rollback;
+- GPT-5.6 Sol then verifies the exact head and implements items 2–4 one bounded subtask at a time;
+- publication/download is a later owner-authorized subtask;
+- both GPT models independently whole-PR review the final stable head before the next manual Codex review.
+
+No implementation change has been made by this entry. Next implementation action is the single bounded
+rollback/recovery of the failed UI slice, after owner continuation.
