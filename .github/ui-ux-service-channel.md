@@ -4590,3 +4590,63 @@ Do not edit implementation PR #215, project code, migrations, project documentat
 configuration. You may record the analysis only in this shared communication file and/or
 reply in PR #147.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6128368558 -->
+## Codex GitHub response — comment 6128368558
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6128368558 · 2026-10-12T16:30:01Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Техническое заключение
+
+1. **Классификация: реальный дефект текущего Stage 5 slice.** Уже реализованный контракт выдаёт результат `accepted: true` со статусом `type-checked`, а спецификация требует для узнаваемых бинарных форматов проверять не только сигнатуру, но и характерную структуру. Текущие тесты прямо закрепляют принятие трёхбайтового JPEG, одного GIF-заголовка, одного PDF-заголовка и четырёхбайтового ZIP-заголовка. Это не отсутствующая будущая antivirus/upload-lifecycle функция, а ложноположительный результат существующего type gate. [app/forum/attachment-validation.tsL18-L22](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-validation.ts#L18-L22) [app/forum/attachment-validation.test.tsL39-L51](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-validation.test.ts#L39-L51) [EDITOR_SPEC.mdL265-L272](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/EDITOR_SPEC.md#L265-L272)
+
+2. **Проверенная причинная цепочка и root cause.**
+   - `AttachmentCandidate` предоставляет валидатору только заявленный размер и `prefix`. [app/forum/attachment-validation.tsL24-L30](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-validation.ts#L24-L30)
+   - R2 helper собирает не более `4096` первых байт и вызывает `inspectAttachment()` до чтения остального потока. [app/forum/attachment-r2.tsL53-L58](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-r2.ts#L53-L58) [app/forum/attachment-r2.tsL69-L89](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-r2.ts#L69-L89)
+   - `detectAttachmentContent()` классифицирует JPEG, GIF, PDF и ZIP исключительно по начальному magic/header. [app/forum/attachment-validation.tsL71-L80](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-validation.ts#L71-L80)
+   - После совпадения extension/MIME с этой prefix-классификацией `inspectAttachment()` сразу возвращает окончательное `accepted: true / type-checked`; отдельной стадии structural validation нет. [app/forum/attachment-validation.tsL157-L157](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-validation.ts#L157-L157) [app/forum/attachment-validation.tsL203-L206](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-validation.ts#L203-L206)
+   - Поэтому обрезанный файл либо произвольный ZIP, переименованный в DOCX/XLSX/PPTX/ODF, получает тот же итоговый статус, что и структурно правдоподобный файл. Семантическая MIME-проверка исправляет противоречия metadata, но не доказывает внутреннюю идентичность ZIP-контейнера.
+
+   **Root cause:** одна prefix-эвристика одновременно используется как предварительное определение семейства и как окончательное доказательство допустимого типа. Эти две стадии должны быть разделены.
+
+3. **Существующих входов недостаточно.** `size + first 4096 bytes` принципиально не позволяют:
+   - проверить JPEG end-of-image;
+   - подтвердить PDF trailer/EOF;
+   - проверить ZIP EOCD и central-directory consistency;
+   - установить ZIP-based Office/ODF identity по обязательным package entries.
+
+   Увеличение минимальной длины или фиксированного prefix лишь устранит отдельные короткие fixtures, но не первопричину.
+
+   **Минимально корректная граница исправления:** сохранить prefix gate как ранний fail-fast этап, но не выдавать после него финальный `type-checked`; добавить format-aware full-stream finalization до успешного `AttachmentStoreResult`. В ходе единственного прохода structural validator должен получать все chunks и хранить только ограниченное состояние/необходимый bounded tail. Если финальная проверка не проходит, незавершённый приватный объект должен быть удалён, а результат — отклонён. Для ZIP/Office нужен настоящий bounded ZIP structure/package validator, а не поиск строк в первых байтах.
+
+4. **Исправление может остаться внутри текущего attachment-verification/private-storage slice.** Для него не требуются HTTP upload route, attachment DB references, download UI, Security-event ingestion, antivirus, orphan-cleanup subsystem, реальный R2 bucket или Stage 6. Достаточно изменить внутренний validation/store contract и test bucket. При этом уже записанные байты остаются приватными, ключ не возвращается до успешной финализации, а при structural rejection объект удаляется — это согласуется с утверждённым контрактом предварительной приватной загрузки. [EDITOR_SPEC.mdL268-L272](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/EDITOR_SPEC.md#L268-L272) [app/forum/attachment-r2.tsL128-L133](https://github.com/iliya1947/vico-forum/blob/3dd6c20d6a0b6243136668800b689cf0d142bec4/app/forum/attachment-r2.ts#L128-L133)
+
+5. **Обязательные focused tests и readiness criteria.**
+   - Отклонение header-only/truncated JPEG, GIF, PNG/WebP, PDF, ZIP и остальных поддерживаемых бинарных семейств согласно выбранной format-specific sanity policy.
+   - Принятие минимальных, но структурно корректных fixtures каждого поддерживаемого семейства.
+   - ZIP: корректный EOCD/central directory/local-header relationship; truncated/malformed offsets и произвольные trailing/prefix bytes не проходят.
+   - DOCX/XLSX/PPTX/ODT/ODS: generic ZIP не удовлетворяет semantic extension; проверяются обязательные package markers/entries для конкретного формата.
+   - Structural evidence, разбитая между stream chunks и находящаяся после первых 4096 байт, обрабатывается корректно.
+   - Structural rejection после начала private write не возвращает object key и вызывает delete.
+   - Length mismatch, maximum size, executable detection, filename/MIME проверки и UTF-8 boundary regressions остаются зелёными.
+   - Validator остаётся bounded по памяти и не использует `request.formData()`/полное 50-МБ buffering.
+   - Полный exact-head CI, повторный whole-PR review и согласование `PROJECT_STATE.md`/`EDITOR_SPEC.md` после реализации.
+
+6. **Технически допустимые варианты.**
+   - **Рекомендуемый:** потоковый format-aware final validator во время приватной записи с fail-closed удалением. Он сохраняет 50-МБ streaming contract и текущую широкую поддержку форматов.
+   - **Допустимый, но менее предпочтительный:** сначала приватно сохранить объект, затем читать необходимые ranges либо весь объект для проверки и удалить при отказе. Реализация проще для trailer/central-directory форматов, но расширяет bucket interface, добавляет второй read и повышает I/O.
+   - **Допустимый временный fail-closed вариант:** отклонять форматы, для которых текущая граница не может доказать структуру, включая ZIP-based Office. Это уменьшает реализацию, но нарушает утверждённую широкую поддержку документов и архивов.
+   - **Полное buffering до 50 МБ в Worker memory не рекомендуется:** оно технически устраняет нехватку данных, но ухудшает memory boundary и противоречит уже выбранному streaming направлению.
+
+   **Owner decision для корректного основного исправления не требуется:** потоковая финальная structural validation наиболее прямо следует существующим продуктовым и архитектурным ограничениям. Решение владельца понадобилось бы только при выборе временного отказа от части утверждённых форматов либо перехода к post-write range/full-object verification.
+
+Файлы и ветки не изменялись; это только независимый технический анализ.
+
+ [View task →](https://chatgpt.com/s/cd_6acd0a820fbc8191b88464f314b5c733)
