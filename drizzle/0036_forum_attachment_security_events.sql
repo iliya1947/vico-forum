@@ -8,7 +8,7 @@ CREATE TABLE "forum_attachment_security_events" (
   "declared_mime" text NOT NULL,
   "detected_type" text NOT NULL,
   "reason" text NOT NULL,
-  "byte_size" integer NOT NULL,
+  "declared_byte_size" integer NOT NULL,
   "created_at" timestamp with time zone DEFAULT now() NOT NULL,
   CONSTRAINT "forum_attachment_security_events_upload_id_unique" UNIQUE("upload_id")
 );
