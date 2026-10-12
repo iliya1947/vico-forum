@@ -118,7 +118,7 @@ describe("forum attachment lifecycle foundation", () => {
       responseMime: "text/plain; charset=utf-8",
       byteSize: 1,
       verificationStatus: "type-checked",
-    })).rejects.toMatchObject({ code: "23503" });
+    })).rejects.toMatchObject({ cause: { code: "23503" } });
     const rows = await client.query("select id from forum_attachments where id = $1", [id]);
     expect(rows.rowCount).toBe(0);
   });
