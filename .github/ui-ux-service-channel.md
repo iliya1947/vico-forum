@@ -4297,3 +4297,38 @@ open, non-Draft and not merge-ready because Editor 2.0 implementation continues.
 Do not request independent Codex review yet; AGENTS.md reserves that for the
 final stable implementation head after remaining work and required acceptance.
 
+## PR #215: Stage 4 finding №3 — autosave ↔ publication race fixed — 2026-10-12
+
+Owner continuation authorized only the remaining Stage 4 finding №3 in Editor 2.0 PR #215.
+
+Root cause was confirmed in the same-tab client path, not in the database CAS:
+a 60-second autosave could already be in flight with draft version N while the
+publication FormData captured N. If that save committed first, the same editor
+advanced the server draft to N+1 and its subsequent publication was correctly
+rejected by the exact CAS as stale. Weakening the server CAS would also weaken
+protection against real concurrent tab/device edits and was therefore rejected.
+
+The bounded fix keeps the server/database contract unchanged. The editor now
+serializes a real publication behind an already-running autosave + remote
+reconciliation cycle, then replays the original submit with the actual current
+draft ID/version. While the publication request is pending, another 60-second
+autosave cycle cannot start; after a failed same-page publication attempt the
+lock is released. Help "Check similar questions" is not a publication intent
+and is not delayed by this barrier.
+
+Regression coverage starts publication while the first autosave request is
+unresolved, verifies that no publication is emitted early, then verifies the
+replayed fence uses N+1. It also proves another autosave is suppressed while
+publication is pending and resumes after the attempt finishes.
+
+Final implementation head: `7b440ee4f70eccfe055c69573451dfa76e6596f5`.
+Exact-head CI [#38251064639](https://github.com/iliya1947/vico-forum/actions/runs/38251064639)
+completed successfully: `checks` and `database` are green. The first code-head
+CI failure was only a TypeScript control-flow issue in the new test harness;
+production implementation did not change for that correction.
+
+Stage 4 audit now has no remaining open finding. PR #215 remains open and is
+not merge-ready because other audited Editor 2.0 stages still have confirmed
+current-scope findings. Do not start the next package or request final Codex
+review until owner explicitly continues.
+
