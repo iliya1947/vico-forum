@@ -142,7 +142,7 @@ describe("forum attachment lifecycle foundation", () => {
       declaredMime: "text/plain",
       detectedType: "executable",
       reason: "executable-signature",
-      byteSize: 4,
+      declaredByteSize: 4,
     };
     await store.recordSecurityEvent(event);
     await store.recordSecurityEvent(event);
