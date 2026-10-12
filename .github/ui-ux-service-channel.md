@@ -4796,3 +4796,50 @@ HTTP upload, attachment DB lifecycle, download UI, durable Security events, anti
 orphan cleanup and Stage 6 remain outside this subtask. Do not proceed until owner
 explicitly continues.
 
+## PR #215: Stage 5 finding №4 — remaining container validators complete — 2026-10-12
+
+Owner continuation authorized only the next bounded subtask after ZIP/Office validation.
+This subtask adds structural sanity for the remaining already-supported binary container
+families and does not connect finalization to the private R2 writer yet.
+
+Implemented in `app/forum/attachment-container-validation.ts`:
+- 7z: exact signature, major-version boundary, StartHeader CRC, safe referenced
+  NextHeader range and streamed NextHeader CRC; next-header bytes are read in <=64 KiB chunks;
+- gzip: RFC member fixed header, compression method, reserved flag bits, bounded FEXTRA/FNAME/
+  FCOMMENT parsing, optional FHCRC, and evidence of compressed payload plus final trailer;
+  DEFLATE payload is deliberately not decompressed;
+- tar: 512-byte ustar records, header checksum with checksum-field-as-spaces semantics,
+  octal and GNU positive base-256 sizes, padded data bounds and conventional two-zero-block
+  terminator while retaining GNU-compatible clean EOF without end marker;
+- OLE/CFB: compound-file signature/CLSID/version/byte-order/sector invariants, v3/v4 sector
+  shifts, v4 zero header padding, declared FAT/DIFAT consistency, FAT/DIFAT sector markers,
+  bounded directory FAT-chain traversal, and mandatory first Root Entry.
+
+All random-access arithmetic is fail-closed on unsafe sums. CFB header/DIFAT parsing also rejects
+undeclared extra FAT sector IDs rather than silently ignoring metadata after the declared FAT count.
+Storage-read exceptions propagate rather than being converted into invalid-content verdicts.
+
+Focused tests cover:
+- 7z truncation, StartHeader/NextHeader CRC failure and >64 KiB bounded range processing;
+- gzip optional filename/FHCRC, reserved flags, unterminated optional fields and truncation;
+- tar checksum, declared-size truncation, positive base-256 size and clean EOF;
+- CFB v3/v4, bad sector shift, out-of-range directory, extra undeclared FAT ID, broken FAT
+  directory chain, invalid root entry and non-zero v4 header padding;
+- dispatcher behavior and storage-read failure propagation.
+
+Implementation history:
+- `ec56004f54f8b7c0c69a6d6f832547a055010501` initial validator package;
+- `a3a47febb09156957a410265de573c3aca6dc0a3` TypeScript fixture type correction only;
+- `8b55bf95c8e48a0564ce104058fb9929fdb7cbab` safe-range and CFB DIFAT tightening.
+
+Exact-head CI #38288493514 completed successfully with `checks` and `database` green.
+Diff from previous head `e6262d0` changes only the new container validator/tests plus
+`PROJECT_STATE.md` and temporary `EDITOR_SPEC.md`.
+
+All currently recognized binary/container families now have a final structural-validation
+boundary, but finding №4 remains OPEN because these validators are not yet authoritative in
+the storage path. The next bounded subtask is private R2 finalization/delete-on-rejection.
+HTTP upload routes, attachment DB lifecycle, download UI, durable Security events, antivirus,
+orphan cleanup and Stage 6 remain outside this work. Do not proceed until owner explicitly
+continues.
+
