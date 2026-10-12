@@ -1058,7 +1058,7 @@
           "defaultSha256": null
         },
         {
-          "name": "byte_size",
+          "name": "declared_byte_size",
           "type": "integer",
           "nullable": false,
           "defaultSha256": null
