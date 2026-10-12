@@ -427,13 +427,16 @@ Vico Forum находится в ранней pre-release разработке.
   defect в one-pass R2 streaming/length fencing не найдено. HTTP upload route,
   DB attachment lifecycle/references, download/UI, durable Security/Attachments
   events, antivirus provider и orphan cleanup остаются будущей реализацией и не
-  классифицированы как defects этого уже существующего slice. Finding №4 подтверждён как current-scope defect, но локального исправления без обхода не найдено:
-  текущий type-gate принимает решение до R2 write по size + первым 4096 bytes, тогда как
-  достаточная structural evidence для JPEG/PDF/ZIP и семантика ZIP-based Office container
-  могут находиться за пределами prefix (включая trailer/central directory). Простое добавление
-  минимальных размеров закрыло бы только очевидно короткие fixtures, но оставило бы произвольный
-  ZIP под Office extension и поэтому было бы костылём. Finding №4 отложен в группу сложных
-  defects для отдельного технического разбора/Codex; implementation code этим решением не менялся.
+  классифицированы как defects этого уже существующего slice. Finding №4 после независимого технического разбора Codex подтверждён на том же root cause:
+  prefix-classifier нельзя использовать как окончательное доказательство структуры. Реализация
+  начата поэтапно. Первый bounded subtask 2026-10-12 добавляет отдельный streaming structural
+  validator contract для non-container image/PDF families (PNG/JPEG/GIF/WebP/PDF) без
+  подключения его к R2 store path: PNG проверяет datastream order IHDR→IDAT→IEND и IHDR
+  semantics, JPEG требует frame/scan/end markers, GIF — logical-screen minimum и trailer,
+  WebP — RIFF/WEBP size+first image chunk, PDF — startxref + %%EOF tail. Validator хранит
+  только bounded head/tail либо небольшой parser state и работает при произвольных chunk
+  boundaries. ZIP/Office и остальные archive/container families намеренно остаются следующим
+  subtask; до их реализации и R2 finalization finding №4 остаётся открытым.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
