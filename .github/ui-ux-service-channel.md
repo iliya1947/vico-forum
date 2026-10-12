@@ -4489,3 +4489,34 @@ Stage 2 protected-content restoration remains a separate current-scope defect an
 intentionally not changed in this package. The complex Stage 5 structural-validation
 finding remains deferred for a dedicated technical/Codex pass.
 
+## PR #215: Stage 2 protected-selection restore fixed — 2026-10-12
+
+Owner continuation authorized the next non-deferred current-scope Editor 2.0 defect:
+the repeated-audit Stage 2 protected-content restore boundary.
+
+Root cause was confirmed in the shared visual-selection restoration path. Manual Simple
+selection already rejected a DOM Range that crossed `data-visual-protected`, but
+`restoreVisualDomSelection()` did not. A source selection restored from Advanced/history
+could therefore span a fenced-code/other protected block, become authoritative in
+`visualSelectionRef`, and then be consumed by a Simple toolbar mutation.
+
+The bounded fix is at the common restore boundary, not in individual toolbar actions:
+- `restoreVisualDomSelection()` rejects a reconstructed DOM Range containing
+  `data-visual-protected` before moving focus;
+- a failed restore clears the pending visual selection and explicitly leaves the
+  authoritative visual selection empty/fail-closed;
+- the same fail-closed helper is used by direct imperative Simple focus, preventing
+  another restoration path from reintroducing the unsafe range;
+- safe manual Simple selections and normal restorable selections are unchanged.
+
+Regression coverage starts in Advanced, selects prose across fenced code, switches to
+Simple and verifies a subsequent Bold command leaves the exact Markdown unchanged.
+
+Final implementation head: `834b6d68ec8b0c81a554af9b738afdb9dab3dcca`.
+Exact-head CI [#38274884024](https://github.com/iliya1947/vico-forum/actions/runs/38274884024)
+completed successfully with `checks` and `database` green.
+
+The remaining non-deferred repeated-audit defect is Stage 3 finding №1:
+"Edit in Markdown" does not position the Advanced editor at the selected protected code block.
+The complex Stage 5 structural-validation finding remains deferred for a dedicated Codex pass.
+
