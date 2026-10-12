@@ -408,11 +408,14 @@ Vico Forum находится в ранней pre-release разработке.
   generic application/octet-stream, text/plain и application/zip не считаются
   доказательством более специфичного типа. Неизвестный non-generic MIME больше не
   игнорируется для известного semantic extension, при этом custom text/source name
-  без известной семантики сохраняет broad-support path. Остались findings №3–4:
-  Text sniff при полном 4096-byte prefix безусловно исключает последние
-  четыре байта из UTF-8 fatal decode, из-за чего invalid bytes внутри самого
-  sniff-window могут быть ошибочно классифицированы как text. Recognized binary
-  verification ограничен magic prefix: заведомо обрезанные JPEG/GIF/PDF/ZIP
+  без известной семантики сохраняет broad-support path.
+  Stage 5 finding №3 исправлен отдельно 2026-10-12 на UTF-8 sniff boundary:
+  4096-byte sample теперь проверяется целиком fatal decoder-ом. Streaming decode
+  включается только когда sample является реальным prefix более длинного файла,
+  поэтому допускается лишь незавершённый UTF-8 code point на самой границе;
+  malformed bytes внутри sample больше не скрываются. Если 4096 bytes — весь файл,
+  незавершённый trailing code point отклоняется. Остался finding №4:
+  Recognized binary verification ограничен magic prefix: заведомо обрезанные JPEG/GIF/PDF/ZIP
   payloads и произвольный ZIP под Office container name могут получить
   type-checked acceptance без минимальной structural sanity. Актуальный Cloudflare
   Workers R2 contract отдельно проверен: ReadableStream put, returned object size

@@ -60,7 +60,10 @@ function has(bytes: Uint8Array, position: number, signature: readonly number[]):
 function ascii(bytes: Uint8Array, at: number, text: string): boolean {
   return [...text].every((value, index) => bytes[at + index] === value.charCodeAt(0));
 }
-export function detectAttachmentContent(bytes: Uint8Array): AttachmentDetection {
+export function detectAttachmentContent(
+  bytes: Uint8Array,
+  sampleMayContinue = false,
+): AttachmentDetection {
   if (has(bytes, 0, [0x4d, 0x5a]) || has(bytes, 0, [0x7f, 0x45, 0x4c, 0x46])
     || [[0xfe, 0xed, 0xfa, 0xce], [0xce, 0xfa, 0xed, 0xfe],
       [0xfe, 0xed, 0xfa, 0xcf], [0xcf, 0xfa, 0xed, 0xfe],
@@ -81,10 +84,14 @@ export function detectAttachmentContent(bytes: Uint8Array): AttachmentDetection 
   for (const byte of bytes) {
     if (byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) return "unknown";
   }
-  // Check a complete UTF-8 prefix; the last few bytes may bisect a code point.
-  const end = bytes.length === ATTACHMENT_SNIFF_BYTES ? bytes.length - 4 : bytes.length;
-  try { new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, end)); }
-  catch { return "unknown"; }
+  // Validate every sampled byte. Streaming mode is used only when this is a
+  // real prefix of a larger file: it tolerates an incomplete UTF-8 code point
+  // at the boundary, but still rejects malformed bytes inside the sample.
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes, { stream: sampleMayContinue });
+  } catch {
+    return "unknown";
+  }
   return "text";
 }
 
@@ -152,7 +159,10 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
   const name = candidate.fileName.split(/[/\\]/u).pop()?.trim() ?? "";
   const extension = name.toLowerCase().split(".").pop() ?? "";
   const mime = candidate.declaredMime.split(";")[0]!.trim().toLowerCase();
-  const detected = detectAttachmentContent(candidate.prefix);
+  const detected = detectAttachmentContent(
+    candidate.prefix,
+    candidate.size > candidate.prefix.length,
+  );
   const reject = (reason: AttachmentRejection, suspicious = true): AttachmentInspection =>
     ({ accepted: false, fileName: name, detected, reason, suspicious, scanStatus: "rejected" });
   const maxBytes = candidate.maxBytes ?? DEFAULT_ATTACHMENT_MAX_BYTES;

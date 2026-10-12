@@ -149,6 +149,32 @@ describe("Editor 2.0 server-side attachment type gate", () => {
     });
   });
 
+  it("validates the full 4096-byte UTF-8 sample without rejecting a real boundary split", () => {
+    for (const position of [ATTACHMENT_SNIFF_BYTES - 4, ATTACHMENT_SNIFF_BYTES - 1]) {
+      const invalid = new Uint8Array(ATTACHMENT_SNIFF_BYTES).fill(0x61);
+      invalid[position] = 0xff;
+      expect(detectAttachmentContent(invalid, true)).toBe("unknown");
+      expect(inspect("notes.txt", invalid, "text/plain", {
+        size: ATTACHMENT_SNIFF_BYTES + 1,
+      })).toMatchObject({
+        accepted: false, detected: "unknown", reason: "binary-content", suspicious: true,
+      });
+    }
+
+    const splitCodePoint = new Uint8Array(ATTACHMENT_SNIFF_BYTES).fill(0x61);
+    splitCodePoint[ATTACHMENT_SNIFF_BYTES - 1] = 0xc3;
+    expect(detectAttachmentContent(splitCodePoint, true)).toBe("text");
+    expect(inspect("notes.txt", splitCodePoint, "text/plain", {
+      size: ATTACHMENT_SNIFF_BYTES + 1,
+    })).toMatchObject({ accepted: true, detected: "text", suspicious: false });
+
+    // The same incomplete byte is invalid when the sample is the entire file.
+    expect(detectAttachmentContent(splitCodePoint)).toBe("unknown");
+    expect(inspect("notes.txt", splitCodePoint, "text/plain")).toMatchObject({
+      accepted: false, detected: "unknown", reason: "binary-content", suspicious: true,
+    });
+  });
+
   it("enforces a configurable per-file limit from server-owned actual size", () => {
     const text = utf8("hello");
     expect(DEFAULT_ATTACHMENT_MAX_BYTES).toBe(50_000_000);
