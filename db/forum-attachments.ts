@@ -1,6 +1,10 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { forumAttachmentDraftRefs, forumAttachments } from "./schema";
+import {
+  forumAttachmentDraftRefs,
+  forumAttachments,
+  forumAttachmentSecurityEvents,
+} from "./schema";
 import { isEditorDraftContextKey } from "./editor-draft-context";
 
 export interface ForumAttachmentMetadata {
@@ -29,6 +33,29 @@ export interface CreateDraftAttachmentInput {
   verificationStatus: "type-checked";
 }
 
+export interface RecordAttachmentSecurityEventInput {
+  uploadId: string;
+  uploadedByUserId: string;
+  contextKey: string;
+  draftId: string;
+  fileName: string;
+  declaredMime: string;
+  detectedType: string;
+  reason: string;
+  byteSize: number;
+}
+
+export interface ForumAttachmentSecurityEvent extends RecordAttachmentSecurityEventInput {
+  id: string;
+  createdAt: Date;
+}
+
+export interface ForumAttachmentSecurityEventPage {
+  events: ForumAttachmentSecurityEvent[];
+  hasMore: boolean;
+  page: number;
+}
+
 export class InvalidForumAttachmentError extends Error {
   constructor() {
     super("invalid forum attachment");
@@ -53,6 +80,23 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
     && Number.isSafeInteger(input.byteSize)
     && input.byteSize > 0
     && input.verificationStatus === "type-checked";
+}
+
+function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean {
+  return uuid.test(input.uploadId)
+    && input.uploadedByUserId.length > 0
+    && isEditorDraftContextKey(input.contextKey)
+    && input.contextKey.length <= 4096
+    && uuid.test(input.draftId)
+    && input.fileName.length <= 4096
+    && input.declaredMime.length <= 512
+    && input.detectedType.length > 0
+    && input.detectedType.length <= 64
+    && input.reason.length > 0
+    && input.reason.length <= 128
+    && Number.isSafeInteger(input.byteSize)
+    && input.byteSize >= 0
+    && input.byteSize <= 2_147_483_647;
 }
 
 function toMetadata(row: typeof forumAttachments.$inferSelect): ForumAttachmentMetadata {
@@ -98,6 +142,35 @@ export class DrizzleForumAttachments {
       });
       return toMetadata(created);
     });
+  }
+
+  async recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void> {
+    if (!validSecurityEvent(input)) throw new InvalidForumAttachmentError();
+    await this.db.insert(forumAttachmentSecurityEvents).values({
+      id: crypto.randomUUID(),
+      ...input,
+    }).onConflictDoNothing({
+      target: forumAttachmentSecurityEvents.uploadId,
+    });
+  }
+
+  async readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage> {
+    if (!Number.isSafeInteger(page) || page < 0 || page > 10_000) {
+      throw new InvalidForumAttachmentError();
+    }
+    const pageSize = 50;
+    const rows = await this.db.select().from(forumAttachmentSecurityEvents)
+      .orderBy(
+        desc(forumAttachmentSecurityEvents.createdAt),
+        desc(forumAttachmentSecurityEvents.id),
+      )
+      .limit(pageSize + 1)
+      .offset(page * pageSize);
+    return {
+      events: rows.slice(0, pageSize),
+      hasMore: rows.length > pageSize,
+      page,
+    };
   }
 
   async listDraftAttachments(ownerId: string, contextKey: string, draftId: string) {
