@@ -4879,3 +4879,38 @@ events, antivirus integration, orphan cleanup and Stage 6 remain later scope and
 
 Do not proceed to the next Editor 2.0 subtask until owner explicitly continues.
 
+## PR #215: Stage 5 attachment DB lifecycle/reference foundation complete — 2026-10-12
+
+Owner continuation authorized only the first bounded implementation subtask after the completed
+Stage 5 audit: data lifecycle/references for attachments. HTTP/R2 runtime/UI/security-event work
+was deliberately not started.
+
+Implemented on PR #215:
+- forward migration `0035_forum_attachments_foundation`;
+- `forum_attachments` stores private asset metadata/object key separately from references;
+- `forum_attachment_draft_refs` identifies exact owner + editor context + draft generation;
+- `forum_post_attachments` is the published-post reference surface for later publication wiring;
+- composite attachment+owner FK prevents cross-owner draft references;
+- asset-reference FKs use RESTRICT, while post deletion cascades only the post reference, so a
+  shared asset cannot be physically deleted while any valid draft/post reference remains;
+- draft references intentionally do not FK to `forum_editor_drafts`: immediate file upload must
+  not create/advance the separately specified 60-second server draft text sync;
+- repository boundary currently supports atomic asset+draft-ref creation, owner-scoped listing,
+  and exact draft-ref removal;
+- the new relations receive no web runtime grants yet because there is no HTTP attachment runtime
+  boundary in this subtask.
+
+Focused native PostgreSQL tests cover owner isolation, transactional rollback, coexistence of
+draft+published refs, reference-protected asset deletion, post-ref cascade, and the absence of any
+forced server draft row. The first database CI attempt exposed only a test assertion mistake:
+Drizzle wraps the PostgreSQL FK code under `cause.code`; the assertion was corrected without
+changing production code.
+
+Code-head `fb9f2f3c6885085814719795880f537dff7444bb` passed CI #38302897708 with
+`checks` and `database` green, including clean PostgreSQL 17 migrations, schema manifest/parity,
+runtime privilege probes and Workers smoke.
+
+Next bounded Stage 5 subtask is HTTP upload boundary + durable Security/Attachments event
+foundation. Publication promotion/download, editor upload UI and orphan cleanup remain later.
+Do not proceed until owner explicitly continues.
+
