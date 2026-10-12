@@ -12,6 +12,7 @@ import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-draf
 import type { CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { action } from "./attachment-upload";
+import routes from "../routes";
 
 const contextKey = "topic:opaque/topic:reply";
 const draftId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
@@ -79,6 +80,12 @@ function request(
 }
 
 describe("private attachment upload API", () => {
+  it("is registered before the generic API catch-all", () => {
+    const paths = routes.map((route) => route.path);
+    expect(paths.indexOf("api/attachments")).toBeGreaterThanOrEqual(0);
+    expect(paths.indexOf("api/attachments")).toBeLessThan(paths.indexOf("api/*"));
+  });
+
   it("requires session, same origin and current authoring permission before storage", async () => {
     const bytes = new TextEncoder().encode("hello");
     const guest = setup({ owner: "" });
