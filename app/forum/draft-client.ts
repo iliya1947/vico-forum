@@ -12,6 +12,8 @@ export interface LocalEditorDraft {
   editedAt: string;
   baseVersion: number;
   syncedEditedAt: string | null;
+  /** Draft generation used for an attachment operation; retained across text-generation changes until refs are reconciled. */
+  attachmentDraftId?: string;
 }
 export interface DraftMetadata {
   contextKey: string;
@@ -54,6 +56,8 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && Number.isFinite(Date.parse(data.editedAt))
     && Date.now() - Date.parse(data.editedAt) < DRAFT_LIFETIME_MS
     && typeof data.draftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.draftId)
+    && (data.attachmentDraftId === undefined
+      || (typeof data.attachmentDraftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.attachmentDraftId)))
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
     && !!data.payload && typeof data.payload.body === "string"
     && typeof data.payload.title === "string" && typeof data.payload.tags === "string";
