@@ -4650,3 +4650,54 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-612836855
 Файлы и ветки не изменялись; это только независимый технический анализ.
 
  [View task →](https://chatgpt.com/s/cd_6acd0a820fbc8191b88464f314b5c733)
+
+## PR #215: Stage 5 finding №4 — ChatGPT/Codex technical consensus — 2026-10-12
+
+Codex independently analyzed the current Stage 5 attachment-verification slice after a
+neutral request and reached the same substantive diagnosis as ChatGPT.
+
+Consensus:
+
+1. Finding №4 is a real current-scope defect of the already implemented type gate, not
+   future antivirus/upload-lifecycle groundwork.
+2. Root cause is that the current prefix classifier performs two roles at once:
+   preliminary family recognition and final proof of a structurally valid supported type.
+   After extension/MIME agreement, `inspectAttachment()` immediately emits
+   `accepted: true / scanStatus: "type-checked"` from `size + first 4096 bytes`.
+3. Those inputs are intrinsically insufficient for trustworthy structural validation of
+   JPEG/PDF/ZIP and ZIP-based Office/ODF packages. A minimum-length patch or larger fixed
+   prefix would only cover examples, not the root cause.
+4. The smallest correct boundary is to keep the prefix gate as fail-fast preflight and add
+   a separate format-aware final structural validation stage before returning a successful
+   `AttachmentStoreResult`.
+5. The preferred implementation is a bounded-memory validator fed by the actual upload
+   stream during the existing private write. It may retain only format-specific bounded
+   state/tail; on final structural rejection, no object key is returned and the private
+   object is deleted.
+6. ZIP/Office validation must use real ZIP structure/package evidence (EOCD/central
+   directory/local-header relationships and required package entries), not string search
+   in the initial prefix.
+7. This remains bounded to the current attachment-verification/private-storage slice.
+   It does not require HTTP upload routes, attachment DB lifecycle, download UI, Security
+   event ingestion, antivirus, orphan cleanup subsystem, real R2 provisioning, or Stage 6.
+8. Full buffering of a 50 MB upload is not acceptable for the chosen streaming boundary.
+   A post-write R2 reread is technically valid but less preferred because it expands the
+   bucket interface and adds I/O.
+9. No owner product decision is required for the preferred fix. Owner choice would be
+   required only to deliberately drop supported formats or switch to post-write reread.
+
+Required focused coverage includes:
+- truncated/header-only binary fixtures rejected;
+- minimal structurally valid fixtures accepted;
+- evidence beyond 4096 bytes and split across chunks;
+- ZIP central-directory/EOCD/local-header consistency;
+- DOCX/XLSX/PPTX/ODT/ODS package identity;
+- rejection after private write deletes the object and never returns its key;
+- existing length/size/executable/name/MIME/UTF-8 regressions stay green;
+- bounded-memory streaming and full exact-head CI.
+
+Implementation PR #215 remains unchanged at
+`e291953c3540532f1095517f997b0c6c8168770d`.
+The next step, after owner continuation, is for ChatGPT to design and implement this
+bounded finalization stage. This is not the final Codex Code Review of PR #215.
+
