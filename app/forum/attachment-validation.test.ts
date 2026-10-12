@@ -137,7 +137,12 @@ describe("Editor 2.0 server-side attachment type gate", () => {
     expect(inspect("config.json", utf8("{}"), "application/x-custom-json")).toMatchObject({
       accepted: false, reason: "mime-mismatch", suspicious: true,
     });
+    expect(inspect("config.json", utf8("{}"), "text/x-custom-json")).toMatchObject({
+      accepted: false, reason: "mime-mismatch", suspicious: true,
+    });
     expect(inspect("custom.unknown-source", utf8("custom source"), "application/x-custom-source").accepted)
+      .toBe(true);
+    expect(inspect("custom.unknown-source", utf8("custom source"), "text/x-custom-source").accepted)
       .toBe(true);
     expect(inspect("notes.md", utf8("Hello"), "application/x-msdownload")).toMatchObject({
       accepted: false, reason: "forbidden-mime", suspicious: true,
