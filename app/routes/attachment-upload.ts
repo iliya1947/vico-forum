@@ -145,7 +145,7 @@ export async function action({
           declaredMime,
           detectedType: result.inspection.detected,
           reason: result.inspection.reason,
-          byteSize: size,
+          declaredByteSize: size,
         });
       } catch (error) {
         if (error instanceof ForumAttachmentStorageUnavailableError) {
