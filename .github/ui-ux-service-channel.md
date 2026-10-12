@@ -4426,3 +4426,37 @@ changed in this package. Upload/DB/download, durable Security events, antivirus,
 R2 provisioning and Stage 6 remain outside this package. Do not proceed to finding №4
 until owner explicitly continues.
 
+## PR #215: Stage 5 finding №4 — confirmed complex, not patched — 2026-10-12
+
+Owner continuation authorized only Stage 5 finding №4.
+
+Diagnosis confirms this is a current-scope defect of the already implemented attachment
+type-gate, not future attachment lifecycle work. However no localized root-cause fix exists
+inside the current pre-write prefix-only contract.
+
+Current boundary:
+- `inspectAttachment()` decides before R2 write from declared size plus at most the first
+  4096 actual bytes;
+- that is enough for magic/signature identification, but not enough to establish minimum
+  structural sanity for formats whose evidence can occur later in the file;
+- JPEG/PDF need meaningful end/trailer evidence for a trustworthy structural check;
+- ZIP structure relies on data beyond an initial magic prefix, including end/central-directory
+  information;
+- ZIP-based Office container identity cannot be established from ZIP magic alone because
+  required package entries need not be proven by the initial prefix.
+
+A patch that only rejects the currently tiny fixtures by minimum byte counts would leave
+the original semantic hole (for example an arbitrary ZIP named as DOCX) and would therefore
+be a workaround rather than a root-cause correction. No such patch was applied.
+
+Finding №4 is recorded as a confirmed complex defect for a later dedicated technical
+analysis/Codex pass. HTTP upload, DB references, download/UI, durable Security events,
+antivirus, cleanup, R2 provisioning and Stage 6 remain separate future scope and are not
+being pulled into this finding.
+
+Implementation code remains unchanged from green head
+`f9d774e803262050ff61306a15c6226894e9945b`. Implementation-branch head
+`1dc214bc808ea11c4ade0d349b2336e6e106b67d` changes only project/spec status text.
+Do not attempt a length-only workaround and do not proceed to another finding until the
+owner explicitly continues.
+
