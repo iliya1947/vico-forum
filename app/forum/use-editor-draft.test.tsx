@@ -27,7 +27,8 @@ void i18n.init({
 
 function Harness({ ownerId }: { ownerId: string | null }) {
   const [body, setBody] = useState("");
-  useEffect(() => { setBody(""); }, [ownerId]);
+  const [reserved, setReserved] = useState<string | null>(null);
+  useEffect(() => { setBody(""); setReserved(null); }, [ownerId]);
   const draft = useEditorDraft({
     ownerId, contextKey, locale: "en", initialPayload: empty,
     restore: (payload) => setBody(payload.body),
@@ -39,6 +40,10 @@ function Harness({ ownerId }: { ownerId: string | null }) {
       draft.noteEdit(event.target.value);
     }} />
     <button type="button" onClick={draft.saveLocal}>Leave editor</button>
+    <button type="button" onClick={() => setReserved(draft.reserveAttachmentGeneration())}>Reserve attachment</button>
+    <button type="button" onClick={draft.retryAttachmentReconciliation}>Retry attachment check</button>
+    <output data-testid="attachment-ready">{draft.attachmentReady ? "ready" : "blocked"}</output>
+    <output data-testid="attachment-reservation">{reserved ?? "none"}</output>
     <button type="button" onClick={() => draft.acknowledgePublished(draft.draftId, draft.expectedVersion + 1)}>
       Published
     </button>
@@ -62,6 +67,116 @@ afterEach(() => {
 });
 
 describe("editor draft lifecycle", () => {
+  it("does not reserve an attachment generation until remote reconciliation succeeds, including on retry", async () => {
+    const remote = { contextKey, draftId: oldId, version: 2, status: "active" as const,
+      title: "", snippet: "Server content", editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server content" } };
+    let contentAvailable = false;
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) {
+        return contentAvailable ? response({ draft: remote }) : response({ error: "offline" }, 503);
+      }
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
+    fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
+    expect(screen.getByTestId("attachment-reservation")).toHaveTextContent("none");
+    expect(readLocalEditorDraft("alice", contextKey)).toBeNull();
+
+    contentAvailable = true;
+    fireEvent.click(screen.getByRole("button", { name: "Retry attachment check" }));
+    await flush();
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
+    fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
+    expect(screen.getByTestId("attachment-reservation")).toHaveTextContent(oldId);
+  });
+
+  it("persists an attachment-only generation across remount without triggering early or periodic text sync", async () => {
+    vi.useFakeTimers();
+    const posts: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        posts.push(JSON.parse(options.body as string));
+        return response({ outcome: "saved", draft: {
+          contextKey, draftId: (posts[0] as { draftId: string }).draftId, version: posts.length,
+          status: "active", editedAt: new Date().toISOString(), payload: empty,
+        } });
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [] });
+      throw new Error("Unexpected fetch");
+    }));
+    const mounted = mount();
+    await flush();
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
+    fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
+    const draftId = screen.getByTestId("attachment-reservation").textContent;
+    expect(draftId).toMatch(/^[a-f0-9-]{36}$/u);
+    const local = readLocalEditorDraft("alice", contextKey);
+    expect(local).toMatchObject({ draftId, attachmentDraftId: draftId, payload: empty });
+    expect(local?.syncedEditedAt).toBe(local?.editedAt);
+    expect(posts).toHaveLength(0);
+    mounted.unmount();
+
+    mount();
+    await flush();
+    expect(screen.getByTestId("draft-id")).toHaveTextContent(draftId!);
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(posts).toHaveLength(0);
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "New reply " } });
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBe(draftId);
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(posts).toHaveLength(1);
+  });
+
+  it("keeps the original attachment generation recoverable and blocks reservation when a conflict changes the draft ID", async () => {
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
+      attachmentDraftId: oldId, editedAt: new Date().toISOString(), baseVersion: 1,
+      syncedEditedAt: null, payload: { ...empty, body: "Local reply" } });
+    const remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
+      title: "", snippet: "Server reply", editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server reply" } };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
+    fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
+    expect(screen.getByTestId("attachment-reservation")).toHaveTextContent("none");
+    fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
+      draftId: newId, attachmentDraftId: oldId, baseVersion: 4,
+    });
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
+    fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
+    expect(screen.getByTestId("attachment-reservation")).toHaveTextContent("none");
+  });
+
+  it("does not silently equate draft generations when their text matches but attachments belong to the old ID", async () => {
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
+      attachmentDraftId: oldId, editedAt: new Date().toISOString(), baseVersion: 1,
+      syncedEditedAt: null, payload: { ...empty, body: "Same text" } });
+    const remote = { contextKey, draftId: newId, version: 5, status: "active" as const,
+      title: "", snippet: "Same text", editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), payload: { ...empty, body: "Same text" } };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
+    expect(readLocalEditorDraft("alice", contextKey)?.draftId).toBe(oldId);
+  });
+
   it("syncs the latest locally saved edit every 60 seconds with the same instance and incremented version", async () => {
     vi.useFakeTimers();
     const posts: Array<Record<string, unknown>> = [];
