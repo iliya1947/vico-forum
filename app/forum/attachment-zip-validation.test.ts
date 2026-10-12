@@ -120,6 +120,13 @@ describe("ZIP attachment structural validation", () => {
     secondLocalMismatch[secondCentral + 44] = 0;
     secondLocalMismatch[secondCentral + 45] = 0;
     expect(await valid(secondLocalMismatch, "zip")).toBe(false);
+
+    const overlappingData = zip.slice();
+    overlappingData[central + 20] = 0xff;
+    overlappingData[central + 21] = 0xff;
+    overlappingData[central + 22] = 0xff;
+    overlappingData[central + 23] = 0x7f;
+    expect(await valid(overlappingData, "zip")).toBe(false);
   });
 
   it("accepts a structurally consistent ZIP64 directory without an arbitrary classic-entry limit", async () => {

@@ -438,7 +438,8 @@ Vico Forum находится в ранней pre-release разработке.
   boundaries. Второй bounded subtask 2026-10-12 добавляет отдельный random-access ZIP
   finalizer без подключения к R2 store path. EOCD/ZIP64 EOCD определяют authoritative central
   directory; parser проверяет single-disk offsets/count/size, central records, optional directory
-  signature и связь first/required entries с local headers, не буферизуя весь архив. Для
+  signature, связь каждого central entry с local header и границу его compressed data до central
+  directory, не буферизуя весь архив. Для
   DOCX/XLSX/PPTX проверяются package metadata + соответствующий main part; для ODT/ODS —
   нормативный первый uncompressed `mimetype`, exact media type, `META-INF/manifest.xml` и
   document content/styles presence, а ODF entries ограничены STORE/DEFLATE. Storage read failures

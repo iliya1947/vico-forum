@@ -256,7 +256,10 @@ async function localHeaderMatches(
   const nameLength = u16(fixed, 26);
   const extraLength = u16(fixed, 28);
   const end = entry.localOffset + LOCAL_FILE_HEADER_BYTES + nameLength + extraLength;
-  if (end > directoryOffset || u16(fixed, 6) !== entry.flags || u16(fixed, 8) !== entry.method) {
+  const dataEnd = end + entry.compressedSize;
+  if (!Number.isSafeInteger(end) || !Number.isSafeInteger(dataEnd)
+    || dataEnd > directoryOffset
+    || u16(fixed, 6) !== entry.flags || u16(fixed, 8) !== entry.method) {
     return null;
   }
   const name = await readExact(source, entry.localOffset + LOCAL_FILE_HEADER_BYTES, nameLength);
