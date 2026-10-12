@@ -13,7 +13,7 @@ export type AttachmentDetection = "png" | "jpeg" | "gif" | "webp" | "pdf"
 export type AttachmentRejection = "empty" | "too-large" | "invalid-name"
   | "forbidden-extension" | "forbidden-mime" | "executable-signature"
   | "unsupported-extension" | "signature-mismatch" | "mime-mismatch"
-  | "binary-content" | "insufficient-evidence";
+  | "binary-content" | "insufficient-evidence" | "invalid-structure";
 
 export type AttachmentInspection =
   | { accepted: true; fileName: string; detected: AttachmentDetection;
