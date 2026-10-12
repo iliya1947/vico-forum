@@ -971,6 +971,37 @@ export const forumPostAttachments = pgTable(
   ],
 );
 
+export const forumAttachmentSecurityEvents = pgTable(
+  "forum_attachment_security_events",
+  {
+    id: text("id").primaryKey(),
+    uploadId: text("upload_id").notNull(),
+    uploadedByUserId: text("uploaded_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    fileName: text("file_name").notNull(),
+    declaredMime: text("declared_mime").notNull(),
+    detectedType: text("detected_type").notNull(),
+    reason: text("reason").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_attachment_security_events_upload_id_unique").on(table.uploadId),
+    index("forum_attachment_security_events_created_idx").on(table.createdAt, table.id),
+    check(
+      "forum_attachment_security_events_shape_check",
+      sql`${table.contextKey} <> ''
+        and ${table.draftId} <> ''
+        and ${table.detectedType} <> ''
+        and ${table.reason} <> ''
+        and ${table.byteSize} >= 0`,
+    ),
+  ],
+);
+
 export const forumHelpSignals = pgTable(
   "forum_help_signals",
   {
