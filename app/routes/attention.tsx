@@ -5,6 +5,8 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumAttentionQueueGroup, ForumAttentionQueueCase, ForumAttentionQueueCounts, HelpSignalKind } from "../../db/forum-repository";
 import { forumReaderForRequest } from "../forum/request-context";
+import { attachmentStoreForRequest } from "../forum/attachment-request-context";
+import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { forumMutationGuard, mutationFailure, requireForumPermission, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
 import { AttentionCenterView, type AttentionGroup, type AttentionMode } from "../forum/views";
 import { ForumRouteError } from "../forum/ui";
@@ -69,6 +71,23 @@ export async function loader({ request, params, context }: {
     ? pageNumber : 0;
 
   let queue: { cases: (Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string })[]; hasMore: boolean; page: number } | null = null;
+  let securityQueue: {
+    events: Array<{
+      id: string;
+      uploadId: string;
+      uploadedByUserId: string;
+      contextKey: string;
+      draftId: string;
+      fileName: string;
+      declaredMime: string;
+      detectedType: string;
+      reason: string;
+      byteSize: number;
+      createdAt: string;
+    }>;
+    hasMore: boolean;
+    page: number;
+  } | null = null;
   let counts: ForumAttentionQueueCounts | null = null;
   if (mode === "signals") {
     const kinds: HelpSignalKind[] = [
@@ -95,7 +114,25 @@ export async function loader({ request, params, context }: {
       throw error;
     }
   }
-  return { locale: params.locale ?? "en", mode, group, queue, counts, referenceTime: new Date().toISOString() };
+  if (mode === "security" && group === "attachments") {
+    try {
+      const page = await attachmentStoreForRequest(context).readSecurityAttachmentEvents(pageIndex);
+      securityQueue = {
+        ...page,
+        events: page.events.map((event) => ({
+          ...event,
+          createdAt: event.createdAt.toISOString(),
+        })),
+      };
+    } catch (error) {
+      if (error instanceof ForumAttachmentStorageUnavailableError) {
+        throw new Response("Unavailable", { status: 503 });
+      }
+      throw error;
+    }
+  }
+
+  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {
