@@ -252,6 +252,7 @@ export function restoreVisualDomSelection(
   const domRange = document.createRange();
   domRange.setStart(start.node, start.offset);
   domRange.setEnd(end.node, end.offset);
+  if (domRange.cloneContents().querySelector("[data-visual-protected]")) return false;
   const domSelection = window.getSelection();
   if (!domSelection
     || typeof domSelection.removeAllRanges !== "function"

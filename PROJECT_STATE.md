@@ -311,17 +311,18 @@ Vico Forum находится в ранней pre-release разработке.
   а Simple write-mode немедленно восстанавливает visual DOM selection. Переход из preview
   сохраняет существующий pending-selection lifecycle. Regression покрывает оба authoring
   mode без принудительного переключения режима.
-  Повторный поэтапный аудит Stage 2 (2026-10-11) выявил отдельный current-scope
-  defect protected-content boundary. Ручное выделение в Simple безопасно
-  отклоняется, если DOM Range пересекает data-visual-protected, однако
-  restoreVisualDomSelection() при восстановлении selection из Advanced/history
-  не проверяет защищённые блоки. Диапазон, начинающийся в обычном тексте до
-  fenced code и заканчивающийся в обычном тексте после него, может быть
-  восстановлен в Simple, помечен authoritative в visualSelectionRef и затем
-  использован toolbar-командой для source mutation вместе с защищённым блоком.
-  Это нарушает запрет прямого редактирования сложного Markdown в Simple.
-  Существующий regression покрывает только ручное Simple-selection через
-  protected content. Дефект зафиксирован, но не исправлен.
+  Повторный поэтапный аудит Stage 2 (2026-10-11) выявил current-scope
+  defect protected-content boundary: ручное Simple-selection безопасно отклонялось
+  при пересечении data-visual-protected, но restoreVisualDomSelection() мог
+  восстановить через protected block диапазон из Advanced/history и затем пометить
+  его authoritative для toolbar mutation. Исправлено 2026-10-12 на общей restore
+  boundary: восстановленный DOM Range проверяется на data-visual-protected тем же
+  fail-closed принципом, а неуспешное восстановление очищает pending selection и
+  явно фиксирует отсутствие authoritative visual selection. Поэтому toolbar не
+  получает fallback range и не может изменить fenced code/другой protected Markdown.
+  Тот же fail-closed helper используется direct imperative Simple focus path.
+  Regression воспроизводит Advanced → Simple selection через fenced code и проверяет,
+  что последующая Bold-команда не изменяет source.
   Повторный поэтапный аудит Stage 3 (2026-10-11) выявил три current-scope
   defects. Действие Edit in Markdown на protected code переключает только
   authoring mode и не переводит caret/scroll к source span выбранного code block.

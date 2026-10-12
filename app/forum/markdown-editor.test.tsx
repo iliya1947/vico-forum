@@ -523,6 +523,32 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveValue(source);
   });
 
+  it("fails closed when an Advanced selection restored into Simple crosses protected content", async () => {
+    const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor
+          defaultAuthoringMode="advanced"
+          id="body"
+          name="body"
+          defaultValue={source}
+        />
+      </>,
+    );
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(1, source.indexOf("After") + 2);
+
+    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
+    expect(document.querySelector('[data-visual-protected="code"]')).not.toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
+
+    expect(textarea).toHaveValue(source);
+  });
+
   it("edits a visual prose leaf while keeping code untouched and exact form data", () => {
     const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
     renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);

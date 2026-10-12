@@ -557,15 +557,25 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       pendingSelectionRef.current = null;
     }, [mode, value, authoringMode]);
 
+    function restoreVisualSelection(selection: EditorSelection) {
+      const editor = editorRef.current;
+      const restored = !!editor && restoreVisualDomSelection(editor, value, selection);
+      if (!restored) {
+        visualSelectionRef.current = null;
+        visualSelectionKnownRef.current = true;
+        return false;
+      }
+      visualSelectionRef.current = selection;
+      visualSelectionKnownRef.current = true;
+      historyRef.current = rememberEditorSelection(historyRef.current, selection);
+      return true;
+    }
+
     useLayoutEffect(() => {
       const pending = pendingVisualSelectionRef.current;
-      const editor = editorRef.current;
-      if (!pending || !editor || authoringMode !== "simple" || mode !== "write") return;
-      if (!restoreVisualDomSelection(editor, value, pending)) return;
+      if (!pending || authoringMode !== "simple" || mode !== "write") return;
       pendingVisualSelectionRef.current = null;
-      visualSelectionRef.current = pending;
-      visualSelectionKnownRef.current = true;
-      historyRef.current = rememberEditorSelection(historyRef.current, pending);
+      restoreVisualSelection(pending);
     }, [value, authoringMode, mode]);
 
     function replaceSelection(
@@ -683,12 +693,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const selection = sourceSelection() ?? historyRef.current.current.selection;
         if (authoringMode === "simple") {
           pendingVisualSelectionRef.current = selection;
-          visualSelectionRef.current = selection;
-          visualSelectionKnownRef.current = true;
-          if (mode === "write" && editorRef.current
-            && restoreVisualDomSelection(editorRef.current, value, selection)) {
+          if (mode === "write") {
             pendingVisualSelectionRef.current = null;
-            historyRef.current = rememberEditorSelection(historyRef.current, selection);
+            restoreVisualSelection(selection);
+          } else {
+            visualSelectionRef.current = null;
+            visualSelectionKnownRef.current = false;
           }
         } else {
           pendingSelectionRef.current = selection;
