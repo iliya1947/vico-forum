@@ -33,6 +33,8 @@ type Runtime = {
   reading: boolean;
   disposed: boolean;
   epoch: number;
+  serverCycle: Promise<void> | null;
+  publishing: boolean;
 };
 
 const blank = (): ForumEditorDraftPayload => ({ body: "", title: "", tags: "" });
@@ -94,6 +96,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     ctx.hasInput = false;
     ctx.syncing = false;
     ctx.reading = false;
+    ctx.publishing = false;
     ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
     ctx.conflict = null;
@@ -242,6 +245,55 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     }
   }
 
+  function runServerCycle(ctx: Runtime) {
+    if (!current(ctx) || ctx.publishing) return Promise.resolve();
+    if (ctx.serverCycle) return ctx.serverCycle;
+    const task = (async () => {
+      await sync(ctx);
+      await checkRemote(ctx);
+    })();
+    ctx.serverCycle = task;
+    void task.then(
+      () => { if (ctx.serverCycle === task) ctx.serverCycle = null; },
+      () => { if (ctx.serverCycle === task) ctx.serverCycle = null; },
+    );
+    return task;
+  }
+
+  async function preparePublication() {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || ctx.conflict) return null;
+    const epoch = ctx.epoch;
+    ctx.publishing = true;
+    const inFlight = ctx.serverCycle;
+    if (inFlight) {
+      try {
+        await inFlight;
+      } catch {
+        if (currentAt(ctx, epoch)) {
+          ctx.publishing = false;
+          setStatus(ctx.local ? "pending" : "idle");
+        }
+        return null;
+      }
+    }
+    if (!currentAt(ctx, epoch) || ctx.conflict) {
+      if (current(ctx)) ctx.publishing = false;
+      return null;
+    }
+    if (ctx.hasInput) capture(ctx);
+    const local = ctx.local;
+    return {
+      draftId: local?.draftId ?? ctx.draftId,
+      expectedVersion: local?.baseVersion ?? ctx.startVersion,
+    };
+  }
+
+  function releasePublication() {
+    const ctx = runtimeRef.current;
+    if (ctx && current(ctx)) ctx.publishing = false;
+  }
+
   function noteEdit(body: string, immediate = false) {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx)) return;
@@ -315,6 +367,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
       rejectedSyncEditedAt: null,
       syncing: false, reading: false, disposed: false, epoch: 0,
+      serverCycle: null, publishing: false,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
@@ -369,7 +422,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVisibility);
     const timer = window.setInterval(() => {
-      void sync(ctx).then(() => checkRemote(ctx));
+      void runServerCycle(ctx);
     }, 60_000);
     return () => {
       // Capture the old owner/context before discarding its runtime.
@@ -409,6 +462,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   );
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
+    preparePublication, releasePublication,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
