@@ -71,6 +71,7 @@ async function chooseView(view: "write" | "preview" | "split") {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -921,6 +922,121 @@ describe("MarkdownEditor", () => {
 
     const body = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
     expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe(body);
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("waits for its own in-flight autosave before publishing with the updated CAS fence", async () => {
+    vi.useFakeTimers();
+    const userId = "draft-publication-sync-user";
+    const contextKey = "section:publication-sync:new";
+    let resolveSave!: (response: Response) => void;
+    const pendingSave = new Promise<Response>((resolve) => { resolveSave = resolve; });
+    let sentSave: Record<string, unknown> | null = null;
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        sentSave = JSON.parse(String(options.body)) as Record<string, unknown>;
+        return pendingSave;
+      }
+      if (uri.includes("mode=metadata")) {
+        return new Response(JSON.stringify({ drafts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("Unexpected fetch");
+    }));
+
+    const submittedVersions: string[] = [];
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          submittedVersions.push(String(new FormData(event.currentTarget).get("editorDraftVersion")));
+        }}>
+          <input type="hidden" name="intent" value="createTopic" />
+          <label htmlFor="draft-publication-sync-body">Body</label>
+          <MarkdownEditor id="draft-publication-sync-body" name="body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en"
+            draftPublicationIntent="createTopic" />
+          <button type="submit">Publish test</button>
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Ready " } });
+    act(() => { vi.advanceTimersByTime(60_000); });
+    expect(sentSave).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish test" }));
+    expect(submittedVersions).toEqual([]);
+
+    await act(async () => {
+      const sent = sentSave!;
+      resolveSave(new Response(JSON.stringify({
+        outcome: "saved",
+        draft: {
+          contextKey,
+          draftId: sent.draftId,
+          version: 1,
+          status: "active",
+          payload: sent.payload,
+          editedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      }), { status: 200, headers: { "Content-Type": "application/json" } }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(submittedVersions).toEqual(["1"]);
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("does not start a new autosave after the publication fence has been submitted", async () => {
+    vi.useFakeTimers();
+    const userId = "draft-publication-pause-user";
+    const contextKey = "section:publication-pause:new";
+    const postRequests: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        postRequests.push(options.body);
+        throw new Error("Autosave must stay paused during publication");
+      }
+      if (uri.includes("mode=metadata")) {
+        return new Response(JSON.stringify({ drafts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("Unexpected fetch");
+    }));
+
+    const submittedVersions: string[] = [];
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          submittedVersions.push(String(new FormData(event.currentTarget).get("editorDraftVersion")));
+        }}>
+          <input type="hidden" name="intent" value="createTopic" />
+          <label htmlFor="draft-publication-pause-body">Body</label>
+          <MarkdownEditor id="draft-publication-pause-body" name="body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en"
+            draftPublicationIntent="createTopic" />
+          <button type="submit">Publish now</button>
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Ready " } });
+    fireEvent.click(screen.getByRole("button", { name: "Publish now" }));
+    expect(submittedVersions).toEqual(["0"]);
+
+    act(() => { vi.advanceTimersByTime(120_000); });
+    await act(async () => { await Promise.resolve(); });
+    expect(postRequests).toHaveLength(0);
     clearLocalEditorDraft(userId, contextKey);
   });
 

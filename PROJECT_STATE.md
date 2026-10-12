@@ -359,7 +359,13 @@ Vico Forum находится в ранней pre-release разработке.
   title/tags определяется фактическим input event этого поля, а не состоянием body.
   Space и paste сохраняют немедленно, focusout сохраняет накопленные правки;
   обычный ввод при пустом body больше не становится ложным immediate trigger.
-  Findings №3–5 намеренно оставлены без изменений.
+  Stage 4 finding №3 исправлен отдельно 2026-10-12 на границе publish↔draft sync:
+  runtime хранит Promise текущего 60s save и publication-pending fence. После начала
+  publish новые sync/read reconciliation не стартуют; уже in-flight save сначала
+  должен дать известный успешный CAS-result, после чего FormData получает актуальные
+  draft ID/version из runtime и только тогда отправляется. Conflict/ambiguous network
+  result не приводит к автоматической публикации. Server CAS и 60s cadence не
+  ослаблены и не изменены. Findings №4–5 намеренно оставлены без изменений.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
   Filename validation не классифицирует Unicode bidi/format controls как masking
