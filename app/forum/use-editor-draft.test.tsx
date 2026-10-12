@@ -20,6 +20,7 @@ void i18n.init({
     editorDraftOtherDevice: "Other device", editorDraftKeepLocal: "Keep local",
     editorDraftNoRemoteVersion: "This draft was published or deleted.",
     editorDraftKeepServer: "Keep server",
+    topicTitleLabel: "Topic title", topicTagsLabel: "Tags", replyToMessage: "Reply",
   } } },
 });
 
@@ -149,6 +150,50 @@ describe("editor draft lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Local code");
     expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(2);
+  });
+
+  it("shows non-body payload differences before choosing a draft conflict version", async () => {
+    writeLocalEditorDraft({
+      ownerId: "alice", contextKey, draftId: oldId,
+      editedAt: new Date().toISOString(),
+      baseVersion: 1, syncedEditedAt: null,
+      payload: {
+        ...empty,
+        title: "Local title",
+        tags: "local-tag",
+        body: "Same body",
+        parentPostId: "e7bdbd73-61d4-4b06-bc03-b24b1c217d50",
+      },
+    });
+    const other = {
+      contextKey, draftId: oldId, version: 2, status: "active" as const,
+      editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      title: "Remote title", snippet: "Same body",
+      payload: {
+        ...empty,
+        title: "Remote title",
+        tags: "remote-tag",
+        body: "Same body",
+        parentPostId: "e7bdbd73-61d4-4b06-bc03-b24b1c217d51",
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [other] });
+      if (uri.includes("mode=content")) return response({ draft: other });
+      throw new Error("Unexpected fetch");
+    }));
+
+    mount();
+    await flush();
+
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    expect(screen.getByText("Local title")).toBeInTheDocument();
+    expect(screen.getByText("Remote title")).toBeInTheDocument();
+    expect(screen.getByText("local-tag")).toBeInTheDocument();
+    expect(screen.getByText("remote-tag")).toBeInTheDocument();
+    expect(screen.getByText("e7bdbd73-61d4-4b06-bc03-b24b1c217d50")).toBeInTheDocument();
+    expect(screen.getByText("e7bdbd73-61d4-4b06-bc03-b24b1c217d51")).toBeInTheDocument();
+    expect(screen.getAllByText("Same body")).toHaveLength(2);
   });
 
   it("never picks an unfamiliar local generation against a server tombstone using timestamps", async () => {

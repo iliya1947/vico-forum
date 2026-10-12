@@ -368,6 +368,23 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     saving: t("editorDraftSaving"), restored: t("editorDraftRestored"),
     conflict: t("editorDraftConflict"), error: t("editorDraftLocalError"),
   };
+  const conflictRemotePayload = conflict && "payload" in conflict.server ? conflict.server.payload : null;
+  const conflictTitleLabel = contextKey === "help:new"
+    ? t("helpSolutionsQuestionTitleLabel")
+    : t("topicTitleLabel");
+  const renderConflictPayload = (
+    payload: ForumEditorDraftPayload,
+    other: ForumEditorDraftPayload,
+  ) => (
+    <>
+      {payload.title || other.title ? <p><strong>{conflictTitleLabel}:</strong> {payload.title || "—"}</p> : null}
+      {payload.tags || other.tags ? <p><strong>{t("topicTagsLabel")}:</strong> {payload.tags || "—"}</p> : null}
+      {payload.parentPostId || other.parentPostId
+        ? <p><strong>{t("replyToMessage")}:</strong> {payload.parentPostId || "—"}</p>
+        : null}
+      <pre>{payload.body}</pre>
+    </>
+  );
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
     element: ownerId && contextKey ? (
@@ -376,8 +393,18 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         {conflict ? <div className="markdown-editor-draft-conflict" role="group" aria-label={t("editorDraftConflict")}>
           <p>{t("editorDraftConflict")}</p>
           <div className="markdown-editor-draft-versions">
-            <section><strong>{t("editorDraftThisDevice")}</strong><pre>{conflict.local.payload.body}</pre></section>
-            <section><strong>{t("editorDraftOtherDevice")}</strong><pre>{"payload" in conflict.server ? conflict.server.payload.body : t("editorDraftNoRemoteVersion")}</pre></section>
+            <section>
+              <strong>{t("editorDraftThisDevice")}</strong>
+              {conflictRemotePayload
+                ? renderConflictPayload(conflict.local.payload, conflictRemotePayload)
+                : <pre>{conflict.local.payload.body}</pre>}
+            </section>
+            <section>
+              <strong>{t("editorDraftOtherDevice")}</strong>
+              {conflictRemotePayload
+                ? renderConflictPayload(conflictRemotePayload, conflict.local.payload)
+                : <pre>{t("editorDraftNoRemoteVersion")}</pre>}
+            </section>
           </div>
           <button type="button" onClick={() => chooseVersion("local")}>{t("editorDraftKeepLocal")}</button>
           <button type="button" onClick={() => chooseVersion("server")}>{t("editorDraftKeepServer")}</button>
