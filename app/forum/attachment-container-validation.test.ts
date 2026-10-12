@@ -237,6 +237,10 @@ describe("remaining archive/container structural validation", () => {
     putU32(badDirectory, 48, 9);
     expect(await validateOleStructure(source(badDirectory))).toBe(false);
 
+    const extraFat = cfb(3);
+    putU32(extraFat, 80, 1);
+    expect(await validateOleStructure(source(extraFat))).toBe(false);
+
     const brokenChain = cfb(3);
     putU32(brokenChain, 512 + 4, FREESECT);
     expect(await validateOleStructure(source(brokenChain))).toBe(false);

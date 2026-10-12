@@ -43,9 +43,10 @@ async function readExact(
   offset: number,
   length: number,
 ): Promise<Uint8Array | null> {
+  const end = offset + length;
   if (!Number.isSafeInteger(source.size) || !Number.isSafeInteger(offset)
-    || !Number.isSafeInteger(length) || source.size < 0 || offset < 0 || length < 0
-    || offset + length > source.size) return null;
+    || !Number.isSafeInteger(length) || !Number.isSafeInteger(end)
+    || source.size < 0 || offset < 0 || length < 0 || end > source.size) return null;
   const bytes = await source.read(offset, length);
   return bytes.byteLength === length ? bytes : null;
 }
@@ -79,11 +80,11 @@ async function crc32Range(
   offset: number,
   length: number,
 ): Promise<number | null> {
+  const end = offset + length;
   if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length)
-    || offset < 0 || length < 0 || offset + length > source.size) return null;
+    || !Number.isSafeInteger(end) || offset < 0 || length < 0 || end > source.size) return null;
   const crc = new Crc32();
   let cursor = offset;
-  const end = offset + length;
   while (cursor < end) {
     const count = Math.min(READ_CHUNK_BYTES, end - cursor);
     const bytes = await readExact(source, cursor, count);
@@ -124,10 +125,10 @@ async function updateCrcRange(
   offset: number,
   length: number,
 ): Promise<boolean> {
-  if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length)
-    || offset < 0 || length < 0 || offset + length > source.size) return false;
-  let cursor = offset;
   const end = offset + length;
+  if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length)
+    || !Number.isSafeInteger(end) || offset < 0 || length < 0 || end > source.size) return false;
+  let cursor = offset;
   while (cursor < end) {
     const count = Math.min(READ_CHUNK_BYTES, end - cursor);
     const bytes = await readExact(source, cursor, count);
@@ -343,11 +344,13 @@ export async function validateOleStructure(
     return true;
   };
 
-  for (let index = 0; index < 109 && fatSectors.length < fatCount; index += 1) {
+  for (let index = 0; index < 109; index += 1) {
     const sector = u32(header, 76 + index * 4);
     if (sector === FREESECT) continue;
-    if (!addFat(sector)) return false;
+    if (fatSectors.length >= fatCount || !addFat(sector)) return false;
   }
+  if ((fatCount <= 109 && difatCount !== 0) || (fatCount > 109 && difatCount === 0)
+    || difatCount > totalSectors) return false;
 
   const difatSectors: number[] = [];
   const difatSet = new Set<number>();
@@ -360,10 +363,10 @@ export async function validateOleStructure(
     difatSectors.push(difat);
     const sector = await readExact(source, sectorOffset(difat, sectorSize), sectorSize);
     if (!sector) return false;
-    for (let at = 0; at < difatEntries && fatSectors.length < fatCount; at += 1) {
+    for (let at = 0; at < difatEntries; at += 1) {
       const fat = u32(sector, at * 4);
       if (fat === FREESECT) continue;
-      if (!addFat(fat)) return false;
+      if (fatSectors.length >= fatCount || !addFat(fat)) return false;
     }
     difat = u32(sector, difatEntries * 4);
   }
