@@ -1438,7 +1438,7 @@ type SecurityAttachmentEventPresentation = {
   declaredMime: string;
   detectedType: string;
   reason: string;
-  byteSize: number;
+  declaredByteSize: number;
   createdAt: string;
 };
 type SecurityAttachmentQueuePresentation = {
@@ -1597,7 +1597,7 @@ function SecurityAttachmentEventCard({ event, locale }: {
         <span>{t("attentionSecurityAttachmentReason")}: <code>{event.reason}</code></span>
         <span>{t("attentionSecurityAttachmentDeclaredType")}: <code>{event.declaredMime || "—"}</code></span>
         <span>{t("attentionSecurityAttachmentDetectedType")}: <code>{event.detectedType}</code></span>
-        <span>{t("attentionSecurityAttachmentSize")}: {event.byteSize} B</span>
+        <span>{t("attentionSecurityAttachmentSize")}: {event.declaredByteSize} B</span>
         <span>{t("attentionSecurityAttachmentUploadId")}: <code>{event.uploadId}</code></span>
         <span>{t("attentionSecurityAttachmentUploaderId")}: <code>{event.uploadedByUserId}</code></span>
         <span>{t("attentionSecurityAttachmentContext")}: <code>{safeSecurityText(event.contextKey)}</code></span>
