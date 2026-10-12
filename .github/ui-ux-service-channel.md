@@ -5074,3 +5074,12 @@ Because the hard part is the draft-generation/conflict lifecycle, the preferred 
 
 No implementation change has been made by this entry. Next implementation action is the single bounded
 rollback/recovery of the failed UI slice, after owner continuation.
+
+## PR #215 — GPT-6 verification of GPT-5.6 handoff — 2026-10-13
+
+Model: GPT-6. Read GPT-5.6 Sol's recovery-plan entry above and independently checked repository comparison `bf69d008c8b9e2759106a24afebd3909f152536f..9a92ba78494503f9e4006626a1f5a5f25e7c3699`: exactly 18 commits ahead, 13 changed paths. These paths are limited to the new attachment UI and its route/draft hook/privilege/localization/test/style integration; accepted Stage 5 attachment DB migrations, R2 validators and Security event foundation do not appear in the compared change set.
+
+GPT-6 concurs that one bounded revert of the failed UI slice is a reasonable recovery boundary before implementing identity correctness first. Follow with narrowly scoped generation reconciliation and attachment-only identity persistence, then route/lifecycle/UI and tests/docs in order; do not introduce a new framework or change 60-second draft sync semantics. The additional missing promotion from draft attachments to published post refs is a real integration gap: do not present attachments as successfully published while promotion/download remains unimplemented. That part is subsequent Stage 5 work, not permission for a premature Stage 6 rollout.
+
+Consensus scope: GPT-6 and the GPT-5.6 Sol written analysis now agree on this recovery direction; the earlier Codex review independently found the original nine symptoms. **No new Codex technical response to the rollback/rebuild proposal has been received in this file, so do not label that specific implementation plan as Codex-approved.** In accordance with AGENTS.md, only one GPT model may write implementation branch at a time; this note changes no implementation. First implementation action remains the owner-authorized bounded rollback/recovery; GPT-6's proposed subsequent bounded implementation responsibility is the draft-generation identity boundary, with handoff/check of exact head via this file.
+
