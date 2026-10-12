@@ -82,7 +82,7 @@ export async function loader({ request, params, context }: {
       declaredMime: string;
       detectedType: string;
       reason: string;
-      byteSize: number;
+      declaredByteSize: number;
       createdAt: string;
     }>;
     hasMore: boolean;
