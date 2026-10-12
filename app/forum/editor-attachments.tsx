@@ -294,7 +294,9 @@ export function useEditorAttachments({ contextKey, draftId, disabled }: Props) {
   }
 
   function handlePaste(event: ClipboardEvent<HTMLElement>) {
-    const files = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith("image/"));
+    const clipboardFiles = event.clipboardData?.files;
+    if (!clipboardFiles) return;
+    const files = Array.from(clipboardFiles).filter((file) => file.type.startsWith("image/"));
     if (files.length === 0) return;
     event.preventDefault();
     if (!disabled) addFiles(files);
