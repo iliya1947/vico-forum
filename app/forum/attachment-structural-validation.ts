@@ -68,7 +68,7 @@ abstract class HeadTailStructuralValidator implements AttachmentStructuralValida
     this.onChunk(chunk);
   }
 
-  protected onChunk(_chunk: Uint8Array): void {}
+  protected onChunk(chunk: Uint8Array): void { void chunk; }
 
   protected exactLength(): boolean {
     return Number.isSafeInteger(this.expectedSize)
