@@ -309,7 +309,10 @@ class PdfStructuralValidator extends HeadTailStructuralValidator {
     if (!this.exactLength() || !asciiAt(this.head, 0, "%PDF-")) return false;
     const tailText = String.fromCharCode(...this.tail);
     const eof = tailText.lastIndexOf("%%EOF");
-    if (eof < 0 || !/^[\x00\t\n\f\r ]*$/u.test(tailText.slice(eof + 5))) return false;
+    if (eof < 0) return false;
+    const trailing = tailText.slice(eof + 5);
+    if ([...trailing].some((character) =>
+      ![0, 9, 10, 12, 13, 32].includes(character.charCodeAt(0)))) return false;
     const beforeEof = tailText.slice(0, eof);
     const matches = [...beforeEof.matchAll(/startxref\s+(\d+)/gu)];
     const latest = matches.at(-1);
