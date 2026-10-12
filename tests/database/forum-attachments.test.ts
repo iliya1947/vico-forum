@@ -24,6 +24,7 @@ const migrations = [
   "0029_help_question_needs_details", "0030_help_duplicate_workflow",
   "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
   "0034_forum_editor_drafts", "0035_forum_attachments_foundation",
+  "0036_forum_attachment_security_events",
 ];
 
 const ownerId = "attachment-owner";
@@ -128,6 +129,35 @@ describe("forum attachment lifecycle foundation", () => {
       "insert into forum_attachment_draft_refs (attachment_id, owner_id, context_key, draft_id, created_at) values ($1, $2, $3, $4, now())",
       [attachmentId, otherId, contextKey, "c526541e-a1ff-4b80-bcbf-6b20ec30ce74"],
     )).rejects.toMatchObject({ code: "23503" } satisfies Partial<DatabaseError>);
+  });
+
+  it("durably records one security event per upload even without an attachment row", async () => {
+    const uploadId = "137b6246-8d59-4f20-a8dc-6fd3d54f0e86";
+    const event = {
+      uploadId,
+      uploadedByUserId: ownerId,
+      contextKey,
+      draftId,
+      fileName: "masked\\u202Etxt.exe",
+      declaredMime: "text/plain",
+      detectedType: "executable",
+      reason: "executable-signature",
+      byteSize: 4,
+    };
+    await store.recordSecurityEvent(event);
+    await store.recordSecurityEvent(event);
+
+    const events = await store.readSecurityAttachmentEvents(0);
+    expect(events.events).toHaveLength(1);
+    expect(events.hasMore).toBe(false);
+    expect(events.events[0]).toMatchObject(event);
+    expect(events.events[0]?.id).toMatch(/^[0-9a-f-]{36}$/u);
+
+    const attachment = await client.query(
+      "select id from forum_attachments where id = $1",
+      [uploadId],
+    );
+    expect(attachment.rowCount).toBe(0);
   });
 
   it("allows draft and published references to coexist and protects shared assets from deletion", async () => {
