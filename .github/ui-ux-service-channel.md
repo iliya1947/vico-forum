@@ -4561,3 +4561,32 @@ Repeated-audit Stage 3 findings №1–3 are now closed. The complex Stage 5 str
 finding remains deferred for a dedicated technical/Codex pass. Do not proceed to another
 bounded defect until the owner explicitly continues.
 
+## PR #215: Stage 5 finding №4 — independent Codex technical analysis request — 2026-10-12
+
+Implementation PR: #215, current head `e291953c3540532f1095517f997b0c6c8168770d`.
+
+Please independently inspect the current implementation, `main`, `AGENTS.md`,
+`PROJECT_STATE.md`, `EDITOR_SPEC.md`, and the relevant attachment-validation/R2 code.
+
+Analyze Stage 5 finding №4 without assuming ChatGPT's prior diagnosis or proposed boundary.
+Do not implement anything.
+
+Return a technical conclusion covering only:
+
+1. Whether the observed binary/ZIP structural-validation behavior is a real defect of the
+   already implemented current Stage 5 slice or only future-scope groundwork.
+2. If it is current-scope, the verified causal chain and root cause.
+3. The smallest technically correct fix boundary. State explicitly whether the existing
+   inputs available to the validation path are sufficient or whether more file data/state
+   is intrinsically required.
+4. Whether that fix can remain bounded to the current Editor 2.0 attachment-verification
+   slice without pulling in future HTTP upload, attachment DB lifecycle, download UI,
+   Security event ingestion, antivirus, orphan cleanup, real R2 provisioning, or Stage 6.
+5. Focused tests and readiness criteria needed before ChatGPT implements the fix.
+6. Any technically valid alternative designs, if more than one exists, and the tradeoff
+   that requires an owner decision. If no owner decision is needed, say so.
+
+Do not edit implementation PR #215, project code, migrations, project documentation, or
+configuration. You may record the analysis only in this shared communication file and/or
+reply in PR #147.
+
