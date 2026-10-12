@@ -1428,12 +1428,31 @@ type AttentionQueuePresentation = {
   hasMore: boolean;
   page: number;
 };
+type SecurityAttachmentEventPresentation = {
+  id: string;
+  uploadId: string;
+  uploadedByUserId: string;
+  contextKey: string;
+  draftId: string;
+  fileName: string;
+  declaredMime: string;
+  detectedType: string;
+  reason: string;
+  byteSize: number;
+  createdAt: string;
+};
+type SecurityAttachmentQueuePresentation = {
+  events: SecurityAttachmentEventPresentation[];
+  hasMore: boolean;
+  page: number;
+};
 
-export function AttentionCenterView({ locale, mode, group, queue, counts, actionData, isPreview = false }: {
+export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
   queue: AttentionQueuePresentation | null;
+  securityQueue?: SecurityAttachmentQueuePresentation | null;
   counts?: ForumAttentionQueueCounts | null;
   referenceTime?: string;
   actionData?: ForumMutationError;
@@ -1501,7 +1520,17 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
                 ? "attentionCaseNoLongerPending" : "attentionCaseActionFailed")}
             </p>
           ) : null}
-          {mode !== "signals" ? (
+          {mode === "security" && group === "attachments" ? (
+            !securityQueue || securityQueue.events.length === 0 ? (
+              <EmptyState>{t("attentionSecurityAttachmentsEmpty")}</EmptyState>
+            ) : (
+              <ul className="attention-case-list">
+                {securityQueue.events.map(event => <li key={event.id}>
+                  <SecurityAttachmentEventCard event={event} locale={locale} />
+                </li>)}
+              </ul>
+            )
+          ) : mode !== "signals" ? (
             <EmptyState>{t("attentionPlaceholderEmpty")}</EmptyState>
           ) : cases.length === 0 ? (
             <EmptyState>{t("helpSolutionsNeedsAttentionEmpty")}</EmptyState>
@@ -1518,10 +1547,63 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
               <span>{queue.page + 1}</span>
               {queue.hasMore ? <Link to={pathFor(mode, group, queue.page + 1)}>{t("attentionCaseNext")}</Link> : null}
             </nav>
+          ) : mode === "security" && group === "attachments" && securityQueue
+            && (securityQueue.page > 0 || securityQueue.hasMore) ? (
+            <nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>
+              {securityQueue.page > 0
+                ? <Link to={pathFor(mode, group, securityQueue.page - 1)}>{t("attentionCasePrevious")}</Link>
+                : null}
+              <span>{securityQueue.page + 1}</span>
+              {securityQueue.hasMore
+                ? <Link to={pathFor(mode, group, securityQueue.page + 1)}>{t("attentionCaseNext")}</Link>
+                : null}
+            </nav>
           ) : null}
         </section>
       </div>
     </ForumShell>
+  );
+}
+
+function safeSecurityText(value: string): string {
+  return [...value].map((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint < 32 || codePoint === 127 || /\p{Cf}/u.test(character)
+      ? `\\u{${codePoint.toString(16).toUpperCase()}}`
+      : character;
+  }).join("");
+}
+
+function SecurityAttachmentEventCard({ event, locale }: {
+  event: SecurityAttachmentEventPresentation;
+  locale: string;
+}) {
+  const { t } = useTranslation("common");
+  const dateLabel = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+  }).format(new Date(event.createdAt));
+  return (
+    <article className="attention-case attention-security-attachment-event">
+      <div className="attention-case-heading">
+        <span className="attention-case-kind">{t("attentionSecurityAttachmentEvent")}</span>
+        <span className="attention-case-id">#{event.id}</span>
+        <time dateTime={event.createdAt}>{dateLabel} UTC</time>
+      </div>
+      <div className="attention-case-explanation">
+        <strong>{t("attentionSecurityAttachmentFile")}</strong>
+        <p><bdi dir="auto">{safeSecurityText(event.fileName)}</bdi></p>
+      </div>
+      <div className="attention-case-metadata">
+        <span>{t("attentionSecurityAttachmentReason")}: <code>{event.reason}</code></span>
+        <span>{t("attentionSecurityAttachmentDeclaredType")}: <code>{event.declaredMime || "—"}</code></span>
+        <span>{t("attentionSecurityAttachmentDetectedType")}: <code>{event.detectedType}</code></span>
+        <span>{t("attentionSecurityAttachmentSize")}: {event.byteSize} B</span>
+        <span>{t("attentionSecurityAttachmentUploadId")}: <code>{event.uploadId}</code></span>
+        <span>{t("attentionSecurityAttachmentUploaderId")}: <code>{event.uploadedByUserId}</code></span>
+        <span>{t("attentionSecurityAttachmentContext")}: <code>{safeSecurityText(event.contextKey)}</code></span>
+        <span>{t("attentionSecurityAttachmentDraft")}: <code>{event.draftId}</code></span>
+      </div>
+    </article>
   );
 }
 
