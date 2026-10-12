@@ -1,9 +1,8 @@
 import { type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
-import { authorizationForRequest } from "../authorization/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
+import { authorizeEditorDraftWrite } from "../forum/editor-draft-permission.server";
 import { draftStoreForRequest } from "../forum/draft-request-context";
-import { parseEditorDraftContextKey } from "../../db/editor-draft-context";
 import {
   ForumEditorDraftContextNotFoundError,
   InvalidForumEditorDraftError,
@@ -11,7 +10,6 @@ import {
   validEditorDraftPayload,
 } from "../../db/forum-editor-drafts";
 import { ForumDraftStorageUnavailableError } from "../../db/hyperdrive-editor-drafts";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 const json = (payload: unknown, status = 200) => Response.json(payload, {
   status,
@@ -27,33 +25,6 @@ async function readJsonObject(request: Request): Promise<Record<string, unknown>
     throw new SyntaxError("request body must be an object");
   }
   return parsed as Record<string, unknown>;
-}
-
-async function draftWritePermission(
-  context: RouterContextProvider,
-  userId: string,
-  contextKey: string,
-): Promise<Response | null> {
-  const draftContext = parseEditorDraftContextKey(contextKey);
-  if (!draftContext) return json({ error: "invalid" }, 400);
-
-  // Published-post editing is not a current runtime capability yet.
-  if (draftContext.kind === "post") return json({ error: "invalid" }, 400);
-
-  const permission = draftContext.kind === "topic"
-    ? "forum.reply.create"
-    : "forum.topic.create";
-  try {
-    if (!(await authorizationForRequest(context).forUser(userId).has(permission))) {
-      return json({ error: "forbidden" }, 403);
-    }
-    return null;
-  } catch (error) {
-    if (error instanceof AuthorizationUnavailableError) {
-      return json({ error: "unavailable" }, 503);
-    }
-    throw error;
-  }
 }
 
 function draftStorageFailure(error: unknown): Response | null {
@@ -159,8 +130,10 @@ export async function action({
       return json({ error: "invalid" }, 400);
     }
 
-    const permissionFailure = await draftWritePermission(context, session.user.id, key);
-    if (permissionFailure) return permissionFailure;
+    const authorization = await authorizeEditorDraftWrite(context, session.user.id, key);
+    if (authorization.outcome !== "allowed") {
+      return json({ error: authorization.outcome }, authorization.status);
+    }
 
     const result = await store.save(
       session.user.id,
