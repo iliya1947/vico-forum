@@ -158,6 +158,28 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByTestId("attachment-reservation")).toHaveTextContent("none");
   });
 
+  it("retains attachment provenance when a clean local draft refreshes text in the same generation", async () => {
+    const editedAt = new Date().toISOString();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
+      attachmentDraftId: oldId, editedAt, baseVersion: 1,
+      syncedEditedAt: editedAt, payload: { ...empty, body: "Old text" } });
+    const remote = { contextKey, draftId: oldId, version: 2, status: "active" as const,
+      title: "", snippet: "New text", editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), payload: { ...empty, body: "New text" } };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("New text");
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBe(oldId);
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
+    fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
+    expect(screen.getByTestId("attachment-reservation")).toHaveTextContent(oldId);
+  });
+
   it("does not overwrite attachment provenance when a clean local text copy refreshes from another device", async () => {
     const editedAt = new Date().toISOString();
     writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId,
