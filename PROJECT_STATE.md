@@ -382,7 +382,18 @@ Vico Forum находится в ранней pre-release разработке.
   использует обычный FormData path в том же Worker boundary. Client отдельно различает
   постоянный 4xx mutation rejection от временной unavailable/network ошибки: один и тот
   же отклонённый local snapshot не отправляется каждые 60 секунд, но следующая локальная
-  версия получает новую попытку. Finding №3 намеренно оставлен без изменений.
+  версия получает новую попытку.
+  Stage 4 finding №3 исправлен отдельно 2026-10-12 без ослабления server CAS:
+  publication boundary блокирует запуск нового 60-секундного autosave, дожидается
+  уже начатого server sync/reconciliation cycle и только после него повторяет
+  публикацию с фактическими актуальными draft ID/version. Блокировка сохраняется
+  на время publication request и снимается после завершения неуспешной same-page
+  попытки; успешная навигация/ack завершает runtime обычным lifecycle. Поэтому
+  собственный autosave больше не может сделать FormData fence устаревшим между
+  submit и publication transaction, а реальный concurrent device/tab change
+  по-прежнему остаётся защищён exact server CAS/conflict. Добавлен regression,
+  который запускает submit во время незавершённого 60-секундного save, проверяет
+  ожидание версии N+1 и отсутствие следующего autosave до завершения publication.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
   Filename validation не классифицирует Unicode bidi/format controls как masking
