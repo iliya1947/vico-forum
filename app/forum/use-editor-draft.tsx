@@ -183,16 +183,16 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         if (applyRemote(ctx, remote)) setAttachmentVerified(ctx, true);
         return;
       }
+      // Preserve attachment provenance even when the text copy is already clean.
+      if (latest.attachmentDraftId && latest.attachmentDraftId !== remote.draftId) {
+        updateConflict(ctx, { local: latest, server: remote });
+        return;
+      }
       if (latest.draftId === remote.draftId && latest.editedAt === latest.syncedEditedAt) {
         if (applyRemote(ctx, remote)) setAttachmentVerified(ctx, true);
         return;
       }
       if (JSON.stringify(latest.payload) === JSON.stringify(remote.payload)) {
-        // Equal text does not prove equal attachment generations.
-        if (latest.attachmentDraftId && latest.attachmentDraftId !== remote.draftId) {
-          updateConflict(ctx, { local: latest, server: remote });
-          return;
-        }
         const next = { ...latest, draftId: remote.draftId, baseVersion: remote.version,
           syncedEditedAt: latest.editedAt };
         if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
