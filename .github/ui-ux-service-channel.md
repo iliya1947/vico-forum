@@ -4520,3 +4520,44 @@ The remaining non-deferred repeated-audit defect is Stage 3 finding №1:
 "Edit in Markdown" does not position the Advanced editor at the selected protected code block.
 The complex Stage 5 structural-validation finding remains deferred for a dedicated Codex pass.
 
+## PR #215: Stage 3 finding №1 — protected code opens at exact Markdown span — 2026-10-12
+
+Owner continuation authorized the remaining non-deferred repeated-audit Stage 3 defect:
+"Edit in Markdown" on protected fenced code switched authoring mode but restored the
+previous selection instead of the selected code block.
+
+Root cause was local. The protected code renderer already had an exact AST source range,
+but `onEditTechnical()` accepted no target range, so `switchAuthoring("advanced")`
+fell back to the previous visual/history selection. The editor already had a correct
+`pendingSelectionRef -> Advanced textarea focus/selection` lifecycle; no new scrolling
+state or workaround was required.
+
+Bounded fix:
+- `onEditTechnical` can carry an optional `EditorSelection`;
+- fenced code passes its exact source span, adjusted by the current visual source base;
+- `switchAuthoring` accepts that optional target and otherwise preserves existing behavior;
+- other protected controls still call the same callback without a target and therefore keep
+  their previous semantics;
+- regression with two fenced-code blocks clicks "Edit in Markdown" on the second block and
+  verifies the Advanced textarea is focused with exactly that second Markdown block selected.
+
+The first implementation commit exposed a TypeScript callback-shape error on unrelated
+target-less protected buttons because a callback with an optional argument was passed directly
+as a React mouse handler. This was corrected at the call sites with explicit zero-argument
+lambdas; no behavioral change was made.
+
+Final implementation head:
+`e291953c3540532f1095517f997b0c6c8168770d`.
+
+CI #38276771715:
+- `checks`: green;
+- first `database` attempt failed only in the existing
+  `serializes concurrent desired-state writes and preserves a valid graph` locale test with
+  PostgreSQL serialization failure `40001`;
+- the same failed database job was re-run on the exact same head, with no code changes, and
+  completed green.
+
+Repeated-audit Stage 3 findings №1–3 are now closed. The complex Stage 5 structural-validation
+finding remains deferred for a dedicated technical/Codex pass. Do not proceed to another
+bounded defect until the owner explicitly continues.
+
