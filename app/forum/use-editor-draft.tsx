@@ -11,7 +11,7 @@ interface Props {
   ownerId: string | null;
   contextKey: string | undefined;
   locale: string | undefined;
-  readPayload(body: string): ForumEditorDraftPayload;
+  initialPayload: ForumEditorDraftPayload;
   restore(payload: ForumEditorDraftPayload): void;
 }
 type Status = "idle" | "saved" | "pending" | "saving" | "restored" | "conflict" | "error";
@@ -23,7 +23,7 @@ type Runtime = {
   locale: string;
   draftId: string;
   local: LocalEditorDraft | null;
-  body: string;
+  payload: ForumEditorDraftPayload;
   hasInput: boolean;
   startVersion: number;
   conflict: Conflict | null;
@@ -31,20 +31,19 @@ type Runtime = {
   reading: boolean;
   disposed: boolean;
   epoch: number;
-  readPayload(body: string): ForumEditorDraftPayload;
 };
 
-const blank: ForumEditorDraftPayload = { body: "", title: "", tags: "" };
+const blank = (): ForumEditorDraftPayload => ({ body: "", title: "", tags: "" });
 
-export function useEditorDraft({ ownerId, contextKey, locale, readPayload, restore }: Props) {
+export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, restore }: Props) {
   const { t } = useTranslation("common");
   const [status, setStatus] = useState<Status>("idle");
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const [expectedVersion, setExpectedVersion] = useState(0);
   const runtimeRef = useRef<Runtime | null>(null);
-  const callbacksRef = useRef({ readPayload, restore });
-  callbacksRef.current = { readPayload, restore };
+  const callbacksRef = useRef({ restore });
+  callbacksRef.current = { restore };
   const identity = ownerId && contextKey && locale ? JSON.stringify([ownerId, contextKey, locale]) : null;
   const identityRef = useRef(identity);
   identityRef.current = identity;
@@ -63,14 +62,14 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   }
   function capture(ctx: Runtime, final = false) {
     if (final ? ctx.disposed : !current(ctx)) return;
-    const payload = (final ? ctx.readPayload : callbacksRef.current.readPayload)(ctx.body);
+    const payload = ctx.payload;
     const previous = ctx.local;
     if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()) return;
     if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) { ctx.hasInput = false; return; }
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey,
       draftId: previous?.draftId ?? ctx.draftId,
-      payload, editedAt: new Date().toISOString(),
+      payload: { ...payload }, editedAt: new Date().toISOString(),
       baseVersion: previous?.baseVersion ?? ctx.startVersion,
       syncedEditedAt: previous?.syncedEditedAt ?? null,
     };
@@ -89,14 +88,14 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     ctx.epoch++;
     clearLocalEditorDraft(ctx.ownerId, ctx.contextKey);
     ctx.local = null;
-    ctx.body = "";
+    ctx.payload = blank();
     ctx.hasInput = false;
     ctx.syncing = false;
     ctx.reading = false;
     ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
     ctx.conflict = null;
-    callbacksRef.current.restore(blank);
+    callbacksRef.current.restore(blank());
     setDraftId(ctx.draftId);
     setExpectedVersion(startVersion);
     setConflict(null);
@@ -113,7 +112,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
     ctx.local = next;
     ctx.draftId = remote.draftId;
-    ctx.body = remote.payload.body;
+    ctx.payload = { ...remote.payload };
     ctx.hasInput = false;
     setDraftId(remote.draftId);
     setExpectedVersion(remote.version);
@@ -227,9 +226,23 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
   function noteEdit(body: string, immediate = false) {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx)) return;
-    ctx.body = body;
+    ctx.payload = { ...ctx.payload, body };
     ctx.hasInput = true;
     if (immediate || /\s$/u.test(body) || body.length === 0) capture(ctx);
+  }
+  function noteFields(patch: Partial<Omit<ForumEditorDraftPayload, "body">>, immediate = false) {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx)) return;
+    ctx.payload = { ...ctx.payload, ...patch };
+    ctx.hasInput = true;
+    // Preserve the existing save-trigger behavior for now; its separate audit finding
+    // is intentionally not changed in this root-cause fix.
+    if (immediate || /\s$/u.test(ctx.payload.body) || ctx.payload.body.length === 0) capture(ctx);
+  }
+  function seedFields(patch: Partial<Omit<ForumEditorDraftPayload, "body">>) {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || ctx.local || ctx.hasInput) return;
+    ctx.payload = { ...ctx.payload, ...patch };
   }
   function saveLocal() {
     const ctx = runtimeRef.current;
@@ -249,7 +262,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
         draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : local.draftId };
       ctx.local = next;
       ctx.draftId = next.draftId;
-      ctx.body = next.payload.body;
+      ctx.payload = { ...next.payload };
       ctx.hasInput = false;
       writeLocalEditorDraft(next);
       setDraftId(next.draftId);
@@ -281,9 +294,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     }
     const ctx: Runtime = {
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
-      local: null, body: "", hasInput: false, startVersion: 0, conflict: null,
+      local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
       syncing: false, reading: false, disposed: false, epoch: 0,
-      readPayload: callbacksRef.current.readPayload,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
@@ -294,7 +306,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     if (local) {
       ctx.local = local;
       ctx.draftId = local.draftId;
-      ctx.body = local.payload.body;
+      ctx.payload = { ...local.payload };
       setDraftId(local.draftId);
       setExpectedVersion(local.baseVersion);
       callbacksRef.current.restore(local.payload);
@@ -315,7 +327,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
       if (ctx.hasInput) capture(ctx);
       if (!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt) {
         ctx.local = other;
-        ctx.body = other.payload.body;
+        ctx.payload = { ...other.payload };
         ctx.draftId = other.draftId;
         ctx.hasInput = false;
         callbacksRef.current.restore(other.payload);
@@ -359,7 +371,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, readPayload, resto
     conflict: t("editorDraftConflict"), error: t("editorDraftLocalError"),
   };
   return {
-    noteEdit, saveLocal, draftId, expectedVersion, acknowledgePublished,
+    noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>

@@ -2184,6 +2184,7 @@ export function TopicView({
   }
 
   function targetReply(postId: string) {
+    replyEditorRef.current?.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     focusReplyForm();
@@ -2208,6 +2209,7 @@ export function TopicView({
       return;
     }
 
+    replyEditorRef.current?.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     const quote = selectedText
@@ -2740,6 +2742,7 @@ export function TopicView({
                 <button
                   type="button"
                   onClick={() => {
+                    replyEditorRef.current?.setDraftParentPostId(null);
                     setReplyTargetPostId(null);
                     setQuoteSelectionErrorPostId(null);
                     replyEditorRef.current?.focus();

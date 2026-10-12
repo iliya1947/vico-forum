@@ -351,6 +351,11 @@ Vico Forum находится в ранней pre-release разработке.
   pre-release фазе не классифицирован как defect: просроченный payload не
   возвращается при следующем обращении, а глобальный physical retention cleanup
   относится к будущему release/operational path. Код Stage 4 не исправлялся.
+  Stage 4 finding №1 исправлен отдельно 2026-10-12 на уровне первопричины:
+  owner/context draft runtime authoritative хранит полный payload
+  (body/title/tags/parentPostId), final cleanup больше не перечитывает live DOM,
+  а Reply/Quote фиксируют parent в draft boundary до same-event insertion.
+  Findings №2–5 этого повторного аудита намеренно оставлены без изменений.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
   Filename validation не классифицирует Unicode bidi/format controls как masking

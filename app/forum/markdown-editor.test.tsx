@@ -924,6 +924,62 @@ describe("MarkdownEditor", () => {
     clearLocalEditorDraft(userId, contextKey);
   });
 
+  it("keeps non-body draft fields authoritative across a context cleanup", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-payload-context-user";
+    const firstContext = "section:first:new";
+    const secondContext = "section:second:new";
+    const form = (contextKey: string) => (
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-payload-title">Title</label>
+          <input id="draft-payload-title" name="title" />
+          <label htmlFor="draft-payload-body">Body</label>
+          <MarkdownEditor id="draft-payload-body" name="body" defaultValue="Body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>
+    );
+    const rendered = renderEditor(form(firstContext));
+
+    fireEvent.input(screen.getByLabelText("Title"), {
+      target: { value: "First title" }, inputType: "insertText", data: "e",
+    });
+    rendered.rerender(form(secondContext));
+
+    expect(readLocalEditorDraft(userId, firstContext)?.payload).toMatchObject({
+      title: "First title", body: "Body",
+    });
+    clearLocalEditorDraft(userId, firstContext);
+    clearLocalEditorDraft(userId, secondContext);
+  });
+
+  it("records the Reply parent before same-event text insertion", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-parent-authoritative-user";
+    const contextKey = "topic:parent:reply";
+    const parentPostId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d50";
+    const ref = createRef<MarkdownEditorHandle>();
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-parent-body">Body</label>
+          <MarkdownEditor ref={ref} id="draft-parent-body" name="body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    act(() => {
+      ref.current?.setDraftParentPostId(parentPostId);
+      ref.current?.insertText("> quoted\n\n");
+    });
+    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
+      body: "> quoted\n\n", parentPostId,
+    });
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
   it("captures toolbar formatting after focusout instead of saving only the pre-command body", async () => {
     stubEmptyDraftMetadata();
     const userId = "draft-trigger-format-user";

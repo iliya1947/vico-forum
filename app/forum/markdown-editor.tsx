@@ -32,12 +32,12 @@ import {
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
-import type { ForumEditorDraftPayload } from "../../db/schema";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
   insertText: (text: string) => void;
+  setDraftParentPostId: (parentPostId: string | null) => void;
   acknowledgePublished: (draftId: string, publishedVersion: number) => void;
 }
 
@@ -175,15 +175,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     const draft = useEditorDraft({
       ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
-      readPayload: (body): ForumEditorDraftPayload => {
-        const form = textareaRef.current?.form;
-        const field = (name: string) => {
-          const element = form?.elements.namedItem(name);
-          return element instanceof HTMLInputElement ? element.value : "";
-        };
-        return { body, title: field("title"), tags: field("tags"),
-          parentPostId: field("parentPostId") || null };
-      },
+      initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null },
       restore: (payload) => {
         historyRef.current = createEditorHistory(payload.body);
         onDraftRestoreParent?.(payload.parentPostId ?? null);
@@ -200,10 +192,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (!accountId || !draftContextKey) return;
       const form = textareaRef.current?.form;
       if (!form) return;
+      const fieldValue = (fieldName: string) => {
+        const field = form.elements.namedItem(fieldName);
+        return field instanceof HTMLInputElement ? field.value : "";
+      };
+      draft.seedFields({
+        title: fieldValue("title"),
+        tags: fieldValue("tags"),
+        parentPostId: fieldValue("parentPostId") || null,
+      });
       const onInput = (event: Event) => {
         const field = event.target;
-        if (!(field instanceof HTMLInputElement) || !["title", "tags"].includes(field.name)) return;
-        draft.noteEdit(value, (event as InputEvent).data === " ");
+        if (!(field instanceof HTMLInputElement) || (field.name !== "title" && field.name !== "tags")) return;
+        draft.noteFields(
+          field.name === "title" ? { title: field.value } : { tags: field.value },
+          (event as InputEvent).data === " ",
+        );
       };
       const flush = () => draft.saveLocal();
       form.addEventListener("input", onInput);
@@ -640,6 +644,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         pendingSelectionRef.current = after;
         setMode("write");
         commitSource(nextValue, selection, after);
+      },
+      setDraftParentPostId(parentPostId: string | null) {
+        draft.noteFields({ parentPostId }, true);
       },
       acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
         draft.acknowledgePublished(publishedDraftId, publishedVersion);

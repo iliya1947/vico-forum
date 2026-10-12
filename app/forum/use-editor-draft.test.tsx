@@ -27,8 +27,7 @@ function Harness({ ownerId }: { ownerId: string | null }) {
   const [body, setBody] = useState("");
   useEffect(() => { setBody(""); }, [ownerId]);
   const draft = useEditorDraft({
-    ownerId, contextKey, locale: "en",
-    readPayload: (next) => ({ ...empty, body: next }),
+    ownerId, contextKey, locale: "en", initialPayload: empty,
     restore: (payload) => setBody(payload.body),
   });
   return <div>
