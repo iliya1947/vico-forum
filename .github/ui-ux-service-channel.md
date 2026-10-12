@@ -4391,3 +4391,38 @@ tail handling, binary/ZIP structural sanity, R2 lifecycle, upload/DB/download, d
 Security events, antivirus and cleanup remain outside this package. Do not proceed to
 the next finding until owner explicitly continues.
 
+## PR #215: Stage 5 finding №3 — full UTF-8 sniff window fixed — 2026-10-12
+
+Owner continuation authorized only Stage 5 finding №3 from the existing Editor 2.0 audit.
+
+The finding was confirmed in the already implemented attachment type-gate. The previous
+text detector unconditionally removed the final four bytes whenever the collected sample
+was exactly 4096 bytes. That was intended to avoid rejecting a UTF-8 code point split by
+the sample boundary, but it also skipped malformed/binary bytes that were actually inside
+the sampled window.
+
+The bounded fix changes only the UTF-8 sniff boundary:
+- all collected sample bytes are now passed through fatal UTF-8 decoding;
+- streaming decode is enabled only when the sample is a real prefix of a larger file;
+- an incomplete UTF-8 sequence is therefore tolerated only at that real boundary;
+- malformed bytes inside the 4096-byte sample remain fatal;
+- when 4096 bytes are the entire file, an incomplete trailing sequence is rejected.
+
+Focused regression coverage places invalid 0xff bytes at offsets 4092 and 4095, verifies
+a split UTF-8 starter at the final byte is accepted only when the file continues, and
+verifies the same trailing incomplete sequence is rejected for an exact-4096-byte file.
+
+Code head `a699c315d39b6a87a8cc9bc677d7c8bde3f1e999` passed exact-head CI
+[#38262031297](https://github.com/iliya1947/vico-forum/actions/runs/38262031297)
+with `checks` and `database` green. Two subsequent documentation-only commits corrected
+stale wording left by the original audit; compare confirms they change only
+`PROJECT_STATE.md` and `EDITOR_SPEC.md`. Final implementation head
+`f9d774e803262050ff61306a15c6226894e9945b` passed exact-head CI
+[#38262285740](https://github.com/iliya1947/vico-forum/actions/runs/38262285740)
+with `checks` and `database` green.
+
+Stage 5 finding №4 remains the only open attachment-verification finding and was not
+changed in this package. Upload/DB/download, durable Security events, antivirus, cleanup,
+R2 provisioning and Stage 6 remain outside this package. Do not proceed to finding №4
+until owner explicitly continues.
+
