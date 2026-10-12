@@ -161,6 +161,19 @@ describe("private attachment upload API", () => {
     }));
   });
 
+  it("preserves a NUL filename anomaly as durable escaped evidence", async () => {
+    const env = setup();
+    const response = await action({
+      request: request(new TextEncoder().encode("hello"), { fileName: "bad\0name.txt" }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(422);
+    expect(env.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({
+      fileName: "bad\\u{0}name.txt",
+      reason: "invalid-name",
+    }));
+  });
+
   it("does not create a security event for a non-suspicious size rejection", async () => {
     const env = setup();
     const response = await action({
