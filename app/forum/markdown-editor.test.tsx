@@ -1086,7 +1086,7 @@ describe("MarkdownEditor", () => {
       updatedAt: string;
       payload: DraftPayload;
     };
-    let firstSaveRequest: Record<string, unknown> | null = null;
+    const saveRequests: Array<Record<string, unknown>> = [];
     let resolveFirstSave!: (response: Response) => void;
     const firstSave = new Promise<Response>((resolve) => { resolveFirstSave = resolve; });
     let serverDraft: ServerDraft | null = null;
@@ -1100,10 +1100,8 @@ describe("MarkdownEditor", () => {
       if (options?.method === "POST") {
         postCalls++;
         const sent = JSON.parse(options.body as string) as Record<string, unknown>;
-        if (postCalls === 1) {
-          firstSaveRequest = sent;
-          return firstSave;
-        }
+        saveRequests.push(sent);
+        if (postCalls === 1) return firstSave;
         const now = new Date().toISOString();
         serverDraft = {
           contextKey: draftContextKey,
@@ -1165,12 +1163,12 @@ describe("MarkdownEditor", () => {
     act(() => { vi.advanceTimersByTime(60_000); });
     await act(async () => { await Promise.resolve(); });
     expect(postCalls).toBe(1);
-    expect(firstSaveRequest?.expectedVersion).toBe(0);
+    expect(saveRequests[0]?.expectedVersion).toBe(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     expect(submitted).not.toHaveBeenCalled();
 
-    const sent = firstSaveRequest!;
+    const sent = saveRequests[0]!;
     const now = new Date().toISOString();
     serverDraft = {
       contextKey: draftContextKey,
