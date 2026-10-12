@@ -423,7 +423,7 @@ Vico Forum находится в ранней pre-release разработке.
   defect в one-pass R2 streaming/length fencing не найдено. HTTP upload route,
   DB attachment lifecycle/references, download/UI, durable Security/Attachments
   events, antivirus provider и orphan cleanup остаются будущей реализацией и не
-  классифицированы как defects этого уже существующего slice. Код не исправлялся.
+  классифицированы как defects этого уже существующего slice. Finding №4 пока не исправлялся.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
