@@ -514,7 +514,17 @@ Vico Forum находится в ранней pre-release разработке.
   сохранения события. Security → Attachments читает эту таблицу как read-only очередь;
   имена с control/bidi символами выводятся escaped, ссылок на R2/контент и synthetic events нет.
   Group 2/3 остаются заглушками. Web runtime получает только необходимые INSERT/SELECT grants.
-  Следующие части Stage 5: editor/upload UI, publication/download integration и orphan cleanup.
+  После отката первого ошибочного editor/upload UI slice отдельным bounded шагом подготовлен
+  только draft-generation identity boundary: attachment generation становится доступна после
+  успешной сверки метаданных/контента, не при сетевой ошибке или неразрешённом конфликте.
+  Первая операция с вложением сначала локально фиксирует draft ID, не делая текст dirty и
+  не меняя период 60-секундной серверной синхронизации. При смене draft ID прежний
+  attachmentDraftId остаётся в локальных данных, а новые attachment operations закрываются,
+  пока серверный перенос/разрешение ссылки не выполнен. Это только foundation API редактора:
+  внешний upload UI, GET/DELETE и серверный ref rebind ещё не восстановлены; полноценная
+  доступность вложений и их публикация пока не заявляются.
+  Следующие части Stage 5: восстановление server attachment list/remove/rebind boundary,
+  editor/upload UI, publication/download integration и orphan cleanup.
   Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
