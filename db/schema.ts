@@ -891,6 +891,86 @@ export const forumPosts = pgTable(
   ],
 );
 
+
+export const forumAttachments = pgTable(
+  "forum_attachments",
+  {
+    id: text("id").primaryKey(),
+    ownerId: text("owner_id").notNull(),
+    objectKey: text("object_key").notNull(),
+    fileName: text("file_name").notNull(),
+    declaredMime: text("declared_mime").notNull(),
+    detectedType: text("detected_type").notNull(),
+    responseMime: text("response_mime").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    verificationStatus: text("verification_status").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "forum_attachments_owner_fk",
+      columns: [table.ownerId],
+      foreignColumns: [user.id],
+    }).onDelete("restrict"),
+    unique("forum_attachments_object_key_unique").on(table.objectKey),
+    unique("forum_attachments_id_owner_unique").on(table.id, table.ownerId),
+    index("forum_attachments_owner_created_idx").on(table.ownerId, table.createdAt),
+  ],
+);
+
+export const forumAttachmentDraftRefs = pgTable(
+  "forum_attachment_draft_refs",
+  {
+    attachmentId: text("attachment_id").notNull(),
+    ownerId: text("owner_id").notNull(),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_attachment_draft_refs_pk",
+      columns: [table.attachmentId, table.contextKey, table.draftId],
+    }),
+    foreignKey({
+      name: "forum_attachment_draft_refs_attachment_owner_fk",
+      columns: [table.attachmentId, table.ownerId],
+      foreignColumns: [forumAttachments.id, forumAttachments.ownerId],
+    }).onDelete("restrict"),
+    index("forum_attachment_draft_refs_owner_context_idx").on(
+      table.ownerId,
+      table.contextKey,
+      table.draftId,
+    ),
+  ],
+);
+
+export const forumPostAttachments = pgTable(
+  "forum_post_attachments",
+  {
+    postId: text("post_id").notNull(),
+    attachmentId: text("attachment_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_attachments_pk",
+      columns: [table.postId, table.attachmentId],
+    }),
+    foreignKey({
+      name: "forum_post_attachments_post_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "forum_post_attachments_attachment_fk",
+      columns: [table.attachmentId],
+      foreignColumns: [forumAttachments.id],
+    }).onDelete("restrict"),
+    index("forum_post_attachments_attachment_idx").on(table.attachmentId),
+  ],
+);
+
 export const forumHelpSignals = pgTable(
   "forum_help_signals",
   {
