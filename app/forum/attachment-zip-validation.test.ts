@@ -1,0 +1,217 @@
+import { describe, expect, it } from "vitest";
+import {
+  validateZipAttachmentStructure,
+  type AttachmentRandomAccessSource,
+  type ZipAttachmentSemantic,
+} from "./attachment-zip-validation";
+
+const text = (value: string) => new TextEncoder().encode(value);
+
+function u16(value: number): number[] {
+  return [value & 0xff, (value >>> 8) & 0xff];
+}
+function u32(value: number): number[] {
+  return [value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff];
+}
+function u64(value: number): number[] {
+  const result: number[] = [];
+  let current = BigInt(value);
+  for (let index = 0; index < 8; index += 1) {
+    result.push(Number(current & 0xffn));
+    current >>= 8n;
+  }
+  return result;
+}
+function concat(...parts: Array<Uint8Array | number[]>): Uint8Array {
+  const arrays = parts.map((part) => part instanceof Uint8Array ? part : Uint8Array.from(part));
+  const total = arrays.reduce((sum, part) => sum + part.byteLength, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const part of arrays) {
+    output.set(part, offset);
+    offset += part.byteLength;
+  }
+  return output;
+}
+
+type Entry = { name: string; data?: Uint8Array; method?: number };
+function buildZip(entries: Entry[], zip64 = false): Uint8Array {
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let offset = 0;
+  for (const item of entries) {
+    const name = text(item.name);
+    const data = item.data ?? text("x");
+    const method = item.method ?? 0;
+    const local = concat(
+      u32(0x04034b50), u16(20), u16(0), u16(method), u16(0), u16(0),
+      u32(0), u32(data.byteLength), u32(data.byteLength),
+      u16(name.byteLength), u16(0), name, data,
+    );
+    localParts.push(local);
+    centralParts.push(concat(
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(method), u16(0), u16(0),
+      u32(0), u32(data.byteLength), u32(data.byteLength),
+      u16(name.byteLength), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), name,
+    ));
+    offset += local.byteLength;
+  }
+  const locals = concat(...localParts);
+  const central = concat(...centralParts);
+  if (!zip64) {
+    return concat(
+      locals, central,
+      u32(0x06054b50), u16(0), u16(0), u16(entries.length), u16(entries.length),
+      u32(central.byteLength), u32(locals.byteLength), u16(0),
+    );
+  }
+  const zip64Offset = locals.byteLength + central.byteLength;
+  const zip64Eocd = concat(
+    u32(0x06064b50), u64(44), u16(45), u16(45), u32(0), u32(0),
+    u64(entries.length), u64(entries.length), u64(central.byteLength), u64(locals.byteLength),
+  );
+  const locator = concat(u32(0x07064b50), u32(0), u64(zip64Offset), u32(1));
+  const eocd = concat(
+    u32(0x06054b50), u16(0), u16(0), u16(0xffff), u16(0xffff),
+    u32(0xffffffff), u32(0xffffffff), u16(0),
+  );
+  return concat(locals, central, zip64Eocd, locator, eocd);
+}
+
+function source(bytes: Uint8Array, reads?: Array<{ offset: number; length: number }>)
+  : AttachmentRandomAccessSource {
+  return {
+    size: bytes.byteLength,
+    async read(offset, length) {
+      reads?.push({ offset, length });
+      return bytes.slice(offset, offset + length);
+    },
+  };
+}
+
+async function valid(bytes: Uint8Array, semantic: ZipAttachmentSemantic): Promise<boolean> {
+  return validateZipAttachmentStructure(source(bytes), semantic);
+}
+
+describe("ZIP attachment structural validation", () => {
+  it("accepts an ordinary ZIP and rejects truncated or inconsistent central metadata", async () => {
+    const zip = buildZip([{ name: "a.txt" }, { name: "b.txt" }]);
+    expect(await valid(zip, "zip")).toBe(true);
+    expect(await valid(zip.subarray(0, zip.byteLength - 1), "zip")).toBe(false);
+
+    const badCount = zip.slice();
+    badCount[badCount.byteLength - 12] = 3;
+    expect(await valid(badCount, "zip")).toBe(false);
+
+    const badOffset = zip.slice();
+    const central = badOffset.indexOf(0x50, 60);
+    badOffset[central + 42] = 0xff;
+    badOffset[central + 43] = 0xff;
+    badOffset[central + 44] = 0xff;
+    badOffset[central + 45] = 0x7f;
+    expect(await valid(badOffset, "zip")).toBe(false);
+  });
+
+  it("accepts a structurally consistent ZIP64 directory without an arbitrary classic-entry limit", async () => {
+    expect(await valid(buildZip([{ name: "a.txt" }], true), "zip")).toBe(true);
+  });
+
+  it("distinguishes DOCX, XLSX and PPTX by package parts beyond the initial prefix", async () => {
+    const filler = new Uint8Array(7000);
+    const docx = buildZip([
+      { name: "filler.bin", data: filler },
+      { name: "[Content_Types].xml" },
+      { name: "_rels/.rels" },
+      { name: "word/document.xml" },
+    ]);
+    expect(await valid(docx, "docx")).toBe(true);
+    expect(await valid(docx, "xlsx")).toBe(false);
+    expect(await valid(docx, "pptx")).toBe(false);
+
+    const xlsx = buildZip([
+      { name: "[Content_Types].xml" }, { name: "_rels/.rels" }, { name: "xl/workbook.xml" },
+    ]);
+    const pptx = buildZip([
+      { name: "[Content_Types].xml" }, { name: "_rels/.rels" }, { name: "ppt/presentation.xml" },
+    ]);
+    expect(await valid(xlsx, "xlsx")).toBe(true);
+    expect(await valid(pptx, "pptx")).toBe(true);
+  });
+
+  it("rejects an OOXML package when a required central entry does not match its local header", async () => {
+    const docx = buildZip([
+      { name: "[Content_Types].xml" }, { name: "_rels/.rels" }, { name: "word/document.xml" },
+    ]);
+    const broken = docx.slice();
+    const word = text("word/document.xml");
+    let wordOffset = -1;
+    for (let index = 0; index <= broken.byteLength - word.byteLength; index += 1) {
+      if (word.every((byte, at) => broken[index + at] === byte)) {
+        wordOffset = index;
+        break;
+      }
+    }
+    expect(wordOffset).toBeGreaterThan(0);
+    broken[wordOffset] = "x".charCodeAt(0);
+    expect(await valid(broken, "docx")).toBe(false);
+  });
+
+  it("validates ODT/ODS mimetype as the first stored local entry and requires the manifest", async () => {
+    const odt = buildZip([
+      { name: "mimetype", data: text("application/vnd.oasis.opendocument.text") },
+      { name: "META-INF/manifest.xml" },
+      { name: "content.xml" },
+    ]);
+    const ods = buildZip([
+      { name: "mimetype", data: text("application/vnd.oasis.opendocument.spreadsheet") },
+      { name: "META-INF/manifest.xml" },
+      { name: "styles.xml" },
+    ]);
+    expect(await valid(odt, "odt")).toBe(true);
+    expect(await valid(ods, "ods")).toBe(true);
+    expect(await valid(odt, "ods")).toBe(false);
+
+    const missingManifest = buildZip([
+      { name: "mimetype", data: text("application/vnd.oasis.opendocument.text") },
+      { name: "content.xml" },
+    ]);
+    expect(await valid(missingManifest, "odt")).toBe(false);
+
+    const wrongFirst = buildZip([
+      { name: "content.xml" },
+      { name: "mimetype", data: text("application/vnd.oasis.opendocument.text") },
+      { name: "META-INF/manifest.xml" },
+    ]);
+    expect(await valid(wrongFirst, "odt")).toBe(false);
+  });
+
+  it("rejects unsupported ODF compression methods instead of claiming package conformance", async () => {
+    const odt = buildZip([
+      { name: "mimetype", data: text("application/vnd.oasis.opendocument.text") },
+      { name: "META-INF/manifest.xml", method: 12 },
+      { name: "content.xml" },
+    ]);
+    expect(await valid(odt, "odt")).toBe(false);
+  });
+
+  it("uses bounded range reads rather than buffering the whole archive", async () => {
+    const zip = buildZip([
+      { name: "large.bin", data: new Uint8Array(20_000) },
+      { name: "[Content_Types].xml" },
+      { name: "_rels/.rels" },
+      { name: "word/document.xml" },
+    ]);
+    const reads: Array<{ offset: number; length: number }> = [];
+    expect(await validateZipAttachmentStructure(source(zip, reads), "docx")).toBe(true);
+    expect(Math.max(...reads.map((read) => read.length))).toBeLessThanOrEqual(65_557);
+    expect(reads.some((read) => read.offset > 4096)).toBe(true);
+  });
+
+  it("propagates storage read failures instead of misclassifying them as invalid content", async () => {
+    const zip = buildZip([{ name: "a.txt" }]);
+    await expect(validateZipAttachmentStructure({
+      size: zip.byteLength,
+      async read() { throw new Error("range read unavailable"); },
+    }, "zip")).rejects.toThrow("range read unavailable");
+  });
+});

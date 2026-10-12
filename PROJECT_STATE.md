@@ -435,8 +435,15 @@ Vico Forum находится в ранней pre-release разработке.
   semantics, JPEG требует frame/scan/end markers, GIF — logical-screen minimum и trailer,
   WebP — RIFF/WEBP size+first image chunk, PDF — startxref + %%EOF tail. Validator хранит
   только bounded head/tail либо небольшой parser state и работает при произвольных chunk
-  boundaries. ZIP/Office и остальные archive/container families намеренно остаются следующим
-  subtask; до их реализации и R2 finalization finding №4 остаётся открытым.
+  boundaries. Второй bounded subtask 2026-10-12 добавляет отдельный random-access ZIP
+  finalizer без подключения к R2 store path. EOCD/ZIP64 EOCD определяют authoritative central
+  directory; parser проверяет single-disk offsets/count/size, central records, optional directory
+  signature и связь first/required entries с local headers, не буферизуя весь архив. Для
+  DOCX/XLSX/PPTX проверяются package metadata + соответствующий main part; для ODT/ODS —
+  нормативный первый uncompressed `mimetype`, exact media type, `META-INF/manifest.xml` и
+  document content/styles presence, а ODF entries ограничены STORE/DEFLATE. Storage read failures
+  не маскируются как invalid content. Remaining 7z/gzip/tar/OLE families и R2 finalization остаются
+  следующими subtask; до их реализации finding №4 остаётся открытым.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
