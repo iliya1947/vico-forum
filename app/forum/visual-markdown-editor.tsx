@@ -248,11 +248,12 @@ export function restoreVisualDomSelection(
   const end = point(endLeaf, selection.end);
   if (!start || !end) return false;
 
-  startLeaf.focus();
   const domRange = document.createRange();
   domRange.setStart(start.node, start.offset);
   domRange.setEnd(end.node, end.offset);
   if (domRange.cloneContents().querySelector("[data-visual-protected]")) return false;
+
+  startLeaf.focus();
   const domSelection = window.getSelection();
   if (!domSelection
     || typeof domSelection.removeAllRanges !== "function"
