@@ -488,11 +488,22 @@ Vico Forum находится в ранней pre-release разработке.
   файлов до 50 МБ. Проверки fragmented/changing-length/R2 interruption
   добавлены, результат CI фиксируется отдельно. Внешний бакет, binding и live R2
   проверка остаются Stage 6.
-  Никакой HTTP route, выдачи файла, привязки к DB-драфту/сообщению, системы
-  durable security events или UI загрузки ещё не подключено: это последующие
-  части Editor Stage 5, а не работающая пользовательская функция.
-  Вложения, Security/Attachments ingestion, mentions и полный
-  publication/edit workflow остаются следующими этапами.
+  Следующий bounded Stage 5 subtask 2026-10-12 добавляет только DB lifecycle/reference
+  foundation для вложений через migration `0035_forum_attachments_foundation`: отдельный private
+  asset хранит server-owned metadata/object key, а независимые draft-generation и published-post
+  refs позволяют одному asset оставаться живым, пока существует хотя бы одна действующая связь.
+  Draft ref содержит owner/context/draft ID, но намеренно не имеет FK на `forum_editor_drafts`:
+  немедленная загрузка файла не создаёт и не ускоряет 60-second server draft sync. Composite
+  attachment+owner FK запрещает чужие draft refs; post deletion удаляет только соответствующую
+  post-ref, а RESTRICT на asset refs не даёт удалить общий asset до снятия всех связей.
+  Repository boundary пока умеет только atomically создать asset+draft ref, owner-scoped list и
+  точное удаление draft-ref. Новые relations не получают web runtime grants, потому что HTTP
+  upload/download boundary ещё отсутствует. Code-head `fb9f2f3` прошёл CI #38302897708:
+  `checks` и `database` green, включая clean PostgreSQL 17, schema manifest/parity,
+  runtime privilege probes и Workers smoke. Первоначальный DB run упал только из-за неверного
+  test assertion на wrapped Drizzle FK error; production code не менялся для исправления.
+  HTTP upload, R2 binding/runtime wiring, публикационное promotion refs, выдача файла,
+  durable Security/Attachments events, UI и orphan cleanup остаются следующими частями Stage 5.
   Существующий body/FormData/server contract не изменялся.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
