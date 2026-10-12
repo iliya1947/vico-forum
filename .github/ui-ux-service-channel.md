@@ -4843,3 +4843,39 @@ HTTP upload routes, attachment DB lifecycle, download UI, durable Security event
 orphan cleanup and Stage 6 remain outside this work. Do not proceed until owner explicitly
 continues.
 
+## PR #215: Stage 5 finding №4 — private R2 structural finalization complete — 2026-10-12
+
+Owner continuation authorized the final bounded subtask for Stage 5 finding №4.
+
+Implemented:
+- private R2 writer now treats prefix/type inspection only as preflight and returns `stored`
+  only after the recognized binary/container family passes its structural validator;
+- PNG/JPEG/GIF/WebP/PDF validators consume the same one-pass upload stream, without reopening
+  or buffering the whole file;
+- ZIP/ZIP64, DOCX/XLSX/PPTX/ODT/ODS and 7z/gzip/tar/OLE validators use bounded ranged reads
+  from the already-private R2 object after `put`;
+- structural rejection is represented as `invalid-structure`, best-effort deletes the private
+  object and never returns its object key;
+- R2/range-read failure remains a storage/dependency error, is not converted into invalid-content,
+  and also never returns the key;
+- ranged reads fail closed on absent bodies, changed object size or short in-bounds reads.
+
+Focused integration tests cover successful streaming finalization, streaming structural rejection
+with deletion, generic ZIP ranged finalization, Office semantic rejection, and R2 range-read
+failure propagation. Existing exact-length/partial-write cleanup tests remain intact.
+
+Self-review found one integration-boundary defect before completion: an unexpectedly short R2 range
+response could otherwise have been interpreted downstream as invalid structure. It now fails as
+storage-read error at the random-access source boundary.
+
+Code-head `d038ad89738923182248baf2968ec40b578fe65f` passed CI #38292243315 with
+`checks` and `database` green. Implementation diff from prior head `8b55bf9` is limited to
+`attachment-r2.ts`, `attachment-r2.test.ts`, and the new `invalid-structure` rejection value
+in `attachment-validation.ts`; documentation follows separately.
+
+Stage 5 finding №4 is CLOSED. All four confirmed Stage 5 audit findings are now closed.
+HTTP upload routes, DB attachment lifecycle/references, download/UI, durable Security/Attachments
+events, antivirus integration, orphan cleanup and Stage 6 remain later scope and were not added.
+
+Do not proceed to the next Editor 2.0 subtask until owner explicitly continues.
+
