@@ -41,6 +41,10 @@ function decodedHeader(request: Request, name: string, maxLength: number): strin
   }
 }
 
+function durableSecurityFilename(value: string): string {
+  return value.replaceAll("\0", "\\u{0}");
+}
+
 function attachmentSize(request: Request): number | null {
   const raw = request.headers.get("X-Vico-Attachment-Size");
   if (!raw || !/^(0|[1-9][0-9]*)$/u.test(raw)) return null;
@@ -136,7 +140,7 @@ export async function action({
           uploadedByUserId: session.user.id,
           contextKey,
           draftId,
-          fileName,
+          fileName: durableSecurityFilename(fileName),
           declaredMime,
           detectedType: result.inspection.detected,
           reason: result.inspection.reason,
