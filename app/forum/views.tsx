@@ -1304,6 +1304,8 @@ export function HelpSolutionsView({
                 <MarkdownEditor
                   id="help-question-body"
                   draftContextKey="help:new" draftLocale={locale}
+                  draftPublicationIntent="createHelpQuestion"
+                  draftPublicationPending={isQuestionSubmitting}
                   name="body"
                   required
                   rows={8}
@@ -1899,6 +1901,8 @@ export function SectionView({
               <MarkdownEditor
                 id="create-topic-body"
                 draftContextKey={`section:${section.id}:new`} draftLocale={locale}
+                draftPublicationIntent="createTopic"
+                draftPublicationPending={isCreateTopicSubmitting}
                 name="body"
                 required
                 rows={8}
@@ -2760,6 +2764,8 @@ export function TopicView({
                   ref={replyEditorRef}
                   id="reply-body"
                   draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
+                  draftPublicationIntent="reply"
+                  draftPublicationPending={isReplySubmitting}
                   onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
                   required
