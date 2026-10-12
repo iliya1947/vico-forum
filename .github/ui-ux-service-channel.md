@@ -4460,3 +4460,32 @@ Implementation code remains unchanged from green head
 Do not attempt a length-only workaround and do not proceed to another finding until the
 owner explicitly continues.
 
+## PR #215: Stage 1 repeated-audit focus regression fixed — 2026-10-12
+
+Owner continuation moved past the deferred complex Stage 5 finding №4 to the next
+non-deferred current-scope defect: the repeated-audit Stage 1 imperative focus regression.
+
+Root cause was confirmed in `MarkdownEditorHandle.focus()`. It always wrote a pending
+selection and called `setMode("write")`, relying on the layout effect to perform actual
+DOM focus. When the editor was already in write mode, React kept the same state and the
+layout effect did not run, so Reply could scroll to the form without moving the caret
+into the editor.
+
+The bounded fix changes only the imperative focus boundary:
+- already-open Advanced write mode focuses the textarea immediately and restores the
+  current source selection;
+- already-open Simple write mode immediately restores the visual DOM selection/focus;
+- transitions from preview still use the existing pending-selection lifecycle;
+- authoring mode is not forced or changed.
+
+Focused regressions cover both already-open Advanced and Simple write surfaces after
+focus has moved outside the editor.
+
+Implementation head: `bd40a7319e1c736e0fc3f541a6ea68e8fe226a9c`.
+Exact-head CI [#38268387877](https://github.com/iliya1947/vico-forum/actions/runs/38268387877)
+completed successfully with `checks` and `database` green.
+
+Stage 2 protected-content restoration remains a separate current-scope defect and was
+intentionally not changed in this package. The complex Stage 5 structural-validation
+finding remains deferred for a dedicated technical/Codex pass.
+
