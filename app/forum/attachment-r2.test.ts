@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   AttachmentLengthMismatchError,
+  AttachmentStorageError,
   storePrivateAttachment,
   storePrivateAttachmentStream,
   type PrivateAttachmentBucket,
@@ -109,7 +110,7 @@ describe("private R2 attachment write contract", () => {
     store.put.mockImplementationOnce(async () => ({ size: 1 }));
     await expect(storePrivateAttachment(store,
       file("report.pdf", new TextEncoder().encode("%PDF-1.7"))))
-      .rejects.toThrow("private attachment storage failed");
+      .rejects.toBeInstanceOf(AttachmentStorageError);
     expect(store.delete).toHaveBeenCalledOnce();
     expect(store.delete.mock.calls[0]?.[0]).toMatch(/^private\//u);
   });
@@ -119,7 +120,10 @@ describe("private R2 attachment write contract", () => {
     store.put.mockRejectedValueOnce(new Error("R2 service unavailable"));
     await expect(storePrivateAttachment(store,
       file("work.js", new TextEncoder().encode("const a = 1;"))))
-      .rejects.toThrow("R2 service unavailable");
+      .rejects.toMatchObject({
+        name: "AttachmentStorageError",
+        cause: expect.objectContaining({ message: "R2 service unavailable" }),
+      });
   });
 
   it("finalizes streaming binary structure before returning a private key", async () => {
@@ -181,7 +185,10 @@ describe("private R2 attachment write contract", () => {
     const store = bucket();
     store.get.mockRejectedValueOnce(new Error("R2 range read unavailable"));
     await expect(storePrivateAttachment(store, file("empty.zip", emptyZip(), "application/zip")))
-      .rejects.toThrow("R2 range read unavailable");
+      .rejects.toMatchObject({
+        name: "AttachmentStorageError",
+        cause: expect.objectContaining({ message: "R2 range read unavailable" }),
+      });
     expect(store.delete).toHaveBeenCalledOnce();
   });
 });
@@ -258,7 +265,10 @@ describe("bounded one-pass upload stream", () => {
     await expect(storePrivateAttachmentStream(store, {
       fileName: "notes.txt", declaredMime: "text/plain",
       size: 5, body: chunked([new TextEncoder().encode("hello")]),
-    })).rejects.toThrow("R2 interrupted");
+    })).rejects.toMatchObject({
+      name: "AttachmentStorageError",
+      cause: expect.objectContaining({ message: "R2 interrupted" }),
+    });
     expect(store.delete).toHaveBeenCalledOnce();
   });
 });
