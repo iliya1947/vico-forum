@@ -15,6 +15,8 @@ import {
   createEditorHistory,
   editableCodeRanges,
   editVisualText,
+  inlineCodeAffixes,
+  longestBacktickRun,
   recordEditorEdit,
   redoEditorEdit,
   rememberEditorSelection,
@@ -65,29 +67,6 @@ type EditorMode = "write" | "preview" | "split";
 
 function normalizedCodeLanguage(value: string): string {
   return value.trim().replace(/[^a-z0-9_+.#-]/giu, "").slice(0, 32);
-}
-
-function longestBacktickRun(value: string): number {
-  let longest = 0;
-  for (const match of value.matchAll(/`+/gu)) {
-    longest = Math.max(longest, match[0].length);
-  }
-  return longest;
-}
-
-function inlineCodeAffixes(value: string): { prefix: string; suffix: string } {
-  const delimiter = "`".repeat(longestBacktickRun(value) + 1);
-  const isOnlySpaces = /^ +$/u.test(value);
-  const needsPadding = value.length > 0 && (
-    value.startsWith("`")
-    || value.endsWith("`")
-    || (!isOnlySpaces && value.startsWith(" ") && value.endsWith(" "))
-  );
-  const padding = needsPadding ? " " : "";
-  return {
-    prefix: delimiter + padding,
-    suffix: padding + delimiter,
-  };
 }
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(

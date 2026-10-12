@@ -332,7 +332,13 @@ Vico Forum находится в ранней pre-release разработке.
   Simple UX: обычную Markdown-таблицу можно создать визуальной командой в Simple,
   затем редактировать там же; Advanced используется для ручного Markdown и
   сложных/нестандартных таблиц. Текущий UI с Table в Simple корректен, поэтому
-  код для этого пункта менять не требуется. Остальные три Stage 3 defects не исправлялись.
+  код для этого пункта менять не требуется. Stage 3 finding №2 (HTML inline-code
+  paste) исправлен 2026-10-12 на общей Markdown serialization boundary: существующее
+  корректное правило выбора backtick delimiter/padding вынесено из MarkdownEditor в
+  общий editor-document helper и используется также HTML clipboard converter.
+  Поэтому paste больше не имеет отдельной расходящейся сериализации для `<code>`,
+  а граничные backticks и симметричные пробелы сохраняются по тем же правилам, что
+  inline-code toolbar. Findings №1 и №3 остаются открытыми и этим изменением не затронуты.
   Повторный поэтапный аудит Stage 4 (2026-10-11) выявил пять current-scope
   defects. Draft runtime authoritative хранит только body, а title/tags/parentPostId
   берёт из live DOM при capture; final cleanup после React commit и same-event

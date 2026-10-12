@@ -1,3 +1,4 @@
+import { inlineCodeMarkdown } from "./editor-document";
 import { serializeTable } from "./technical-markdown";
 
 const tick = String.fromCharCode(96);
@@ -70,9 +71,7 @@ export function clipboardHtmlToMarkdown(html: string): string | null {
     if (["em", "i"].includes(name)) return "_" + inner() + "_";
     if (name === "s" || name === "del") return "~~" + inner() + "~~";
     if (name === "code") {
-      const code = plain(element);
-      const delimiter = tick.repeat(Math.max(1, ...[...code.matchAll(/\x60+/gu)].map((m) => m[0].length + 1)));
-      return delimiter + code + delimiter;
+      return inlineCodeMarkdown(plain(element));
     }
     if (name === "pre") {
       const value = plain(element).replace(/\r\n/gu, "\n");

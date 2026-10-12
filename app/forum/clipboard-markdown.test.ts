@@ -10,6 +10,11 @@ describe("Editor 2.0 clipboard import", () => {
     expect(source).toContain("[link](https://example.com)");
   });
 
+  it("preserves boundary backticks and spaces in pasted inline code", () => {
+    expect(clipboardHtmlToMarkdown("<p><code>`foo`</code></p>")).toBe("`` `foo` ``");
+    expect(clipboardHtmlToMarkdown("<p><code> foo </code></p>")).toBe("`  foo  `");
+  });
+
   it("turns simple spreadsheet HTML into ordinary safe Markdown", () => {
     const html = "<table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table>";
     expect(clipboardHtmlToMarkdown(html)).toContain("| 1 | 2 |");
