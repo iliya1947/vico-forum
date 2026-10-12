@@ -991,14 +991,6 @@ export const forumAttachmentSecurityEvents = pgTable(
   (table) => [
     unique("forum_attachment_security_events_upload_id_unique").on(table.uploadId),
     index("forum_attachment_security_events_created_idx").on(table.createdAt, table.id),
-    check(
-      "forum_attachment_security_events_shape_check",
-      sql`${table.contextKey} <> ''
-        and ${table.draftId} <> ''
-        and ${table.detectedType} <> ''
-        and ${table.reason} <> ''
-        and ${table.byteSize} >= 0`,
-    ),
   ],
 );
 
