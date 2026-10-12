@@ -954,6 +954,64 @@ describe("MarkdownEditor", () => {
     clearLocalEditorDraft(userId, secondContext);
   });
 
+  it("does not save ordinary title typing merely because body is empty", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-title-trigger-user";
+    const contextKey = "section:title-trigger:new";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-title-trigger">Title</label>
+          <input id="draft-title-trigger" name="title" />
+          <label htmlFor="draft-title-trigger-body">Body</label>
+          <MarkdownEditor id="draft-title-trigger-body" name="body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    fireEvent.input(screen.getByLabelText("Title"), {
+      target: { value: "Ordinary" }, inputType: "insertText", data: "y",
+    });
+
+    expect(readLocalEditorDraft(userId, contextKey)).toBeNull();
+  });
+
+  it("saves title and tags immediately from their own space and paste events", () => {
+    stubEmptyDraftMetadata();
+    const userId = "draft-field-trigger-user";
+    const contextKey = "section:field-trigger:new";
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+        <form>
+          <label htmlFor="draft-field-title">Title</label>
+          <input id="draft-field-title" name="title" />
+          <label htmlFor="draft-field-tags">Tags</label>
+          <input id="draft-field-tags" name="tags" />
+          <label htmlFor="draft-field-body">Body</label>
+          <MarkdownEditor id="draft-field-body" name="body" defaultValue="Body"
+            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    fireEvent.input(screen.getByLabelText("Title"), {
+      target: { value: "New " }, inputType: "insertText", data: " ",
+    });
+    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
+      title: "New ", tags: "", body: "Body",
+    });
+
+    fireEvent.input(screen.getByLabelText("Tags"), {
+      target: { value: "typescript" }, inputType: "insertFromPaste", data: "typescript",
+    });
+    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
+      title: "New ", tags: "typescript", body: "Body",
+    });
+
+    clearLocalEditorDraft(userId, contextKey);
+  });
+
   it("records the Reply parent before same-event text insertion", () => {
     stubEmptyDraftMetadata();
     const userId = "draft-parent-authoritative-user";

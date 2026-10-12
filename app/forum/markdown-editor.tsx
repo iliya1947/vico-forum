@@ -204,9 +204,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const onInput = (event: Event) => {
         const field = event.target;
         if (!(field instanceof HTMLInputElement) || (field.name !== "title" && field.name !== "tags")) return;
+        const input = event as InputEvent;
         draft.noteFields(
           field.name === "title" ? { title: field.value } : { tags: field.value },
-          (event as InputEvent).data === " ",
+          input.data === " " || input.inputType === "insertFromPaste",
         );
       };
       const flush = () => draft.saveLocal();

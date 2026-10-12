@@ -355,7 +355,11 @@ Vico Forum находится в ранней pre-release разработке.
   owner/context draft runtime authoritative хранит полный payload
   (body/title/tags/parentPostId), final cleanup больше не перечитывает live DOM,
   а Reply/Quote фиксируют parent в draft boundary до same-event insertion.
-  Findings №2–5 этого повторного аудита намеренно оставлены без изменений.
+  Stage 4 finding №2 исправлен отдельно 2026-10-12: момент local capture для
+  title/tags определяется фактическим input event этого поля, а не состоянием body.
+  Space и paste сохраняют немедленно, focusout сохраняет накопленные правки;
+  обычный ввод при пустом body больше не становится ложным immediate trigger.
+  Findings №3–5 намеренно оставлены без изменений.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
   Filename validation не классифицирует Unicode bidi/format controls как masking

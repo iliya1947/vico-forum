@@ -235,9 +235,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     if (!ctx || !current(ctx)) return;
     ctx.payload = { ...ctx.payload, ...patch };
     ctx.hasInput = true;
-    // Preserve the existing save-trigger behavior for now; its separate audit finding
-    // is intentionally not changed in this root-cause fix.
-    if (immediate || /\s$/u.test(ctx.payload.body) || ctx.payload.body.length === 0) capture(ctx);
+    if (immediate) capture(ctx);
   }
   function seedFields(patch: Partial<Omit<ForumEditorDraftPayload, "body">>) {
     const ctx = runtimeRef.current;
