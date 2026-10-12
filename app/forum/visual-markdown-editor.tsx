@@ -459,14 +459,14 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       if (range && markdown[range.start] === "[") return (
         <span className="markdown-editor-protected" data-visual-protected="link-target">
           <span className="markdown-editor-visual-link">{children}</span>
-          <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+          <button type="button" disabled={disabled} onClick={() => actions.onEditTechnical()}>
             {t("editorEditInMarkdown")}
           </button>
         </span>
       );
       return <span className="markdown-editor-protected" data-visual-protected="link">
         <code>{node.children?.map((child) => child.value ?? "").join("") ?? ""}</code>
-        <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>{t("editorEditInMarkdown")}</button>
+        <button type="button" disabled={disabled} onClick={() => actions.onEditTechnical()}>{t("editorEditInMarkdown")}</button>
       </span>;
     }
     case "text": {
@@ -503,7 +503,7 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       return (
         <span className="markdown-editor-protected" data-visual-protected={node.type}>
           <code>{label}</code>
-          <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+          <button type="button" disabled={disabled} onClick={() => actions.onEditTechnical()}>
             {t("editorEditInMarkdown")}
           </button>
         </span>
@@ -583,7 +583,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         if (segment.kind === "protected") return (
           <div key={index} className="markdown-editor-protected" data-visual-protected="table">
             <pre dir="ltr">{segment.source}</pre>
-            <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+            <button type="button" disabled={disabled} onClick={() => actions.onEditTechnical()}>
               {t("editorEditInMarkdown")}
             </button>
           </div>
