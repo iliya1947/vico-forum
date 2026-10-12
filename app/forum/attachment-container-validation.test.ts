@@ -57,7 +57,7 @@ function source(bytes: Uint8Array, reads?: Array<{ offset: number; length: numbe
   };
 }
 
-function sevenZip(nextHeader = Uint8Array.from([0x01, 0x00]), offset = 0): Uint8Array {
+function sevenZip(nextHeader: Uint8Array = Uint8Array.from([0x01, 0x00]), offset = 0): Uint8Array {
   const nextCrc = crc32(nextHeader);
   const start = Uint8Array.from([...u64(offset), ...u64(nextHeader.byteLength), ...u32(nextCrc)]);
   const startCrc = crc32(start);
