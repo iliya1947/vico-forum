@@ -16,6 +16,7 @@ import {
 import type { ForumEditorDraftPayload } from "./schema";
 
 export interface ForumDraftStore {
+  assertContextExists(contextKey: string): Promise<void>;
   metadata(ownerId: string): Promise<ForumEditorDraftMetadata[]>;
   get(ownerId: string, contextKey: string): Promise<ForumEditorDraft | null>;
   save(
@@ -81,6 +82,7 @@ export function createHyperdriveForumDraftStore(
   }
 
   return {
+    assertContextExists: (contextKey) => apply((store) => store.assertContextExists(contextKey)),
     metadata: (ownerId) => apply((store) => store.metadata(ownerId)),
     get: (ownerId, key) => apply((store) => store.get(ownerId, key)),
     save: (ownerId, key, draftId, payload, version) =>
