@@ -51,6 +51,7 @@ const forbiddenMimes = new Set([
   "application/x-ms-installer", "application/vnd.microsoft.portable-executable",
   "application/x-executable", "application/x-mach-binary", "application/wasm",
 ]);
+const unicodeFormatControl = /\p{Cf}/u;
 
 function has(bytes: Uint8Array, position: number, signature: readonly number[]): boolean {
   return position + signature.length <= bytes.length
@@ -120,7 +121,8 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
   const maxBytes = candidate.maxBytes ?? DEFAULT_ATTACHMENT_MAX_BYTES;
   if (hasPath) return reject("invalid-name");
   if (!name || name === "." || name === ".." || name.length > 255
-    || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return reject("invalid-name");
+    || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
+    || unicodeFormatControl.test(name)) return reject("invalid-name");
   if (!Number.isSafeInteger(candidate.size) || candidate.size <= 0) return reject("empty", false);
   if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || candidate.size > maxBytes) return reject("too-large", false);
   if (candidate.prefix.length < Math.min(candidate.size, ATTACHMENT_SNIFF_BYTES)) return reject("insufficient-evidence", false);

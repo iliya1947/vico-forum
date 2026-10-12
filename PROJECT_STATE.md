@@ -396,8 +396,12 @@ Vico Forum находится в ранней pre-release разработке.
   ожидание версии N+1 и отсутствие следующего autosave до завершения publication.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
-  Filename validation не классифицирует Unicode bidi/format controls как masking
-  anomaly и может вернуть suspicious=false для визуально манипулируемого имени.
+  Stage 5 finding №1 исправлен отдельно 2026-10-12 на filename anomaly boundary:
+  Unicode General_Category=Format (Cf), включая bidi override/isolate и zero-width
+  format controls, теперь отклоняется как invalid-name с suspicious=true; обычные
+  Unicode filenames не запрещаются. Это сохраняет будущий Security/Attachments
+  сигнал о признаках маскировки без расширения текущего attachment lifecycle.
+  Остались findings №2–4:
   Declared-MIME consistency проверяется неполно: неизвестные non-generic MIME
   игнорируются, а text/ZIP/OLE families схлопываются в coarse kind, поэтому
   extension↔MIME mismatches внутри одной family проходят accepted без suspicious

@@ -147,6 +147,18 @@ describe("Editor 2.0 server-side attachment type gate", () => {
     expect(inspect("oops\nfile.txt", utf8("hello"))).toMatchObject({
       accepted: false, reason: "invalid-name", suspicious: true,
     });
+    for (const name of [
+      "report\u202Ename.txt", // bidi override
+      "report\u2066name.txt", // bidi isolate
+      "report\u200Bname.txt", // zero-width format character
+    ]) {
+      expect(inspect(name, utf8("hello"), "text/plain")).toMatchObject({
+        accepted: false, reason: "invalid-name", suspicious: true,
+      });
+    }
+    expect(inspect("קובץ-רגיל.txt", utf8("hello"), "text/plain")).toMatchObject({
+      accepted: true, suspicious: false,
+    });
     expect(inspect("", utf8("hello"))).toMatchObject({
       accepted: false, reason: "invalid-name", suspicious: true,
     });
