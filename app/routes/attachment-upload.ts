@@ -87,6 +87,7 @@ export async function action({
   if (
     fileName === null
     || contextKey === null
+    || contextKey.includes("\0")
     || !/^[0-9a-f-]{36}$/iu.test(draftId)
     || size === null
     || declaredMime.length > 512
