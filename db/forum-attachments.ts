@@ -14,7 +14,7 @@ export interface ForumAttachmentMetadata {
   declaredMime: string;
   detectedType: string;
   responseMime: string;
-  byteSize: number;
+  declaredByteSize: number;
   verificationStatus: "type-checked";
   createdAt: string;
 }
@@ -29,7 +29,7 @@ export interface CreateDraftAttachmentInput {
   declaredMime: string;
   detectedType: string;
   responseMime: string;
-  byteSize: number;
+  declaredByteSize: number;
   verificationStatus: "type-checked";
 }
 
@@ -42,7 +42,7 @@ export interface RecordAttachmentSecurityEventInput {
   declaredMime: string;
   detectedType: string;
   reason: string;
-  byteSize: number;
+  declaredByteSize: number;
 }
 
 export interface ForumAttachmentSecurityEvent extends RecordAttachmentSecurityEventInput {
@@ -77,8 +77,8 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
     && typeof input.declaredMime === "string"
     && input.detectedType.length > 0
     && input.responseMime.length > 0
-    && Number.isSafeInteger(input.byteSize)
-    && input.byteSize > 0
+    && Number.isSafeInteger(input.declaredByteSize)
+    && input.declaredByteSize > 0
     && input.verificationStatus === "type-checked";
 }
 
@@ -94,9 +94,9 @@ function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean 
     && input.detectedType.length <= 64
     && input.reason.length > 0
     && input.reason.length <= 128
-    && Number.isSafeInteger(input.byteSize)
-    && input.byteSize >= 0
-    && input.byteSize <= 2_147_483_647;
+    && Number.isSafeInteger(input.declaredByteSize)
+    && input.declaredByteSize >= 0
+    && input.declaredByteSize <= 2_147_483_647;
 }
 
 function toMetadata(row: typeof forumAttachments.$inferSelect): ForumAttachmentMetadata {
@@ -128,7 +128,7 @@ export class DrizzleForumAttachments {
         declaredMime: input.declaredMime,
         detectedType: input.detectedType,
         responseMime: input.responseMime,
-        byteSize: input.byteSize,
+        declaredByteSize: input.declaredByteSize,
         verificationStatus: input.verificationStatus,
         createdAt,
       }).returning();
