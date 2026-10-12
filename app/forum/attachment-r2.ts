@@ -98,7 +98,11 @@ function privateObjectSource(
       if (!object?.body || object.size !== size) {
         throw new Error("private attachment structural read failed");
       }
-      return new Uint8Array(await new Response(object.body).arrayBuffer());
+      const bytes = new Uint8Array(await new Response(object.body).arrayBuffer());
+      if (bytes.byteLength !== length) {
+        throw new Error("private attachment structural read failed");
+      }
+      return bytes;
     },
   };
 }
