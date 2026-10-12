@@ -451,8 +451,14 @@ Vico Forum находится в ранней pre-release разработке.
   OLE/CFB — header/version/sector invariants, DIFAT/FAT allocation, directory FAT chain и Root Entry,
   включая v4 header padding. Все чтения bounded, а storage errors пробрасываются. Архивы не
   распаковываются и эта проверка не выдаётся за антивирус. Все format validators теперь имеют
-  finalization boundary; finding №4 остаётся открытым только до подключения их к private R2
-  finalization/delete-on-rejection.
+  finalization boundary. Финальный bounded subtask 2026-10-12 подключает эти validators к
+  authoritative private-R2 store path: PNG/JPEG/GIF/WebP/PDF проверяются на том же streaming
+  upload, ZIP/Office/ODF и 7z/gzip/tar/OLE после private write читаются только bounded R2 ranges.
+  `stored` возвращается только после structural success; structural rejection получает
+  `invalid-structure`, private object best-effort удаляется и его key не возвращается.
+  Storage/range-read failures остаются dependency errors и также не выдают key. Полный файл
+  в память не собирается, архивы не распаковываются. Finding №4 закрыт на code-head
+  `d038ad8`; exact-head CI #38292243315 (`checks` + `database`) прошёл успешно.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
