@@ -88,7 +88,7 @@ function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean 
     && isEditorDraftContextKey(input.contextKey)
     && input.contextKey.length <= 4096
     && uuid.test(input.draftId)
-    && input.fileName.length <= 4096
+    && input.fileName.length <= 32_768
     && input.declaredMime.length <= 512
     && input.detectedType.length > 0
     && input.detectedType.length <= 64
