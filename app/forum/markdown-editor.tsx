@@ -34,7 +34,7 @@ import {
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
-import { clipboardPlainToMarkdown } from "./clipboard-markdown";
+import { clipboardPlainToMarkdown } from "./clipboard-markdown";\nimport { useEditorAttachments } from "./editor-attachments";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -184,6 +184,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
     });
 
+    const attachments = useEditorAttachments({
+      contextKey: accountId ? draftContextKey : undefined,
+      draftId: draft.draftId,
+      disabled,
+    });
+
     useEffect(() => {
       if (draftPublicationPending) {
         if (publicationPreparedRef.current) publicationPendingSeenRef.current = true;
@@ -236,6 +242,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
         if (intent !== draftPublicationIntent) return;
 
+        if (attachments.blocking) {
+          event.preventDefault();
+          attachments.markPublicationAttempt();
+          return;
+        }
         event.preventDefault();
         if (publicationPreparingRef.current) return;
         publicationPreparingRef.current = true;
@@ -737,6 +748,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     return (
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
+        onDragOver={attachments.handleDragOver}
+        onDrop={attachments.handleDrop}
+        onPasteCapture={attachments.handlePaste}
         onKeyDownCapture={(event) => {
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
@@ -994,6 +1008,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             </section>
           )}
         </div>
+        {attachments.element}
         {draft.element}
       </div>
     );
