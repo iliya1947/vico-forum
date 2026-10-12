@@ -9,6 +9,7 @@ import {
 import { forumDraftStoreContext } from "../forum/draft-request-context";
 import type { PrivateAttachmentBucket } from "../forum/attachment-r2";
 import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-drafts";
+import type { CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { action } from "./attachment-upload";
 
@@ -36,7 +37,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const assertContextExists = vi.fn(async () => {});
   ctx.set(forumDraftStoreContext, { assertContextExists } as never);
 
-  const createDraftAttachment = vi.fn(async (input) => ({
+  const createDraftAttachment = vi.fn(async (input: CreateDraftAttachmentInput) => ({
     ...input,
     createdAt: new Date().toISOString(),
   }));
