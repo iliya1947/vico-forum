@@ -351,19 +351,6 @@ Vico Forum находится в ранней pre-release разработке.
   pre-release фазе не классифицирован как defect: просроченный payload не
   возвращается при следующем обращении, а глобальный physical retention cleanup
   относится к будущему release/operational path. Код Stage 4 не исправлялся.
-  Root-cause cleanup draft model (2026-10-12) заменяет прежнее
-  event-specific латание единым authoritative payload runtime на owner/context.
-  Body/title/tags/parentPostId обновляют одну snapshot-модель по фактическим
-  событиям, поэтому cleanup больше не перечитывает уже изменившийся DOM, а
-  Reply/Quote записывают parent до same-event insertion. Space/paste/toolbar/
-  Enter остаются только моментами local capture. Submit теперь приостанавливает
-  последующие sync и, если собственный 60s autosave уже выполняется, ждёт его
-  известного CAS-результата перед повторной отправкой формы с актуальной
-  draft-version; ambiguous network result/conflict автоматически не публикуется.
-  Этим cleanup закрывает первопричину Stage 4 findings о stale non-body payload,
-  неверных title/tags save-triggers и собственной autosave→publish гонке.
-  Side-by-side conflict presentation и несогласованные draft/publication limits
-  остаются отдельными открытыми findings и в этот пакет не входят.
   Повторный поэтапный аудит Stage 5 (2026-10-11) для уже реализованного
   file-verification/private-R2 slice выявил четыре current-scope defects.
   Filename validation не классифицирует Unicode bidi/format controls как masking

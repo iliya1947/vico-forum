@@ -27,14 +27,15 @@ function Harness({ ownerId }: { ownerId: string | null }) {
   const [body, setBody] = useState("");
   useEffect(() => { setBody(""); }, [ownerId]);
   const draft = useEditorDraft({
-    ownerId, contextKey, locale: "en", initialPayload: empty,
+    ownerId, contextKey, locale: "en",
+    readPayload: (next) => ({ ...empty, body: next }),
     restore: (payload) => setBody(payload.body),
   });
   return <div>
     <label htmlFor="draft-test">Body</label>
     <input id="draft-test" value={body} onChange={(event) => {
       setBody(event.target.value);
-      draft.noteEdit(event.target.value, event.target.value.endsWith(" "));
+      draft.noteEdit(event.target.value);
     }} />
     <button type="button" onClick={draft.saveLocal}>Leave editor</button>
     <button type="button" onClick={() => draft.acknowledgePublished(draft.draftId, draft.expectedVersion + 1)}>
