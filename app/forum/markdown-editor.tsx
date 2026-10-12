@@ -34,7 +34,8 @@ import {
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
-import { clipboardPlainToMarkdown } from "./clipboard-markdown";\nimport { useEditorAttachments } from "./editor-attachments";
+import { clipboardPlainToMarkdown } from "./clipboard-markdown";
+import { useEditorAttachments } from "./editor-attachments";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
