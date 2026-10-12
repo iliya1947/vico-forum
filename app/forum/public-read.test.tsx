@@ -1125,7 +1125,7 @@ describe("Help & solutions modes and authoring", () => {
         declaredMime: "text/plain",
         detectedType: "executable",
         reason: "executable-signature",
-        byteSize: 4,
+        declaredByteSize: 4,
         createdAt: new Date("2026-10-12T12:00:00Z"),
       }],
       hasMore: true,
