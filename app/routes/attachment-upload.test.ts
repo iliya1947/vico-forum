@@ -42,16 +42,23 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
     ...input,
     createdAt: new Date().toISOString(),
   }));
+  const listDraftAttachments = vi.fn(async () => []);
+  const removeDraftAttachment = vi.fn(async () => true);
   const recordSecurityEvent = vi.fn(async () => {});
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
   ctx.set(forumAttachmentStoreContext, {
     createDraftAttachment,
+    listDraftAttachments,
+    removeDraftAttachment,
     recordSecurityEvent,
     readSecurityAttachmentEvents,
   } as never);
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
-  return { ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent };
+  return {
+    ctx, r2, assertContextExists, createDraftAttachment,
+    listDraftAttachments, removeDraftAttachment, recordSecurityEvent,
+  };
 }
 
 function request(
@@ -223,5 +230,76 @@ describe("private attachment upload API", () => {
     });
     expect(response.status).toBe(503);
     expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
+
+  it("lists only safe attachment metadata for the current draft generation", async () => {
+    const env = setup();
+    env.listDraftAttachments.mockResolvedValueOnce([{
+      id: "23b93562-0550-4eef-88af-f951d6ea6138",
+      objectKey: "private/secret-object",
+      fileName: "notes.txt",
+      declaredMime: "text/plain",
+      detectedType: "text",
+      responseMime: "text/plain; charset=utf-8",
+      byteSize: 12,
+      verificationStatus: "type-checked",
+      createdAt: new Date().toISOString(),
+    }]);
+    const response = await action({
+      request: new Request("https://forum.test/api/attachments", {
+        method: "GET",
+        headers: {
+          "X-Vico-Draft-Context": encodeURIComponent(contextKey),
+          "X-Vico-Draft-Id": draftId,
+        },
+      }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    expect(body).toContain("notes.txt");
+    expect(body).not.toContain("private/secret-object");
+    expect(body).not.toContain("declaredMime");
+    expect(env.listDraftAttachments).toHaveBeenCalledWith("real-user", contextKey, draftId);
+  });
+
+  it("removes only the exact owner/context/draft attachment reference", async () => {
+    const env = setup();
+    const attachmentId = "23b93562-0550-4eef-88af-f951d6ea6138";
+    const response = await action({
+      request: new Request("https://forum.test/api/attachments", {
+        method: "DELETE",
+        headers: {
+          Origin: "https://forum.test",
+          "X-Vico-Draft-Context": encodeURIComponent(contextKey),
+          "X-Vico-Draft-Id": draftId,
+          "X-Vico-Attachment-Id": attachmentId,
+        },
+      }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(200);
+    expect(env.removeDraftAttachment).toHaveBeenCalledWith(
+      "real-user", contextKey, draftId, attachmentId,
+    );
+    expect(env.r2.delete).not.toHaveBeenCalled();
+  });
+
+  it("requires same origin for draft attachment removal", async () => {
+    const env = setup();
+    const response = await action({
+      request: new Request("https://forum.test/api/attachments", {
+        method: "DELETE",
+        headers: {
+          Origin: "https://evil.test",
+          "X-Vico-Draft-Context": encodeURIComponent(contextKey),
+          "X-Vico-Draft-Id": draftId,
+          "X-Vico-Attachment-Id": "23b93562-0550-4eef-88af-f951d6ea6138",
+        },
+      }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(403);
+    expect(env.removeDraftAttachment).not.toHaveBeenCalled();
   });
 });
