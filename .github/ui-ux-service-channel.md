@@ -4456,7 +4456,7 @@ being pulled into this finding.
 
 Implementation code remains unchanged from green head
 `f9d774e803262050ff61306a15c6226894e9945b`. Implementation-branch head
-`1dc214bc808ea11c4ade0d349b2336e6e106b67d` changes only project/spec status text.
+`1dc214bc808ea11c4ade0d349b2336e6e106b67d` changes only project/spec status text and passed exact-head CI #38266351724 with `checks` and `database` green.
 Do not attempt a length-only workaround and do not proceed to another finding until the
 owner explicitly continues.
 
