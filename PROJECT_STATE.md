@@ -443,8 +443,16 @@ Vico Forum находится в ранней pre-release разработке.
   DOCX/XLSX/PPTX проверяются package metadata + соответствующий main part; для ODT/ODS —
   нормативный первый uncompressed `mimetype`, exact media type, `META-INF/manifest.xml` и
   document content/styles presence, а ODF entries ограничены STORE/DEFLATE. Storage read failures
-  не маскируются как invalid content. Remaining 7z/gzip/tar/OLE families и R2 finalization остаются
-  следующими subtask; до их реализации finding №4 остаётся открытым.
+  не маскируются как invalid content. Третий bounded subtask 2026-10-12 добавляет random-access
+  structural sanity для остальных уже поддерживаемых container families без подключения к R2
+  writer: 7z проверяет signature/version, StartHeader CRC и bounded NextHeader range+CRC; gzip —
+  RFC member header/flags/optional fields/FHCRC и наличие payload+trailer без распаковки DEFLATE;
+  tar — 512-byte ustar headers, checksum, octal/GNU positive base-256 size и data-block boundaries;
+  OLE/CFB — header/version/sector invariants, DIFAT/FAT allocation, directory FAT chain и Root Entry,
+  включая v4 header padding. Все чтения bounded, а storage errors пробрасываются. Архивы не
+  распаковываются и эта проверка не выдаётся за антивирус. Все format validators теперь имеют
+  finalization boundary; finding №4 остаётся открытым только до подключения их к private R2
+  finalization/delete-on-rejection.
   Проверка уже реализованных этапов Editor 2.0 1–3 (2026-10-11)
   подтвердила и исправила текущие функциональные дефекты: двойной
   requestSubmit по Ctrl+Enter в Advanced; ошибочные смещения выделения в
