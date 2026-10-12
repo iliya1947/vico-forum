@@ -324,30 +324,30 @@ Vico Forum находится в ранней pre-release разработке.
   Regression воспроизводит Advanced → Simple selection через fenced code и проверяет,
   что последующая Bold-команда не изменяет source.
   Повторный поэтапный аудит Stage 3 (2026-10-11) выявил три current-scope
-  defects. Действие Edit in Markdown на protected code переключает только
-  authoring mode и не переводит caret/scroll к source span выбранного code block.
-  HTML clipboard conversion для inline <code> не применяет необходимые
+  defects. Finding №1 исправлен 2026-10-12 на существующей authoring-selection
+  boundary: protected fenced-code node теперь передаёт собственный exact source span
+  в общий переход Simple → Advanced, а тот использует уже существующий
+  pendingSelectionRef lifecycle для focus/selection textarea. Поэтому «Edit in Markdown»
+  открывает именно выбранный code block вместо восстановления предыдущего caret/selection;
+  отдельная scroll-механика или новый state не добавлялись. Regression с двумя code blocks
+  проверяет, что кнопка второго блока переводит Advanced textarea и выделяет ровно его
+  Markdown source. HTML clipboard conversion для inline <code> ранее не применял необходимые
   delimiter-padding правила для текста, начинающегося/заканчивающегося backtick
-  или пробелами, поэтому поддерживаемый inline code может менять содержимое после
-  повторного Markdown parse. tableAt() при более чем 200 data rows принимает
-  только первые 200 строк как table и оставляет хвост того же Markdown-table как
-  prose вместо защиты всего oversized блока. Ранее найденный code/spec conflict
-  по созданию таблиц разрешён владельцем 2026-10-12 в пользу последовательного
-  Simple UX: обычную Markdown-таблицу можно создать визуальной командой в Simple,
-  затем редактировать там же; Advanced используется для ручного Markdown и
-  сложных/нестандартных таблиц. Текущий UI с Table в Simple корректен, поэтому
-  код для этого пункта менять не требуется. Stage 3 finding №2 (HTML inline-code
-  paste) исправлен 2026-10-12 на общей Markdown serialization boundary: существующее
-  корректное правило выбора backtick delimiter/padding вынесено из MarkdownEditor в
-  общий editor-document helper и используется также HTML clipboard converter.
-  Поэтому paste больше не имеет отдельной расходящейся сериализации для `<code>`,
-  а граничные backticks и симметричные пробелы сохраняются по тем же правилам, что
-  inline-code toolbar. Stage 3 finding №3 (oversized Markdown table) исправлен
-  отдельно 2026-10-12 на parser boundary: лимит 200 больше не завершает распознавание
-  таблицы преждевременно. Parser проверяет следующую строку и при 201-й валидной data row
-  отказывается от visual-table representation, после чего существующий protected-table
-  path сохраняет весь contiguous Markdown-table одним read-only блоком. Finding №1 остаётся
-  открытым; другие parser/table semantics этим изменением не менялись.
+  или пробелами; Stage 3 finding №2 исправлен 2026-10-12 на общей Markdown
+  serialization boundary: существующее корректное правило выбора backtick
+  delimiter/padding вынесено из MarkdownEditor в общий editor-document helper и
+  используется также HTML clipboard converter. Поэтому paste больше не имеет отдельной
+  расходящейся сериализации для `<code>`, а граничные backticks и симметричные пробелы
+  сохраняются по тем же правилам, что inline-code toolbar. Stage 3 finding №3
+  (oversized Markdown table) исправлен отдельно 2026-10-12 на parser boundary:
+  лимит 200 больше не завершает распознавание таблицы преждевременно. Parser проверяет
+  следующую строку и при 201-й валидной data row отказывается от visual-table
+  representation, после чего существующий protected-table path сохраняет весь
+  contiguous Markdown-table одним read-only блоком. Ранее найденный code/spec conflict
+  по созданию таблиц разрешён владельцем 2026-10-12 в пользу последовательного Simple UX:
+  обычную Markdown-таблицу можно создать визуальной командой в Simple, затем редактировать
+  там же; Advanced используется для ручного Markdown и сложных/нестандартных таблиц.
+  Текущий UI с Table в Simple корректен.
   Повторный поэтапный аудит Stage 4 (2026-10-11) выявил пять current-scope
   defects. Draft runtime authoritative хранит только body, а title/tags/parentPostId
   берёт из live DOM при capture; final cleanup после React commit и same-event

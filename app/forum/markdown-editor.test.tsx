@@ -638,6 +638,28 @@ describe("MarkdownEditor", () => {
     expect(new FormData(textarea.form!).get("body")).toBe("First\n\nSecond");
   });
 
+  it("opens the selected protected code block at its exact source span in Advanced mode", async () => {
+    const first = "```js\nfirst();\n```";
+    const second = "```ts\nsecond();\n```";
+    const source = `Before\n\n${first}\n\nMiddle\n\n${second}\n\nAfter`;
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" defaultValue={source} />
+      </>,
+    );
+
+    const editButtons = screen.getAllByRole("button", { name: "Edit in Markdown" });
+    expect(editButtons).toHaveLength(2);
+    await userEvent.click(editButtons[1]!);
+
+    const editor = document.querySelector(".markdown-editor")!;
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(editor).toHaveAttribute("data-authoring", "advanced");
+    expect(textarea).toHaveFocus();
+    expect(textarea.value.slice(textarea.selectionStart, textarea.selectionEnd)).toBe(second);
+  });
+
   it("edits ordinary table cells and adds rows while preserving the body source", async () => {
     const source = "| A | B |\n| --- | --- |\n| one | two |";
     renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);

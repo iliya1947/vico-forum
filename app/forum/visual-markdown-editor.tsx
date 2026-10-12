@@ -28,7 +28,7 @@ interface VisualEditorProps {
   ): void;
   onSelection(selection: EditorSelection | null): void;
   onInsertParagraph(offset: number): void;
-  onEditTechnical(): void;
+  onEditTechnical(range?: EditorSelection): void;
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
   onPasteTable(range: EditorSelection, plain: string): void;
@@ -487,7 +487,15 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       if (node.type === "code") return (
         <div className="markdown-editor-protected" data-visual-protected={node.type}>
           <ForumMarkdown>{source}</ForumMarkdown>
-          <button type="button" disabled={disabled} onClick={actions.onEditTechnical}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => actions.onEditTechnical(
+              range
+                ? { start: range.start + baseOffset, end: range.end + baseOffset }
+                : undefined,
+            )}
+          >
             {t("editorEditInMarkdown")}
           </button>
         </div>

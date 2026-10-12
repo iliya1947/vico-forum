@@ -116,8 +116,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }
     }, [accountId, defaultAuthoringMode]);
 
-    function switchAuthoring(next: "simple" | "advanced") {
-      const selection = sourceSelection() ?? historyRef.current.current.selection;
+    function switchAuthoring(
+      next: "simple" | "advanced",
+      targetSelection?: EditorSelection,
+    ) {
+      const selection = targetSelection ?? sourceSelection() ?? historyRef.current.current.selection;
       if (next === "advanced") {
         pendingSelectionRef.current = selection;
         pendingVisualSelectionRef.current = null;
@@ -895,7 +898,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 rememberSelection(selection);
               }}
               onInsertParagraph={insertVisualParagraph}
-              onEditTechnical={() => switchAuthoring("advanced")}
+              onEditTechnical={(range) => switchAuthoring("advanced", range)}
               onReplaceRange={replaceSourceRange}
               onTableDimension={extendTable}
               onPasteTable={pasteSpreadsheet}
