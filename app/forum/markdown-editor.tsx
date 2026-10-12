@@ -53,7 +53,6 @@ export interface MarkdownEditorProps {
   defaultAuthoringMode?: "simple" | "advanced";
   draftContextKey?: string;
   draftLocale?: string;
-  draftPublicationIntent?: string;
   onDraftRestoreParent?: (parentPostId: string | null) => void;
 }
 
@@ -105,7 +104,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       defaultAuthoringMode = "simple",
       draftContextKey,
       draftLocale,
-      draftPublicationIntent,
       onDraftRestoreParent,
     },
     forwardedRef,
@@ -156,10 +154,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const editorRef = useRef<HTMLDivElement>(null);
     const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const draftIdInputRef = useRef<HTMLInputElement>(null);
-    const draftVersionInputRef = useRef<HTMLInputElement>(null);
-    const publicationWaitRef = useRef(false);
-    const publicationRetryRef = useRef(false);
     const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
@@ -202,21 +196,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const field = form.elements.namedItem(fieldName);
         return field instanceof HTMLInputElement ? field.value : "";
       };
-      const applyPublicationFence = (fence: { draftId: string; expectedVersion: number }) => {
-        if (draftIdInputRef.current) draftIdInputRef.current.value = fence.draftId;
-        if (draftVersionInputRef.current) {
-          draftVersionInputRef.current.value = String(fence.expectedVersion);
-        }
-      };
-      const submittedIntent = (event: SubmitEvent) => {
-        const submitter = event.submitter;
-        if (
-          (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement)
-          && submitter.name === "intent"
-        ) return submitter.value;
-        const field = form.elements.namedItem("intent");
-        return field instanceof HTMLInputElement ? field.value : null;
-      };
       draft.seedFields({
         title: fieldValue("title"),
         tags: fieldValue("tags"),
@@ -232,56 +211,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         );
       };
       const flush = () => draft.saveLocal();
-      const onSubmit = (event: SubmitEvent) => {
-        if (!draftPublicationIntent || submittedIntent(event) !== draftPublicationIntent) return;
-        if (publicationRetryRef.current) {
-          publicationRetryRef.current = false;
-          return;
-        }
-        if (publicationWaitRef.current) {
-          event.preventDefault();
-          return;
-        }
-        const preparation = draft.preparePublication();
-        if (preparation.kind === "ready") {
-          applyPublicationFence(preparation.fence);
-          return;
-        }
-        event.preventDefault();
-        publicationWaitRef.current = true;
-        const submitter = event.submitter;
-        const retrySubmitter =
-          (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement)
-          && submitter.form === form
-            ? submitter
-            : undefined;
-        void preparation.promise.then((fence) => {
-          publicationWaitRef.current = false;
-          if (!fence || !form.isConnected) return;
-          applyPublicationFence(fence);
-          publicationRetryRef.current = true;
-          try {
-            form.requestSubmit(retrySubmitter);
-          } catch {
-            publicationRetryRef.current = false;
-            draft.resumePublication();
-          }
-        });
-      };
       form.addEventListener("input", onInput);
       form.addEventListener("focusout", flush);
-      form.addEventListener("submit", onSubmit);
       return () => {
         form.removeEventListener("input", onInput);
         form.removeEventListener("focusout", flush);
-        form.removeEventListener("submit", onSubmit);
       };
-    });
-
-    const previousDisabledRef = useRef(disabled);
-    useEffect(() => {
-      if (previousDisabledRef.current && !disabled) draft.resumePublication();
-      previousDisabledRef.current = disabled;
     });
 
 
@@ -746,8 +681,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       >
         {accountId && draftContextKey ? (
           <>
-            <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
-            <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+            <input type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+            <input type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>

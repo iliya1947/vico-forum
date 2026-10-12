@@ -16,10 +16,6 @@ interface Props {
 }
 type Status = "idle" | "saved" | "pending" | "saving" | "restored" | "conflict" | "error";
 type Conflict = { local: LocalEditorDraft; server: DraftRemote | DraftMetadata };
-type DraftPublicationFence = { draftId: string; expectedVersion: number };
-type DraftPublicationPreparation =
-  | { kind: "ready"; fence: DraftPublicationFence }
-  | { kind: "wait"; promise: Promise<DraftPublicationFence | null> };
 type Runtime = {
   identity: string;
   ownerId: string;
@@ -31,8 +27,7 @@ type Runtime = {
   hasInput: boolean;
   startVersion: number;
   conflict: Conflict | null;
-  syncPromise: Promise<boolean> | null;
-  publicationPending: boolean;
+  syncing: boolean;
   reading: boolean;
   disposed: boolean;
   epoch: number;
@@ -95,8 +90,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     ctx.local = null;
     ctx.payload = blank();
     ctx.hasInput = false;
-    ctx.syncPromise = null;
-    ctx.publicationPending = false;
+    ctx.syncing = false;
     ctx.reading = false;
     ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
@@ -127,7 +121,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
 
   async function checkRemote(ctx: Runtime) {
-    if (!current(ctx) || ctx.syncPromise || ctx.publicationPending || ctx.reading || ctx.conflict) return;
+    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
     const epoch = ctx.epoch;
     ctx.reading = true;
     try {
@@ -182,32 +176,34 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     }
   }
 
-  async function performSync(ctx: Runtime, sent: LocalEditorDraft): Promise<boolean> {
+  async function sync(ctx: Runtime) {
+    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
+    const sent = ctx.local;
+    if (!sent || sent.editedAt === sent.syncedEditedAt) return;
     const epoch = ctx.epoch;
+    ctx.syncing = true;
     setStatus("saving");
     try {
       const result = await mutateDraft(ctx.locale, {
         intent: "save", contextKey: ctx.contextKey, draftId: sent.draftId,
         payload: sent.payload, expectedVersion: sent.baseVersion,
       });
-      if (!currentAt(ctx, epoch)) return false;
+      if (!currentAt(ctx, epoch)) return;
       if (result.outcome === "saved" && result.draft) {
         const latest = ctx.local;
-        if (!latest || latest.draftId !== sent.draftId) return false;
+        if (!latest || latest.draftId !== sent.draftId) return;
         const next = { ...latest, baseVersion: result.draft.version,
           syncedEditedAt: latest === sent ? sent.editedAt : latest.syncedEditedAt };
         ctx.local = next;
         writeLocalEditorDraft(next);
         setExpectedVersion(result.draft.version);
         setStatus(next.editedAt === next.syncedEditedAt ? "saved" : "pending");
-        return true;
-      }
-      if (result.outcome === "conflict" || result.outcome === "gone") {
+      } else if (result.outcome === "conflict" || result.outcome === "gone") {
         // Refetch authoritative metadata, not a client clock or an assumed deletion.
         const meta = (await fetchDraftMetadata(ctx.locale))
           .find((entry) => entry.contextKey === ctx.contextKey);
-        if (!currentAt(ctx, epoch)) return false;
-        if (!meta) return false;
+        if (!currentAt(ctx, epoch)) return;
+        if (!meta) return;
         if (meta.status !== "active" && meta.draftId === sent.draftId) {
           reset(ctx, meta.version);
         } else if (meta.status !== "active") {
@@ -215,29 +211,16 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
           if (latest) updateConflict(ctx, { local: latest, server: meta });
         } else {
           const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
-          if (!currentAt(ctx, epoch) || !remote) return false;
+          if (!currentAt(ctx, epoch) || !remote) return;
           const latest = ctx.local;
           if (latest) updateConflict(ctx, { local: latest, server: remote });
           else applyRemote(ctx, remote);
         }
       }
-      return false;
-    } catch {
-      if (currentAt(ctx, epoch) && !ctx.conflict) setStatus("pending");
-      return false;
+    } catch { if (currentAt(ctx, epoch) && !ctx.conflict) setStatus("pending"); }
+    finally {
+      if (ctx.epoch === epoch) ctx.syncing = false;
     }
-  }
-
-  function startSync(ctx: Runtime): Promise<boolean> | null {
-    if (!current(ctx) || ctx.reading || ctx.conflict || ctx.publicationPending) return null;
-    if (ctx.syncPromise) return ctx.syncPromise;
-    const sent = ctx.local;
-    if (!sent || sent.editedAt === sent.syncedEditedAt) return null;
-    const running = performSync(ctx, sent).finally(() => {
-      if (ctx.syncPromise === running) ctx.syncPromise = null;
-    });
-    ctx.syncPromise = running;
-    return running;
   }
 
   function noteEdit(body: string, immediate = false) {
@@ -262,36 +245,6 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function saveLocal() {
     const ctx = runtimeRef.current;
     if (ctx) capture(ctx);
-  }
-  function publicationFence(ctx: Runtime): DraftPublicationFence {
-    const local = ctx.local;
-    return {
-      draftId: local?.draftId ?? ctx.draftId,
-      expectedVersion: local?.baseVersion ?? ctx.startVersion,
-    };
-  }
-  function preparePublication(): DraftPublicationPreparation {
-    const ctx = runtimeRef.current;
-    if (!ctx || !current(ctx)) {
-      return { kind: "ready", fence: { draftId, expectedVersion } };
-    }
-    ctx.publicationPending = true;
-    const pending = ctx.syncPromise;
-    if (!pending) return { kind: "ready", fence: publicationFence(ctx) };
-    return {
-      kind: "wait",
-      promise: pending.then((synced) => {
-        if (!current(ctx) || !synced || ctx.conflict) {
-          if (current(ctx)) ctx.publicationPending = false;
-          return null;
-        }
-        return publicationFence(ctx);
-      }),
-    };
-  }
-  function resumePublication() {
-    const ctx = runtimeRef.current;
-    if (ctx && current(ctx)) ctx.publicationPending = false;
   }
   function chooseVersion(which: "local" | "server") {
     const ctx = runtimeRef.current;
@@ -340,7 +293,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx: Runtime = {
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
       local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
-      syncPromise: null, publicationPending: false, reading: false, disposed: false, epoch: 0,
+      syncing: false, reading: false, disposed: false, epoch: 0,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
@@ -394,9 +347,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVisibility);
     const timer = window.setInterval(() => {
-      const running = startSync(ctx);
-      if (running) void running.then(() => checkRemote(ctx));
-      else void checkRemote(ctx);
+      void sync(ctx).then(() => checkRemote(ctx));
     }, 60_000);
     return () => {
       // Capture the old owner/context before discarding its runtime.
@@ -418,8 +369,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     conflict: t("editorDraftConflict"), error: t("editorDraftLocalError"),
   };
   return {
-    noteEdit, noteFields, seedFields, saveLocal, preparePublication, resumePublication,
-    draftId, expectedVersion, acknowledgePublished,
+    noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
