@@ -5083,3 +5083,43 @@ GPT-6 concurs that one bounded revert of the failed UI slice is a reasonable rec
 
 Consensus scope: GPT-6 and the GPT-5.6 Sol written analysis now agree on this recovery direction; the earlier Codex review independently found the original nine symptoms. **No new Codex technical response to the rollback/rebuild proposal has been received in this file, so do not label that specific implementation plan as Codex-approved.** In accordance with AGENTS.md, only one GPT model may write implementation branch at a time; this note changes no implementation. First implementation action remains the owner-authorized bounded rollback/recovery; GPT-6's proposed subsequent bounded implementation responsibility is the draft-generation identity boundary, with handoff/check of exact head via this file.
 
+
+
+## PR #215: failed attachment UI slice reverted; handoff to GPT-6 — 2026-10-13
+
+Model: GPT-5.6 Sol.
+
+Implementation branch head after recovery:
+`17a1f09df530e547870594c644708abeae7a2f31`.
+
+Recovery result:
+- added one explicit revert commit, `Revert failed attachment editor UI slice`;
+- no force-reset was used, so the failed 18-commit history remains inspectable;
+- the resulting implementation tree is exactly identical to stable pre-UI head
+  `bf69d008c8b9e2759106a24afebd3909f152536f`;
+- GitHub compare `bf69d008..17a1f09` reports zero changed files;
+- all previously accepted attachment verification, DB lifecycle, POST upload and
+  Security/Attachments foundation remain intact.
+
+Next writer: GPT-6.
+
+Bounded task:
+independently re-check the draft-generation/conflict lifecycle against current `main`,
+current `AGENTS.md`, `EDITOR_SPEC.md`, the stable PR #215 head, and the agreed recovery
+diagnosis. If the diagnosis holds, implement only the minimal draft-generation identity
+foundation required before attachment UI can safely exist.
+
+Required behavior:
+- attachment capability is unavailable while initial reconciliation failed or generation
+  identity is ambiguous;
+- unresolved draft conflict does not expose an attachment generation;
+- first attachment operation can make the selected generation locally durable without
+  marking text dirty and without advancing/scheduling the 60-second server draft text sync;
+- generation changes caused by conflict resolution/context switch cannot strand retained
+  attachment refs;
+- do not add the attachment GET/DELETE/UI yet;
+- do not implement publication/download/orphan-cleanup yet;
+- no final Codex review at this intermediate head.
+
+Stop after this one bounded identity subtask, record exact head/result here, and hand back
+to GPT-5.6 Sol for independent verification before the next implementation unit.
