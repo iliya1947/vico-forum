@@ -4701,3 +4701,51 @@ Implementation PR #215 remains unchanged at
 The next step, after owner continuation, is for ChatGPT to design and implement this
 bounded finalization stage. This is not the final Codex Code Review of PR #215.
 
+## PR #215: Stage 5 finding №4 — structural validator subtask 1 complete — 2026-10-12
+
+After the ChatGPT/Codex technical consensus, owner continuation authorized implementation
+of the complex attachment structural-validation finding. The work remains intentionally
+split into bounded subtasks.
+
+This first subtask adds only the internal streaming structural-validation core for
+PNG/JPEG/GIF/WebP/PDF. It does not connect finalization to the private R2 writer yet and
+does not implement ZIP/Office/archive validators.
+
+Implemented boundary:
+- common `AttachmentStructuralValidator` contract consumes arbitrary Uint8Array chunks
+  and finalizes against the authoritative expected byte length;
+- validators keep only bounded head/tail buffers or small parser state; no full-file
+  buffering is introduced;
+- PNG requires signature, first/unique IHDR with valid dimensions/bit-depth/color-mode
+  basics, at least one IDAT, terminal zero-length IEND and no bytes after IEND;
+- JPEG requires SOI plus frame, scan and terminal EOI evidence, with EOI at the end;
+- GIF requires a complete header/logical-screen minimum and terminal trailer, accounting
+  for declared global-color-table size when present;
+- WebP requires exact RIFF-declared file size, WEBP form type and a plausible first
+  VP8/VP8L/VP8X image chunk boundary;
+- PDF requires a PDF header plus tail `startxref` and terminal `%%EOF`, allowing only
+  permitted trailing whitespace after EOF.
+
+Focused regressions cover deliberately fragmented chunks, header-only/truncated payloads,
+invalid structural fields, trailing payloads and authoritative length mismatch. Container
+families return no validator in this subtask by design.
+
+Implementation history:
+- initial core commit `d03382421fa3a0e4a14025494a69db8262eab982`;
+- lint/type narrowing corrections were mechanical and did not alter validation semantics;
+- self-review tightened WebP RIFF exact length, terminal JPEG EOI, and PDF trailing-data
+  rejection before acceptance of the subtask;
+- final head `ed4e95ce04cc967d58df87cd96207989b441d8ce`.
+
+Exact-head CI #38281335890 completed successfully with `checks` and `database` green.
+Compare from prior implementation head changes only:
+`app/forum/attachment-structural-validation.ts`,
+`app/forum/attachment-structural-validation.test.ts`,
+`PROJECT_STATE.md`, and `EDITOR_SPEC.md`.
+
+Finding №4 is NOT closed. Next bounded subtask is archive/container structural validation,
+starting with ZIP/Office package identity; private R2 finalization/delete-on-rejection remains
+a later subtask after validators exist. HTTP upload routes, DB attachment lifecycle,
+download UI, durable Security events, antivirus, orphan cleanup and Stage 6 remain outside
+this work. Do not proceed until owner explicitly continues.
+
