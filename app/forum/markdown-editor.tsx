@@ -56,6 +56,8 @@ export interface MarkdownEditorProps {
   draftContextKey?: string;
   draftLocale?: string;
   onDraftRestoreParent?: (parentPostId: string | null) => void;
+  draftPublicationIntent?: string;
+  draftPublicationPending?: boolean;
 }
 
 interface PendingSelection {
@@ -84,6 +86,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       draftContextKey,
       draftLocale,
       onDraftRestoreParent,
+      draftPublicationIntent,
+      draftPublicationPending = false,
     },
     forwardedRef,
   ) {
@@ -133,6 +137,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const editorRef = useRef<HTMLDivElement>(null);
     const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const draftIdInputRef = useRef<HTMLInputElement>(null);
+    const draftVersionInputRef = useRef<HTMLInputElement>(null);
+    const publicationReplayRef = useRef(false);
+    const publicationPreparingRef = useRef(false);
+    const publicationPreparedRef = useRef(false);
+    const publicationPendingSeenRef = useRef(false);
     const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
@@ -150,6 +160,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(defaultValue);
       setPasteWarning(false);
       setFindOpen(false);
+      publicationReplayRef.current = false;
+      publicationPreparingRef.current = false;
+      publicationPreparedRef.current = false;
+      publicationPendingSeenRef.current = false;
     }, [editorScope, defaultValue]);
 
     const draft = useEditorDraft({
@@ -166,6 +180,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         }
       },
     });
+
+    useEffect(() => {
+      if (draftPublicationPending) {
+        if (publicationPreparedRef.current) publicationPendingSeenRef.current = true;
+        return;
+      }
+      if (!publicationPendingSeenRef.current) return;
+      publicationPendingSeenRef.current = false;
+      publicationPreparedRef.current = false;
+      draft.releasePublication();
+    }, [draftPublicationPending, draft]);
 
     useEffect(() => {
       if (!accountId || !draftContextKey) return;
@@ -190,11 +215,60 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         );
       };
       const flush = () => draft.saveLocal();
+      const onSubmit = (event: SubmitEvent) => {
+        if (!draftPublicationIntent) return;
+        if (publicationReplayRef.current) {
+          publicationReplayRef.current = false;
+          return;
+        }
+
+        const submitter = event.submitter;
+        const submitterIntent =
+          (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement)
+          && submitter.name === "intent"
+            ? submitter.value
+            : null;
+        const intentField = form.elements.namedItem("intent");
+        const intent = submitterIntent
+          ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
+        if (intent !== draftPublicationIntent) return;
+
+        event.preventDefault();
+        if (publicationPreparingRef.current) return;
+        publicationPreparingRef.current = true;
+        const replaySubmitter =
+          submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement
+            ? submitter
+            : undefined;
+
+        void draft.preparePublication().then((fence) => {
+          publicationPreparingRef.current = false;
+          if (!fence) return;
+          if (draftIdInputRef.current) draftIdInputRef.current.value = fence.draftId;
+          if (draftVersionInputRef.current) {
+            draftVersionInputRef.current.value = String(fence.expectedVersion);
+          }
+          publicationPreparedRef.current = true;
+          publicationReplayRef.current = true;
+          form.requestSubmit(replaySubmitter);
+          if (publicationReplayRef.current) {
+            publicationReplayRef.current = false;
+            publicationPreparedRef.current = false;
+            draft.releasePublication();
+          }
+        }).catch(() => {
+          publicationPreparingRef.current = false;
+          publicationPreparedRef.current = false;
+          draft.releasePublication();
+        });
+      };
       form.addEventListener("input", onInput);
       form.addEventListener("focusout", flush);
+      form.addEventListener("submit", onSubmit);
       return () => {
         form.removeEventListener("input", onInput);
         form.removeEventListener("focusout", flush);
+        form.removeEventListener("submit", onSubmit);
       };
     });
 
@@ -660,8 +734,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       >
         {accountId && draftContextKey ? (
           <>
-            <input type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
-            <input type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+            <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+            <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
