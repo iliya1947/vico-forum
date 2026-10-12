@@ -4749,3 +4749,50 @@ a later subtask after validators exist. HTTP upload routes, DB attachment lifecy
 download UI, durable Security events, antivirus, orphan cleanup and Stage 6 remain outside
 this work. Do not proceed until owner explicitly continues.
 
+## PR #215: Stage 5 finding №4 — ZIP/Office structural validator subtask complete — 2026-10-12
+
+Owner continuation authorized only the next bounded subtask after the image/PDF structural
+validator core. This subtask adds ZIP-backed package structural validation and does not
+integrate the validator with the private R2 writer yet.
+
+Implemented:
+- separate `AttachmentRandomAccessSource` + `validateZipAttachmentStructure()` boundary;
+- EOCD tail scan with exact comment-end fencing and single-disk classic ZIP validation;
+- ZIP64 EOCD locator/record support with safe integer and directory/count/size fencing;
+- sequential central-directory parsing, optional archive-extra/digital-signature handling;
+- every central entry must reference a matching local header (name/flags/method), with its
+  declared compressed-data range ending before the central directory;
+- DOCX/XLSX/PPTX identity requires `[Content_Types].xml`, `_rels/.rels`, and the
+  format-specific main part (`word/document.xml`, `xl/workbook.xml`,
+  `ppt/presentation.xml`);
+- ODT/ODS requires physical first-entry `mimetype` at offset 0, STORE/no local extra field,
+  exact ODF media-type bytes, `META-INF/manifest.xml`, and content/styles evidence;
+  ODF central entries are restricted to STORE/DEFLATE;
+- storage/range-read failures propagate rather than being converted into invalid-content.
+
+The validator performs bounded random-access reads and does not buffer the whole archive.
+This is the appropriate boundary for ZIP because authoritative EOCD/central-directory
+evidence is trailer-directed and cannot be proven from the first 4096 upload bytes.
+
+Focused tests cover ordinary/empty ZIP, truncation and inconsistent metadata, ZIP64,
+OOXML type discrimination with evidence beyond 4096 bytes, central/local mismatch,
+ODT/ODS mimetype+manifest rules, unsupported ODF methods, bounded range reads, and
+storage-read failure propagation.
+
+Implementation commits:
+- `6689db71c9d85ea81ff131f647af81e3503d9703` initial ZIP/package validator;
+- `198e2be9566808f32d1bac81ba430104c44ece34` central/local and ZIP64 bounds tightening;
+- `e6262d05f14416f4df744674d18327975fa218cc` compressed-data boundary + final doc wording.
+
+Exact-head CI #38286086912 completed successfully with `checks` and `database` green.
+The subtask diff from prior head `ed4e95c` changes only:
+`app/forum/attachment-zip-validation.ts`,
+`app/forum/attachment-zip-validation.test.ts`,
+`PROJECT_STATE.md`, and `EDITOR_SPEC.md`.
+
+Finding №4 remains OPEN. Remaining format validators are 7z/gzip/tar/OLE; only after
+those are complete should private R2 finalization/delete-on-rejection be integrated.
+HTTP upload, attachment DB lifecycle, download UI, durable Security events, antivirus,
+orphan cleanup and Stage 6 remain outside this subtask. Do not proceed until owner
+explicitly continues.
+
