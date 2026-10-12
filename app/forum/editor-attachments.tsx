@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type ClipboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import type { UiKey } from "../localization/catalog";
 
 export interface DraftAttachment {
   id: string;
@@ -41,7 +42,7 @@ function fallbackClipboardName(file: File): string {
   return `pasted-image-${Date.now()}.${extension}`;
 }
 
-function uploadErrorKey(reason: string | null): string {
+function uploadErrorKey(reason: string | null): UiKey<"common"> {
   if (reason === "too-large") return "editorAttachmentErrorTooLarge";
   if (reason === "empty") return "editorAttachmentErrorEmpty";
   if (reason === "invalid-name") return "editorAttachmentErrorName";
@@ -103,7 +104,7 @@ function likelySecretFile(name: string): boolean {
 export function useEditorAttachments({ contextKey, draftId, disabled }: Props) {
   const { t, i18n } = useTranslation("common");
   const [entries, setEntries] = useState<UploadEntry[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<UiKey<"common"> | null>(null);
   const [publicationWarning, setPublicationWarning] = useState(false);
   const requestsRef = useRef(new Map<string, XMLHttpRequest>());
   const scope = contextKey ? `${contextKey}\u0000${draftId}` : null;
