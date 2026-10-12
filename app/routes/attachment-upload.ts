@@ -52,24 +52,6 @@ function attachmentSize(request: Request): number | null {
   return Number.isSafeInteger(size) ? size : null;
 }
 
-function safeAttachment(attachment: {
-  id: string;
-  fileName: string;
-  detectedType: string;
-  responseMime: string;
-  byteSize: number;
-  verificationStatus: string;
-}) {
-  return {
-    id: attachment.id,
-    fileName: attachment.fileName,
-    detectedType: attachment.detectedType,
-    responseMime: attachment.responseMime,
-    byteSize: attachment.byteSize,
-    verificationStatus: attachment.verificationStatus,
-  };
-}
-
 async function contextFailure(
   context: RouterContextProvider,
   contextKey: string,
@@ -85,35 +67,6 @@ async function contextFailure(
   }
 }
 
-async function requestScope(
-  request: Request,
-  context: RouterContextProvider,
-): Promise<
-  | { response: Response }
-  | { userId: string; contextKey: string; draftId: string }
-> {
-  const session = authSessionForRequest(context);
-  if (!session) return { response: json({ error: "unauthenticated" }, 401) };
-
-  const contextKey = decodedHeader(request, "X-Vico-Draft-Context", 4096);
-  const draftId = request.headers.get("X-Vico-Draft-Id")?.trim() ?? "";
-  if (
-    contextKey === null
-    || contextKey.includes("\0")
-    || !/^[0-9a-f-]{36}$/iu.test(draftId)
-  ) {
-    return { response: json({ error: "invalid" }, 400) };
-  }
-
-  const authorization = await authorizeEditorDraftWrite(context, session.user.id, contextKey);
-  if (authorization.outcome !== "allowed") {
-    return { response: json({ error: authorization.outcome }, authorization.status) };
-  }
-  const missingContext = await contextFailure(context, contextKey);
-  if (missingContext) return { response: missingContext };
-  return { userId: session.user.id, contextKey, draftId };
-}
-
 export async function action({
   request,
   context,
@@ -121,61 +74,34 @@ export async function action({
   request: Request;
   context: RouterContextProvider;
 }) {
-  if (!["GET", "POST", "DELETE"].includes(request.method)) return json({ error: "method" }, 405);
-  if (request.method !== "GET" && !requireSameOrigin(request)) {
-    return json({ error: "origin" }, 403);
-  }
-
-  const scope = await requestScope(request, context);
-  if ("response" in scope) return scope.response;
-  const store = attachmentStoreForRequest(context);
-
-  if (request.method === "GET") {
-    try {
-      const attachments = await store.listDraftAttachments(
-        scope.userId,
-        scope.contextKey,
-        scope.draftId,
-      );
-      return json({ attachments: attachments.map(safeAttachment) });
-    } catch (error) {
-      if (error instanceof ForumAttachmentStorageUnavailableError) {
-        return json({ error: "unavailable" }, 503);
-      }
-      throw error;
-    }
-  }
-
-  if (request.method === "DELETE") {
-    const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
-    if (!/^[0-9a-f-]{36}$/iu.test(attachmentId)) return json({ error: "invalid" }, 400);
-    try {
-      const removed = await store.removeDraftAttachment(
-        scope.userId,
-        scope.contextKey,
-        scope.draftId,
-        attachmentId,
-      );
-      return removed ? json({ outcome: "removed" }) : json({ error: "notFound" }, 404);
-    } catch (error) {
-      if (error instanceof ForumAttachmentStorageUnavailableError) {
-        return json({ error: "unavailable" }, 503);
-      }
-      throw error;
-    }
-  }
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  const session = authSessionForRequest(context);
+  if (!session) return json({ error: "unauthenticated" }, 401);
+  if (!requireSameOrigin(request)) return json({ error: "origin" }, 403);
 
   const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);
+  const contextKey = decodedHeader(request, "X-Vico-Draft-Context", 4096);
+  const draftId = request.headers.get("X-Vico-Draft-Id")?.trim() ?? "";
   const size = attachmentSize(request);
   const declaredMime = request.headers.get("Content-Type")?.trim() ?? "";
   if (
     fileName === null
+    || contextKey === null
+    || contextKey.includes("\0")
+    || !/^[0-9a-f-]{36}$/iu.test(draftId)
     || size === null
     || declaredMime.length > 512
     || !request.body
   ) {
     return json({ error: "invalid" }, 400);
   }
+
+  const authorization = await authorizeEditorDraftWrite(context, session.user.id, contextKey);
+  if (authorization.outcome !== "allowed") {
+    return json({ error: authorization.outcome }, authorization.status);
+  }
+  const missingContext = await contextFailure(context, contextKey);
+  if (missingContext) return missingContext;
 
   let bucket;
   try {
@@ -206,14 +132,15 @@ export async function action({
     throw error;
   }
 
+  const store = attachmentStoreForRequest(context);
   if (result.outcome === "rejected") {
     if (result.inspection.suspicious) {
       try {
         await store.recordSecurityEvent({
           uploadId,
-          uploadedByUserId: scope.userId,
-          contextKey: scope.contextKey,
-          draftId: scope.draftId,
+          uploadedByUserId: session.user.id,
+          contextKey,
+          draftId,
           fileName: durableSecurityFilename(fileName),
           declaredMime,
           detectedType: result.inspection.detected,
@@ -238,9 +165,9 @@ export async function action({
   try {
     const attachment = await store.createDraftAttachment({
       id: uploadId,
-      ownerId: scope.userId,
-      contextKey: scope.contextKey,
-      draftId: scope.draftId,
+      ownerId: session.user.id,
+      contextKey,
+      draftId,
       objectKey: result.objectKey,
       fileName: result.inspection.fileName,
       declaredMime,
@@ -251,7 +178,14 @@ export async function action({
     });
     return json({
       outcome: "stored",
-      attachment: safeAttachment(attachment),
+      attachment: {
+        id: attachment.id,
+        fileName: attachment.fileName,
+        detectedType: attachment.detectedType,
+        responseMime: attachment.responseMime,
+        byteSize: attachment.byteSize,
+        verificationStatus: attachment.verificationStatus,
+      },
     }, 201);
   } catch (error) {
     await bucket.delete(result.objectKey).catch(() => {});
