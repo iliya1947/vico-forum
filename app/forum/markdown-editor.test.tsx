@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { createRef, type ReactNode } from "react";
+import { createRef, useState, type ReactNode } from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
@@ -71,6 +71,7 @@ async function chooseView(view: "write" | "preview" | "split") {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -1067,6 +1068,141 @@ describe("MarkdownEditor", () => {
     expect(screen.getByLabelText("Body")).toHaveValue("**alpha** beta");
     expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe("**alpha** beta");
     clearLocalEditorDraft(userId, contextKey);
+  });
+
+  it("serializes publication behind its own in-flight autosave and submits the fresh CAS fence", async () => {
+    vi.useFakeTimers();
+    const userId = "draft-publication-race-user";
+    const draftContextKey = "topic:publication-race:reply";
+    type DraftPayload = { title: string; body: string; tags: string; parentPostId?: string | null };
+    type ServerDraft = {
+      contextKey: string;
+      draftId: string;
+      version: number;
+      status: "active";
+      title: string;
+      snippet: string;
+      editedAt: string;
+      updatedAt: string;
+      payload: DraftPayload;
+    };
+    let firstSaveRequest: Record<string, unknown> | null = null;
+    let resolveFirstSave!: (response: Response) => void;
+    const firstSave = new Promise<Response>((resolve) => { resolveFirstSave = resolve; });
+    let serverDraft: ServerDraft | null = null;
+    let postCalls = 0;
+
+    const json = (body: unknown) => new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        postCalls++;
+        const sent = JSON.parse(options.body as string) as Record<string, unknown>;
+        if (postCalls === 1) {
+          firstSaveRequest = sent;
+          return firstSave;
+        }
+        const now = new Date().toISOString();
+        serverDraft = {
+          contextKey: draftContextKey,
+          draftId: sent.draftId as string,
+          version: 2,
+          status: "active",
+          title: "",
+          snippet: "Reply changed ",
+          editedAt: now,
+          updatedAt: now,
+          payload: sent.payload as DraftPayload,
+        };
+        return json({ outcome: "saved", draft: serverDraft });
+      }
+      if (uri.includes("mode=metadata")) {
+        return json({ drafts: serverDraft ? [serverDraft] : [] });
+      }
+      throw new Error("Unexpected fetch");
+    }));
+
+    const submitted = vi.fn();
+    let setPublicationPending!: (value: boolean) => void;
+    function PublicationHarness() {
+      const [publicationPending, setPending] = useState(false);
+      setPublicationPending = setPending;
+      return (
+        <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
+          <form onSubmit={(event) => {
+            if (event.defaultPrevented) return;
+            event.preventDefault();
+            setPending(true);
+            const data = new FormData(event.currentTarget);
+            submitted({
+              draftId: data.get("editorDraftId"),
+              version: data.get("editorDraftVersion"),
+            });
+          }}>
+            <input type="hidden" name="intent" value="reply" />
+            <label htmlFor="draft-publication-body">Body</label>
+            <MarkdownEditor
+              id="draft-publication-body"
+              name="body"
+              defaultAuthoringMode="advanced"
+              draftContextKey={draftContextKey}
+              draftLocale="en"
+              draftPublicationIntent="reply"
+              draftPublicationPending={publicationPending}
+            />
+            <button type="submit">Publish</button>
+          </form>
+        </HeaderAuthProvider>
+      );
+    }
+
+    renderEditor(<PublicationHarness />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Reply " } });
+
+    act(() => { vi.advanceTimersByTime(60_000); });
+    await act(async () => { await Promise.resolve(); });
+    expect(postCalls).toBe(1);
+    expect(firstSaveRequest?.expectedVersion).toBe(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(submitted).not.toHaveBeenCalled();
+
+    const sent = firstSaveRequest!;
+    const now = new Date().toISOString();
+    serverDraft = {
+      contextKey: draftContextKey,
+      draftId: sent.draftId as string,
+      version: 1,
+      status: "active",
+      title: "",
+      snippet: "Reply ",
+      editedAt: now,
+      updatedAt: now,
+      payload: sent.payload as DraftPayload,
+    };
+    await act(async () => {
+      resolveFirstSave(json({ outcome: "saved", draft: serverDraft }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(submitted).toHaveBeenCalledTimes(1);
+    expect(submitted).toHaveBeenCalledWith({
+      draftId: sent.draftId,
+      version: "1",
+    });
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(postCalls).toBe(1);
+
+    act(() => { setPublicationPending(false); });
+    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Reply changed " } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(postCalls).toBe(2);
   });
 
   it("resets body and history when the draft context changes for the same account", async () => {
