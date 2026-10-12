@@ -144,9 +144,6 @@ function declaredMimeExpectation(mime: string): DeclaredMimeExpectation | "gener
   if (!mime || mime === "application/octet-stream") return "generic";
   const known = declaredMimeExpectations[mime];
   if (known) return known;
-  // Keep broad source/config support without pretending an unknown text subtype
-  // identifies a more specific format.
-  if (mime.startsWith("text/")) return { detected: "text" };
   return "unknown";
 }
 
@@ -181,7 +178,8 @@ export function inspectAttachment(candidate: AttachmentCandidate): AttachmentIns
     if (mimeExpected === "unknown") {
       // Unknown application/* is tolerated only for broad text/source names where
       // neither extension nor content claims a known semantic file format.
-      if (detected !== "text" || extensionSemantics[extension] || !mime.startsWith("application/")) {
+      const broadTextMime = mime.startsWith("text/") || mime.startsWith("application/");
+      if (detected !== "text" || extensionSemantics[extension] || !broadTextMime) {
         return reject("mime-mismatch");
       }
     } else {
