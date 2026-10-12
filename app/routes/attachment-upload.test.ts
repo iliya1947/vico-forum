@@ -164,7 +164,7 @@ describe("private attachment upload API", () => {
       fileName: "friendly.txt",
       detectedType: "executable",
       reason: "executable-signature",
-      byteSize: bytes.length,
+      declaredByteSize: bytes.length,
     }));
   });
 
