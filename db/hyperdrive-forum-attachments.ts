@@ -17,6 +17,8 @@ import {
 
 export interface ForumAttachmentStore {
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
+  listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
+  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<boolean>;
   recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void>;
   readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage>;
 }
@@ -70,6 +72,10 @@ export function createHyperdriveForumAttachmentStore(
 
   return {
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
+    listDraftAttachments: (ownerId, contextKey, draftId) =>
+      apply((store) => store.listDraftAttachments(ownerId, contextKey, draftId)),
+    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
+      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)),
     recordSecurityEvent: (input) => apply((store) => store.recordSecurityEvent(input)),
     readSecurityAttachmentEvents: (page) => apply((store) => store.readSecurityAttachmentEvents(page)),
   };
