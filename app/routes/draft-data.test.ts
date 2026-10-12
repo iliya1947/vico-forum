@@ -164,9 +164,10 @@ describe("account-scoped draft API", () => {
     const env = setup();
     const largePayload = {
       title: "t".repeat(600),
-      tags: "g".repeat(2_100),
+      tags: Array.from({ length: 40 }, (_, index) => `tag-${index}-${"g".repeat(45)}`).join(","),
       body: "x".repeat(160_000),
     };
+    expect(largePayload.tags.length).toBeGreaterThan(2_000);
     const response = await action({
       request: request({
         intent: "save",
