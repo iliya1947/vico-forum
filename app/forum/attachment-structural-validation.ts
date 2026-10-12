@@ -51,8 +51,8 @@ function readU32Le(bytes: ArrayLike<number>, offset: number): number {
 }
 
 abstract class HeadTailStructuralValidator implements AttachmentStructuralValidator {
-  protected head = new Uint8Array();
-  protected tail = new Uint8Array();
+  protected head: Uint8Array = new Uint8Array();
+  protected tail: Uint8Array = new Uint8Array();
   protected bytesSeen = 0;
 
   constructor(
