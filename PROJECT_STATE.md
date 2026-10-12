@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-11
+Последнее обновление: 2026-10-12
 
 ## Назначение
 
@@ -77,11 +77,11 @@ Vico Forum находится в ранней pre-release разработке.
   permission are rejected. Complaints remains a placeholder with Group 1–3.
   In Editor 2.0 PR #215, Security first group is renamed **Attachments**
   (`mode=security&group=attachments`), followed by placeholder Group 2–3.
-  The new group is reserved for future persisted suspicious-upload events,
-  not Help signals or user complaints; no event ingestion or handling is live yet.
-  There is deliberately no synthetic security data or permissions workflow yet. No schema or migration,
-  notification bell semantics, complaint processing, editor, or Stage 6 action
-  changes. The revised implementation head `ebb72df8` passed CI
+  The group is reserved for persisted suspicious-upload system events,
+  not Help signals or user complaints. Editor 2.0 PR #215 now connects durable
+  suspicious-attachment event ingestion and a read-only Security/Attachments queue;
+  no synthetic data or invented accept/reject/close workflow is used. Notification-bell
+  semantics, complaint processing and Stage 6 external R2 provisioning remain unchanged. The revised implementation head `ebb72df8` passed CI
   #38082349666: 702 application tests, 217 native PostgreSQL 17 tests,
   lint/typecheck and builds. A single unrelated transaction-serialization
   concurrency test needed one successful failed-DB-job rerun with no code
@@ -502,9 +502,20 @@ Vico Forum находится в ранней pre-release разработке.
   `checks` и `database` green, включая clean PostgreSQL 17, schema manifest/parity,
   runtime privilege probes и Workers smoke. Первоначальный DB run упал только из-за неверного
   test assertion на wrapped Drizzle FK error; production code не менялся для исправления.
-  HTTP upload, R2 binding/runtime wiring, публикационное promotion refs, выдача файла,
-  durable Security/Attachments events, UI и orphan cleanup остаются следующими частями Stage 5.
-  Существующий body/FormData/server contract не изменялся.
+  Следующий bounded Stage 5 subtask 2026-10-12 подключает реальный private upload HTTP
+  boundary к уже существующим verification/R2 helpers и DB refs. POST `/api/attachments`
+  требует сессию, same-origin, текущую authoring permission и существующий editor context до
+  storage write; тело идёт streaming, private object key наружу не возвращается, а DB failure
+  после R2 write вызывает best-effort cleanup. Runtime R2 binding остаётся optional/fail-closed:
+  без `ATTACHMENT_R2` route отвечает 503, внешний bucket/binding не создавался.
+  Migration `0036_forum_attachment_security_events` хранит независимое durable событие
+  подозрительной загрузки с уникальным upload ID, uploader/context/draft metadata, reason,
+  declared/detected type и именно заявленным клиентом размером. Rejected object не нужен для
+  сохранения события. Security → Attachments читает эту таблицу как read-only очередь;
+  имена с control/bidi символами выводятся escaped, ссылок на R2/контент и synthetic events нет.
+  Group 2/3 остаются заглушками. Web runtime получает только необходимые INSERT/SELECT grants.
+  Следующие части Stage 5: editor/upload UI, publication/download integration и orphan cleanup.
+  Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
