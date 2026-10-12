@@ -4914,3 +4914,46 @@ Next bounded Stage 5 subtask is HTTP upload boundary + durable Security/Attachme
 foundation. Publication promotion/download, editor upload UI and orphan cleanup remain later.
 Do not proceed until owner explicitly continues.
 
+## PR #215: Stage 5 HTTP upload + durable Security/Attachments foundation complete — 2026-10-12
+
+Owner continuation authorized only the next bounded attachment subtask after the DB lifecycle
+foundation. Editor upload UI, publication/download promotion, orphan cleanup and external R2
+provisioning were deliberately not started.
+
+Implemented on PR #215:
+- exact `POST /api/attachments` before the generic API catch-all;
+- session + same-origin + current editor authoring permission + authoritative context existence
+  are checked before any storage write;
+- raw request-body streaming reuses the existing attachment verification and structural
+  finalization path; no `formData()` file buffering was introduced;
+- private object keys never leave the server response; a DB failure after a successful R2 write
+  triggers best-effort object deletion;
+- request-stream failures and R2 dependency failures are typed separately from invalid content
+  and programming defects;
+- the Worker accepts an optional `ATTACHMENT_R2` request binding; when absent the route fails
+  closed with 503. No external bucket/binding was created, so provisioning/live R2 remains Stage 6;
+- migration `0036_forum_attachment_security_events` stores independent durable suspicious-upload
+  system events with one event per upload ID and uploader/context/draft/filename/type/reason data;
+- event size is explicitly the client-declared size, not misrepresented as server-measured bytes;
+- NUL filename evidence is persisted as literal `\\u{0}`, and control/bidi characters are
+  escaped for Security UI presentation;
+- `/:locale/attention?mode=security&group=attachments` now reads real persisted events as a
+  read-only queue. No file/object link and no invented accept/reject/close workflow were added;
+  Security Group 2/3 remain placeholders;
+- attachment/event runtime grants are limited to the relations used by this HTTP/read path;
+  published attachment refs remain outside runtime capability until publication integration.
+
+Self-review caught two current-scope semantic issues before completion: PostgreSQL cannot persist a
+literal NUL in text security evidence, and rejected-upload size was initially named as though it
+were measured. Both were corrected at the data boundary rather than hidden in the UI.
+
+Intermediate CI exposed only test-contract issues: Request BodyInit typing and an old auth-route
+test that assumed no additional exact API route before the catch-all. Production behavior was not
+changed to satisfy either test.
+
+Code-head `267b5f98e19d4b04db0edcfe4d6c959a66a5252a` passed exact-head CI
+#38306573292 with `checks` and `database` green, including clean PostgreSQL 17 migrations,
+schema parity/manifest, runtime privilege probes and Workers smoke.
+
+Next bounded Stage 5 subtask: editor/upload UI. Do not proceed until owner explicitly continues.
+
