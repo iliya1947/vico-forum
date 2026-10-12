@@ -50,6 +50,20 @@ export class AttachmentLengthMismatchError extends Error {
   }
 }
 
+export class AttachmentUploadReadError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("attachment upload stream could not be read", options);
+    this.name = "AttachmentUploadReadError";
+  }
+}
+
+export class AttachmentStorageError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("private attachment storage unavailable", options);
+    this.name = "AttachmentStorageError";
+  }
+}
+
 type AcceptedInspection = Extract<AttachmentInspection, { accepted: true }>;
 
 function fileExtension(fileName: string): string {
@@ -94,15 +108,23 @@ function privateObjectSource(
     size,
     async read(offset, length) {
       if (length === 0) return new Uint8Array();
-      const object = await bucket.get(objectKey, { range: { offset, length } });
+      let object;
+      try {
+        object = await bucket.get(objectKey, { range: { offset, length } });
+      } catch (error) {
+        throw new AttachmentStorageError({ cause: error });
+      }
       if (!object?.body || object.size !== size) {
-        throw new Error("private attachment structural read failed");
+        throw new AttachmentStorageError();
       }
-      const bytes = new Uint8Array(await new Response(object.body).arrayBuffer());
-      if (bytes.byteLength !== length) {
-        throw new Error("private attachment structural read failed");
+      try {
+        const bytes = new Uint8Array(await new Response(object.body).arrayBuffer());
+        if (bytes.byteLength !== length) throw new AttachmentStorageError();
+        return bytes;
+      } catch (error) {
+        if (error instanceof AttachmentStorageError) throw error;
+        throw new AttachmentStorageError({ cause: error });
       }
-      return bytes;
     },
   };
 }
@@ -165,7 +187,12 @@ export async function storePrivateAttachmentStream(
   let remainder: Uint8Array | null = null;
   try {
     while (prefixBytes < sampleSize) {
-      const next = await reader.read();
+      let next;
+      try {
+        next = await reader.read();
+      } catch (error) {
+        throw new AttachmentUploadReadError({ cause: error });
+      }
       if (next.done) break;
       const count = Math.min(next.value.byteLength, sampleSize - prefixBytes);
       prefix.set(next.value.subarray(0, count), prefixBytes);
@@ -204,7 +231,12 @@ export async function storePrivateAttachmentStream(
           return;
         }
         try {
-          const next = await reader.read();
+          let next;
+          try {
+            next = await reader.read();
+          } catch (error) {
+            throw new AttachmentUploadReadError({ cause: error });
+          }
           if (next.done) {
             if (receivedBytes !== upload.size) throw new AttachmentLengthMismatchError();
             controller.close();
@@ -225,13 +257,26 @@ export async function storePrivateAttachmentStream(
     });
 
     const objectKey = "private/" + crypto.randomUUID();
+    let stored: { size: number } | null;
     try {
-      const stored = await bucket.put(objectKey, content, {
+      stored = await bucket.put(objectKey, content, {
         httpMetadata: { contentType: "application/octet-stream" },
       });
-      if (!stored || stored.size !== upload.size) {
-        throw new Error("private attachment storage failed");
+    } catch (error) {
+      await reader.cancel(error).catch(() => {});
+      await bucket.delete(objectKey).catch(() => {});
+      if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
+        throw error;
       }
+      throw new AttachmentStorageError({ cause: error });
+    }
+    if (!stored || stored.size !== upload.size) {
+      await reader.cancel().catch(() => {});
+      await bucket.delete(objectKey).catch(() => {});
+      throw new AttachmentStorageError();
+    }
+
+    try {
       const structurallyValid = await validateStoredStructure(
         bucket,
         objectKey,
@@ -246,7 +291,7 @@ export async function storePrivateAttachmentStream(
       return { outcome: "stored", objectKey, inspection, bytes: stored.size };
     } catch (error) {
       await reader.cancel(error).catch(() => {});
-      // R2 may have received bytes before a failed upload/finalization. Never hand out the key.
+      // R2 may have received bytes before a failed finalization. Never hand out the key.
       await bucket.delete(objectKey).catch(() => {});
       throw error;
     }
