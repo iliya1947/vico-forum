@@ -45,6 +45,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const [expectedVersion, setExpectedVersion] = useState(0);
+  const [ready, setReady] = useState(false);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
   callbacksRef.current = { restore };
@@ -360,6 +361,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       runtimeRef.current = null;
       setStatus("idle");
       setConflict(null);
+      setReady(false);
       return;
     }
     const ctx: Runtime = {
@@ -374,6 +376,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setExpectedVersion(0);
     setConflict(null);
     setStatus("idle");
+    setReady(false);
     const local = readLocalEditorDraft(ownerId, contextKey);
     if (local) {
       ctx.local = local;
@@ -384,7 +387,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       callbacksRef.current.restore(local.payload);
       setStatus("restored");
     }
-    void checkRemote(ctx);
+    void checkRemote(ctx).finally(() => {
+      if (current(ctx)) setReady(true);
+    });
     const onVisibility = () => {
       if (document.visibilityState === "hidden") capture(ctx);
       else void checkRemote(ctx);
@@ -461,7 +466,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     </>
   );
   return {
-    noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
+    noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, ready, acknowledgePublished,
     preparePublication, releasePublication,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
