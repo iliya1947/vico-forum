@@ -64,6 +64,19 @@ describe("Editor 2.0 technical Markdown source boundaries", () => {
     expect(parsed && parsed.kind === "table" ? parsed.headers.length : null).toBe(3);
   });
 
+  it("protects an ordinary Markdown table with more than 200 data rows as one block", () => {
+    const rows = Array.from({ length: 201 }, (_, index) => `| row-${index + 1} | value-${index + 1} |`);
+    const source = ["| A | B |", "| --- | --- |", ...rows].join("\n");
+    const segments = segmentTechnicalMarkdown(source);
+
+    expect(segments.map((segment) => segment.kind)).toEqual(["protected"]);
+    const protectedTable = segments[0];
+    expect(protectedTable?.kind).toBe("protected");
+    if (!protectedTable || protectedTable.kind !== "protected") return;
+    expect(protectedTable.source).toBe(source);
+    expect(protectedTable.source).toContain("| row-201 | value-201 |");
+  });
+
   it("protects a table shape that would lose data if converted to ordinary cells", () => {
     const source = "| A | B |\n| --- | --- |\n| one | two | extra |";
     expect(segmentTechnicalMarkdown(source).some((segment) => segment.kind === "protected")).toBe(true);

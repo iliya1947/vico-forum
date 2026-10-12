@@ -338,7 +338,12 @@ Vico Forum находится в ранней pre-release разработке.
   общий editor-document helper и используется также HTML clipboard converter.
   Поэтому paste больше не имеет отдельной расходящейся сериализации для `<code>`,
   а граничные backticks и симметричные пробелы сохраняются по тем же правилам, что
-  inline-code toolbar. Findings №1 и №3 остаются открытыми и этим изменением не затронуты.
+  inline-code toolbar. Stage 3 finding №3 (oversized Markdown table) исправлен
+  отдельно 2026-10-12 на parser boundary: лимит 200 больше не завершает распознавание
+  таблицы преждевременно. Parser проверяет следующую строку и при 201-й валидной data row
+  отказывается от visual-table representation, после чего существующий protected-table
+  path сохраняет весь contiguous Markdown-table одним read-only блоком. Finding №1 остаётся
+  открытым; другие parser/table semantics этим изменением не менялись.
   Повторный поэтапный аудит Stage 4 (2026-10-11) выявил пять current-scope
   defects. Draft runtime authoritative хранит только body, а title/tags/parentPostId
   берёт из live DOM при capture; final cleanup после React commit и same-event

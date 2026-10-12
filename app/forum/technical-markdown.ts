@@ -81,7 +81,7 @@ function tableAt(lines: Line[], index: number): { table: MarkdownTable; next: nu
     : cell.text.endsWith(":") ? "right" as const : null);
   const rows: TableCell[][] = [];
   let next = index + 2;
-  while (next < lines.length && rows.length < 200) {
+  while (next < lines.length) {
     const candidate = lines[next]!;
     if (candidate.text.trim() === "" || /^\s*[:]{3}/u.test(candidate.text)) break;
     const cells = splitCells(candidate);
@@ -89,6 +89,7 @@ function tableAt(lines: Line[], index: number): { table: MarkdownTable; next: nu
       if (candidate.text.includes("|")) return null; // complex shape remains protected
       break;
     }
+    if (rows.length >= 200) return null; // oversized ordinary table stays protected as one block
     rows.push(cells);
     next++;
   }
