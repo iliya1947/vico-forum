@@ -12,6 +12,7 @@ import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachme
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
+import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
 import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
 
@@ -66,8 +67,8 @@ function upload(context: string, generation: string, id = crypto.randomUUID()): 
 
 async function queuedOperations<T, U>(
   context: string,
-  first: (store: DrizzleForumAttachments) => Promise<T>,
-  second: (store: DrizzleForumAttachments) => Promise<U>,
+  first: (store: DrizzleForumAttachments, repository: DrizzleForumRepository) => Promise<T>,
+  second: (store: DrizzleForumAttachments, repository: DrizzleForumRepository) => Promise<U>,
 ): Promise<[T, U]> {
   const connections = Array.from({ length: 3 }, () => new Client({
     connectionString: databaseUrl, options: `-c search_path=${schema}`,
@@ -96,10 +97,12 @@ async function queuedOperations<T, U>(
   try {
     await blocker.query("begin");
     await lockAttachmentDraftScope(drizzle(blocker), ownerId, context);
-    firstResult = first(new DrizzleForumAttachments(drizzle(firstConnection)));
+    firstResult = first(new DrizzleForumAttachments(drizzle(firstConnection)),
+      new DrizzleForumRepository(drizzle(firstConnection), { cooldownMs: 0, now: () => new Date() }));
     void firstResult.catch(() => {});
     await waiting(firstPid);
-    secondResult = second(new DrizzleForumAttachments(drizzle(secondConnection)));
+    secondResult = second(new DrizzleForumAttachments(drizzle(secondConnection)),
+      new DrizzleForumRepository(drizzle(secondConnection), { cooldownMs: 0, now: () => new Date() }));
     void secondResult.catch(() => {});
     await waiting(secondPid);
     await blocker.query("commit");
@@ -630,6 +633,91 @@ describe("suspicious upload route and PostgreSQL integration", () => {
 
 
 describe("atomic publication of selected draft refs", () => {
+  it.each(["create-topic", "help-question"] as const)(
+    "atomically publishes initial post attachments for %s",
+    async (kind) => {
+      const isHelp = kind === "help-question";
+      const sectionId = isHelp ? HELP_SOLUTIONS_SERVICE_SECTION_ID : "attachment-section";
+      const context = isHelp ? "help:new" : "section:attachment-section:new";
+      const draft = crypto.randomUUID();
+      const asset = await store.createDraftAttachment(upload(context, draft));
+      const topicId = crypto.randomUUID();
+      const postId = crypto.randomUUID();
+      const created = await repository.createTopicWithInitialPost({
+        id: topicId, sectionId, authorId: ownerId,
+        titleRevision: { id: crypto.randomUUID(), originalContent: "With file", sourceLocale: "en" },
+        initialPost: {
+          id: postId, topicId, authorId: ownerId,
+          bodyRevision: { id: crypto.randomUUID(), originalContent: "File in question", sourceLocale: "en" },
+        },
+        publishedDraft: { contextKey: context, draftId: draft, expectedVersion: 0, attachmentIds: [asset.id] },
+      });
+      expect(created.post.id).toBe(postId);
+      expect(await store.readPublishedAttachment(postId, asset.id)).toMatchObject({ id: asset.id });
+      const loaded = await repository.readTopicPage(topicId);
+      expect(loaded?.posts[0]?.attachments).toEqual([{
+        id: asset.id, fileName: asset.fileName, byteSize: asset.byteSize,
+      }]);
+    },
+  );
+
+  it.each(["delete-before-publish", "publish-before-delete"] as const)(
+    "serializes concurrent DELETE/publication without losing the selected set: %s",
+    async (order) => {
+      const { topicId, context, draft } = await topicFixture();
+      const file = await store.createDraftAttachment(upload(context, draft));
+      const makePost = (forum: DrizzleForumRepository) => forum.createPost(reply(topicId, context, draft, [file.id]));
+      const remove = (attachments: DrizzleForumAttachments) =>
+        attachments.removeDraftAttachment(ownerId, context, draft, file.id);
+      if (order === "delete-before-publish") {
+        const [removed, published] = await queuedOperations(context,
+          (attachments) => remove(attachments),
+          (_, forum) => makePost(forum).then(() => "unexpected", (error: unknown) =>
+            error instanceof ForumStateConflictError ? "conflict" : Promise.reject(error)),
+        );
+        expect(removed).toBe(true);
+        expect(published).toBe("conflict");
+      } else {
+        const [published, removed] = await queuedOperations(context,
+          (_, forum) => makePost(forum),
+          (attachments) => remove(attachments).then(() => "unexpected", (error: unknown) =>
+            error instanceof ForumAttachmentDraftConflictError ? "gone" : Promise.reject(error)),
+        );
+        expect(published.id).toBeDefined();
+        expect(removed).toBe("gone");
+        expect(await store.readPublishedAttachment(published.id, file.id)).toMatchObject({ id: file.id });
+      }
+    },
+  );
+
+  it.each(["upload-before-publish", "publish-before-upload"] as const)(
+    "serializes concurrent POST final persistence/publication: %s",
+    async (order) => {
+      const { topicId, context, draft } = await topicFixture();
+      const file = upload(context, draft);
+      const makePost = (forum: DrizzleForumRepository) => forum.createPost(reply(topicId, context, draft, []));
+      if (order === "upload-before-publish") {
+        const [stored, published] = await queuedOperations(context,
+          (attachments) => attachments.createDraftAttachment(file),
+          (_, forum) => makePost(forum).then(() => "unexpected", (error: unknown) =>
+            error instanceof ForumStateConflictError ? "conflict" : Promise.reject(error)),
+        );
+        expect(stored.id).toBe(file.id);
+        expect(published).toBe("conflict");
+        expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).not.toBeNull();
+      } else {
+        const [published, uploaded] = await queuedOperations(context,
+          (_, forum) => makePost(forum),
+          (attachments) => attachments.createDraftAttachment(file).then(() => "unexpected", (error: unknown) =>
+            error instanceof ForumAttachmentDraftConflictError ? "gone" : Promise.reject(error)),
+        );
+        expect(published.id).toBeDefined();
+        expect(uploaded).toBe("gone");
+        expect(await store.readPublishedAttachment(published.id, file.id)).toBeNull();
+      }
+    },
+  );
+
   const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
 
   async function topicFixture() {
