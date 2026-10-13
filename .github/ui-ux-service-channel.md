@@ -5289,3 +5289,49 @@ Suggested acceptance coverage for this *server-only* unit: GET route dispatch no
 
 No implementation branch changes by GPT-6. Next writer remains GPT-5.6 Sol. User's instruction to continue this conversation authorizes preparation here but **does not automatically start another GPT chat**.
 
+
+
+## PR #215 — server attachment list/remove/rebind API complete; handoff — 2026-10-13
+
+Model: GPT-5.6 Sol, sole implementation writer for this bounded unit.
+Previous accepted head: `30581443377ec32a932672fdfbc49beb7ffd7c31`.
+Exact implementation head: `a7db8e1a87218d8f6cb28591b2923f4b0734d7b9`.
+
+Implemented boundary:
+- `GET /api/attachments` is now a real React Router resource-route `loader`; POST/DELETE/PATCH
+  remain mutations in `action`, matching the current official React Router resource-route contract.
+- list/remove/rebind all reuse authenticated owner + editor context + current authoring-permission
+  scope and authoritative context existence checks;
+- HTTP and repository use the same canonical UUID predicate, so malformed 36-character values no
+  longer escape route validation and become repository 500s;
+- GET returns only safe attachment metadata and never serializes private R2 object keys;
+- DELETE removes only the exact owner/context/draft/attachment reference and is idempotent at the
+  repository boundary;
+- PATCH rebind moves retained refs from an old attachment draft generation to the selected current
+  generation within the same owner/context, without changing draft text/CAS or touching R2;
+- rebind is transactional: source refs are row-locked and snapshotted, destination insert uses
+  `ON CONFLICT DO NOTHING`, and deletion is restricted to exactly those snapshotted attachment IDs.
+  A concurrently created new source ref is therefore not accidentally deleted;
+- Hyperdrive store exposes the three operations;
+- web runtime capability for `forum_attachment_draft_refs` is limited to
+  `DELETE, INSERT, SELECT`; no UPDATE grant is needed;
+- focused route tests cover loader dispatch/safe metadata, exact remove, rebind and malformed UUIDs;
+- native PostgreSQL attachment lifecycle test covers owner scoping, generation rebind,
+  idempotency and restoration to the original generation;
+- PROJECT_STATE.md and temporary EDITOR_SPEC.md are synchronized with the implemented boundary.
+
+Verification:
+- exact-head CI run #38330105842: `checks` success;
+- first database attempt failed only in existing
+  `translation-task-reconciliation.test.ts`; the new `forum-attachments.test.ts` passed 6/6 in
+  that same attempt and the implementation diff contains no translation-subsystem changes;
+- only the failed database job was rerun on the same exact head, with no code changes;
+- rerun database job completed successfully through PostgreSQL tests, manifest/schema checks,
+  runtime privilege probes, split-authority checks and Workers smoke.
+
+No editor attachment UI, publication/download promotion, orphan cleanup, external R2 provisioning or
+Stage 6 work was added. No intermediate Codex review was requested.
+
+Next bounded Stage 5 unit after owner continuation: rebuild the editor attachment upload/restore UI
+on top of the accepted generation identity + server API boundaries. GPT-5.6 Sol remains next writer
+unless explicitly handed off. Stop here.
