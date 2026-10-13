@@ -8,6 +8,8 @@ import {
   forumProfiles,
   forumAttachmentDraftGenerations,
   forumAttachmentDraftRefs,
+  forumAttachments,
+  forumPostAttachments,
   forumEditorDrafts,
   forumOnlinePresence,
   forumCategories,
@@ -319,6 +321,7 @@ export interface ForumSectionPage {
 }
 
 export interface ForumThreadPost extends ForumPost {
+  attachments?: Array<{ id: string; fileName: string; byteSize: number }>;
   authorImage?: string | null;
   authorName: string;
   createdAt: Date;
@@ -419,7 +422,7 @@ export interface CreateTopicInput {
 }
 
 export interface CreatePostInput {
-  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number };
+  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] };
   id: string;
   topicId: string;
   authorId: string;
@@ -428,7 +431,7 @@ export interface CreatePostInput {
 }
 
 export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
-  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number };
+  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] };
   initialPost: CreatePostInput;
 }
 
@@ -579,7 +582,7 @@ export class DrizzleForumRepository {
         })));
       }
       if (input.publishedDraft) {
-        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft);
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.initialPost.id);
       }
       return {
         topic: {
@@ -666,7 +669,7 @@ export class DrizzleForumRepository {
       }
 
       if (input.publishedDraft) {
-        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft);
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.id);
       }
       return {
         id: input.id,
@@ -684,7 +687,8 @@ export class DrizzleForumRepository {
   private async finishPublishedDraft(
     tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
     ownerId: string,
-    draft: { contextKey: string; draftId?: string; expectedVersion?: number },
+    draft: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] },
+    postId: string,
   ) {
     const hasFence = draft.draftId !== undefined || draft.expectedVersion !== undefined;
     if (
@@ -711,6 +715,43 @@ export class DrizzleForumRepository {
           throw new ForumStateConflictError("editor draft generation finished before publication");
         }
         throw error;
+      }
+    }
+    // Selection is an explicit snapshot, not evidence of ownership or verification.
+    // The caller holds the owner/context scope lock through this publication transaction.
+    if (draft.attachmentIds !== undefined) {
+      if (!hasFence || !Array.isArray(draft.attachmentIds)
+        || draft.attachmentIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/iu.test(id))
+        || new Set(draft.attachmentIds.map((id) => id.toLowerCase())).size !== draft.attachmentIds.length) {
+        throw new ForumStateConflictError("invalid attachment publication selection");
+      }
+      const selected = new Set(draft.attachmentIds.map((id) => id.toLowerCase()));
+      const refs = await tx.select({
+        id: forumAttachmentDraftRefs.attachmentId,
+        ownerId: forumAttachments.ownerId,
+        verificationStatus: forumAttachments.verificationStatus,
+      }).from(forumAttachmentDraftRefs).innerJoin(forumAttachments, and(
+        eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
+        eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
+      )).where(and(
+        eq(forumAttachmentDraftRefs.ownerId, ownerId),
+        eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
+        eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
+      ));
+      if (refs.length !== selected.size || refs.some((ref) =>
+        !selected.has(ref.id.toLowerCase()) || ref.ownerId !== ownerId || ref.verificationStatus !== "type-checked"
+      )) throw new ForumStateConflictError("selected attachments changed before publication");
+      if (refs.length) {
+        const createdAt = new Date();
+        await tx.insert(forumPostAttachments).values(refs.map((ref) => ({
+          postId, attachmentId: ref.id, createdAt,
+        })));
+        await tx.delete(forumAttachmentDraftRefs).where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
+          eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
+          inArray(forumAttachmentDraftRefs.attachmentId, refs.map((ref) => ref.id)),
+        ));
       }
     }
     const [currentDraft] = hasFence ? [] : await tx.select({
@@ -2595,6 +2636,21 @@ export class DrizzleForumRepository {
       ))
       .where(eq(forumPosts.topicId, id))
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
+    const attached = posts.length === 0 ? [] : await this.database.select({
+      postId: forumPostAttachments.postId,
+      id: forumAttachments.id,
+      fileName: forumAttachments.fileName,
+      byteSize: forumAttachments.byteSize,
+    }).from(forumPostAttachments).innerJoin(forumAttachments,
+      eq(forumAttachments.id, forumPostAttachments.attachmentId),
+    ).where(inArray(forumPostAttachments.postId, posts.map((post) => post.id)))
+      .orderBy(asc(forumPostAttachments.createdAt), asc(forumAttachments.id));
+    const attachmentsByPost = new Map<string, Array<{ id: string; fileName: string; byteSize: number }>>();
+    for (const attachment of attached) {
+      const list = attachmentsByPost.get(attachment.postId) ?? [];
+      list.push({ id: attachment.id, fileName: attachment.fileName, byteSize: attachment.byteSize });
+      attachmentsByPost.set(attachment.postId, list);
+    }
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
@@ -2609,6 +2665,7 @@ export class DrizzleForumRepository {
       posts: posts.map((post) => ({
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
         authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt,
+        attachments: attachmentsByPost.get(post.id) ?? [],
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
         solutionOutdatedReasonKind: post.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
