@@ -9,7 +9,7 @@ import {
 import { forumDraftStoreContext } from "../forum/draft-request-context";
 import type { PrivateAttachmentBucket } from "../forum/attachment-r2";
 import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-drafts";
-import type { CreateDraftAttachmentInput } from "../../db/forum-attachments";
+import type { CreateDraftAttachmentInput, ForumAttachmentMetadata } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
@@ -44,7 +44,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   }));
   const recordSecurityEvent = vi.fn(async () => {});
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
-  const listDraftAttachments = vi.fn(async () => []);
+  const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
   const removeDraftAttachment = vi.fn(async () => true);
   const rebindDraftAttachments = vi.fn(async () => 0);
   ctx.set(forumAttachmentStoreContext, {
