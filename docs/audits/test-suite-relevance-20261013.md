@@ -8,7 +8,7 @@
 - Источник: `main`, commit `83219af2c36a99dd292b6ab1a9550f49b1011c0d`.
 - Полное дерево GitHub (не усечено): **118 тестовых файлов** — 77 обычных Vitest, 24 PostgreSQL Vitest, 17 Node `.test.mjs`.
 - Последний проверенный CI для сопоставимого набора кода: [run #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543), **1 075 успешных кейсов** (704 обычных + 222 DB + 149 Node). CI выполнялся на head PR #221, изменявшего только `AGENTS.md`. Это не прямой запуск тестов на merge SHA `main`.
-- Инвентаризация тестовых файлов завершена; индивидуальный аудит этапов 1–5 и прохода 6A выполнен. Находки и гипотезы приведены ниже; этап 6 продолжается, этапы 7–8 не начаты.
+- **Аудит завершён:** все 118 файлов и 1 075 исходных тест-кейсов рассмотрены в 8 этапах с межэтапным сравнением. Ни тесты, ни код не изменялись. Открытые вопросы отделены от подтверждённых кандидатов; итоговая классификация в конце документа.
 - Изменения `main` после базового SHA проверять отдельно: не переносить автоматически выводы на новый код.
 
 ## Задача и критерии
@@ -31,8 +31,8 @@
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Завершено: 44 файла, 438 кейсов; 1 узкий кандидат SRC-01 |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Завершено: 71 тест-кейс; 1 кандидат WIRE-01 |
-| 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **116 файлов / 1 072 тест-кейса проверено** |
+| 8 | Общие тесты и итоговая межблочная сверка | 2 | Завершено: 3 теста и глобальное сравнение |
+| **Итого** | **Без повторного включения файлов** | **118** | **118 файлов / 1 075 тест-кейсов проверены** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -177,12 +177,29 @@
 - [x] `tests/database/migrations.test.ts`
 - [x] `workers/database-bindings.test.ts`
 
-### 8. Общие тесты и итоговая межблочная сверка — 2 файлов, не начато
+### 8. Общие тесты и итоговая межблочная сверка — 2 файла, завершено
 
-- [ ] `app/server-logging.test.ts`
-- [ ] `tests/production-migration-verifier.test.ts`
+- [x] `app/server-logging.test.ts`
+- [x] `tests/production-migration-verifier.test.ts`
 
 ## Журнал завершённых проходов
+
+### Проход 8 — безопасность SSR логов, production migration verifier и межэтапная сверка (2026-10-14)
+
+- **База:** актуальный `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`, тот же source snapshot, что и этапы 1–7. Полностью проверены последние два test files, связанные реализации [`app/server-logging.ts`](../../app/server-logging.ts) и [`.github/scripts/verify-production-migration.mjs`](../../.github/scripts/verify-production-migration.mjs), сопоставлены с уже рассмотренными `migration-history`/production-migration contract/privilege tests, PostgreSQL `migrations.test.ts`, и повторно проверены `AUTH-01`, `SRC-01`, `WIRE-01`, `CRED-01`. Production и тестовая DB/Worker не вызывались.
+- **CI:** `app/server-logging.test.ts` **2 passed**, `tests/production-migration-verifier.test.ts` **1 passed** по [CI #38372052543 checks](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) на source-equivalent PR #221 head; не новый CI run. Оба файла содержат всего **3** отдельных `it`, без `it.each`.
+- **Индивидуальные гарантии последних файлов:**
+  - [`app/server-logging.test.ts`](../../app/server-logging.test.ts), **2**: безопасное server-side событие `ssr_stream_error` содержит только `event/phase/errorKind` и не выводит поля error/URL/cookie/OAuth secrets; non-Error throw не сериализуется в sink. Специального равнозначного SSR log redaction test в предыдущих этапах нет; unrelated auth/provider logging contracts не заменяют это.
+  - [`tests/production-migration-verifier.test.ts`](../../tests/production-migration-verifier.test.ts), **1**: в **настоящем скрипте production migration verification** source-текст проверяется на нормализацию ASCII-whitespace при `locale='en'` как в `public.ui_translations`, так и в `public.ui_translation_bundles`, причём simple `lower(locale)` и `lower(btrim(locale))` не принимаются. Тест `migrations.test.ts` отвергает trimmed English на **disposable PostgreSQL DDL boundaries**, а Stage 1 `production-migration-contract.test.mjs` проверяет **timestamp/hash applied-ledger**. Это разные safeguards; source-text style сам по себе хрупок при форматировании, но тест не дублирует checks другого слоя и обоснован текущим production verifier contract.
+- **Итоговый cross-stage вывод на основании stage logs и повторно сверенных спорных файлов:**
+  1. **`AUTH-01` — 1 явный идентичный execution:** `app/auth/session-context.test.ts` `it.each` имеет две итерации, где различается только label; вход `runtime(null)` и assertion одинаковы. Одна итерация не проверяет invalid cookie или real session expiry. Сохранить один `it`, а реальный expiry test `tests/database/auth-runtime.test.ts` оставить.
+  2. **`SRC-01` — 1 семантически поглощённый case:** `content-source-locale.test.ts` already checks known revision source `ru` ⇒ `detector.detect` не вызывается. В `tinyld-source-locale-detector.test.ts` отдельный known-source case прогоняет **тот же resolver path**, TinyLD runner по определению обходится, а его stub ничего дополнительного не проверяет. Сохранить generic resolver guard и настоящие TinyLD model/scoring/semantic cases, убрать повторный known-source case.
+  3. **`WIRE-01` — 1 mergeable case:** `db/web-runtime-wiring.test.ts` disabled generation-status reader guard и `workers/database-bindings.test.ts` source guard утверждают два одинаковых предиката про `workers/app.ts`. Оставшееся уникальное `!contentGenerationStatusReaderContext` перенести к Workers guard; удалить после переноса только первый merged case. Оба test files оставить.
+  4. **`CRED-01` — отдельный conditional workflow cleanup, не «доказанное лишнее сейчас»:** одноразовые bootstrap/recovery V1/V2/rollback-only workflows документально consumed, но их scripts/helpers и `node --test` CI entries ещё участвуют в репозиторном contract. `docs/database/HYPERDRIVE.md` подтверждает принятие web credential другим способом и необходимость сохранить repeatable read-only preflight. Удалять case files только **вместе с удалением соответствующего неактуального workflow/entrypoint после анализа зависимостей**, если владелец решит выводить lifecycle. **0 немедленно безопасных изолированных test removals** по `CRED-01`.
+  5. **Отвергнутые предположения:** `migrations.test.ts` entire PostgreSQL migrator/seed/DDL smoke vs Node production migration history/permissions vs production SQL verifier — независимы; `public-read.test.tsx` vs Home/route error/not-found/real PostgreSQL — разные routing/cross-layer paths; local compiler vs stored compiled bundle vs i18next hydration vs SQL publication — разные trust/serialization stages; content title vs Markdown post body execution — разные stores/provider envelopes; generic task lifecycle vs persisted resource-specific races — разные actual call chains. Не переписывать весь набор «похожих сценариев».
+  6. **Отдельно не удалять ради экономии:** `COV-01`, `COV-02`, `COV-03` (неполные/неточно названные assertions), `QUALITY-01` (хрупкая static wiring assertion) и `NAME-01` (неточное имя DB presence test). Это исправления/уточнения конкретных тестов, **не доказательство их бесполезности**. Нельзя превращать задел на будущий deployment в дефект действующего Stage 5.
+- **Статический аудит, не runtime acceptance:** все 118 test files соотнесены с исходным CI file/case inventory (`704 app + 222 PostgreSQL + 149 node = 1 075`). Последний проверенный CI получен с отдельного PR #221, имеющего кодовое соответствие `main`; **ни один тест не запускался заново** во время аудита, поэтому не делать заявлений о production acceptance на 14 октября.
+- **Итог Stage 8:** **2/2 файла, 3/3 cases; 0 новых дубликатов**. **Все 8 этапов завершены: 118/118 файлов, 1 075/1 075 исходных cases**; **3 подтверждённых узких возможности удалить/поглотить по 1 case** без потери проверяемой гарантии; **0 целиком лишних файлов** по текущему active code; `CRED-01` — условное отдельное решение. Последующий bundle правок тестов (если решён владельцем) должен быть отдельно от временного audit PR.
 
 ### Проход 7 — PostgreSQL deadlines, Worker wiring, full migrations (2026-10-14)
 
@@ -597,18 +614,29 @@
 
 - **NAME-01 (4Г):** название DB presence кейса говорит «ignores client-supplied identity», хотя у repository-level test нет client form/actor distinction. Security invariant надёжнее зафиксирован в `app/routes/presence.test.ts`. Уточнить название только при следующей связанной правке, не сокращать покрытие.
 
-## Открытые вопросы и гипотезы
+## Открытые вопросы и гипотезы после полной сверки
 
-**Этапы 5/6:** сравнение raw namespace / compiled-bundle / SSR resource loader и published bundle/DB SQL cases не выявило одинаковой полной гарантии: trusted-source/normalization, persistence verification, hydration и DB writes имеют разные boundaries. Финальное глобальное сопоставление с этапами 7/8 ещё не проведено.
-
-
-Первоначальные подозрения на тождественное дублирование `public-read.test.tsx` с `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts`, а также с PostgreSQL/forum-runtime 4Г **не подтвердились** в пределах этапа 4; дополнительное межэтапное пересечение проверить в Stage 8.
-
-
-Проверить возможное пересечение migration/ACL integration probes с тестами этапа 1 после завершения блоков 7–8. Похожие имена и пересекающиеся ограничения сами по себе не доказывают лишность.
-
-Проверить влияние удаления старых credential workflow/scripts на повторяемую read-only диагностику и на используемые shared helper exports перед любой cleanup-реализацией. Live состояние external credentials в рамках этого audit-only прохода не проверялось.
+- **CRED-01:** отдельная cleanup-операция для consumed one-shot credential workflows и зависимых тестов/scripts требует решения о выводе этих workflows и проверки shared helper dependencies/сохранения repeatable read-only diagnostics. Пока это **не подтверждённые отдельные removals**.
+- **Остальное:** первичные подозрения на одинаковые migration/ACL, SSR/route, TinyLD, DB task/publication, compiler/bundle и production verifier checks либо **опровергнуты сравнением реальных гарантий**, либо записаны выше как конкретные `AUTH-01`, `SRC-01`, `WIRE-01`. Дополнительные speculative findings не открывать.
 
 ## Итоговая сверка
 
-Не проводилась. Финальные числа «сохранить / объединить / удалить / переписать» появятся только после покрытия всех 118 файлов и межблочной проверки.
+**Статус: завершено.** Основание — `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d` и source-equivalent [CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543). Всего **118 файлов**, **1 075 выполненных исходных кейсов**. Все индивидуальные проходы закрыты, межэтапные сопоставления выполнены. Ветка аудита меняет только этот документ.
+
+| Рекомендация | Тестовые файлы | Исходные кейсы / эффект | Решение |
+| --- | ---: | ---: | --- |
+| Сохранить действующие coverage boundaries | **118** | **1 072 кейса** после трёх узких объединений | Никаких файлов целиком удалять |
+| Убрать идентичную итерацию `AUTH-01` | 1 из 118 | **−1** | Можно сократить локально |
+| Убрать повторный known-source обход `SRC-01` | 1 из 118 | **−1** | Можно сократить локально |
+| Поглотить Worker-guard `WIRE-01` | 2 из 118 | **−1** только после переноса 1 уникального assertion | Можно сократить локально |
+| `CRED-01`: consumed one-shot credential procedures | Не подсчитывать как безопасно удаляемые сейчас | **0 без согласованной cleanup-проверки** | Не трогать изолированно |
+| `COV-01/02/03`, `QUALITY-01`, `NAME-01` | Уточнения/assertions при необходимости | **0 удалений** | Не раздувать текущую работу |
+
+**Минимальная точечная оптимизация:** оставить все 118 тестовых файлов и сократить **1 075 → 1 072 исполняемых кейса**, сохранив существующие guards. Это **предлагаемый** результат, **не осуществлённый** в PR #224. Экономия мала (3/1 075); масштабный рефакторинг тестовой архитектуры не обоснован. Даже эту точечную работу следует делать только если она нужна владельцу, а не создавать implementation PR автоматически.
+
+**Риск потери покрытия:** ни один класс больших DB / route / local resource / integration tests не признан лишним: существующие пересечения защищают разные execution paths (PostgreSQL, SSR, authz, source locale, retries, Worker configuration, migrations и production-verifier scripts). Устранение `CRED-01` потребует отдельного workflow/script cleanup и уточнения сохранения повторяемой диагностики; число удаляемых файлов/кейсов нельзя обещать до этой проверки.
+
+**Подтверждённые качества, не включённые в сокращение:** 3 узких пробела/naming issues `COV-01/02/03`, 1 brittle source-text assertion `QUALITY-01` и 1 неточное имя `NAME-01`. Реальных production bugs/Stage 5 correctness defects в них **не установлено**, и аудит не применял исправлений.
+
+**После аудита:** технический материал готов. PR #224 — временный Draft, **не merge**, после ознакомления владелец может его **закрыть самостоятельно**. Любое решение об изменении тестов/удалении старых workflow — отдельная задача и отдельный implementation PR после распоряжения владельца.
+
