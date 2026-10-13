@@ -699,7 +699,7 @@ describe("editor attachment UI", () => {
     expect(FakeXMLHttpRequest.instances).toHaveLength(1);
   });
 
-  it("blocks publication for pending, failed, or stored attachments until publication integration exists", async () => {
+  it("blocks pending uploads and permits selected stored refs once settled", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: [] })));
     vi.spyOn(crypto, "randomUUID").mockReturnValue(attachmentId);
     renderHarness();
@@ -725,9 +725,8 @@ describe("editor attachment UI", () => {
       },
     });
     fireEvent.click(screen.getByRole("button", { name: "Try publish" }));
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Publishing attachments is not connected yet. Remove attached files before publishing this draft.",
-    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("notes.txt")).toBeInTheDocument();
   });
 
   it("warns before uploading a likely secret file and honors cancel", async () => {

@@ -23,6 +23,7 @@
     "app/forum/draft-request-context.ts",
     "app/forum/editor-draft-permission.server.ts",
     "app/routes/attachment-upload.ts",
+    "app/routes/attachment-download.ts",
     "app/forum/mutations.server.ts",
     "app/forum/paths.ts",
     "app/forum/profile.ts",

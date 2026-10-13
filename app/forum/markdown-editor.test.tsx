@@ -1319,7 +1319,7 @@ describe("MarkdownEditor", () => {
     expect(postCalls).toBe(2);
   });
 
-  it("does not submit a stored attachment through the still text-only publication path", async () => {
+  it("submits only selected stored attachments with the text CAS fence", async () => {
     const storedId = "23b93562-0550-4eef-88af-f951d6ea6138";
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
       if (uri === "/api/attachments" && options?.method === "GET") {
@@ -1347,7 +1347,7 @@ describe("MarkdownEditor", () => {
         <form onSubmit={(event) => {
           if (event.defaultPrevented) return;
           event.preventDefault();
-          submitted();
+          submitted(new FormData(event.currentTarget).get("editorAttachmentIds"));
         }}>
           <label htmlFor="attachment-publication-body">Body</label>
           <MarkdownEditor
@@ -1366,10 +1366,9 @@ describe("MarkdownEditor", () => {
 
     expect(await screen.findByText("kept.txt")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-    expect(submitted).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Publishing attachments is not connected yet. Remove attached files before publishing this draft.",
-    );
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(submitted).toHaveBeenCalledWith(JSON.stringify([storedId]));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("resets body and history when the draft context changes for the same account", async () => {

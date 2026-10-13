@@ -11,6 +11,7 @@ import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-foru
 import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
+import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
 import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
 
@@ -624,5 +625,70 @@ describe("suspicious upload route and PostgreSQL integration", () => {
       expect(recorded).toHaveLength(5);
       expect(new Set(recorded.map((event) => event.id)).size).toBe(5);
     });
+  });
+});
+
+
+describe("atomic publication of selected draft refs", () => {
+  const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+
+  async function topicFixture() {
+    const topicId = crypto.randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Publication fixture", sourceLocale: "en" },
+      initialPost: {
+        id: crypto.randomUUID(), topicId, authorId: ownerId,
+        bodyRevision: { id: crypto.randomUUID(), originalContent: "First post", sourceLocale: "en" },
+      },
+    });
+    return { topicId, context: `topic:${topicId}:reply`, draft: crypto.randomUUID() };
+  }
+  function reply(topicId: string, context: string, draft: string, ids: string[], version = 0) {
+    return {
+      id: crypto.randomUUID(), topicId, authorId: ownerId,
+      bodyRevision: { id: crypto.randomUUID(), originalContent: "Reply with file", sourceLocale: "en" },
+      publishedDraft: { contextKey: context, draftId: draft, expectedVersion: version, attachmentIds: ids },
+    };
+  }
+
+  it("promotes only exact selected refs with a first-save CAS, then revokes draft access", async () => {
+    const { topicId, context, draft } = await topicFixture();
+    const file = await store.createDraftAttachment(upload(context, draft));
+    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).not.toBeNull();
+    expect(await store.readDraftAttachment(otherId, context, draft, file.id)).toBeNull();
+    const created = await repository.createPost(reply(topicId, context, draft, [file.id]));
+    expect(await store.readPublishedAttachment(created.id, file.id)).toMatchObject({ id: file.id });
+    expect(await store.readPublishedAttachment(crypto.randomUUID(), file.id)).toBeNull();
+    await expect(store.readDraftAttachment(ownerId, context, draft, file.id))
+      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    const moved = await client.query("select attachment_id from forum_post_attachments where post_id = $1", [created.id]);
+    expect(moved.rows).toEqual([{ attachment_id: file.id }]);
+  });
+
+  it("rolls back post, draft completion and refs on selected-set mismatch or stale CAS", async () => {
+    const { topicId, context, draft } = await topicFixture();
+    const file = await store.createDraftAttachment(upload(context, draft));
+    const wrong = reply(topicId, context, draft, []);
+    await expect(repository.createPost(wrong)).rejects.toBeInstanceOf(ForumStateConflictError);
+    expect((await client.query("select id from forum_posts where id = $1", [wrong.id])).rowCount).toBe(0);
+    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).not.toBeNull();
+    await setDraft(ownerId, context, draft);
+    const stale = reply(topicId, context, draft, [file.id], 0);
+    await expect(repository.createPost(stale)).rejects.toBeInstanceOf(ForumStateConflictError);
+    expect((await client.query("select id from forum_posts where id = $1", [stale.id])).rowCount).toBe(0);
+    const accepted = await repository.createPost(reply(topicId, context, draft, [file.id], 1));
+    expect(await store.readPublishedAttachment(accepted.id, file.id)).not.toBeNull();
+    await expect(store.createDraftAttachment(upload(context, draft)))
+      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+  });
+
+  it("does not publish an unrelated ID or attach the selected file to another post", async () => {
+    const { topicId, context, draft } = await topicFixture();
+    const file = await store.createDraftAttachment(upload(context, draft));
+    const invalid = reply(topicId, context, draft, [crypto.randomUUID()]);
+    await expect(repository.createPost(invalid)).rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await store.readPublishedAttachment(invalid.id, file.id)).toBeNull();
+    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).not.toBeNull();
   });
 });
