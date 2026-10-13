@@ -8,7 +8,7 @@
 - Источник: `main`, commit `83219af2c36a99dd292b6ab1a9550f49b1011c0d`.
 - Полное дерево GitHub (не усечено): **118 тестовых файлов** — 77 обычных Vitest, 24 PostgreSQL Vitest, 17 Node `.test.mjs`.
 - Последний проверенный CI для сопоставимого набора кода: [run #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543), **1 075 успешных кейсов** (704 обычных + 222 DB + 149 Node). CI выполнялся на head PR #221, изменявшего только `AGENTS.md`. Это не прямой запуск тестов на merge SHA `main`.
-- Инвентаризация тестовых файлов сделана; **индивидуальный аудит не начат**, отметок «лишний тест» пока нет.
+- Инвентаризация тестовых файлов завершена; индивидуальный аудит этапов 1–5 выполнен. Подтверждённые находки и гипотезы приведены ниже, этапы 6–8 ещё не начаты.
 - Изменения `main` после базового SHA проверять отдельно: не переносить автоматически выводы на новый код.
 
 ## Задача и критерии
@@ -28,11 +28,11 @@
 | 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
-| 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
+| 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **53 файла / 433 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **68 файлов / 563 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -105,23 +105,23 @@
 - [x] `tests/database/forum-profiles.test.ts`
 - [x] `tests/database/stage4-core-e2e.test.ts`
 
-### 5. Локали, UI-ресурсы и маршрутизация языков — 15 файлов, не начато
+### 5. Локали, UI-ресурсы и маршрутизация языков — 15 файлов, завершено
 
-- [ ] `app/localization/bundles.test.ts`
-- [ ] `app/localization/i18next-types.test.ts`
-- [ ] `app/localization/locale-rules.test.ts`
-- [ ] `app/localization/persistent-registry.test.ts`
-- [ ] `app/localization/persistent-sources.test.ts`
-- [ ] `app/localization/registry.test.ts`
-- [ ] `app/localization/request-context.test.ts`
-- [ ] `app/localization/resolver.test.ts`
-- [ ] `app/localization/resource-loader-bundles.test.ts`
-- [ ] `app/localization/resources.test.ts`
-- [ ] `app/routes/locale-boundary.test.ts`
-- [ ] `app/routes/locale-negotiation.test.ts`
-- [ ] `db/hyperdrive-registry.test.ts`
-- [ ] `db/locale-repository.test.ts`
-- [ ] `tests/database/hyperdrive-registry.test.ts`
+- [x] `app/localization/bundles.test.ts`
+- [x] `app/localization/i18next-types.test.ts`
+- [x] `app/localization/locale-rules.test.ts`
+- [x] `app/localization/persistent-registry.test.ts`
+- [x] `app/localization/persistent-sources.test.ts`
+- [x] `app/localization/registry.test.ts`
+- [x] `app/localization/request-context.test.ts`
+- [x] `app/localization/resolver.test.ts`
+- [x] `app/localization/resource-loader-bundles.test.ts`
+- [x] `app/localization/resources.test.ts`
+- [x] `app/routes/locale-boundary.test.ts`
+- [x] `app/routes/locale-negotiation.test.ts`
+- [x] `db/hyperdrive-registry.test.ts`
+- [x] `db/locale-repository.test.ts`
+- [x] `tests/database/hyperdrive-registry.test.ts`
 
 ### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файлов, не начато
 
@@ -184,12 +184,42 @@
 
 ## Журнал завершённых проходов
 
+### Проход 5 — локали / UI translation / routing (2026-10-13)
+
+- **База:** неизменённый GitHub `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Все 15 test files просмотрены полностью с их fixtures, параметризованными cases и assertions. Сопоставлены с актуальными `app/localization/{bundles,locale-rules,registry,persistent-registry,persistent-sources,resource-loader,resolver,request-context}.ts`, `app/routes/{locale-boundary,locale-negotiation}`, `db/{hyperdrive-registry,locale-repository}.ts`, `docs/translation/{LOCALES,UI_TRANSLATION,STORAGE_AND_VERSIONING}.md`, `docs/database/HYPERDRIVE.md`, `PROJECT_STATE.md` и текущими CI/typecheck scripts.
+- **Учтено:** **15 файлов, 130 test cases** = `12+1+5+19+11+9+7+18+5+17+6+4+7+8+1`. Все 130 присутствуют с успешным file-level `✓ ...(N tests)` в [CI checks #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) (129 cases) и [CI database](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177318) (1 case). Этот audit **не запускал** новый test run. CI выполнен на source-equivalent PR #221, а не непосредственно на merge commit main.
+- **Файлы и разные проверяемые контракты:**
+  - [`app/localization/bundles.test.ts`](../../app/localization/bundles.test.ts) — **12**: Deterministic compiled namespace bundle/ETag, plural expansion, source/version invalidation and inherited-name input validation.
+  - [`app/localization/i18next-types.test.ts`](../../app/localization/i18next-types.test.ts) — **1**: Negative compile-time namespace/key assertions via @ts-expect-error, included in tsc -b; minimal runtime smoke is not proof of type safety by itself.
+  - [`app/localization/locale-rules.test.ts`](../../app/localization/locale-rules.test.ts) — **5**: Intl/CLDR target plural categories including Arabic six-way cardinal and explicit refusal of unsupported/extension candidates.
+  - [`app/localization/persistent-registry.test.ts`](../../app/localization/persistent-registry.test.ts) — **19**: Persistent locale rows and graph integrity, canonical tags, semantic identity ordering/fallback, strict degradation/unknown failures, request memoization.
+  - [`app/localization/persistent-sources.test.ts`](../../app/localization/persistent-sources.test.ts) — **11**: Persistent manual-vs-machine precedence, fingerprint/policy freshness, malformed-row isolation/reporting/deduplication and scoped storage integrity.
+  - [`app/localization/registry.test.ts`](../../app/localization/registry.test.ts) — **9**: In-memory bootstrap/aliases/reserved segments/fallback graph and deep immutability of returned locale snapshots.
+  - [`app/localization/request-context.test.ts`](../../app/localization/request-context.test.ts) — **7**: Explicit per-request dependency injection/configuration failures for registry loader, UI store and content translation presentation.
+  - [`app/localization/resolver.test.ts`](../../app/localization/resolver.test.ts) — **18**: Pure explicit locale resolution (canonical 308, unavailable 307, mutating fail-closed) and root negotiation preference/q-value logic.
+  - [`app/localization/resource-loader-bundles.test.ts`](../../app/localization/resource-loader-bundles.test.ts) — **5**: Resource loader persisted exact-locale bundle hit, no raw fallback reads for target, distinct fallback locale resources and equivalent server/hydration runtime.
+  - [`app/localization/resources.test.ts`](../../app/localization/resources.test.ts) — **17**: Local pack/canonical English source priority, stale fingerprint, real runtime plural lookup, RU/HE reviewed pack content and runtime isolation.
+  - [`app/routes/locale-boundary.test.ts`](../../app/routes/locale-boundary.test.ts) — **6**: Actual middleware 404/non-mutating 307/308 and translated request context; public loader's classified authz degraded fallback vs unexpected failure.
+  - [`app/routes/locale-negotiation.test.ts`](../../app/routes/locale-negotiation.test.ts) — **4**: Root route integration: auth locale wins, no-store redirect, query preservation, HEAD and nonlocale mutation rejected.
+  - [`db/hyperdrive-registry.test.ts`](../../db/hyperdrive-registry.test.ts) — **7**: Adapter lazy shared pg/Drizzle registry load; error categorization/report once/cleanup and unexpected error propagation through mock Client.
+  - [`db/locale-repository.test.ts`](../../db/locale-repository.test.ts) — **8**: Controlled SERIALIZABLE writer statement/lock deadlines, uncertain commit reconciliation, cancellation differentiation and canonical SQL DML tags.
+  - [`tests/database/hyperdrive-registry.test.ts`](../../tests/database/hyperdrive-registry.test.ts) — **1**: Real node-postgres connection refused on 127.0.0.1:1 -> bootstrap English degraded; unlike mock unit tests, exercises actual pg driver error.
+- **Сопоставление похожих наборов:**
+  1. [`bundles.test.ts`](../../app/localization/bundles.test.ts) — compiler/version/ETag validation одного namespace; [`resource-loader-bundles.test.ts`](../../app/localization/resource-loader-bundles.test.ts) — orchestration persisted `(locale, namespace)` reads, raw-source bypass и hydration. [`resources.test.ts`](../../app/localization/resources.test.ts) — local-pack priority, explicit fallback, actual i18next lookup and reviewed RU/HE content. Отдельные уровни; даже одинаковые plural terms имеют разные input/calls/assertions.
+  2. Prototype namespace vectors (`constructor`, `__proto__` и прочие) используются **на разных публичных границах**: bundle compile/verify и canonical/local source/pack validation. Их одноимённость не доказывает повтор одного call path. Не сокращать без cross-surface regression comparison.
+  3. [`registry.test.ts`](../../app/localization/registry.test.ts) защищает invariants in-memory LocaleRegistry и immutable snapshots, [`persistent-registry.test.ts`](../../app/localization/persistent-registry.test.ts) — DB row adapter + full graph publication + semantic hashing и degraded fallback, [`db/hyperdrive-registry.test.ts`](../../db/hyperdrive-registry.test.ts) — request-scoped pg adapter errors и one-time reporting. Ровно один [`tests/database/hyperdrive-registry.test.ts`](../../tests/database/hyperdrive-registry.test.ts) exercises **real node-postgres connection refusal** без подмены client (порт `127.0.0.1:1` намеренно недоступен), в отличие от mocked adapter. Этот тест **не выполняет успешный запрос к действующей PostgreSQL service**; его место в `database` job — организационный выбор, не отсутствие ценности.
+  4. [`resolver.test.ts`](../../app/localization/resolver.test.ts) проверяет чистые правила negotiation/redirect; [`locale-boundary.test.ts`](../../app/routes/locale-boundary.test.ts) — реальную middleware integration, fail-closed mutation и injectable context; [`locale-negotiation.test.ts`](../../app/routes/locale-negotiation.test.ts) — true root route response headers/status with user session. Пересечение правил намеренное, routing integration не гарантируется pure resolver unit test.
+  5. [`persistent-sources.test.ts`](../../app/localization/persistent-sources.test.ts) обрабатывает potentially malformed **DB translation rows** и local/manual priority; [`resources.test.ts`](../../app/localization/resources.test.ts) тестирует code-owned packs/translation fallback. Отдельный trust boundary и source identity. [`db/locale-repository.test.ts`](../../db/locale-repository.test.ts) защищает legacy/current controlled registry lifecycle writes с `SERIALIZABLE`/ambiguous COMMIT; planned Stage 6 rollout pause **не делает local contract неактуальным**.
+- **Особенность TYPE-01 (описание механизма, не кандидат удаления):** [`i18next-types.test.ts`](../../app/localization/i18next-types.test.ts) содержит `@ts-expect-error` negative type assertions; их защищает `pnpm typecheck` → `tsc -b`, поскольку [`tsconfig.cloudflare.json`](../../tsconfig.cloudflare.json) включает `app/**/*` и [`ci.yml`](../../.github/workflows/ci.yml) исполняет typecheck. Прохождение Vitest `1 test` **само по себе** не подтверждает корректность TypeScript constraints. Один runtime assertion на пустой `store.data` имеет низкую standalone ценность, но сам файл всё ещё нужен как compile-time type regression и безопасно удалить его без переноса этих assertions нельзя. Не предлагать переписывание ради одного прогона.
+- **Stage boundary:** source-of-truth описывает Stage 5 local/CI UI resource/compiled-bundle production logic и code-owned English fallback как действующие. External Hyperdrive/provider/Queue rollout остаётся Stage 6. Отсутствие production deployment — не основание вычищать тесты реально реализованных loaders/security boundaries.
+- **Вывод:** **0 доказанно лишних или побитно тождественных кейсов; 0 целиком лишних файлов** в этапе 5. Контролируемые сходства оставлены с обоснованием. Итог аудита: **68 из 118 файлов и 563 из 1 075 кейсов**, осталось **50 файлов / 512 исходных кейсов**. **Этап 6** (переводы, генерация, фоновые задачи и хранилища), 44 файла, планировать связными проходами и начинать только после команды владельца.
+
 ### Разбиение этапа 4 (учётное, без повторов)
 
 - **4A, UI/Markdown/error/preview:** 7 файлов, **53** кейса — **завершено**.
 - **4B, forum read/write и generation UI:** 5 файлов, **103 кейса — завершено** — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **завершено**.
 - **4C, пользовательские маршруты/профили/присутствие:** 7 файлов, **40 кейсов — завершено** — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **завершено**.
-- **4D (4Г), реальные PostgreSQL/forum-runtime contracts:** 5 файлов, **31 кейс — завершено** — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **не начато**.
+- **4D (4Г), реальные PostgreSQL/forum-runtime contracts:** 5 файлов, **31 кейс — завершено** — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **завершено**.
 - Крупные файлы, особенно `public-read.test.tsx`, можно дополнительно исследовать по темам внутри 4B, но не считать дважды. После 4D выполнить сводную проверку пересечений внутри Stage 4 и оставить межэтапную сверку Stage 8.
 
 ### Проход 4Г / 4D — PostgreSQL и forum-runtime (2026-10-13)
@@ -382,6 +412,9 @@
 - **NAME-01 (4Г):** название DB presence кейса говорит «ignores client-supplied identity», хотя у repository-level test нет client form/actor distinction. Security invariant надёжнее зафиксирован в `app/routes/presence.test.ts`. Уточнить название только при следующей связанной правке, не сокращать покрытие.
 
 ## Открытые вопросы и гипотезы
+
+**Этап 5:** при итоговой сверке Stage 8 убедиться, что shared namespace inherited-name vectors и localized SSR hydration checks не повторены целиком в Stage 6 generation/persistence tests. Сейчас **нет подтверждённых дубликатов**.
+
 
 Первоначальные подозрения на тождественное дублирование `public-read.test.tsx` с `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts`, а также с PostgreSQL/forum-runtime 4Г **не подтвердились** в пределах этапа 4; дополнительное межэтапное пересечение проверить в Stage 8.
 
