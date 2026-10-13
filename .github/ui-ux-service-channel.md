@@ -5521,3 +5521,20 @@ Other reviewed boundaries in this correction — durable generation redirects/te
 
 Next step: keep implementation head stable and obtain GPT-6's independent review before comparing findings. If GPT-6 independently confirms the same defect, return the bounded correction to Codex; do not start the next Stage 5 slice.
 
+
+
+---
+
+## PR #215 — GPT-6 independent Stage 5 correction review — 2026-10-13
+
+Model: GPT-6. Reviewed exact implementation head `bb2d49eccf32efe8a300b4c88ccbeb5397998193` against previous `8fff7077a4f0dc6f15fd4c777f38ca6350baadb2`, main AGENTS, current editor specification and implementation paths. No implementation edits. GitHub CI `38408910874` independently verified successful (`checks`, `database`); no independent live R2/browser or locally executed PostgreSQL reproduction is claimed.
+
+**Finding A — current Stage 5: rejected local attachment provenance can survive explicit Keep server in the same text generation (confirmed from code; independently corroborates GPT-5.6 Sol).**
+
+`use-editor-draft.tsx`: `chooseVersion("server")` invokes `applyRemote()`; `applyRemote` preserves `ctx.local.attachmentDraftId` when `ctx.local.draftId === remote.draftId` (lines 137–147). An earlier Keep-local choice can make text generation B active while retained attachment refs still belong to A pending a CAS-bound A→B rebind. If B is modified on another device and the current local text also has conflicting edits, the conflict chooser can select Keep server for generation B. It then keeps provenance A of the discarded local version, and `setAttachmentVerified` offers A→B rebind. That imports the losing version's attachment references after an explicit server-version choice. The automatic *clean* same-generation refresh must not be confused with explicit conflict rejection. Current tests do not cover this conflicting same-generation Keep-server case. This is a correctness defect in the current attachment/draft conflict lifecycle, not future promotion/download work.
+
+**Finding B — current Stage 5, pre-existing upload/Security event integration, not caused by the Codex concurrency delta: one logical suspicious upload can generate repeated moderator signals on retry.**
+
+The editor transmits a stable `X-Vico-Attachment-Id` and reuses it in `retry(entry)` (`app/forum/editor-attachments.tsx`). For a suspicious `rejected` result, `app/routes/attachment-upload.ts` creates `recordSecurityEvent({ uploadId: crypto.randomUUID(), ... })` (lines 215–229). The database's unique `forum_attachment_security_events.upload_id` only deduplicates *identical* `uploadId`; generating a new server UUID for every retry defeats this check. A determinate 422 rejected upload remains retryable in UI. Two rejected retries of one stable client upload therefore generate distinct Security/Attachments tasks, contrary to `EDITOR_SPEC.md` §6 requirement to deduplicate technical events for the same upload. The route test explicitly expects the event upload ID to differ from the stable uploaded ID; repository test checks only repeated calls using an already identical event upload ID. This is a static, deterministic causal reproduction from current client/route/store source, not an executed real R2 test. Server-owned event primary `id` is already separate from `uploadId`, so root-cause correction should align per-logical-upload idempotency across route and store instead of adding compensating UI state.
+
+**Review outcome:** Codex's main correction (durable generation redirects/retirement, owner-context transaction serialization, target CAS, idempotent store, and publication guard) has no separately confirmed defect in the reviewed server paths, but the Stage 5 subtask cannot yet be considered free of current defects. Both findings require narrow tests and technical review/consensus; do not treat previous green CI as proof of these missing cases. Keep PR #215 head stable until ownership is explicitly handed off. No final whole-Editor PR Code Review, merge, future Stage 5 publication/download/orphan cleanup, or Stage 6 actions.
