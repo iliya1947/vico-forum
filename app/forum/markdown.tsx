@@ -1,6 +1,9 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { type Components } from "react-markdown";
+import { remarkForumStrikethrough } from "../markdown-syntax";
+import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
 
 const HIGHLIGHTED_POST_LENGTH_LIMIT = 12_000;
 const HighlightBudgetContext = createContext(true);
@@ -146,13 +149,28 @@ export function highlightCode(code: string, language: string | undefined): Synta
 function ForumCodeBlock({
   code,
   language,
+  filename,
 }: {
   code: string;
   language?: string;
+  filename?: string;
 }) {
   const { t } = useTranslation("common");
   const [copyState, setCopyState] = useState<"copied" | "error" | null>(null);
+  const accountId = useHeaderAuthUser()?.id ?? null;
   const [wrap, setWrap] = useState(false);
+  const [lineNumbers, setLineNumbers] = useState(false);
+  useEffect(() => {
+    try {
+      setWrap(accountId ? localStorage.getItem("vico:editor:code-wrap:" + accountId) === "true" : false);
+      setLineNumbers(accountId ? localStorage.getItem("vico:editor:code-lines:" + accountId) === "true" : false);
+    } catch { setWrap(false); setLineNumbers(false); }
+  }, [accountId]);
+
+  function setPreference(key: "code-wrap" | "code-lines", enabled: boolean) {
+    if (!accountId) return;
+    try { localStorage.setItem("vico:editor:" + key + ":" + accountId, String(enabled)); } catch { /* Storage denied. */ }
+  }
   const displayLanguage = language?.trim() || null;
   const allowHighlight = useContext(HighlightBudgetContext);
   const tokens = allowHighlight ? highlightCode(code, displayLanguage ?? undefined) : [{ text: code }];
@@ -174,14 +192,22 @@ function ForumCodeBlock({
         <span className="forum-code-language" dir={displayLanguage ? "ltr" : undefined}>
           {displayLanguage || t("codeLanguagePlainText")}
         </span>
+        {filename ? <span className="forum-code-filename" dir="ltr">{filename}</span> : null}
         <span className="forum-code-actions">
           <button
             type="button"
             aria-pressed={wrap}
-            onClick={() => setWrap((current) => !current)}
+            onClick={() => setWrap((current) => {
+              setPreference("code-wrap", !current);
+              return !current;
+            })}
           >
             {t(wrap ? "codeNoWrap" : "codeWrap")}
           </button>
+          <button type="button" aria-pressed={lineNumbers} onClick={() => setLineNumbers((current) => {
+            setPreference("code-lines", !current);
+            return !current;
+          })}>{t("editorLineNumbers")}</button>
           <button type="button" onClick={() => void copyCode()}>
             {t("codeCopy")}
           </button>
@@ -196,14 +222,20 @@ function ForumCodeBlock({
           </span>
         )}
       </figcaption>
-      <pre tabIndex={0} dir="ltr">
+      <pre tabIndex={0} dir="ltr" data-line-numbers={lineNumbers ? "true" : "false"}>
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
-          {tokens.map((token, index) =>
-            token.kind ? (
-              <span className={`syntax-${token.kind}`} key={index}>{token.text}</span>
-            ) : token.text
-          )}
+          {displayLanguage?.toLowerCase() === "diff" && code.length <= 20_000
+            ? code.split("\n").map((line, index, rows) => (
+              <span className={line.startsWith("+") ? "syntax-diff-add" : line.startsWith("-") ? "syntax-diff-remove" : undefined} key={index}>
+                {line}{index < rows.length - 1 ? "\n" : ""}
+              </span>
+            ))
+            : tokens.map((token, index) =>
+              token.kind ? <span className={`syntax-${token.kind}`} key={index}>{token.text}</span> : token.text)}
         </code>
+        {lineNumbers ? <span className="forum-code-line-gutter" aria-hidden="true">
+          {code.split("\n").map((_, index) => <span key={index}>{index + 1}</span>)}
+        </span> : null}
       </pre>
     </figure>
   );
@@ -215,9 +247,15 @@ const markdownComponents: Components = {
     <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
   ),
   pre: ({ children: preChildren }) => <>{preChildren}</>,
-  code: ({ children: codeChildren, className }) => {
+  code: ({ children: codeChildren, className, node }) => {
     const source = String(codeChildren);
     const language = className?.match(/(?:^|\s)language-([^\s]+)/u)?.[1];
+    const metadata = node?.data?.meta;
+    const fileMatch = typeof metadata === "string"
+      ? /(?:^|\s)(?:file|filename)=(?:"([^"]+)"|'([^']+)'|([^\s]+))/u.exec(metadata)
+      : null;
+    const name = fileMatch?.[1] ?? fileMatch?.[2] ?? fileMatch?.[3];
+    const filename = name && name.length <= 256 && ![...name].some((character) => character.charCodeAt(0) < 32) ? name : undefined;
     const block = Boolean(language) || source.includes("\n");
 
     if (!block) {
@@ -228,19 +266,64 @@ const markdownComponents: Components = {
       <ForumCodeBlock
         code={source.replace(/\n$/u, "")}
         language={language}
+        filename={filename}
       />
     );
   },
 };
 
-export function ForumMarkdown({ children }: { children: string }) {
+function ForumTable({ table }: { table: MarkdownTable }) {
+  return (
+    <div className="forum-markdown-table-scroll" tabIndex={0}>
+      <table className="forum-markdown-table">
+        <thead><tr>{table.headers.map((cell, index) => (
+          <th key={index} scope="col" style={{ textAlign: table.align[index] ?? undefined }}>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]}>{cell.text}</ReactMarkdown>
+          </th>
+        ))}</tr></thead>
+        <tbody>{table.rows.map((row, index) => <tr key={index}>
+          {row.map((cell, column) => (
+            <td key={column} style={{ textAlign: table.align[column] ?? undefined }}>
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]}>{cell.text}</ReactMarkdown>
+            </td>
+          ))}
+        </tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function ForumMarkdownBody({ children }: { children: string }) {
+  const { t } = useTranslation("common");
+  const segments = segmentTechnicalMarkdown(children);
   return (
     <div className="post-body">
-      <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
-        <ReactMarkdown components={markdownComponents}>
-          {children}
-        </ReactMarkdown>
-      </HighlightBudgetContext.Provider>
+      {segments.map((segment, index) => {
+        if (segment.kind === "table") return <ForumTable table={segment} key={index} />;
+        if (segment.kind === "spoiler") return (
+          <details className="forum-markdown-spoiler" key={index}>
+            <summary>{segment.title || t("editorSpoiler")}</summary>
+            <ForumMarkdownBody>{segment.body}</ForumMarkdownBody>
+          </details>
+        );
+        return (
+          <ReactMarkdown
+            components={markdownComponents}
+            key={index}
+            remarkPlugins={[remarkForumStrikethrough]}
+          >
+            {segment.source}
+          </ReactMarkdown>
+        );
+      })}
     </div>
+  );
+}
+
+export function ForumMarkdown({ children }: { children: string }) {
+  return (
+    <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
+      <ForumMarkdownBody>{children}</ForumMarkdownBody>
+    </HighlightBudgetContext.Provider>
   );
 }

@@ -5,6 +5,8 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumAttentionQueueGroup, ForumAttentionQueueCase, ForumAttentionQueueCounts, HelpSignalKind } from "../../db/forum-repository";
 import { forumReaderForRequest } from "../forum/request-context";
+import { attachmentStoreForRequest } from "../forum/attachment-request-context";
+import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { forumMutationGuard, mutationFailure, requireForumPermission, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
 import { AttentionCenterView, type AttentionGroup, type AttentionMode } from "../forum/views";
 import { ForumRouteError } from "../forum/ui";
@@ -13,6 +15,7 @@ const SIGNAL_GROUPS = new Set<AttentionGroup>([
   "needs-details", "needs-review", "solution-outdated", "duplicate", "appeals", "mixed",
 ]);
 const PLACEHOLDER_GROUPS = new Set<AttentionGroup>(["group1", "group2", "group3"]);
+const SECURITY_GROUPS = new Set<AttentionGroup>(["attachments", "group2", "group3"]);
 
 export function meta() {
   return [{ title: "Needs attention · Vico Forum" }];
@@ -58,16 +61,33 @@ export async function loader({ request, params, context }: {
   const mode: AttentionMode = requestedMode === "complaints" || requestedMode === "security"
     ? requestedMode : "signals";
   const requestedGroup = query.get("group") as AttentionGroup | null;
-  const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : PLACEHOLDER_GROUPS;
+  const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : PLACEHOLDER_GROUPS;
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
-    : mode === "signals" ? "needs-details" : "group1";
+    : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : "group1";
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
   const pageIndex = Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000
     ? pageNumber : 0;
 
   let queue: { cases: (Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string })[]; hasMore: boolean; page: number } | null = null;
+  let securityQueue: {
+    events: Array<{
+      id: string;
+      uploadId: string;
+      uploadedByUserId: string;
+      contextKey: string;
+      draftId: string;
+      fileName: string;
+      declaredMime: string;
+      detectedType: string;
+      reason: string;
+      declaredByteSize: number;
+      createdAt: string;
+    }>;
+    hasMore: boolean;
+    page: number;
+  } | null = null;
   let counts: ForumAttentionQueueCounts | null = null;
   if (mode === "signals") {
     const kinds: HelpSignalKind[] = [
@@ -94,7 +114,25 @@ export async function loader({ request, params, context }: {
       throw error;
     }
   }
-  return { locale: params.locale ?? "en", mode, group, queue, counts, referenceTime: new Date().toISOString() };
+  if (mode === "security" && group === "attachments") {
+    try {
+      const page = await attachmentStoreForRequest(context).readSecurityAttachmentEvents(pageIndex);
+      securityQueue = {
+        ...page,
+        events: page.events.map((event) => ({
+          ...event,
+          createdAt: event.createdAt.toISOString(),
+        })),
+      };
+    } catch (error) {
+      if (error instanceof ForumAttachmentStorageUnavailableError) {
+        throw new Response("Unavailable", { status: 503 });
+      }
+      throw error;
+    }
+  }
+
+  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {

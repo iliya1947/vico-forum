@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -8,10 +9,39 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown } from "./markdown";
+import {
+  applyTextareaEdit,
+  clearInlineMarkdownFormatting,
+  createEditorHistory,
+  editableCodeRanges,
+  editVisualText,
+  inlineCodeAffixes,
+  longestBacktickRun,
+  recordEditorEdit,
+  redoEditorEdit,
+  rememberEditorSelection,
+  sourceOffsetToTextareaOffset,
+  textareaMarkdown,
+  textareaOffsetToSourceOffset,
+  undoEditorEdit,
+  type EditorSelection,
+} from "./editor-document";
+import {
+  VisualMarkdownEditor,
+  escapeVisualMarkdownText,
+  restoreVisualDomSelection,
+} from "./visual-markdown-editor";
+import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { useEditorDraft } from "./use-editor-draft";
+import { clipboardPlainToMarkdown } from "./clipboard-markdown";
+import { useEditorAttachments } from "./editor-attachments";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
   insertText: (text: string) => void;
+  setDraftParentPostId: (parentPostId: string | null) => void;
+  acknowledgePublished: (draftId: string, publishedVersion: number) => void;
 }
 
 export interface MarkdownEditorProps {
@@ -23,6 +53,12 @@ export interface MarkdownEditorProps {
   describedBy?: string;
   defaultValue?: string;
   defaultPreviewOpen?: boolean;
+  defaultAuthoringMode?: "simple" | "advanced";
+  draftContextKey?: string;
+  draftLocale?: string;
+  onDraftRestoreParent?: (parentPostId: string | null) => void;
+  draftPublicationIntent?: string;
+  draftPublicationPending?: boolean;
 }
 
 interface PendingSelection {
@@ -36,29 +72,6 @@ function normalizedCodeLanguage(value: string): string {
   return value.trim().replace(/[^a-z0-9_+.#-]/giu, "").slice(0, 32);
 }
 
-function longestBacktickRun(value: string): number {
-  let longest = 0;
-  for (const match of value.matchAll(/`+/gu)) {
-    longest = Math.max(longest, match[0].length);
-  }
-  return longest;
-}
-
-function inlineCodeAffixes(value: string): { prefix: string; suffix: string } {
-  const delimiter = "`".repeat(longestBacktickRun(value) + 1);
-  const isOnlySpaces = /^ +$/u.test(value);
-  const needsPadding = value.length > 0 && (
-    value.startsWith("`")
-    || value.endsWith("`")
-    || (!isOnlySpaces && value.startsWith(" ") && value.endsWith(" "))
-  );
-  const padding = needsPadding ? " " : "";
-  return {
-    prefix: delimiter + padding,
-    suffix: padding + delimiter,
-  };
-}
-
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
     {
@@ -70,36 +83,534 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       describedBy,
       defaultValue = "",
       defaultPreviewOpen = false,
+      defaultAuthoringMode = "simple",
+      draftContextKey,
+      draftLocale,
+      onDraftRestoreParent,
+      draftPublicationIntent,
+      draftPublicationPending = false,
     },
     forwardedRef,
   ) {
     const { t } = useTranslation("common");
+    const authUser = useHeaderAuthUser();
+    const visualSelectionRef = useRef<EditorSelection | null>(null);
+    const visualSelectionKnownRef = useRef(false);
+    const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
+    const [fullScreen, setFullScreen] = useState(false);
+    const [pasteWarning, setPasteWarning] = useState(false);
+    const [findOpen, setFindOpen] = useState(false);
+    const [findText, setFindText] = useState("");
+    const [replaceText, setReplaceText] = useState("");
+    const accountId = authUser?.id ?? null;
+
+    useEffect(() => {
+      if (!accountId) {
+        setAuthoringMode(defaultAuthoringMode);
+        return;
+      }
+      try {
+        const stored = window.localStorage.getItem("vico:editor:mode:" + accountId);
+        setAuthoringMode(stored === "advanced" || stored === "simple" ? stored : defaultAuthoringMode);
+      } catch {
+        setAuthoringMode(defaultAuthoringMode);
+      }
+    }, [accountId, defaultAuthoringMode]);
+
+    function switchAuthoring(
+      next: "simple" | "advanced",
+      targetSelection?: EditorSelection,
+    ) {
+      const selection = targetSelection ?? sourceSelection() ?? historyRef.current.current.selection;
+      if (next === "advanced") {
+        pendingSelectionRef.current = selection;
+        pendingVisualSelectionRef.current = null;
+      } else {
+        pendingVisualSelectionRef.current = selection;
+        pendingSelectionRef.current = null;
+      }
+      setAuthoringMode(next);
+      setMode("write");
+      visualSelectionRef.current = null;
+      visualSelectionKnownRef.current = false;
+      if (accountId) {
+        try { window.localStorage.setItem("vico:editor:mode:" + accountId, next); } catch { /* private mode */ }
+      }
+    }
+
+    const editorRef = useRef<HTMLDivElement>(null);
+    const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const draftIdInputRef = useRef<HTMLInputElement>(null);
+    const draftVersionInputRef = useRef<HTMLInputElement>(null);
+    const publicationReplayRef = useRef(false);
+    const publicationPreparingRef = useRef(false);
+    const publicationPreparedRef = useRef(false);
+    const publicationPendingSeenRef = useRef(false);
+    const previewRef = useRef<HTMLElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
+    const historyRef = useRef(createEditorHistory(defaultValue));
     const [value, setValue] = useState(defaultValue);
+    const editorScope = JSON.stringify([accountId, draftContextKey ?? null, draftLocale ?? null]);
+    const previousScopeRef = useRef(editorScope);
+    useEffect(() => {
+      if (previousScopeRef.current === editorScope) return;
+      previousScopeRef.current = editorScope;
+      visualSelectionRef.current = null;
+      visualSelectionKnownRef.current = false;
+      pendingVisualSelectionRef.current = null;
+      pendingSelectionRef.current = null;
+      historyRef.current = createEditorHistory(defaultValue);
+      setValue(defaultValue);
+      setPasteWarning(false);
+      setFindOpen(false);
+      publicationReplayRef.current = false;
+      publicationPreparingRef.current = false;
+      publicationPreparedRef.current = false;
+      publicationPendingSeenRef.current = false;
+    }, [editorScope, defaultValue]);
+
+    const draft = useEditorDraft({
+      ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
+      initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null },
+      restore: (payload) => {
+        historyRef.current = createEditorHistory(payload.body);
+        onDraftRestoreParent?.(payload.parentPostId ?? null);
+        setValue(payload.body);
+        const form = textareaRef.current?.form;
+        for (const key of ["title", "tags"] as const) {
+          const field = form?.elements.namedItem(key);
+          if (field instanceof HTMLInputElement) field.value = payload[key];
+        }
+      },
+    });
+
+    const attachments = useEditorAttachments({
+      ownerId: accountId,
+      contextKey: accountId ? draftContextKey : undefined,
+      draftId: draft.draftId,
+      draftReady: draft.attachmentReady,
+      draftRevision: draft.attachmentRevision,
+      rebindFrom: draft.attachmentRebindFrom,
+      rebindVersion: draft.attachmentRebindVersion,
+      disabled,
+      reserveGeneration: draft.reserveAttachmentGeneration,
+      completeRebind: draft.completeAttachmentRebind,
+      retryDraftReconciliation: draft.retryAttachmentReconciliation,
+      noteAttachmentChange: draft.noteAttachmentChange,
+    });
+
+    useEffect(() => {
+      if (draftPublicationPending) {
+        if (publicationPreparedRef.current) publicationPendingSeenRef.current = true;
+        return;
+      }
+      if (!publicationPendingSeenRef.current) return;
+      publicationPendingSeenRef.current = false;
+      publicationPreparedRef.current = false;
+      draft.releasePublication();
+    }, [draftPublicationPending, draft]);
+
+    useEffect(() => {
+      if (!accountId || !draftContextKey) return;
+      const form = textareaRef.current?.form;
+      if (!form) return;
+      const fieldValue = (fieldName: string) => {
+        const field = form.elements.namedItem(fieldName);
+        return field instanceof HTMLInputElement ? field.value : "";
+      };
+      draft.seedFields({
+        title: fieldValue("title"),
+        tags: fieldValue("tags"),
+        parentPostId: fieldValue("parentPostId") || null,
+      });
+      const onInput = (event: Event) => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement) || (field.name !== "title" && field.name !== "tags")) return;
+        const input = event as InputEvent;
+        draft.noteFields(
+          field.name === "title" ? { title: field.value } : { tags: field.value },
+          input.data === " " || input.inputType === "insertFromPaste",
+        );
+      };
+      const flush = () => draft.saveLocal();
+      const onSubmit = (event: SubmitEvent) => {
+        if (!draftPublicationIntent) return;
+        if (publicationReplayRef.current) {
+          publicationReplayRef.current = false;
+          return;
+        }
+
+        const submitter = event.submitter;
+        const submitterIntent =
+          (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement)
+          && submitter.name === "intent"
+            ? submitter.value
+            : null;
+        const intentField = form.elements.namedItem("intent");
+        const intent = submitterIntent
+          ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
+        if (intent !== draftPublicationIntent) return;
+
+        if (attachments.blocking) {
+          event.preventDefault();
+          attachments.markPublicationAttempt();
+          return;
+        }
+
+        event.preventDefault();
+        if (publicationPreparingRef.current) return;
+        publicationPreparingRef.current = true;
+        const replaySubmitter =
+          submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement
+            ? submitter
+            : undefined;
+
+        void draft.preparePublication().then((fence) => {
+          publicationPreparingRef.current = false;
+          if (!fence) return;
+          if (draftIdInputRef.current) draftIdInputRef.current.value = fence.draftId;
+          if (draftVersionInputRef.current) {
+            draftVersionInputRef.current.value = String(fence.expectedVersion);
+          }
+          publicationPreparedRef.current = true;
+          publicationReplayRef.current = true;
+          form.requestSubmit(replaySubmitter);
+          if (publicationReplayRef.current) {
+            publicationReplayRef.current = false;
+            publicationPreparedRef.current = false;
+            draft.releasePublication();
+          }
+        }).catch(() => {
+          publicationPreparingRef.current = false;
+          publicationPreparedRef.current = false;
+          draft.releasePublication();
+        });
+      };
+      form.addEventListener("input", onInput);
+      form.addEventListener("focusout", flush);
+      form.addEventListener("submit", onSubmit);
+      return () => {
+        form.removeEventListener("input", onInput);
+        form.removeEventListener("focusout", flush);
+        form.removeEventListener("submit", onSubmit);
+      };
+    });
+
+
+    function textareaSourceSelection(source = value): EditorSelection {
+      const textarea = textareaRef.current;
+      const displayedLength = textareaMarkdown(source).length;
+      const start = textarea?.selectionStart ?? displayedLength;
+      const end = textarea?.selectionEnd ?? start;
+      return {
+        start: textareaOffsetToSourceOffset(source, start),
+        end: textareaOffsetToSourceOffset(source, end),
+      };
+    }
+
+    function sourceSelection(): EditorSelection | null {
+      if (authoringMode === "simple") {
+        if (visualSelectionKnownRef.current) return visualSelectionRef.current;
+        return { start: value.length, end: value.length };
+      }
+      return textareaSourceSelection();
+    }
+
+    function rememberSelection(selection: EditorSelection | null) {
+      if (!selection) return;
+      historyRef.current = rememberEditorSelection(historyRef.current, selection);
+    }
+
+    function commitSource(
+      nextValue: string,
+      beforeOverride?: EditorSelection | null,
+      afterOverride?: EditorSelection,
+    ) {
+      const before = beforeOverride ?? sourceSelection() ?? historyRef.current.current.selection;
+      const after = afterOverride ?? pendingSelectionRef.current ?? before;
+      historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
+      if (authoringMode === "simple") {
+        pendingVisualSelectionRef.current = after;
+        pendingSelectionRef.current = null;
+        visualSelectionRef.current = after;
+        visualSelectionKnownRef.current = true;
+      }
+      setValue(nextValue);
+      // commitSource is used only by discrete editor actions (Enter, toolbar,
+      // imperative Reply/Quote), all of which are explicit local-save triggers.
+      draft.noteEdit(nextValue, true);
+    }
+
+    function commitTextareaValue(nextDisplayedValue: string, selectionStart: number, selectionEnd: number) {
+      const before = historyRef.current.current.selection;
+      const nextValue = applyTextareaEdit(value, nextDisplayedValue);
+      const after = {
+        start: textareaOffsetToSourceOffset(nextValue, selectionStart),
+        end: textareaOffsetToSourceOffset(nextValue, selectionEnd),
+      };
+      historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
+      setValue(nextValue);
+      draft.noteEdit(nextValue);
+    }
+
+    function travelHistory(direction: "undo" | "redo") {
+      const next = direction === "undo"
+        ? undoEditorEdit(historyRef.current)
+        : redoEditorEdit(historyRef.current);
+      if (next === historyRef.current) return;
+      historyRef.current = next;
+      if (authoringMode === "simple") {
+        if (document.activeElement instanceof HTMLElement
+          && document.activeElement.matches('[data-visual-text="true"]')) {
+          document.activeElement.blur();
+        }
+        pendingVisualSelectionRef.current = next.current.selection;
+        pendingSelectionRef.current = null;
+        visualSelectionRef.current = next.current.selection;
+        visualSelectionKnownRef.current = true;
+      } else {
+        pendingSelectionRef.current = next.current.selection;
+        pendingVisualSelectionRef.current = null;
+      }
+      if (mode === "preview") setMode("write");
+      setValue(next.current.markdown);
+      draft.noteEdit(next.current.markdown, true);
+    }
     const [codeLanguage, setCodeLanguage] = useState("");
-    const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "split" : "write");
+    const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "preview" : "write");
+
+    function syncSplitScroll(source: HTMLElement, target: HTMLElement | null) {
+      if (mode !== "split" || !target) return;
+      const possible = source.scrollHeight - source.clientHeight;
+      const destination = target.scrollHeight - target.clientHeight;
+      const next = possible > 0 ? (source.scrollTop / possible) * destination : 0;
+      if (Math.abs(target.scrollTop - next) > 1) target.scrollTop = next;
+    }
+
+    function updateVisualText(
+      range: EditorSelection,
+      text: string,
+      selectionAfter?: EditorSelection,
+      saveLocal = false,
+    ) {
+      const next = editVisualText(
+        historyRef.current,
+        range,
+        escapeVisualMarkdownText(text),
+        selectionAfter,
+      );
+      if (!next) { switchAuthoring("advanced"); return; }
+      historyRef.current = next;
+      visualSelectionRef.current = next.current.selection;
+      visualSelectionKnownRef.current = true;
+      setValue(next.current.markdown);
+      draft.noteEdit(next.current.markdown, saveLocal);
+    }
+
+    function replaceSourceRange(
+      range: EditorSelection,
+      replacement: string,
+      historyBefore: EditorSelection = range,
+    ) {
+      if (range.start < 0 || range.end > value.length || range.end < range.start) return;
+      const next = value.slice(0, range.start) + replacement + value.slice(range.end);
+      const after = { start: range.start + replacement.length, end: range.start + replacement.length };
+      historyRef.current = recordEditorEdit(historyRef.current, next, historyBefore, after);
+      if (authoringMode === "simple") {
+        pendingVisualSelectionRef.current = after;
+        visualSelectionRef.current = after;
+        visualSelectionKnownRef.current = true;
+      } else {
+        pendingSelectionRef.current = after;
+      }
+      setValue(next);
+      draft.noteEdit(next, true);
+      setPasteWarning(false);
+    }
+
+    function extendTable(table: MarkdownTable, dimension: "row" | "column") {
+      const next = addTableDimension(value, table, dimension);
+      historyRef.current = recordEditorEdit(historyRef.current, next, table.span, table.span);
+      setValue(next);
+      draft.noteEdit(next, true);
+    }
+
+    function pasteSpreadsheet(range: EditorSelection, text: string) {
+      const converted = spreadsheetToMarkdown(text);
+      if (!converted) {
+        setPasteWarning(true);
+        return;
+      }
+      replaceSourceRange(range, "\n\n" + converted + "\n\n");
+    }
+
+    function insertTechnicalBlock(text: string) {
+      const selection = sourceSelection();
+      if (!selection) return;
+      const leading = selection.start > 0 && value[selection.start - 1] !== "\n" ? "\n\n" : "";
+      const trailing = selection.end < value.length && value[selection.end] !== "\n" ? "\n\n" : "";
+      replaceSourceRange(selection, leading + text + trailing);
+    }
+
+    function insertBlockAfterSelection(text: string) {
+      const selection = sourceSelection();
+      if (!selection) return;
+      const at = selection.end;
+      const before = value.slice(0, at);
+      const after = value.slice(at);
+      const leading = at === 0 || before.endsWith("\n\n")
+        ? ""
+        : before.endsWith("\n") ? "\n" : "\n\n";
+      const trailing = at === value.length
+        ? "\n\n"
+        : after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+      replaceSourceRange({ start: at, end: at }, leading + text + trailing, selection);
+    }
+
+    function codeKey(key: string, shift: boolean) {
+      const textarea = textareaRef.current;
+      if (!textarea) return false;
+      const matches: Record<string, string> = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+      const pair = matches[key];
+      if (key !== "Tab" && key !== "Enter" && pair === undefined) return false;
+
+      const selection = sourceSelection();
+      if (!selection) return false;
+      const { start, end } = selection;
+      const codeRange = editableCodeRanges(value).find((range) =>
+        start >= range.start
+        && end <= range.end
+        && (start !== end || start < range.end)
+      );
+      if (!codeRange) return false;
+      if (key === "Tab") {
+        const first = Math.max(
+          value.lastIndexOf("\n", Math.max(0, start - 1)) + 1,
+          codeRange.start,
+        );
+        const last = value.indexOf("\n", end);
+        const right = Math.min(last < 0 ? value.length : last, codeRange.end);
+        const block = value.slice(first, right);
+        const lines = block.split("\n");
+        const edit = shift
+          ? lines.map((line) => line.startsWith("  ") ? line.slice(2) : line.startsWith(" ") ? line.slice(1) : line).join("\n")
+          : lines.map((line) => "  " + line).join("\n");
+        replaceSourceRange({ start: first, end: right }, edit);
+        return true;
+      }
+      if (key === "Enter") {
+        const startOfLine = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+        const indent = /^ */u.exec(value.slice(startOfLine, start))?.[0] ?? "";
+        replaceSourceRange({ start, end }, "\n" + indent);
+        return true;
+      }
+      if (pair !== undefined && start === end) {
+        replaceSourceRange({ start, end }, key + pair);
+        pendingSelectionRef.current = { start: start + 1, end: start + 1 };
+        textarea.focus();
+        const caret = sourceOffsetToTextareaOffset(value, start + 1);
+        textarea.setSelectionRange(caret, caret);
+        return true;
+      }
+      return false;
+    }
+
+    async function pasteFromClipboard(format: "plain" | "code") {
+      try {
+        if (!navigator.clipboard?.readText) throw new Error("Clipboard unsupported");
+        const text = await navigator.clipboard.readText();
+        if (format === "plain") {
+          const selection = sourceSelection();
+          if (!selection) { setPasteWarning(true); return; }
+          replaceSourceRange(selection, clipboardPlainToMarkdown(text));
+          return;
+        }
+        const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
+        insertTechnicalBlock(fence + normalizedCodeLanguage(codeLanguage) + "\n" + text + "\n" + fence);
+      } catch { setPasteWarning(true); }
+    }
+
+    function clearInlineFormatting() {
+      const selection = sourceSelection();
+      if (!selection) return;
+      const target = selection.start === selection.end
+        ? { start: 0, end: value.length }
+        : selection;
+      const cleared = clearInlineMarkdownFormatting(value, target, selection);
+      if (cleared.markdown === value) return;
+      commitSource(cleared.markdown, selection, cleared.selection);
+      setPasteWarning(false);
+    }
+
+    function findNext() {
+      if (!findText) return;
+      const textarea = textareaRef.current;
+      const current = textareaOffsetToSourceOffset(value, textarea?.selectionEnd ?? 0);
+      let at = value.indexOf(findText, current);
+      if (at < 0) at = value.indexOf(findText);
+      if (at < 0) return;
+      const selection = { start: at, end: at + findText.length };
+      historyRef.current = rememberEditorSelection(historyRef.current, selection);
+      setMode("write");
+      pendingSelectionRef.current = selection;
+    }
+
+    function replaceAllMatches() {
+      if (!findText || !value.includes(findText)) return;
+      replaceSourceRange({ start: 0, end: value.length }, value.split(findText).join(replaceText));
+    }
+
+    function insertVisualParagraph(offset: number) {
+      if (offset < 0 || offset > value.length) return;
+      const next = value.slice(0, offset) + "\n\n" + value.slice(offset);
+      const at = offset + 2;
+      pendingSelectionRef.current = { start: at, end: at };
+      commitSource(next);
+    }
 
     useLayoutEffect(() => {
       const pending = pendingSelectionRef.current;
       const textarea = textareaRef.current;
-      if (!pending || !textarea || mode === "preview") return;
+      if (!pending || !textarea || mode === "preview" || authoringMode !== "advanced") return;
 
       textarea.focus();
-      textarea.setSelectionRange(pending.start, pending.end);
+      textarea.setSelectionRange(
+        sourceOffsetToTextareaOffset(value, pending.start),
+        sourceOffsetToTextareaOffset(value, pending.end),
+      );
       pendingSelectionRef.current = null;
-    }, [mode, value]);
+    }, [mode, value, authoringMode]);
+
+    function restoreVisualSelection(selection: EditorSelection) {
+      const editor = editorRef.current;
+      const restored = !!editor && restoreVisualDomSelection(editor, value, selection);
+      if (!restored) {
+        visualSelectionRef.current = null;
+        visualSelectionKnownRef.current = true;
+        return false;
+      }
+      visualSelectionRef.current = selection;
+      visualSelectionKnownRef.current = true;
+      historyRef.current = rememberEditorSelection(historyRef.current, selection);
+      return true;
+    }
+
+    useLayoutEffect(() => {
+      const pending = pendingVisualSelectionRef.current;
+      if (!pending || authoringMode !== "simple" || mode !== "write") return;
+      pendingVisualSelectionRef.current = null;
+      restoreVisualSelection(pending);
+    }, [value, authoringMode, mode]);
 
     function replaceSelection(
       prefix: string,
       suffix: string,
       emptySelectionOffset = prefix.length,
     ) {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       const selected = value.slice(start, end);
       const nextValue = value.slice(0, start) + prefix + selected + suffix + value.slice(end);
 
@@ -112,15 +623,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const caret = start + emptySelectionOffset;
         pendingSelectionRef.current = { start: caret, end: caret };
       }
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     function prefixSelectedLines(prefixForLine: (index: number) => string) {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const selectionStart = textarea.selectionStart ?? value.length;
-      const selectionEnd = textarea.selectionEnd ?? selectionStart;
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start: selectionStart, end: selectionEnd } = selection;
 
       if (selectionStart === selectionEnd) {
         const lineStart = selectionStart === 0 ? 0 : value.lastIndexOf("\n", selectionStart - 1) + 1;
@@ -128,7 +637,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const nextValue = value.slice(0, lineStart) + prefix + value.slice(lineStart);
         const caret = selectionStart + prefix.length;
         pendingSelectionRef.current = { start: caret, end: caret };
-        setValue(nextValue);
+        commitSource(nextValue);
         return;
       }
 
@@ -149,15 +658,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         start: lineStart,
         end: lineStart + transformed.length,
       };
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     function insertLink() {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       const selected = value.slice(start, end);
       const label = selected || t("editorLink");
       const destination = "https://";
@@ -176,15 +683,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           end: start + 1 + label.length,
         };
       }
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     function insertFencedCodeBlock() {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart ?? value.length;
-      const end = textarea.selectionEnd ?? start;
+      const selection = sourceSelection();
+      if (!selection) return;
+      const { start, end } = selection;
       const selected = value.slice(start, end);
       const language = normalizedCodeLanguage(codeLanguage);
       const needsLeadingBreak = start > 0 && value[start - 1] !== "\n";
@@ -205,111 +710,150 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const caret = start + fenceStart.length;
         pendingSelectionRef.current = { start: caret, end: caret };
       }
-      setValue(nextValue);
+      commitSource(nextValue);
     }
 
     useImperativeHandle(forwardedRef, () => ({
       focus() {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-
-        const start = textarea.selectionStart ?? value.length;
-        const end = textarea.selectionEnd ?? start;
-        if (mode === "preview") {
-          pendingSelectionRef.current = { start, end };
-          setMode("write");
-          return;
+        const selection = sourceSelection() ?? historyRef.current.current.selection;
+        if (authoringMode === "simple") {
+          pendingVisualSelectionRef.current = selection;
+          if (mode === "write") {
+            pendingVisualSelectionRef.current = null;
+            restoreVisualSelection(selection);
+          } else {
+            visualSelectionRef.current = null;
+            visualSelectionKnownRef.current = false;
+          }
+        } else {
+          pendingSelectionRef.current = selection;
+          const textarea = textareaRef.current;
+          if (mode === "write" && textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(
+              sourceOffsetToTextareaOffset(value, selection.start),
+              sourceOffsetToTextareaOffset(value, selection.end),
+            );
+            pendingSelectionRef.current = null;
+          }
         }
-
-        textarea.focus();
+        if (mode !== "write") setMode("write");
       },
       insertText(text: string) {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-
-        const start = textarea.selectionStart ?? value.length;
-        const end = textarea.selectionEnd ?? start;
-        const nextValue = value.slice(0, start) + text + value.slice(end);
-        const caret = start + text.length;
-        pendingSelectionRef.current = { start: caret, end: caret };
-        if (mode === "preview") setMode("write");
-        setValue(nextValue);
+        const selection = sourceSelection() ?? historyRef.current.current.selection;
+        const nextValue = value.slice(0, selection.start) + text + value.slice(selection.end);
+        const caret = selection.start + text.length;
+        const after = { start: caret, end: caret };
+        pendingSelectionRef.current = after;
+        setMode("write");
+        commitSource(nextValue, selection, after);
       },
-    }), [mode, value]);
+      setDraftParentPostId(parentPostId: string | null) {
+        draft.noteFields({ parentPostId }, true);
+      },
+      acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
+        draft.acknowledgePublished(publishedDraftId, publishedVersion);
+      },
+    }), [mode, value, authoringMode, draft]);
 
     return (
-      <div className="markdown-editor" data-mode={mode}>
-        <div className="markdown-editor-modebar">
-          <div className="markdown-editor-modes" role="group" aria-label={t("editorViewMode")}>
-            <button type="button" disabled={disabled} aria-pressed={mode === "write"} onClick={() => setMode("write")}>
-              {t("editorModeWrite")}
-            </button>
-            <button type="button" disabled={disabled} aria-pressed={mode === "preview"} onClick={() => setMode("preview")}>
-              {t("editorModePreview")}
-            </button>
-            <button type="button" disabled={disabled} aria-pressed={mode === "split"} onClick={() => setMode("split")}>
-              {t("editorModeSplit")}
-            </button>
-          </div>
-        </div>
-
-        {mode !== "preview" && (
-          <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
-            <div className="markdown-editor-formatting">
-              <div className="markdown-editor-tool-group">
-                <button type="button" disabled={disabled} aria-label={t("editorHeading")} title={t("editorHeading")} onClick={() => prefixSelectedLines(() => "## ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-heading">H</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")} onClick={() => replaceSelection("**", "**", 2)}>
-                  <strong aria-hidden="true">B</strong>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")} onClick={() => replaceSelection("_", "_", 1)}>
-                  <em aria-hidden="true">I</em>
-                </button>
-              </div>
-
-              <div className="markdown-editor-tool-group">
-                <button
-                  type="button"
-                  disabled={disabled}
-                  aria-label={t("editorInlineCode")}
-                  title={t("editorInlineCode")}
-                  onClick={() => {
-                    const textarea = textareaRef.current;
-                    if (!textarea) return;
-                    const selected = value.slice(
-                      textarea.selectionStart ?? value.length,
-                      textarea.selectionEnd ?? textarea.selectionStart ?? value.length,
-                    );
-                    const { prefix, suffix } = inlineCodeAffixes(selected);
-                    replaceSelection(prefix, suffix, prefix.length);
-                  }}
-                >
-                  <span aria-hidden="true" className="markdown-editor-glyph is-code">&lt;/&gt;</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorCodeBlock")} title={t("editorCodeBlock")} onClick={insertFencedCodeBlock}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-code-block">{"{ }"}</span>
-                </button>
-              </div>
-
-              <div className="markdown-editor-tool-group">
-                <button type="button" disabled={disabled} aria-label={t("editorQuote")} title={t("editorQuote")} onClick={() => prefixSelectedLines(() => "> ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-quote">❞</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")} onClick={insertLink}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-link">↗</span>
-                </button>
-              </div>
-
-              <div className="markdown-editor-tool-group">
-                <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")} onClick={() => prefixSelectedLines(() => "- ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-list">•</span>
-                </button>
-                <button type="button" disabled={disabled} aria-label={t("editorNumberedList")} title={t("editorNumberedList")} onClick={() => prefixSelectedLines((index) => String(index + 1) + ". ")}>
-                  <span aria-hidden="true" className="markdown-editor-glyph is-list">1.</span>
-                </button>
-              </div>
+      <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
+        data-mode={mode} data-authoring={authoringMode}
+        onDragOver={attachments.handleDragOver}
+        onDrop={attachments.handleDrop}
+        onPasteCapture={attachments.handlePaste}
+        onKeyDownCapture={(event) => {
+          if (event.key === "Escape" && fullScreen) setFullScreen(false);
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            editorRef.current?.closest("form")?.requestSubmit();
+            return;
+          }
+          if (authoringMode !== "simple" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+          const key = event.key.toLowerCase();
+          if (key === "b" || key === "i" || key === "k") {
+            event.preventDefault();
+            if (key === "b") replaceSelection("**", "**", 2);
+            if (key === "i") replaceSelection("_", "_", 1);
+            if (key === "k") insertLink();
+            return;
+          }
+          if (key === "z" || key === "y") {
+            event.preventDefault();
+            travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
+          }
+        }}
+      >
+        {accountId && draftContextKey ? (
+          <>
+            <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
+            <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+          </>
+        ) : null}
+        <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
+          <div className="markdown-editor-formatting">
+            <div className="markdown-editor-tool-group">
+              <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
+              <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
             </div>
+            <div className="markdown-editor-tool-group">
+              <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
+                onClick={() => replaceSelection("**", "**", 2)}><strong>B</strong></button>
+              <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")}
+                onClick={() => replaceSelection("_", "_", 1)}><em>I</em></button>
+              <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
+                onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
+              <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")}
+                onClick={insertLink}>↗</button>
+              <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")}
+                onClick={() => prefixSelectedLines(() => "- ")}>•</button>
+              <button type="button" disabled={disabled} aria-label={t("editorNumberedList")} title={t("editorNumberedList")}
+                onClick={() => prefixSelectedLines((index) => String(index + 1) + ". ")}>1.</button>
+              <button type="button" disabled={disabled} aria-label={t("editorQuote")} title={t("editorQuote")}
+                onClick={() => prefixSelectedLines(() => "> ")}>❞</button>
+              <details className="markdown-editor-extra-menu">
+                <summary aria-label={t("editorEmoji")}>☺</summary>
+                <div className="markdown-editor-extra-options">
+                  {["😀", "🙂", "👍", "❤️"].map((emoji) =>
+                    <button type="button" key={emoji} disabled={disabled} onClick={() => replaceSelection(emoji, "", emoji.length)}
+                      aria-label={emoji}>{emoji}</button>,
+                  )}
+                </div>
+              </details>
+              <details className="markdown-editor-extra-menu">
+                <summary aria-label={t("editorMoreTools")}>•••</summary>
+                <div className="markdown-editor-extra-options">
+                  <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "## ")}>H2</button>
+                  <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "### ")}>H3</button>
+                  <button type="button" disabled={disabled} onClick={() => insertBlockAfterSelection("---")}>—</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorSpoiler")}
+                    onClick={() => insertBlockAfterSelection(":::spoiler\n\n:::")}>{t("editorSpoiler")}</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorTable")}
+                    onClick={() => insertBlockAfterSelection("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorClearFormatting")}
+                    onClick={clearInlineFormatting}>{t("editorClearFormatting")}</button>
+                  <button type="button" disabled={disabled} aria-label={t("editorPastePlain")}
+                    onClick={() => void pasteFromClipboard("plain")}>{t("editorPastePlain")}</button>
+                  {authoringMode === "advanced" ? (
+                    <>
+                      <button type="button" disabled={disabled} aria-label={t("editorInlineCode")} onClick={() => {
+                        const selection = sourceSelection();
+                        if (!selection) return;
+                        const { prefix, suffix } = inlineCodeAffixes(value.slice(selection.start, selection.end));
+                        replaceSelection(prefix, suffix, prefix.length);
+                      }}>{t("editorInlineCode")}</button>
+                      <button type="button" disabled={disabled} aria-label={t("editorCodeBlock")}
+                        onClick={insertFencedCodeBlock}>{t("editorCodeBlock")}</button>
+                      <button type="button" disabled={disabled} aria-label={t("editorPasteCode")}
+                        onClick={() => void pasteFromClipboard("code")}>{t("editorPasteCode")}</button>
+                      <button type="button" disabled={disabled} aria-label={t("editorFindReplace")}
+                        onClick={() => setFindOpen((open) => !open)}>{t("editorFindReplace")}</button>
+                    </>
+                  ) : null}
+                </div>
+              </details>
+            </div>
+          </div>
 
             <label className="markdown-editor-language">
               <span>{t("editorCodeLanguage")}</span>
@@ -326,38 +870,144 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 onChange={(event) => setCodeLanguage(event.target.value)}
               />
             </label>
+          <div className="markdown-editor-controls">
+            <button type="button" disabled={disabled} onClick={() => switchAuthoring(authoringMode === "simple" ? "advanced" : "simple")}>
+              {t(authoringMode === "simple" ? "editorAdvanced" : "editorSimple")}
+            </button>
+            {authoringMode === "simple"
+              ? <button type="button" disabled={disabled} aria-pressed={mode === "preview"}
+                  onClick={() => {
+                    if (mode === "preview") {
+                      pendingVisualSelectionRef.current =
+                        visualSelectionRef.current ?? historyRef.current.current.selection;
+                      setMode("write");
+                    } else {
+                      rememberSelection(sourceSelection());
+                      setMode("preview");
+                    }
+                  }}>{t("editorModePreview")}</button>
+              : <details className="markdown-editor-preview-menu">
+                  <summary>{t("editorModePreview")}</summary>
+                  <div className="markdown-editor-preview-options">
+                    {(["write", "preview", "split"] as const).map((item) =>
+                      <button type="button" key={item} disabled={disabled} aria-pressed={mode === item}
+                        onClick={() => setMode(item)}>
+                        {t(item === "write" ? "editorModeMarkdown" : item === "preview" ? "editorModePreview" : "editorModeSplit")}
+                      </button>,
+                    )}
+                  </div>
+                </details>}
+            <button type="button" disabled={disabled} aria-pressed={fullScreen}
+              title={t("editorFullScreen")} aria-label={t("editorFullScreen")}
+              onClick={() => setFullScreen((previous) => !previous)}>⛶</button>
           </div>
-        )}
+        </div>
 
+        {authoringMode === "advanced" && findOpen ? (
+          <div className="markdown-editor-find" role="group" aria-label={t("editorFindReplace")}>
+            <input aria-label={t("editorFind")} value={findText} onChange={(event) => setFindText(event.target.value)} />
+            <input aria-label={t("editorReplacement")} value={replaceText} onChange={(event) => setReplaceText(event.target.value)} />
+            <button type="button" onClick={findNext}>{t("editorFindNext")}</button>
+            <button type="button" onClick={replaceAllMatches}>{t("editorReplaceAll")}</button>
+            <button type="button" onClick={() => setFindOpen(false)}>{t("profileCancel")}</button>
+          </div>
+        ) : null}
         <div className={"markdown-editor-workspace is-" + mode}>
+          {authoringMode === "simple" && mode !== "preview" ? (
+            <VisualMarkdownEditor
+              markdown={value} disabled={disabled}
+              onTextEdit={updateVisualText}
+              onSelection={(selection) => {
+                visualSelectionKnownRef.current = true;
+                visualSelectionRef.current = selection;
+                rememberSelection(selection);
+              }}
+              onInsertParagraph={insertVisualParagraph}
+              onEditTechnical={(range) => switchAuthoring("advanced", range)}
+              onReplaceRange={replaceSourceRange}
+              onTableDimension={extendTable}
+              onPasteTable={pasteSpreadsheet}
+              onPasteFallback={() => setPasteWarning(true)}
+            />
+          ) : null}
           <div className={"markdown-editor-write-pane" + (mode === "preview" ? " is-preview-hidden" : "")}>
+            <input type="hidden" name={name} value={value} disabled={disabled} readOnly />
             <textarea
               ref={textareaRef}
               id={id}
-              name={name}
               required={required}
-              tabIndex={mode === "preview" ? -1 : undefined}
+              tabIndex={mode === "preview" || authoringMode === "simple" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
               aria-describedby={describedBy}
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
+              value={textareaMarkdown(value)}
+              onChange={(event) => commitTextareaValue(
+                event.currentTarget.value,
+                event.currentTarget.selectionStart ?? event.currentTarget.value.length,
+                event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
+              )}
+              onSelect={(event) => rememberSelection({
+                start: textareaOffsetToSourceOffset(value, event.currentTarget.selectionStart ?? 0),
+                end: textareaOffsetToSourceOffset(value, event.currentTarget.selectionEnd ?? 0),
+              })}
+              onKeyUp={(event) => {
+                rememberSelection(textareaSourceSelection());
+                if (event.key === " " || event.key === "Enter") draft.saveLocal();
+              }}
+              onPasteCapture={() => { window.setTimeout(() => draft.saveLocal(), 0); }}
+              onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
+              onKeyDown={(event) => {
+                if (!disabled && !event.ctrlKey && !event.metaKey && !event.altKey && codeKey(event.key, event.shiftKey)) {
+                  event.preventDefault();
+                  return;
+                }
+                if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+                const key = event.key.toLowerCase();
+                if (key === "f" && authoringMode === "advanced") {
+                  event.preventDefault();
+                  setFindOpen(true);
+                  return;
+                }
+                if (key === "z" || key === "y") {
+                  event.preventDefault();
+                  travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
+                }
+              }}
+              onBeforeInput={(event) => {
+                rememberSelection({
+                  start: textareaOffsetToSourceOffset(value, event.currentTarget.selectionStart ?? 0),
+                  end: textareaOffsetToSourceOffset(value, event.currentTarget.selectionEnd ?? 0),
+                });
+                const inputType = (event.nativeEvent as InputEvent).inputType;
+                if (inputType !== "historyUndo" && inputType !== "historyRedo") return;
+                event.preventDefault();
+                travelHistory(inputType === "historyUndo" ? "undo" : "redo");
+              }}
               onFocus={() => {
                 if (mode === "preview") setMode("write");
+                rememberSelection(textareaSourceSelection());
               }}
               onInvalid={() => {
-                if (mode !== "preview") return;
-                const textarea = textareaRef.current;
-                const start = textarea?.selectionStart ?? value.length;
-                const end = textarea?.selectionEnd ?? start;
-                pendingSelectionRef.current = { start, end };
-                setMode("write");
+                const selection = textareaSourceSelection();
+                if (authoringMode === "simple") {
+                  pendingVisualSelectionRef.current = selection;
+                  visualSelectionRef.current = selection;
+                  visualSelectionKnownRef.current = true;
+                  setMode("write");
+                  return;
+                }
+                if (mode === "preview") {
+                  pendingSelectionRef.current = selection;
+                  setMode("write");
+                }
               }}
             />
           </div>
 
+          {pasteWarning ? <p className="markdown-editor-paste-warning" role="alert">{t("editorPasteTableWarning")}</p> : null}
           {mode !== "write" && (
-            <section id={id + "-preview"} className="markdown-editor-preview" aria-label={t("editorPreviewHeading")}>
+            <section ref={previewRef} id={id + "-preview"} className="markdown-editor-preview" aria-label={t("editorPreviewHeading")}
+              onScroll={(event) => syncSplitScroll(event.currentTarget, textareaRef.current)}>
               <header className="markdown-editor-preview-header">
                 <strong>{t("editorPreviewHeading")}</strong>
               </header>
@@ -369,6 +1019,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             </section>
           )}
         </div>
+        {attachments.element}
+        {draft.element}
       </div>
     );
   },

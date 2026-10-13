@@ -30,6 +30,22 @@ import {
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
 
+type DraftPublicationFence = { draftId: string; draftVersion: number };
+
+function validatedDraftPublicationFence(form: FormData): DraftPublicationFence | null | undefined {
+  const draftId = form.get("editorDraftId");
+  const rawVersion = form.get("editorDraftVersion");
+  if (draftId === null && rawVersion === null) return null;
+  if (
+    typeof draftId !== "string"
+    || !/^[0-9a-f-]{36}$/iu.test(draftId)
+    || typeof rawVersion !== "string"
+    || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
+  ) return undefined;
+  const draftVersion = Number(rawVersion);
+  return Number.isSafeInteger(draftVersion) ? { draftId, draftVersion } : undefined;
+}
+
 export async function helpSolutionsCategoryAction({ request, params, context }: {
   request: Request;
   params: { locale?: string; categoryId?: string };
@@ -77,6 +93,8 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
   const title = requiredFormText(formData, "title");
   const body = requiredFormText(formData, "body");
   if (!title || !body) return mutationFailure("invalid", 400);
+  const draftFence = validatedDraftPublicationFence(formData);
+  if (draftFence === undefined) return mutationFailure("invalid", 400);
   const tags = draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createTopic({
@@ -85,6 +103,7 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
       title,
       body,
       tags,
+      ...(draftFence ?? {}),
     });
     return redirect(forumTopicPath(locale, created.topicId));
   });
@@ -136,8 +155,10 @@ export async function sectionAction({ request, params, context }: {
   const tags = typeof rawTags === "string"
     ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
     : [];
+  const draftFence = validatedDraftPublicationFence(formData);
+  if (draftFence === undefined) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body, tags });
+    const created = await writer.createTopic({ sectionId, authorId, title, body, tags, ...(draftFence ?? {}) });
     return redirect(forumTopicPath(locale, created.topicId));
   });
 }
@@ -434,8 +455,10 @@ export async function topicAction({ request, params, context }: {
   const parentPostId = typeof rawParentPostId === "string" && rawParentPostId.trim()
     ? rawParentPostId.trim()
     : null;
+  const draftFence = validatedDraftPublicationFence(formData);
+  if (draftFence === undefined) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createReply({ topicId, authorId, body, parentPostId });
+    const created = await writer.createReply({ topicId, authorId, body, parentPostId, ...(draftFence ?? {}) });
     return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(created.postId));
   });
 }

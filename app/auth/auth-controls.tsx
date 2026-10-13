@@ -102,6 +102,11 @@ export function AuthControls({ locale, actions = authClientActions }: {
             <span>{user.name}</span>
           </Link>
         ) : null}
+        {user ? (
+          <Link className="auth-drafts-link" to={`/${encodeURIComponent(locale)}/drafts`}>
+            {t("editorMyDrafts")}
+          </Link>
+        ) : null}
         {user?.canManageAuthorization ? (
           <Link className="auth-admin-link" to={`/${encodeURIComponent(locale)}/admin/authorization`}>
             {t("authorizationNav")}

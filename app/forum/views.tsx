@@ -48,6 +48,8 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { fetchDraftMetadata, readLocalEditorDraft } from "./draft-client";
 
 export function HomeView({
   locale,
@@ -1047,6 +1049,21 @@ export function HelpSolutionsView({
       : undefined;
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
+  const draftUser = useHeaderAuthUser();
+  const location = useLocation();
+  useEffect(() => {
+    if (!canAskQuestion || !draftUser) return;
+    if (new URLSearchParams(location.search).has("compose")
+      || readLocalEditorDraft(draftUser.id, "help:new")) setQuestionComposerOpen(true);
+    let live = true;
+    void fetchDraftMetadata(locale).then((drafts) => {
+      if (live && drafts.some((draft) => draft.contextKey === "help:new" && draft.status === "active")) {
+        setQuestionComposerOpen(true);
+      }
+    }).catch(() => { /* Local cache remains available. */ });
+    return () => { live = false; };
+  }, [canAskQuestion, draftUser?.id, location.search, locale]);
+
   const submittingHelpQuestion = navigation.state === "submitting";
   const submittingIntent = navigation.formData?.get("intent");
   const isSimilarChecking =
@@ -1286,6 +1303,9 @@ export function HelpSolutionsView({
                 <label htmlFor="help-question-body">{t("helpSolutionsQuestionBodyLabel")}</label>
                 <MarkdownEditor
                   id="help-question-body"
+                  draftContextKey="help:new" draftLocale={locale}
+                  draftPublicationIntent="createHelpQuestion"
+                  draftPublicationPending={isQuestionSubmitting}
                   name="body"
                   required
                   rows={8}
@@ -1400,7 +1420,7 @@ export function HelpSolutionsView({
 }
 
 export type AttentionMode = "signals" | "complaints" | "security";
-export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "group1" | "group2" | "group3";
+export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "attachments" | "group1" | "group2" | "group3";
 
 type AttentionCasePresentation = Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string };
 type AttentionQueuePresentation = {
@@ -1408,12 +1428,31 @@ type AttentionQueuePresentation = {
   hasMore: boolean;
   page: number;
 };
+type SecurityAttachmentEventPresentation = {
+  id: string;
+  uploadId: string;
+  uploadedByUserId: string;
+  contextKey: string;
+  draftId: string;
+  fileName: string;
+  declaredMime: string;
+  detectedType: string;
+  reason: string;
+  declaredByteSize: number;
+  createdAt: string;
+};
+type SecurityAttachmentQueuePresentation = {
+  events: SecurityAttachmentEventPresentation[];
+  hasMore: boolean;
+  page: number;
+};
 
-export function AttentionCenterView({ locale, mode, group, queue, counts, actionData, isPreview = false }: {
+export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
   queue: AttentionQueuePresentation | null;
+  securityQueue?: SecurityAttachmentQueuePresentation | null;
   counts?: ForumAttentionQueueCounts | null;
   referenceTime?: string;
   actionData?: ForumMutationError;
@@ -1433,6 +1472,10 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
     { id: "duplicate", label: t("helpDuplicateBadge") },
     { id: "appeals", label: t("helpAttentionAppeals") },
     { id: "mixed", label: t("helpAttentionMixed") },
+  ] : mode === "security" ? [
+    { id: "attachments", label: t("attentionSecurityAttachments") },
+    { id: "group2", label: t("attentionPlaceholderGroup2") },
+    { id: "group3", label: t("attentionPlaceholderGroup3") },
   ] : [
     { id: "group1", label: t("attentionPlaceholderGroup1") },
     { id: "group2", label: t("attentionPlaceholderGroup2") },
@@ -1477,7 +1520,17 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
                 ? "attentionCaseNoLongerPending" : "attentionCaseActionFailed")}
             </p>
           ) : null}
-          {mode !== "signals" ? (
+          {mode === "security" && group === "attachments" ? (
+            !securityQueue || securityQueue.events.length === 0 ? (
+              <EmptyState>{t("attentionSecurityAttachmentsEmpty")}</EmptyState>
+            ) : (
+              <ul className="attention-case-list">
+                {securityQueue.events.map(event => <li key={event.id}>
+                  <SecurityAttachmentEventCard event={event} locale={locale} />
+                </li>)}
+              </ul>
+            )
+          ) : mode !== "signals" ? (
             <EmptyState>{t("attentionPlaceholderEmpty")}</EmptyState>
           ) : cases.length === 0 ? (
             <EmptyState>{t("helpSolutionsNeedsAttentionEmpty")}</EmptyState>
@@ -1494,10 +1547,63 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
               <span>{queue.page + 1}</span>
               {queue.hasMore ? <Link to={pathFor(mode, group, queue.page + 1)}>{t("attentionCaseNext")}</Link> : null}
             </nav>
+          ) : mode === "security" && group === "attachments" && securityQueue
+            && (securityQueue.page > 0 || securityQueue.hasMore) ? (
+            <nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>
+              {securityQueue.page > 0
+                ? <Link to={pathFor(mode, group, securityQueue.page - 1)}>{t("attentionCasePrevious")}</Link>
+                : null}
+              <span>{securityQueue.page + 1}</span>
+              {securityQueue.hasMore
+                ? <Link to={pathFor(mode, group, securityQueue.page + 1)}>{t("attentionCaseNext")}</Link>
+                : null}
+            </nav>
           ) : null}
         </section>
       </div>
     </ForumShell>
+  );
+}
+
+function safeSecurityText(value: string): string {
+  return [...value].map((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint < 32 || codePoint === 127 || /\p{Cf}/u.test(character)
+      ? `\\u{${codePoint.toString(16).toUpperCase()}}`
+      : character;
+  }).join("");
+}
+
+function SecurityAttachmentEventCard({ event, locale }: {
+  event: SecurityAttachmentEventPresentation;
+  locale: string;
+}) {
+  const { t } = useTranslation("common");
+  const dateLabel = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+  }).format(new Date(event.createdAt));
+  return (
+    <article className="attention-case attention-security-attachment-event">
+      <div className="attention-case-heading">
+        <span className="attention-case-kind">{t("attentionSecurityAttachmentEvent")}</span>
+        <span className="attention-case-id">#{event.id}</span>
+        <time dateTime={event.createdAt}>{dateLabel} UTC</time>
+      </div>
+      <div className="attention-case-explanation">
+        <strong>{t("attentionSecurityAttachmentFile")}</strong>
+        <p><bdi dir="auto">{safeSecurityText(event.fileName)}</bdi></p>
+      </div>
+      <div className="attention-case-metadata">
+        <span>{t("attentionSecurityAttachmentReason")}: <code>{event.reason}</code></span>
+        <span>{t("attentionSecurityAttachmentDeclaredType")}: <code>{event.declaredMime || "—"}</code></span>
+        <span>{t("attentionSecurityAttachmentDetectedType")}: <code>{event.detectedType}</code></span>
+        <span>{t("attentionSecurityAttachmentSize")}: {event.declaredByteSize} B</span>
+        <span>{t("attentionSecurityAttachmentUploadId")}: <code>{event.uploadId}</code></span>
+        <span>{t("attentionSecurityAttachmentUploaderId")}: <code>{event.uploadedByUserId}</code></span>
+        <span>{t("attentionSecurityAttachmentContext")}: <code>{safeSecurityText(event.contextKey)}</code></span>
+        <span>{t("attentionSecurityAttachmentDraft")}: <code>{event.draftId}</code></span>
+      </div>
+    </article>
   );
 }
 
@@ -1825,6 +1931,7 @@ export function SectionView({
 
       {canCreateTopic && (
         <Form
+          key={section.id}
           id="create-topic"
           method="post"
           className="forum-write-form section-create-form"
@@ -1875,6 +1982,9 @@ export function SectionView({
               <label htmlFor="create-topic-body">{t("initialPostLabel")}</label>
               <MarkdownEditor
                 id="create-topic-body"
+                draftContextKey={`section:${section.id}:new`} draftLocale={locale}
+                draftPublicationIntent="createTopic"
+                draftPublicationPending={isCreateTopicSubmitting}
                 name="body"
                 required
                 rows={8}
@@ -2041,11 +2151,79 @@ export function TopicView({
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
+  const activeReplyTargetPostId =
+    replyTargetPostId && messageNumberById.has(replyTargetPostId) ? replyTargetPostId : null;
   const messageLinkRequestId = useRef(0);
   const replyEditorRef = useRef<MarkdownEditorHandle>(null);
+  const replyPublicationRef = useRef<{
+    topicId: string;
+    draftId: string;
+    expectedVersion: number;
+    existingPostIds: Set<string>;
+  } | null>(null);
   const navigation = useNavigation();
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
+
+  useEffect(() => {
+    setReplyTargetPostId(null);
+    setQuoteSelectionErrorPostId(null);
+    setOpenMessageActionsPostId(null);
+    replyPublicationRef.current = null;
+  }, [topic.id]);
+
+  useEffect(() => {
+    if (
+      navigation.state !== "submitting"
+      || navigation.formData?.get("intent") !== "reply"
+    ) return;
+    const draftId = navigation.formData.get("editorDraftId");
+    const rawVersion = navigation.formData.get("editorDraftVersion");
+    if (
+      typeof draftId !== "string"
+      || !/^[0-9a-f-]{36}$/iu.test(draftId)
+      || typeof rawVersion !== "string"
+      || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
+    ) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    const expectedVersion = Number(rawVersion);
+    if (!Number.isSafeInteger(expectedVersion)) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    replyPublicationRef.current = {
+      topicId: topic.id,
+      draftId,
+      expectedVersion,
+      existingPostIds: new Set(topic.posts.map((post) => post.id)),
+    };
+  }, [navigation.state, navigation.formData, topic.id, topic.posts]);
+
+  useEffect(() => {
+    const pending = replyPublicationRef.current;
+    if (!pending || navigation.state !== "idle") return;
+    if (forumWriteError) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    if (pending.topicId !== topic.id || !location.hash.startsWith("#post-")) return;
+    let postId: string;
+    try {
+      postId = decodeURIComponent(location.hash.slice("#post-".length));
+    } catch {
+      return;
+    }
+    if (!postId || pending.existingPostIds.has(postId) || !topic.posts.some((post) => post.id === postId)) return;
+    replyEditorRef.current?.acknowledgePublished(
+      pending.draftId,
+      pending.expectedVersion + 1,
+    );
+    setReplyTargetPostId(null);
+    setQuoteSelectionErrorPostId(null);
+    replyPublicationRef.current = null;
+  }, [forumWriteError, location.hash, navigation.state, topic.id, topic.posts]);
 
   useEffect(() => {
     const latestPostId = topicReadState?.latestPostId;
@@ -2092,6 +2270,7 @@ export function TopicView({
   }
 
   function targetReply(postId: string) {
+    replyEditorRef.current?.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     focusReplyForm();
@@ -2116,6 +2295,7 @@ export function TopicView({
       return;
     }
 
+    replyEditorRef.current?.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     const quote = selectedText
@@ -2632,7 +2812,7 @@ export function TopicView({
             aria-busy={isReplySubmitting}
           >
             <input type="hidden" name="intent" value="reply" />
-            {replyTargetPostId && <input type="hidden" name="parentPostId" value={replyTargetPostId} />}
+            {activeReplyTargetPostId && <input type="hidden" name="parentPostId" value={activeReplyTargetPostId} />}
 
             <header className="forum-write-header">
               <div>
@@ -2642,12 +2822,13 @@ export function TopicView({
               <p>{t("replyHelp")}</p>
             </header>
 
-            {replyTargetPostId && messageNumberById.has(replyTargetPostId) && (
+            {activeReplyTargetPostId && (
               <div className="reply-target-banner">
-                <span>{t("replyingToMessage", { number: messageNumberById.get(replyTargetPostId)! })}</span>
+                <span>{t("replyingToMessage", { number: messageNumberById.get(activeReplyTargetPostId)! })}</span>
                 <button
                   type="button"
                   onClick={() => {
+                    replyEditorRef.current?.setDraftParentPostId(null);
                     setReplyTargetPostId(null);
                     setQuoteSelectionErrorPostId(null);
                     replyEditorRef.current?.focus();
@@ -2664,6 +2845,10 @@ export function TopicView({
                 <MarkdownEditor
                   ref={replyEditorRef}
                   id="reply-body"
+                  draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
+                  draftPublicationIntent="reply"
+                  draftPublicationPending={isReplySubmitting}
+                  onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
                   required
                   rows={8}
