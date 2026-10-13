@@ -550,6 +550,20 @@ Vico Forum находится в ранней pre-release разработке.
   path. Editor UI не выдаёт private object key и не скачивает file content при restore.
   Следующие части Stage 5: publication/download integration и orphan cleanup.
   Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
+- Editor Stage 5 package 1 — implementation in progress (2026-10-14, PR #215):
+  Existing topic/Help/reply publication transactions now validate an explicit snapshot
+  of selected draft attachment IDs against authoritative owner/context/canonical generation
+  refs under the existing scope lock; the same transaction moves confirmed refs to
+  forum_post_attachments, removes promoted draft refs, and finishes the CAS draft.
+  Missing/mismatched refs cause a rollback, preserving the text-only safety guard
+  for legacy callers. A controlled /api/attachments/file/:attachmentId read route
+  checks current draft-owner or published post-reference authority before streaming
+  private bytes with no-store/nosniff/download headers. Topic rendering attaches
+  filename/size/download metadata through a batch read; editor only permits submit
+  when uploads/deletions are settled. No external bucket provisioned and no
+  publication/idempotency, inline-image or cleanup scope expanded. This is an
+  implementation-progress record, NOT an acceptance claim; tests and exact-head CI
+  must still be completed and checked. 
 - Stage 5 attachment/draft concurrency correction (2026-10-13): Codex выполняет реализацию
   по прямому назначению владельца. Stale GET restore отсекается cleanup fence; выполняющиеся
   upload/retry/remove сохраняют исходную identity при retained переходах A→B→C.

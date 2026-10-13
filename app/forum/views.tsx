@@ -2695,6 +2695,18 @@ export function TopicView({
                       <PostBodyContent presentation={postPresentation} />
                     </div>
 
+                    {post.attachments && post.attachments.length > 0 ? (
+                      <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
+                        {post.attachments.map((attachment) => (
+                          <a key={attachment.id} download={attachment.fileName}
+                            href={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`}>
+                            <span dir="auto">{attachment.fileName}</span>
+                            <span> ({new Intl.NumberFormat(locale).format(attachment.byteSize)} B)</span>
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+
                     {generationUnit && (
                       <div className="message-generation-status">
                         <ContentGenerationUnitStatus unit={generationUnit} />

@@ -319,14 +319,15 @@ export function useEditorAttachments({
   const canAdd = !!contextKey && draftReady && !rebindFrom && rebindState !== "loading"
     && restoreReady && !disabled;
   const hasUnsettled = entries.some((entry) => entry.status !== "stored");
-  // Publication promotion/download is the next bounded Stage 5 unit. Until then a stored
-  // attachment must never be silently discarded by a text-only publication.
+  // A published snapshot contains only settled files; all pending operations block submit.
   const blocking = !!contextKey && (
     !draftReady
     || !!rebindFrom
     || !restoreReady
-    || entries.length > 0
+    || hasUnsettled
   );
+  const selectedAttachmentIds = entries.filter((entry) => entry.status === "stored")
+    .map((entry) => entry.id).sort();
 
   useEffect(() => {
     if (!blocking) setPublicationWarning(false);
@@ -651,6 +652,7 @@ export function useEditorAttachments({
 
   return {
     blocking,
+    selectedAttachmentIds,
     element,
     handleDrop,
     handleDragOver,

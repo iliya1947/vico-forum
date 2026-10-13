@@ -789,6 +789,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           <>
             <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
             <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+            <input type="hidden" name="editorAttachmentIds" value={JSON.stringify(attachments.selectedAttachmentIds)} readOnly />
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
