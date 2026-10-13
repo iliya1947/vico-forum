@@ -29,6 +29,7 @@ type UploadEntry = {
   attachment: DraftAttachment | null;
   error: string | null;
   removeError: boolean;
+  uncertainCommit: boolean;
 };
 
 interface Props {
@@ -120,6 +121,7 @@ function restoredEntry(attachment: DraftAttachment): UploadEntry {
     attachment,
     error: null,
     removeError: false,
+    uncertainCommit: false,
   };
 }
 
@@ -250,7 +252,12 @@ export function useEditorAttachments({
     setEntries((current) => current.map((entry) => entry.id === id ? update(entry) : entry));
   }
 
-  function startUpload(file: File, stableId = crypto.randomUUID(), replacing = false) {
+  function startUpload(
+    file: File,
+    stableId = crypto.randomUUID(),
+    replacing = false,
+    uncertainCommit = false,
+  ) {
     if (!contextKey || !canAdd) return;
     const generation = callbacksRef.current.reserveGeneration();
     if (!generation || generation !== draftId) return;
@@ -274,6 +281,7 @@ export function useEditorAttachments({
       attachment: null,
       error: null,
       removeError: false,
+      uncertainCommit,
     };
     if (replacing) setEntry(stableId, () => next);
     else setEntries((current) => [...current, next]);
@@ -313,6 +321,7 @@ export function useEditorAttachments({
         status: "error",
         progress: null,
         error: "unavailable",
+        uncertainCommit: true,
       }));
     };
     request.onerror = transportFailure;
@@ -335,11 +344,16 @@ export function useEditorAttachments({
 
   function retry(entry: UploadEntry) {
     if (!entry.file || entry.status !== "error") return;
-    startUpload(entry.file, entry.id, true);
+    startUpload(entry.file, entry.id, true, entry.uncertainCommit);
   }
 
   async function remove(entry: UploadEntry) {
-    if (!contextKey || entry.status === "uploading" || entry.status === "removing") return;
+    if (
+      !contextKey
+      || entry.status === "uploading"
+      || entry.status === "removing"
+      || entry.uncertainCommit
+    ) return;
     const scopeAtStart = scope;
     const previousStatus = entry.attachment ? "stored" as const : "error" as const;
     setEntry(entry.id, (current) => ({ ...current, status: "removing", removeError: false }));
@@ -476,11 +490,13 @@ export function useEditorAttachments({
                     {t("editorAttachmentRetry")}
                   </button>
                 ) : null}
-                {entry.status !== "uploading" && entry.status !== "removing" ? (
-                  <button type="button" disabled={disabled} onClick={() => void remove(entry)}>
-                    {t("editorAttachmentRemove")}
-                  </button>
-                ) : null}
+                {entry.status !== "uploading"
+                  && entry.status !== "removing"
+                  && !entry.uncertainCommit ? (
+                    <button type="button" disabled={disabled} onClick={() => void remove(entry)}>
+                      {t("editorAttachmentRemove")}
+                    </button>
+                  ) : null}
               </div>
               {entry.status === "uploading" && entry.progress !== null ? (
                 <progress
