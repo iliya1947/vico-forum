@@ -170,10 +170,17 @@ export async function action({ request, context }: { request: Request; context: 
     }
   }
 
+  const uploadId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
   const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);
   const size = attachmentSize(request);
   const declaredMime = request.headers.get("Content-Type")?.trim() ?? "";
-  if (fileName === null || size === null || declaredMime.length > 512 || !request.body) {
+  if (
+    !isForumAttachmentUuid(uploadId)
+    || fileName === null
+    || size === null
+    || declaredMime.length > 512
+    || !request.body
+  ) {
     return json({ error: "invalid" }, 400);
   }
 
@@ -185,7 +192,6 @@ export async function action({ request, context }: { request: Request; context: 
     throw error;
   }
 
-  const uploadId = crypto.randomUUID();
   let result;
   try {
     result = await storePrivateAttachmentStream(bucket, {
@@ -241,6 +247,9 @@ export async function action({ request, context }: { request: Request; context: 
       byteSize: result.bytes,
       verificationStatus: result.inspection.scanStatus,
     });
+    if (attachment.objectKey !== result.objectKey) {
+      await bucket.delete(result.objectKey).catch(() => {});
+    }
     return json({ outcome: "stored", attachment: safeAttachment(attachment) }, 201);
   } catch (error) {
     await bucket.delete(result.objectKey).catch(() => {});
