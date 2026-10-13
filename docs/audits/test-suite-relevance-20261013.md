@@ -27,12 +27,12 @@
 | 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
 | 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
-| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | В работе: 4A+4B — 12/24 файлов, 156 кейсов |
+| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | В работе: 4A+4B+4C — 19/24 файлов, 196 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **41 файл / 362 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **48 файлов / 402 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -78,26 +78,26 @@
 - [x] `tests/database/authorization-snapshot.test.ts`
 - [x] `tests/database/forum-email-registration.test.ts`
 
-### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, в работе: 4A и 4B завершены
+### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, в работе: 4A, 4B и 4C завершены
 
 - [x] `app/forum/content-generation-controls.test.tsx`
 - [x] `app/forum/content-generation-navigation.test.tsx`
 - [x] `app/forum/homepage.test.tsx`
 - [x] `app/forum/markdown-editor.test.tsx`
 - [x] `app/forum/markdown.test.tsx`
-- [ ] `app/forum/online-presence-heartbeat.test.tsx`
-- [ ] `app/forum/profile-view.test.tsx`
-- [ ] `app/forum/profile.test.ts`
+- [x] `app/forum/online-presence-heartbeat.test.tsx`
+- [x] `app/forum/profile-view.test.tsx`
+- [x] `app/forum/profile.test.ts`
 - [x] `app/forum/public-authz-degradation.test.ts`
 - [x] `app/forum/public-read.test.tsx`
 - [x] `app/forum/route-error.test.tsx`
 - [x] `app/forum/ui.test.tsx`
 - [x] `app/forum/write-actions.test.ts`
 - [x] `app/routes/not-found.test.ts`
-- [ ] `app/routes/notifications.test.ts`
-- [ ] `app/routes/presence.test.ts`
-- [ ] `app/routes/profile.test.ts`
-- [ ] `app/routes/unread.test.ts`
+- [x] `app/routes/notifications.test.ts`
+- [x] `app/routes/presence.test.ts`
+- [x] `app/routes/profile.test.ts`
+- [x] `app/routes/unread.test.ts`
 - [x] `app/ui-preview/preview-app.test.tsx`
 - [ ] `db/hyperdrive-forum.test.ts`
 - [ ] `tests/database/forum-help-attention.test.ts`
@@ -188,9 +188,32 @@
 
 - **4A, UI/Markdown/error/preview:** 7 файлов, **53** кейса — **завершено**.
 - **4B, forum read/write и generation UI:** 5 файлов, **103 кейса — завершено** — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **не начато**.
-- **4C, пользовательские маршруты/профили/присутствие:** 7 файлов — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **не начато**.
+- **4C, пользовательские маршруты/профили/присутствие:** 7 файлов, **40 кейсов — завершено** — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **не начато**.
 - **4D, реальные PostgreSQL/forum-runtime contracts:** 5 файлов — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **не начато**.
 - Крупные файлы, особенно `public-read.test.tsx`, можно дополнительно исследовать по темам внутри 4B, но не считать дважды. После 4D выполнить сводную проверку пересечений внутри Stage 4 и оставить межэтапную сверку Stage 8.
+
+### Проход 4C — профили, присутствие, уведомления, unread (2026-10-13)
+
+- **База:** immutable `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Полностью прочитаны 7 test files и соответствующие implementations `app/forum/{online-presence-heartbeat,profile-view,profile}.tsx/ts`, `app/routes/{notifications,presence,profile,unread}.tsx/ts`; сопоставлены с `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md` (actual current UI/UX-pass and Stage 6 boundaries).
+- **Учтено:** **7 файлов, 40/1 075 кейсов**: `4 + 4 + 12 + 3 + 6 + 9 + 2 = 40`. Каждый файл имеет `✓ ... (N tests)` в [checks CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268), на сопоставимом PR #221 head; все 40 прошли. `it.each` counted as separate executions: profile unsafe website = 6, GitHub links = 4; presence invalid origin = 3; profile POST unauthorized = 4. **В текущем аудите заново тесты не запускались.**
+- **Файлы:**
+  - [`app/forum/online-presence-heartbeat.test.tsx`](../../app/forum/online-presence-heartbeat.test.tsx) — **4** кейса. Browser heartbeat: guest silence, same-origin authenticated POST, 401 stop, hidden-page and RTL visibility resume.
+  - [`app/forum/profile-view.test.tsx`](../../app/forum/profile-view.test.tsx) — **4** кейса. Public profile UI, HTML-safe bio/links/avatar fallback, RTL name isolation, edit mode and validation feedback.
+  - [`app/forum/profile.test.ts`](../../app/forum/profile.test.ts) — **12** кейса. 500-code-point Unicode bio, normalization, HTTP(S)/GitHub URL allowlist and per-segment opaque profile path encoding; it.each covers 6 unsafe website and 4 GitHub variants.
+  - [`app/routes/notifications.test.ts`](../../app/routes/notifications.test.ts) — **3** кейса. Auth-only notifications inbox, current-user/ISO date serialization, read+reply-anchor redirect.
+  - [`app/routes/presence.test.ts`](../../app/routes/presence.test.ts) — **6** кейса. Server POST: identity only from session, guest/cross-origin rejects (3 matrix entries), methods/intent validation and classified 503 vs unexpected errors.
+  - [`app/routes/profile.test.ts`](../../app/routes/profile.test.ts) — **9** кейса. Public projection privacy, owner edit gating, 4 authn/authz/CSRF rejections, authoritative writes, drafts/400/503/error mapping, malformed HTTP methods/forms.
+  - [`app/routes/unread.test.ts`](../../app/routes/unread.test.ts) — **2** кейса. Signed-in-only inbox and session-scoped unread topic/first-unread cursor.
+- **Сопоставление похожих проверок:**
+  1. [Browser heartbeat](../../app/forum/online-presence-heartbeat.test.tsx) проверяет **поведение в браузере** — периодичность, отсутствие ping у гостя, видимость вкладки и 401 stop. [Server presence action](../../app/routes/presence.test.ts) независимо проверяет **серверную authority/CSRF**, отсутствие доверия полям клиента и 204/401/403/405/503. Сходство «guest» не является тождественной гарантией.
+  2. [Profile field validator](../../app/forum/profile.test.ts) содержит разные adversarial URL классы и Unicode boundary cases; [profile view](../../app/forum/profile-view.test.tsx) проверяет safe display, [profile route](../../app/routes/profile.test.ts) — privacy projection и persistence mutation authorization. Уровни не взаимозаменяемы; URL attack matrices не сливать без доказательства одинакового execution path.
+  3. [Notifications route](../../app/routes/notifications.test.ts) и [Unread route](../../app/routes/unread.test.ts) повторяют общий auth requirement **у разных защищённых маршрутов**, но проверяют разные capabilities / userscope / returned state. Удаление одного auth guard test уменьшает контрактный контроль конкретной route.
+  4. Данные и выборка online/presence/profile/read-state из PostgreSQL проверяются отдельно в **4D**, поэтому нельзя пока заключить, что mocked route checks заменяют native DB integration.
+- **Подтверждённые пробелы качества тестов (не избыточность, не выявленный application runtime defect):**
+  - **COV-01:** [`online-presence-heartbeat.test.tsx:43–51`](../../app/forum/online-presence-heartbeat.test.tsx#L43-L51) называется `stops heartbeat requests and revalidates session after a 401`, но утверждает только count `fetchMock`. В [implementation](../../app/forum/online-presence-heartbeat.tsx) 401 branch вызывает `revalidator.revalidate()` и останавливает timer/listener, однако сам тест **не фиксирует вызов revalidation**. Рекомендовать отдельно проверяемый spy/observable revalidator effect, если тест будет улучшаться. Текущий компонентный тест не обеспечивает названную гарантию.
+  - **COV-02:** [`profile-view.test.tsx:44–49`](../../app/forum/profile-view.test.tsx#L44-L49) называется `shows the owner edit link and only owner editable fields`, но вызывает `show({ isOwner:true, editing:true,... })`. В [`profile-view.tsx`](../../app/forum/profile-view.tsx) link «Edit profile» отображается только при `isOwner && !editing`. Тест проверяет поля редактирования, ошибку и Cancel, но **не показывает и не проверяет ссылку Edit**. Можно добавить assertion для `isOwner=true, editing=false` либо уточнить название/разделить. Route-unit тест подтверждает boolean `editing`, не заменяет DOM-link assertion.
+  - Обе находки относятся к **действующей функциональности текущего UI/UX pass**, но не означают доказанных пользовательских ошибок. **Не выполнять правки** в audit PR.
+- **Итог 4C:** **0 доказанных лишних кейсов, 0 полностью избыточных файлов; 2 доказанных пробела в проверяемых assertions**. Суммарно **48/118 файлов, 402/1 075 кейсов**. Stage 4: **19/24 файлов, 196 кейсов** рассмотрено. Далее **4D** — 5 forum/PostgreSQL-related test files, после команды владельца.
 
 ### Проход 4B — публичное чтение, actions, generation UI (2026-10-13)
 
@@ -327,6 +350,12 @@
 - **Доказательство:** две итерации `it.each` отличаются только названием, не входными значениями и не проверяемым поведением. Параметр строки теста внутри callback не используется.
 - **Решение для последующей реализации:** один `it` вместо двух одинаковых `it.each`-итераций; из исходных 4 test cases файла останется 3. Отдельный real expiry integration test сохранить.
 - **Статус:** подтверждён как изолированное устранение 1 ненужного прогона без потери проверяемой логики; **в audit PR изменения исходников не вносились**.
+
+## Подтверждённые пробелы тестового покрытия (не кандидаты на удаление)
+
+- **COV-01 (4C):** название `online-presence-heartbeat.test.tsx` 401-теста обещает `revalidator.revalidate()`, но проверяется только остановка fetch. В реализации вызов есть; тест не защищает от регрессии именно revalidation.
+- **COV-02 (4C):** название `profile-view.test.tsx` owner-edit теста обещает ссылку «Редактировать профиль», но fixture сразу открывает `editing=true`; DOM-link отсутствует по задумке и не утверждается.
+- Оба — слабость assertions действующих UI-функций, не признак избыточности и не подтверждённый runtime defect. Отдельные узкие test improvements допустимы после завершения audit stage; в этом PR никаких тестов не меняется.
 
 ## Открытые вопросы и гипотезы
 
