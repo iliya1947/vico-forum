@@ -1319,6 +1319,59 @@ describe("MarkdownEditor", () => {
     expect(postCalls).toBe(2);
   });
 
+  it("does not submit a stored attachment through the still text-only publication path", async () => {
+    const storedId = "23b93562-0550-4eef-88af-f951d6ea6138";
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri === "/api/attachments" && options?.method === "GET") {
+        return new Response(JSON.stringify({ attachments: [{
+          id: storedId,
+          fileName: "kept.txt",
+          detectedType: "text",
+          responseMime: "text/plain; charset=utf-8",
+          byteSize: 4,
+          verificationStatus: "type-checked",
+        }] }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (!options?.method && uri.includes("mode=metadata")) {
+        return new Response(JSON.stringify({ drafts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error("Unexpected fetch");
+    }));
+
+    const submitted = vi.fn();
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: "attachment-publication-user", name: "Author" }}>
+        <form onSubmit={(event) => {
+          if (event.defaultPrevented) return;
+          event.preventDefault();
+          submitted();
+        }}>
+          <label htmlFor="attachment-publication-body">Body</label>
+          <MarkdownEditor
+            id="attachment-publication-body"
+            name="body"
+            defaultValue="Text"
+            defaultAuthoringMode="advanced"
+            draftContextKey="topic:attachment-publication:reply"
+            draftLocale="en"
+            draftPublicationIntent="reply"
+          />
+          <button type="submit" name="intent" value="reply">Publish</button>
+        </form>
+      </HeaderAuthProvider>,
+    );
+
+    expect(await screen.findByText("kept.txt")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(submitted).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Publishing attachments is not connected yet. Remove attached files before publishing this draft.",
+    );
+  });
+
   it("resets body and history when the draft context changes for the same account", async () => {
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
       if (uri === "/api/attachments" && options?.method === "GET") {
