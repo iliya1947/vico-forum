@@ -170,12 +170,12 @@ export async function action({ request, context }: { request: Request; context: 
     }
   }
 
-  const uploadId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
+  const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
   const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);
   const size = attachmentSize(request);
   const declaredMime = request.headers.get("Content-Type")?.trim() ?? "";
   if (
-    !isForumAttachmentUuid(uploadId)
+    !isForumAttachmentUuid(attachmentId)
     || fileName === null
     || size === null
     || declaredMime.length > 512
@@ -209,7 +209,7 @@ export async function action({ request, context }: { request: Request; context: 
     if (result.inspection.suspicious) {
       try {
         await store.recordSecurityEvent({
-          uploadId,
+          uploadId: crypto.randomUUID(),
           uploadedByUserId: scope.userId,
           contextKey: scope.contextKey,
           draftId: scope.draftId,
@@ -235,7 +235,7 @@ export async function action({ request, context }: { request: Request; context: 
 
   try {
     const attachment = await store.createDraftAttachment({
-      id: uploadId,
+      id: attachmentId,
       ownerId: scope.userId,
       contextKey: scope.contextKey,
       draftId: scope.draftId,
