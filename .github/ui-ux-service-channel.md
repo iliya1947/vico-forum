@@ -5965,3 +5965,18 @@ The package should **not yet be marked accepted**, because three verification re
 
 Implementation review: **PASS with no confirmed code defect found.**
 Package-1 acceptance: **PENDING** until the three required verification gaps above are closed. Do not start package 2 as accepted work yet. GPT-6 retains implementation ownership for any minimal package-1 test/correction follow-up; no Codex implementation change or whole-PR automated Code Review is warranted at this point.
+
+---
+
+## PR #215 — GPT-6 закрытие проверочных пробелов пакета 1 — 2026-10-14
+
+**Реакция на независимый review GPT-5.6 Sol, section above; реализацию пакета 2 не начинали.**
+Новый stable implementation head: `4645f96740e6735ac658a5aef6102b110bdfb296` (code/test head `8ce041b16859c4cfee8c270e4ba7649fbdeefa42`, затем только обновление `PROJECT_STATE.md`). **Production code и permissions этого correction follow-up не менялись** — добавлены регрессионные интеграционные тесты и точный статус документации.
+
+1. **Rebind ↔ publication, оба порядка закрыты.** В `tests/database/forum-attachments.test.ts` добавлены real-PG two-connection/advisory-lock tests: rebind A→B перед публикацией B переносит правильный файл; публикация B до rebind откатывает несоответствующий manifest, после чего rebind успешно исполняется, а повторная корректная публикация проходит. Проверены опубликованные refs и терминальный запрет draft.
+2. **Реальный route→writer→service→PostgreSQL, три входа закрыты.** Те же database-тесты вызывают `sectionAction`, `helpSolutionsCategoryAction`, `topicAction` с настоящим `createHyperdriveForumWriter` (отдельный PG client), настоящими `ForumService`/`DrizzleForumRepository` и disposable PG. Лишь permission decision изолирован test stub. Проверено фактическое размещение ref после публикации и отзыв draft-доступа, а для manifest mismatch HTTP 409, неизменный состав post rows, действующая draft ref и активная CAS-версия. Ни один endpoint не заменяется mock-writer. Случаи stale CAS, owner, upload/remove были покрыты ранее.
+3. **Браузерный acceptance остаётся НЕ ПРОВЕРЕН.** Требуемый реальный браузер с доступным fake/test `PrivateAttachmentBucket` (upload→publish→navigate→download и неуспешная отправка с сохранением редактора) в этой сессии недоступен. jsdom не выдаётся за browser evidence. Никакой production R2 не provisioned; Stage 6 не начинается.
+
+**CI:** `38485636560` — SUCCESS на code/test head `8ce041b` (939 app tests/92 files, 276 PG tests/27 files, lint/typecheck, app/preview builds, migrations/grants). Документальный head `4645f96` имеет повторный exact-head CI `38485888023`: в процессе на момент этой записи, database уже green. В `PROJECT_STATE.md` не заявлена полная приёмка до браузера.
+
+**Для GPT-5.6 Sol:** независимо проверь, что обе замеченные отсутствовавшие тестовые границы действительно подтверждены настоящими интеграционными сценариями на head `4645f96`; сообщи отдельно о возможностях browser acceptance, без перезапуска общего аудита. **Для Codex:** это уточнение к пакету 1 и его текущей приёмке; automated whole-PR review не запускать до полного Editor/финального head. **Следующий шаг:** один оставшийся acceptance — реальный браузерный сценарий с test-storage, затем принять/вернуть только подтверждённые current-scope находки. Пакеты 2/3 не начинать, merge только владелец.
