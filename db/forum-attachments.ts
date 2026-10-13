@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
@@ -64,11 +64,14 @@ export class InvalidForumAttachmentError extends Error {
 }
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+export function isForumAttachmentUuid(value: string): boolean {
+  return uuid.test(value);
+}
 const privateObjectKey = /^private\/[0-9a-f-]{36}$/iu;
 
 function validInput(input: CreateDraftAttachmentInput): boolean {
-  return uuid.test(input.id)
-    && uuid.test(input.draftId)
+  return isForumAttachmentUuid(input.id)
+    && isForumAttachmentUuid(input.draftId)
     && input.ownerId.length > 0
     && isEditorDraftContextKey(input.contextKey)
     && privateObjectKey.test(input.objectKey)
@@ -83,11 +86,11 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
 }
 
 function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean {
-  return uuid.test(input.uploadId)
+  return isForumAttachmentUuid(input.uploadId)
     && input.uploadedByUserId.length > 0
     && isEditorDraftContextKey(input.contextKey)
     && input.contextKey.length <= 4096
-    && uuid.test(input.draftId)
+    && isForumAttachmentUuid(input.draftId)
     && input.fileName.length <= 32_768
     && input.declaredMime.length <= 512
     && input.detectedType.length > 0
@@ -174,7 +177,7 @@ export class DrizzleForumAttachments {
   }
 
   async listDraftAttachments(ownerId: string, contextKey: string, draftId: string) {
-    if (!ownerId || !isEditorDraftContextKey(contextKey) || !uuid.test(draftId)) {
+    if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) {
       throw new InvalidForumAttachmentError();
     }
     const rows = await this.db.select({ attachment: forumAttachments })
@@ -201,7 +204,7 @@ export class DrizzleForumAttachments {
     draftId: string,
     attachmentId: string,
   ): Promise<boolean> {
-    if (!ownerId || !isEditorDraftContextKey(contextKey) || !uuid.test(draftId) || !uuid.test(attachmentId)) {
+    if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) {
       throw new InvalidForumAttachmentError();
     }
     const deleted = await this.db.delete(forumAttachmentDraftRefs)
@@ -214,4 +217,60 @@ export class DrizzleForumAttachments {
       .returning({ attachmentId: forumAttachmentDraftRefs.attachmentId });
     return deleted.length > 0;
   }
+  async rebindDraftAttachments(
+    ownerId: string,
+    contextKey: string,
+    fromDraftId: string,
+    toDraftId: string,
+  ): Promise<number> {
+    if (
+      !ownerId
+      || !isEditorDraftContextKey(contextKey)
+      || !isForumAttachmentUuid(fromDraftId)
+      || !isForumAttachmentUuid(toDraftId)
+    ) {
+      throw new InvalidForumAttachmentError();
+    }
+    if (fromDraftId === toDraftId) return 0;
+
+    return this.db.transaction(async (tx) => {
+      const source = await tx.select({
+        attachmentId: forumAttachmentDraftRefs.attachmentId,
+        createdAt: forumAttachmentDraftRefs.createdAt,
+      })
+        .from(forumAttachmentDraftRefs)
+        .where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, contextKey),
+          eq(forumAttachmentDraftRefs.draftId, fromDraftId),
+        ))
+        .orderBy(asc(forumAttachmentDraftRefs.createdAt), asc(forumAttachmentDraftRefs.attachmentId))
+        .for("update");
+
+      if (source.length === 0) return 0;
+
+      await tx.insert(forumAttachmentDraftRefs).values(source.map((reference) => ({
+        attachmentId: reference.attachmentId,
+        ownerId,
+        contextKey,
+        draftId: toDraftId,
+        createdAt: reference.createdAt,
+      }))).onConflictDoNothing();
+
+      const deleted = await tx.delete(forumAttachmentDraftRefs)
+        .where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, contextKey),
+          eq(forumAttachmentDraftRefs.draftId, fromDraftId),
+          inArray(
+            forumAttachmentDraftRefs.attachmentId,
+            source.map((reference) => reference.attachmentId),
+          ),
+        ))
+        .returning({ attachmentId: forumAttachmentDraftRefs.attachmentId });
+
+      return deleted.length;
+    });
+  }
+
 }
