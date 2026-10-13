@@ -29,10 +29,10 @@
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
-| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A–6D — 29/44 файлов, 292 кейса |
+| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A–6E — 37/44 файлов, 370 кейсов |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **97 файлов / 855 тест-кейсов проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **105 файлов / 933 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -123,7 +123,7 @@
 - [x] `db/locale-repository.test.ts`
 - [x] `tests/database/hyperdrive-registry.test.ts`
 
-### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A–6D завершены)
+### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A–6E завершены)
 
 - [x] `app/localization/cloudflare-m2m100-provider.test.ts`
 - [x] `app/localization/content-generation-action.server.test.ts`
@@ -154,14 +154,14 @@
 - [x] `db/hyperdrive-content-translations.test.ts`
 - [x] `db/hyperdrive-ui-translations.test.ts`
 - [x] `db/ui-translation-bundle-store.test.ts`
-- [ ] `tests/database/content-generation-status.test.ts`
-- [ ] `tests/database/content-post-body-task-planning.test.ts`
-- [ ] `tests/database/content-request-budget-store.test.ts`
-- [ ] `tests/database/content-topic-title-execution.test.ts`
-- [ ] `tests/database/content-topic-title-task-planning.test.ts`
-- [ ] `tests/database/content-translation-store.test.ts`
-- [ ] `tests/database/source-locale-correction.test.ts`
-- [ ] `tests/database/translation-generation-authorization.test.ts`
+- [x] `tests/database/content-generation-status.test.ts`
+- [x] `tests/database/content-post-body-task-planning.test.ts`
+- [x] `tests/database/content-request-budget-store.test.ts`
+- [x] `tests/database/content-topic-title-execution.test.ts`
+- [x] `tests/database/content-topic-title-task-planning.test.ts`
+- [x] `tests/database/content-translation-store.test.ts`
+- [x] `tests/database/source-locale-correction.test.ts`
+- [x] `tests/database/translation-generation-authorization.test.ts`
 - [ ] `tests/database/translation-task-generation-isolation.test.ts`
 - [ ] `tests/database/translation-task-reconciliation.test.ts`
 - [ ] `tests/database/translation-task-store.test.ts`
@@ -190,9 +190,34 @@
 - **6B — провайдеры и исполнение** — **9 файлов, 118 кейсов, завершён**: `app/localization/cloudflare-m2m100-provider.test.ts`, `app/localization/content-provider-allowance.test.ts`, `app/localization/content-request-budget.server.test.ts`, `app/localization/content-generation-action.server.test.ts`, `app/localization/translation-provider-data-policy.test.ts`, `app/localization/translation-provider.test.ts`, `app/localization/translation-execution.test.ts`, `app/localization/content-translation-execution.test.ts`, `app/localization/content-post-body-execution.test.tsx`.
 - **6C — планирование, очереди и публикация** — **8 файлов, 74 кейса, завершён**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
 - **6D (6Г) — DB/Hyperdrive адаптеры** — **5 файлов, 31 кейс, завершён**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
-- **6E — content generation PostgreSQL** — **8 файлов**, **не начат**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
+- **6E (6Д) — content generation PostgreSQL** — **8 файлов, 78 кейсов, завершён**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
 - **6F — tasks/UI storage PostgreSQL** — **7 файлов**, **не начат**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
-- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6E до команды владельца.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6F до команды владельца.
+
+### Проход 6E / 6Д — PostgreSQL content translation/generation и авторизация (2026-10-14)
+
+- **База:** `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`, без code/test edits. Просмотрены полностью 8 test files, их `beforeAll/beforeEach` fixtures, real PostgreSQL queries, multi-session concurrency, fake provider/Queue boundaries и postcondition assertions; сопоставлены с `PROJECT_STATE.md`, `ROADMAP.md`, `docs/translation/{CONTENT_TRANSLATION,PROVIDERS_AND_JOBS,STORAGE_AND_VERSIONING}.md`, с ранее проверенными application unit tests 6A–6C и Hyperdrive/Drizzle unit 6D. PostgreSQL только из ранее сохранённого CI; при текущем аудите ни production, ни локальная тестовая БД не запускались.
+- **CI:** **8 файлов / 78 исполняемых cases** = `2 + 25 + 11 + 14 + 13 + 7 + 4 + 2`. Все файлы прошли в [GitHub database CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177318) на source-equivalent PR #221 (не новый прогон). Здесь нет `it.each`-расширения сверх 78 объявленных cases.
+- **Файлы и предметное покрытие:**
+  - [`tests/database/content-generation-status.test.ts`](../../tests/database/content-generation-status.test.ts) — **2** кейсов. PostgreSQL real adapter: title/body set-based generation-status read, live task-head/revision and locale isolation; distinctly tests SQL against 6D mock row parsing.
+  - [`tests/database/content-post-body-task-planning.test.ts`](../../tests/database/content-post-body-task-planning.test.ts) — **25** кейсов. PostgreSQL real post-body planning/execution: atomic budget/task metadata, concurrency, provider windows, Markdown protection, manual-trust, lease ownership, rollback on failed task completion, FK isolation.
+  - [`tests/database/content-request-budget-store.test.ts`](../../tests/database/content-request-budget-store.test.ts) — **11** кейсов. Fixed-window PostgreSQL ledger: exact per-requester/global limits, no partial global charge, lock order/concurrency, policy isolation, DB-owned reset/retry, rollback on injected failure, bounded cleanup.
+  - [`tests/database/content-topic-title-execution.test.ts`](../../tests/database/content-topic-title-execution.test.ts) — **14** кейсов. PostgreSQL real title executor+dispatcher: stored kind, provider data-policy revocation, stale/reclaim/allowance lifecycle, concurrent admission, retries, authoritative revision and manual result fencing.
+  - [`tests/database/content-topic-title-task-planning.test.ts`](../../tests/database/content-topic-title-task-planning.test.ts) — **13** кейсов. PostgreSQL real title planning: current immutable revision, serialized dedup and one-unit budget, pending/completed/live claim, rollback on metadata failure, FIFO enqueue post-commit, task FK and generation.
+  - [`tests/database/content-translation-store.test.ts`](../../tests/database/content-translation-store.test.ts) — **7** кейсов. PostgreSQL exact title/body revision/target persistence, trusted manual-over-machine, concurrent idempotent writes, Drizzle batch no-stale leak, owner FK, SQL locale constraints and cascade.
+  - [`tests/database/source-locale-correction.test.ts`](../../tests/database/source-locale-correction.test.ts) — **4** кейсов. Real route action + Postgres: authoritative revision copying, old translation remains historical, current grants/ownership, strict source-locale validations, stale/CAS concurrent corrections.
+  - [`tests/database/translation-generation-authorization.test.ts`](../../tests/database/translation-generation-authorization.test.ts) — **2** кейсов. Migration/DB current grants for translation.generate built-in roles and effective dynamic deny/allow overrides, not just mocked route permission wiring.
+- **Сравнение кандидатов на дублирование:**
+  1. [`content-topic-title-task-planning.test.ts`](../../tests/database/content-topic-title-task-planning.test.ts) и [`content-post-body-task-planning.test.ts`](../../tests/database/content-post-body-task-planning.test.ts) повторяют high-level race/success исходы (`duplicate upsert`, `budget atomicity`, `completed/live claim`, `enqueue failure`, `metadata rollback`). Однако тестируют **разные Drizzle planning stores**, content-specific revision joins, отдельные kinds/FK/identity/budget scopes и отдельные schemas. Post-body дополнительно охраняет CNT-04 protected metadata, no partial provider publication и source-protection policy; title дополнительно проверяет его policy/allowance, cross-kind isolation. Общий durable-task backbone сам по себе **не гарантирует интеграцию обоих ресурсов**. Эквивалентных входов/выходов одной реализации не выявлено.
+  2. Оба planning DB test files против [`content-translation-planning.test.ts`](../../app/localization/content-translation-planning.test.ts) и [`content-post-body-planning.test.ts`](../../app/localization/content-post-body-planning.test.ts): первые включают **реальные transaction isolation, row locks, simultaneous PG connections, FK/trigger rollback**; вторые unit fixtures проверяют **сервисную логику, порядок проверки source/provider, что именно отправляется в durable API и Queue**. Это разные границы, не взаимозаменяемые case executions.
+  3. [`content-request-budget-store.test.ts`](../../tests/database/content-request-budget-store.test.ts) проверяет сам PostgreSQL fixed-window counter, сквозной lock ordering, limit `cost`, indexed cleanup. Budget predicates в title/body planning test files проверяют **атомарность совместного budget + task transaction** на разных resource-specific stores, в том числе duplicate costs. Отдельный ledger test не гарантирует правильную транзакцию конкретного planner.
+  4. [`content-topic-title-execution.test.ts`](../../tests/database/content-topic-title-execution.test.ts) и execution cases внутри [`content-post-body-task-planning.test.ts`](../../tests/database/content-post-body-task-planning.test.ts) защищают **разные publication stores и provider windows**: title — one plain provider call, content-policy preflight/allowance, post — multiple ordered protected Markdown segments, token restoration, manual inserts between calls, atomic no-partial writes, reclaim races. Unit tests 6B используют mocked persistence; integration tests здесь проверяют actual task status, generation heads, lease ownership и stored translations.
+  5. [`content-generation-status.test.ts`](../../tests/database/content-generation-status.test.ts) реализует SQL query через настоящий PostgreSQL с реальными revision/head/task/locale rows; [`db/hyperdrive-content-generation-status.test.ts`](../../db/hyperdrive-content-generation-status.test.ts) проверяет mocked driver cardinality, SQL invocation count, classified unavailable/cleanup and public projection. Один уровень не заменяет другой.
+  6. [`content-translation-store.test.ts`](../../tests/database/content-translation-store.test.ts) проверяет реальные versioned FK/check/cascade/uniqueness constraints и race при write; [`db/content-translation-store.test.ts`](../../db/content-translation-store.test.ts) — mocked Drizzle query-count и error wrapping. Совпадающий method `readBatch` не делает один тест лишним.
+  7. [`source-locale-correction.test.ts`](../../tests/database/source-locale-correction.test.ts) проверяет actual authorization current DB + route actions and concurrent revision CAS, [`translation-generation-authorization.test.ts`](../../tests/database/translation-generation-authorization.test.ts) — **отдельную permission `forum.translation.generate`** и текущие grant/override rows. Право correction `correctOwn/correctAny` не заменяет generation permission. Auth tests Stage 3 на generic permissions не подтверждают эту миграцию grants автоматически.
+- **Предварительная оценка инфраструктурного покрытия:** PostgreSQL integration tests используют scoped disposable test schema/database and controlled fixtures; конкурентные тесты открывают дополнительные test connections, инъекции ошибок через rollback/temporary triggers выполняются только в test scope. Нельзя называть эти тесты реальными provider/Queue acceptance или production Neon smoke. Current Stage 5 local/CI code-backed contracts уже реализованы; Stage 6 external not-ready сам по себе не основание их удалять.
+- **Итог прохода 6E:** **0 доказанных точных дублирующих кейсов, 0 файлов для удаления и 0 новых подтверждённых дефектов тестов**; многократное тестирование похожего outcome на **разных конкретных PostgreSQL resource paths** оправдано. Пересечения с оставшимся shared task/observability/UI storage в 6F проверить при следующем проходе; также сверить `COV-03` (mock-observe pass-through) с реальной PostgreSQL `observeTranslationTasks` в 6F.
+- **Прогресс:** **105/118 файлов, 933/1 075 исходных кейсов проверено**. Остаётся **13 файлов и 142 кейса**, из них 6F — 7 files, Stage 7 — 4, Stage 8 — 2. Stage 6 пройдено **37/44 файла, 370 кейсов**. Следующий проход **6F (6Е)**, 7 файлов PostgreSQL shared translation-tasks/UI storage, только после отдельной команды владельца.
 
 ### Проход 6D / 6Г — PostgreSQL / Hyperdrive adapter boundaries (2026-10-14)
 
