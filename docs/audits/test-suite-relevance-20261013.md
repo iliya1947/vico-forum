@@ -26,13 +26,13 @@
 | --- | --- | ---: | --- |
 | 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
 | 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
-| 3 | Аутентификация и авторизация | 12 | Не начато |
+| 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Не начато |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **17 файлов / 149 тест-кейсов проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **29 файлов / 206 тест-кейсов проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -63,20 +63,20 @@
 - [x] `.github/scripts/validate-production-web-credential-input.test.mjs`
 - [x] `.github/scripts/verify-recovery-v2-validation-run.test.mjs`
 
-### 3. Аутентификация и авторизация — 12 файлов, не начато
+### 3. Аутентификация и авторизация — 12 файлов, завершено
 
-- [ ] `app/auth/auth-controls.test.tsx`
-- [ ] `app/auth/auth.server.test.ts`
-- [ ] `app/auth/credential-view.test.tsx`
-- [ ] `app/auth/session-context.test.ts`
-- [ ] `app/authorization/admin-view.test.tsx`
-- [ ] `app/routes/auth-api.test.ts`
-- [ ] `app/routes/authorization-admin.test.ts`
-- [ ] `db/authorization-repository.test.ts`
-- [ ] `db/hyperdrive-authorization.test.ts`
-- [ ] `tests/database/auth-runtime.test.ts`
-- [ ] `tests/database/authorization-snapshot.test.ts`
-- [ ] `tests/database/forum-email-registration.test.ts`
+- [x] `app/auth/auth-controls.test.tsx`
+- [x] `app/auth/auth.server.test.ts`
+- [x] `app/auth/credential-view.test.tsx`
+- [x] `app/auth/session-context.test.ts`
+- [x] `app/authorization/admin-view.test.tsx`
+- [x] `app/routes/auth-api.test.ts`
+- [x] `app/routes/authorization-admin.test.ts`
+- [x] `db/authorization-repository.test.ts`
+- [x] `db/hyperdrive-authorization.test.ts`
+- [x] `tests/database/auth-runtime.test.ts`
+- [x] `tests/database/authorization-snapshot.test.ts`
+- [x] `tests/database/forum-email-registration.test.ts`
 
 ### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файлов, не начато
 
@@ -234,6 +234,32 @@
   5. **0 подтверждённых тест-кейсов, безопасных для изолированного удаления**. Подтверждён один класс исторической избыточности (consumed one-shot operations); точный набор удаляемых тестов зависит от последующей проверки зависимостей и политики хранения этих workflow.
 - **Следующий проход:** этап 3 — аутентификация/авторизация (12 файлов), **не начат**; остановка до команды владельца.
 
+### Проход 3 — authentication / application authorization (2026-10-13)
+
+- **База:** тот же `main` commit `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Полностью прочитаны 12 test files и сопоставлены с `app/auth/*`, маршрутом [`authorization-admin.tsx`](../../app/routes/authorization-admin.tsx), [`db/authorization-repository.ts`](../../db/authorization-repository.ts), [`db/hyperdrive-authorization.ts`](../../db/hyperdrive-authorization.ts), [`docs/auth/AUTHORIZATION.md`](../../docs/auth/AUTHORIZATION.md) и current Better Auth/DB code.
+- **Кейсы:** **57** (51 application Vitest и 6 native PostgreSQL Vitest), учтены параметризованные `it.each`. По логам [checks CI](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) и [database CI](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177318) — **57 passed** на сопоставимом PR #221 head (только `AGENTS.md` различался с `main`). Новые тесты не запускались.
+- **Файлы, кейсы и роль:**
+  - [`app/auth/auth-controls.test.tsx`](../../app/auth/auth-controls.test.tsx) — **11**: Header guest/signed-in links, returnTo/query/hash, LTR/RTL, sign-out and server-loader revalidation.
+  - [`app/auth/auth.server.test.ts`](../../app/auth/auth.server.test.ts) — **3**: Better Auth 1.7.4 email/password, persisted rate limiting, Cloudflare IP and origin/CSRF configuration.
+  - [`app/auth/credential-view.test.tsx`](../../app/auth/credential-view.test.tsx) — **9**: Email registration/login and Google alternative, safe error feedback, returnTo with anchor and header refresh.
+  - [`app/auth/session-context.test.ts`](../../app/auth/session-context.test.ts) — **4**: Per-request session setup and Set-Cookie propagation; **два идентичных `.each` cases** при `runtime(null)` — находка AUTH-01.
+  - [`app/authorization/admin-view.test.tsx`](../../app/authorization/admin-view.test.tsx) — **3**: Admin presentation сохраняет intents/fields, не предлагает delete для built-in и показывает safe feedback.
+  - [`app/routes/auth-api.test.ts`](../../app/routes/auth-api.test.ts) — **2**: `/api/auth/*` forwards runtime handler и register order против catch-all.
+  - [`app/routes/authorization-admin.test.ts`](../../app/routes/authorization-admin.test.ts) — **8**: Самостоятельные authn/authz guards у loader/action, 503 vs unexpected failure, bulk state, forged actor и management result mapping.
+  - [`db/authorization-repository.test.ts`](../../db/authorization-repository.test.ts) — **6**: PostgreSQL query snapshot shape, transaction BEGIN/COMMIT/ROLLBACK cleanup semantics, bound query reuse, unique-slug conflict mapping.
+  - [`db/hyperdrive-authorization.test.ts`](../../db/hyperdrive-authorization.test.ts) — **3**: Классификация dependency availability против schema/programming errors и request-scoped vs new-request permission cache.
+  - [`tests/database/auth-runtime.test.ts`](../../tests/database/auth-runtime.test.ts) — **1**: Реальный Better Auth + PostgreSQL sliding-session Set-Cookie, session expiry и cleanup; не дублирует pure fake-session тест.
+  - [`tests/database/authorization-snapshot.test.ts`](../../tests/database/authorization-snapshot.test.ts) — **2**: Реальная конкурентная PostgreSQL консистентность `resolveUser` и `readManagementState` при параллельных changes to grants/overrides/assignment.
+  - [`tests/database/forum-email-registration.test.ts`](../../tests/database/forum-email-registration.test.ts) — **5**: Реальные email/password signup/login, persisted hash/verification/session, invalid names и trim on PostgreSQL.
+- **Подтверждённый дубль AUTH-01 (1 лишний запуск):** [`app/auth/session-context.test.ts:44–51`](../../app/auth/session-context.test.ts#L44-L51) параметризует два названия (`guest/no-session` и `invalid or expired session`), **но в обеих итерациях передаёт один и тот же `runtime(null)`, один `Request("https://vico.test/en")` и утверждает одно и то же `authSessionForRequest(context) === null`**. Это тождественные входы, вызываемая логика и assertion. Вторая итерация не создаёт invalid/expired cookie и не проверяет его обработку. [`tests/database/auth-runtime.test.ts:155–167`](../../tests/database/auth-runtime.test.ts#L155-L167) отдельно и реально истекает PostgreSQL session, затем проверяет rejection, Set-Cookie и удаление старой строки. **Рекомендация:** заменить только этот `it.each` одним `it("stores null when auth runtime reports no session", ...)`. Убрать один повтор, оставить DB-expiry regression. Сейчас **не исправлялось**.
+- **Проверенные потенциальные пересечения, не подтверждены как лишние:**
+  1. Header [`safeForumReturnPath`](../../app/auth/credential-path.ts) и credential `credentialReturnPath` тестируют соответственно path/anchor encoding при построении URL и обработку untrusted callback URL на странице входа. Функции связаны, но входные границы разные.
+  2. [`app/auth/auth.server.test.ts`](../../app/auth/auth.server.test.ts) фиксирует security configuration, [`tests/database/forum-email-registration.test.ts`](../../tests/database/forum-email-registration.test.ts) — фактическую регистрацию/вход/валидацию имён. Не эквивалентны.
+  3. [`app/auth/session-context.test.ts`](../../app/auth/session-context.test.ts) проверяет передачу mock session/cookies, [`tests/database/auth-runtime.test.ts`](../../tests/database/auth-runtime.test.ts) — настоящую sliding/expired session в PostgreSQL. Не эквивалентны (кроме найденного повтора внутри mock test).
+  4. Route `authorization-admin` проверяет отказ и mapping кодов ответов, repository tests — SQL/transaction semantics, [`tests/database/authorization-snapshot.test.ts`](../../tests/database/authorization-snapshot.test.ts) — реальные concurrency interleavings. Все три уровня защищают разные ошибки.
+- **Ограничение:** real Google OAuth login/deployed smoke не покрыт этими tests и остаётся Stage 6 acceptance; это известная external boundary, **не причина удалять** unit/API/DB проверки Stage 4. Сам аудит не является новым runtime/browser acceptance.
+- **Итог:** **12 файлов / 57 кейсов рассмотрены; 1 подтверждённый дублирующий кейс; 0 файлов, которые доказанно целиком лишние.** Общий прогресс: **29/118 файлов и 206/1 075 исходных кейсов**. Следующий этап 4 — forum/UX, **24 файла; требуется разбиение на несколько связных малых проходов**, остановка до команды владельца.
+
 ## Подтверждённые кандидаты на оптимизацию
 
 ### CRED-01 — условная очистка исчерпанных одноразовых credential workflows
@@ -243,6 +269,13 @@
 - **Смешанные наборы, не удалять целиком без миграции покрытия:** [bootstrap helper tests](../../.github/scripts/bootstrap-production-web-credential.test.mjs), [recovery V1 core tests](../../.github/scripts/recover-production-web-credential.test.mjs), [diagnostic workflow tests](../../.github/scripts/production-web-credential-diagnostic-workflows.test.mjs); [input validation tests](../../.github/scripts/validate-production-web-credential-input.test.mjs) относятся к repeatable validation, но его текущий практический смысл после consumed V2 требует окончательного решения.
 - **Граница:** повторяемую read-only preflight диагностику сохранить до подтверждения наличия эквивалентной безопасной диагностики. Нельзя удалять тесты при сохранении исполнительных workflow или используемых helper-функций. CI содержит явные `node --test` записи, их также потребуется обновить при будущем cleanup.
 - **Статус:** обоснованное предложение по совместному cleanup **после** полной проверки, но **не разрешение немедленно удалять**. Число безопасно удаляемых отдельно тест-кейсов — 0.
+
+### AUTH-01 — дублирующий test case с `runtime(null)`
+
+- **Файл:** [`app/auth/session-context.test.ts#L44-L51`](../../app/auth/session-context.test.ts#L44-L51).
+- **Доказательство:** две итерации `it.each` отличаются только названием, не входными значениями и не проверяемым поведением. Параметр строки теста внутри callback не используется.
+- **Решение для последующей реализации:** один `it` вместо двух одинаковых `it.each`-итераций; из исходных 4 test cases файла останется 3. Отдельный real expiry integration test сохранить.
+- **Статус:** подтверждён как изолированное устранение 1 ненужного прогона без потери проверяемой логики; **в audit PR изменения исходников не вносились**.
 
 ## Открытые вопросы и гипотезы
 
