@@ -581,8 +581,8 @@ Vico Forum находится в ранней pre-release разработке.
   snapshot без проигравшего attachment provenance и меняет отдельный selection epoch,
   в том числе при прежнем text draft ID. Ошибка localStorage сохраняет конфликт и текст.
   Clean refresh/Keep-local сохраняют текущие загрузки, исходные IDs и штатный 60-second CAS.
-  Устаревшие upload/GET/PATCH/DELETE callbacks не применяются к новому выбору; поздний
-  DELETE, включая потерю подтверждения, уведомляет только соответствующий owner/context
+  Устаревшие upload/GET/PATCH/DELETE callbacks не применяются к новому выбору; позднее
+  завершение upload/DELETE, включая потерю подтверждения, уведомляет только owner/context
   и инициирует authoritative GET текущего поколения, а не прямое изменение нового UI.
   Suspicious retries используют versioned server-derived SHA-256 key по authenticated
   owner, stable upload UUID, original context/draft и bounded rejection evidence поверх
@@ -591,8 +591,13 @@ Vico Forum находится в ранней pre-release разработке.
   Регрессии используют настоящий MarkdownEditor с обоими hooks, управляемые transport/R2
   заглушки и actual upload route → pooled native PostgreSQL. Новый exact-head CI и
   независимая проверка фиксируются в checks и служебном канале по факту; результаты
-  предыдущих heads не считаются доказательством новых проверок. Рабочая среда потеряла
-  связь до локального прогона этого пакета; новое выполнение local tests не заявляется.
+  предыдущих heads не считаются доказательством новых проверок. После восстановления
+  рабочей среды прошли 933 application tests / 90 files (maxWorkers=2) и 261 PostgreSQL 17
+  tests / 27 files; typecheck и обе сборки успешны. Native route imports явно включены
+  в Node TypeScript project без ослабления compiler/CI. Cache snapshot другой вкладки
+  сохраняет свои attachment bindings, остаётся dirty и проходит metadata verification
+  и штатный CAS до rebind. Ошибка обоих вариантов выбора сохраняет конфликт; runtime
+  epoch отсекает старые draft GET/save ответы и освобождает следующий regular cycle.
   Real R2 provisioning, bindings/live acceptance и Stage 6 остаются отложенными.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable

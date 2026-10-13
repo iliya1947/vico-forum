@@ -8,7 +8,7 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { useEditorAttachments } from "./editor-attachments";
 import { MarkdownEditor } from "./markdown-editor";
 import { HeaderAuthProvider } from "../auth/auth-controls";
-import { readLocalEditorDraft, writeLocalEditorDraft } from "./draft-client";
+import { readLocalEditorDraft, writeLocalEditorDraft, draftStorageKey } from "./draft-client";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -884,10 +884,11 @@ describe("MarkdownEditor attachment and draft integration", () => {
     expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
   });
 
-  it.each([false, true])("restores late origin-A completion only through authoritative refs; prior redirect=%s", async (redirected) => {
+  it.each([false, true].flatMap((redirected) =>
+    (["stored", "transport-error", "unavailable"] as const).map((result) => ({ redirected, result })),
+  ))("restores origin-A only through authoritative refs; redirect=$redirected, result=$result", async ({ redirected, result }) => {
     let remote = remoteDraft(oldDraftId, 1, "Initial A text");
     let committed = false;
-    let originId: string | null = null;
     const winner = { id: attachmentId, fileName: "authoritative-winner.txt", detectedType: "text",
       responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
     const fetchMock = vi.fn(async (uri: string, init?: RequestInit) => {
@@ -906,7 +907,7 @@ describe("MarkdownEditor attachment and draft integration", () => {
     await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
     fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "late-origin-A.txt")] } });
     const upload = FakeXMLHttpRequest.instances[0]!;
-    originId = upload.headers.get("X-Vico-Attachment-Id");
+    const originId = upload.headers.get("X-Vico-Attachment-Id");
     remote = remoteDraft(draftId, 4, "First remote B");
     await reconcileDraft();
     fireEvent.click(await screen.findByRole("button", { name: "Keep this version" }));
@@ -918,7 +919,10 @@ describe("MarkdownEditor attachment and draft integration", () => {
     expect(screen.queryByText("late-origin-A.txt")).not.toBeInTheDocument();
     expect(upload.aborted).toBe(false);
     committed = true;
-    upload.complete(201, { outcome: "stored", attachment: { ...winner, id: originId, fileName: "late-origin-A.txt" } });
+    if (result === "stored") {
+      upload.complete(201, { outcome: "stored", attachment: { ...winner, id: originId, fileName: "late-origin-A.txt" } });
+    } else if (result === "unavailable") upload.complete(503, { error: "unavailable" });
+    else upload.fail();
     if (redirected) await screen.findByText("late-origin-A.txt");
     else {
       await act(async () => { await Promise.resolve(); await Promise.resolve(); });
@@ -927,4 +931,32 @@ describe("MarkdownEditor attachment and draft integration", () => {
     expect(screen.getByText("authoritative-winner.txt")).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
   });
+});
+
+it("drops the current tab's transient uploads while retaining the selected tab's attachment provenance", async () => {
+  const remote = remoteDraft(draftId, 1, "Actual server");
+  const fetchMock = vi.fn(async (uri: string, init?: RequestInit) => {
+    if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
+    if (uri.includes("mode=content")) return Response.json({ draft: remote });
+    if (init?.method === "GET") return Response.json({ attachments: [] });
+    throw new Error("Unexpected eager save or rebind");
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  renderDraftEditor();
+  await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+  fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "current-tab.txt")] } });
+  const upload = FakeXMLHttpRequest.instances[0]!;
+  fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "Current tab unsynced " } });
+  writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId, attachmentDraftId: oldDraftId,
+    editedAt: new Date().toISOString(), baseVersion: 1, syncedEditedAt: null,
+    payload: { ...emptyDraftPayload, body: "Chosen other tab" } });
+  await act(async () => { window.dispatchEvent(new StorageEvent("storage", { key: draftStorageKey("alice", contextKey) })); });
+  fireEvent.click(await screen.findByRole("button", { name: "Keep other version" }));
+  await waitFor(() => expect(screen.queryByText("current-tab.txt")).not.toBeInTheDocument());
+  expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Chosen other tab");
+  expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ attachmentDraftId: oldDraftId, syncedEditedAt: null });
+  upload.fail();
+  expect(screen.queryByText("current-tab.txt")).not.toBeInTheDocument();
+  expect(upload.aborted).toBe(false);
+  expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
 });

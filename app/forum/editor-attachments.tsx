@@ -186,6 +186,7 @@ export function useEditorAttachments({
   const draftIdRef = useRef(draftId);
   draftIdRef.current = draftId;
   const previousIdentityRef = useRef(identity);
+  const previousSelectionEpochRef = useRef(selectionEpoch);
   const removedIdsRef = useRef(new Set<string>());
   // A confirmed explicit server selection invalidates losing local attachment state,
   // even when the text draft ID is unchanged. Routine refresh does not change it.
@@ -214,12 +215,14 @@ export function useEditorAttachments({
   useEffect(() => { setRestoredScope(null); }, [draftRevision]);
 
   useEffect(() => {
-    const retaining = identity === previousIdentityRef.current && !!rebindFrom;
+    const retaining = identity === previousIdentityRef.current
+      && selectionEpoch === previousSelectionEpochRef.current && !!rebindFrom;
     if (!retaining) {
       setEntries([]);
       removedIdsRef.current.clear();
     }
     previousIdentityRef.current = identity;
+    previousSelectionEpochRef.current = selectionEpoch;
     setRestoredScope(null);
     setRestoreState("idle");
     setRebindState("idle");
@@ -396,7 +399,11 @@ export function useEditorAttachments({
         callbacksRef.current.noteAttachmentChange(draftIdRef.current);
         return;
       }
-      if (!active()) return;
+      if (!active()) {
+        // A failure response can hide a committed ref in the chosen generation.
+        notifyAttachmentChange(identityAtStart);
+        return;
+      }
       const reason = typeof payload?.reason === "string"
         ? payload.reason
         : typeof payload?.error === "string" ? payload.error : null;
@@ -414,7 +421,10 @@ export function useEditorAttachments({
     };
     const transportFailure = () => {
       requestsRef.current.delete(stableId);
-      if (!active()) return;
+      if (!active()) {
+        notifyAttachmentChange(identityAtStart);
+        return;
+      }
       setEntry(stableId, (current) => ({
         ...current,
         status: "error",

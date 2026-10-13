@@ -16,7 +16,11 @@ interface Props {
   restore(payload: ForumEditorDraftPayload): void;
 }
 type Status = "idle" | "saved" | "pending" | "saving" | "restored" | "conflict" | "error";
-type Conflict = { local: LocalEditorDraft; server: DraftRemote | DraftMetadata };
+type Conflict = {
+  local: LocalEditorDraft;
+  server: DraftRemote | DraftMetadata;
+  localCandidate?: LocalEditorDraft;
+};
 type Runtime = {
   identity: string;
   ownerId: string;
@@ -135,16 +139,24 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setConflict(null);
     setStatus("idle");
   }
-  function applyRemote(ctx: Runtime, remote: DraftRemote, discardLocalAttachments = false): boolean {
+  function applyRemote(
+    ctx: Runtime,
+    remote: DraftRemote,
+    discardLocalAttachments = false,
+    localCandidate?: LocalEditorDraft,
+  ): boolean {
     if (!current(ctx)) return false;
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: remote.draftId,
-      editedAt: remote.editedAt,
-      baseVersion: remote.version, syncedEditedAt: remote.editedAt,
+      editedAt: localCandidate ? new Date().toISOString() : remote.editedAt,
+      baseVersion: remote.version, syncedEditedAt: localCandidate ? null : remote.editedAt,
       payload: remote.payload,
-      // Retain attachment provenance when refreshing text within the same generation.
-      attachmentDraftId: !discardLocalAttachments && ctx.local?.draftId === remote.draftId
-        ? ctx.local.attachmentDraftId : undefined,
+      // Keep the chosen tab's provenance; a cache snapshot is not a server ACK.
+      // A clean server refresh retains provenance within the same generation.
+      attachmentDraftId: localCandidate
+        ? localCandidate.attachmentDraftId
+        : !discardLocalAttachments && ctx.local?.draftId === remote.draftId
+          ? ctx.local.attachmentDraftId : undefined,
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
     ctx.local = next;
@@ -155,7 +167,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setDraftId(remote.draftId);
     setExpectedVersion(remote.version);
     callbacksRef.current.restore(remote.payload);
-    setStatus("restored");
+    setStatus(localCandidate ? "pending" : "restored");
     return true;
   }
 
@@ -435,7 +447,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     let verified = false;
     if (which === "server") {
       if ("payload" in conflictNow.server) {
-        verified = applyRemote(ctx, conflictNow.server, true);
+        verified = applyRemote(ctx, conflictNow.server, true, conflictNow.localCandidate);
         // Keep the conflict when the local winner snapshot could not be persisted.
         if (!verified) return;
       } else reset(ctx, conflictNow.server.version);
@@ -447,6 +459,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       const next = { ...local, baseVersion: conflictNow.server.version, syncedEditedAt: null,
         draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : crypto.randomUUID() };
       verified = writeLocalEditorDraft(next);
+      if (!verified) { setStatus("error"); return; }
       ctx.local = next;
       ctx.draftId = next.draftId;
       ctx.payload = { ...next.payload };
@@ -457,9 +470,17 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       callbacksRef.current.restore(next.payload);
       setStatus(verified ? "pending" : "error");
     }
+    // Pending reads/saves belong to the rejected choice. Their DB operations can
+    // finish, but their replies must not reset this selected snapshot or block
+    // its next regular save cycle.
+    ctx.epoch++;
+    ctx.syncing = false;
+    ctx.reading = false;
+    ctx.serverCycle = null;
     updateConflict(ctx, null);
-    setAttachmentVerified(ctx, verified);
-    if (!verified && which === "server" && !("payload" in conflictNow.server)) {
+    const checkLocalCandidate = !!conflictNow.localCandidate;
+    setAttachmentVerified(ctx, verified && !checkLocalCandidate);
+    if (checkLocalCandidate || (!verified && which === "server" && !("payload" in conflictNow.server))) {
       void checkRemote(ctx);
     }
   }
@@ -539,7 +560,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         void checkRemote(ctx);
       } else if (other.draftId !== ctx.local.draftId
         || JSON.stringify(other.payload) !== JSON.stringify(ctx.local.payload)) {
-        updateConflict(ctx, { local: ctx.local, server: {
+        updateConflict(ctx, { local: ctx.local, localCandidate: other, server: {
           contextKey, draftId: other.draftId, version: other.baseVersion,
           status: "active", editedAt: other.editedAt, updatedAt: other.editedAt,
           title: other.payload.title, snippet: other.payload.body.slice(0, 140),
