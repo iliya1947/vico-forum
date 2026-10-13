@@ -29,10 +29,10 @@
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
-| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A+6B — 16/44 файлов, 187 кейсов |
+| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A+6B+6C — 24/44 файла, 261 кейс |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **84 файла / 750 тест-кейсов проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **92 файла / 824 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -123,32 +123,32 @@
 - [x] `db/locale-repository.test.ts`
 - [x] `tests/database/hyperdrive-registry.test.ts`
 
-### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A и 6B завершены)
+### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A–6C завершены)
 
 - [x] `app/localization/cloudflare-m2m100-provider.test.ts`
 - [x] `app/localization/content-generation-action.server.test.ts`
 - [x] `app/localization/content-generation-view.test.ts`
 - [x] `app/localization/content-markdown-translation.test.tsx`
 - [x] `app/localization/content-post-body-execution.test.tsx`
-- [ ] `app/localization/content-post-body-planning.test.ts`
+- [x] `app/localization/content-post-body-planning.test.ts`
 - [x] `app/localization/content-provider-allowance.test.ts`
 - [x] `app/localization/content-request-budget.server.test.ts`
 - [x] `app/localization/content-source-locale.test.ts`
 - [x] `app/localization/content-translation-execution.test.ts`
-- [ ] `app/localization/content-translation-planning.test.ts`
+- [x] `app/localization/content-translation-planning.test.ts`
 - [x] `app/localization/content-translation-presentation.test.ts`
 - [x] `app/localization/content-translation.test.ts`
 - [x] `app/localization/tinyld-source-locale-detector.test.ts`
 - [x] `app/localization/translation-execution.test.ts`
 - [x] `app/localization/translation-provider-data-policy.test.ts`
 - [x] `app/localization/translation-provider.test.ts`
-- [ ] `app/localization/translation-publication.test.ts`
-- [ ] `app/localization/translation-task-consumer.test.ts`
-- [ ] `app/localization/translation-task-dispatch.test.ts`
-- [ ] `app/localization/translation-task-reconciliation.test.ts`
-- [ ] `app/localization/translation-tasks.test.ts`
+- [x] `app/localization/translation-publication.test.ts`
+- [x] `app/localization/translation-task-consumer.test.ts`
+- [x] `app/localization/translation-task-dispatch.test.ts`
+- [x] `app/localization/translation-task-reconciliation.test.ts`
+- [x] `app/localization/translation-tasks.test.ts`
 - [x] `app/localization/translation-validation.test.ts`
-- [ ] `app/localization/ui-translation-service.test.ts`
+- [x] `app/localization/ui-translation-service.test.ts`
 - [ ] `db/content-translation-store.test.ts`
 - [ ] `db/hyperdrive-content-generation-status.test.ts`
 - [ ] `db/hyperdrive-content-translations.test.ts`
@@ -188,11 +188,34 @@
 
 - **6A — source locale / безопасное представление** — **7 файлов**, 69 кейсов, **завершён**: `app/localization/content-source-locale.test.ts`, `app/localization/tinyld-source-locale-detector.test.ts`, `app/localization/content-translation.test.ts`, `app/localization/content-translation-presentation.test.ts`, `app/localization/content-markdown-translation.test.tsx`, `app/localization/translation-validation.test.ts`, `app/localization/content-generation-view.test.ts`.
 - **6B — провайдеры и исполнение** — **9 файлов, 118 кейсов, завершён**: `app/localization/cloudflare-m2m100-provider.test.ts`, `app/localization/content-provider-allowance.test.ts`, `app/localization/content-request-budget.server.test.ts`, `app/localization/content-generation-action.server.test.ts`, `app/localization/translation-provider-data-policy.test.ts`, `app/localization/translation-provider.test.ts`, `app/localization/translation-execution.test.ts`, `app/localization/content-translation-execution.test.ts`, `app/localization/content-post-body-execution.test.tsx`.
-- **6C — планирование, очереди и публикация** — **8 файлов**, **не начат**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
+- **6C — планирование, очереди и публикация** — **8 файлов, 74 кейса, завершён**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
 - **6D — DB/Hyperdrive адаптеры** — **5 файлов**, **не начат**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
 - **6E — content generation PostgreSQL** — **8 файлов**, **не начат**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
 - **6F — tasks/UI storage PostgreSQL** — **7 файлов**, **не начат**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
-- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6C до команды владельца.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6D до команды владельца.
+
+### Проход 6C — планирование, очереди, preflight и публикация (2026-10-13)
+
+- **База:** `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d` неизменён. Полностью рассмотрены **восемь test files** с `it.each`, fixtures/harness/assertions. Код тестов сопоставлен с implementation `app/localization/{content-translation-planning,content-post-body-planning,translation-publication,translation-task-consumer,translation-task-dispatch,translation-task-reconciliation,translation-tasks,ui-translation-service}.ts` и текущим `PROJECT_STATE.md` Stage 5A/5B, `docs/translation/{CONTENT_TRANSLATION,PROVIDERS_AND_JOBS,UI_TRANSLATION,STORAGE_AND_VERSIONING}.md`. Действия с external DB/provider/Queue не проводились.
+- **CI:** **8 файлов / 74 case executions**, file-level `✓ ...(N tests)` подтверждены в [checks run #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) (на head PR #221, source-equivalent production code; **не** новый CI run). `13 + 15 + 5 + 11 + 5 + 8 + 4 + 13 = 74`. Параметризованные `it.each`: title no-job **4**, post no-job **5**, UI consumer stale reasons **6**, reconciliation invalid query **5**, UI regeneration stale classes **3**, fallback locales **2**.
+- **Назначение конкретных файлов:**
+  - [`app/localization/content-translation-planning.test.ts`](../../app/localization/content-translation-planning.test.ts) — **13**: Topic-title planning: authoritative current revision/source, detected und without persisting evidence, exact no-job cases, metadata-only provider capability, atomic budget admission outcome, post-commit enqueue failure.
+  - [`app/localization/content-post-body-planning.test.ts`](../../app/localization/content-post-body-planning.test.ts) — **15**: Post-body planning: protected authoritative Markdown, no semantic text, segment-only provider capability, budget and current revision gates, protection policy/source fingerprint and durable task id.
+  - [`app/localization/translation-publication.test.ts`](../../app/localization/translation-publication.test.ts) — **5**: UI publication after provider result: plain/plural validation, recheck of newly added manual translation, conditional claim-token publication and claim-lost mapping.
+  - [`app/localization/translation-task-consumer.test.ts`](../../app/localization/translation-task-consumer.test.ts) — **11**: UI preflight after claim: current source fingerprint/policy/generation/target, exact local and persistent manual overrides, ignored fallback-locale rows and nonclaimed/terminal deliveries.
+  - [`app/localization/translation-task-dispatch.test.ts`](../../app/localization/translation-task-dispatch.test.ts) — **5**: Persisted-kind dispatcher: UI/title/post handlers, missing task ack, unknown kind fail-closed before any kind-specific claim.
+  - [`app/localization/translation-task-reconciliation.test.ts`](../../app/localization/translation-task-reconciliation.test.ts) — **8**: Recovery iteration: pending and expired processing reserved ids only, partial transport failure survival, query limits; includes one low-information mock store observe() passthrough test.
+  - [`app/localization/translation-tasks.test.ts`](../../app/localization/translation-tasks.test.ts) — **4**: Initial UI durable task-before-enqueue, no enqueue on failed persist, pending left on enqueue error and sequential dispatch ordering.
+  - [`app/localization/ui-translation-service.test.ts`](../../app/localization/ui-translation-service.test.ts) — **13**: Exact target UI translation job planning, fresh/manual/machine/stale policy priority, fallback suppression, deterministic versioned identities, invalid/unknown namespace guarding and pure plan vs dispatch.
+- **Проверенные потенциальные дубли:**
+  1. [`content-translation-planning.test.ts`](../../app/localization/content-translation-planning.test.ts) и [`content-post-body-planning.test.ts`](../../app/localization/content-post-body-planning.test.ts) имеют похожий набор `known/detected source`, `same-locale`, `inactive target`, `budget denied`, `enqueue fail`. Но вызывают **разные planner classes**, передают **разную task kind identity** и разные provider/data-policy metadata; post дополнительно защищает CNT-04 Markdown segments и `protectedContentPolicyVersion`. Единый upstream `ContentSourceLocaleResolver` не гарантирует, что оба planners правильно применяют его decision и transactional task upsert. Совпадение названий/веток **не основание** убирать половину матрицы.
+  2. [`ui-translation-service.test.ts`](../../app/localization/ui-translation-service.test.ts) проверяет **чистое планирование exact locale и актуальность local/manual/machine policy**, [`translation-tasks.test.ts`](../../app/localization/translation-tasks.test.ts) — **UI durable job dispatcher** (upsert before enqueue, no orphan messages, input ordering), [`translation-task-reconciliation.test.ts`](../../app/localization/translation-task-reconciliation.test.ts) — **повторный transport attempt после резервирования ранее сохранённых DB records** и продолжение recovery при частичном enqueue failure. Первый dispatch и последующее восстановление — разные execution paths.
+  3. [`translation-task-consumer.test.ts`](../../app/localization/translation-task-consumer.test.ts) проверяет `uiTranslationTaskStaleReason` **до provider call**, [`translation-publication.test.ts`](../../app/localization/translation-publication.test.ts) — **повторную проверку того же условия после provider call** перед conditional database publication. Даже наличие общей helper-функции не создаёт дубль: новое manual translation или изменение generation возможны между двумя моментами.
+  4. [`translation-task-dispatch.test.ts`](../../app/localization/translation-task-dispatch.test.ts) — discriminator из **persisted kind** до claim; ранее проверенные `translation-execution.test.ts`, `content-translation-execution.test.ts`, `content-post-body-execution.test.tsx` — **конкретные executor claims и provider behavior** после выбора вида. Distinct trust boundary.
+  5. Mock planning `upsertPending` не моделирует PostgreSQL isolation/transaction; соответствующие data-layer resource/current-revision/atomic request-budget и concurrent planning guards остаются отдельной **обязательной** проверкой в 6E/6F.
+- **Замечание COV-03 / кандидат для межэтапного сопоставления, пока НЕ доказанное дублирование:** [`translation-task-reconciliation.test.ts:108–145`](../../app/localization/translation-task-reconciliation.test.ts#L108-L145) назван `exposes bounded non-sensitive operational observability`, но целиком задаёт fixture `snapshot` и утверждает `await reconciler.observe() === snapshot`. В текущем [`translation-task-reconciliation.ts:130–132`](../../app/localization/translation-task-reconciliation.ts#L130-L132) `observe()` **только делегирует** `tasks.observeTranslationTasks()` без своей filtering, bounding, redaction. Поэтому тест доказывает передачу snapshot без изменения, **не** bounded/non-sensitive характер данных. Эта гарантия должна проверяться на стороне DB reader (соответствующие 6F PostgreSQL tests) или отдельного boundary, если он есть. После сравнения с 6F можно решить, достаточен ли тест тонкого pass-through или его лучше переименовать/усилить; не удалять заранее и не считать дефектом приложения.
+- **Stage:** все planning/publication/reconciliation контракты присутствуют в current Stage 5 local/CI. Stage 6 external Queue/Workers AI/authoritative live allowance/production anti-abuse acceptance не выполнен; это **не** делает тесты на уже реализованный recovery/conditional publication ненужными.
+- **Результат 6C:** **0 подтверждённых целиком лишних файлов, 0 доказанных повторных кейсов**, 1 точно установленная слабость семантики тестового названия `COV-03` (не заявляется как runtime defect). **Общий прогресс: 92/118 файлов, 824/1 075 исходных кейсов; остаётся 26 файлов / 251 кейс.** Внутри этапа 6: **24/44 файла, 261 кейс**. Следующий блок **6D** (5 DB/Hyperdrive adapter tests), затем 6E/6F только по отдельным командам владельца.
 
 ### Проход 6B — провайдеры, allowance, budget, action, execution (2026-10-13)
 
@@ -466,6 +489,7 @@
 ## Подтверждённые пробелы тестового покрытия (не кандидаты на удаление)
 
 - **COV-01 (4C):** название `online-presence-heartbeat.test.tsx` 401-теста обещает `revalidator.revalidate()`, но проверяется только остановка fetch. В реализации вызов есть; тест не защищает от регрессии именно revalidation.
+- **COV-03 (6C):** `app/localization/translation-task-reconciliation.test.ts` обещает bounded/non-sensitive observability, но лишь сравнивает переданный mock snapshot с возвращённым `observe()`. Actual observe() является тонкой делегацией в store, а bounded/redaction должны проверяться на DB layer в 6F. Это **неточное название/ограниченность assertions**, не установлено лишнее тестирование или runtime defect.
 - **COV-02 (4C):** название `profile-view.test.tsx` owner-edit теста обещает ссылку «Редактировать профиль», но fixture сразу открывает `editing=true`; DOM-link отсутствует по задумке и не утверждается.
 - Оба — слабость assertions действующих UI-функций, не признак избыточности и не подтверждённый runtime defect. Отдельные узкие test improvements допустимы после завершения audit stage; в этом PR никаких тестов не меняется.
 
