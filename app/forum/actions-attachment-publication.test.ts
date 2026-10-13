@@ -71,7 +71,7 @@ describe("authoring attachment manifest boundary", () => {
         request: request("/en/topics/some-topic", "reply", bad),
         params: { locale: "en", topicId: "some-topic" }, context,
       });
-      expect((response as Response).status).toBe(400);
+      expect((response as { init?: { status?: number } }).init?.status).toBe(400);
       expect(createReply).not.toHaveBeenCalled();
     }
   });
