@@ -17,7 +17,9 @@ function failure(status: number): Response {
 
 function disposition(name: string): string {
   const fallback = name.replace(/[^\x20-\x7e]|["\\]/gu, "_").slice(0, 180) || "attachment";
-  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+  const encoded = encodeURIComponent(name).replace(/[!'()*]/gu, (char) =>
+    "%" + char.charCodeAt(0).toString(16).toUpperCase());
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
 }
 
 export async function loader({ request, params, context }: {
