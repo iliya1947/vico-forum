@@ -305,6 +305,7 @@ describe("private attachment upload API", () => {
     expect(env.r2.put).not.toHaveBeenCalled();
     expect(env.createDraftAttachment).not.toHaveBeenCalled();
     expect(env.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({
+      uploadId: expect.stringMatching(/^[0-9a-f-]{36}$/u),
       uploadedByUserId: "real-user",
       contextKey,
       draftId,
@@ -313,6 +314,7 @@ describe("private attachment upload API", () => {
       reason: "executable-signature",
       declaredByteSize: bytes.length,
     }));
+    expect(env.recordSecurityEvent.mock.calls[0]?.[0].uploadId).not.toBe(uploadId);
   });
 
   it("preserves a NUL filename anomaly as durable escaped evidence", async () => {
