@@ -394,9 +394,10 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       || ctx.conflict
       || !ctx.attachmentVerified
       || ctx.draftId !== toDraftId
-      || ctx.local?.attachmentDraftId !== fromDraftId
     ) return false;
-    const next = { ...ctx.local, attachmentDraftId: toDraftId };
+    const local = ctx.local;
+    if (!local || local.attachmentDraftId !== fromDraftId) return false;
+    const next = { ...local, attachmentDraftId: toDraftId };
     if (!writeLocalEditorDraft(next)) {
       setStatus("error");
       return false;
