@@ -147,6 +147,16 @@ export function useEditorAttachments({
   const [rebindAttempt, setRebindAttempt] = useState(0);
   const [publicationWarning, setPublicationWarning] = useState(false);
   const requestsRef = useRef(new Map<string, XMLHttpRequest>());
+  const callbacksRef = useRef({
+    reserveGeneration,
+    completeRebind,
+    retryDraftReconciliation,
+  });
+  callbacksRef.current = {
+    reserveGeneration,
+    completeRebind,
+    retryDraftReconciliation,
+  };
   const scope = contextKey ? `${contextKey}\u0000${draftId}` : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
@@ -183,14 +193,14 @@ export function useEditorAttachments({
     }).then(async (response) => {
       if (!response.ok) throw new Error(String(response.status));
       if (scopeRef.current !== scopeAtStart) return;
-      if (!completeRebind(fromDraftId, toDraftId)) return;
+      if (!callbacksRef.current.completeRebind(fromDraftId, toDraftId)) return;
       setRebindState("idle");
       setRestoredScope(null);
       setRestoreState("idle");
     }).catch(() => {
       if (scopeRef.current === scopeAtStart) setRebindState("error");
     });
-  }, [contextKey, draftId, rebindFrom, rebindAttempt, scope, completeRebind]);
+  }, [contextKey, draftId, rebindFrom, rebindAttempt, scope]);
 
   useEffect(() => {
     if (!contextKey || !draftReady || rebindFrom || restoredScope === scope) return;
@@ -242,7 +252,7 @@ export function useEditorAttachments({
 
   function startUpload(file: File, stableId = crypto.randomUUID(), replacing = false) {
     if (!contextKey || !canAdd) return;
-    const generation = reserveGeneration();
+    const generation = callbacksRef.current.reserveGeneration();
     if (!generation || generation !== draftId) return;
 
     const namedFile = file.name.trim()
@@ -425,7 +435,7 @@ export function useEditorAttachments({
               {t("editorAttachmentRetry")}
             </button>
           ) : !rebindFrom && !draftReady ? (
-            <button type="button" disabled={disabled} onClick={retryDraftReconciliation}>
+            <button type="button" disabled={disabled} onClick={() => callbacksRef.current.retryDraftReconciliation()}>
               {t("editorAttachmentRetry")}
             </button>
           ) : restoreState === "error" ? (
