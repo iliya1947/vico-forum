@@ -29,10 +29,10 @@
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
-| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A–6E — 37/44 файлов, 370 кейсов |
+| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Завершено: 44 файла, 438 кейсов; 1 узкий кандидат SRC-01 |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **105 файлов / 933 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **112 файлов / 1 001 тест-кейс проверен** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -123,7 +123,7 @@
 - [x] `db/locale-repository.test.ts`
 - [x] `tests/database/hyperdrive-registry.test.ts`
 
-### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A–6E завершены)
+### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, завершено (6A–6F)
 
 - [x] `app/localization/cloudflare-m2m100-provider.test.ts`
 - [x] `app/localization/content-generation-action.server.test.ts`
@@ -162,13 +162,13 @@
 - [x] `tests/database/content-translation-store.test.ts`
 - [x] `tests/database/source-locale-correction.test.ts`
 - [x] `tests/database/translation-generation-authorization.test.ts`
-- [ ] `tests/database/translation-task-generation-isolation.test.ts`
-- [ ] `tests/database/translation-task-reconciliation.test.ts`
-- [ ] `tests/database/translation-task-store.test.ts`
-- [ ] `tests/database/ui-translation-bundle-store.test.ts`
-- [ ] `tests/database/ui-translation-publication-store.test.ts`
-- [ ] `tests/database/ui-translation-storage.test.ts`
-- [ ] `tests/database/ui-translation-store.test.ts`
+- [x] `tests/database/translation-task-generation-isolation.test.ts`
+- [x] `tests/database/translation-task-reconciliation.test.ts`
+- [x] `tests/database/translation-task-store.test.ts`
+- [x] `tests/database/ui-translation-bundle-store.test.ts`
+- [x] `tests/database/ui-translation-publication-store.test.ts`
+- [x] `tests/database/ui-translation-storage.test.ts`
+- [x] `tests/database/ui-translation-store.test.ts`
 
 ### 7. Оставшиеся DB/runtime контракты — 4 файлов, не начато
 
@@ -191,8 +191,31 @@
 - **6C — планирование, очереди и публикация** — **8 файлов, 74 кейса, завершён**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
 - **6D (6Г) — DB/Hyperdrive адаптеры** — **5 файлов, 31 кейс, завершён**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
 - **6E (6Д) — content generation PostgreSQL** — **8 файлов, 78 кейсов, завершён**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
-- **6F — tasks/UI storage PostgreSQL** — **7 файлов**, **не начат**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
-- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6F до команды владельца.
+- **6F (6Е) — tasks/UI storage PostgreSQL** — **7 файлов, 68 кейсов, завершён**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать этап 7 до команды владельца.
+
+### Проход 6F / 6Е — PostgreSQL task lifecycle, recovery, UI publication/storage (2026-10-14)
+
+- **База:** неизменённый `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Семь database test files прочитаны полностью (fixtures, `beforeAll/beforeEach`, SQL, параметры `it.each` и assertions); исследованы реализации `db/{translation-task-store,ui-translation-publication-store,ui-translation-bundle-store,ui-translation-store}.ts`, `app/localization/translation-task-reconciliation.ts`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/translation/{CONTENT_TRANSLATION,PROVIDERS_AND_JOBS,STORAGE_AND_VERSIONING,UI_TRANSLATION}.md` и отдельные unit/boundary tests из 6A–6E. Ни к production, ни к реальной пользовательской БД не обращались.
+- **CI:** **7 файлов, 68 actual case executions** = `4+4+19+12+9+17+3`. Все прошли в [GitHub CI database job #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177318) на source-equivalent PR #221; **новый run не проводился**. Параметры: `translation-task-store.test.ts` включает восемь отдельных SQL CHECK cases, `ui-translation-storage.test.ts` — десять `ui_translations` SQL constraints и четыре bundle constraints, `ui-translation-bundle-store.test.ts` — две CLI negative variants. Ничего не counted дважды.
+- **Рассмотренные файлы:**
+  - [`tests/database/translation-task-generation-isolation.test.ts`](../../tests/database/translation-task-generation-isolation.test.ts) — **4** cases. Real PostgreSQL generation-head ordering under two concurrent task identities; delayed old publication rejection, ABA stale reactivation, completed older identity cannot supersede newer current work.
+  - [`tests/database/translation-task-reconciliation.test.ts`](../../tests/database/translation-task-reconciliation.test.ts) — **4** cases. Real PostgreSQL recovery reservations by state/age and indexes; no repeat/starvation across bounded runs or concurrent reconcilers; observeTranslationTasks status/age/failure summaries.
+  - [`tests/database/translation-task-store.test.ts`](../../tests/database/translation-task-store.test.ts) — **19** cases. Durable UI task lifecycle, duplicate upsert, eight SQL CHECK invalid variants, single claim owner, lease and generation/attempt exhaustion, retry/terminal and stale claim-token fencing.
+  - [`tests/database/ui-translation-bundle-store.test.ts`](../../tests/database/ui-translation-bundle-store.test.ts) — **12** cases. Actual PostgreSQL compiled bundles, plural flattening, version revalidation and locked obsolete cleanup; real CLI reconciliation in disposable DB repeated idempotently, CLI unsafe/missing URL rejection.
+  - [`tests/database/ui-translation-publication-store.test.ts`](../../tests/database/ui-translation-publication-store.test.ts) — **9** cases. Atomic UI publish/task completion/compiled-bundle update, exact claim token, prior failure cleanup, plural and manual priority, rollback on compilation failure; reconciler-vs-publisher and parallel key publication races.
+  - [`tests/database/ui-translation-storage.test.ts`](../../tests/database/ui-translation-storage.test.ts) — **17** cases. Schema-only raw PostgreSQL checks: independent manual/machine candidates, uniqueness, ten ui_translations invalid row classes, compiled-bundle identity and four ui_translation_bundles SQL constraints.
+  - [`tests/database/ui-translation-store.test.ts`](../../tests/database/ui-translation-store.test.ts) — **3** cases. Drizzle readApproved selects exact target + namespace and approved status, canonical English always empty, machine policy provenance returned for freshness filter.
+- **Сверка дублей и актуальности:**
+  1. `translation-task-store.test.ts` защищает **основную PostgreSQL implementation** shared upsert/lease/attempt/failure + schema CHECK, `translation-task-generation-isolation.test.ts` — **между двумя разными identity/policy heads** under concurrent planning, delayed old publication, ABA reactivation and completed-old-head isolation. Single-identity lease tests не защищают monotonically advancing current generation. Content-title/post tests в 6E отдельно проверяют kind-specific metadata and budget integrity поверх этого lifecycle.
+  2. `translation-task-reconciliation.test.ts` — SQL eligibility, ordered batch reservation/DB indexes, cross-run fairness и disjoint concurrent reservations; `app/localization/translation-task-reconciliation.test.ts` (6C) — **queue transport orchestration** после reserve: идёт дальше при enqueue failure, отправляет только ids, даёт bounded input checks. Названия не означают один execution path.
+  3. `ui-translation-bundle-store.test.ts` и `ui-translation-publication-store.test.ts` оба работают с compiled namespace bundle, но первое — **Drizzle storage put/read, SQL row locks/reconciliation CLI guard/idempotent script**, второе — **атомарная транзакция machine publication + task completion + bundle**, а также serializing competing publication/reconciler lock orders. Даже одинаковый bundle `heading` не делает независимые tests тождественными. `db/ui-translation-bundle-store.test.ts` (6D) тестирует pure persisted verifier, не транзакционные SQL/CLI операции.
+  4. `ui-translation-storage.test.ts` — миграционная **DDL/constraints** проверка raw SQL (недопустимые origin/status/fingerprint/payload/bundleVersion); `ui-translation-store.test.ts` — **Drizzle query projection/filter** approved/exact locale/namespace и policy version; `ui-translation-publication-store.test.ts` — **atomic write + derived compiled resources**. Ни duplicate raw-row fail case, ни approved row read нельзя удалить только потому, что DB содержит записи на те же namespaces.
+  5. `translation-task-generation-isolation.test.ts` old in-flight publication + `ui-translation-publication-store.test.ts` lost-claim test: первый предотвращает **устаревшее identity generation (другой current head)**, второй — **потерю claim token у того же task**, отдельные race predicates.
+  6. После завершения 6A–6F зафиксирован ровно **1 ранее подтверждённый узкий case-level candidate `SRC-01`** (из 6A, known-source TinyLD bypass); в 6F **новых подтверждённых лишних кейсов / файлов = 0**. Оставить оба полномасштабных task/UI PostgreSQL integration набора.
+- **Уточнение COV-03 (6C), по реальному DB implementation:** [`app/localization/translation-task-reconciliation.test.ts:108–145`](../../app/localization/translation-task-reconciliation.test.ts#L108-L145) mock `TranslationTaskReconciler.observe()` только сравнивает возвращаемый заранее собранный snapshot. В `translation-task-reconciliation.ts` `observe()` чисто делегирует вызов. Но [`tests/database/translation-task-reconciliation.test.ts:215–315`](../../tests/database/translation-task-reconciliation.test.ts#L215-L315) тестирует реальные SQL aggregate counts, oldest age, lease/attempt и terminal groups. [`db/translation-task-store.ts:603–876`](../../db/translation-task-store.ts#L603-L876) реализует ограничение group results через `MAX_TRANSLATION_TASK_FAILURE_GROUPS=20` и `MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS=20`, наружу выдаёт агрегированные counts / category codes, без task ids, actor ids или source text. **Подтверждено, что защита есть в DB source**; однако DB test использует только две группы и **не нагружает лимит свыше 20 или allowance reason distribution**. Поэтому риск дублирования `COV-03` *не подтверждён* (mock passthrough и SQL aggregates — разные observable contracts), а обещание «bounded/non-sensitive» в названии mock test — **неточное**. Изменение/удаление теста не требуется сейчас; при целевом укреплении DB tests можно добавить >20 categories / no-sensitive-field assertions, если это останется актуальным для current Stage.
+- **Stage:** эти тесты проверяют действующую repository/local-CI Stage 5 task lifecycle/UI bundle foundation. Actual `pnpm db:reconcile-ui-bundles` в тесте запускается только с guarded disposable `*_test` DB, а не на production; external Cloudflare/provider Queue rollout Stage 6 не принимался и не симулируется как прошедший acceptance.
+- **Итог 6F:** **7 файлов, 68 cases; 0 новых дубликатов**, один ранее найденный в 6A `SRC-01` остаётся кандидатом. **Этап 6 полностью проверен: 44/44 файла и 438/438 кейсов**, без изменения test/source code. **Общий прогресс: 112/118 файлов, 1 001/1 075 исходных кейсов, остаётся 6 файлов / 74 кейса** (Stage 7: 4 файла; Stage 8: 2 файла и итоговая cross-stage сверка). Остановиться и ждать явной команды для Stage 7.
 
 ### Проход 6E / 6Д — PostgreSQL content translation/generation и авторизация (2026-10-14)
 
@@ -548,7 +571,7 @@
 
 ## Открытые вопросы и гипотезы
 
-**Этап 5:** при итоговой сверке Stage 8 убедиться, что shared namespace inherited-name vectors и localized SSR hydration checks не повторены целиком в Stage 6 generation/persistence tests. Сейчас **нет подтверждённых дубликатов**.
+**Этапы 5/6:** сравнение raw namespace / compiled-bundle / SSR resource loader и published bundle/DB SQL cases не выявило одинаковой полной гарантии: trusted-source/normalization, persistence verification, hydration и DB writes имеют разные boundaries. Финальное глобальное сопоставление с этапами 7/8 ещё не проведено.
 
 
 Первоначальные подозрения на тождественное дублирование `public-read.test.tsx` с `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts`, а также с PostgreSQL/forum-runtime 4Г **не подтвердились** в пределах этапа 4; дополнительное межэтапное пересечение проверить в Stage 8.
