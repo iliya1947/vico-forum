@@ -366,7 +366,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const next: LocalEditorDraft = ctx.local
       ? { ...ctx.local, attachmentDraftId: ctx.draftId }
       : { ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: ctx.draftId,
-          payload: { ...ctx.payload }, editedAt: now, syncedEditedAt: now,
+          payload: { ...ctx.payload }, editedAt: now, syncedEditedAt: null,
           baseVersion: ctx.startVersion, attachmentDraftId: ctx.draftId };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return null; }
     ctx.local = next;
