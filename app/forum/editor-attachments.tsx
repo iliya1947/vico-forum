@@ -259,9 +259,6 @@ export function useEditorAttachments({
     uncertainCommit = false,
   ) {
     if (!contextKey || !canAdd) return;
-    const generation = callbacksRef.current.reserveGeneration();
-    if (!generation || generation !== draftId) return;
-
     const namedFile = file.name.trim()
       ? file
       : new File([file], fallbackClipboardName(file), {
@@ -270,6 +267,8 @@ export function useEditorAttachments({
         });
     if (likelySecretFile(namedFile.name) && !window.confirm(t("editorAttachmentSecretWarning"))) return;
 
+    const generation = callbacksRef.current.reserveGeneration();
+    if (!generation || generation !== draftId) return;
     const scopeAtStart = `${contextKey}\u0000${generation}`;
     const next: UploadEntry = {
       id: stableId,
