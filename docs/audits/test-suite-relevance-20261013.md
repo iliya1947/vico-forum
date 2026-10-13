@@ -27,12 +27,12 @@
 | 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
 | 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
-| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | В работе: 4A 7/24 файлов, 53 кейса |
+| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | В работе: 4A+4B — 12/24 файлов, 156 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **36 файлов / 259 тест-кейсов проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **41 файл / 362 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -78,21 +78,21 @@
 - [x] `tests/database/authorization-snapshot.test.ts`
 - [x] `tests/database/forum-email-registration.test.ts`
 
-### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, в работе: 4A завершён
+### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, в работе: 4A и 4B завершены
 
-- [ ] `app/forum/content-generation-controls.test.tsx`
-- [ ] `app/forum/content-generation-navigation.test.tsx`
+- [x] `app/forum/content-generation-controls.test.tsx`
+- [x] `app/forum/content-generation-navigation.test.tsx`
 - [x] `app/forum/homepage.test.tsx`
 - [x] `app/forum/markdown-editor.test.tsx`
 - [x] `app/forum/markdown.test.tsx`
 - [ ] `app/forum/online-presence-heartbeat.test.tsx`
 - [ ] `app/forum/profile-view.test.tsx`
 - [ ] `app/forum/profile.test.ts`
-- [ ] `app/forum/public-authz-degradation.test.ts`
-- [ ] `app/forum/public-read.test.tsx`
+- [x] `app/forum/public-authz-degradation.test.ts`
+- [x] `app/forum/public-read.test.tsx`
 - [x] `app/forum/route-error.test.tsx`
 - [x] `app/forum/ui.test.tsx`
-- [ ] `app/forum/write-actions.test.ts`
+- [x] `app/forum/write-actions.test.ts`
 - [x] `app/routes/not-found.test.ts`
 - [ ] `app/routes/notifications.test.ts`
 - [ ] `app/routes/presence.test.ts`
@@ -187,10 +187,30 @@
 ### Разбиение этапа 4 (учётное, без повторов)
 
 - **4A, UI/Markdown/error/preview:** 7 файлов, **53** кейса — **завершено**.
-- **4B, forum read/write и generation UI:** 5 файлов — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **не начато**.
+- **4B, forum read/write и generation UI:** 5 файлов, **103 кейса — завершено** — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **не начато**.
 - **4C, пользовательские маршруты/профили/присутствие:** 7 файлов — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **не начато**.
 - **4D, реальные PostgreSQL/forum-runtime contracts:** 5 файлов — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **не начато**.
 - Крупные файлы, особенно `public-read.test.tsx`, можно дополнительно исследовать по темам внутри 4B, но не считать дважды. После 4D выполнить сводную проверку пересечений внутри Stage 4 и оставить межэтапную сверку Stage 8.
+
+### Проход 4B — публичное чтение, actions, generation UI (2026-10-13)
+
+- **База:** неизменённый `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Пять файлов полностью просмотрены; проверены test harness, cases, assertions и отличие отдельных entrypoints. Сопоставлены с `app/forum/actions.server.ts`, `app/forum/mutations.server.ts`, `app/routes/{home,category,section,topic,attention,...}`, `app/forum/views.tsx`, `app/forum/content-generation-controls.tsx`, `app/localization/content-generation-view.ts` и current UI/UX/translation Stage source of truth.
+- **Учтено:** **5 файлов, 103 test cases** = `9+2+9+50+33`. Проверено по file-level `✓ ... (N tests)` из [CI #38372052543 / checks](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268); все 103 успешны на сопоставимом PR #221 source-head. `public-read.test.tsx` содержит 49 `it(...)`, но первый кейс находится внутри `describe.each([{locale:"en",direction:"ltr"},{locale:"he",direction:"rtl"}])`, поэтому исполняется **50 кейсов**, а не 49: это два разных language-direction input. Тесты сейчас не перезапускались.
+- **Файлы и разные проверяемые гарантии:**
+  - [`app/forum/content-generation-controls.test.tsx`](../../app/forum/content-generation-controls.test.tsx) — **9**: Точный revision key, automatic/explicit feedback, StrictMode deduplication, loader revalidation, bounded polling and post-hydration replacement guards.
+  - [`app/forum/content-generation-navigation.test.tsx`](../../app/forum/content-generation-navigation.test.tsx) — **2**: Real React Router navigation: fresh locale/topic generation snapshot; stale in-flight answer not attached to new route.
+  - [`app/forum/public-authz-degradation.test.ts`](../../app/forum/public-authz-degradation.test.ts) — **9**: Fail-closed optional auth UI with public read preserved on classified outage, public translation guest parity, read-only generation hints, status/presentation convergence, unexpected failures.
+  - [`app/forum/public-read.test.tsx`](../../app/forum/public-read.test.tsx) — **50**: Public route/React UI through category→section→topic, Help filters/auth/moderation, discovery, translations, links, best answer, forms/pending and 404. First describe.each en(LTR)/he(RTL) makes 49 declarations = 50 cases.
+  - [`app/forum/write-actions.test.ts`](../../app/forum/write-actions.test.ts) — **33**: Protected POST mutation flows: actor from session, same-origin, topic/reply/Help, solution/duplicate/signal, source-locale, generation action paths with authoritative identity, 401/403/404/409/429/503 mapping.
+- **Cross-check с предыдущим 4A и внутри 4B:**
+  1. [`public-read.test.tsx`](../../app/forum/public-read.test.tsx) проверяет **real forum route loader + bound React page**: категории, Help filters, identity-dependent lists, публичную приватность апелляций и конечные формы. [`homepage.test.tsx`](../../app/forum/homepage.test.tsx) отдельно проверяет **isolated HomeView** category disclosure/placeholder/online/conditional navigation. Частичное совпадение UI не равно тождественным входам/проверкам.
+  2. [`public-read.test.tsx#L2653-L2672`](../../app/forum/public-read.test.tsx#L2653-L2672) проверяет missing **category loader** и actual localized fallback route rendering. [`not-found.test.ts`](../../app/routes/not-found.test.ts) проверяет catch-all route registration/404, [`route-error.test.tsx`](../../app/forum/route-error.test.tsx) — status-specific error render и leak-safety 401/403/404/503/500. Exact duplicates не установлены.
+  3. [`public-authz-degradation.test.ts`](../../app/forum/public-authz-degradation.test.ts) проверяет **read-only optional permission hints** и translation/generation display при service outage/competing status; [`write-actions.test.ts`](../../app/forum/write-actions.test.ts) — **protected mutations** с обязательной permission, actor/server identity и controlled failure. Distinct security boundary.
+  4. [`content-generation-controls.test.tsx`](../../app/forum/content-generation-controls.test.tsx) проверяет **component lifecycle and fetcher feedback**; [`content-generation-navigation.test.tsx`](../../app/forum/content-generation-navigation.test.tsx) — **actual React Router navigation / invalidation** между topic/locale. Double-submit prevention на одной странице не заменяет stale-response navigation test.
+  5. Generation control unit UI и server action code уже присутствуют в `main`; external provider/Queue deployment остаётся Stage 6 работой. Эти тесты проверяют implemented Stage 5 local/CI paths и fail-closed `enabled` gate — **не считать лишними только из-за отсутствия production provider**.
+  6. Help moderation and signals tests проверяют актуальные работающие boundaries в `main`. Неслитые PR или планируемые admin UI не могут быть основанием для автоматического удаления. Подробности cross-Stage DB guards исследовать в 4D/8.
+- **Вывод:** **0 подтверждённых тождественных или устаревших кейсов**, **0 тестовых файлов под удаление** в 4B. Рекомендация: сохранить 103 до финального межуровневого сравнения, не сокращать coverage ради числа. Не заменять 4D PostgreSQL проверками только потому, что здесь есть mocked repository.
+- **Общий прогресс:** **41/118 файлов, 362/1 075 исходных кейсов**. Из этапа 4 завершены **12/24 файла, 156 кейсов**. Далее **4C** (presence, profiles, unread/notification routes), **7 файлов**, не начат. Остановиться до отдельной команды владельца.
 
 ### Проход 4A — интерфейс/Markdown/error/preview (2026-10-13)
 
@@ -310,7 +330,7 @@
 
 ## Открытые вопросы и гипотезы
 
-При подэтапе 4B сравнить `app/forum/public-read.test.tsx` с `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts` на предмет точных одинаковых тестируемых гарантий. До просмотра 4B пересечения считать гипотезой, не находкой.
+Подэтап 4B: первоначальные подозрения на тождественное дублирование `public-read.test.tsx` против `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts` **не подтвердились** (сценарии различаются route registration / loader / presentation). Окончательное межблочное сравнение с PostgreSQL/forum-runtime оставить на 4D и Stage 8.
 
 
 Проверить возможное пересечение migration/ACL integration probes с тестами этапа 1 после завершения блоков 7–8. Похожие имена и пересекающиеся ограничения сами по себе не доказывают лишность.
