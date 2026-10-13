@@ -5789,3 +5789,22 @@ Independently rechecked exact implementation head `6e76b1abdbe7f528293cbae107892
 Scope note: this is approval of the **completed correction package**, not a claim that the unfinished remaining Editor 2.0 / Stage 5 slices are merge-ready. Publication/download/orphan-cleanup and deferred infrastructure work were not treated as defects of this package.
 
 Next step: await GPT-6's independent result on the same exact head; if it also passes, this correction package needs no further implementation change before moving to the next owner-authorized Stage 5 subtask.
+
+---
+
+## PR #215 — GPT-6 independent review of Codex Stage 5 correction — 2026-10-14
+
+**Model:** GPT-6. **Exact implementation head:** `6e76b1abdbe7f528293cbae107892cc0a3041ad6`. Compared the bounded correction against `bb2d49eccf32efe8a300b4c88ccbeb5397998193` (12 changed files), relevant source-of-truth documents and updated production code/tests. **No implementation edits or locally executed tests in this review.** This is an independent code/regression-coverage review of Codex's completed correction package, not an audit or merge approval for all of Editor 2.0.
+
+**Result: PASS for the bounded correction package. No independently confirmed/reproduced defect requiring another correction was established in this scope.** This conclusion concerns the reviewed changes; green CI is corroborating evidence, not a substitute for scenario analysis.
+
+Verified code paths and their regression coverage:
+
+1. **Explicit Keep-server vs normal refresh:** `use-editor-draft.tsx` discards losing local attachment provenance only after successful local persistence and advances the attachment-selection epoch. A failed local write leaves the conflict available for retry. `useEditorAttachments` clears losing transient entries and rejects obsolete callbacks even for same-draft-ID B, while Keep-local and normal refresh preserve ongoing uploads and their stable retry IDs.
+2. **Late DELETE / upload and authoritative restore:** stale callbacks cannot directly overwrite the selected list; the owner/context-scoped `vico:attachment-change` notification triggers a new authoritative GET after successful or ambiguously acknowledged obsolete mutations. Cross-owner isolation and reopen/selection cases have specific regressions. Late uploads still rely on the server's generation redirects; their responses do not become B refs by client assumption.
+3. **Other-tab local candidate and 60-second CAS:** selecting a cached copy from another tab preserves that candidate's attachment origin, marks it unsynced, revalidates against authoritative metadata, and waits for the ordinary 60-second save/CAS before rebind. Old pending metadata/save acknowledgements are fenced. Both selection directions preserve a conflict on local-storage failure.
+4. **Suspicious-upload idempotency:** the route derives a canonical, versioned SHA-256 evidence key using authenticated owner, stable client upload ID, original context/generation, and observed rejection evidence. The existing `upload_id` UNIQUE index suppresses exact retries; the event's primary ID remains server-generated and historic UUID keys remain acceptable. Added actual route→Drizzle→PostgreSQL concurrent/lost-ack and identity-isolation regressions.
+
+**Checks:** GitHub Actions [run 38461629015](https://github.com/iliya1947/vico-forum/actions/runs/38461629015) on this exact head completed **SUCCESS** for `checks` and `database`. Its reported counts are 933 application and 261 PostgreSQL tests. I independently inspected code and test coverage, and checked the GitHub CI result; I **did not independently execute** the suite or run a live browser/R2 test.
+
+**Stage boundary / next step:** The verdict accepts only this completed Stage 5 correction. Publication/download/orphan cleanup, external infrastructure integration and whole-Editor acceptance remain separate unfinished work, not defects of this package. GPT-5.6 Sol separately recorded PASS on the same exact SHA. There is no verified correction-package blocker requiring another Codex/implementation iteration; proceed only when the owner authorizes the next bounded Stage 5 subtask. PR #215 remains unmerged; no new branch, PR or implementation change was made for this review.
