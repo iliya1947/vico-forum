@@ -5582,3 +5582,24 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+## PR #215 — GPT-5.6 Sol comparison with GPT-6 review — 2026-10-13
+
+Model: GPT-5.6 Sol. Compared GPT-6's independent review of exact implementation head `bb2d49eccf32efe8a300b4c88ccbeb5397998193` with my prior review and independently checked GPT-6's additional Security-event finding. No implementation edits.
+
+Finding A is independently confirmed by both GPT-5.6 Sol and GPT-6: explicit Keep server during an incompatible same-draft-ID conflict can preserve losing-local `attachmentDraftId` provenance and later offer A→B rebind. Classification remains a real current Stage 5 lifecycle defect.
+
+Finding B is also confirmed as a real current Stage 5 defect:
+- the client retry path reuses the same stable attachment/upload ID;
+- suspicious rejected uploads are retryable;
+- the route records each suspicious rejection with a fresh server-generated `uploadId`;
+- the DB deduplicates security events only by unique `upload_id`;
+- therefore retries of one logical suspicious upload create multiple moderator events;
+- `EDITOR_SPEC.md` explicitly requires repeated technical events for one upload not to create duplicate moderator tasks.
+
+The correction must preserve server-owned event row identity and must not naively make a globally unique DB key equal to a user-controlled UUID without accounting for owner/context collision/isolation. Exact minimal persistence key/constraint is left for the requested Codex technical analysis.
+
+The latest `@codex` request in PR #147 asks for technical analysis of both findings. The subsequent “Codex Review: Didn't find any major issues” message reviewed service-branch commit `63146f7f30`; it is an automated PR review and is not a substantive answer to that technical-analysis request.
+
+Implementation PR #215 remains unchanged at `bb2d49e`. Next step: wait for the requested Codex technical conclusion, compare it against both GPT reviews, then decide the one bounded correction package. Do not start publication/download, orphan cleanup or Stage 6.
+
