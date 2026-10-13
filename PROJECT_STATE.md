@@ -523,11 +523,16 @@ Vico Forum находится в ранней pre-release разработке.
   правок повторной отправки нет. Это не объявляет текст изменённым и не меняет таймер.
   При смене draft ID прежний attachmentDraftId остаётся в локальных данных, а новые
   attachment operations закрываются,
-  пока серверный перенос/разрешение ссылки не выполнен. Это только foundation API редактора:
-  внешний upload UI, GET/DELETE и серверный ref rebind ещё не восстановлены; полноценная
-  доступность вложений и их публикация пока не заявляются.
-  Следующие части Stage 5: восстановление server attachment list/remove/rebind boundary,
-  editor/upload UI, publication/download integration и orphan cleanup.
+  пока серверный перенос/разрешение ссылки не выполнен. Следующий bounded server API slice
+  восстанавливает owner/context/generation-scoped GET list через React Router loader,
+  DELETE exact draft ref и PATCH rebind retained refs между draft generations. Rebind
+  выполняется транзакционно: сначала фиксируется исходный набор refs, destination insert
+  идемпотентен, затем удаляются только зафиксированные source refs, поэтому конкурентная
+  новая ссылка не теряется. HTTP boundary использует ту же canonical UUID semantics, что
+  repository; private object key наружу не возвращается. Runtime draft-ref capability
+  ограничена DELETE/INSERT/SELECT. Editor upload UI всё ещё не восстановлен и публикация
+  вложений пока не заявляется.
+  Следующие части Stage 5: editor/upload UI, publication/download integration и orphan cleanup.
   Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
