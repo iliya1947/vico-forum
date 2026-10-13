@@ -9,7 +9,11 @@ import {
 import { forumDraftStoreContext } from "../forum/draft-request-context";
 import type { PrivateAttachmentBucket } from "../forum/attachment-r2";
 import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-drafts";
-import type { CreateDraftAttachmentInput, ForumAttachmentMetadata } from "../../db/forum-attachments";
+import type {
+  CreateDraftAttachmentInput,
+  ForumAttachmentMetadata,
+  RecordAttachmentSecurityEventInput,
+} from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
@@ -39,11 +43,22 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const assertContextExists = vi.fn(async () => {});
   ctx.set(forumDraftStoreContext, { assertContextExists } as never);
 
-  const createDraftAttachment = vi.fn(async (input: CreateDraftAttachmentInput) => ({
-    ...input,
+  const createDraftAttachment = vi.fn(async (
+    input: CreateDraftAttachmentInput,
+  ): Promise<ForumAttachmentMetadata> => ({
+    id: input.id,
+    objectKey: input.objectKey,
+    fileName: input.fileName,
+    declaredMime: input.declaredMime,
+    detectedType: input.detectedType,
+    responseMime: input.responseMime,
+    byteSize: input.byteSize,
+    verificationStatus: input.verificationStatus,
     createdAt: new Date().toISOString(),
   }));
-  const recordSecurityEvent = vi.fn(async () => {});
+  const recordSecurityEvent = vi.fn(async (
+    _input: RecordAttachmentSecurityEventInput,
+  ): Promise<void> => {});
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
   const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
   const removeDraftAttachment = vi.fn(async () => true);
