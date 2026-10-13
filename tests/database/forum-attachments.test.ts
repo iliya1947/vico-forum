@@ -263,7 +263,7 @@ describe("forum attachment lifecycle foundation", () => {
     expect(await store.rebindDraftAttachments(ownerId, context, source, target, 4)).toBe(1);
     expect(await store.discardDraftAttachments(ownerId, context, source, target, 4)).toBe("already-rebound");
     expect((await store.listDraftAttachments(ownerId, context, target)).map((item) => item.id)).toEqual([input.id]);
-    expect((await store.createDraftAttachment(upload(context, target))).draftId).toBeUndefined();
+    expect(await store.createDraftAttachment(upload(context, target))).toMatchObject({ fileName: "concurrent.txt" });
   });
 
   it("rejects discard against a stale target version or an unrelated redirect", async () => {
@@ -332,7 +332,7 @@ describe("forum attachment lifecycle foundation", () => {
     expect(rows.rows).toEqual([{ upload_id: event.uploadId }]);
   });
 
-  it("allows draft and published references to coexist and protects shared assets from deletion",
+  it("allows draft and published references to coexist and protects shared assets from deletion", async () => {
     await client.query(
       "insert into forum_post_attachments (post_id, attachment_id, created_at) values ('attachment-post', $1, now())",
       [attachmentId],
