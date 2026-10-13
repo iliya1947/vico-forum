@@ -755,18 +755,22 @@ describe("atomic publication of selected draft refs", () => {
       .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
     const moved = await client.query("select attachment_id from forum_post_attachments where post_id = $1", [created.id]);
     expect(moved.rows).toEqual([{ attachment_id: file.id }]);
+    const shared = await repository.createPost({
+      id: crypto.randomUUID(), topicId, authorId: ownerId,
+      bodyRevision: { id: crypto.randomUUID(), originalContent: "Shared file", sourceLocale: "en" },
+    });
     await client.query(
-      "insert into forum_post_attachments (post_id, attachment_id, created_at) values ('attachment-post', $1, now())",
-      [file.id],
+      "insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1, $2, now())",
+      [shared.id, file.id],
     );
     await client.query("delete from forum_posts where id = $1", [created.id]);
     expect(await store.readPublishedAttachment(created.id, file.id)).toBeNull();
-    expect(await store.readPublishedAttachment("attachment-post", file.id)).toMatchObject({ id: file.id });
+    expect(await store.readPublishedAttachment(shared.id, file.id)).toMatchObject({ id: file.id });
     await client.query(
-      "delete from forum_post_attachments where post_id = 'attachment-post' and attachment_id = $1",
-      [file.id],
+      "delete from forum_post_attachments where post_id = $1 and attachment_id = $2",
+      [shared.id, file.id],
     );
-    expect(await store.readPublishedAttachment("attachment-post", file.id)).toBeNull();
+    expect(await store.readPublishedAttachment(shared.id, file.id)).toBeNull();
   });
 
   it("rolls back post, draft completion and refs on selected-set mismatch or stale CAS", async () => {
