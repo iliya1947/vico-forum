@@ -539,8 +539,9 @@ Vico Forum находится в ранней pre-release разработке.
   повтор после неоднозначной transport-ошибки идемпотентно сходится к уже сохранённому asset/ref,
   а новый duplicate R2 object удаляется. In-flight upload не удаляется и не abort-ится при
   смене editor scope; поздний результат относится к исходной generation и восстанавливается
-  при возврате. Remove после determinate/ambiguous failure всегда сначала делает exact DELETE
-  по стабильному upload ID. Пока attachmentDraftId переносится на выбранную draft generation,
+  при возврате. После determinate rejection Remove делает exact DELETE по стабильному upload ID;
+  transport failure считается неоднозначным и остаётся retry-only, пока idempotent Retry тем же
+  UUID не установит определённое состояние. Пока attachmentDraftId переносится на выбранную draft generation,
   обычные remote reconciliation и 60-second text sync не меняют generation; после завершения
   rebind обычный lifecycle продолжается.
   До следующего Stage 5 publication/download slice любой сохранённый attachment намеренно
