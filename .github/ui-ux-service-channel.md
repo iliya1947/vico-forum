@@ -5272,3 +5272,20 @@ was included.
 
 Next bounded unit after owner continuation: server attachment list/remove/rebind API.
 GPT-5.6 Sol is the next implementation writer; no intermediate Codex review is needed.
+
+## PR #215 — GPT-6 independent server API boundary check before Sol implementation — 2026-10-13
+
+Model: GPT-6. Reviewed exact unchanged implementation head `30581443377ec32a932672fdfbc49beb7ffd7c31` and current `main` AGENTS.md, editor requirements and existing attachment repository/schema, routing, store interface and privileges. This is a preparatory independent code-path check, **not** a new implementation finding or an independent Codex review. GPT-5.6 Sol remains the next implementation writer for this bounded server API unit.
+
+Confirmed implementation boundaries for the next unit:
+- `db/forum-attachments.ts` already implements owner/context/draft-scoped `listDraftAttachments` and `removeDraftAttachment`; `db/hyperdrive-forum-attachments.ts`'s runtime `ForumAttachmentStore` **does not expose** these methods yet. Reuse existing repository path; do not duplicate it elsewhere.
+- `app/routes/attachment-upload.ts` is currently POST-only `action`; `app/routes.ts` already registers `api/attachments`. Add actual React Router GET `loader` for retrieval (not a GET branch in action), use action for mutation methods. Keep auth + per-context authoring authorization and same-origin mutation policy; do not expose objectKey in browser JSON.
+- `forum_attachment_draft_refs` has owner + context + draft ID, no FK to `forum_editor_drafts` by design because uploads may happen before the 60-second text sync. The existing composite attachment-owner FK prevents cross-owner ref creation. A new rebind operation must retain the same attachment assets, not copy private objects; source and target belong to one authenticated owner and **same editor context**. Server-side current-generation/CAS consistency must be checked when the winner draft ID differs; never treat the client-supplied target ID alone as authority. Design scope for races against other tabs and terminal tombstones before selecting the DB statement/lock boundary.
+- Current runtime privileges are `forum_attachment_draft_refs: INSERT` and `forum_attachments: INSERT, SELECT`; list/delete/rebind likely require selective additional DB permissions. Align wrapper, grants and runtime tests only with actual repository calls. Do not grant global broad permission speculatively.
+- Repo-level `uuid` validation is stricter than the route's existing 36-character hexadecimal/hyphen check. Apply the canonical semantics to all new mutation/list identifiers, ensuring malformed request => controlled 400 rather than repository exceptions/500.
+- The editor keeps `attachmentDraftId` as old ref generation if Keep-local changes `draftId` after conflict resolution; attachment readiness is blocked. The future UI cannot simply clear this marker until server rebind succeeded. If author chooses server version, local losing-generation refs must not silently appear in winning server version. Physical orphan cleanup and publication/download remain later work.
+
+Suggested acceptance coverage for this *server-only* unit: GET route dispatch not direct-action GET mock; owner/context/ID isolation for list/remove/rebind; idempotent remove/rebind behavior and concurrent conflict/stale-target/tombstone rejection; refs remain discoverable under chosen generation after successful rebind; injected DB unavailability mapped to controlled 503; web runtime DB grants; no attachment UI, publication promotion or external R2 changes.
+
+No implementation branch changes by GPT-6. Next writer remains GPT-5.6 Sol. User's instruction to continue this conversation authorizes preparation here but **does not automatically start another GPT chat**.
+
