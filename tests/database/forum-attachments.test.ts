@@ -721,6 +721,52 @@ describe("atomic publication of selected draft refs", () => {
     },
   );
 
+  it.each(["rebind-before-publication", "publication-before-rebind"] as const)(
+    "serializes actual rebind/publication against the selected generation: %s",
+    async (order) => {
+      const { topicId, context, draft: source } = await topicFixture();
+      const target = crypto.randomUUID();
+      const file = await store.createDraftAttachment(upload(context, source));
+      // A retained source generation is not yet authoritative for B.
+      await setDraft(ownerId, context, target, "active", 1);
+      const promote = (forum: DrizzleForumRepository) =>
+        forum.createPost(reply(topicId, context, target, [file.id], 1));
+      const rebind = (attachments: DrizzleForumAttachments) =>
+        attachments.rebindDraftAttachments(ownerId, context, source, target, 1);
+
+      if (order === "rebind-before-publication") {
+        const [moved, published] = await queuedOperations(context,
+          (attachments) => rebind(attachments),
+          (_, forum) => promote(forum),
+        );
+        expect(moved).toBe(1);
+        expect(await store.readPublishedAttachment(published.id, file.id)).toMatchObject({ id: file.id });
+        const rows = await client.query(
+          "select attachment_id from forum_post_attachments where post_id = $1", [published.id],
+        );
+        expect(rows.rows).toEqual([{ attachment_id: file.id }]);
+        await expect(store.listDraftAttachments(ownerId, context, source))
+          .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+      } else {
+        const [result, moved] = await queuedOperations(context,
+          (_, forum) => promote(forum).then(
+            () => "unexpected",
+            (error: unknown) => error instanceof ForumStateConflictError
+              ? "conflict" : Promise.reject(error),
+          ),
+          (attachments) => rebind(attachments),
+        );
+        expect(result).toBe("conflict");
+        expect(moved).toBe(1);
+        expect(await store.listDraftAttachments(ownerId, context, target)).toMatchObject([
+          { id: file.id },
+        ]);
+        const later = await repository.createPost(reply(topicId, context, target, [file.id], 1));
+        expect(await store.readPublishedAttachment(later.id, file.id)).toMatchObject({ id: file.id });
+      }
+    },
+  );
+
   const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
 
   async function topicFixture() {
