@@ -27,12 +27,12 @@
 | 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
 | 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
-| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Не начато |
+| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | В работе: 4A 7/24 файлов, 53 кейса |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **29 файлов / 206 тест-кейсов проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **36 файлов / 259 тест-кейсов проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -78,27 +78,27 @@
 - [x] `tests/database/authorization-snapshot.test.ts`
 - [x] `tests/database/forum-email-registration.test.ts`
 
-### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файлов, не начато
+### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, в работе: 4A завершён
 
 - [ ] `app/forum/content-generation-controls.test.tsx`
 - [ ] `app/forum/content-generation-navigation.test.tsx`
-- [ ] `app/forum/homepage.test.tsx`
-- [ ] `app/forum/markdown-editor.test.tsx`
-- [ ] `app/forum/markdown.test.tsx`
+- [x] `app/forum/homepage.test.tsx`
+- [x] `app/forum/markdown-editor.test.tsx`
+- [x] `app/forum/markdown.test.tsx`
 - [ ] `app/forum/online-presence-heartbeat.test.tsx`
 - [ ] `app/forum/profile-view.test.tsx`
 - [ ] `app/forum/profile.test.ts`
 - [ ] `app/forum/public-authz-degradation.test.ts`
 - [ ] `app/forum/public-read.test.tsx`
-- [ ] `app/forum/route-error.test.tsx`
-- [ ] `app/forum/ui.test.tsx`
+- [x] `app/forum/route-error.test.tsx`
+- [x] `app/forum/ui.test.tsx`
 - [ ] `app/forum/write-actions.test.ts`
-- [ ] `app/routes/not-found.test.ts`
+- [x] `app/routes/not-found.test.ts`
 - [ ] `app/routes/notifications.test.ts`
 - [ ] `app/routes/presence.test.ts`
 - [ ] `app/routes/profile.test.ts`
 - [ ] `app/routes/unread.test.ts`
-- [ ] `app/ui-preview/preview-app.test.tsx`
+- [x] `app/ui-preview/preview-app.test.tsx`
 - [ ] `db/hyperdrive-forum.test.ts`
 - [ ] `tests/database/forum-help-attention.test.ts`
 - [ ] `tests/database/forum-online-presence.test.ts`
@@ -183,6 +183,37 @@
 - [ ] `tests/production-migration-verifier.test.ts`
 
 ## Журнал завершённых проходов
+
+### Разбиение этапа 4 (учётное, без повторов)
+
+- **4A, UI/Markdown/error/preview:** 7 файлов, **53** кейса — **завершено**.
+- **4B, forum read/write и generation UI:** 5 файлов — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **не начато**.
+- **4C, пользовательские маршруты/профили/присутствие:** 7 файлов — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **не начато**.
+- **4D, реальные PostgreSQL/forum-runtime contracts:** 5 файлов — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **не начато**.
+- Крупные файлы, особенно `public-read.test.tsx`, можно дополнительно исследовать по темам внутри 4B, но не считать дважды. После 4D выполнить сводную проверку пересечений внутри Stage 4 и оставить межэтапную сверку Stage 8.
+
+### Проход 4A — интерфейс/Markdown/error/preview (2026-10-13)
+
+- **База:** `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d` неизменён. Все 7 test files прочитаны и сопоставлены с реальными `MarkdownEditor`, `ForumMarkdown`, `HomeView`, `ForumShell`, `ForumRouteError`, локализованным catch-all route и Pages preview controller/embedded routing. Текущие границы сверены с [`docs/UI_UX_PASS.md`](../../docs/UI_UX_PASS.md), в частности § GitHub Pages preview, Homepage contract, Topic authoring, Unfinished-function behavior.
+- **Учтено:** **7 тестовых файлов, 53 отдельных test cases**, по успешному [checks CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268): `8 + 17 + 11 + 5 + 6 + 4 + 2 = 53`. Прочитаны `it.each` матрицы route-error (401/403/404/503) — это 4 разных кейса, плюс 500. CI фактически выполнялся на сопоставимом PR #221 head (он изменял только `AGENTS.md`), **не перезапускался**. В общей инвентаризации: **36/118 файлов, 259/1 075 исходных тестов**.
+- **Проверенные файлы:**
+  - [`app/forum/homepage.test.tsx`](../../app/forum/homepage.test.tsx) — **8** тестов. Домашняя карта категорий, раскрытие трёх разделов, корректные ссылки/доступность Unread, честные online-states и временный Under development.
+  - [`app/forum/markdown-editor.test.tsx`](../../app/forum/markdown-editor.test.tsx) — **17** тестов. Реальная редакторская mutation Markdown, selection/caret/focus, code fences/backtick/RTL, imperatively inserted Reply/Quote, native validation/form POST, write/preview/split.
+  - [`app/forum/markdown.test.tsx`](../../app/forum/markdown.test.tsx) — **11** тестов. Safe CommonMark renderer: sanitizer/links/images, code copy/wrap/errors, RTL code direction и budget-aware syntax highlighting.
+  - [`app/forum/route-error.test.tsx`](../../app/forum/route-error.test.tsx) — **5** тестов. Рендер 401/403/404/503 с безопасным текстом/recovery link и unexpected 500 без утечки error detail.
+  - [`app/forum/ui.test.tsx`](../../app/forum/ui.test.tsx) — **6** тестов. Skip link/keyboard navigation, URL locale switcher с сохранением query/anchor, preview override, system/manual light/dark startup/persistence.
+  - [`app/ui-preview/preview-app.test.tsx`](../../app/ui-preview/preview-app.test.tsx) — **4** тестов. Representative preview-state catalog (locale/identity), 3 editor fixtures и click-through из home → section → topic в static Pages preview.
+  - [`app/routes/not-found.test.ts`](../../app/routes/not-found.test.ts) — **2** тестов. Точная конфигурация locale catch-all и возврат HTTP 404 на unknown route, независимо от рендера 404-страницы.
+- **Сходство тестов, не являющееся доказанным дублированием:**
+  1. `markdown-editor.test.tsx` проверяет UI редактирования и интеграцию превью через `<ForumMarkdown>`, в том числе один smoke unsafe-input example; `markdown.test.tsx` отдельно испытывает sanitizer/code renderer и его state/budget. Редактор может сломать подключение безопасного рендера, не ломая сам renderer — smoke остаётся обоснованным.
+  2. `route-error.test.tsx` проверяет **представление** исключений и безопасную обработку 401/403/404/503/500. `not-found.test.ts` проверяет **route registration и настоящий HTTP 404**, а не его внешний вид.
+  3. `homepage.test.tsx` проверяет реальные Home-компоненты/подменные state/links, а `preview-app.test.tsx` — управляемый **статический GitHub Pages preview** и click-through на representative data. Pages не заменяет реальные SSR/permissions, поэтому эту проверку нельзя ошибочно приравнять к полноценному forum-route E2E.
+  4. Тесты language and theme `ui.test.tsx` защищают разные источники состояния: browser pre-hydration bootstrap, system preference, persisted override и отдельный preview callback path. Совпадение элемента UI не равнозначно совпадению контракта.
+- **Проверка актуальности Stage:** `Under development` остаётся approved временным поведением **до реализации в `main`**; новые функции из открытых PR не считать уже принятыми. Pages preview — действующий инструмент текущего UI/UX pass, не снятая заготовка.
+- **Вывод:** **0 подтверждённых избыточных кейсов или ненужных файлов** в проходе 4A. Сохранить все 53 до итогового сопоставления с оставшимися forum route/runtime tests. **0 изменений реализации.**
+- **Следующий подэтап:** 4B (forum public read/write + generation UI), **5 файлов**, не начат. Остановиться до команды владельца.
+
+
 
 ### Проход 1 — миграции, CI и production workflow (2026-10-13)
 
@@ -278,6 +309,9 @@
 - **Статус:** подтверждён как изолированное устранение 1 ненужного прогона без потери проверяемой логики; **в audit PR изменения исходников не вносились**.
 
 ## Открытые вопросы и гипотезы
+
+При подэтапе 4B сравнить `app/forum/public-read.test.tsx` с `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts` на предмет точных одинаковых тестируемых гарантий. До просмотра 4B пересечения считать гипотезой, не находкой.
+
 
 Проверить возможное пересечение migration/ACL integration probes с тестами этапа 1 после завершения блоков 7–8. Похожие имена и пересекающиеся ограничения сами по себе не доказывают лишность.
 
