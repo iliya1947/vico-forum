@@ -35,6 +35,7 @@ import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useEditorDraft } from "./use-editor-draft";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
+import { useEditorAttachments } from "./editor-attachments";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -184,6 +185,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
     });
 
+    const attachments = useEditorAttachments({
+      contextKey: accountId ? draftContextKey : undefined,
+      draftId: draft.draftId,
+      draftReady: draft.attachmentReady,
+      rebindFrom: draft.attachmentRebindFrom,
+      disabled,
+      reserveGeneration: draft.reserveAttachmentGeneration,
+      completeRebind: draft.completeAttachmentRebind,
+      retryDraftReconciliation: draft.retryAttachmentReconciliation,
+    });
+
     useEffect(() => {
       if (draftPublicationPending) {
         if (publicationPreparedRef.current) publicationPendingSeenRef.current = true;
@@ -235,6 +247,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const intent = submitterIntent
           ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
         if (intent !== draftPublicationIntent) return;
+
+        if (attachments.blocking) {
+          event.preventDefault();
+          attachments.markPublicationAttempt();
+          return;
+        }
 
         event.preventDefault();
         if (publicationPreparingRef.current) return;
@@ -737,6 +755,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     return (
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
+        onDragOver={attachments.handleDragOver}
+        onDrop={attachments.handleDrop}
+        onPasteCapture={attachments.handlePaste}
         onKeyDownCapture={(event) => {
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
@@ -994,6 +1015,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             </section>
           )}
         </div>
+        {attachments.element}
         {draft.element}
       </div>
     );
