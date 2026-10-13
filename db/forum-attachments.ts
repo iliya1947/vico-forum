@@ -6,6 +6,8 @@ import {
   forumAttachments,
   forumAttachmentSecurityEvents,
   forumEditorDrafts,
+  forumPostAttachments,
+  forumPosts,
 } from "./schema";
 import { isEditorDraftContextKey } from "./editor-draft-context";
 import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration } from "./attachment-draft-generation";
@@ -187,6 +189,39 @@ export class DrizzleForumAttachments {
         .limit(1);
       if (!reference) throw new InvalidForumAttachmentError();
       return toMetadata(existing);
+    });
+  }
+
+  async readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null> {
+    if (!isForumAttachmentUuid(postId) || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
+    const [row] = await this.db.select({ attachment: forumAttachments })
+      .from(forumPostAttachments)
+      .innerJoin(forumPosts, eq(forumPosts.id, forumPostAttachments.postId))
+      .innerJoin(forumAttachments, eq(forumAttachments.id, forumPostAttachments.attachmentId))
+      .where(and(
+        eq(forumPostAttachments.postId, postId),
+        eq(forumPostAttachments.attachmentId, attachmentId),
+      )).limit(1);
+    return row && row.attachment.verificationStatus === "type-checked" ? toMetadata(row.attachment) : null;
+  }
+
+  async readDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null> {
+    if (!ownerId || !isEditorDraftContextKey(contextKey)
+      || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const current = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      const [row] = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
+        .innerJoin(forumAttachments, and(
+          eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
+          eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
+        )).where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, contextKey),
+          eq(forumAttachmentDraftRefs.draftId, current),
+          eq(forumAttachmentDraftRefs.attachmentId, attachmentId),
+        )).limit(1);
+      return row && row.attachment.verificationStatus === "type-checked" ? toMetadata(row.attachment) : null;
     });
   }
 

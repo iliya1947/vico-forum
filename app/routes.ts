@@ -4,6 +4,7 @@ export default [
   index("routes/locale-negotiation.ts"),
   route("api/auth/*", "routes/auth-api.ts"),
   route("api/attachments", "routes/attachment-upload.ts"),
+  route("api/attachments/file/:attachmentId", "routes/attachment-download.ts"),
   route("api/*", "routes/api.ts"),
   route(":locale", "routes/locale-boundary.tsx", [
     index("routes/home.tsx"),

@@ -13,6 +13,7 @@ import {
   type HelpSimilarQuestionsActionData,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
+import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -44,6 +45,19 @@ function validatedDraftPublicationFence(form: FormData): DraftPublicationFence |
   ) return undefined;
   const draftVersion = Number(rawVersion);
   return Number.isSafeInteger(draftVersion) ? { draftId, draftVersion } : undefined;
+}
+
+// Omission retains legacy text-only calls; an explicit [] is a verified empty selection.
+function selectedAttachmentIds(form: FormData): string[] | null | undefined {
+  const raw = form.get("editorAttachmentIds");
+  if (raw === null) return undefined;
+  if (typeof raw !== "string") return null;
+  try {
+    const ids: unknown = JSON.parse(raw);
+    if (!Array.isArray(ids) || !ids.every((id) => typeof id === "string" && isForumAttachmentUuid(id))) return null;
+    if (new Set(ids.map((id: string) => id.toLowerCase())).size !== ids.length) return null;
+    return ids;
+  } catch { return null; }
 }
 
 export async function helpSolutionsCategoryAction({ request, params, context }: {
@@ -94,7 +108,8 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
   const body = requiredFormText(formData, "body");
   if (!title || !body) return mutationFailure("invalid", 400);
   const draftFence = validatedDraftPublicationFence(formData);
-  if (draftFence === undefined) return mutationFailure("invalid", 400);
+  const attachmentIds = selectedAttachmentIds(formData);
+  if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
   const tags = draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createTopic({
@@ -104,6 +119,7 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
       body,
       tags,
       ...(draftFence ?? {}),
+      ...(attachmentIds === undefined ? {} : { attachmentIds }),
     });
     return redirect(forumTopicPath(locale, created.topicId));
   });
@@ -156,9 +172,10 @@ export async function sectionAction({ request, params, context }: {
     ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
     : [];
   const draftFence = validatedDraftPublicationFence(formData);
-  if (draftFence === undefined) return mutationFailure("invalid", 400);
+  const attachmentIds = selectedAttachmentIds(formData);
+  if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body, tags, ...(draftFence ?? {}) });
+    const created = await writer.createTopic({ sectionId, authorId, title, body, tags, ...(draftFence ?? {}), ...(attachmentIds === undefined ? {} : { attachmentIds }) });
     return redirect(forumTopicPath(locale, created.topicId));
   });
 }
@@ -456,9 +473,10 @@ export async function topicAction({ request, params, context }: {
     ? rawParentPostId.trim()
     : null;
   const draftFence = validatedDraftPublicationFence(formData);
-  if (draftFence === undefined) return mutationFailure("invalid", 400);
+  const attachmentIds = selectedAttachmentIds(formData);
+  if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createReply({ topicId, authorId, body, parentPostId, ...(draftFence ?? {}) });
+    const created = await writer.createReply({ topicId, authorId, body, parentPostId, ...(draftFence ?? {}), ...(attachmentIds === undefined ? {} : { attachmentIds }) });
     return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(created.postId));
   });
 }

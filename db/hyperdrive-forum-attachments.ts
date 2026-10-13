@@ -17,6 +17,8 @@ import {
 
 export interface ForumAttachmentStore {
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
+  readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
+  readDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
   recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void>;
   readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage>;
   listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
@@ -73,6 +75,9 @@ export function createHyperdriveForumAttachmentStore(
 
   return {
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
+    readPublishedAttachment: (postId, attachmentId) => apply((store) => store.readPublishedAttachment(postId, attachmentId)),
+    readDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
+      apply((store) => store.readDraftAttachment(ownerId, contextKey, draftId, attachmentId)),
     recordSecurityEvent: (input) => apply((store) => store.recordSecurityEvent(input)),
     readSecurityAttachmentEvents: (page) => apply((store) => store.readSecurityAttachmentEvents(page)),
     listDraftAttachments: (ownerId, contextKey, draftId) =>
