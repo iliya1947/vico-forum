@@ -24,7 +24,7 @@
 
 | Этап | Область | Тестовых файлов | Статус |
 | --- | --- | ---: | --- |
-| 1 | Миграции, CI, production-workflow (без credentials) | 8 | Не начато |
+| 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
 | 2 | Доступы и восстановление production web credential | 9 | Не начато |
 | 3 | Аутентификация и авторизация | 12 | Не начато |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Не начато |
@@ -32,7 +32,7 @@
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **0 проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **8 файлов / 83 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -40,16 +40,16 @@
 
 Отметка `[x]` означает: содержимое теста и релевантную реализацию рассмотрели и зафиксировали вывод. Она **не означает**, что тест признан лишним.
 
-### 1. Миграции, CI, production-workflow (без credentials) — 8 файлов, не начато
+### 1. Миграции, CI, production-workflow (без credentials) — 8 файлов, завершено
 
-- [ ] `.github/scripts/migration-history.test.mjs`
-- [ ] `.github/scripts/production-migration-contract.test.mjs`
-- [ ] `.github/scripts/production-privileges.test.mjs`
-- [ ] `.github/scripts/production-worker-rollout.test.mjs`
-- [ ] `.github/scripts/provision-production-web-relations.test.mjs`
-- [ ] `.github/scripts/runtime-migration-evidence.test.mjs`
-- [ ] `.github/scripts/runtime-privileges.test.mjs`
-- [ ] `.github/scripts/verify-production-migration-identity.test.mjs`
+- [x] `.github/scripts/migration-history.test.mjs`
+- [x] `.github/scripts/production-migration-contract.test.mjs`
+- [x] `.github/scripts/production-privileges.test.mjs`
+- [x] `.github/scripts/production-worker-rollout.test.mjs`
+- [x] `.github/scripts/provision-production-web-relations.test.mjs`
+- [x] `.github/scripts/runtime-migration-evidence.test.mjs`
+- [x] `.github/scripts/runtime-privileges.test.mjs`
+- [x] `.github/scripts/verify-production-migration-identity.test.mjs`
 
 ### 2. Доступы и восстановление production web credential — 9 файлов, не начато
 
@@ -184,12 +184,27 @@
 
 ## Журнал завершённых проходов
 
-Пока нет. Каждый проход добавлять как отдельную запись:
-- дата, база `main` SHA, номер этапа/подэтапа и список просмотренных файлов;
-- сколько тест-кейсов просмотрено, чем подтверждена их актуальность;
-- подтверждённые находки с точными ссылками и предлагаемым решением;
-- сомнения/недостаточные данные — отдельно;
-- результат: проверено N / 118 файлов, следующий согласованный проход.
+### Проход 1 — миграции, CI и production workflow (2026-10-13)
+
+- **Основание:** exact `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d` (без изменений). Восемь `.test.mjs` прочитаны до конца, сопоставлены с одноимёнными исполняемыми модулями, применимыми wrapper-скриптами, `ci.yml`, manual workflows и `docs/database/MIGRATIONS.md` / `HYPERDRIVE.md`.
+- **Учтено:** **8/118 тестовых файлов, 83/1 075 тест-кейсов**. Числа тест-кейсов сверены по фактическим `ℹ pass` соответствующих восьми команд из [CI #38372052543 (job checks)](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268). **83 прошли**, 0 упали. Это доказательство исполнения тестов на сопоставимом source-head PR #221 (он изменял только `AGENTS.md`), **не оценка доказательности каждого assertion автоматически**.
+- **Результат аудита:** **8 файлов / 83 кейса сохранять** в текущем объёме; подтверждённых лишних, устаревших либо тождественных проверок **0**. Вывод о межэтапном дублировании предварительный до этапа 8.
+- **Проверенные файлы и независимая гарантия:**
+  - [.github/scripts/migration-history.test.mjs](../../.github/scripts/migration-history.test.mjs): **5** тестов. История принятых SQL/snapshot/journal — PR-level append-only guard; исполняется `verify-migration-history.mjs` в CI.
+  - [.github/scripts/production-migration-contract.test.mjs](../../.github/scripts/production-migration-contract.test.mjs): **6** тестов. Pre/post ledger Drizzle по timestamp + SQL hash при внешней миграции; исполняется `verify-production-migration.mjs`.
+  - [.github/scripts/production-privileges.test.mjs](../../.github/scripts/production-privileges.test.mjs): **17** тестов. Контракт migrator/application-owner и read-only localization для production schema migration; используется `verify-production-migration.mjs`.
+  - [.github/scripts/production-worker-rollout.test.mjs](../../.github/scripts/production-worker-rollout.test.mjs): **10** тестов. Сопоставление exact Worker version/deployment и защитных свойств manual rollout/rollback; используются `.github/workflows/production-worker-rollout.yml`, `production-worker-rollout.mjs`, smoke.
+  - [.github/scripts/provision-production-web-relations.test.mjs](../../.github/scripts/provision-production-web-relations.test.mjs): **12** тестов. Выдача web relation grants из shared ACL contract, owner-phase prerequisites, commit/rollback и безопасный CLI; используется manual provisioning workflow.
+  - [.github/scripts/runtime-migration-evidence.test.mjs](../../.github/scripts/runtime-migration-evidence.test.mjs): **4** тестов. Проверка GitHub run, точного SHA и покрытия migrations в deploy evidence gate; используется `verify-runtime-migration-evidence.mjs` до Worker upload.
+  - [.github/scripts/runtime-privileges.test.mjs](../../.github/scripts/runtime-privileges.test.mjs): **18** тестов. Два runtime roles, exact ACL/ownership/defaults/CONNECT и каталог PostgreSQL; используется `verify-production-runtime-privileges.mjs` и relation provisioning.
+  - [.github/scripts/verify-production-migration-identity.test.mjs](../../.github/scripts/verify-production-migration-identity.test.mjs): **11** тестов. Read-only отдельный identity/CREATE gate для dedicated migrator; используется manual `.github/workflows/production-db-identity.yml`.
+- **Сопоставление похожих групп:** 
+  1. `migration-history` защищает *невозможность переписать уже принятые файлы/журнал в PR*; `production-migration-contract` проверяет *реально применённый ledger в целевой БД*; `runtime-migration-evidence` привязывает *подтверждённый GitHub migration run к допускаемому Worker rollout*. Одинаковая тема, но три независимые границы.
+  2. `production-privileges` проверяет *роль владельца/мигратора и базовую read-only localization схему*, `runtime-privileges` — *отдельные реальные web/localization runtime роли и их текущие расширенные ACL*. Пересечения в правилах least privilege не дают оснований удалить один из двух тестовых наборов, потому что entrypoints/acceptance разные.
+  3. `verify-production-migration-identity` — отдельная ручная read-only проверка dedicated migrator до миграции, а не замена full production privilege contract.
+  4. `production-worker-rollout` включает проверки порядка и строк workflow. Они проверяют зафиксированную форму workflow, **не доказывают реального успешного deploy/rollback**. Эта граница покрытия — примечание по качеству, **не установленная избыточность и не самостоятельный дефект Stage**.
+- **Потенциальное пересечение для этапа 8:** сравнить `migration-history.test.mjs` с `tests/database/migrations.test.ts` и `tests/production-migration-verifier.test.ts`; сравнить ACL fixture tests с native PostgreSQL ACL probes (`verify-runtime-privilege-probes.mjs`, `verify-web-relation-provisioning-probes.mjs`). Подозрение **не подтверждено**: уровни testing различаются.
+- **Следующее действие:** этап 2 — 9 тестовых файлов credential recovery/bootstrap; **не начат**, нужен отдельный запрос владельца.
 
 ## Подтверждённые кандидаты на оптимизацию
 
@@ -197,7 +212,7 @@
 
 ## Открытые вопросы и гипотезы
 
-Пока нет. Наличие похожих имён тестов либо разных версий workflow само по себе не означает дублирования или устаревания.
+Проверить возможное пересечение migration/ACL integration probes с тестами этапа 1 после завершения блоков 7–8. Похожие имена и пересекающиеся ограничения сами по себе не доказывают лишность.
 
 ## Итоговая сверка
 
