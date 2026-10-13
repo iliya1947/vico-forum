@@ -42,14 +42,19 @@ function Harness({ ownerId }: { ownerId: string | null }) {
     <button type="button" onClick={draft.saveLocal}>Leave editor</button>
     <button type="button" onClick={() => setReserved(draft.reserveAttachmentGeneration())}>Reserve attachment</button>
     <button type="button" onClick={draft.retryAttachmentReconciliation}>Retry attachment check</button>
+    <button type="button" onClick={() => draft.noteAttachmentChange(draft.draftId)}>Attachment removed</button>
     <output data-testid="attachment-ready">{draft.attachmentReady ? "ready" : "blocked"}</output>
     <output data-testid="attachment-rebind">{draft.attachmentRebindFrom ?? "none"}</output>
+    <output data-testid="attachment-rebind-version">{draft.attachmentRebindVersion ?? "none"}</output>
     <output data-testid="attachment-reservation">{reserved ?? "none"}</output>
     <button type="button" onClick={() => {
       if (draft.attachmentRebindFrom) {
         draft.completeAttachmentRebind(draft.attachmentRebindFrom, draft.draftId);
       }
     }}>Complete attachment rebind</button>
+    <button type="button" onClick={() => {
+      if (draft.attachmentRebindFrom) draft.completeAttachmentRebind(draft.attachmentRebindFrom, draft.draftId, true);
+    }}>Discard completed attachment generation</button>
     <button type="button" onClick={() => draft.acknowledgePublished(draft.draftId, draft.expectedVersion + 1)}>
       Published
     </button>
@@ -73,6 +78,40 @@ afterEach(() => {
 });
 
 describe("editor draft lifecycle", () => {
+  it.each(["Reserve attachment", "Attachment removed"])("renews a clean draft for %s on the 60-second cycle without eager POST", async (action) => {
+    vi.useFakeTimers();
+    const editedAt = new Date(Date.now() - 29 * 86_400_000).toISOString();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId, attachmentDraftId: oldId,
+      editedAt, syncedEditedAt: editedAt, baseVersion: 1, payload: empty });
+    let remote = { contextKey, draftId: oldId, version: 1, status: "active" as const,
+      title: "", snippet: "", editedAt, updatedAt: editedAt, payload: empty };
+    const posts: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        posts.push(JSON.parse(options.body as string));
+        remote = { ...remote, version: 2, editedAt: new Date().toISOString() };
+        return response({ outcome: "saved", draft: remote });
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected request");
+    }));
+    mount();
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: action }));
+    const changed = readLocalEditorDraft("alice", contextKey)!;
+    expect(Date.parse(changed.editedAt)).toBeGreaterThan(Date.parse(editedAt));
+    expect(changed.syncedEditedAt).toBeNull();
+    expect(changed.payload).toEqual(empty);
+    await act(async () => { await vi.advanceTimersByTimeAsync(59_999); });
+    expect(posts).toHaveLength(0);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ draftId: oldId, expectedVersion: 1, payload: empty });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(posts).toHaveLength(1);
+  });
+
   it("does not reserve an attachment generation until remote reconciliation succeeds, including on retry", async () => {
     const remote = { contextKey, draftId: oldId, version: 2, status: "active" as const,
       title: "", snippet: "Server content", editedAt: new Date().toISOString(),
@@ -183,12 +222,12 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   });
 
-  it("does not advance text sync to another generation until retained attachment refs finish rebinding", async () => {
+  it("CAS-saves the selected text on the normal cycle before rebinding, even while attachments wait", async () => {
     vi.useFakeTimers();
     writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
       attachmentDraftId: oldId, editedAt: new Date().toISOString(), baseVersion: 1,
       syncedEditedAt: null, payload: { ...empty, body: "Local reply" } });
-    const remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
+    let remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
       title: "", snippet: "Server reply", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server reply" } };
     const posts: unknown[] = [];
@@ -196,13 +235,14 @@ describe("editor draft lifecycle", () => {
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string);
         posts.push(sent);
-        return response({ outcome: "saved", draft: {
+        remote = {
           ...remote,
           draftId: newId,
           version: 5,
           payload: sent.payload,
           editedAt: new Date().toISOString(),
-        } });
+        };
+        return response({ outcome: "saved", draft: remote });
       }
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) return response({ draft: remote });
@@ -213,15 +253,18 @@ describe("editor draft lifecycle", () => {
     await flush();
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
     expect(screen.getByTestId("attachment-rebind")).toHaveTextContent(oldId);
+    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("none");
+    expect(posts).toHaveLength(0);
 
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(posts).toHaveLength(0);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ draftId: newId, expectedVersion: 4 });
+    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("5");
 
     fireEvent.click(screen.getByRole("button", { name: "Complete attachment rebind" }));
     await flush();
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
     expect(posts).toHaveLength(1);
-    expect(posts[0]).toMatchObject({ draftId: newId, expectedVersion: 4 });
   });
 
   it("retains attachment provenance when a clean local draft refreshes text in the same generation", async () => {
@@ -246,9 +289,26 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByTestId("attachment-reservation")).toHaveTextContent(oldId);
   });
 
-  it("does not overwrite attachment provenance when a clean local text copy refreshes from another device", async () => {
+  it("refreshes clean text in the selected generation while retaining refs pending rebind", async () => {
     const editedAt = new Date().toISOString();
-    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId,
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId, attachmentDraftId: oldId,
+      editedAt, syncedEditedAt: editedAt, baseVersion: 4, payload: { ...empty, body: "Old text" } });
+    const remote = { contextKey, draftId: newId, version: 5, status: "active" as const,
+      title: "", snippet: "Updated text", editedAt, updatedAt: editedAt,
+      payload: { ...empty, body: "Updated text" } };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => uri.includes("mode=metadata")
+      ? response({ drafts: [remote] }) : response({ draft: remote })));
+    mount();
+    await flush();
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Updated text");
+    expect(screen.queryByRole("group", { name: "Draft conflict" })).not.toBeInTheDocument();
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId: newId, attachmentDraftId: oldId });
+    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("5");
+  });
+
+  it("requires a choice when another device supplies a different text generation with different attachment provenance", async () => {
+    const editedAt = new Date().toISOString();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
       attachmentDraftId: oldId, editedAt, baseVersion: 4,
       syncedEditedAt: editedAt, payload: { ...empty, body: "Old text" } });
     const remote = { contextKey, draftId: newId, version: 5, status: "active" as const,
@@ -472,6 +532,7 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
     expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(8);
+    expect(readLocalEditorDraft("alice", contextKey)?.draftId).not.toBe(newId);
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
   });
 

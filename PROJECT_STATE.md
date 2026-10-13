@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-12
+Последнее обновление: 2026-10-13
 
 ## Назначение
 
@@ -542,13 +542,39 @@ Vico Forum находится в ранней pre-release разработке.
   при возврате. После determinate rejection Remove делает exact DELETE по стабильному upload ID;
   transport failure считается неоднозначным и остаётся retry-only, пока idempotent Retry тем же
   UUID не установит определённое состояние. Пока attachmentDraftId переносится на выбранную draft generation,
-  обычные remote reconciliation и 60-second text sync не меняют generation; после завершения
-  rebind обычный lifecycle продолжается.
+  новые вложения закрыты, но штатный 60-second text sync сохраняет выбранный текст.
+  Rebind использует CAS-version уже сохранённого active target; новые remote changes
+  проходят обычную reconciliation/conflict проверку.
   До следующего Stage 5 publication/download slice любой сохранённый attachment намеренно
   блокирует publication, чтобы файл не был молча потерян при существующем text-only publish
   path. Editor UI не выдаёт private object key и не скачивает file content при restore.
   Следующие части Stage 5: publication/download integration и orphan cleanup.
   Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
+- Stage 5 attachment/draft concurrency correction (2026-10-13): Codex выполняет реализацию
+  по прямому назначению владельца. Stale GET restore отсекается cleanup fence; выполняющиеся
+  upload/retry/remove сохраняют исходную identity при retained переходах A→B→C.
+  Изменение вложений обновляет local editedAt/dirty snapshot и попадает только в очередной
+  штатный 60-second CAS save. Выбранный local текст сначала сохраняется этим же циклом,
+  затем PATCH проверяет active target ID/version под общей owner/context transaction lock.
+  Migration `0037_forum_attachment_draft_generations` хранит durable redirects и NULL terminal
+  markers: поздний POST и retry/DELETE по прежнему ID следуют переносу; завершённое поколение
+  не оживает после появления нового text head. Publish/delete/expiry закрывают generation
+  атомарно, save отклоняет retired/redirected ID. Metadata координации каскадно удаляется
+  вместе с owner, как text drafts; private asset lifetime не меняется.
+  Существующий Stage 5 text-only publication guard теперь проверяется на сервере и откатывает
+  публикацию при действующих attachment refs. Scope lock берётся до topic/user locks,
+  чтобы first-save/upload/publication не образовали lock-order cycle. Runtime capability
+  новой таблицы ограничена INSERT/SELECT; attachment row locks с лишним UPDATE требованием
+  удалены. Client различает CAS conflict (409) и retired generation (410), сохраняя выбранный
+  текст и очищая только завершённые attachment bindings. После неопределённого DB commit
+  приватный объект сохраняется до установления ownership; stable-ID retry не получает ссылку
+  на уже удалённый объект. Подтверждённый logical reject очищает новую private write.
+  Полный локальный прогон прошёл: 904 application tests (maxWorkers=2), 257 PostgreSQL 17
+  tests; typecheck, lint и обе сборки успешны. Предшествующий parallel local run имел один
+  5-second timeout public-read; отдельный повтор всех 50 public-read tests и полный повтор
+  успешны. Статус exact-head CI фиксируется в checks PR, независимые GPT-5.6 Sol/GPT-6
+  проверки и merge не выполнены. Publication promotion/download,
+  orphan cleanup, AV и external R2 provisioning не реализуются этим исправлением.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
@@ -1177,7 +1203,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0034`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0037`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

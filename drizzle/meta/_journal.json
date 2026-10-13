@@ -260,6 +260,13 @@
       "when": 1791840600000,
       "tag": "0036_forum_attachment_security_events",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791890456622,
+      "tag": "0037_forum_attachment_draft_generations",
+      "breakpoints": true
     }
   ]
 }

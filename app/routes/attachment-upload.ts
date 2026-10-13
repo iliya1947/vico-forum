@@ -20,6 +20,7 @@ import {
 } from "../../db/forum-editor-drafts";
 import {
   InvalidForumAttachmentError,
+  ForumAttachmentDraftConflictError,
   isForumAttachmentUuid,
   type ForumAttachmentMetadata,
 } from "../../db/forum-attachments";
@@ -113,6 +114,9 @@ async function requestScope(
 }
 
 function attachmentStoreFailure(error: unknown): Response | null {
+  if (error instanceof ForumAttachmentDraftConflictError) {
+    return json({ error: error.reason }, error.reason === "gone" ? 410 : 409);
+  }
   if (error instanceof InvalidForumAttachmentError) return json({ error: "invalid" }, 400);
   if (error instanceof ForumAttachmentStorageUnavailableError) return json({ error: "unavailable" }, 503);
   return null;
@@ -157,10 +161,13 @@ export async function action({ request, context }: { request: Request; context: 
 
   if (request.method === "PATCH") {
     const fromDraftId = request.headers.get("X-Vico-Attachment-From-Draft-Id")?.trim() ?? "";
-    if (!isForumAttachmentUuid(fromDraftId)) return json({ error: "invalid" }, 400);
+    const rawVersion = request.headers.get("X-Vico-Draft-Version") ?? "";
+    const expectedVersion = Number(rawVersion);
+    if (!isForumAttachmentUuid(fromDraftId) || !/^[1-9][0-9]*$/u.test(rawVersion)
+      || !Number.isSafeInteger(expectedVersion)) return json({ error: "invalid" }, 400);
     try {
       const moved = await store.rebindDraftAttachments(
-        scope.userId, scope.contextKey, fromDraftId, scope.draftId,
+        scope.userId, scope.contextKey, fromDraftId, scope.draftId, expectedVersion,
       );
       return json({ outcome: "rebound", moved });
     } catch (error) {
@@ -252,7 +259,12 @@ export async function action({ request, context }: { request: Request; context: 
     }
     return json({ outcome: "stored", attachment: safeAttachment(attachment) }, 201);
   } catch (error) {
-    await bucket.delete(result.objectKey).catch(() => {});
+    // A lost COMMIT acknowledgement can leave an authoritative asset using this
+    // object. Retain it until ownership is known; a stable-ID retry converges on
+    // that asset. Logical rejection establishes that no new ref was committed.
+    if (error instanceof InvalidForumAttachmentError || error instanceof ForumAttachmentDraftConflictError) {
+      await bucket.delete(result.objectKey).catch(() => {});
+    }
     const response = attachmentStoreFailure(error);
     if (response) return response;
     throw error;

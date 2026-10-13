@@ -2,10 +2,15 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
+  forumAttachmentDraftGenerations,
   forumAttachments,
   forumAttachmentSecurityEvents,
+  forumEditorDrafts,
 } from "./schema";
 import { isEditorDraftContextKey } from "./editor-draft-context";
+import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration } from "./attachment-draft-generation";
+
+export { ForumAttachmentDraftConflictError } from "./attachment-draft-generation";
 
 export interface ForumAttachmentMetadata {
   id: string;
@@ -123,6 +128,18 @@ export class DrizzleForumAttachments {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
     const createdAt = new Date();
     return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, input.ownerId, input.contextKey);
+      const draftId = await resolveAttachmentDraftGeneration(tx, input.ownerId, input.contextKey, input.draftId);
+      const [draft] = await tx.select({
+        draftId: forumEditorDrafts.draftId,
+        status: forumEditorDrafts.status,
+      }).from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, input.ownerId),
+        eq(forumEditorDrafts.contextKey, input.contextKey),
+      )).for("update").limit(1);
+      if (draft?.draftId === draftId && draft.status !== "active") {
+        throw new ForumAttachmentDraftConflictError("gone");
+      }
       const [created] = await tx.insert(forumAttachments).values({
         id: input.id,
         ownerId: input.ownerId,
@@ -143,7 +160,7 @@ export class DrizzleForumAttachments {
           attachmentId: input.id,
           ownerId: input.ownerId,
           contextKey: input.contextKey,
-          draftId: input.draftId,
+          draftId,
           createdAt,
         });
         return toMetadata(created);
@@ -156,7 +173,6 @@ export class DrizzleForumAttachments {
           eq(forumAttachments.id, input.id),
           eq(forumAttachments.ownerId, input.ownerId),
         ))
-        .for("update")
         .limit(1);
       if (!existing) throw new InvalidForumAttachmentError();
 
@@ -166,7 +182,7 @@ export class DrizzleForumAttachments {
           eq(forumAttachmentDraftRefs.attachmentId, input.id),
           eq(forumAttachmentDraftRefs.ownerId, input.ownerId),
           eq(forumAttachmentDraftRefs.contextKey, input.contextKey),
-          eq(forumAttachmentDraftRefs.draftId, input.draftId),
+          eq(forumAttachmentDraftRefs.draftId, draftId),
         ))
         .limit(1);
       if (!reference) throw new InvalidForumAttachmentError();
@@ -207,22 +223,26 @@ export class DrizzleForumAttachments {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) {
       throw new InvalidForumAttachmentError();
     }
-    const rows = await this.db.select({ attachment: forumAttachments })
-      .from(forumAttachmentDraftRefs)
-      .innerJoin(
-        forumAttachments,
-        and(
-          eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
-          eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
-        ),
-      )
-      .where(and(
-        eq(forumAttachmentDraftRefs.ownerId, ownerId),
-        eq(forumAttachmentDraftRefs.contextKey, contextKey),
-        eq(forumAttachmentDraftRefs.draftId, draftId),
-      ))
-      .orderBy(asc(forumAttachmentDraftRefs.createdAt), asc(forumAttachmentDraftRefs.attachmentId));
-    return rows.map(({ attachment }) => toMetadata(attachment));
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      const rows = await tx.select({ attachment: forumAttachments })
+        .from(forumAttachmentDraftRefs)
+        .innerJoin(
+          forumAttachments,
+          and(
+            eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
+            eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
+          ),
+        )
+        .where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, contextKey),
+          eq(forumAttachmentDraftRefs.draftId, generation),
+        ))
+        .orderBy(asc(forumAttachmentDraftRefs.createdAt), asc(forumAttachmentDraftRefs.attachmentId));
+      return rows.map(({ attachment }) => toMetadata(attachment));
+    });
   }
 
   async removeDraftAttachment(
@@ -234,33 +254,55 @@ export class DrizzleForumAttachments {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) {
       throw new InvalidForumAttachmentError();
     }
-    const deleted = await this.db.delete(forumAttachmentDraftRefs)
-      .where(and(
-        eq(forumAttachmentDraftRefs.ownerId, ownerId),
-        eq(forumAttachmentDraftRefs.contextKey, contextKey),
-        eq(forumAttachmentDraftRefs.draftId, draftId),
-        eq(forumAttachmentDraftRefs.attachmentId, attachmentId),
-      ))
-      .returning({ attachmentId: forumAttachmentDraftRefs.attachmentId });
-    return deleted.length > 0;
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      const deleted = await tx.delete(forumAttachmentDraftRefs)
+        .where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, contextKey),
+          eq(forumAttachmentDraftRefs.draftId, generation),
+          eq(forumAttachmentDraftRefs.attachmentId, attachmentId),
+        ))
+        .returning({ attachmentId: forumAttachmentDraftRefs.attachmentId });
+      return deleted.length > 0;
+    });
   }
   async rebindDraftAttachments(
     ownerId: string,
     contextKey: string,
     fromDraftId: string,
     toDraftId: string,
+    expectedVersion: number,
   ): Promise<number> {
     if (
       !ownerId
       || !isEditorDraftContextKey(contextKey)
       || !isForumAttachmentUuid(fromDraftId)
       || !isForumAttachmentUuid(toDraftId)
+      || !Number.isSafeInteger(expectedVersion)
+      || expectedVersion < 1
     ) {
       throw new InvalidForumAttachmentError();
     }
-    if (fromDraftId === toDraftId) return 0;
-
     return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const [draft] = await tx.select({
+        draftId: forumEditorDrafts.draftId,
+        status: forumEditorDrafts.status,
+        version: forumEditorDrafts.version,
+      }).from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, contextKey),
+      )).for("update").limit(1);
+      if (draft?.status !== "active" || draft.draftId !== toDraftId || draft.version !== expectedVersion) {
+        throw new ForumAttachmentDraftConflictError();
+      }
+      const target = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, toDraftId);
+      if (target !== toDraftId) throw new ForumAttachmentDraftConflictError();
+      const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, fromDraftId);
+      if (generation === target) return 0;
+
       const source = await tx.select({
         attachmentId: forumAttachmentDraftRefs.attachmentId,
         createdAt: forumAttachmentDraftRefs.createdAt,
@@ -269,18 +311,24 @@ export class DrizzleForumAttachments {
         .where(and(
           eq(forumAttachmentDraftRefs.ownerId, ownerId),
           eq(forumAttachmentDraftRefs.contextKey, contextKey),
-          eq(forumAttachmentDraftRefs.draftId, fromDraftId),
+          eq(forumAttachmentDraftRefs.draftId, generation),
         ))
-        .orderBy(asc(forumAttachmentDraftRefs.createdAt), asc(forumAttachmentDraftRefs.attachmentId))
-        .for("update");
+        .orderBy(asc(forumAttachmentDraftRefs.createdAt), asc(forumAttachmentDraftRefs.attachmentId));
 
+      // This fence also covers a first upload that is still streaming outside this transaction.
+      await tx.insert(forumAttachmentDraftGenerations).values({
+        ownerId,
+        contextKey,
+        draftId: generation,
+        targetDraftId: target,
+      });
       if (source.length === 0) return 0;
 
       await tx.insert(forumAttachmentDraftRefs).values(source.map((reference) => ({
         attachmentId: reference.attachmentId,
         ownerId,
         contextKey,
-        draftId: toDraftId,
+        draftId: target,
         createdAt: reference.createdAt,
       }))).onConflictDoNothing();
 
@@ -288,7 +336,7 @@ export class DrizzleForumAttachments {
         .where(and(
           eq(forumAttachmentDraftRefs.ownerId, ownerId),
           eq(forumAttachmentDraftRefs.contextKey, contextKey),
-          eq(forumAttachmentDraftRefs.draftId, fromDraftId),
+          eq(forumAttachmentDraftRefs.draftId, generation),
           inArray(
             forumAttachmentDraftRefs.attachmentId,
             source.map((reference) => reference.attachmentId),

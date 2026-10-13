@@ -186,14 +186,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     });
 
     const attachments = useEditorAttachments({
+      ownerId: accountId,
       contextKey: accountId ? draftContextKey : undefined,
       draftId: draft.draftId,
       draftReady: draft.attachmentReady,
+      draftRevision: draft.attachmentRevision,
       rebindFrom: draft.attachmentRebindFrom,
+      rebindVersion: draft.attachmentRebindVersion,
       disabled,
       reserveGeneration: draft.reserveAttachmentGeneration,
       completeRebind: draft.completeAttachmentRebind,
       retryDraftReconciliation: draft.retryAttachmentReconciliation,
+      noteAttachmentChange: draft.noteAttachmentChange,
     });
 
     useEffect(() => {

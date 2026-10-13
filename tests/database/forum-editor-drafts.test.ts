@@ -26,9 +26,12 @@ const migrations = [
   "0029_help_question_needs_details", "0030_help_duplicate_workflow",
   "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
   "0034_forum_editor_drafts",
+  "0035_forum_attachments_foundation", "0036_forum_attachment_security_events",
+  "0037_forum_attachment_draft_generations",
 ];
 const id1 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d55";
 const id2 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d56";
+const id3 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d57";
 const text1 = { title: "first", body: "Draft **one**", tags: "typescript" };
 const text2 = { title: "second", body: "Draft **two**", tags: "" };
 
@@ -122,7 +125,7 @@ describe("account-scoped durable editor drafts", () => {
   it("never lets terminal tombstones displace a valid active draft from metadata discovery", async () => {
     const key = "section:draft/opaque:✓:new";
     const marker = await store.get("draft-owner", key);
-    const active = await store.save("draft-owner", key, id1, text2, marker!.version);
+    const active = await store.save("draft-owner", key, id3, text2, marker!.version);
     expect(active.outcome).toBe("saved");
     await client.query(
       'update forum_editor_drafts set edited_at = now()-interval \'20 days\', updated_at = now()-interval \'20 days\' where owner_id = $1 and context_key = $2',
@@ -154,9 +157,20 @@ describe("account-scoped durable editor drafts", () => {
     const metadata = await store.metadata("draft-owner");
     expect(metadata.find((draft) => draft.contextKey === key)).toMatchObject({
       status: "active",
-      draftId: id1,
+      draftId: id3,
     });
     expect(metadata.filter((draft) => draft.contextKey.startsWith("terminal:"))).toHaveLength(205);
     expect(metadata.some((draft) => draft.contextKey === "terminal:expired")).toBe(false);
+  });
+
+  it("keeps previously retired generations closed even with the latest different terminal CAS", async () => {
+    expect((await store.save("draft-other", "help:new", id1, text1, 0)).outcome).toBe("saved");
+    expect(await store.finish("draft-other", "help:new", id1, "deleted")).toBe(true);
+    expect((await store.save("draft-other", "help:new", id2, text2, 2)).outcome).toBe("saved");
+    expect(await store.finish("draft-other", "help:new", id2, "published")).toBe(true);
+    expect(await store.save("draft-other", "help:new", id1, text1, 4)).toEqual({ outcome: "gone", version: 4 });
+    expect(await store.get("draft-other", "help:new")).toMatchObject({
+      draftId: id2, version: 4, status: "published", payload: { title: "", body: "", tags: "" },
+    });
   });
 });

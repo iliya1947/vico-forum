@@ -945,6 +945,29 @@ export const forumAttachmentDraftRefs = pgTable(
   ],
 );
 
+export const forumAttachmentDraftGenerations = pgTable(
+  "forum_attachment_draft_generations",
+  {
+    ownerId: text("owner_id").notNull(),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    targetDraftId: text("target_draft_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_attachment_draft_generations_pk",
+      columns: [table.ownerId, table.contextKey, table.draftId],
+    }),
+    foreignKey({
+      name: "forum_attachment_draft_generations_owner_fk",
+      columns: [table.ownerId],
+      foreignColumns: [user.id],
+    }).onDelete("cascade"),
+    check("forum_attachment_draft_generations_target_check", sql`${table.draftId} <> ${table.targetDraftId}`),
+  ],
+);
+
 export const forumPostAttachments = pgTable(
   "forum_post_attachments",
   {

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0036_forum_attachment_security_events",
+  "targetMigration": "0037_forum_attachment_draft_generations",
   "tables": {
     "account": {
       "columns": [
@@ -912,6 +912,78 @@
           ]
         }
       ]
+    },
+    "forum_attachment_draft_generations": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_draft_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_draft_generations_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_draft_generations_owner_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_attachment_draft_generations_target_check",
+          "columns": [
+            "draft_id",
+            "target_draft_id"
+          ],
+          "definitionSha256": "225cc95d2b733ca4c49088e89017e7e06cc2606f5c58335fc10cd55713adaa46"
+        }
+      ],
+      "indexes": []
     },
     "forum_attachment_draft_refs": {
       "columns": [

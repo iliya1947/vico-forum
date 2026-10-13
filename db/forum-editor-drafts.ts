@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumEditorDrafts,
@@ -12,6 +12,7 @@ import {
   parseEditorDraftContextKey,
 } from "./editor-draft-context";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
+import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
 
 export { isEditorDraftContextKey };
 
@@ -113,18 +114,33 @@ export class DrizzleForumEditorDrafts {
   async purgeExpired(ownerId: string) {
     // Keep a tombstone so a still-valid offline copy cannot regain create privileges.
     const now = new Date();
-    await this.db.update(forumEditorDrafts)
-      .set({
-        status: "deleted",
-        payload: { title: "", body: "", tags: "" },
-        version: sql`${forumEditorDrafts.version}+1`,
-        updatedAt: now,
-      })
-      .where(and(
+    const cutoff = new Date(now.getTime() - EDITOR_DRAFT_EXPIRY_MS);
+    const candidates = await this.db.select({ contextKey: forumEditorDrafts.contextKey })
+      .from(forumEditorDrafts).where(and(
         eq(forumEditorDrafts.ownerId, ownerId),
         eq(forumEditorDrafts.status, "active"),
-        lt(forumEditorDrafts.editedAt, new Date(now.getTime() - EDITOR_DRAFT_EXPIRY_MS)),
-      ));
+        lt(forumEditorDrafts.editedAt, cutoff),
+      )).orderBy(forumEditorDrafts.contextKey);
+    if (candidates.length === 0) return;
+    await this.db.transaction(async (tx) => {
+      for (const { contextKey } of candidates) await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const expired = await tx.update(forumEditorDrafts)
+        .set({
+          status: "deleted",
+          payload: { title: "", body: "", tags: "" },
+          version: sql`${forumEditorDrafts.version}+1`,
+          updatedAt: now,
+        })
+        .where(and(
+          eq(forumEditorDrafts.ownerId, ownerId),
+          eq(forumEditorDrafts.status, "active"),
+          lt(forumEditorDrafts.editedAt, cutoff),
+          inArray(forumEditorDrafts.contextKey, candidates.map((row) => row.contextKey)),
+        )).returning({ contextKey: forumEditorDrafts.contextKey, draftId: forumEditorDrafts.draftId });
+      for (const { contextKey, draftId } of expired) {
+        await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      }
+    });
   }
 
   async metadata(ownerId: string): Promise<ForumEditorDraftMetadata[]> {
@@ -195,51 +211,68 @@ export class DrizzleForumEditorDrafts {
     const isNewGeneration = !previous || previous.draftId !== draftId;
     if (isNewGeneration) await this.assertContextExists(contextKey);
 
-    const changed = isNewGeneration
-      ? await this.db.insert(forumEditorDrafts)
-        .values({
-          ownerId,
-          contextKey,
-          draftId,
-          version: 1,
-          status: "active",
-          payload,
-          editedAt: now,
-          updatedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
-          set: {
+    const changed = await this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      let closed: boolean;
+      try {
+        closed = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId) !== draftId;
+      } catch (error) {
+        if (error instanceof ForumAttachmentDraftConflictError && error.reason === "gone") closed = true;
+        else throw error;
+      }
+      if (closed) {
+        const [head] = await tx.select({ version: forumEditorDrafts.version }).from(forumEditorDrafts)
+          .where(whereOwner).limit(1);
+        return { outcome: "gone" as const, version: head?.version ?? 0 };
+      }
+      const rows = isNewGeneration
+        ? await tx.insert(forumEditorDrafts)
+          .values({
+            ownerId,
+            contextKey,
             draftId,
-            version: sql`${forumEditorDrafts.version}+1`,
+            version: 1,
             status: "active",
             payload,
             editedAt: now,
             updatedAt: now,
-          },
-          setWhere: and(
-            ne(forumEditorDrafts.status, "active"),
-            ne(forumEditorDrafts.draftId, draftId),
+          })
+          .onConflictDoUpdate({
+            target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
+            set: {
+              draftId,
+              version: sql`${forumEditorDrafts.version}+1`,
+              status: "active",
+              payload,
+              editedAt: now,
+              updatedAt: now,
+            },
+            setWhere: and(
+              ne(forumEditorDrafts.status, "active"),
+              ne(forumEditorDrafts.draftId, draftId),
+              eq(forumEditorDrafts.version, expectedVersion),
+            ),
+          })
+          .returning()
+        : await tx.update(forumEditorDrafts)
+          .set({
+            version: sql`${forumEditorDrafts.version}+1`,
+            payload,
+            editedAt: now,
+            updatedAt: now,
+          })
+          .where(and(
+            whereOwner,
             eq(forumEditorDrafts.version, expectedVersion),
-          ),
-        })
-        .returning()
-      : await this.db.update(forumEditorDrafts)
-        .set({
-          version: sql`${forumEditorDrafts.version}+1`,
-          payload,
-          editedAt: now,
-          updatedAt: now,
-        })
-        .where(and(
-          whereOwner,
-          eq(forumEditorDrafts.version, expectedVersion),
-          eq(forumEditorDrafts.draftId, draftId),
-          eq(forumEditorDrafts.status, "active"),
-        ))
-        .returning();
+            eq(forumEditorDrafts.draftId, draftId),
+            eq(forumEditorDrafts.status, "active"),
+          ))
+          .returning();
+      return { outcome: "changed" as const, rows };
+    });
 
-    if (changed[0]) return { outcome: "saved", draft: toDraft(changed[0]) };
+    if (changed.outcome === "gone") return changed;
+    if (changed.rows[0]) return { outcome: "saved", draft: toDraft(changed.rows[0]) };
     const current = await this.get(ownerId, contextKey);
     if (current?.status !== "active" || current.draftId !== draftId) {
       return { outcome: "gone", version: current?.version ?? 0 };
@@ -262,22 +295,26 @@ export class DrizzleForumEditorDrafts {
       throw new InvalidForumEditorDraftError();
     }
     const now = new Date();
-    const result = await this.db.update(forumEditorDrafts)
-      .set({
-        status: "deleted",
-        payload: { title: "", body: "", tags: "" },
-        version: sql`${forumEditorDrafts.version}+1`,
-        updatedAt: now,
-      })
-      .where(and(
-        eq(forumEditorDrafts.ownerId, ownerId),
-        eq(forumEditorDrafts.contextKey, contextKey),
-        eq(forumEditorDrafts.status, "active"),
-        eq(forumEditorDrafts.draftId, draftId),
-        eq(forumEditorDrafts.version, expectedVersion),
-      ))
-      .returning({ version: forumEditorDrafts.version });
-    return result.length > 0;
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const result = await tx.update(forumEditorDrafts)
+        .set({
+          status: "deleted",
+          payload: { title: "", body: "", tags: "" },
+          version: sql`${forumEditorDrafts.version}+1`,
+          updatedAt: now,
+        })
+        .where(and(
+          eq(forumEditorDrafts.ownerId, ownerId),
+          eq(forumEditorDrafts.contextKey, contextKey),
+          eq(forumEditorDrafts.status, "active"),
+          eq(forumEditorDrafts.draftId, draftId),
+          eq(forumEditorDrafts.version, expectedVersion),
+        ))
+        .returning({ version: forumEditorDrafts.version });
+      if (result.length > 0) await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      return result.length > 0;
+    });
   }
 
   async finish(
@@ -290,28 +327,32 @@ export class DrizzleForumEditorDrafts {
       throw new InvalidForumEditorDraftError();
     }
     const now = new Date();
-    const result = await this.db.insert(forumEditorDrafts).values({
-      ownerId,
-      contextKey,
-      draftId,
-      version: 1,
-      status,
-      payload: { title: "", body: "", tags: "" },
-      editedAt: now,
-      updatedAt: now,
-    }).onConflictDoUpdate({
-      target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
-      set: {
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const result = await tx.insert(forumEditorDrafts).values({
+        ownerId,
+        contextKey,
+        draftId,
+        version: 1,
         status,
         payload: { title: "", body: "", tags: "" },
-        version: sql`${forumEditorDrafts.version}+1`,
+        editedAt: now,
         updatedAt: now,
-      },
-      setWhere: and(
-        eq(forumEditorDrafts.status, "active"),
-        eq(forumEditorDrafts.draftId, draftId),
-      ),
-    }).returning();
-    return result.length > 0;
+      }).onConflictDoUpdate({
+        target: [forumEditorDrafts.ownerId, forumEditorDrafts.contextKey],
+        set: {
+          status,
+          payload: { title: "", body: "", tags: "" },
+          version: sql`${forumEditorDrafts.version}+1`,
+          updatedAt: now,
+        },
+        setWhere: and(
+          eq(forumEditorDrafts.status, "active"),
+          eq(forumEditorDrafts.draftId, draftId),
+        ),
+      }).returning();
+      if (result.length > 0) await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      return result.length > 0;
+    });
   }
 }

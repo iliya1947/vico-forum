@@ -52,6 +52,9 @@ const migrationFiles = [
   "0032_forum_profiles.sql",
   "0033_forum_online_presence.sql",
   "0034_forum_editor_drafts.sql",
+  "0035_forum_attachments_foundation.sql",
+  "0036_forum_attachment_security_events.sql",
+  "0037_forum_attachment_draft_generations.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });

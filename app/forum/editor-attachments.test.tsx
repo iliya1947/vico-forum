@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -79,20 +79,20 @@ class FakeXMLHttpRequest {
   }
 
   progress(loaded: number, total: number) {
-    this.upload.onprogress?.call(
+    act(() => this.upload.onprogress?.call(
       this.upload as unknown as XMLHttpRequestUpload,
       { lengthComputable: true, loaded, total } as ProgressEvent<EventTarget>,
-    );
+    ));
   }
 
   complete(status: number, payload: unknown) {
     this.status = status;
     this.responseText = JSON.stringify(payload);
-    this.onload?.call(this as unknown as XMLHttpRequest, new ProgressEvent("load"));
+    act(() => { this.onload?.call(this as unknown as XMLHttpRequest, new ProgressEvent("load")); });
   }
 
   fail() {
-    this.onerror?.call(this as unknown as XMLHttpRequest, new ProgressEvent("error"));
+    act(() => { this.onerror?.call(this as unknown as XMLHttpRequest, new ProgressEvent("error")); });
   }
 }
 
@@ -105,7 +105,11 @@ interface HarnessProps {
   context?: string;
   id?: string;
   ready?: boolean;
+  revision?: number;
   rebindFrom?: string | null;
+  rebindVersion?: number | null;
+  ownerId?: string;
+  noteChange?: (draftId: string) => void;
   reserve?: () => string | null;
   completeRebind?: (fromDraftId: string, toDraftId: string) => boolean;
   retryDraft?: () => void;
@@ -116,21 +120,29 @@ function Harness({
   context = contextKey,
   id = draftId,
   ready = true,
+  revision = 0,
   rebindFrom = null,
+  rebindVersion = 4,
+  ownerId = "alice",
+  noteChange = () => {},
   reserve = () => id,
   completeRebind = () => true,
   retryDraft = () => {},
   childPaste = () => {},
 }: HarnessProps) {
   const attachments = useEditorAttachments({
+    ownerId,
     contextKey: context,
     draftId: id,
     draftReady: ready,
+    draftRevision: revision,
     rebindFrom,
+    rebindVersion,
     disabled: false,
     reserveGeneration: reserve,
     completeRebind,
     retryDraftReconciliation: retryDraft,
+    noteAttachmentChange: noteChange,
   });
   return (
     <div
@@ -168,6 +180,196 @@ afterEach(() => {
 });
 
 describe("editor attachment UI", () => {
+  it("restores a late successful upload into a reopened editor of the same generation", async () => {
+    let committed = false;
+    const saved = { id: attachmentId, fileName: "reopened.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(attachmentId);
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: committed ? [saved] : [] })));
+    const first = renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "reopened.txt")] } });
+    const request = FakeXMLHttpRequest.instances[0]!;
+    first.unmount();
+    renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    expect(screen.queryByText("reopened.txt")).not.toBeInTheDocument();
+    committed = true;
+    request.complete(201, { outcome: "stored", attachment: saved });
+    expect(await screen.findByText("reopened.txt")).toBeInTheDocument();
+    expect(screen.getByText("Uploaded")).toBeInTheDocument();
+  });
+
+  it("refreshes server refs after successful draft reconciliation even when readiness stays true", async () => {
+    let committed = false;
+    const fetchMock = vi.fn(async () => Response.json({ attachments: committed ? [{
+      id: attachmentId, fileName: "other-device.txt", detectedType: "text", responseMime: "text/plain",
+      byteSize: 5, verificationStatus: "type-checked",
+    }] : [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const view = renderHarness({ revision: 1 });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    committed = true;
+    view.rerender(<I18nextProvider i18n={runtime()}><Harness revision={2} /></I18nextProvider>);
+    expect(await screen.findByText("other-device.txt")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores an obsolete restore after readiness changes, then preserves concurrent uploads", async () => {
+    const resolves: Array<(response: Response) => void> = [];
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolves.push(resolve); }));
+    vi.stubGlobal("fetch", fetchMock);
+    const view = renderHarness();
+    await waitFor(() => expect(resolves).toHaveLength(1));
+    const rerender = (ready: boolean) => view.rerender(
+      <I18nextProvider i18n={runtime()}><Harness ready={ready} /></I18nextProvider>,
+    );
+    rerender(false);
+    rerender(true);
+    await waitFor(() => expect(resolves).toHaveLength(2));
+    await act(async () => { resolves[1]!(Response.json({ attachments: [] })); });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["a"], "first.txt"), new File(["b"], "second.txt")] },
+    });
+    expect(FakeXMLHttpRequest.instances).toHaveLength(2);
+    await act(async () => { resolves[0]!(Response.json({ attachments: [] })); });
+    expect(screen.getByText("first.txt")).toBeInTheDocument();
+    expect(screen.getByText("second.txt")).toBeInTheDocument();
+    expect(screen.getAllByRole("progressbar")).toHaveLength(2);
+  });
+
+  it("keeps late upload and ambiguous retry under their original identity across a retained rebind", async () => {
+    const noteChange = vi.fn();
+    const completeRebind = vi.fn(() => true);
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => init?.method === "PATCH"
+      ? Response.json({ outcome: "rebound", moved: 0 }) : Response.json({ attachments: [] })));
+    const view = renderHarness({ id: oldDraftId, noteChange });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["hello"], "late.txt")] },
+    });
+    const first = FakeXMLHttpRequest.instances[0]!;
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness id={draftId} rebindFrom={oldDraftId} ready={false} completeRebind={completeRebind} noteChange={noteChange} />
+    </I18nextProvider>);
+    await waitFor(() => expect(completeRebind).toHaveBeenCalledOnce());
+    expect(screen.getByText("late.txt")).toBeInTheDocument();
+    first.fail();
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    const retry = FakeXMLHttpRequest.instances[1]!;
+    expect(retry.headers.get("X-Vico-Draft-Id")).toBe(oldDraftId);
+    expect(retry.headers.get("X-Vico-Attachment-Id")).toBe(first.headers.get("X-Vico-Attachment-Id"));
+    retry.complete(201, { outcome: "stored", attachment: {
+      id: first.headers.get("X-Vico-Attachment-Id"), fileName: "late.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked",
+    } });
+    expect(screen.getByText("Uploaded")).toBeInTheDocument();
+    expect(noteChange).toHaveBeenCalledWith(draftId);
+  });
+
+  it("preserves a retained upload through two text-generation choices and ignores a losing server choice", async () => {
+    const noteChange = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: [] })));
+    const view = renderHarness({ id: oldDraftId, noteChange });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "retained.txt")] } });
+    const request = FakeXMLHttpRequest.instances[0]!;
+    const thirdId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d56";
+    for (const id of [draftId, thirdId]) {
+      view.rerender(<I18nextProvider i18n={runtime()}>
+        <Harness id={id} rebindFrom={oldDraftId} ready={false} rebindVersion={null} noteChange={noteChange} />
+      </I18nextProvider>);
+      expect(screen.getByText("retained.txt")).toBeInTheDocument();
+    }
+    request.fail();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    view.rerender(<I18nextProvider i18n={runtime()}><Harness id={draftId} noteChange={noteChange} /></I18nextProvider>);
+    FakeXMLHttpRequest.instances[1]!.complete(201, { outcome: "stored", attachment: {
+      id: request.headers.get("X-Vico-Attachment-Id"), fileName: "retained.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked",
+    } });
+    expect(screen.queryByText("retained.txt")).not.toBeInTheDocument();
+    expect(noteChange).not.toHaveBeenCalled();
+  });
+
+  it("fences rebind by the saved target version and waits for the ordinary draft save", async () => {
+    const retryDraft = vi.fn();
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe("/api/attachments");
+      expect(init?.method).toBe("PATCH");
+      return Response.json({ error: "conflict" }, { status: 409 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const view = renderHarness({ rebindFrom: oldDraftId, ready: false, rebindVersion: null, retryDraft });
+    expect(fetchMock).not.toHaveBeenCalled();
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness rebindFrom={oldDraftId} ready={false} rebindVersion={5} retryDraft={retryDraft} />
+    </I18nextProvider>);
+    await waitFor(() => expect(retryDraft).toHaveBeenCalledOnce());
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string> | undefined;
+    expect(headers?.["X-Vico-Draft-Version"]).toBe("5");
+    expect(screen.getByLabelText("Attach")).toBeDisabled();
+  });
+
+  it("discards completed source bindings after an authoritative gone response", async () => {
+    const completeRebind = vi.fn(() => true);
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => init?.method === "PATCH"
+      ? Response.json({ error: "gone" }, { status: 410 }) : Response.json({ attachments: [] })));
+    const view = renderHarness({ id: oldDraftId });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "retired.txt")] } });
+    FakeXMLHttpRequest.instances[0]!.fail();
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness id={draftId} ready={false} rebindFrom={oldDraftId} completeRebind={completeRebind} />
+    </I18nextProvider>);
+    await waitFor(() => expect(completeRebind).toHaveBeenCalledWith(oldDraftId, draftId, true));
+    expect(screen.queryByText("retired.txt")).not.toBeInTheDocument();
+  });
+
+  it("allows local removal when a stable retry proves its original generation completed", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: [] })));
+    renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "closed.txt")] } });
+    FakeXMLHttpRequest.instances[0]!.fail();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    FakeXMLHttpRequest.instances[1]!.complete(410, { error: "gone" });
+    expect(screen.getByText("This draft was published or deleted.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(screen.queryByText("closed.txt")).not.toBeInTheDocument();
+  });
+
+  it("clears a stored entry after DELETE proves its generation completed, without marking a new edit", async () => {
+    const noteChange = vi.fn();
+    const retryDraft = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => init?.method === "DELETE"
+      ? Response.json({ error: "gone" }, { status: 410 }) : Response.json({ attachments: [{
+        id: attachmentId, fileName: "completed.txt", detectedType: "text", responseMime: "text/plain",
+        byteSize: 5, verificationStatus: "type-checked",
+      }] })));
+    renderHarness({ noteChange, retryDraft });
+    await screen.findByText("completed.txt");
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(screen.queryByText("completed.txt")).not.toBeInTheDocument());
+    expect(noteChange).not.toHaveBeenCalled();
+    expect(retryDraft).toHaveBeenCalledOnce();
+  });
+
+  it("treats an HTTP dependency failure as ambiguous and keeps the stable retry identity", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: [] })));
+    renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "notes.txt")] } });
+    FakeXMLHttpRequest.instances[0]!.complete(503, { error: "unavailable" });
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(FakeXMLHttpRequest.instances[1]!.headers.get("X-Vico-Attachment-Id"))
+      .toBe(FakeXMLHttpRequest.instances[0]!.headers.get("X-Vico-Attachment-Id"));
+  });
+
   it("waits for draft reconciliation and a successful restore before enabling uploads", async () => {
     const retryDraft = vi.fn();
     const pending: { resolve?: (response: Response) => void } = {};

@@ -48,6 +48,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [expectedVersion, setExpectedVersion] = useState(0);
   const [attachmentReady, setAttachmentReady] = useState(false);
   const [attachmentRebindFrom, setAttachmentRebindFrom] = useState<string | null>(null);
+  const [attachmentRebindVersion, setAttachmentRebindVersion] = useState<number | null>(null);
+  const [attachmentRevision, setAttachmentRevision] = useState(0);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
   callbacksRef.current = { restore };
@@ -61,19 +63,21 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function currentAt(ctx: Runtime, epoch: number) {
     return current(ctx) && ctx.epoch === epoch;
   }
-  function attachmentGenerationMismatch(ctx: Runtime) {
-    return !!ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId;
-  }
   function setAttachmentVerified(ctx: Runtime, verified: boolean) {
     if (!current(ctx)) return;
     ctx.attachmentVerified = verified;
     const attachmentDraftId = ctx.local?.attachmentDraftId;
-    const rebindFrom = verified && !ctx.conflict
+    const rebindFrom = !ctx.conflict
       && attachmentDraftId && attachmentDraftId !== ctx.draftId
       ? attachmentDraftId
       : null;
     setAttachmentRebindFrom(rebindFrom);
+    // Only move refs after the selected text has reached its regular CAS save.
+    // Waiting for R2 must never suspend that 60-second save cycle.
+    setAttachmentRebindVersion(verified && rebindFrom && ctx.local
+      && ctx.local.editedAt === ctx.local.syncedEditedAt ? ctx.local.baseVersion : null);
     setAttachmentReady(verified && !ctx.conflict && rebindFrom === null);
+    if (verified && !ctx.conflict) setAttachmentRevision((value) => value + 1);
   }
   function updateConflict(ctx: Runtime, next: Conflict | null) {
     if (!current(ctx)) return;
@@ -122,6 +126,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     ctx.startVersion = startVersion;
     ctx.draftId = crypto.randomUUID();
     ctx.conflict = null;
+    setAttachmentVerified(ctx, false);
     ctx.rejectedSyncEditedAt = null;
     callbacksRef.current.restore(blank());
     setDraftId(ctx.draftId);
@@ -137,7 +142,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       baseVersion: remote.version, syncedEditedAt: remote.editedAt,
       payload: remote.payload,
       // Retain attachment provenance when refreshing text within the same generation.
-      attachmentDraftId: ctx.local?.attachmentDraftId === remote.draftId
+      attachmentDraftId: ctx.local?.draftId === remote.draftId
         ? ctx.local.attachmentDraftId : undefined,
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
@@ -154,7 +159,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
 
   async function checkRemote(ctx: Runtime) {
-    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict || attachmentGenerationMismatch(ctx)) return;
+    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
     const epoch = ctx.epoch;
     ctx.reading = true;
     setAttachmentVerified(ctx, false);
@@ -196,7 +201,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         return;
       }
       // Preserve attachment provenance even when the text copy is already clean.
-      if (latest.attachmentDraftId && latest.attachmentDraftId !== remote.draftId) {
+      if (latest.attachmentDraftId && latest.draftId !== remote.draftId) {
         updateConflict(ctx, { local: latest, server: remote });
         return;
       }
@@ -225,7 +230,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
 
   async function sync(ctx: Runtime) {
-    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict || attachmentGenerationMismatch(ctx)) return;
+    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
     const sent = ctx.local;
     if (
       !sent
@@ -373,20 +378,31 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     }
     const now = new Date().toISOString();
     const next: LocalEditorDraft = ctx.local
-      ? { ...ctx.local, attachmentDraftId: ctx.draftId }
+      ? { ...ctx.local, attachmentDraftId: ctx.draftId, editedAt: now, syncedEditedAt: null }
       : { ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: ctx.draftId,
           payload: { ...ctx.payload }, editedAt: now, syncedEditedAt: null,
           baseVersion: ctx.startVersion, attachmentDraftId: ctx.draftId };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return null; }
     ctx.local = next;
     ctx.hasInput = false;
+    setStatus("pending");
     return ctx.draftId;
+  }
+  function noteAttachmentChange(generation: string) {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || ctx.draftId !== generation || !ctx.local) return;
+    if (ctx.hasInput) capture(ctx);
+    const next = { ...ctx.local, editedAt: new Date().toISOString(), syncedEditedAt: null };
+    if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
+    ctx.local = next;
+    if (ctx.conflict) updateConflict(ctx, { ...ctx.conflict, local: next });
+    else setStatus("pending");
   }
   function retryAttachmentReconciliation() {
     const ctx = runtimeRef.current;
     if (ctx && current(ctx)) void checkRemote(ctx);
   }
-  function completeAttachmentRebind(fromDraftId: string, toDraftId: string): boolean {
+  function completeAttachmentRebind(fromDraftId: string, toDraftId: string, retired = false): boolean {
     const ctx = runtimeRef.current;
     if (
       !ctx
@@ -397,7 +413,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     ) return false;
     const local = ctx.local;
     if (!local || local.attachmentDraftId !== fromDraftId) return false;
-    const next = { ...local, attachmentDraftId: toDraftId };
+    const next = { ...local, attachmentDraftId: retired ? undefined : toDraftId };
     if (!writeLocalEditorDraft(next)) {
       setStatus("error");
       return false;
@@ -410,6 +426,10 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function chooseVersion(which: "local" | "server") {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx) || !ctx.conflict) return;
+    if (ctx.hasInput) {
+      capture(ctx);
+      if (ctx.hasInput) return;
+    }
     const conflictNow = ctx.conflict;
     let verified = false;
     if (which === "server") {
@@ -419,7 +439,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       // Explicit selection is the only way to replace another generation.
       const local = conflictNow.local;
       const next = { ...local, baseVersion: conflictNow.server.version, syncedEditedAt: null,
-        draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : local.draftId };
+        draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : crypto.randomUUID() };
       verified = writeLocalEditorDraft(next);
       ctx.local = next;
       ctx.draftId = next.draftId;
@@ -455,6 +475,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       runtimeRef.current = null;
       setAttachmentReady(false);
       setAttachmentRebindFrom(null);
+      setAttachmentRebindVersion(null);
       setStatus("idle");
       setConflict(null);
       return;
@@ -472,6 +493,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setConflict(null);
     setAttachmentReady(false);
     setAttachmentRebindFrom(null);
+    setAttachmentRebindVersion(null);
     setStatus("idle");
     const local = readLocalEditorDraft(ownerId, contextKey);
     if (local) {
@@ -496,9 +518,6 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       // Storage events can arrive while this tab has unflushed typing.
       // Never restore the other tab over that still-live editor buffer.
       if (ctx.hasInput) capture(ctx);
-      // Finish an attachment-generation move before considering another generation.
-      // Otherwise an ambiguous network result could strand retained refs between IDs.
-      if (attachmentGenerationMismatch(ctx)) return;
       if ((!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt)
         && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === other.draftId)) {
         setAttachmentVerified(ctx, false);
@@ -567,7 +586,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   );
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
-    preparePublication, releasePublication, attachmentReady, attachmentRebindFrom,
+    preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
+    noteAttachmentChange,
     reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">

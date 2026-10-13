@@ -15,6 +15,7 @@ import type {
   RecordAttachmentSecurityEventInput,
 } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import { ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
 
@@ -31,7 +32,8 @@ function bucket() {
   });
   const get = vi.fn(async () => null);
   const del = vi.fn(async (key: string) => { objects.delete(key); });
-  return { put, get, delete: del } satisfies PrivateAttachmentBucket;
+  const result = { put, get, delete: del, objects };
+  return result satisfies PrivateAttachmentBucket;
 }
 
 function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) {
@@ -117,12 +119,14 @@ function scopedRequest(
     id = draftId,
     attachmentId,
     fromDraftId,
+    version = "4",
   }: {
     origin?: string;
     key?: string;
     id?: string;
     attachmentId?: string;
     fromDraftId?: string;
+    version?: string;
   } = {},
 ) {
   const headers = new Headers({
@@ -132,6 +136,7 @@ function scopedRequest(
   if (method !== "GET") headers.set("Origin", origin);
   if (attachmentId) headers.set("X-Vico-Attachment-Id", attachmentId);
   if (fromDraftId) headers.set("X-Vico-Attachment-From-Draft-Id", fromDraftId);
+  if (method === "PATCH") headers.set("X-Vico-Draft-Version", version);
   return new Request("https://forum.test/api/attachments", { method, headers });
 }
 
@@ -187,8 +192,31 @@ describe("private attachment upload API", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ outcome: "rebound", moved: 2 });
     expect(env.rebindDraftAttachments).toHaveBeenCalledWith(
-      "real-user", contextKey, fromDraftId, draftId,
+      "real-user", contextKey, fromDraftId, draftId, 4,
     );
+  });
+
+  it("requires a valid CAS version for rebind and reports stale or terminal targets as conflict", async () => {
+    const env = setup();
+    const fromDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
+    for (const version of ["", "0", "-1", "1.5", "9007199254740992"]) {
+      const result = await action({ request: scopedRequest("PATCH", { fromDraftId, version }), context: env.ctx });
+      expect(result.status).toBe(400);
+    }
+    expect(env.rebindDraftAttachments).not.toHaveBeenCalled();
+    env.rebindDraftAttachments.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
+    const result = await action({ request: scopedRequest("PATCH", { fromDraftId }), context: env.ctx });
+    expect(result.status).toBe(409);
+    expect(await result.json()).toEqual({ error: "conflict" });
+  });
+
+  it("discards the private upload when final persistence sees a terminal draft generation", async () => {
+    const env = setup();
+    env.createDraftAttachment.mockRejectedValueOnce(new ForumAttachmentDraftConflictError("gone"));
+    const result = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(result.status).toBe(410);
+    expect(env.r2.delete).toHaveBeenCalledOnce();
+    expect(JSON.stringify(await result.json())).not.toContain("private/");
   });
 
   it("rejects malformed UUIDs before repository operations", async () => {
@@ -368,16 +396,28 @@ describe("private attachment upload API", () => {
     expect(env.createDraftAttachment).not.toHaveBeenCalled();
   });
 
-  it("deletes a stored private object if durable DB persistence becomes unavailable", async () => {
+  it("preserves an ambiguously committed private object and converges a stable-ID retry on it", async () => {
     const env = setup();
-    env.createDraftAttachment.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    let committed: ForumAttachmentMetadata | undefined;
+    env.createDraftAttachment.mockImplementationOnce(async (input) => {
+      committed = { ...input, createdAt: new Date().toISOString() };
+      throw new ForumAttachmentStorageUnavailableError();
+    });
     const response = await action({
       request: request(new TextEncoder().encode("hello")),
       context: env.ctx,
     });
     expect(response.status).toBe(503);
     expect(env.r2.put).toHaveBeenCalledOnce();
+    expect(env.r2.delete).not.toHaveBeenCalled();
+    expect(env.r2.objects.has(committed!.objectKey)).toBe(true);
+    env.createDraftAttachment.mockResolvedValueOnce(committed!);
+    const retried = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(retried.status).toBe(201);
+    expect(env.r2.objects.size).toBe(1);
+    expect(Array.from(env.r2.objects.get(committed!.objectKey) ?? [])).toEqual([104, 101, 108, 108, 111]);
     expect(env.r2.delete).toHaveBeenCalledOnce();
+    expect(env.r2.delete).not.toHaveBeenCalledWith(committed!.objectKey);
   });
 
   it("fails closed if a suspicious rejection cannot be durably recorded", async () => {
