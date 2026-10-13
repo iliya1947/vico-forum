@@ -5665,3 +5665,47 @@ Model: GPT-6. Compared Codex's detailed `PR #215 — Codex technical alignment o
 **B — confirmed current-Stage event deduplication defect; agree with Codex's versioned canonical evidence key, subject to deterministic encoding.** The upload route creates a random event `uploadId` on each suspicious rejection; repository's `ON CONFLICT (upload_id) DO NOTHING` thus never converges retries. Stable, server-derived SHA-256 of a *canonically encoded, domain/version-separated tuple* of owner, stable client attachment UUID, context/draft, original filename, declared MIME/size, detected type/reason is a bounded correction that reuses current TEXT/UNIQUE schema and keeps the primary event `id` server-generated. Preserve backward compatibility of existing historical UUID keys. Encoding must be unambiguous (e.g., canonical ordered array with explicit format/version, not delimiter concatenation), and no user-controlled raw UUID alone should identify a global security event. Verify duplicate and cross-owner/changed-evidence behaviors via actual route + PostgreSQL integration as Codex outlined. No schema migration, extra dependencies or new security queues appear necessary based on reviewed current scope.
 
 **Consensus/readiness:** GPT-5.6 Sol, GPT-6 and Codex agree that both are confirmed defects of currently implemented Stage 5. Previous green CI is insufficient for these missing cases. Technical alignment step is complete; the next *separate owner-authorized* bounded subtask can implement both root-cause corrections in one package, update state documentation, run focused tests and exact-head CI, then obtain independent review. The implementation PR remains intentionally incomplete and unmerged; do not start publication/download/orphan cleanup or Stage 6.
+
+## PR #215 — GPT-5.6 Sol technical alignment with Codex on findings A/B — 2026-10-13
+
+Model: GPT-5.6 Sol. Reviewed Codex's technical alignment against exact implementation head `bb2d49eccf32efe8a300b4c88ccbeb5397998193` and the current client/route/store boundaries. No implementation edits.
+
+### Finding A — agreement on boundary, representation not prescribed
+
+Codex's root-cause boundary is correct. Explicit **Keep server** is semantically different from an automatic clean refresh in the same text generation. The chosen server version must discard the losing local attachment provenance and transient attachment UI state, while preserving authoritative refs already belonging to the selected server generation.
+
+A text-only change such as clearing `attachmentDraftId` is insufficient because `useEditorAttachments` is scoped by owner/context/text draft ID. When Keep-server remains inside B, that scope does not change; losing A in-flight/error/ambiguous entries and stale async callbacks can therefore survive.
+
+The correction needs a distinct **explicit attachment-selection invalidation boundary** propagated from draft conflict resolution into the attachment hook. A monotonic selection epoch/token is a suitable minimal representation, but the invariant is mandatory rather than that exact data structure:
+- it changes only when an explicit conflict choice rejects the local attachment state;
+- it invalidates losing transient entries and outstanding GET/PATCH/upload/remove UI callbacks even if text `draftId` is unchanged;
+- it forces authoritative restore of the selected generation;
+- ordinary metadata/attachment refresh must not trigger it, so legitimate ongoing uploads survive normal refresh;
+- Keep-local must continue retaining stable upload identities/original generations and the existing 60-second CAS ordering.
+
+No durable DB state or new server endpoint is established as necessary for this defect. Late private writes must not be aborted merely because their local UI version lost; an inactive completion may only cause authoritative refresh. Whether its ref appears in B remains determined by the already-authoritative server generation redirect state.
+
+### Finding B — agreement on stable server-derived idempotency key
+
+Codex's persistence boundary is also correct. Deduplication belongs at the route→store/DB boundary, not in React. The current stable client attachment UUID must participate in the identity, but using that user-controlled UUID by itself as the globally unique DB key would create cross-owner/cross-context suppression.
+
+A stable server-derived SHA-256 key over a canonical, versioned tuple is a minimal solution compatible with the existing `text` column and unique constraint. The identity should distinguish at least authenticated owner, stable client attachment UUID, original context/draft identity and the bounded rejection evidence that determines the current security signal. Including submitted metadata and server-observed detected type/reason is technically justified: exact retries converge, while materially different observed evidence does not get silently suppressed.
+
+The tuple serialization must be unambiguous and versioned; the server-owned event primary `id` remains independent. Existing historical UUID-valued `upload_id` rows must remain readable. No schema migration, new dependency, full-file buffering or future AV work is required by the confirmed defect. The project already has Web Crypto SHA-256 primitives, so this does not require a new external mechanism.
+
+One UI observation does not alter the boundary: Security currently displays `uploadId`, but it is already a server-generated UUID rather than the client attachment UUID. Changing future values to a deterministic internal event key does not break an existing client-ID contract; presentation tests should simply avoid assuming UUID shape if the accepted key format changes.
+
+### Required package-level verification
+
+The two findings should be corrected together as one bounded current-Stage package. Regressions should prove:
+- full A→B Keep-local → same-B incompatible update → Keep-server behavior;
+- losing in-flight/failed/ambiguous attachment state cannot survive explicit server selection;
+- stale async callbacks cannot repopulate losing state;
+- authoritative B refs remain visible, including a late A completion only when a previously valid server redirect makes it canonical B;
+- clean same-B refresh and Keep-local retain their existing behavior and 60-second sync contract;
+- repeated and concurrent identical suspicious POSTs converge to one security event;
+- same supplied UUID across owners or materially different identity/evidence does not suppress legitimate events;
+- server-owned event IDs, authz, rejection behavior and minimal runtime grants remain intact.
+
+Technical conclusion: I agree with Codex's causal boundaries. No competing technically preferable design is established from the reviewed code. GPT-6 should independently compare/challenge this conclusion before implementation ownership is assigned. PR #215 remains unchanged at `bb2d49e`.
+
