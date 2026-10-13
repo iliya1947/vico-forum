@@ -5720,3 +5720,49 @@ A: Explicit Keep-server must invalidate losing-local attachment provenance, tran
 B: Stable, unambiguously serialized, versioned, server-derived per-logical-upload/evidence idempotency key, using existing unique DB event `upload_id`, preserves distinct owners/context/evidence and independent server-generated primary `id`. Existing historical UUID values remain valid/readable. No DB migration established as necessary.
 
 Next bounded implementation package (not yet authorized): root-cause corrections plus focused client/route/PostgreSQL regressions and exact-head checks, followed by independent review. Writer assignment and implementation require owner command. PR #215 currently remains `bb2d49eccf32efe8a300b4c88ccbeb5397998193`, unchanged/unmerged. Do not advance unrelated Stage 5 slices or paused Stage 6.
+
+## PR #215 — Codex Stage 5 correction delivered for independent GPT-5.6 Sol / GPT-6 review — 2026-10-13 20:38 UTC
+
+Model/role: Codex, implementation executor for this bounded package by the owner's direct instruction overriding the ordinary AGENTS.md role split. The owner subsequently asked whether to finish PR #222 or correct PR #215; I selected and completed the correction in PR #215. This supersedes the preceding “not yet authorized / bb2d49e unchanged” status. Competition PRs #222/#223 were not modified. No merge.
+
+**Review exact head:** `6e76b1abdbe7f528293cbae107892cc0a3041ad6` in [PR #215](https://github.com/iliya1947/vico-forum/pull/215), branch `chatgpt/editor-v2-implementation-20261010`. Compare the bounded correction against `bb2d49eccf32efe8a300b4c88ccbeb5397998193`: commits `6968b8c0e5b25ee93e86d7ecfb5d155c0949219d` and `6e76b1abdbe7f528293cbae107892cc0a3041ad6`; 12 files, primarily regression tests. Main observed at `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Implementation ownership is released for independent review; no further planned edits to this head.
+
+### Implementation and independently established causal boundaries
+
+I independently examined both competition implementations and executed diagnostic/regression cases rather than accepting model conclusions as facts. Adopted the reviewed nine source/test files from GPT-6 PR #222 head `d6495c02d78458643324c3aacbbed03301316a2e`, excluding its competition documentation/proposal changes, then added independently established corrections below. Credit for the base A/B implementation belongs to GPT-6.
+
+1. **Explicit choice and transient attachment state (agreed A):** `attachmentSelectionEpoch` increments after successful Keep-server persistence; losing-local provenance/transient rows and obsolete callbacks are fenced even when text draft ID stays B. A real storage failure preserves the conflict for retry. Ordinary refresh / Keep-local retain logical upload IDs and preserve the normal 60-second text-save-before-rebind contract. Runtime draft epoch also advances on accepted choices, preventing old draft metadata/save responses from resetting the chosen generation.
+
+2. **Suspicious request idempotency (agreed B):** server-derived, versioned SHA-256 key over an unambiguous JSON tuple of owner, supplied stable upload UUID, original context/generation and raw identity/evidence uses the existing TEXT + UNIQUE event upload_id. Primary event ID remains server-generated. Different owners/evidence remain distinct, historical UUID-valued keys stay readable. No new migration/endpoint.
+
+3. **Late attachment mutation outcome left the selected list stale:** an A DELETE could commit after selected B had already listed its inherited ref; the old callback was correctly fenced from directly editing B, but nothing refreshed B. Known success and lost-ACK failure now notify the existing owner/context attachment-change boundary, causing the current matching editor to read authoritative selected-generation refs. An obsolete upload transport failure / non-success response likewise requests reconciliation, since a commit may already have redirected a legitimate ref to B. No obsolete callback reapplies a transient row, replaces selected text, or refreshes another owner/context.
+
+4. **Chosen other-tab cache was falsely treated as server-synced:** a storage-event conflict constructed its remote-looking candidate from another LocalEditorDraft. Choosing it lost attachmentDraftId and set syncedEditedAt, suppressing the regular 60-second POST. The conflict now retains its local candidate; accepted choice preserves that candidate's attachment provenance, stays pending/unsynced, passes metadata-first validation and the normal CAS cycle before rebind. Both choices retain their conflict on persistence failure. Accepting another candidate fences and releases the old in-flight metadata/save cycle, so stale terminal ACKs cannot clear the fresh generation and an old read cannot indefinitely block its validation. Attachment transients from the rejecting tab are still cleared when the selected other-tab candidate has a pending rebind source.
+
+**Minimality/scope:** reused existing draft runtime, epoch, owner/context notification and event unique constraint. No additional infrastructure, dependency, public endpoint, permission expansion or DB schema change in this correction. Composite tsconfig.node explicitly includes the nine server imports required by the real upload-route→native-PG regressions; compiler checks were not relaxed. PROJECT_STATE.md and temporary EDITOR_SPEC.md record the actual bounded implementation.
+
+### Executed evidence
+
+[CI #38461629015](https://github.com/iliya1947/vico-forum/actions/runs/38461629015), **exact head 6e76b1a**, completed SUCCESS in both `checks` and `database`. Decoded job logs independently confirm:
+
+- **933 application tests / 90 files; 261 native PostgreSQL 17 tests / 27 files.** Full local runs passed with the same counts.
+- Lint: zero errors, one existing unused no-eval eslint-disable warning in app/forum/ui.test.tsx. Typecheck, application build and UI-preview build passed.
+- Accepted migration-history guard, schema/manifest parity, runtime positive/negative privilege probes, split-authority provisioning, credential diagnostic/recovery/bootstrap probes and local Workers smoke passed.
+- Real MarkdownEditor integration uses the production draft/attachment hook wiring: same-B rejection, storage failure/retry, A→Keep-local/B→later incompatible B→Keep-server, origin-A late completions with redirect/no redirect and 201/transport failure/503, and chosen other-cache provenance.
+- Late DELETE success/lost-ACK after choice or reopen refreshes selected authoritative refs; owner-change regression preserves isolation.
+- Draft regressions cover other-cache regular-60s-save-before-rebind, both persistence failures, old terminal save ACK and old pending metadata read after accepted choice.
+- Native route→Drizzle→pooled PostgreSQL tests use independent connections for identical concurrent suspicious requests; commit-then-503 retry converges to one event; distinct owner/context/generation/evidence remain separate events. Auth/context/R2 boundaries are test adapters; the SQL/unique enforcement is real.
+
+The first published correction head 6968b8c had a checks failure (composite imports and fake XHR header nullability), while its database job passed. Both causes were fixed; the final head above passes all jobs. No CI configuration, timeout, permission check or regression expectation was weakened.
+
+### Infrastructure and limits
+
+The owner's instruction is explicit: infrastructure is stopped/deferred; boundaries that eventually connect to it must use interfaces/stubs at this stage. This package did not provision/connect R2, Hyperdrive, Neon or any external runtime resource, and added no infrastructure workaround. Verification used existing test adapters plus disposable local/CI PostgreSQL and local Workers overrides. These probes establish local/CI behavior, not external infrastructure acceptance.
+
+Stage 5 remains open for its separate publication/download/orphan-cleanup slices; Stage 6 is paused. This package does not implement them. Full Editor 2.0 / PR #215 is not merge-ready; browser/owner visual acceptance is not established by these component tests. No intermediate automated Codex Code Review was launched.
+
+### Next step — independent review requested
+
+**GPT-5.6 Sol and GPT-6: independently inspect this exact head against the original attachment/draft invariants and current Stage 5 scope.** Do not assume my diagnoses or passing tests establish correctness; verify causal paths, competing uploads, canonical ref ownership across generations, explicit choice versus refresh, ordinary 60-second CAS, storage failure, stale metadata/save/delete/upload responses and security-event uniqueness. Include the real MarkdownEditor composition, not only isolated hook tests. Separate a reproducible current-Stage defect from future infrastructure work.
+
+Each model should append its model name, inspected exact SHA, independently verified result/findings, evidence and next step here. A finding should include the concrete trigger, observed effect, violated current requirement and minimal correction boundary; disagreement belongs in this file before implementation changes. Do not modify the implementation branch concurrently or merge. Their reviews of this **new** head are pending; this handoff does not claim independent approval. No owner message relay is needed.
