@@ -235,6 +235,51 @@ describe("forum attachment lifecycle foundation", () => {
     expect(rows.rows).toEqual([{ draft_id: nextDraftId }]);
   });
 
+  it("durably retires a losing generation and fences late uploads and rebinds", async () => {
+    const context = "topic:discard-losing:reply";
+    const source = crypto.randomUUID();
+    const target = crypto.randomUUID();
+    const input = upload(context, source);
+    await store.createDraftAttachment(input);
+    await setDraft(ownerId, context, target, "active", 4);
+
+    expect(await store.discardDraftAttachments(ownerId, context, source, target, 4)).toBe("discarded");
+    expect(await store.discardDraftAttachments(ownerId, context, source, target, 4)).toBe("discarded");
+    await expect(store.createDraftAttachment(upload(context, source))).rejects.toMatchObject({ reason: "gone" });
+    await expect(store.rebindDraftAttachments(ownerId, context, source, target, 4))
+      .rejects.toMatchObject({ reason: "gone" });
+    await expect(store.listDraftAttachments(ownerId, context, source)).rejects.toMatchObject({ reason: "gone" });
+    expect(await store.listDraftAttachments(ownerId, context, target)).toEqual([]);
+  });
+
+  it("does not retire the selected generation when rebind linearizes before discard", async () => {
+    const context = "topic:rebind-before-discard:reply";
+    const source = crypto.randomUUID();
+    const target = crypto.randomUUID();
+    const input = upload(context, source);
+    await store.createDraftAttachment(input);
+    await setDraft(ownerId, context, target, "active", 4);
+
+    expect(await store.rebindDraftAttachments(ownerId, context, source, target, 4)).toBe(1);
+    expect(await store.discardDraftAttachments(ownerId, context, source, target, 4)).toBe("already-rebound");
+    expect((await store.listDraftAttachments(ownerId, context, target)).map((item) => item.id)).toEqual([input.id]);
+    expect((await store.createDraftAttachment(upload(context, target))).draftId).toBeUndefined();
+  });
+
+  it("rejects discard against a stale target version or an unrelated redirect", async () => {
+    const context = "topic:discard-fences:reply";
+    const source = crypto.randomUUID();
+    const middle = crypto.randomUUID();
+    const target = crypto.randomUUID();
+    await setDraft(ownerId, context, middle, "active", 1);
+    expect(await store.rebindDraftAttachments(ownerId, context, source, middle, 1)).toBe(0);
+    await setDraft(ownerId, context, target, "active", 2);
+    await expect(store.discardDraftAttachments(ownerId, context, source, target, 1))
+      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    await expect(store.discardDraftAttachments(ownerId, context, source, target, 2))
+      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+  });
+
   it("durably records one security event per upload even without an attachment row", async () => {
     const uploadId = "137b6246-8d59-4f20-a8dc-6fd3d54f0e86";
     const event = {
@@ -264,7 +309,30 @@ describe("forum attachment lifecycle foundation", () => {
     expect(attachment.rowCount).toBe(0);
   });
 
-  it("allows draft and published references to coexist and protects shared assets from deletion", async () => {
+  it("deduplicates concurrent SHA-256 Security event identities at the database boundary", async () => {
+    const event = {
+      uploadId: `sha256:${"a".repeat(64)}`,
+      uploadedByUserId: ownerId,
+      contextKey: "topic:security-digest:reply",
+      draftId,
+      fileName: "retry.exe",
+      declaredMime: "application/octet-stream",
+      detectedType: "executable",
+      reason: "executable-signature",
+      declaredByteSize: 4,
+    };
+    await Promise.all([
+      store.recordSecurityEvent(event),
+      store.recordSecurityEvent(event),
+    ]);
+    const rows = await client.query(
+      "select upload_id from forum_attachment_security_events where upload_id = $1",
+      [event.uploadId],
+    );
+    expect(rows.rows).toEqual([{ upload_id: event.uploadId }]);
+  });
+
+  it("allows draft and published references to coexist and protects shared assets from deletion",
     await client.query(
       "insert into forum_post_attachments (post_id, attachment_id, created_at) values ('attachment-post', $1, now())",
       [attachmentId],
@@ -477,6 +545,7 @@ describe("forum attachment lifecycle foundation", () => {
       const original = await restricted.createDraftAttachment(input);
       expect(await restricted.createDraftAttachment({ ...input, objectKey: `private/${crypto.randomUUID()}` })).toEqual(original);
       expect(await restricted.rebindDraftAttachments(ownerId, context, source, target, 1)).toBe(1);
+      expect(await restricted.discardDraftAttachments(ownerId, context, source, target, 1)).toBe("already-rebound");
       expect(await restricted.createDraftAttachment({ ...input, objectKey: `private/${crypto.randomUUID()}` })).toEqual(original);
       expect(await restricted.removeDraftAttachment(ownerId, context, source, input.id)).toBe(true);
     } finally {
