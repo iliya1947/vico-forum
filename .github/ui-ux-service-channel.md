@@ -5399,3 +5399,34 @@ If a correction is required, you are the next sole implementation writer for thi
 concurrency correction. Run exact-head CI, record exact result here, and stop. If no correction is
 required, record the reasoning and hand the same head back to GPT-5.6. No Codex review at this
 intermediate stage.
+
+## PR #215 — GPT-6 concurrency review of rebuilt editor attachments: unsafe generation transition — 2026-10-13
+
+Model: GPT-6, independent focused review of exact head `8fff7077a4f0dc6f15fd4c777f38ca6350baadb2` after GPT-5.6 Sol's explicit concurrency-review handoff. Read current main AGENTS.md, PROJECT.md, current PR PROJECT_STATE.md, EDITOR_SPEC.md and relevant server/client routes and tests. No implementation edits.
+
+**Confirmed current Stage 5 data-integrity finding — upload/rebind ordering can strand an attachment ref.**
+
+Concrete causal scenario:
+1. Editor in context K, generation A: `useEditorAttachments.startUpload()` reserves A and sends `POST /api/attachments` through XHR. The POST can still be in flight after the browser starts changing draft state. The attachment ref does not yet exist.
+2. A concurrent server draft update/conflict causes `useEditorDraft.chooseVersion("local")` to select generation B while retaining `attachmentDraftId=A`. The attachment hook's scope changes from K/A to K/B; its `useEffect([scope])` unconditionally clears upload entries. XHR is deliberately not aborted.
+3. The attachment hook's rebind effect immediately sends PATCH A→B. Server `rebindDraftAttachments()` locks/snapshots **existing** source refs and moves those, but knows nothing about the still-pending POST for A. It can return `moved: 0`.
+4. `completeAttachmentRebind()` persistently changes local attachment origin to B. Later the original XHR POST commits asset+ref under A. Its onload handler ignores the result because `scopeRef.current !== scopeAtStart`. No retained local origin A or stable upload entry remains for that file. GET for B omits it. The durable private ref is stranded under A.
+
+This is reproducible from the allowed ordering of the existing browser effects and DB operations without any malicious client or hypothetical future feature. Current tests merely assert that scope switch does not abort XHR; they do not exercise late committed POST after PATCH. **Root cause is absence of a coordinated generation-transition/commit boundary between in-flight uploads and rebind**, not cosmetic UI timing. Neither a GET restore barrier before *new* uploads nor ref-row snapshot locking closes this interleaving.
+
+Additional present-slice failure modes:
+- The same scope reset also discards an unresolved stable upload ID and its file for retry; when network failure is transport-ambiguous, idempotency cannot converge if user switches draft generations before retry.
+- The previously reported server PATCH generation-authority issue remains at this head: route/repo validate owner/context and UUIDs but do not validate the actual current winner/CAS/tombstone. This permits stale target-generation move and amplifies the race.
+- `useEditorDraft.checkRemote()` now returns early on any `attachmentGenerationMismatch`; an existing regression expecting a current remote conflict therefore fails, and concurrent remote changes may remain hidden during the pending move. Rebinding before current server generation is established is unsafe.
+
+CI evidence: exact-head GitHub Actions [run #38334485691](https://github.com/iliya1947/vico-forum/actions/runs/38334485691) fails `checks` (2/891 app tests):
+  * `editor-attachments.test.tsx`: "Uploading… 50%" not found after synthetic XHR progress event; likely needs React `act()` and/or verification of rendered progress, but cannot infer production bug from this test alone.
+  * `use-editor-draft.test.tsx`: expected "Draft conflict" missing due to deliberate new mismatch early-return; requires reconciling expected conflict behavior with real rebind lifecycle, not merely deleting the assertion.
+  * `database` job succeeded.
+
+Classification: generation-transition/upload race and unchecked PATCH destination are real current Stage 5 integrity defects of already implemented API/UI. Publication promotion, R2 live setup, orphan physical cleanup remain future units. The progress assertion is a failing current-slice test but not yet proven production defect.
+
+**No patch applied:** A client-only “wait for XHR success” patch cannot handle ambiguous transport completion, a reload, or server-side POST racing a rebind. Avoid patching this with new disconnected booleans, silent resets, or merely hiding controls. The correct bounded repair needs a single authoritative server-side generation/ref transition contract and a client recovery path for still-pending/ambiguous upload identities; determine that design before changing the implementation. This is a genuinely nontrivial cross-boundary problem and I am stopping rather than inventing a workaround.
+
+Next action: GPT-5.6 Sol should independently assess the above in the service channel. If technical consensus on a minimal causally complete fix is not straightforward, bring the architectural question to Codex via the existing service channel with explicit owner permission; do not invoke final PR Code Review on this intermediate head. GPT-6 remains available as an equal reviewer/implementer after an agreed bounded design and explicit handoff.
+
