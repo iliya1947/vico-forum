@@ -29,10 +29,10 @@
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
-| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A+6B+6C — 24/44 файла, 261 кейс |
+| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A–6D — 29/44 файлов, 292 кейса |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **92 файла / 824 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **97 файлов / 855 тест-кейсов проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -123,7 +123,7 @@
 - [x] `db/locale-repository.test.ts`
 - [x] `tests/database/hyperdrive-registry.test.ts`
 
-### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A–6C завершены)
+### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A–6D завершены)
 
 - [x] `app/localization/cloudflare-m2m100-provider.test.ts`
 - [x] `app/localization/content-generation-action.server.test.ts`
@@ -149,11 +149,11 @@
 - [x] `app/localization/translation-tasks.test.ts`
 - [x] `app/localization/translation-validation.test.ts`
 - [x] `app/localization/ui-translation-service.test.ts`
-- [ ] `db/content-translation-store.test.ts`
-- [ ] `db/hyperdrive-content-generation-status.test.ts`
-- [ ] `db/hyperdrive-content-translations.test.ts`
-- [ ] `db/hyperdrive-ui-translations.test.ts`
-- [ ] `db/ui-translation-bundle-store.test.ts`
+- [x] `db/content-translation-store.test.ts`
+- [x] `db/hyperdrive-content-generation-status.test.ts`
+- [x] `db/hyperdrive-content-translations.test.ts`
+- [x] `db/hyperdrive-ui-translations.test.ts`
+- [x] `db/ui-translation-bundle-store.test.ts`
 - [ ] `tests/database/content-generation-status.test.ts`
 - [ ] `tests/database/content-post-body-task-planning.test.ts`
 - [ ] `tests/database/content-request-budget-store.test.ts`
@@ -189,10 +189,30 @@
 - **6A — source locale / безопасное представление** — **7 файлов**, 69 кейсов, **завершён**: `app/localization/content-source-locale.test.ts`, `app/localization/tinyld-source-locale-detector.test.ts`, `app/localization/content-translation.test.ts`, `app/localization/content-translation-presentation.test.ts`, `app/localization/content-markdown-translation.test.tsx`, `app/localization/translation-validation.test.ts`, `app/localization/content-generation-view.test.ts`.
 - **6B — провайдеры и исполнение** — **9 файлов, 118 кейсов, завершён**: `app/localization/cloudflare-m2m100-provider.test.ts`, `app/localization/content-provider-allowance.test.ts`, `app/localization/content-request-budget.server.test.ts`, `app/localization/content-generation-action.server.test.ts`, `app/localization/translation-provider-data-policy.test.ts`, `app/localization/translation-provider.test.ts`, `app/localization/translation-execution.test.ts`, `app/localization/content-translation-execution.test.ts`, `app/localization/content-post-body-execution.test.tsx`.
 - **6C — планирование, очереди и публикация** — **8 файлов, 74 кейса, завершён**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
-- **6D — DB/Hyperdrive адаптеры** — **5 файлов**, **не начат**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
+- **6D (6Г) — DB/Hyperdrive адаптеры** — **5 файлов, 31 кейс, завершён**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
 - **6E — content generation PostgreSQL** — **8 файлов**, **не начат**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
 - **6F — tasks/UI storage PostgreSQL** — **7 файлов**, **не начат**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
-- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6D до команды владельца.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6E до команды владельца.
+
+### Проход 6D / 6Г — PostgreSQL / Hyperdrive adapter boundaries (2026-10-14)
+
+- **База:** GitHub `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d` без изменений. Прочитаны целиком пять test files, fixtures и assertions; сравнены с `db/{content-translation-store,hyperdrive-content-generation-status,hyperdrive-content-translations,hyperdrive-ui-translations,ui-translation-bundle-store,postgres-deadlines}.ts`, текущими `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` и `docs/translation/{CONTENT_TRANSLATION,PROVIDERS_AND_JOBS,STORAGE_AND_VERSIONING,UI_TRANSLATION}.md`. Не производились действия с live DB или Cloudflare.
+- **CI:** **5 файлов / 31 кейс** = `5+5+5+12+4`; все 31 case passed в [GitHub CI checks #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) (сопоставимый PR #221 head, не новый CI-run). `hyperdrive-ui-translations.test.ts` раскрывает три варианта `bundle read` и два варианта `unknown connect`; `ui-translation-bundle-store.test.ts` раскрывает три malformed versions/resources. Свежих тестовых прогонов не было.
+- **Файлы и проверяемые contracts:**
+  - [`db/content-translation-store.test.ts`](../../db/content-translation-store.test.ts) — **5** кейсов. Drizzle set-based title/post read bounded to two queries, raw/wrapped PostgreSQL unavailable and timeout classification, unexpected permission failure preserved.
+  - [`db/hyperdrive-content-generation-status.test.ts`](../../db/hyperdrive-content-generation-status.test.ts) — **5** кейсов. Single SQL batch for title/body generation hints, revision exactness, bounded public state, classified unavailable versus integrity failure, cleanup preserving original errors.
+  - [`db/hyperdrive-content-translations.test.ts`](../../db/hyperdrive-content-translations.test.ts) — **5** кейсов. Web caller deadline choice, PostgreSQL connection/query timeouts mapped to original-safe batch presentation, direct adapter typed classification and unexpected error/cleanup handling.
+  - [`db/hyperdrive-ui-translations.test.ts`](../../db/hyperdrive-ui-translations.test.ts) — **12** кейсов. Request-scoped lazy UI store: memoized compiled bundles and raw reads, English/no-op, classified bundle and raw-table errors, broken connection circuit/reporter once and unexpected error transparency.
+  - [`db/ui-translation-bundle-store.test.ts`](../../db/ui-translation-bundle-store.test.ts) — **4** кейсов. Persisted compiled bundle verifier accepts current version and rejects mismatched version, unknown source keys and structured payload; wraps as PersistentBundleIntegrityError.
+- **Проверка пересечений:**
+  1. `db/content-translation-store.test.ts` проверяет Drizzle storage-classification на raw/wrapped PG errors и **не-N+1** два set-based query; `db/hyperdrive-content-translations.test.ts` — upstream per-request `pg.Client` connect/timeout/cleanup и сквозной original-safe `ContentTranslationPresentationService`. Совпадение `storage-unavailable` сохраняет разные runtime boundaries. `content-translation-presentation.test.ts` из 6A использует fake reader, не реальный PG adapter.
+  2. `db/hyperdrive-content-generation-status.test.ts` читает **task/status generation heads**, не stored translations. Его one-query assertion и revision/status integrity отличаются от `content-generation-view.test.ts` (pure UI state/gating) и `content-generation-controls.test.tsx` (client polling/dedup). Реальное SQL и current-generation snapshot исследовать отдельно в 6E.
+  3. `db/hyperdrive-ui-translations.test.ts` `readApproved` проверяет **raw UI translation table**, `read` — **compiled bundle table**. Два похожих случая missing table/permission error не дубли: один нужен для каждого отдельного query/read path. Request-local memoization/circuit and per-request degradation отличаются от 5-stage pure bundle-resource fallback и от `db/hyperdrive-content-translations.test.ts` (single-request content batch reader).
+  4. `db/ui-translation-bundle-store.test.ts` проверяет **persisted version/resource verifier** и `PersistentBundleIntegrityError` wrapping. `app/localization/bundles.test.ts` из этапа 5 защищает **compiler canonical deterministic bundle output**. Wrapper/persisted trust boundary отдельно охраняем. DB transaction/read/write/reconciliation покрытие будет сверено с реальными PostgreSQL тестами в 6F.
+  5. Classified cleanup-failure preservation повторяется в нескольких адаптерах, но **применяется к разным factories/read interfaces и typed errors**, так что автоматическое удаление такой проверки из одного адаптера не сохраняет его контракт.
+- **Наблюдение QUALITY-01 (не доказанная избыточность):** [`db/hyperdrive-content-translations.test.ts:23–39`](../../db/hyperdrive-content-translations.test.ts#L23-L39) `uses the shared web caller deadlines by default` проверяет указание default client factory через `readFileSync` и `source.includes("const defaultClientFactory: PostgreSqlClientFactory = createWebClient;")`. Затем тест отдельно проверяет реальные параметры `createWebClient(...)`. Такая string-based wiring assertion хрупка при безвредном переименовании/форматировании и **не запускает фабрику через default-argument** reader. Однако проверка выбираемого web factory существенна (отличается от более коротких localization deadlines), а реальные web deadline значения она подтверждает. **Кандидат на улучшение способа проверки**, не на удаление теста или изменение приложения. Не приписывать test coverage timeout path отсутствующим runtime calls.
+- **Граница Stage:** local/CI typed DB reader/storage, degradation, public status and deterministic current bundle verification присутствуют в текущем Stage 5, поэтому эти проверки **не future placeholders**. External Hyperdrive/Workers AI deployed acceptance Stage 6 сюда не относится.
+- **Итог:** **0 доказанных дублирующих или целиком лишних кейсов/файлов** в 6D; 1 качественное замечание `QUALITY-01` без срочного изменения. **Итого 97/118 файлов, 855/1 075 исходных кейсов**, остаётся **21 файл и 220 кейсов**. Этап 6: **29/44 файла, 292 кейса**. Далее **6E** (8 PostgreSQL content generation files), только после отдельной команды владельца.
 
 ### Проход 6C — планирование, очереди, preflight и публикация (2026-10-13)
 
@@ -491,7 +511,11 @@
 - **COV-01 (4C):** название `online-presence-heartbeat.test.tsx` 401-теста обещает `revalidator.revalidate()`, но проверяется только остановка fetch. В реализации вызов есть; тест не защищает от регрессии именно revalidation.
 - **COV-03 (6C):** `app/localization/translation-task-reconciliation.test.ts` обещает bounded/non-sensitive observability, но лишь сравнивает переданный mock snapshot с возвращённым `observe()`. Actual observe() является тонкой делегацией в store, а bounded/redaction должны проверяться на DB layer в 6F. Это **неточное название/ограниченность assertions**, не установлено лишнее тестирование или runtime defect.
 - **COV-02 (4C):** название `profile-view.test.tsx` owner-edit теста обещает ссылку «Редактировать профиль», но fixture сразу открывает `editing=true`; DOM-link отсутствует по задумке и не утверждается.
-- Оба — слабость assertions действующих UI-функций, не признак избыточности и не подтверждённый runtime defect. Отдельные узкие test improvements допустимы после завершения audit stage; в этом PR никаких тестов не меняется.
+- Эти замечания — слабость отдельных assertions или формулировок, не признак избыточности и не подтверждённый runtime defect. Отдельные узкие test improvements допустимы после завершения audit stage; в этом PR никаких тестов не меняется.
+
+## Качество способов проверки (не кандидаты на удаление)
+
+- **QUALITY-01 (6Г):** `db/hyperdrive-content-translations.test.ts` проверяет default-factory wiring через буквальный текст `readFileSync(...).includes(...)`, а client deadline values — отдельно в реальном `createWebClient`. Это хрупкая проверка синтаксиса вместо поведения default аргумента, но сама гарантия web deadline нужна. Рассмотреть смену способа проверки при следующем целевом улучшении; не удалять тест.
 
 ## Замечания к формулировкам тестов
 
