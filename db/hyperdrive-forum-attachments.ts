@@ -19,6 +19,9 @@ export interface ForumAttachmentStore {
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
   recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void>;
   readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage>;
+  listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
+  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<boolean>;
+  rebindDraftAttachments(ownerId: string, contextKey: string, fromDraftId: string, toDraftId: string): Promise<number>;
 }
 
 export class ForumAttachmentStorageUnavailableError extends Error {
@@ -72,5 +75,11 @@ export function createHyperdriveForumAttachmentStore(
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
     recordSecurityEvent: (input) => apply((store) => store.recordSecurityEvent(input)),
     readSecurityAttachmentEvents: (page) => apply((store) => store.readSecurityAttachmentEvents(page)),
+    listDraftAttachments: (ownerId, contextKey, draftId) =>
+      apply((store) => store.listDraftAttachments(ownerId, contextKey, draftId)),
+    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
+      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)),
+    rebindDraftAttachments: (ownerId, contextKey, fromDraftId, toDraftId) =>
+      apply((store) => store.rebindDraftAttachments(ownerId, contextKey, fromDraftId, toDraftId)),
   };
 }
