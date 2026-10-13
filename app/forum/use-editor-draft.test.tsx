@@ -46,6 +46,9 @@ function Harness({ ownerId }: { ownerId: string | null }) {
     <output data-testid="attachment-ready">{draft.attachmentReady ? "ready" : "blocked"}</output>
     <output data-testid="attachment-rebind">{draft.attachmentRebindFrom ?? "none"}</output>
     <output data-testid="attachment-rebind-version">{draft.attachmentRebindVersion ?? "none"}</output>
+    <output data-testid="attachment-discard">{draft.attachmentDiscardFrom ?? "none"}</output>
+    <output data-testid="attachment-discard-version">{draft.attachmentDiscardVersion ?? "none"}</output>
+    <output data-testid="attachment-selection-epoch">{draft.attachmentSelectionEpoch}</output>
     <output data-testid="attachment-reservation">{reserved ?? "none"}</output>
     <button type="button" onClick={() => {
       if (draft.attachmentRebindFrom) {
@@ -55,6 +58,11 @@ function Harness({ ownerId }: { ownerId: string | null }) {
     <button type="button" onClick={() => {
       if (draft.attachmentRebindFrom) draft.completeAttachmentRebind(draft.attachmentRebindFrom, draft.draftId, true);
     }}>Discard completed attachment generation</button>
+    <button type="button" onClick={() => {
+      if (draft.attachmentDiscardFrom) {
+        draft.completeAttachmentDiscard(draft.attachmentDiscardFrom, draft.draftId);
+      }
+    }}>Complete attachment discard</button>
     <button type="button" onClick={() => draft.acknowledgePublished(draft.draftId, draft.expectedVersion + 1)}>
       Published
     </button>
@@ -304,6 +312,62 @@ describe("editor draft lifecycle", () => {
     expect(screen.queryByRole("group", { name: "Draft conflict" })).not.toBeInTheDocument();
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId: newId, attachmentDraftId: oldId });
     expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("5");
+    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("0");
+    expect(screen.getByTestId("attachment-discard")).toHaveTextContent("none");
+  });
+
+  it("explicit Keep server retires losing attachment provenance even when the text generation stays the same", async () => {
+    const localEditedAt = new Date().toISOString();
+    writeLocalEditorDraft({
+      ownerId: "alice",
+      contextKey,
+      draftId: newId,
+      attachmentDraftId: oldId,
+      editedAt: localEditedAt,
+      baseVersion: 4,
+      syncedEditedAt: null,
+      payload: { ...empty, body: "Local B text" },
+    });
+    const remote = {
+      contextKey,
+      draftId: newId,
+      version: 5,
+      status: "active" as const,
+      title: "",
+      snippet: "Server B text",
+      editedAt: new Date(Date.now() + 1_000).toISOString(),
+      updatedAt: new Date(Date.now() + 1_000).toISOString(),
+      payload: { ...empty, body: "Server B text" },
+    };
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+
+    mount();
+    await flush();
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
+
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Server B text");
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
+      draftId: newId,
+      pendingAttachmentDiscardId: oldId,
+      baseVersion: 5,
+    });
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
+    expect(screen.getByTestId("attachment-discard")).toHaveTextContent(oldId);
+    expect(screen.getByTestId("attachment-discard-version")).toHaveTextContent("5");
+    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("1");
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
+
+    fireEvent.click(screen.getByRole("button", { name: "Complete attachment discard" }));
+    await flush();
+    expect(readLocalEditorDraft("alice", contextKey)?.pendingAttachmentDiscardId).toBeUndefined();
+    expect(screen.getByTestId("attachment-discard")).toHaveTextContent("none");
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   });
 
   it("requires a choice when another device supplies a different text generation with different attachment provenance", async () => {
