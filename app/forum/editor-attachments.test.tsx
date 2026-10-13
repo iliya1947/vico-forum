@@ -345,6 +345,79 @@ describe("editor attachment UI", () => {
     expect(screen.getByLabelText("Attach")).toBeEnabled();
   });
 
+  it("rejects a stale GET snapshot after explicit server selection inside the same generation", async () => {
+    let resolveFirst: ((response: Response) => void) | undefined;
+    let reads = 0;
+    const winner = { id: attachmentId, fileName: "winner-get.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    const loser = { ...winner, fileName: "loser-get.txt" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method !== "GET") throw new Error("Unexpected operation");
+      reads++;
+      return reads === 1
+        ? new Promise<Response>((resolve) => { resolveFirst = resolve; })
+        : Promise.resolve(Response.json({ attachments: [winner] }));
+    }));
+    const view = renderHarness();
+    await waitFor(() => expect(reads).toBe(1));
+    view.rerender(<I18nextProvider i18n={runtime()}><Harness selectionEpoch={1} /></I18nextProvider>);
+    await screen.findByText("winner-get.txt");
+    await act(async () => { resolveFirst?.(Response.json({ attachments: [loser] })); });
+    expect(screen.queryByText("loser-get.txt")).not.toBeInTheDocument();
+    expect(screen.getByText("winner-get.txt")).toBeInTheDocument();
+  });
+
+  it("ignores the stale rebind response after rejecting local attachments", async () => {
+    let resolvePatch: ((response: Response) => void) | undefined;
+    const completeRebind = vi.fn(() => true);
+    const winner = { id: attachmentId, fileName: "winner-patch.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return new Promise<Response>((resolve) => { resolvePatch = resolve; });
+      }
+      return Promise.resolve(Response.json({ attachments: [winner] }));
+    }));
+    const view = renderHarness({ ready: false, rebindFrom: oldDraftId, rebindVersion: 5,
+      completeRebind });
+    await waitFor(() => expect(resolvePatch).toBeDefined());
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness ready selectionEpoch={1} completeRebind={completeRebind} />
+    </I18nextProvider>);
+    await screen.findByText("winner-patch.txt");
+    await act(async () => { resolvePatch?.(Response.json({ outcome: "rebound", moved: 1 })); });
+    expect(completeRebind).not.toHaveBeenCalled();
+    expect(screen.getByText("winner-patch.txt")).toBeInTheDocument();
+  });
+
+  it("ignores an obsolete DELETE result after choosing server attachments", async () => {
+    let resolveDelete: ((response: Response) => void) | undefined;
+    let selected = false;
+    const noteChange = vi.fn();
+    const loser = { id: attachmentId, fileName: "loser-delete.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    const winner = { ...loser, id: "96b93562-0550-4eef-88af-f951d6ea6138", fileName: "winner-delete.txt" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return new Promise<Response>((resolve) => { resolveDelete = resolve; });
+      }
+      return Promise.resolve(Response.json({ attachments: [selected ? winner : loser] }));
+    }));
+    const view = renderHarness({ noteChange });
+    await screen.findByText("loser-delete.txt");
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(resolveDelete).toBeDefined());
+    selected = true;
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness selectionEpoch={1} noteChange={noteChange} />
+    </I18nextProvider>);
+    await screen.findByText("winner-delete.txt");
+    await act(async () => { resolveDelete?.(Response.json({ outcome: "removed" })); });
+    expect(screen.queryByText("loser-delete.txt")).not.toBeInTheDocument();
+    expect(screen.getByText("winner-delete.txt")).toBeInTheDocument();
+    expect(noteChange).not.toHaveBeenCalled();
+  });
+
   it("fences rebind by the saved target version and waits for the ordinary draft save", async () => {
     const retryDraft = vi.fn();
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
