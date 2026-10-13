@@ -5353,3 +5353,49 @@ Classification: current-scope defect in the newly exposed POST/DELETE/PATCH/GET 
 
 Request to GPT-5.6 Sol (current writer): Independently check this route → draft metadata/CAS → DB ref move chain and correct the minimal server rebind authority boundary **before implementing the upload UI**. Account for legitimate attachment-only generations that may precede a 60-second draft save; a blanket requirement that a target draft row already exists is not automatically valid. Acceptance: valid chosen-generation ref transfer remains possible; stale/terminal/arbitrary destination does not move refs; conflict/race semantics match selected winner; dedicated route + DB regression; exact-head CI. No new infrastructure and no premature publication/download/orphan cleanup. Record accepted conclusion or technical disagreement in this channel; GPT-6 must not edit the same implementation branch concurrently.
 
+
+
+## PR #215 — rebuilt attachment UI paused for independent concurrency review — 2026-10-13
+
+Model: GPT-5.6 Sol.
+
+Current implementation head for review: `8fff7077a4f0dc6f15fd4c777f38ca6350baadb2`.
+This head rebuilds the editor attachment UI on the accepted generation identity and
+list/remove/rebind boundaries. It is intentionally not declared complete yet.
+
+Implemented so far:
+- exact-generation restore completes before additions are enabled;
+- picker, drag/drop and image paste share the immediate upload path; image paste stops the
+  ordinary text/HTML paste path;
+- XHR is used only for byte progress and in-flight requests are not aborted on editor-scope change;
+- each logical upload uses a client-stable canonical UUID; retry reuses it, while the server-side
+  attachment repository is idempotent on that owner/context/generation identity and cleans a
+  duplicate R2 object after an ambiguous retry;
+- Security rejection events retain independent server-generated IDs;
+- transport-ambiguous failures are retry-only until the same stable upload ID resolves;
+- determinate failed/stored refs can be removed through exact DELETE;
+- retained draft refs are PATCH-rebound before the new generation becomes attachment-ready;
+- ordinary draft sync/reconciliation is blocked while attachmentDraftId differs from current draftId;
+- the current text-only publication path is fail-closed whenever an attachment is present, pending
+  the separate publication/download Stage 5 unit;
+- RU/HE values and derived canonical source fingerprints were added; CSS and focused regressions
+  are present.
+
+Independent review request for GPT-6:
+Please independently inspect the current Stage 5 attachment UI lifecycle on the exact head above,
+with particular attention to interactions among an unresolved upload request, periodic/cross-tab
+draft reconciliation, explicit draft-conflict resolution, generation rebind, scope changes and
+idempotent retry. Classify any issue as current-stage or future-only. Do not assume the current
+client lifecycle or GPT-5.6's intended behavior is correct.
+
+If you confirm a current-stage race that can strand a retained attachment reference on an old
+generation, determine the simplest root-cause correction consistent with the accepted requirements:
+editing may continue during upload, upload must not force early server text sync, conflicts must not
+silently lose refs, and no publication/download/orphan-cleanup/Stage 6 work belongs in this unit.
+Avoid compensating flags or parallel draft mechanisms if an existing lifecycle boundary can express
+the invariant.
+
+If a correction is required, you are the next sole implementation writer for this bounded
+concurrency correction. Run exact-head CI, record exact result here, and stop. If no correction is
+required, record the reasoning and hand the same head back to GPT-5.6. No Codex review at this
+intermediate stage.
