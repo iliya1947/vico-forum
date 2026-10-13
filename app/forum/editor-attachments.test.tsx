@@ -272,10 +272,10 @@ describe("editor attachment UI", () => {
     expect(await screen.findByText("Uploaded")).toBeInTheDocument();
   });
 
-  it("removes an ambiguous failed upload through DELETE before forgetting it locally", async () => {
+  it("keeps an ambiguous transport failure retry-only until the stable upload ID resolves", async () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === "GET") return Response.json({ attachments: [] });
-      if (init?.method === "DELETE") return Response.json({ error: "notFound" }, { status: 404 });
+      if (init?.method === "DELETE") return Response.json({ outcome: "removed" });
       throw new Error("unexpected request");
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -287,6 +287,21 @@ describe("editor attachment UI", () => {
     fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [file] } });
     FakeXMLHttpRequest.instances[0]!.fail();
     await screen.findByText("Attachment storage is temporarily unavailable. Try again.");
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    FakeXMLHttpRequest.instances[1]!.complete(201, {
+      outcome: "stored",
+      attachment: {
+        id: attachmentId,
+        fileName: "notes.txt",
+        detectedType: "text",
+        responseMime: "text/plain; charset=utf-8",
+        byteSize: 5,
+        verificationStatus: "type-checked",
+      },
+    });
+    expect(await screen.findByText("Uploaded")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     await waitFor(() => expect(screen.queryByText("notes.txt")).not.toBeInTheDocument());
@@ -294,6 +309,31 @@ describe("editor attachment UI", () => {
     expect(deletion).toBeTruthy();
     const headers = (deletion?.[1]?.headers ?? {}) as Record<string, string>;
     expect(headers["X-Vico-Attachment-Id"]).toBe(attachmentId);
+  });
+
+  it("allows an exact DELETE after a determinate rejected upload", async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === "GET") return Response.json({ attachments: [] });
+      if (init?.method === "DELETE") return Response.json({ error: "notFound" }, { status: 404 });
+      throw new Error("unexpected request");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(attachmentId);
+    renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File([""], "empty.txt", { type: "text/plain" })] },
+    });
+    FakeXMLHttpRequest.instances[0]!.complete(422, {
+      outcome: "rejected",
+      reason: "empty",
+      suspicious: false,
+    });
+    expect(await screen.findByText("Empty files cannot be attached.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(screen.queryByText("empty.txt")).not.toBeInTheDocument());
   });
 
   it("does not abort an in-flight upload when the editor draft scope changes", async () => {
