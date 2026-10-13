@@ -252,6 +252,59 @@ describe("forum attachment lifecycle foundation", () => {
     expect(await store.listDraftAttachments(ownerId, context, target)).toEqual([]);
   });
 
+  it.each(["upload-first", "discard-first"] as const)(
+    "serializes a late upload against discard when %s commits first",
+    async (order) => {
+      const context = `topic:discard-upload-${order}:reply`;
+      const source = crypto.randomUUID();
+      const target = crypto.randomUUID();
+      const input = upload(context, source);
+      await setDraft(ownerId, context, target, "active", 4);
+      const create = (repository: DrizzleForumAttachments) => repository.createDraftAttachment(input);
+      const discard = (repository: DrizzleForumAttachments) =>
+        repository.discardDraftAttachments(ownerId, context, source, target, 4);
+
+      if (order === "upload-first") {
+        const [created, disposition] = await queuedOperations(context, create, discard);
+        expect(created.id).toBe(input.id);
+        expect(disposition).toBe("discarded");
+      } else {
+        await expect(queuedOperations(context, discard, create)).rejects.toMatchObject({ reason: "gone" });
+      }
+
+      await expect(store.listDraftAttachments(ownerId, context, source)).rejects.toMatchObject({ reason: "gone" });
+      expect(await store.listDraftAttachments(ownerId, context, target)).toEqual([]);
+      await expect(store.createDraftAttachment(upload(context, source))).rejects.toMatchObject({ reason: "gone" });
+    },
+  );
+
+  it.each(["rebind-first", "discard-first"] as const)(
+    "serializes rebind against discard when %s commits first",
+    async (order) => {
+      const context = `topic:discard-rebind-${order}:reply`;
+      const source = crypto.randomUUID();
+      const target = crypto.randomUUID();
+      const input = upload(context, source);
+      await store.createDraftAttachment(input);
+      await setDraft(ownerId, context, target, "active", 4);
+      const rebind = (repository: DrizzleForumAttachments) =>
+        repository.rebindDraftAttachments(ownerId, context, source, target, 4);
+      const discard = (repository: DrizzleForumAttachments) =>
+        repository.discardDraftAttachments(ownerId, context, source, target, 4);
+
+      if (order === "rebind-first") {
+        const [moved, disposition] = await queuedOperations(context, rebind, discard);
+        expect(moved).toBe(1);
+        expect(disposition).toBe("already-rebound");
+        expect((await store.listDraftAttachments(ownerId, context, target)).map((item) => item.id))
+          .toEqual([input.id]);
+      } else {
+        await expect(queuedOperations(context, discard, rebind)).rejects.toMatchObject({ reason: "gone" });
+        expect(await store.listDraftAttachments(ownerId, context, target)).toEqual([]);
+      }
+    },
+  );
+
   it("does not retire the selected generation when rebind linearizes before discard", async () => {
     const context = "topic:rebind-before-discard:reply";
     const source = crypto.randomUUID();
