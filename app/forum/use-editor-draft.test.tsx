@@ -94,7 +94,7 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByTestId("attachment-reservation")).toHaveTextContent(oldId);
   });
 
-  it("persists an attachment-only generation across remount without triggering early or periodic text sync", async () => {
+  it("syncs an attachment-only generation once on the normal 60-second cycle, without an eager save", async () => {
     vi.useFakeTimers();
     const posts: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
@@ -116,7 +116,7 @@ describe("editor draft lifecycle", () => {
     expect(draftId).toMatch(/^[a-f0-9-]{36}$/u);
     const local = readLocalEditorDraft("alice", contextKey);
     expect(local).toMatchObject({ draftId, attachmentDraftId: draftId, payload: empty });
-    expect(local?.syncedEditedAt).toBe(local?.editedAt);
+    expect(local?.syncedEditedAt).toBeNull();
     expect(posts).toHaveLength(0);
     mounted.unmount();
 
@@ -124,12 +124,22 @@ describe("editor draft lifecycle", () => {
     await flush();
     expect(screen.getByTestId("draft-id")).toHaveTextContent(draftId!);
     expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
+    await act(async () => { await vi.advanceTimersByTimeAsync(59_999); });
+    expect(posts).toHaveLength(0); // No eager draft POST during the regular interval.
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ intent: "save", contextKey, draftId, payload: empty, expectedVersion: 0 });
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBe(draftId);
+    expect(readLocalEditorDraft("alice", contextKey)?.syncedEditedAt)
+      .toBe(readLocalEditorDraft("alice", contextKey)?.editedAt);
+
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(posts).toHaveLength(0);
+    expect(posts).toHaveLength(1); // No repeated POST for an unchanged snapshot.
     fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "New reply " } });
     expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBe(draftId);
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(posts).toHaveLength(1);
+    expect(posts).toHaveLength(2);
+    expect(posts[1]).toMatchObject({ draftId, expectedVersion: 1 });
   });
 
   it("keeps the original attachment generation recoverable and blocks reservation when a conflict changes the draft ID", async () => {
