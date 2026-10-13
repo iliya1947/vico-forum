@@ -1,5 +1,10 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
+import { forumDraftStoreContext } from "../app/forum/draft-request-context";
+import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../app/forum/attachment-request-context";
+import type { PrivateAttachmentBucket } from "../app/forum/attachment-r2";
+import { createHyperdriveForumDraftStore } from "../db/hyperdrive-editor-drafts";
+import { createHyperdriveForumAttachmentStore } from "../db/hyperdrive-forum-attachments";
 import {
   contentTranslationPresentationContext,
   contentGenerationActionContext,
@@ -31,6 +36,10 @@ export default {
     const authHeaders = await initializeAuthContext(context, request, auth);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
     context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString));
+    context.set(forumDraftStoreContext, createHyperdriveForumDraftStore(webConnectionString));
+    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString));
+    const attachmentBucket = (env as Env & { ATTACHMENT_R2?: PrivateAttachmentBucket }).ATTACHMENT_R2 ?? null;
+    context.set(privateAttachmentBucketContext, attachmentBucket);
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(

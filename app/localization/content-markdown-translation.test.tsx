@@ -59,6 +59,18 @@ describe("protected CommonMark translation", () => {
     expect(container.querySelector("blockquote")?.textContent).toContain("שלום עולם");
   });
 
+  it("preserves agreed strikethrough structure through translation protection", () => {
+    const source = "Keep ~~deprecated phrase~~ visible.";
+    const document = protectMarkdownForTranslation(source);
+    expect(document.segments.map((segment) => segment.text).join(" ")).toContain("deprecated phrase");
+
+    const restored = document.restore(translateIdentity(document.segments));
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+
+    expect(restored).toContain("~~deprecated phrase~~");
+    expect(container.querySelector("del")?.textContent).toBe("deprecated phrase");
+  });
+
   it("never exposes inline/fenced/indented code, autolink URLs, raw HTML, or image data as segments", () => {
     const source = `Before \`inlineCode()\` after.
 

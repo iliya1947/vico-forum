@@ -3,6 +3,7 @@ import { index, route, type RouteConfig } from "@react-router/dev/routes";
 export default [
   index("routes/locale-negotiation.ts"),
   route("api/auth/*", "routes/auth-api.ts"),
+  route("api/attachments", "routes/attachment-upload.ts"),
   route("api/*", "routes/api.ts"),
   route(":locale", "routes/locale-boundary.tsx", [
     index("routes/home.tsx"),
@@ -18,6 +19,8 @@ export default [
     route("sign-up", "routes/credential-sign-up.tsx"),
     route("presence", "routes/presence.ts"),
     route("notifications", "routes/notifications.tsx"),
+    route("drafts/data", "routes/draft-data.ts"),
+    route("drafts", "routes/drafts.tsx"),
     route("attention", "routes/attention.tsx"),
     route("tags", "routes/tags.tsx"),
     route("tags/:tagKey", "routes/tag.tsx"),

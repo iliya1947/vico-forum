@@ -492,6 +492,27 @@ export const forumProfiles = pgTable("forum_profiles", {
   check("forum_profiles_website_url", sql`${table.websiteUrl} is null or (char_length(${table.websiteUrl}) <= 2048 and ${table.websiteUrl} ~ '^https?://')`),
 ]);
 
+export interface ForumEditorDraftPayload {
+  body: string;
+  title: string;
+  tags: string;
+  parentPostId?: string | null;
+}
+
+export const forumEditorDrafts = pgTable("forum_editor_drafts", {
+  ownerId: text("owner_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  contextKey: text("context_key").notNull(),
+  draftId: text("draft_id").notNull(),
+  version: integer("version").notNull(),
+  status: text("status").notNull(),
+  payload: jsonb("payload").$type<ForumEditorDraftPayload>().notNull(),
+  editedAt: timestamp("edited_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  primaryKey({ name: "forum_editor_drafts_pk", columns: [table.ownerId, table.contextKey] }),
+  index("forum_editor_drafts_owner_edited_idx").on(table.ownerId, table.editedAt),
+]);
+
 export const forumOnlinePresence = pgTable("forum_online_presence", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
@@ -867,6 +888,132 @@ export const forumPosts = pgTable(
         and ${table.solutionOutdatedReasonKind} is null
       )`,
     ),
+  ],
+);
+
+
+export const forumAttachments = pgTable(
+  "forum_attachments",
+  {
+    id: text("id").primaryKey(),
+    ownerId: text("owner_id").notNull(),
+    objectKey: text("object_key").notNull(),
+    fileName: text("file_name").notNull(),
+    declaredMime: text("declared_mime").notNull(),
+    detectedType: text("detected_type").notNull(),
+    responseMime: text("response_mime").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    verificationStatus: text("verification_status").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "forum_attachments_owner_fk",
+      columns: [table.ownerId],
+      foreignColumns: [user.id],
+    }).onDelete("restrict"),
+    unique("forum_attachments_object_key_unique").on(table.objectKey),
+    unique("forum_attachments_id_owner_unique").on(table.id, table.ownerId),
+    index("forum_attachments_owner_created_idx").on(table.ownerId, table.createdAt),
+  ],
+);
+
+export const forumAttachmentDraftRefs = pgTable(
+  "forum_attachment_draft_refs",
+  {
+    attachmentId: text("attachment_id").notNull(),
+    ownerId: text("owner_id").notNull(),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_attachment_draft_refs_pk",
+      columns: [table.attachmentId, table.contextKey, table.draftId],
+    }),
+    foreignKey({
+      name: "forum_attachment_draft_refs_attachment_owner_fk",
+      columns: [table.attachmentId, table.ownerId],
+      foreignColumns: [forumAttachments.id, forumAttachments.ownerId],
+    }).onDelete("restrict"),
+    index("forum_attachment_draft_refs_owner_context_idx").on(
+      table.ownerId,
+      table.contextKey,
+      table.draftId,
+    ),
+  ],
+);
+
+export const forumAttachmentDraftGenerations = pgTable(
+  "forum_attachment_draft_generations",
+  {
+    ownerId: text("owner_id").notNull(),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    targetDraftId: text("target_draft_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_attachment_draft_generations_pk",
+      columns: [table.ownerId, table.contextKey, table.draftId],
+    }),
+    foreignKey({
+      name: "forum_attachment_draft_generations_owner_fk",
+      columns: [table.ownerId],
+      foreignColumns: [user.id],
+    }).onDelete("cascade"),
+    check("forum_attachment_draft_generations_target_check", sql`${table.draftId} <> ${table.targetDraftId}`),
+  ],
+);
+
+export const forumPostAttachments = pgTable(
+  "forum_post_attachments",
+  {
+    postId: text("post_id").notNull(),
+    attachmentId: text("attachment_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_attachments_pk",
+      columns: [table.postId, table.attachmentId],
+    }),
+    foreignKey({
+      name: "forum_post_attachments_post_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "forum_post_attachments_attachment_fk",
+      columns: [table.attachmentId],
+      foreignColumns: [forumAttachments.id],
+    }).onDelete("restrict"),
+    index("forum_post_attachments_attachment_idx").on(table.attachmentId),
+  ],
+);
+
+export const forumAttachmentSecurityEvents = pgTable(
+  "forum_attachment_security_events",
+  {
+    id: text("id").primaryKey(),
+    uploadId: text("upload_id").notNull(),
+    uploadedByUserId: text("uploaded_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    fileName: text("file_name").notNull(),
+    declaredMime: text("declared_mime").notNull(),
+    detectedType: text("detected_type").notNull(),
+    reason: text("reason").notNull(),
+    declaredByteSize: integer("declared_byte_size").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_attachment_security_events_upload_id_unique").on(table.uploadId),
+    index("forum_attachment_security_events_created_idx").on(table.createdAt, table.id),
   ],
 );
 

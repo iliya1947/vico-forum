@@ -1,7 +1,6 @@
-import { fromMarkdown } from "mdast-util-from-markdown";
-import { toMarkdown } from "mdast-util-to-markdown";
+import { parseForumMarkdown, serializeForumMarkdown } from "../markdown-syntax";
 
-export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt04-commonmark-v1";
+export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt05-strikethrough-v1";
 export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
@@ -570,11 +569,11 @@ function childPath(parentPath: string, type: string, index: number): string {
 }
 
 function parseMarkdown(value: string): MarkdownNode {
-  return fromMarkdown(value) as unknown as MarkdownNode;
+  return parseForumMarkdown(value) as unknown as MarkdownNode;
 }
 
 function serializeMarkdown(tree: MarkdownNode): string {
-  return toMarkdown(tree as Parameters<typeof toMarkdown>[0]);
+  return serializeForumMarkdown(tree as Parameters<typeof serializeForumMarkdown>[0]);
 }
 
 function escapeRegExp(value: string): string {

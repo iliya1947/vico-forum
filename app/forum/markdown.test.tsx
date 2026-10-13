@@ -55,6 +55,54 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("Editor 2.0 technical rendering", () => {
+  it("renders ordinary Markdown tables in published content safely", () => {
+    const { container } = renderMarkdown("| Name | Value |\n| --- | --- |\n| **A** | [docs](https://example.org) |");
+    expect(container.querySelectorAll(".forum-markdown-table th")).toHaveLength(2);
+    expect(container.querySelectorAll(".forum-markdown-table td")).toHaveLength(2);
+    expect(screen.getByText("A").tagName).toBe("STRONG");
+    expect(screen.getByRole("link", { name: "docs" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+  });
+
+  it("renders agreed double-tilde strikethrough without enabling unrelated GFM syntax", () => {
+    const { container } = renderMarkdown("Before ~~old~~ after");
+    expect(screen.getByText("old").tagName).toBe("DEL");
+    expect(container.textContent).toContain("Before old after");
+  });
+
+  it("supports a collapsed spoiler without executing inline HTML or opening images", async () => {
+    const { container } = renderMarkdown(":::spoiler Info\n**secret**\n\n<script>alert(1)</script>\n:::");
+    const spoiler = container.querySelector(".forum-markdown-spoiler");
+    expect(spoiler).not.toHaveAttribute("open");
+    expect(spoiler?.querySelector("summary")).toHaveTextContent("Info");
+    expect(spoiler?.querySelector("strong")).toHaveTextContent("secret");
+    expect(container.querySelector("script, img")).toBeNull();
+    await userEvent.click(screen.getByText("Info"));
+    expect(spoiler).toHaveAttribute("open");
+  });
+
+  it("shows a fenced-code filename separately from copyable source", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const fence = String.fromCharCode(96).repeat(3);
+    renderMarkdown(fence + 'tsx filename="src/main.tsx"\nexport const n = 4;\n' + fence);
+    expect(screen.getByText("src/main.tsx")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith("export const n = 4;");
+  });
+
+  it("highlights Diff plus and minus while preserving exact copied code", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const source = "+added\n-removed\n unchanged";
+    const { container } = renderMarkdown(String.fromCharCode(96).repeat(3) + "diff\n" + source + "\n" + String.fromCharCode(96).repeat(3));
+    expect(container.querySelector(".syntax-diff-add")).toHaveTextContent("+added");
+    expect(container.querySelector(".syntax-diff-remove")).toHaveTextContent("-removed");
+    await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith(source);
+  });
+});
+
 describe("ForumMarkdown", () => {
   it("renders CommonMark paragraphs, emphasis, lists, inline code, and fenced code", () => {
     const { container } = renderMarkdown(`First *important* paragraph.
@@ -177,6 +225,20 @@ const longValue = "code";
     const message = Array.from({ length: 7 }, () => fenced).join("\n\n");
     expect(message.length).toBeGreaterThan(12_000);
     const { container } = renderMarkdown(message);
+    expect(container.querySelectorAll(".forum-code-block")).toHaveLength(7);
+    expect(container.querySelectorAll(".syntax-keyword")).toHaveLength(0);
+    expect(container.querySelector("pre")?.textContent).toContain("const value = 1;");
+  });
+
+  it("keeps the full-post highlight budget inside nested spoilers", () => {
+    const code = "const value = 1;\n".repeat(110);
+    const spoiler = (index: number) =>
+      [":::spoiler Part " + index, "```ts", code.trimEnd(), "```", ":::"].join("\n");
+    const message = Array.from({ length: 7 }, (_, index) => spoiler(index)).join("\n\n");
+    expect(message.length).toBeGreaterThan(12_000);
+
+    const { container } = renderMarkdown(message);
+    expect(container.querySelectorAll(".forum-markdown-spoiler")).toHaveLength(7);
     expect(container.querySelectorAll(".forum-code-block")).toHaveLength(7);
     expect(container.querySelectorAll(".syntax-keyword")).toHaveLength(0);
     expect(container.querySelector("pre")?.textContent).toContain("const value = 1;");
