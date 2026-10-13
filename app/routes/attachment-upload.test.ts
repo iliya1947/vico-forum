@@ -16,6 +16,7 @@ import routes from "../routes";
 
 const contextKey = "topic:opaque/topic:reply";
 const draftId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
+const uploadId = "23b93562-0550-4eef-88af-f951d6ea6138";
 
 function bucket() {
   const objects = new Map<string, Uint8Array>();
@@ -72,6 +73,7 @@ function request(
     size = bytes.length,
     key = contextKey,
     id = draftId,
+    attachmentId = uploadId,
   } = {},
 ) {
   return new Request("https://forum.test/api/attachments", {
@@ -79,6 +81,7 @@ function request(
     headers: {
       Origin: origin,
       "Content-Type": declaredMime,
+      "X-Vico-Attachment-Id": attachmentId,
       "X-Vico-Attachment-Name": encodeURIComponent(fileName),
       "X-Vico-Attachment-Size": String(size),
       "X-Vico-Draft-Context": encodeURIComponent(key),
@@ -241,12 +244,49 @@ describe("private attachment upload API", () => {
     });
     expect(JSON.stringify(payload)).not.toContain("private/");
     expect(env.createDraftAttachment).toHaveBeenCalledWith(expect.objectContaining({
+      id: uploadId,
       ownerId: "real-user",
       contextKey,
       draftId,
       objectKey: expect.stringMatching(/^private\//u),
     }));
     expect(env.recordSecurityEvent).not.toHaveBeenCalled();
+  });
+
+  it("cleans up a duplicate retry object when the stable upload ID already committed", async () => {
+    const env = setup();
+    env.createDraftAttachment.mockResolvedValueOnce({
+      id: uploadId,
+      objectKey: "private/8cd55954-9cb6-48fd-a42f-e4a5e85ae90c",
+      fileName: "notes.txt",
+      declaredMime: "text/plain",
+      detectedType: "text",
+      responseMime: "text/plain; charset=utf-8",
+      byteSize: 5,
+      verificationStatus: "type-checked",
+      createdAt: new Date().toISOString(),
+    });
+    const response = await action({
+      request: request(new TextEncoder().encode("hello")),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(201);
+    expect(env.r2.put).toHaveBeenCalledOnce();
+    expect(env.r2.delete).toHaveBeenCalledOnce();
+    expect(JSON.stringify(await response.json())).not.toContain("private/");
+  });
+
+  it("rejects a malformed client upload ID before touching storage", async () => {
+    const env = setup();
+    const response = await action({
+      request: request(new TextEncoder().encode("hello"), {
+        attachmentId: "------------------------------------",
+      }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(400);
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
   });
 
   it("durably records suspicious rejection metadata without storing an attachment row", async () => {
