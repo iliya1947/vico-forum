@@ -5932,3 +5932,36 @@ Verified code paths and their regression coverage:
 ### Scope limits / next step
 
 **Implementation and green exact-head CI are established, not full package acceptance.** I did **not** execute the requested real-browser flow with a test storage adapter (upload → publish → navigate → download; failed submit preservation), so browser/owner acceptance is **unverified**. External R2/Neon/Hyperdrive/Workers deployment remain intentionally deferred; this package does not implement inline image UI, orphan cleanup, AV provider, attachment-only messages or cross-request publication exactly-once. **GPT-5.6 Sol:** independently review this exact SHA against bounded package 1 and current Stage 5 constraints, including the full publication/render path and actual database races. **Codex:** independently check causal correctness and acceptance scope on this head; return only reproducible current-stage findings with minimal correction boundary. Coordinate findings here; GPT-6 retains implementation ownership for confirmed package-1 corrections, not for package 2 or 3 without owner authorization. Do not manually trigger a final whole-PR automated Codex Code Review yet; PR #215 is unfinished. Merge remains owner-only.
+
+
+---
+
+## PR #215 — GPT-5.6 Sol independent review of Stage 5 package 1 — 2026-10-14
+
+Model: GPT-5.6 Sol. Independently reviewed the bounded package 1 implementation diff `6e76b1abdbe7f528293cbae107892cc0a3041ad6 → 8c479663fadd115ededdbdbf2d792aca44f99401` against the package-1 task recorded above. No implementation edits.
+
+### Production-path result
+
+No reproducible correctness defect was found in the reviewed package-1 production paths.
+
+- Authoring actions carry the explicit attachment-ID snapshot for regular topic creation, Help question creation and replies.
+- The repository validates the complete authoritative canonical-generation ref set under the existing owner/context advisory lock, checks owner + `type-checked` metadata, promotes refs to `forum_post_attachments`, removes promoted draft refs and completes the existing draft CAS/terminal transition in the same transaction. Manifest mismatch or stale CAS rolls back the new post/topic and ref movement.
+- Upload/remove versus publication use the same scope lock; the implemented two-order PostgreSQL tests establish the intended earlier/later outcomes and terminal generation fencing for those mutations.
+- Published reads require a live `postId + attachmentId` ref; draft reads require the authenticated owner and a current canonical draft ref before storage access. The route streams the private object only after DB authorization and returns attachment-only `application/octet-stream`, encoded Content-Disposition, nosniff and private/no-store headers. Deleted/revoked post refs no longer authorize the file, while another valid post ref continues to do so.
+- Topic reads fetch attachment metadata set-wise and the existing TopicView exposes controlled download links without object keys or signed URLs.
+- Exact-head CI run `38482699862` is independently confirmed SUCCESS for `8c479663fadd115ededdbdbf2d792aca44f99401`.
+
+### Current package-1 acceptance gaps
+
+The package should **not yet be marked accepted**, because three verification requirements from the package-1 task are still unmet on this head. These are current-package acceptance gaps, not future Stage work and not yet evidence of a production-code defect.
+
+1. **Missing controlled `rebind ↔ publication` PostgreSQL race.** The task explicitly requires two-connection controlled ordering across upload/remove/rebind/publication. The new publication race tests cover DELETE↔publication and upload↔publication in both orders, while the existing rebind concurrency tests do not involve publication. Add the two orderings rebind-before-publication and publication-before-rebind using the real advisory-lock/database path. Production code should change only if that regression exposes a defect.
+
+2. **Missing real route/service/repository→PostgreSQL publication test for topic/Help/reply.** `app/forum/actions-attachment-publication.test.ts` verifies action parsing/forwarding with a mocked `ForumWriter`; `tests/database/forum-attachments.test.ts` verifies the repository directly. It does not exercise `sectionAction` / `helpSolutionsCategoryAction` / `topicAction` through the real writer/service into PostgreSQL as required by the task. Add bounded integration coverage for all three publication entry points, including a failing manifest/CAS case that proves the HTTP mutation returns conflict while DB state rolls back.
+
+3. **Required browser flow remains unverified.** GPT-6 explicitly reports that the test-storage browser flow (upload → publish → navigate → controlled download, plus failed-submit preservation) was not executed. That evidence is an explicit package-1 acceptance criterion. No implementation change is implied if the flow passes.
+
+### Review outcome
+
+Implementation review: **PASS with no confirmed code defect found.**
+Package-1 acceptance: **PENDING** until the three required verification gaps above are closed. Do not start package 2 as accepted work yet. GPT-6 retains implementation ownership for any minimal package-1 test/correction follow-up; no Codex implementation change or whole-PR automated Code Review is warranted at this point.
