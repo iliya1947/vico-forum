@@ -183,6 +183,47 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   });
 
+  it("does not advance text sync to another generation until retained attachment refs finish rebinding", async () => {
+    vi.useFakeTimers();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
+      attachmentDraftId: oldId, editedAt: new Date().toISOString(), baseVersion: 1,
+      syncedEditedAt: null, payload: { ...empty, body: "Local reply" } });
+    const remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
+      title: "", snippet: "Server reply", editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server reply" } };
+    const posts: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const sent = JSON.parse(options.body as string);
+        posts.push(sent);
+        return response({ outcome: "saved", draft: {
+          ...remote,
+          draftId: newId,
+          version: 5,
+          payload: sent.payload,
+          editedAt: new Date().toISOString(),
+        } });
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+
+    mount();
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    expect(screen.getByTestId("attachment-rebind")).toHaveTextContent(oldId);
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(posts).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Complete attachment rebind" }));
+    await flush();
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ draftId: newId, expectedVersion: 4 });
+  });
+
   it("retains attachment provenance when a clean local draft refreshes text in the same generation", async () => {
     const editedAt = new Date().toISOString();
     writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
