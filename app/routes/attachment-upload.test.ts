@@ -11,7 +11,7 @@ import type { PrivateAttachmentBucket } from "../forum/attachment-r2";
 import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-drafts";
 import type { CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
-import { action } from "./attachment-upload";
+import { action, loader } from "./attachment-upload";
 import routes from "../routes";
 
 const contextKey = "topic:opaque/topic:reply";
@@ -44,14 +44,23 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   }));
   const recordSecurityEvent = vi.fn(async () => {});
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
+  const listDraftAttachments = vi.fn(async () => []);
+  const removeDraftAttachment = vi.fn(async () => true);
+  const rebindDraftAttachments = vi.fn(async () => 0);
   ctx.set(forumAttachmentStoreContext, {
     createDraftAttachment,
     recordSecurityEvent,
     readSecurityAttachmentEvents,
+    listDraftAttachments,
+    removeDraftAttachment,
+    rebindDraftAttachments,
   } as never);
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
-  return { ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent };
+  return {
+    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent,
+    listDraftAttachments, removeDraftAttachment, rebindDraftAttachments,
+  };
 }
 
 function request(
@@ -79,11 +88,109 @@ function request(
   });
 }
 
+
+function scopedRequest(
+  method: "GET" | "DELETE" | "PATCH",
+  {
+    origin = "https://forum.test",
+    key = contextKey,
+    id = draftId,
+    attachmentId,
+    fromDraftId,
+  }: {
+    origin?: string;
+    key?: string;
+    id?: string;
+    attachmentId?: string;
+    fromDraftId?: string;
+  } = {},
+) {
+  const headers = new Headers({
+    "X-Vico-Draft-Context": encodeURIComponent(key),
+    "X-Vico-Draft-Id": id,
+  });
+  if (method !== "GET") headers.set("Origin", origin);
+  if (attachmentId) headers.set("X-Vico-Attachment-Id", attachmentId);
+  if (fromDraftId) headers.set("X-Vico-Attachment-From-Draft-Id", fromDraftId);
+  return new Request("https://forum.test/api/attachments", { method, headers });
+}
+
 describe("private attachment upload API", () => {
   it("is registered before the generic API catch-all", () => {
     const paths = routes.map((route) => route.path);
     expect(paths.indexOf("api/attachments")).toBeGreaterThanOrEqual(0);
     expect(paths.indexOf("api/attachments")).toBeLessThan(paths.indexOf("api/*"));
+  });
+
+  it("restores draft attachments through loader without exposing private storage keys", async () => {
+    const env = setup();
+    env.listDraftAttachments.mockResolvedValueOnce([{
+      id: "23b93562-0550-4eef-88af-f951d6ea6138",
+      objectKey: "private/8cd55954-9cb6-48fd-a42f-e4a5e85ae90c",
+      fileName: "example.txt",
+      declaredMime: "text/plain",
+      detectedType: "text",
+      responseMime: "text/plain; charset=utf-8",
+      byteSize: 12,
+      verificationStatus: "type-checked",
+      createdAt: new Date().toISOString(),
+    }]);
+    const response = await loader({ request: scopedRequest("GET"), context: env.ctx });
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(JSON.stringify(payload)).not.toContain("private/");
+    expect(env.listDraftAttachments).toHaveBeenCalledWith("real-user", contextKey, draftId);
+    expect((await action({ request: scopedRequest("GET"), context: env.ctx })).status).toBe(405);
+  });
+
+  it("removes only the exact owner/context/draft reference", async () => {
+    const env = setup();
+    const attachmentId = "23b93562-0550-4eef-88af-f951d6ea6138";
+    const response = await action({
+      request: scopedRequest("DELETE", { attachmentId }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(200);
+    expect(env.removeDraftAttachment).toHaveBeenCalledWith(
+      "real-user", contextKey, draftId, attachmentId,
+    );
+  });
+
+  it("rebinds retained draft references to the resolved generation", async () => {
+    const env = setup();
+    const fromDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
+    env.rebindDraftAttachments.mockResolvedValueOnce(2);
+    const response = await action({
+      request: scopedRequest("PATCH", { fromDraftId }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ outcome: "rebound", moved: 2 });
+    expect(env.rebindDraftAttachments).toHaveBeenCalledWith(
+      "real-user", contextKey, fromDraftId, draftId,
+    );
+  });
+
+  it("rejects malformed UUIDs before repository operations", async () => {
+    const env = setup();
+    const malformed = "------------------------------------";
+    expect((await loader({
+      request: scopedRequest("GET", { id: malformed }),
+      context: env.ctx,
+    })).status).toBe(400);
+    expect(env.listDraftAttachments).not.toHaveBeenCalled();
+
+    expect((await action({
+      request: scopedRequest("DELETE", { attachmentId: malformed }),
+      context: env.ctx,
+    })).status).toBe(400);
+    expect(env.removeDraftAttachment).not.toHaveBeenCalled();
+
+    expect((await action({
+      request: scopedRequest("PATCH", { fromDraftId: malformed }),
+      context: env.ctx,
+    })).status).toBe(400);
+    expect(env.rebindDraftAttachments).not.toHaveBeenCalled();
   });
 
   it("requires session, same origin and current authoring permission before storage", async () => {
