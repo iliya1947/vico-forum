@@ -5808,3 +5808,80 @@ Verified code paths and their regression coverage:
 **Checks:** GitHub Actions [run 38461629015](https://github.com/iliya1947/vico-forum/actions/runs/38461629015) on this exact head completed **SUCCESS** for `checks` and `database`. Its reported counts are 933 application and 261 PostgreSQL tests. I independently inspected code and test coverage, and checked the GitHub CI result; I **did not independently execute** the suite or run a live browser/R2 test.
 
 **Stage boundary / next step:** The verdict accepts only this completed Stage 5 correction. Publication/download/orphan cleanup, external infrastructure integration and whole-Editor acceptance remain separate unfinished work, not defects of this package. GPT-5.6 Sol separately recorded PASS on the same exact SHA. There is no verified correction-package blocker requiring another Codex/implementation iteration; proceed only when the owner authorizes the next bounded Stage 5 subtask. PR #215 remains unmerged; no new branch, PR or implementation change was made for this review.
+
+---
+
+## PR #215 — Codex: назначение GPT-6 и план оставшейся работы Stage 5 — 2026-10-14
+
+**Решение владельца в текущем чате:** дальнейшую реализацию выполняет GPT-6; Codex составляет задачи, определяет критерии готовности и независимо проверяет результат, сам код больше не пишет. GPT-5.6 Sol — независимый проверяющий. Это заменяет прежнее исключение о назначении Codex исполнителем. Implementation-ветку пишет только GPT-6; второй исполнитель одновременно не назначен.
+
+### Исходное состояние и оценка ответов
+
+Прочитал независимые ответы обеих моделей. GPT-5.6 Sol и GPT-6 записали **PASS ограниченному correction package** на `6e76b1abdbe7f528293cbae107892cc0a3041ad6`, без нового подтверждённого finding. GPT-6 прямо указал, что самостоятельно не запускал тесты: его результат — проверка кода/покрытия и существующего CI, а не новый runtime-прогон. Эти заключения закрывают независимую проверку данного пакета, но не означают завершения Stage 5 или готовности всего PR к merge.
+
+Сверенные refs: PR #215 открыт/unmerged, head `6e76b1abdbe7f528293cbae107892cc0a3041ad6`; main `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Existing exact-head CI #38461629015 — SUCCESS, 933 application / 261 PostgreSQL tests. Повторно менять принятый correction package без нового доказанного дефекта не требуется.
+
+План основан на PROJECT.md, относящихся к редактору разделах PROJECT_STATE.md, EDITOR_SPEC.md §§5–6/8/13, global ROADMAP scope и фактических attachment/publication boundaries. Это целевой план оставшейся работы Editor Stage 5, не полный новый аудит всего PR или документации.
+
+**Важно различать этапы:** локальные этапы Editor 2.0 из EDITOR_SPEC.md и глобальные infrastructure/translation Stage из ROADMAP — разные перечни. Продолжаем только Editor Stage 5 attachment scope. Глобальная external integration Stage 6 и следующие этапы редактора не запускаются.
+
+### Общие ограничения и инварианты для всех пакетов
+
+- Один implementation PR #215, текущая ветка `chatgpt/editor-v2-implementation-20261010`. Перед началом сверить актуальные refs и служебные записи, полностью прочитать обязательные source-of-truth документы по AGENTS.md. Не переносить конкурирующие ветки #222/#223 целиком.
+- Сохранить точный Markdown, локальные save triggers, metadata-first recovery, server sync раз в 60 секунд, CAS/conflict selection, generation redirects/retirement, стабильные upload IDs и owner/context isolation. Не ускорять server draft POST ради вложений и не использовать время клиента для выбора победителя.
+- Инфраструктура остановлена/отложена. Переиспользовать существующие интерфейсы и управляемые local/CI заглушки. Отсутствие внешнего адаптера даёт явное unavailable/fail-closed, а не fake success. Не создавать/подключать R2 buckets, Hyperdrive/Neon, Queues/Cron, AV/provider resources, credentials или production deployment. Автотесты используют disposable PostgreSQL и storage adapters.
+- Не строить новый общий storage/job framework, не выполнять несвязанный refactor, не расширять permissions или schema по инерции. Новая migration допустима только при установленной необходимости конкретного attachment lifecycle; это нужно обосновать до реализации. Старые migration history не переписывать.
+- После публикации либо удаления доступ определяется действующими refs и текущими правами, а не possession of URL, owner asset metadata или старым кешем. Private object key никогда не становится клиентским идентификатором.
+- Не включать упоминания, полноценное редактирование опубликованных сообщений/историю, общую подсистему publication idempotency, attachment-only publication и другие явно отложенные редакторные Stage 6 функции в эти пакеты. Текущее задание публикации ниже касается вложений в уже поддержанных сценариях создания темы, Help question и ответа с содержательным текстом. Полный §8 остаётся последующим scope; частичную готовность не выдавать за его выполнение.
+
+### Пакет 1 — атомарная публикация вложений и минимальная контролируемая выдача
+
+**Это ближайшее задание GPT-6.** Цель: публикация в существующих authoring сценариях сохраняет именно готовые вложения выбранного черновика, а пользователь после успеха получает рабочие разрешённые ссылки. Не снимать существующий text-only publication guard раньше, чем новый путь полностью закрывает его защитный инвариант.
+
+Перед изменениями составить короткую таблицу цепочки: route/action → forum service → repository publication transaction → draft completion → attachment access. Отметить уже работающие компоненты и минимальные нужные изменения. Сейчас `0035` уже содержит assets, draft refs и `forum_post_attachments`; `db/forum-repository.ts` берёт scope lock до topic/user locks и блокирует attachment refs в `finishPublishedDraft`. Не создавать второй независимый жизненный цикл.
+
+Задачи:
+1. На сервере проверять выбранные owner/context/generation, актуальную CAS-version, authoring permission и допустимость каждого файла по серверным metadata. Клиентский список/готовность UI не является доказательством права или завершения проверки. Не добавлять в сообщение чужие refs, refs другого контекста или проигравшего поколения.
+2. В той же DB transaction, где создаются post/revision и завершается draft, переносить выбранные действующие refs в published-post refs. Снимать только действительно перенесённые draft refs; сохранять остальные допустимые связи с asset. Scope/asset lock ordering должен быть совместим с upload/rebind/delete. Ошибка любой части откатывает post, refs и draft completion вместе.
+3. Явно определить набор публикуемых файлов и поведение конкурентного upload/remove/rebind на границе submit. Существующий CAS текста сам по себе не версионирует изменения refs. Нельзя молча потерять файл, подменить выбранный набор или принять ref по позднему клиентскому callback. GPT-6 выбирает минимальную согласованную серверную границу и доказывает её тестами; не предписываю заранее новую таблицу/token.
+4. Минимальная выдача через контролируемый серверный read boundary: draft — только автор и действующий draft ref; published — действующая связь с сообщением и право чтения этого сообщения. Прекращение связи/доступа прекращает выдачу. Учитывать shared assets и иные допустимые refs без раскрытия приватного контекста.
+5. Использовать server-observed type/size, stream ответа и безопасные headers/filename encoding. Active HTML/SVG/source не исполняется в origin форума; nosniff и безопасный Content-Disposition, пригодная политика кеширования без утечки private bytes или обхода отзыва доступа. Нет полного buffering файла. Отсутствующий/сбойный storage adapter не возвращает «успешный» пустой файл.
+6. Подключить минимальную metadata presentation/скачивание опубликованных файлов в общий post renderer. UI submit/keyboard path блокируется при незавершённых/ошибочных uploads и не теряет текст при failed publication. Existing draft publication barrier/CAS не ослаблять. Не очищать локальные данные до подтверждённого успеха; потерянный ACK не считать доказанным rollback или поводом удалять asset. Не заявлять общую exactly-once publication без отдельной реализации последующего scope.
+
+Критерии приёмки:
+- Реальные route/service/repository→PostgreSQL tests: topic initial post, Help question и reply; stale CAS/чужой asset/неразрешённый контекст; полный rollback; две конкурентные DB connections с управляемым порядком upload/remove/rebind/publication.
+- Проверены оба порядка гонок: mutation раньше и позже публикации. Поздний upload прежнего terminal generation не оживляет его и не попадает в новый draft.
+- Read route tests: owner/другой пользователь/guest, private draft, public post, удалённый/недоступный post, shared refs, unsafe filename/type, adapter unavailable, прекращение доступа после снятия последней допустимой связи.
+- Обычная text-only публикация, сохранение и восстановление черновика продолжают работать. Browser flow с тестовым storage: upload → публикация → переход к сообщению → разрешённое скачивание; failed submit сохраняет draft и файлы.
+- До положительных checks и независимой проверки пакет не объявляется принятым.
+
+### Пакет 2 — завершение текущего attachment UI и отображения
+
+После приёмки пакета 1 сверить оставшиеся требования §6 с фактической реализацией, не переписывать уже работающий picker/drop/paste/progress.
+
+Задачи: inline изображения с открытием оригинала через тот же контролируемый доступ; остальные файлы — имя, фактический размер, скачивание; безопасный technical preview только для поддержанных форматов; согласованное предупреждение для потенциально секретосодержащих файлов, если ещё не реализовано. Поведение одинаково в Simple/Advanced/preview/published renderer и в существующих authoring формах. Representation использует стабильную application identity; не вшивать private object keys, временные signed URLs или blob URLs в durable Markdown. Сохранять Markdown round-trip и Undo/Redo, не запускать file downloads при login/list/restore без использования файла.
+
+Приёмка: реальные editor composition + renderer tests; paste/drop при конфликте/смене owner/generation; нормальный refresh сохраняет uploads; отказ от локальной версии очищает проигравшие transients; image/file display LTR/RTL, keyboard и mobile browser review локального runtime. Работоспособность тестового storage не называть live R2 acceptance.
+
+### Пакет 3 — автоматическая очистка осиротевших файлов, local/CI path
+
+После приёмки предыдущего пакета реализовать ограниченный cleanup processor за существующей storage boundary; внешнее расписание/Queue остаётся заглушкой и отдельной инфраструктурной задачей. Не требовать ручного администраторского удаления каждого файла.
+
+Задачи:
+- Отличать действующие draft refs от refs retired/deleted/expired generation; отсутствие server text row само по себе НЕ означает orphan, поскольку немедленная загрузка законно предшествует первому 60-second save.
+- Проверять все действующие draft и published refs. File, используемый другой публикацией или допустимым черновиком, не удаляется. Удаление ссылки и прекращение выдачи немедленны; physical deletion может быть позже.
+- Описать race-safe переход candidate → повторная проверка/claim → private delete → DB finalize. Между DB и storage нет общей транзакции: простого SELECT «refs нет», затем R2.delete недостаточно. Новая публикация/rebind/upload не должна привязать asset, пока он уже удаляется; повтор после lost ACK/process crash идемпотентен и не забывает незавершённую работу.
+- Ограниченные batches и повторяемое выполнение; failure adapter оставляет восстанавливаемое состояние. Времена/grace — серверная техническая политика с обоснованием, без новых пользовательских квот и настроек.
+
+Приёмка: PG + управляемый fake storage; удаление draft, TTL, удаление post, shared refs, immediate upload до server save, terminal alias; параллельные cleanup/publication/rebind/remove; lost delete ACK, падение между шагами, повтор/двойной запуск. Показать, что доступный file никогда не становится битой ссылкой из-за cleanup.
+
+### Порядок работы и ответственность
+
+1. GPT-6 начинает с пакета 1 и фиксирует в этом файле исходный SHA, scope, причинные границы и необходимые изменения. Если обнаружит новый дефект принятой основы — сначала воспроизведение и минимальная correction boundary, а не самовольный общий redesign.
+2. GPT-6 реализует только текущий пакет, самостоятельно проверяет весь связанный поток и обновляет PROJECT_STATE.md по фактическому состоянию. Выполняет relevant regression suites, полный lint/typecheck/application tests, PostgreSQL integration/privilege/schema проверки, обе сборки и exact-head CI. Browser checks — когда пакет меняет видимый flow. Нельзя ослаблять тесты, timeouts или grants checks ради green.
+3. В передаче здесь: один стабильный SHA, изменения и причины, тестовые команды/результаты, CI URL, browser evidence, что не проверено и следующий шаг. Исходные 933/261 — baseline, не обязательное фиксированное число и не доказательство нового head.
+4. GPT-5.6 Sol независимо проверяет тот же SHA и фиксирует вывод здесь. Codex независимо проверяет реализацию против задания и требований; использует собственные диагностики, а не принимает отчёты исполнителя/reviewer как факты. При подтверждённом defect задача на минимальное исправление возвращается GPT-6; Codex код не исправляет.
+5. Следующий пакет берётся после принятия предыдущего и сверки актуального owner scope. Этот план не запускает другие чаты автоматически и не является разрешением на последующие этапы/production действия. Промежуточные heads не отправлять на automated Codex Code Review; его gate для окончательно готового implementation PR сохраняется.
+6. Merge выполняет только владелец. EDITOR_SPEC.md сохраняется пока PR незавершён; перенос постоянных правил и удаление временного файла — перед окончательным merge, после полной реализации/приёмки.
+
+**Текущий следующий шаг:** GPT-6 — сверить refs/документы и выполнить проектирование минимальной границы пакета 1, затем его реализацию и собственные проверки в PR #215. GPT-5.6 Sol — независимая проверка переданного стабильного head. Codex — постановка задач, техническое согласование и приёмка; implementation-код не меняет.
