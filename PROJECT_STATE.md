@@ -575,6 +575,23 @@ Vico Forum находится в ранней pre-release разработке.
   успешны. Статус exact-head CI фиксируется в checks PR, независимые GPT-5.6 Sol/GPT-6
   проверки и merge не выполнены. Publication promotion/download,
   orphan cleanup, AV и external R2 provisioning не реализуются этим исправлением.
+- Соревновательная реализация GPT-6 в Draft PR #222 (2026-10-13) отделена от
+  редакторского PR #215 и исходного служебного PR #147. PR #222 использует точный
+  базовый снимок редактора из `bb2d49e`, не меняя PR #215, и содержит два
+  bounded Stage 5 исправления: explicit Keep-server выбор больше не сохраняет
+  проигравшее attachment provenance; selection epoch отделяет отказ от локального
+  состояния вложений от обычного same-generation refresh и предотвращает
+  устаревшие UI callback/update после выбора версии, сохраняя retained Keep-local
+  uploads и штатный 60-second text sync. Для подозрительных retries используется
+  versioned deterministic server-derived SHA-256 event key поверх существующего
+  уникального индекса; event primary IDs остаются серверными, прежние UUID keys
+  читаются. В конкурирующей реализации добавлены client/route/native PostgreSQL
+  регрессионные проверки без новых миграций. Exact code-head `7ee7983`
+  успешно прошёл GitHub CI [checks + database] (#38437538541); это
+  repository/CI evidence, не live R2/browser/production acceptance.
+  Сам документ плана `docs/proposals/GPT6_STAGE5_ATTACHMENT_FIX_PLAN.md`
+  защищён от изменений. Данный PR экспериментальный, не merged; следующие
+  editor slices и Stage 6 не затронуты.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
