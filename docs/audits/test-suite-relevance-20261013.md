@@ -29,10 +29,10 @@
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
-| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A — 7/44 файлов, 69 кейсов |
+| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A+6B — 16/44 файлов, 187 кейсов |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **75 файлов / 632 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **84 файла / 750 тест-кейсов проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -123,25 +123,25 @@
 - [x] `db/locale-repository.test.ts`
 - [x] `tests/database/hyperdrive-registry.test.ts`
 
-### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A завершён)
+### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A и 6B завершены)
 
-- [ ] `app/localization/cloudflare-m2m100-provider.test.ts`
-- [ ] `app/localization/content-generation-action.server.test.ts`
+- [x] `app/localization/cloudflare-m2m100-provider.test.ts`
+- [x] `app/localization/content-generation-action.server.test.ts`
 - [x] `app/localization/content-generation-view.test.ts`
 - [x] `app/localization/content-markdown-translation.test.tsx`
-- [ ] `app/localization/content-post-body-execution.test.tsx`
+- [x] `app/localization/content-post-body-execution.test.tsx`
 - [ ] `app/localization/content-post-body-planning.test.ts`
-- [ ] `app/localization/content-provider-allowance.test.ts`
-- [ ] `app/localization/content-request-budget.server.test.ts`
+- [x] `app/localization/content-provider-allowance.test.ts`
+- [x] `app/localization/content-request-budget.server.test.ts`
 - [x] `app/localization/content-source-locale.test.ts`
-- [ ] `app/localization/content-translation-execution.test.ts`
+- [x] `app/localization/content-translation-execution.test.ts`
 - [ ] `app/localization/content-translation-planning.test.ts`
 - [x] `app/localization/content-translation-presentation.test.ts`
 - [x] `app/localization/content-translation.test.ts`
 - [x] `app/localization/tinyld-source-locale-detector.test.ts`
-- [ ] `app/localization/translation-execution.test.ts`
-- [ ] `app/localization/translation-provider-data-policy.test.ts`
-- [ ] `app/localization/translation-provider.test.ts`
+- [x] `app/localization/translation-execution.test.ts`
+- [x] `app/localization/translation-provider-data-policy.test.ts`
+- [x] `app/localization/translation-provider.test.ts`
 - [ ] `app/localization/translation-publication.test.ts`
 - [ ] `app/localization/translation-task-consumer.test.ts`
 - [ ] `app/localization/translation-task-dispatch.test.ts`
@@ -187,12 +187,37 @@
 ### Разбиение этапа 6 (44 файла, без повторов)
 
 - **6A — source locale / безопасное представление** — **7 файлов**, 69 кейсов, **завершён**: `app/localization/content-source-locale.test.ts`, `app/localization/tinyld-source-locale-detector.test.ts`, `app/localization/content-translation.test.ts`, `app/localization/content-translation-presentation.test.ts`, `app/localization/content-markdown-translation.test.tsx`, `app/localization/translation-validation.test.ts`, `app/localization/content-generation-view.test.ts`.
-- **6B — провайдеры и исполнение** — **9 файлов**, **не начат**: `app/localization/cloudflare-m2m100-provider.test.ts`, `app/localization/content-provider-allowance.test.ts`, `app/localization/content-request-budget.server.test.ts`, `app/localization/content-generation-action.server.test.ts`, `app/localization/translation-provider-data-policy.test.ts`, `app/localization/translation-provider.test.ts`, `app/localization/translation-execution.test.ts`, `app/localization/content-translation-execution.test.ts`, `app/localization/content-post-body-execution.test.tsx`.
+- **6B — провайдеры и исполнение** — **9 файлов, 118 кейсов, завершён**: `app/localization/cloudflare-m2m100-provider.test.ts`, `app/localization/content-provider-allowance.test.ts`, `app/localization/content-request-budget.server.test.ts`, `app/localization/content-generation-action.server.test.ts`, `app/localization/translation-provider-data-policy.test.ts`, `app/localization/translation-provider.test.ts`, `app/localization/translation-execution.test.ts`, `app/localization/content-translation-execution.test.ts`, `app/localization/content-post-body-execution.test.tsx`.
 - **6C — планирование, очереди и публикация** — **8 файлов**, **не начат**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
 - **6D — DB/Hyperdrive адаптеры** — **5 файлов**, **не начат**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
 - **6E — content generation PostgreSQL** — **8 файлов**, **не начат**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
 - **6F — tasks/UI storage PostgreSQL** — **7 файлов**, **не начат**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
-- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6B до команды владельца.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6C до команды владельца.
+
+### Проход 6B — провайдеры, allowance, budget, action, execution (2026-10-13)
+
+- **База:** неизменённый `main` commit `83219af2c36a99dd292b6ab1a9550f49b1011c0d`. Полностью исследованы 9 test files, их `it.each` матрицы и тестовые harness, сверены с implementation `app/localization/{cloudflare-m2m100-provider,content-provider-allowance,content-request-budget.server,content-generation-action.server,translation-provider-data-policy,translation-provider,translation-execution,content-translation-execution,content-post-body-execution}.ts`, `PROJECT_STATE.md` (Stage 5A/5B/current Stage 5), `ROADMAP.md`, `docs/translation/{CONTENT_TRANSLATION,PROVIDERS_AND_JOBS,UI_TRANSLATION,STORAGE_AND_VERSIONING}.md`. Никаких live Workers AI/Queue/Cloudflare/Neon вызовов.
+- **CI:** **9 файлов / 118 test cases** = `27+10+8+6+5+7+12+20+23`, все `✓ filename (N tests)` в [GitHub checks CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) на source-equivalent PR #221 head (без повторного запуска сейчас). В `cloudflare-m2m100-provider.test.ts` именно `it.each` malformed output **8** + error taxonomy **10** объясняют 27 исполнений при 11 объявлениях `it`; остальные параметризованные кейсы отдельно учтены.
+- **Каждый test file и уникальная область:**
+  - [`app/localization/cloudflare-m2m100-provider.test.ts`](../../app/localization/cloudflare-m2m100-provider.test.ts) — **27** cases. Cloudflare Workers AI M2M100 adapter: UI whitelist and mapping, content default-deny and per-call policy, malformed responses, documented error metadata mapping (retry/terminal), direct-call fail-closed.
+  - [`app/localization/content-provider-allowance.test.ts`](../../app/localization/content-provider-allowance.test.ts) — **10** cases. Pre-claim allowance: attempt occurrence identities, title and post-body whole-attempt envelopes, stale fencing after asynchronous adapter, absent/unsupported provider vs absent allowance, deferral and segment budgets.
+  - [`app/localization/content-request-budget.server.test.ts`](../../app/localization/content-request-budget.server.test.ts) — **8** cases. HMAC requester pseudonym and actor-kind/key-version separation, identity redaction, validated versioned scope/cost/window/cleanup contracts; independent of allowance before provider call.
+  - [`app/localization/content-generation-action.server.test.ts`](../../app/localization/content-generation-action.server.test.ts) — **6** cases. Action boundary: server-only actor pseudonymization, automatic 3000-semantic-character threshold and explicit bypass, bounded budget-denied/no-op results, classified availability error map.
+  - [`app/localization/translation-provider-data-policy.test.ts`](../../app/localization/translation-provider-data-policy.test.ts) — **5** cases. Provider/model/allowed canonical locale pair + public-title classification and operation constraints, including four malformed-configuration parameter cases.
+  - [`app/localization/translation-provider.test.ts`](../../app/localization/translation-provider.test.ts) — **7** cases. Provider-neutral router chooses adapters by capability/locale and message kind, retains provenance, validates operation and refuses unsupported select structure; leaves payload untrusted for executor validation.
+  - [`app/localization/translation-execution.test.ts`](../../app/localization/translation-execution.test.ts) — **12** cases. UI task executor claim/preflight/plural provider request, failed output/provenance, typed retry/terminal, durable attempt exhausted/claim loss, conditional UI publication.
+  - [`app/localization/content-translation-execution.test.ts`](../../app/localization/content-translation-execution.test.ts) — **20** cases. Topic-title executor revision/source/policy/generation/target/current gates, exactly-one public-title plain request, default-deny real adapter, provider failure taxonomy, lost claim and publication fencing.
+  - [`app/localization/content-post-body-execution.test.tsx`](../../app/localization/content-post-body-execution.test.tsx) — **23** cases. Post-body executor markdown segment ordering, fingerprint and policy stale checks, technical limits, precheck and between-call capability revocation, no partial publication, full provenance/token/structure validation, retry and claim loss.
+- **Целенаправленная проверка дублей:**
+  1. `cloudflare-m2m100-provider.test.ts` и `translation-provider-data-policy.test.ts` оба содержат разрешения public-title locale pairs, но policy unit test проверяет **валидность конфигурации и точное решение для provider/model/classification/operation**, adapter test — **вызов/невызов реального Workers AI runner, корректный provider payload и повторную policy проверку после изменения разрешения**. Оставить оба.
+  2. `translation-provider.test.ts` проверяет **provider-neutral router selection и deliberate pass-through untrusted payload**. Адаптер Cloudflare проверяет реальные provider error codes и output shape, а task executors — превращение untrusted/invalid results в terminal durable outcome. Никакой один слой не заменяет два остальных.
+  3. `content-request-budget.server.test.ts` = **requester HMAC pseudonym and admission policy input validation**, `content-generation-action.server.test.ts` = **authenticated actor → planner admission, UI result mapping and automatic/explicit size threshold**, `content-provider-allowance.test.ts` = **другая операция**, pre-provider **attempt capacity** и occurrence/generation fencing перед claim. Совпадение терминов `budget`, `allowance` не означает взаимозаменяемость.
+  4. `translation-execution.test.ts`, `content-translation-execution.test.ts`, `content-post-body-execution.test.tsx`: общие сценарии `already-claimed → ack/no-provider`, `reclaimed exhausted → terminal/no-provider`, `claim-lost → ack`, `dependency failure → retry` повторяются у **трёх разных executor entrypoints**. Каждый владеет отдельным claim/preflight/provider/publication path; один тест UI executor не гарантирует защиту title/post executors. Единственный реальный shared durable lifecycle проверяется отдельно в Stage 6C/6F. Не сокращать сейчас.
+  5. Title и post-body оба проверяют `unsupported provider` и invalid provenance, но post body дополнительно имеет **несколько последовательных provider calls**, whole-set atomic publication и protected Markdown restoration. В `content-provider-allowance.test.ts` "configured but unsupported" title/post отличаются task kind/current-source/envelope paths и принципиально отличаются от **no provider configured**: первый должен допустить terminal unsupported execution без лишнего allowance; второй обязан defer. Это действующая current Stage 5 local/CI гарантия, не гипотетический future safety mechanism.
+  6. `content-post-body-execution.test.tsx` + Stage 6A `content-markdown-translation.test.tsx`: AST/token unit test гарантирует **защиту и восстановление Markdown**, executor test — **применение этой защиты при последовательных provider calls, no partial success, final conditional publish**. Похожие protected-token fixtures выполняют разные работы.
+- **Релевантность Stage:** Stage 5 repository/local-CI content task execution, bounded delivery, pre-claim allowance and HMAC request-budget foundation завершены и реально присутствуют в коде. Stage 6 external deployment, real provider credentials, Cloudflare Queues, authoritative production allowance, production anti-abuse policy **не принимались и не проверялись**. Проверки fake runner/adapter не выдавать за live provider acceptance. При этом default-deny paths и unsupported-provider terminal/deferred branches — текущий явный контракт, а не причины удалить тесты из-за отсутствия реальной конфигурации.
+- **Результат прохода:** **0 подтверждённых целиком лишних test files и 0 подтверждённых отдельными идентичными кейсами** в 6B. Пересечения сознательно оставлены как guards независимых entrypoints. Финальный межблочный аудит Stage 8 сравнит эти guards с DB storage/task lifecycle, но без доказанной идентичности их не удалять.
+- **Прогресс:** **84/118 файлов, 750/1 075 исходных кейсов**, осталось **34 файла, 325 кейсов**. Stage 6: **16/44 файла, 187 кейсов**, остаток 28. Следующий проход **6C**, 8 файлов `content-translation-planning`, `content-post-body-planning`, `translation-publication`, `translation-task-consumer`, `translation-task-dispatch`, `translation-task-reconciliation`, `translation-tasks`, `ui-translation-service`. Остановка до команды владельца.
 
 ### Проход 6A — язык источника, Markdown, translation presentation, generation view (2026-10-13)
 
