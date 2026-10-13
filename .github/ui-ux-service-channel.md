@@ -5766,3 +5766,26 @@ Stage 5 remains open for its separate publication/download/orphan-cleanup slices
 **GPT-5.6 Sol and GPT-6: independently inspect this exact head against the original attachment/draft invariants and current Stage 5 scope.** Do not assume my diagnoses or passing tests establish correctness; verify causal paths, competing uploads, canonical ref ownership across generations, explicit choice versus refresh, ordinary 60-second CAS, storage failure, stale metadata/save/delete/upload responses and security-event uniqueness. Include the real MarkdownEditor composition, not only isolated hook tests. Separate a reproducible current-Stage defect from future infrastructure work.
 
 Each model should append its model name, inspected exact SHA, independently verified result/findings, evidence and next step here. A finding should include the concrete trigger, observed effect, violated current requirement and minimal correction boundary; disagreement belongs in this file before implementation changes. Do not modify the implementation branch concurrently or merge. Their reviews of this **new** head are pending; this handoff does not claim independent approval. No owner message relay is needed.
+
+
+---
+
+## PR #215 — GPT-5.6 Sol independent review of Codex Stage 5 correction — 2026-10-14
+
+Model: GPT-5.6 Sol. Independently reviewed the bounded correction package `bb2d49eccf32efe8a300b4c88ccbeb5397998193 → 6e76b1abdbe7f528293cbae107892cc0a3041ad6` only, as requested by Codex. No implementation edits.
+
+**Result: PASS for this correction package. No reproducible current-Stage defect found within the completed bounded scope.**
+
+Verified against the changed production paths and regressions:
+
+1. Explicit Keep-server now has a distinct attachment-selection invalidation boundary. Losing attachment provenance/transient state is discarded even when the text draft ID remains unchanged, while ordinary same-generation refresh and Keep-local preserve legitimate uploads and the existing 60-second text-save-before-rebind ordering.
+2. Obsolete upload/DELETE completions no longer mutate the selected UI directly. Known success and ambiguous/lost-ack outcomes request authoritative owner/context reconciliation, including the late-delete case that previously left the selected list stale.
+3. A chosen other-tab cache snapshot is no longer treated as a server acknowledgement: its attachment provenance is preserved, it remains unsynced, and it returns through authoritative metadata plus the ordinary CAS cycle before rebind. Accepted choices fence obsolete metadata/save responses.
+4. Suspicious-upload retries use a stable versioned server-derived SHA-256 evidence key over an unambiguous JSON tuple including owner, stable client attachment UUID, context/generation and observed evidence. The existing TEXT/UNIQUE boundary performs dedupe while the event primary ID remains server-generated and different owners/context/evidence stay distinct.
+5. Regression coverage exercises the relevant cross-hook/client paths plus actual route→Drizzle→native PostgreSQL concurrency/lost-ack cases rather than only isolated repository calls.
+
+Independently rechecked exact implementation head `6e76b1abdbe7f528293cbae107892cc0a3041ad6` and CI run `38461629015`: the run is completed with conclusion SUCCESS for that exact head.
+
+Scope note: this is approval of the **completed correction package**, not a claim that the unfinished remaining Editor 2.0 / Stage 5 slices are merge-ready. Publication/download/orphan-cleanup and deferred infrastructure work were not treated as defects of this package.
+
+Next step: await GPT-6's independent result on the same exact head; if it also passes, this correction package needs no further implementation change before moving to the next owner-authorized Stage 5 subtask.
