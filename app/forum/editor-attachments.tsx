@@ -39,10 +39,14 @@ interface Props {
   draftId: string;
   draftReady: boolean;
   draftRevision: number;
+  selectionEpoch: number;
+  discardFrom: string | null;
+  discardVersion: number | null;
   rebindFrom: string | null;
   rebindVersion: number | null;
   disabled: boolean;
   reserveGeneration(): string | null;
+  completeDiscard(fromDraftId: string, toDraftId: string): boolean;
   completeRebind(fromDraftId: string, toDraftId: string, retired?: boolean): boolean;
   retryDraftReconciliation(): void;
   noteAttachmentChange(draftId: string): void;
@@ -143,10 +147,14 @@ export function useEditorAttachments({
   draftId,
   draftReady,
   draftRevision,
+  selectionEpoch,
+  discardFrom,
+  discardVersion,
   rebindFrom,
   rebindVersion,
   disabled,
   reserveGeneration,
+  completeDiscard,
   completeRebind,
   retryDraftReconciliation,
   noteAttachmentChange,
@@ -157,19 +165,23 @@ export function useEditorAttachments({
   entriesRef.current = entries;
   const [restoredScope, setRestoredScope] = useState<string | null>(null);
   const [restoreState, setRestoreState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [discardState, setDiscardState] = useState<"idle" | "loading" | "error">("idle");
   const [rebindState, setRebindState] = useState<"idle" | "loading" | "error">("idle");
   const [restoreAttempt, setRestoreAttempt] = useState(0);
+  const [discardAttempt, setDiscardAttempt] = useState(0);
   const [rebindAttempt, setRebindAttempt] = useState(0);
   const [publicationWarning, setPublicationWarning] = useState(false);
   const requestsRef = useRef(new Map<string, XMLHttpRequest>());
   const callbacksRef = useRef({
     reserveGeneration,
+    completeDiscard,
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
   });
   callbacksRef.current = {
     reserveGeneration,
+    completeDiscard,
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
@@ -181,7 +193,7 @@ export function useEditorAttachments({
   draftIdRef.current = draftId;
   const previousIdentityRef = useRef(identity);
   const removedIdsRef = useRef(new Set<string>());
-  const scope = identity ? `${identity}\u0000${draftId}` : null;
+  const scope = identity ? `${identity}\u0000${draftId}\u0000${selectionEpoch}` : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
 
@@ -212,9 +224,48 @@ export function useEditorAttachments({
     previousIdentityRef.current = identity;
     setRestoredScope(null);
     setRestoreState("idle");
+    setDiscardState("idle");
     setRebindState("idle");
     setPublicationWarning(false);
   }, [scope]);
+
+  useEffect(() => {
+    if (!contextKey || !discardFrom || discardVersion === null) {
+      setDiscardState("idle");
+      return;
+    }
+    const scopeAtStart = scope;
+    const fromDraftId = discardFrom;
+    const toDraftId = draftId;
+    let ignore = false;
+    setDiscardState("loading");
+    void fetch("/api/attachments", {
+      method: "PATCH",
+      headers: {
+        "X-Vico-Draft-Context": encoded(contextKey),
+        "X-Vico-Draft-Id": toDraftId,
+        "X-Vico-Attachment-From-Draft-Id": fromDraftId,
+        "X-Vico-Draft-Version": String(discardVersion),
+        "X-Vico-Attachment-Transition": "discard",
+      },
+      credentials: "same-origin",
+    }).then(async (response) => {
+      if (ignore || scopeRef.current !== scopeAtStart) return;
+      if (response.status === 409 || response.status === 410) {
+        callbacksRef.current.retryDraftReconciliation();
+      }
+      if (!response.ok) throw new Error(String(response.status));
+      if (!callbacksRef.current.completeDiscard(fromDraftId, toDraftId)) {
+        throw new Error("local discard not saved");
+      }
+      setDiscardState("idle");
+      setRestoredScope(null);
+      setRestoreState("idle");
+    }).catch(() => {
+      if (!ignore && scopeRef.current === scopeAtStart) setDiscardState("error");
+    });
+    return () => { ignore = true; };
+  }, [contextKey, discardFrom, discardVersion, discardAttempt, draftId, scope]);
 
   useEffect(() => {
     if (!contextKey || !rebindFrom || rebindVersion === null) {
@@ -264,7 +315,7 @@ export function useEditorAttachments({
       setRestoredScope(null);
       return;
     }
-    if (!contextKey || !draftReady || rebindFrom || restoredScope === scope) return;
+    if (!contextKey || !draftReady || discardFrom || rebindFrom || restoredScope === scope) return;
     const scopeAtStart = scope;
     const entriesAtStart = new Map(entriesRef.current.map((entry) => [entry.id, entry]));
     let ignore = false;
@@ -300,16 +351,17 @@ export function useEditorAttachments({
       if (!ignore && scopeRef.current === scopeAtStart) setRestoreState("error");
     });
     return () => { ignore = true; };
-  }, [contextKey, draftId, draftReady, draftRevision, rebindFrom, restoreAttempt, restoredScope, scope]);
+  }, [contextKey, discardFrom, draftId, draftReady, draftRevision, rebindFrom, restoreAttempt, restoredScope, scope]);
 
   const restoreReady = !!scope && restoredScope === scope && restoreState === "ready";
-  const canAdd = !!contextKey && draftReady && !rebindFrom && rebindState !== "loading"
-    && restoreReady && !disabled;
+  const canAdd = !!contextKey && draftReady && !discardFrom && discardState !== "loading"
+    && !rebindFrom && rebindState !== "loading" && restoreReady && !disabled;
   const hasUnsettled = entries.some((entry) => entry.status !== "stored");
   // Publication promotion/download is the next bounded Stage 5 unit. Until then a stored
   // attachment must never be silently discarded by a text-only publication.
   const blocking = !!contextKey && (
     !draftReady
+    || !!discardFrom
     || !!rebindFrom
     || !restoreReady
     || entries.length > 0
@@ -342,6 +394,7 @@ export function useEditorAttachments({
     const generation = originalDraftId ?? callbacksRef.current.reserveGeneration();
     if (!generation || (!originalDraftId && generation !== draftId)) return;
     const identityAtStart = identity;
+    const scopeAtStart = scope;
     const next: UploadEntry = {
       id: stableId,
       draftId: generation,
@@ -362,6 +415,7 @@ export function useEditorAttachments({
     const request = new XMLHttpRequest();
     requestsRef.current.set(stableId, request);
     const active = () => identityRef.current === identityAtStart
+      && scopeRef.current === scopeAtStart
       && entriesRef.current.some((entry) => entry.id === stableId
         && entry.draftId === generation && entry.status === "uploading");
     request.upload.onprogress = (event) => {
@@ -442,6 +496,7 @@ export function useEditorAttachments({
       || entry.uncertainCommit
     ) return;
     const identityAtStart = identity;
+    const scopeAtStart = scope;
     if (entry.error === "gone") {
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       return;
@@ -449,6 +504,7 @@ export function useEditorAttachments({
     const previousStatus = entry.attachment ? "stored" as const : "error" as const;
     setEntry(entry.id, (current) => ({ ...current, status: "removing", removeError: false }));
     const activeRemoval = () => identityRef.current === identityAtStart
+      && scopeRef.current === scopeAtStart
       && entriesRef.current.some((item) => item.id === entry.id
         && item.draftId === entry.draftId && item.status === "removing");
     try {
@@ -508,9 +564,11 @@ export function useEditorAttachments({
     return t("editorAttachmentMegabytes", { size: number.format(bytes / (1024 * 1024)) });
   }
 
-  const lifecycleMessage = rebindFrom
-    ? rebindState === "error" ? "editorAttachmentRebindUnavailable" : "editorAttachmentRebinding"
-    : !draftReady
+  const lifecycleMessage = discardFrom
+    ? discardState === "error" ? "editorAttachmentRebindUnavailable" : "editorAttachmentRebinding"
+    : rebindFrom
+      ? rebindState === "error" ? "editorAttachmentRebindUnavailable" : "editorAttachmentRebinding"
+      : !draftReady
       ? "editorAttachmentDraftWaiting"
       : restoreState === "loading"
         ? "editorAttachmentRestoring"
@@ -541,11 +599,15 @@ export function useEditorAttachments({
       {lifecycleMessage ? (
         <div className="markdown-editor-attachment-status" role="status">
           <span>{t(lifecycleMessage)}</span>
-          {rebindFrom && rebindState === "error" ? (
+          {discardFrom && discardState === "error" ? (
+            <button type="button" disabled={disabled} onClick={() => setDiscardAttempt((value) => value + 1)}>
+              {t("editorAttachmentRetry")}
+            </button>
+          ) : rebindFrom && rebindState === "error" ? (
             <button type="button" disabled={disabled} onClick={() => setRebindAttempt((value) => value + 1)}>
               {t("editorAttachmentRetry")}
             </button>
-          ) : !rebindFrom && !draftReady ? (
+          ) : !discardFrom && !rebindFrom && !draftReady ? (
             <button type="button" disabled={disabled} onClick={() => callbacksRef.current.retryDraftReconciliation()}>
               {t("editorAttachmentRetry")}
             </button>
@@ -609,7 +671,7 @@ export function useEditorAttachments({
 
       {publicationWarning && blocking ? (
         <p className="markdown-editor-attachment-error" role="alert">
-          {t(hasUnsettled || !restoreReady || !draftReady || !!rebindFrom
+          {t(hasUnsettled || !restoreReady || !draftReady || !!discardFrom || !!rebindFrom
             ? "editorAttachmentPublicationBlocked"
             : "editorAttachmentPublicationUnavailable")}
         </p>
