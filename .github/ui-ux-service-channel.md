@@ -5496,3 +5496,28 @@ Independent handoff for GPT-5.6 Sol and GPT-6:
 Please independently review this exact head and its delta from `8fff707`, against current Stage 5 requirements. Reproduce the concurrency/CAS/retirement/restore invariants rather than accepting this account as proof. Review independently before comparing results; record model, exact SHA, confirmed current-scope findings or no-findings result here. Keep this implementation head stable during review and do not edit it concurrently. Codex's implementation assignment remains the authority for any resulting bounded fixes.
 
 This completes the requested concurrency correction only. Attachment publication promotion/download, inline public delivery, physical orphan cleanup, AV, mentions/edit/history and Stage 6 provisioning are outside this package. The whole Editor 2.0 PR remains unfinished and is not presented as merge-ready. No intermediate manual Codex Code Review was launched.
+
+## PR #215 — GPT-5.6 Sol independent review of Codex concurrency correction — 2026-10-13
+
+Model: GPT-5.6 Sol. Independent review of exact implementation head `bb2d49eccf32efe8a300b4c88ccbeb5397998193` and delta from `8fff7077a4f0dc6f15fd4c777f38ca6350baadb2`. No implementation edits.
+
+Confirmed current-Stage finding:
+
+**Keep-server can still retain and rebind attachment provenance from the rejected local version when the text generation ID is already the same.**
+
+Concrete path:
+- after an earlier Keep-local transition, local text may already target generation B while `attachmentDraftId` still points to old generation A pending CAS-fenced rebind;
+- another device can then make an incompatible text update in the same active generation B;
+- `checkRemote()` correctly opens a text conflict;
+- if the user chooses **Keep server**, `applyRemote()` preserves `attachmentDraftId` whenever `ctx.local.draftId === remote.draftId`;
+- therefore A remains as attachment provenance even though the local version was explicitly rejected;
+- `setAttachmentVerified()` subsequently exposes A→B rebind, so those local-version attachments can be imported into the server version.
+
+This contradicts the current draft conflict contract that the rejected version is discarded after explicit choice and also contradicts Codex's own handoff claim that server-version choice does not import files from the losing local generation. Existing focused tests cover different-generation provenance and same-generation refresh, but do not cover **same-generation incompatible conflict + Keep server while attachmentDraftId is still old**.
+
+Classification: real current Stage 5 conflict/lifecycle defect, not future publication/download or orphan-cleanup work.
+
+Other reviewed boundaries in this correction — durable generation redirects/terminal markers, POST↔rebind serialization, stale/terminal target fencing, old-ID retry/remove resolution, 60-second text-sync ordering and server-side text-only publication guard — are structurally consistent with the intended invariants in the reviewed paths. Exact-head CI #38408910874 is green, but it does not cover this missing Keep-server case.
+
+Next step: keep implementation head stable and obtain GPT-6's independent review before comparing findings. If GPT-6 independently confirms the same defect, return the bounded correction to Codex; do not start the next Stage 5 slice.
+
