@@ -134,16 +134,43 @@ export class DrizzleForumAttachments {
         byteSize: input.byteSize,
         verificationStatus: input.verificationStatus,
         createdAt,
+      }).onConflictDoNothing({
+        target: forumAttachments.id,
       }).returning();
-      if (!created) throw new Error("attachment insert did not return a row");
-      await tx.insert(forumAttachmentDraftRefs).values({
-        attachmentId: input.id,
-        ownerId: input.ownerId,
-        contextKey: input.contextKey,
-        draftId: input.draftId,
-        createdAt,
-      });
-      return toMetadata(created);
+
+      if (created) {
+        await tx.insert(forumAttachmentDraftRefs).values({
+          attachmentId: input.id,
+          ownerId: input.ownerId,
+          contextKey: input.contextKey,
+          draftId: input.draftId,
+          createdAt,
+        });
+        return toMetadata(created);
+      }
+
+      // The browser owns the upload ID so a retry after an ambiguous transport failure
+      // can safely converge on the already committed attachment instead of duplicating it.
+      const [existing] = await tx.select().from(forumAttachments)
+        .where(and(
+          eq(forumAttachments.id, input.id),
+          eq(forumAttachments.ownerId, input.ownerId),
+        ))
+        .for("update")
+        .limit(1);
+      if (!existing) throw new InvalidForumAttachmentError();
+
+      const [reference] = await tx.select({ attachmentId: forumAttachmentDraftRefs.attachmentId })
+        .from(forumAttachmentDraftRefs)
+        .where(and(
+          eq(forumAttachmentDraftRefs.attachmentId, input.id),
+          eq(forumAttachmentDraftRefs.ownerId, input.ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, input.contextKey),
+          eq(forumAttachmentDraftRefs.draftId, input.draftId),
+        ))
+        .limit(1);
+      if (!reference) throw new InvalidForumAttachmentError();
+      return toMetadata(existing);
     });
   }
 
