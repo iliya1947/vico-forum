@@ -11,7 +11,7 @@ const postId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
 const draftId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d55";
 const metadata: ForumAttachmentMetadata = {
   id: attachmentId, objectKey: "private/03b93562-0550-4eef-88af-f951d6ea6138",
-  fileName: 'unsafe\"файл.svg', declaredMime: "image/svg+xml",
+  fileName: 'unsafe"файл.svg', declaredMime: "image/svg+xml",
   detectedType: "svg", responseMime: "image/svg+xml",
   byteSize: 4, verificationStatus: "type-checked", createdAt: new Date().toISOString(),
 };
