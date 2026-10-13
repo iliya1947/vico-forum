@@ -254,7 +254,7 @@ export function useEditorAttachments({
 
   function startUpload(
     file: File,
-    stableId = crypto.randomUUID(),
+    stableId: string = crypto.randomUUID(),
     replacing = false,
     uncertainCommit = false,
   ) {
