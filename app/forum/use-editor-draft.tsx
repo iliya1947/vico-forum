@@ -47,6 +47,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const [expectedVersion, setExpectedVersion] = useState(0);
   const [attachmentReady, setAttachmentReady] = useState(false);
+  const [attachmentRebindFrom, setAttachmentRebindFrom] = useState<string | null>(null);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
   callbacksRef.current = { restore };
@@ -63,8 +64,13 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function setAttachmentVerified(ctx: Runtime, verified: boolean) {
     if (!current(ctx)) return;
     ctx.attachmentVerified = verified;
-    setAttachmentReady(verified && !ctx.conflict
-      && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === ctx.draftId));
+    const attachmentDraftId = ctx.local?.attachmentDraftId;
+    const rebindFrom = verified && !ctx.conflict
+      && attachmentDraftId && attachmentDraftId !== ctx.draftId
+      ? attachmentDraftId
+      : null;
+    setAttachmentRebindFrom(rebindFrom);
+    setAttachmentReady(verified && !ctx.conflict && rebindFrom === null);
   }
   function updateConflict(ctx: Runtime, next: Conflict | null) {
     if (!current(ctx)) return;
@@ -146,6 +152,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
 
   async function checkRemote(ctx: Runtime) {
     if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
+    if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return;
     const epoch = ctx.epoch;
     ctx.reading = true;
     setAttachmentVerified(ctx, false);
@@ -377,6 +384,26 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx = runtimeRef.current;
     if (ctx && current(ctx)) void checkRemote(ctx);
   }
+  function completeAttachmentRebind(fromDraftId: string, toDraftId: string): boolean {
+    const ctx = runtimeRef.current;
+    if (
+      !ctx
+      || !current(ctx)
+      || ctx.conflict
+      || !ctx.attachmentVerified
+      || ctx.draftId !== toDraftId
+      || ctx.local?.attachmentDraftId !== fromDraftId
+    ) return false;
+    const next = { ...ctx.local, attachmentDraftId: toDraftId };
+    if (!writeLocalEditorDraft(next)) {
+      setStatus("error");
+      return false;
+    }
+    ctx.local = next;
+    setAttachmentVerified(ctx, true);
+    void checkRemote(ctx);
+    return true;
+  }
   function chooseVersion(which: "local" | "server") {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx) || !ctx.conflict) return;
@@ -424,6 +451,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     if (!identity || !ownerId || !contextKey || !locale) {
       runtimeRef.current = null;
       setAttachmentReady(false);
+      setAttachmentRebindFrom(null);
       setStatus("idle");
       setConflict(null);
       return;
@@ -440,6 +468,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setExpectedVersion(0);
     setConflict(null);
     setAttachmentReady(false);
+    setAttachmentRebindFrom(null);
     setStatus("idle");
     const local = readLocalEditorDraft(ownerId, contextKey);
     if (local) {
@@ -464,6 +493,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       // Storage events can arrive while this tab has unflushed typing.
       // Never restore the other tab over that still-live editor buffer.
       if (ctx.hasInput) capture(ctx);
+      // Finish an attachment-generation move before considering another generation.
+      // Otherwise an ambiguous network result could strand retained refs between IDs.
+      if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return;
       if ((!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt)
         && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === other.draftId)) {
         setAttachmentVerified(ctx, false);
@@ -532,8 +564,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   );
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
-    preparePublication, releasePublication, attachmentReady,
-    reserveAttachmentGeneration, retryAttachmentReconciliation,
+    preparePublication, releasePublication, attachmentReady, attachmentRebindFrom,
+    reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
