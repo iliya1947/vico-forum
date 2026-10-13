@@ -57,8 +57,10 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
     createdAt: new Date().toISOString(),
   }));
   const recordSecurityEvent = vi.fn(async (
-    _input: RecordAttachmentSecurityEventInput,
-  ): Promise<void> => {});
+    input: RecordAttachmentSecurityEventInput,
+  ): Promise<void> => {
+    void input;
+  });
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
   const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
   const removeDraftAttachment = vi.fn(async () => true);
