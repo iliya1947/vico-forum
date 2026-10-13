@@ -193,7 +193,7 @@ export class DrizzleForumAttachments {
   }
 
   async readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null> {
-    if (!isForumAttachmentUuid(postId) || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
+    if (!postId || postId.length > 4096 || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
     const [row] = await this.db.select({ attachment: forumAttachments })
       .from(forumPostAttachments)
       .innerJoin(forumPosts, eq(forumPosts.id, forumPostAttachments.postId))

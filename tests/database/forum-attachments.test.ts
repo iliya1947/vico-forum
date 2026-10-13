@@ -755,6 +755,18 @@ describe("atomic publication of selected draft refs", () => {
       .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
     const moved = await client.query("select attachment_id from forum_post_attachments where post_id = $1", [created.id]);
     expect(moved.rows).toEqual([{ attachment_id: file.id }]);
+    await client.query(
+      "insert into forum_post_attachments (post_id, attachment_id, created_at) values ('attachment-post', $1, now())",
+      [file.id],
+    );
+    await client.query("delete from forum_posts where id = $1", [created.id]);
+    expect(await store.readPublishedAttachment(created.id, file.id)).toBeNull();
+    expect(await store.readPublishedAttachment("attachment-post", file.id)).toMatchObject({ id: file.id });
+    await client.query(
+      "delete from forum_post_attachments where post_id = 'attachment-post' and attachment_id = $1",
+      [file.id],
+    );
+    expect(await store.readPublishedAttachment("attachment-post", file.id)).toBeNull();
   });
 
   it("rolls back post, draft completion and refs on selected-set mismatch or stale CAS", async () => {
