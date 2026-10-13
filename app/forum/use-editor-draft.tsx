@@ -61,6 +61,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function currentAt(ctx: Runtime, epoch: number) {
     return current(ctx) && ctx.epoch === epoch;
   }
+  function attachmentGenerationMismatch(ctx: Runtime) {
+    return !!ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId;
+  }
   function setAttachmentVerified(ctx: Runtime, verified: boolean) {
     if (!current(ctx)) return;
     ctx.attachmentVerified = verified;
@@ -151,8 +154,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
 
   async function checkRemote(ctx: Runtime) {
-    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
-    if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return;
+    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict || attachmentGenerationMismatch(ctx)) return;
     const epoch = ctx.epoch;
     ctx.reading = true;
     setAttachmentVerified(ctx, false);
@@ -223,7 +225,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
 
   async function sync(ctx: Runtime) {
-    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
+    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict || attachmentGenerationMismatch(ctx)) return;
     const sent = ctx.local;
     if (
       !sent
@@ -495,7 +497,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       if (ctx.hasInput) capture(ctx);
       // Finish an attachment-generation move before considering another generation.
       // Otherwise an ambiguous network result could strand retained refs between IDs.
-      if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return;
+      if (attachmentGenerationMismatch(ctx)) return;
       if ((!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt)
         && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === other.draftId)) {
         setAttachmentVerified(ctx, false);
