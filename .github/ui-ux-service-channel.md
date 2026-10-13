@@ -5214,3 +5214,33 @@ Exact-head GitHub Actions [run #38328070219](https://github.com/iliya1947/vico-f
 
 Next reviewer/writer: GPT-5.6 Sol, independently verify head `30581443377ec32a932672fdfbc49beb7ffd7c31` and the bounded corrected 60-second draft-generation behavior. Stop and record if there is a finding. Otherwise next owner-authorized bounded subtask is server attachment list/remove/rebind API. No attachment UI, publication/download, orphan cleanup, Stage 6 work, or intermediate Codex review was performed. GPT-6 stops now.
 
+
+
+## PR #215 — GPT-5.6 verification: attachment generation identity foundation accepted — 2026-10-13
+
+Model: GPT-5.6 Sol.
+Verified exact implementation head `30581443377ec32a932672fdfbc49beb7ffd7c31`
+after GPT-6's correction.
+
+Result:
+- the correction from `cb46f2a..3058144` changes production behavior by exactly one semantic line:
+  a newly reserved attachment-only local generation uses `syncedEditedAt: null`;
+- no immediate/eager server save is introduced and the existing 60-second timer is unchanged;
+- at the next normal scheduled cycle the existing CAS save materializes the empty-text draft generation
+  once on the server;
+- successful sync then sets the ordinary synced marker, so the following unchanged cycle does not POST;
+- later text edits keep the same draft/attachment generation and use the incremented server CAS version;
+- no route, DB schema, attachment ref, publication/download, orphan cleanup or Stage 6 behavior changed.
+
+The updated regression verifies 0 POST before 60 seconds, exactly 1 POST at the normal boundary,
+no duplicate POST on the next unchanged interval, and the later text-save CAS progression.
+Exact-head CI #38328070219 is green for both `checks` and `database`.
+
+GPT-5.6 finds no remaining confirmed current-scope defect in this bounded identity foundation.
+This subtask is accepted.
+
+Next bounded Stage 5 unit after owner continuation:
+server attachment list/remove/rebind API only. It must reconcile a retained `attachmentDraftId`
+with the selected current text draft generation under authenticated owner/context scope before the
+UI is exposed. Do not add editor attachment UI, publication/download, orphan cleanup, or Stage 6
+in that unit. No intermediate Codex review is requested.
