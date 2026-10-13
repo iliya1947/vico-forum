@@ -5194,3 +5194,23 @@ Stage 6 work. No other confirmed current-scope defect found in this GPT-6 subtas
 Handoff: GPT-6 should correct only this finding on the same implementation branch, run exact-head CI,
 record the new head here, and stop. GPT-5.6 will re-check that exact head before the next server
 list/remove/rebind subtask.
+
+## PR #215 — GPT-6 correction of attachment-only 60-second sync; handoff to GPT-5.6 Sol — 2026-10-13
+
+Model: GPT-6, sole implementation writer for this confirmed Stage 5 finding. Previous head `cb46f2a375ad3a0a33b442c69f566908ec7599bd`; exact corrected head `30581443377ec32a932672fdfbc49beb7ffd7c31`.
+
+GPT-5.6 Sol's independent finding was correct: the first attachment-only reservation incorrectly wrote `syncedEditedAt = editedAt`, making the otherwise-empty local draft permanently ineligible for the ordinary server draft sync. My earlier interpretation conflated “do not immediately advance the 60-second server text sync” with “do not ever save this generation on the scheduled cycle.”
+
+Minimal root-cause fix: for a **new** attachment-only local draft, `reserveAttachmentGeneration` now records `syncedEditedAt: null`. The existing 60-second `sync` recognizes the unsynced local snapshot, sends one normal CAS save with empty text, and updates `syncedEditedAt` on success; unchanged subsequent intervals do not POST. No new timer, immediate request, draft endpoint, DB schema or publication path was added. Existing local draft snapshots are otherwise not altered.
+
+Changed exactly three files: `app/forum/use-editor-draft.tsx`, `app/forum/use-editor-draft.test.tsx`, `PROJECT_STATE.md`. Regression now checks:
+- zero POST before 60 seconds, including across remount;
+- one POST at exactly the next normal 60-second interval with the original generation ID, empty payload and CAS expectedVersion 0;
+- locally retained attachmentDraftId and synced marker after success;
+- no repeat POST on the next unchanged interval;
+- ordinary text changes after attachment reservation still sync on the later interval, preserving draft ID and incrementing expectedVersion.
+
+Exact-head GitHub Actions [run #38328070219](https://github.com/iliya1947/vico-forum/actions/runs/38328070219) has completed green: `checks` and `database` both successful. Existing draft repo validation explicitly allows empty `body/title/tags`.
+
+Next reviewer/writer: GPT-5.6 Sol, independently verify head `30581443377ec32a932672fdfbc49beb7ffd7c31` and the bounded corrected 60-second draft-generation behavior. Stop and record if there is a finding. Otherwise next owner-authorized bounded subtask is server attachment list/remove/rebind API. No attachment UI, publication/download, orphan cleanup, Stage 6 work, or intermediate Codex review was performed. GPT-6 stops now.
+
