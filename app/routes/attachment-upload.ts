@@ -51,6 +51,36 @@ function durableSecurityFilename(value: string): string {
   return value.replaceAll("\0", "\\u{0}");
 }
 
+async function securityEventUploadId(input: {
+  ownerId: string;
+  attachmentId: string;
+  contextKey: string;
+  draftId: string;
+  fileName: string;
+  declaredMime: string;
+  declaredByteSize: number;
+  detectedType: string;
+  reason: string;
+}): Promise<string> {
+  const canonical = JSON.stringify([
+    "vico-attachment-security-event-v1",
+    input.ownerId,
+    input.attachmentId.toLowerCase(),
+    input.contextKey,
+    input.draftId.toLowerCase(),
+    input.fileName,
+    input.declaredMime.toLowerCase(),
+    input.declaredByteSize,
+    input.detectedType,
+    input.reason,
+  ]);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+  const hex = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return `sha256:${hex}`;
+}
+
 function attachmentSize(request: Request): number | null {
   const raw = request.headers.get("X-Vico-Attachment-Size");
   if (!raw || !/^(0|[1-9][0-9]*)$/u.test(raw)) return null;
@@ -163,9 +193,19 @@ export async function action({ request, context }: { request: Request; context: 
     const fromDraftId = request.headers.get("X-Vico-Attachment-From-Draft-Id")?.trim() ?? "";
     const rawVersion = request.headers.get("X-Vico-Draft-Version") ?? "";
     const expectedVersion = Number(rawVersion);
+    const transition = request.headers.get("X-Vico-Attachment-Transition")?.trim() || "rebind";
     if (!isForumAttachmentUuid(fromDraftId) || !/^[1-9][0-9]*$/u.test(rawVersion)
-      || !Number.isSafeInteger(expectedVersion)) return json({ error: "invalid" }, 400);
+      || !Number.isSafeInteger(expectedVersion)
+      || (transition !== "rebind" && transition !== "discard")) {
+      return json({ error: "invalid" }, 400);
+    }
     try {
+      if (transition === "discard") {
+        const disposition = await store.discardDraftAttachments(
+          scope.userId, scope.contextKey, fromDraftId, scope.draftId, expectedVersion,
+        );
+        return json({ outcome: "discarded", disposition });
+      }
       const moved = await store.rebindDraftAttachments(
         scope.userId, scope.contextKey, fromDraftId, scope.draftId, expectedVersion,
       );
@@ -216,7 +256,17 @@ export async function action({ request, context }: { request: Request; context: 
     if (result.inspection.suspicious) {
       try {
         await store.recordSecurityEvent({
-          uploadId: crypto.randomUUID(),
+          uploadId: await securityEventUploadId({
+            ownerId: scope.userId,
+            attachmentId,
+            contextKey: scope.contextKey,
+            draftId: scope.draftId,
+            fileName,
+            declaredMime,
+            declaredByteSize: size,
+            detectedType: result.inspection.detected,
+            reason: result.inspection.reason,
+          }),
           uploadedByUserId: scope.userId,
           contextKey: scope.contextKey,
           draftId: scope.draftId,
