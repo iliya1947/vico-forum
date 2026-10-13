@@ -14,6 +14,8 @@ export interface LocalEditorDraft {
   syncedEditedAt: string | null;
   /** Draft generation used for an attachment operation; retained across text-generation changes until refs are reconciled. */
   attachmentDraftId?: string;
+  /** Losing attachment generation that an explicit Keep-server choice must durably retire. */
+  pendingAttachmentDiscardId?: string;
 }
 export interface DraftMetadata {
   contextKey: string;
@@ -58,6 +60,8 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && typeof data.draftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.draftId)
     && (data.attachmentDraftId === undefined
       || (typeof data.attachmentDraftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.attachmentDraftId)))
+    && (data.pendingAttachmentDiscardId === undefined
+      || (typeof data.pendingAttachmentDiscardId === "string" && /^[0-9a-f-]{36}$/iu.test(data.pendingAttachmentDiscardId)))
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
     && !!data.payload && typeof data.payload.body === "string"
     && typeof data.payload.title === "string" && typeof data.payload.tags === "string";
