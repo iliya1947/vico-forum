@@ -27,12 +27,12 @@
 | 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
 | 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
-| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | В работе: 4A+4B+4C — 19/24 файлов, 196 кейсов |
+| 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **48 файлов / 402 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **53 файла / 433 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -78,7 +78,7 @@
 - [x] `tests/database/authorization-snapshot.test.ts`
 - [x] `tests/database/forum-email-registration.test.ts`
 
-### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, в работе: 4A, 4B и 4C завершены
+### 4. Форум, интерфейс, маршруты, функциональные DB-сценарии — 24 файла, завершено (4A–4D)
 
 - [x] `app/forum/content-generation-controls.test.tsx`
 - [x] `app/forum/content-generation-navigation.test.tsx`
@@ -99,11 +99,11 @@
 - [x] `app/routes/profile.test.ts`
 - [x] `app/routes/unread.test.ts`
 - [x] `app/ui-preview/preview-app.test.tsx`
-- [ ] `db/hyperdrive-forum.test.ts`
-- [ ] `tests/database/forum-help-attention.test.ts`
-- [ ] `tests/database/forum-online-presence.test.ts`
-- [ ] `tests/database/forum-profiles.test.ts`
-- [ ] `tests/database/stage4-core-e2e.test.ts`
+- [x] `db/hyperdrive-forum.test.ts`
+- [x] `tests/database/forum-help-attention.test.ts`
+- [x] `tests/database/forum-online-presence.test.ts`
+- [x] `tests/database/forum-profiles.test.ts`
+- [x] `tests/database/stage4-core-e2e.test.ts`
 
 ### 5. Локали, UI-ресурсы и маршрутизация языков — 15 файлов, не начато
 
@@ -187,10 +187,30 @@
 ### Разбиение этапа 4 (учётное, без повторов)
 
 - **4A, UI/Markdown/error/preview:** 7 файлов, **53** кейса — **завершено**.
-- **4B, forum read/write и generation UI:** 5 файлов, **103 кейса — завершено** — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **не начато**.
-- **4C, пользовательские маршруты/профили/присутствие:** 7 файлов, **40 кейсов — завершено** — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **не начато**.
-- **4D, реальные PostgreSQL/forum-runtime contracts:** 5 файлов — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **не начато**.
+- **4B, forum read/write и generation UI:** 5 файлов, **103 кейса — завершено** — `app/forum/public-read.test.tsx`, `app/forum/public-authz-degradation.test.ts`, `app/forum/write-actions.test.ts`, `app/forum/content-generation-controls.test.tsx`, `app/forum/content-generation-navigation.test.tsx` — **завершено**.
+- **4C, пользовательские маршруты/профили/присутствие:** 7 файлов, **40 кейсов — завершено** — `app/forum/online-presence-heartbeat.test.tsx`, `app/forum/profile-view.test.tsx`, `app/forum/profile.test.ts`, `app/routes/notifications.test.ts`, `app/routes/presence.test.ts`, `app/routes/profile.test.ts`, `app/routes/unread.test.ts` — **завершено**.
+- **4D (4Г), реальные PostgreSQL/forum-runtime contracts:** 5 файлов, **31 кейс — завершено** — `db/hyperdrive-forum.test.ts`, `tests/database/forum-help-attention.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` — **не начато**.
 - Крупные файлы, особенно `public-read.test.tsx`, можно дополнительно исследовать по темам внутри 4B, но не считать дважды. После 4D выполнить сводную проверку пересечений внутри Stage 4 и оставить межэтапную сверку Stage 8.
+
+### Проход 4Г / 4D — PostgreSQL и forum-runtime (2026-10-13)
+
+- **База:** `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`, без изменений. Прочитаны полностью 5 test files, сопоставлены с `db/hyperdrive-forum.ts`, `db/forum-repository.ts` (контракты read/mutation), `app/forum/actions.server.ts`, `app/routes/{presence,profile,notifications,unread}.tsx/ts`, `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`. Никаких production/live DB операций не было.
+- **Учтено:** **5 файлов / 31 test case** = `12 + 8 + 4 + 6 + 1`. Проверено по [CI checks #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) (12 Hyperdrive unit cases) и [database job того же CI](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177318) (8+4+6+1 = 19 native PostgreSQL cases); **31 успешно** на сопоставимом test source-head. Аудит — статическое чтение; тесты не перезапускались. Hyperdrive `it.each` считает sync/async cleanup и разные error classes по отдельности.
+- **Файлы и независимое покрытие:**
+  - [`db/hyperdrive-forum.test.ts`](../../db/hyperdrive-forum.test.ts) — **12**: Mock PostgreSQL client: separate sync/async cleanup exceptions after success and failures, availability timeout vs unexpected query, cause-chain and typed availability classification.
+  - [`tests/database/forum-help-attention.test.ts`](../../tests/database/forum-help-attention.test.ts) — **8**: Native PostgreSQL: Help queue filters and grants visibility, signal vs appeal identity, individual cases, stable count/group semantics, resolved task removal and case paging.
+  - [`tests/database/forum-online-presence.test.ts`](../../tests/database/forum-online-presence.test.ts) — **4**: Native PostgreSQL: unique per-user presence, 45-second write throttle, five-minute read window, full count with twelve-member projection, no email leak and FK cascade.
+  - [`tests/database/forum-profiles.test.ts`](../../tests/database/forum-profiles.test.ts) — **6**: Native PostgreSQL: no profile row defaults, upsert/CHECK/cascade, private user projection, live custom role lookup, all/Help message counts and current selected-answer replacement.
+  - [`tests/database/stage4-core-e2e.test.ts`](../../tests/database/stage4-core-e2e.test.ts) — **1**: Connected PostgreSQL + request-scoped app actions: create topic/reply, selected answer, solve, tag/search/popular/unanswered views, role grant removal/restore and effective user overrides across new requests.
+- **Сверка внутри этапа 4 (4A–4D):**
+  1. `db/hyperdrive-forum.test.ts` проверяет **адаптеры и причину classifying/cleanup** до границы routes. `public-authz-degradation.test.ts`, `write-actions.test.ts` и route tests проверяют **корректные HTTP/UI реакции** на classified failures. Одна проверка не заменяет другую.
+  2. `forum-help-attention.test.ts` проверяет PostgreSQL выборки, task counts, отдельные signal/appeal identities, group permission filtering и pagination. `public-read.test.tsx` тестирует route/UI permissions и отображение cases на mocked reader. Различные слои.
+  3. `forum-online-presence.test.ts` проверяет durable 45-second throttle, 5-minute read window, 12-user cap + full count, delete cascade. `online-presence-heartbeat.test.tsx` и `app/routes/presence.test.ts` — browser POST lifecycle и session-derived actor/origin. Не дубли.
+  4. `forum-profiles.test.ts` проверяет реальный storage/aggregation/role consistency, `profile.test.ts` — URL/Unicode validation, `profile-view.test.tsx` — safe DOM/RTL, `app/routes/profile.test.ts` — auth/privacy/action mapping. Защищают разные границы.
+  5. `stage4-core-e2e.test.ts` — **сквозной integration тест в disposable PostgreSQL**, связывающий маршруты/action, Drizzle repository и real authorization/grants/overrides. Несмотря на частичное совпадение успешных операций с более узкими тестами, только он проверяет их совместимость **между запросами с изменившимся persisted authz**. Это **не браузерный/deployed/production E2E**; такому уровню acceptance он не эквивалентен.
+- **Отдельное замечание по точности описания теста (не избыточность):** [`tests/database/forum-online-presence.test.ts:56`](../../tests/database/forum-online-presence.test.ts#L56) включает слова `ignores client-supplied identity`, но тест вызывает repository API с переданным `userId`, без HTTP form/client-forged identity. Реальную security guarantee утверждает [`app/routes/presence.test.ts:27`](../../app/routes/presence.test.ts#L27), где form `userId=victim` и ожидается запись только session user. Здесь лучше уточнить имя DB-теста (до `exposes only public identity and counts users once`) при ближайшей правке, **не удалять его**: другие реальные DB assertions независимы. Это **именование**, не uncovered server security.
+- **Ограничения:** PostgreSQL tests используют disposable local `*_test` database / isolated schemas; некоторые cases используют последовательный shared fixture, но внутри test suite это согласованный интеграционный сценарий, **не доказанная лишность или текущий дефект**. Не приписывать интеграционным тестам реальные production operations.
+- **Итог 4Г:** **0 доказанных лишних кейсов / файлов**, в этапах **4A–4D 24/24 файла, 227 test cases** просмотрены; [AUTH-01](#auth-01--дублирующий-test-case-с-runtimenull) остаётся единственным ранее подтверждённым тождественным тестом в других этапах. Общий прогресс аудита: **53/118 файлов, 433/1 075 исходных кейсов**, осталось 642 кейса. Следующий **этап 5 (локали/UI translation)**, 15 файлов, только по команде владельца.
 
 ### Проход 4C — профили, присутствие, уведомления, unread (2026-10-13)
 
@@ -357,9 +377,13 @@
 - **COV-02 (4C):** название `profile-view.test.tsx` owner-edit теста обещает ссылку «Редактировать профиль», но fixture сразу открывает `editing=true`; DOM-link отсутствует по задумке и не утверждается.
 - Оба — слабость assertions действующих UI-функций, не признак избыточности и не подтверждённый runtime defect. Отдельные узкие test improvements допустимы после завершения audit stage; в этом PR никаких тестов не меняется.
 
+## Замечания к формулировкам тестов
+
+- **NAME-01 (4Г):** название DB presence кейса говорит «ignores client-supplied identity», хотя у repository-level test нет client form/actor distinction. Security invariant надёжнее зафиксирован в `app/routes/presence.test.ts`. Уточнить название только при следующей связанной правке, не сокращать покрытие.
+
 ## Открытые вопросы и гипотезы
 
-Подэтап 4B: первоначальные подозрения на тождественное дублирование `public-read.test.tsx` против `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts` **не подтвердились** (сценарии различаются route registration / loader / presentation). Окончательное межблочное сравнение с PostgreSQL/forum-runtime оставить на 4D и Stage 8.
+Первоначальные подозрения на тождественное дублирование `public-read.test.tsx` с `homepage.test.tsx`, `route-error.test.tsx`, `not-found.test.ts`, а также с PostgreSQL/forum-runtime 4Г **не подтвердились** в пределах этапа 4; дополнительное межэтапное пересечение проверить в Stage 8.
 
 
 Проверить возможное пересечение migration/ACL integration probes с тестами этапа 1 после завершения блоков 7–8. Похожие имена и пересекающиеся ограничения сами по себе не доказывают лишность.
