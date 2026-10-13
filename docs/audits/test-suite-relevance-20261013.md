@@ -8,7 +8,7 @@
 - Источник: `main`, commit `83219af2c36a99dd292b6ab1a9550f49b1011c0d`.
 - Полное дерево GitHub (не усечено): **118 тестовых файлов** — 77 обычных Vitest, 24 PostgreSQL Vitest, 17 Node `.test.mjs`.
 - Последний проверенный CI для сопоставимого набора кода: [run #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543), **1 075 успешных кейсов** (704 обычных + 222 DB + 149 Node). CI выполнялся на head PR #221, изменявшего только `AGENTS.md`. Это не прямой запуск тестов на merge SHA `main`.
-- Инвентаризация тестовых файлов завершена; индивидуальный аудит этапов 1–5 выполнен. Подтверждённые находки и гипотезы приведены ниже, этапы 6–8 ещё не начаты.
+- Инвентаризация тестовых файлов завершена; индивидуальный аудит этапов 1–5 и прохода 6A выполнен. Находки и гипотезы приведены ниже; этап 6 продолжается, этапы 7–8 не начаты.
 - Изменения `main` после базового SHA проверять отдельно: не переносить автоматически выводы на новый код.
 
 ## Задача и критерии
@@ -29,10 +29,10 @@
 | 3 | Аутентификация и авторизация | 12 | Завершено: 57 кейсов, 1 кандидат |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
-| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
+| 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | В работе: 6A — 7/44 файлов, 69 кейсов |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **68 файлов / 563 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **75 файлов / 632 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -123,22 +123,22 @@
 - [x] `db/locale-repository.test.ts`
 - [x] `tests/database/hyperdrive-registry.test.ts`
 
-### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файлов, не начато
+### 6. Переводы, генерация, фоновые задачи и хранилища — 44 файла, в работе (6A завершён)
 
 - [ ] `app/localization/cloudflare-m2m100-provider.test.ts`
 - [ ] `app/localization/content-generation-action.server.test.ts`
-- [ ] `app/localization/content-generation-view.test.ts`
-- [ ] `app/localization/content-markdown-translation.test.tsx`
+- [x] `app/localization/content-generation-view.test.ts`
+- [x] `app/localization/content-markdown-translation.test.tsx`
 - [ ] `app/localization/content-post-body-execution.test.tsx`
 - [ ] `app/localization/content-post-body-planning.test.ts`
 - [ ] `app/localization/content-provider-allowance.test.ts`
 - [ ] `app/localization/content-request-budget.server.test.ts`
-- [ ] `app/localization/content-source-locale.test.ts`
+- [x] `app/localization/content-source-locale.test.ts`
 - [ ] `app/localization/content-translation-execution.test.ts`
 - [ ] `app/localization/content-translation-planning.test.ts`
-- [ ] `app/localization/content-translation-presentation.test.ts`
-- [ ] `app/localization/content-translation.test.ts`
-- [ ] `app/localization/tinyld-source-locale-detector.test.ts`
+- [x] `app/localization/content-translation-presentation.test.ts`
+- [x] `app/localization/content-translation.test.ts`
+- [x] `app/localization/tinyld-source-locale-detector.test.ts`
 - [ ] `app/localization/translation-execution.test.ts`
 - [ ] `app/localization/translation-provider-data-policy.test.ts`
 - [ ] `app/localization/translation-provider.test.ts`
@@ -147,7 +147,7 @@
 - [ ] `app/localization/translation-task-dispatch.test.ts`
 - [ ] `app/localization/translation-task-reconciliation.test.ts`
 - [ ] `app/localization/translation-tasks.test.ts`
-- [ ] `app/localization/translation-validation.test.ts`
+- [x] `app/localization/translation-validation.test.ts`
 - [ ] `app/localization/ui-translation-service.test.ts`
 - [ ] `db/content-translation-store.test.ts`
 - [ ] `db/hyperdrive-content-generation-status.test.ts`
@@ -183,6 +183,36 @@
 - [ ] `tests/production-migration-verifier.test.ts`
 
 ## Журнал завершённых проходов
+
+### Разбиение этапа 6 (44 файла, без повторов)
+
+- **6A — source locale / безопасное представление** — **7 файлов**, 69 кейсов, **завершён**: `app/localization/content-source-locale.test.ts`, `app/localization/tinyld-source-locale-detector.test.ts`, `app/localization/content-translation.test.ts`, `app/localization/content-translation-presentation.test.ts`, `app/localization/content-markdown-translation.test.tsx`, `app/localization/translation-validation.test.ts`, `app/localization/content-generation-view.test.ts`.
+- **6B — провайдеры и исполнение** — **9 файлов**, **не начат**: `app/localization/cloudflare-m2m100-provider.test.ts`, `app/localization/content-provider-allowance.test.ts`, `app/localization/content-request-budget.server.test.ts`, `app/localization/content-generation-action.server.test.ts`, `app/localization/translation-provider-data-policy.test.ts`, `app/localization/translation-provider.test.ts`, `app/localization/translation-execution.test.ts`, `app/localization/content-translation-execution.test.ts`, `app/localization/content-post-body-execution.test.tsx`.
+- **6C — планирование, очереди и публикация** — **8 файлов**, **не начат**: `app/localization/content-translation-planning.test.ts`, `app/localization/content-post-body-planning.test.ts`, `app/localization/translation-publication.test.ts`, `app/localization/translation-task-consumer.test.ts`, `app/localization/translation-task-dispatch.test.ts`, `app/localization/translation-task-reconciliation.test.ts`, `app/localization/translation-tasks.test.ts`, `app/localization/ui-translation-service.test.ts`.
+- **6D — DB/Hyperdrive адаптеры** — **5 файлов**, **не начат**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
+- **6E — content generation PostgreSQL** — **8 файлов**, **не начат**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
+- **6F — tasks/UI storage PostgreSQL** — **7 файлов**, **не начат**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать 6B до команды владельца.
+
+### Проход 6A — язык источника, Markdown, translation presentation, generation view (2026-10-13)
+
+- **База:** тот же `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`; полностью рассмотрены 7 test files, реальные implementation `app/localization/{content-source-locale,tinyld-source-locale-detector,content-translation,content-translation-presentation,content-markdown-translation,translation-validation,content-generation-view}.ts` и runtime dependencies; сопоставлено с [`docs/translation/CONTENT_TRANSLATION.md`](../../docs/translation/CONTENT_TRANSLATION.md), Stage 5 local/CI section of [`PROJECT_STATE.md`](../../PROJECT_STATE.md), provider/execution и UI/presentation boundaries. Не выполнялись внешние provider/production calls.
+- **CI:** **7 файлов / 69 кейсов** = `10 + 17 + 10 + 6 + 10 + 10 + 6`, с подтверждёнными `✓ filename (N tests)` в [CI #38372052543 checks](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) на source-equivalent PR #221; 69 passed. В текущем проходе тесты не запускались.
+- **Файлы и независимые гарантии:**
+  1. [`content-source-locale.test.ts`](../../app/localization/content-source-locale.test.ts), **10**: immutable current source, canonical validation, `und` detection policy and typed failures, explicit correction/new revision and future job gating.
+  2. [`tinyld-source-locale-detector.test.ts`](../../app/localization/tinyld-source-locale-detector.test.ts), **17**: pinned offline TinyLD actual language samples EN/RU/HE/JA/AR, score+margin, top candidate mapping, unsupported Georgian, tech/Markdown semantic filtering, no UI locale leakage, typed failures and known-source resolver bypass.
+  3. [`content-translation.test.ts`](../../app/localization/content-translation.test.ts), **10**: exact current revision identity, original-safe fallback (stale/invalid/availability/unknown source), canonical write/provenance/same-source no-op and unexpected-error propagation.
+  4. [`content-translation-presentation.test.ts`](../../app/localization/content-translation-presentation.test.ts), **6**: batched independent title/post reads, wrong-row isolation, manual provenance, per-block RTL/unknown direction, same-source no-DB and classified failure behavior.
+  5. [`content-markdown-translation.test.tsx`](../../app/localization/content-markdown-translation.test.tsx), **10**: mdast semantic segments, technical tokens/URLs/code/raw HTML protection, collision-safe marker set, output-set/length/structure validation, safe `ForumMarkdown` render and RTL.
+  6. [`translation-validation.test.ts`](../../app/localization/translation-validation.test.ts), **10**: **UI provider** plain/plural validation, branch completeness, placeholders, protected names and control tokens, untrusted output; not substitute for markdown translation.
+  7. [`content-generation-view.test.ts`](../../app/localization/content-generation-view.test.ts), **6**: exact revision/locale generation keys, 3 000 semantic character automatic vs explicit gate, current/converging/deferred/unavailable read-only presentation state.
+- **Пересечения и актуальность:**
+  - `ContentTranslationService.readCurrent` и `ContentTranslationPresentationService.readCurrent` share `selectCurrentContentTranslation`, но первая проверяет **single record store access/write**, вторая — **batch identity filtering, multiple independent units, direction/provenance**; сохранять.
+  - `translation-validation.test.ts` проверяет UI translation descriptor plural/placeholder output, `content-markdown-translation.test.tsx` — **user-content CommonMark AST/token reconstruction**. Названия «validation» не делают тесты дублями.
+  - `content-generation-view.test.ts` проверяет **pure server loader view state**, ранее проверенные `content-generation-controls.test.tsx` и `content-generation-navigation.test.tsx` — **fetcher client lifecycle и navigation stale-response fencing**. Разные механизмы.
+  - `tinyld-source-locale-detector.test.ts` real-model language smoke защищает pinned TinyLD behavior. `content-source-locale.test.ts` generic resolution/policy защищает отдельно факт, что UI locale нельзя выдавать за язык публикации. Это действующая Stage 5 local/CI implementation; отсутствие deployed provider Stage 6 не основание удалить.
+- **Подтверждённое локальное избыточное покрытие SRC-01:** [`content-source-locale.test.ts:58–69`](../../app/localization/content-source-locale.test.ts#L58-L69) `uses an already-canonical immutable revision locale without invoking detection` проверяет source `ru` и no `detector.detect` call с injected fake. [`tinyld-source-locale-detector.test.ts:214–238`](../../app/localization/tinyld-source-locale-detector.test.ts#L214-L238) `lets the existing resolver bypass TinyLD for a known immutable revision source` вызывает **тот же `ContentSourceLocaleResolver.resolve` для известного `ru`** с реальным `TinyLdContentSourceLocaleDetector`, но его underlying model runner подменён throwing stub и **никогда не вызывается**. Оба tests ломаются при одной и той же регрессии `ContentSourceLocaleResolver.resolve`: если для известного source начнёт вызываться `detector.detect`. При таком bypass проверка TinyLD scoring/mapping отсутствует; настоящие TinyLD cases охраняют её отдельно. **Кандидат:** оставить generic known-source no-detect case, убрать одну дублирующую known-source iteration из TinyLD test file; файл TinyLD и остальные 16 cases оставить. Различие inject-объекта не образует самостоятельной исполняемой provider-механики на known-source ветке. **Исходники не менялись**.
+- **Итог:** **1 подтверждённый узкий кандидат на объединение/удаление SRC-01; 0 файлов под удаление**; остальные 68 кейсов сохранять. Общий прогресс: **75/118 файлов, 632/1 075 исходных кейсов**. Остались **43 файла, 443 кейса** (включая оставшиеся 37 файлов этапа 6, 4 этапа 7, 2 этапа 8). Следующий блок **6B**, 9 файлов — только после команды владельца.
 
 ### Проход 5 — локали / UI translation / routing (2026-10-13)
 
@@ -400,6 +430,13 @@
 - **Доказательство:** две итерации `it.each` отличаются только названием, не входными значениями и не проверяемым поведением. Параметр строки теста внутри callback не используется.
 - **Решение для последующей реализации:** один `it` вместо двух одинаковых `it.each`-итераций; из исходных 4 test cases файла останется 3. Отдельный real expiry integration test сохранить.
 - **Статус:** подтверждён как изолированное устранение 1 ненужного прогона без потери проверяемой логики; **в audit PR изменения исходников не вносились**.
+
+### SRC-01 — второй known-source обход TinyLD ничего нового не проверяет
+
+- **Кейсы:** [`content-source-locale.test.ts#L58-L69`](../../app/localization/content-source-locale.test.ts#L58-L69) и [`tinyld-source-locale-detector.test.ts#L214-L238`](../../app/localization/tinyld-source-locale-detector.test.ts#L214-L238).
+- **Почему пересечение настоящее:** обе вызывают `ContentSourceLocaleResolver.resolve` для канонического известного исходного `ru`; основная гарантия — `detector.detect` не вызывается. Во втором тесте TinyLD только конструируется, а подменённый underlying runner ни разу не запускается, так что адаптер не получает собственного meaningful execution coverage.
+- **После аудита:** оставить тест в `content-source-locale.test.ts`, удалить или объединить **1 кейс** из `tinyld-source-locale-detector.test.ts`; остальные TinyLD language/gating/semantic filtering test cases оставить.
+- **Классификация:** подтверждённый повтор одной branch guarantee текущего Stage 5; low-risk потенциальная оптимизация, не дефект приложения и не обязательное срочное исправление. **В рабочем PR только запись.**
 
 ## Подтверждённые пробелы тестового покрытия (не кандидаты на удаление)
 
