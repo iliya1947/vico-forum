@@ -530,9 +530,23 @@ Vico Forum находится в ранней pre-release разработке.
   идемпотентен, затем удаляются только зафиксированные source refs, поэтому конкурентная
   новая ссылка не теряется. HTTP boundary использует ту же canonical UUID semantics, что
   repository; private object key наружу не возвращается. Runtime draft-ref capability
-  ограничена DELETE/INSERT/SELECT. Editor upload UI всё ещё не восстановлен и публикация
-  вложений пока не заявляется.
-  Следующие части Stage 5: editor/upload UI, publication/download integration и orphan cleanup.
+  ограничена DELETE/INSERT/SELECT.
+  Следующий bounded editor/upload UI slice заново подключает вложения поверх этих границ:
+  picker, drag/drop и image paste доступны только после успешной draft reconciliation,
+  generation rebind (если нужен) и полного GET restore exact generation. Поэтому stale restore
+  не может затереть уже начатую загрузку. Image paste останавливает дальнейший text/HTML paste
+  path. Upload использует XHR только ради byte progress, но получает устойчивый client UUID:
+  повтор после неоднозначной transport-ошибки идемпотентно сходится к уже сохранённому asset/ref,
+  а новый duplicate R2 object удаляется. In-flight upload не удаляется и не abort-ится при
+  смене editor scope; поздний результат относится к исходной generation и восстанавливается
+  при возврате. Remove после determinate/ambiguous failure всегда сначала делает exact DELETE
+  по стабильному upload ID. Пока attachmentDraftId переносится на выбранную draft generation,
+  обычные remote reconciliation и 60-second text sync не меняют generation; после завершения
+  rebind обычный lifecycle продолжается.
+  До следующего Stage 5 publication/download slice любой сохранённый attachment намеренно
+  блокирует publication, чтобы файл не был молча потерян при существующем text-only publish
+  path. Editor UI не выдаёт private object key и не скачивает file content при restore.
+  Следующие части Stage 5: publication/download integration и orphan cleanup.
   Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
