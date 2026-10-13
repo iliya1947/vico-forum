@@ -69,6 +69,7 @@ export class InvalidForumAttachmentError extends Error {
 }
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const securityEventDigest = /^sha256:[0-9a-f]{64}$/u;
 export function isForumAttachmentUuid(value: string): boolean {
   return uuid.test(value);
 }
@@ -91,7 +92,7 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
 }
 
 function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean {
-  return isForumAttachmentUuid(input.uploadId)
+  return (isForumAttachmentUuid(input.uploadId) || securityEventDigest.test(input.uploadId))
     && input.uploadedByUserId.length > 0
     && isEditorDraftContextKey(input.contextKey)
     && input.contextKey.length <= 4096
@@ -268,6 +269,61 @@ export class DrizzleForumAttachments {
       return deleted.length > 0;
     });
   }
+  async discardDraftAttachments(
+    ownerId: string,
+    contextKey: string,
+    fromDraftId: string,
+    toDraftId: string,
+    expectedVersion: number,
+  ): Promise<"discarded" | "already-rebound"> {
+    if (
+      !ownerId
+      || !isEditorDraftContextKey(contextKey)
+      || !isForumAttachmentUuid(fromDraftId)
+      || !isForumAttachmentUuid(toDraftId)
+      || !Number.isSafeInteger(expectedVersion)
+      || expectedVersion < 1
+    ) {
+      throw new InvalidForumAttachmentError();
+    }
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const [draft] = await tx.select({
+        draftId: forumEditorDrafts.draftId,
+        status: forumEditorDrafts.status,
+        version: forumEditorDrafts.version,
+      }).from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, contextKey),
+      )).for("update").limit(1);
+      if (draft?.status !== "active" || draft.draftId !== toDraftId || draft.version !== expectedVersion) {
+        throw new ForumAttachmentDraftConflictError();
+      }
+      const target = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, toDraftId);
+      if (target !== toDraftId) throw new ForumAttachmentDraftConflictError();
+
+      let source: string;
+      try {
+        source = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, fromDraftId);
+      } catch (error) {
+        if (error instanceof ForumAttachmentDraftConflictError && error.reason === "gone") {
+          return "discarded";
+        }
+        throw error;
+      }
+      if (source === target) return "already-rebound";
+      if (source !== fromDraftId) throw new ForumAttachmentDraftConflictError();
+
+      await tx.insert(forumAttachmentDraftGenerations).values({
+        ownerId,
+        contextKey,
+        draftId: source,
+        targetDraftId: null,
+      });
+      return "discarded";
+    });
+  }
+
   async rebindDraftAttachments(
     ownerId: string,
     contextKey: string,
