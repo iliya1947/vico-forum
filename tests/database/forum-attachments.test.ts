@@ -131,6 +131,17 @@ describe("forum attachment lifecycle foundation", () => {
     )).rejects.toMatchObject({ code: "23503" } satisfies Partial<DatabaseError>);
   });
 
+  it("atomically rebinds only owned references between draft generations and remains idempotent", async () => {
+    const nextDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
+    expect(await store.rebindDraftAttachments(otherId, contextKey, draftId, nextDraftId)).toBe(0);
+    expect(await store.rebindDraftAttachments(ownerId, contextKey, draftId, nextDraftId)).toBe(1);
+    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toEqual([]);
+    expect(await store.listDraftAttachments(ownerId, contextKey, nextDraftId)).toHaveLength(1);
+    expect(await store.rebindDraftAttachments(ownerId, contextKey, draftId, nextDraftId)).toBe(0);
+    expect(await store.rebindDraftAttachments(ownerId, contextKey, nextDraftId, draftId)).toBe(1);
+    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
+  });
+
   it("durably records one security event per upload even without an attachment row", async () => {
     const uploadId = "137b6246-8d59-4f20-a8dc-6fd3d54f0e86";
     const event = {
