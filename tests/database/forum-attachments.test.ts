@@ -257,6 +257,8 @@ describe("forum attachment lifecycle foundation", () => {
     expect(rows.rows[0]?.id).toMatch(/^[0-9a-f-]{36}$/u);
     await expect(store.recordSecurityEvent({ ...event, uploadId: "attachment-v1:invalid" }))
       .rejects.toBeInstanceOf(InvalidForumAttachmentError);
+    // Other tests assert a fresh, single-event queue; do not leak this fixture.
+    await client.query("delete from forum_attachment_security_events where upload_id = $1", [uploadId]);
   });
 
   it("durably records one security event per upload even without an attachment row", async () => {
