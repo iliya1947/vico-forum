@@ -48,6 +48,12 @@ function renderEditor(element: ReactNode) {
 
 function stubEmptyDraftMetadata() {
   vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+    if (uri === "/api/attachments" && options?.method === "GET") {
+      return new Response(JSON.stringify({ attachments: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     if (!options?.method && uri.includes("mode=metadata")) {
       return new Response(JSON.stringify({ drafts: [] }), {
         status: 200,
@@ -1204,6 +1210,9 @@ describe("MarkdownEditor", () => {
       headers: { "Content-Type": "application/json" },
     });
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri === "/api/attachments" && options?.method === "GET") {
+        return json({ attachments: [] });
+      }
       if (options?.method === "POST") {
         postCalls++;
         const sent = JSON.parse(options.body as string) as Record<string, unknown>;
@@ -1311,7 +1320,13 @@ describe("MarkdownEditor", () => {
   });
 
   it("resets body and history when the draft context changes for the same account", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri === "/api/attachments" && options?.method === "GET") {
+        return new Response(JSON.stringify({ attachments: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       if (uri.includes("mode=metadata")) {
         return new Response(JSON.stringify({ drafts: [] }), {
           status: 200,
