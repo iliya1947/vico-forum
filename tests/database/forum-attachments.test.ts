@@ -3,6 +3,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool, type DatabaseError } from "pg";
 import { RouterContextProvider } from "react-router";
 import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
+import { sectionAction, helpSolutionsCategoryAction, topicAction } from "../../app/forum/actions.server";
+import { forumWriterContext } from "../../app/forum/request-context";
+import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { authorizationContext } from "../../app/authorization/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
 import { forumDraftStoreContext } from "../../app/forum/draft-request-context";
@@ -12,7 +15,7 @@ import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachme
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
-import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
+import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
 import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
 
@@ -843,5 +846,134 @@ describe("atomic publication of selected draft refs", () => {
     await expect(repository.createPost(invalid)).rejects.toBeInstanceOf(ForumStateConflictError);
     expect(await store.readPublishedAttachment(invalid.id, file.id)).toBeNull();
     expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).not.toBeNull();
+  });
+});
+
+
+describe("live action → writer/service → PostgreSQL attachment publication", () => {
+  const realWriter = createHyperdriveForumWriter(
+    databaseUrl,
+    () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` }),
+    { cooldownMs: 0, now: () => new Date() },
+  );
+
+  function realContext() {
+    const ctx = new RouterContextProvider();
+    ctx.set(authSessionContext, { user: { id: ownerId } } as AuthSession);
+    // Route permission decision is isolated; real writer/service/repository/PG are not mocked.
+    ctx.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
+    ctx.set(forumWriterContext, realWriter);
+    return ctx;
+  }
+
+  function publishRequest(path: string, intent: string, generation: string, version: number, ids: string[]) {
+    const body = new FormData();
+    body.set("intent", intent);
+    body.set("title", "Live route attachment");
+    body.set("body", "Attached body");
+    body.set("editorDraftId", generation);
+    body.set("editorDraftVersion", String(version));
+    body.set("editorAttachmentIds", JSON.stringify(ids));
+    return new Request(`https://forum.test${path}`, {
+      method: "POST", headers: { Origin: "https://forum.test" }, body,
+    });
+  }
+
+  function responseStatus(value: unknown) {
+    return value instanceof Response ? value.status : (value as { init?: { status?: number } }).init?.status;
+  }
+
+  it.each(["section-topic", "help-question", "reply"] as const)(
+    "publishes one stored attachment through live %s action and writer",
+    async (kind) => {
+      const generation = crypto.randomUUID();
+      let context: string;
+      let topicId: string | undefined;
+      let sectionId: string | undefined;
+      if (kind === "section-topic") {
+        sectionId = `attachment-live-section-${crypto.randomUUID()}`;
+        await client.query(
+          "insert into forum_sections (id, category_id, name) values ($1, 'attachment-category', 'Live')",
+          [sectionId],
+        );
+        context = `section:${sectionId}:new`;
+      } else if (kind === "help-question") {
+        context = "help:new";
+      } else {
+        topicId = crypto.randomUUID();
+        await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() })
+          .createTopicWithInitialPost({
+            id: topicId, sectionId: "attachment-section", authorId: ownerId,
+            titleRevision: { id: crypto.randomUUID(), originalContent: "Live parent", sourceLocale: "en" },
+            initialPost: {
+              id: crypto.randomUUID(), topicId, authorId: ownerId,
+              bodyRevision: { id: crypto.randomUUID(), originalContent: "Parent", sourceLocale: "en" },
+            },
+          });
+        context = `topic:${topicId}:reply`;
+      }
+      await setDraft(ownerId, context, generation, "active", 1);
+      const file = await store.createDraftAttachment(upload(context, generation));
+      const input = kind === "section-topic"
+        ? { request: publishRequest(`/en/sections/${sectionId}`, "createTopic", generation, 1, [file.id]),
+            params: { locale: "en", sectionId }, context: realContext() }
+        : kind === "help-question"
+          ? { request: publishRequest(`/en/categories/${HELP_SOLUTIONS_CATEGORY_ID}`, "createHelpQuestion", generation, 1, [file.id]),
+              params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: realContext() }
+          : { request: publishRequest(`/en/topics/${topicId}`, "reply", generation, 1, [file.id]),
+              params: { locale: "en", topicId }, context: realContext() };
+
+      const response = kind === "section-topic"
+        ? await sectionAction(input)
+        : kind === "help-question"
+          ? await helpSolutionsCategoryAction(input)
+          : await topicAction(input);
+      expect(responseStatus(response)).toBe(302);
+      if (!(response instanceof Response)) throw new Error("Expected redirect response");
+      const destination = new URL(response.headers.get("Location") ?? "", "https://forum.test");
+      const resolvedTopic = kind === "reply" ? topicId! : destination.pathname.split("/").filter(Boolean).at(-1)!;
+      const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(resolvedTopic);
+      expect(page).toBeDefined();
+      const published = page!.posts.find((post) => post.attachments?.some((entry) => entry.id === file.id));
+      expect(published?.attachments).toEqual([{
+        id: file.id, fileName: file.fileName, byteSize: file.byteSize,
+      }]);
+      expect(await store.readPublishedAttachment(published!.id, file.id)).not.toBeNull();
+      await expect(store.readDraftAttachment(ownerId, context, generation, file.id))
+        .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    },
+  );
+
+  it("returns an HTTP conflict and preserves post/ref/draft on a stale selected manifest", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+    const topicId = crypto.randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Conflict parent", sourceLocale: "en" },
+      initialPost: { id: crypto.randomUUID(), topicId, authorId: ownerId,
+        bodyRevision: { id: crypto.randomUUID(), originalContent: "Parent", sourceLocale: "en" } },
+    });
+    const context = `topic:${topicId}:reply`;
+    const draft = crypto.randomUUID();
+    await setDraft(ownerId, context, draft, "active", 1);
+    const file = await store.createDraftAttachment(upload(context, draft));
+    const before = await client.query<{ count: string }>(
+      "select count(*)::text as count from forum_posts where topic_id = $1", [topicId],
+    );
+    const response = await topicAction({
+      request: publishRequest(`/en/topics/${topicId}`, "reply", draft, 1, []),
+      params: { locale: "en", topicId }, context: realContext(),
+    });
+    expect(responseStatus(response)).toBe(409);
+    const after = await client.query<{ count: string }>(
+      "select count(*)::text as count from forum_posts where topic_id = $1", [topicId],
+    );
+    expect(after.rows).toEqual(before.rows);
+    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).toMatchObject({ id: file.id });
+    const row = await client.query<{ status: string; version: number }>(
+      "select status, version from forum_editor_drafts where owner_id=$1 and context_key=$2",
+      [ownerId, context],
+    );
+    expect(row.rows).toMatchObject([{ status: "active", version: 1 }]);
   });
 });
