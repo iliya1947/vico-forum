@@ -66,6 +66,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
   const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
   const removeDraftAttachment = vi.fn(async () => true);
+  const discardDraftAttachments = vi.fn(async () => "discarded" as const);
   const rebindDraftAttachments = vi.fn(async () => 0);
   ctx.set(forumAttachmentStoreContext, {
     createDraftAttachment,
@@ -73,13 +74,14 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
     readSecurityAttachmentEvents,
     listDraftAttachments,
     removeDraftAttachment,
+    discardDraftAttachments,
     rebindDraftAttachments,
   } as never);
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
     ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent,
-    listDraftAttachments, removeDraftAttachment, rebindDraftAttachments,
+    listDraftAttachments, removeDraftAttachment, discardDraftAttachments, rebindDraftAttachments,
   };
 }
 
@@ -120,6 +122,7 @@ function scopedRequest(
     attachmentId,
     fromDraftId,
     version = "4",
+    transition,
   }: {
     origin?: string;
     key?: string;
@@ -127,6 +130,7 @@ function scopedRequest(
     attachmentId?: string;
     fromDraftId?: string;
     version?: string;
+    transition?: "rebind" | "discard";
   } = {},
 ) {
   const headers = new Headers({
@@ -137,6 +141,7 @@ function scopedRequest(
   if (attachmentId) headers.set("X-Vico-Attachment-Id", attachmentId);
   if (fromDraftId) headers.set("X-Vico-Attachment-From-Draft-Id", fromDraftId);
   if (method === "PATCH") headers.set("X-Vico-Draft-Version", version);
+  if (transition) headers.set("X-Vico-Attachment-Transition", transition);
   return new Request("https://forum.test/api/attachments", { method, headers });
 }
 
@@ -194,6 +199,25 @@ describe("private attachment upload API", () => {
     expect(env.rebindDraftAttachments).toHaveBeenCalledWith(
       "real-user", contextKey, fromDraftId, draftId, 4,
     );
+  });
+
+  it("durably discards a losing generation through the same CAS-fenced transition route", async () => {
+    const env = setup();
+    const fromDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
+    env.discardDraftAttachments.mockResolvedValueOnce("already-rebound");
+    const response = await action({
+      request: scopedRequest("PATCH", { fromDraftId, transition: "discard" }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      outcome: "discarded",
+      disposition: "already-rebound",
+    });
+    expect(env.discardDraftAttachments).toHaveBeenCalledWith(
+      "real-user", contextKey, fromDraftId, draftId, 4,
+    );
+    expect(env.rebindDraftAttachments).not.toHaveBeenCalled();
   });
 
   it("requires a valid CAS version for rebind and reports stale or terminal targets as conflict", async () => {
@@ -350,7 +374,7 @@ describe("private attachment upload API", () => {
     expect(env.r2.put).not.toHaveBeenCalled();
     expect(env.createDraftAttachment).not.toHaveBeenCalled();
     expect(env.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({
-      uploadId: expect.stringMatching(/^[0-9a-f-]{36}$/u),
+      uploadId: expect.stringMatching(/^sha256:[0-9a-f]{64}$/u),
       uploadedByUserId: "real-user",
       contextKey,
       draftId,
@@ -360,6 +384,38 @@ describe("private attachment upload API", () => {
       declaredByteSize: bytes.length,
     }));
     expect(env.recordSecurityEvent.mock.calls[0]?.[0].uploadId).not.toBe(uploadId);
+  });
+
+  it("uses one stable server-derived Security key for exact retries without cross-owner suppression", async () => {
+    const bytes = Uint8Array.from([0x4d, 0x5a, 0x90, 0x00]);
+    const env = setup();
+    await action({ request: request(bytes, { fileName: "friendly.txt" }), context: env.ctx });
+    await action({ request: request(bytes, { fileName: "friendly.txt" }), context: env.ctx });
+    const first = env.recordSecurityEvent.mock.calls[0]?.[0].uploadId;
+    const second = env.recordSecurityEvent.mock.calls[1]?.[0].uploadId;
+    expect(first).toBe(second);
+
+    const otherOwner = setup({ owner: "other-user" });
+    await action({ request: request(bytes, { fileName: "friendly.txt" }), context: otherOwner.ctx });
+    expect(otherOwner.recordSecurityEvent.mock.calls[0]?.[0].uploadId).not.toBe(first);
+
+    await action({ request: request(bytes, { fileName: "other.txt" }), context: env.ctx });
+    expect(env.recordSecurityEvent.mock.calls[2]?.[0].uploadId).not.toBe(first);
+  });
+
+  it("retries an ambiguously acknowledged Security event with the same idempotency key", async () => {
+    const env = setup();
+    const bytes = Uint8Array.from([0x4d, 0x5a, 0x90, 0x00]);
+    let firstKey = "";
+    env.recordSecurityEvent.mockImplementationOnce(async (input) => {
+      firstKey = input.uploadId;
+      throw new ForumAttachmentStorageUnavailableError();
+    });
+    const first = await action({ request: request(bytes), context: env.ctx });
+    expect(first.status).toBe(503);
+    const second = await action({ request: request(bytes), context: env.ctx });
+    expect(second.status).toBe(422);
+    expect(env.recordSecurityEvent.mock.calls[1]?.[0].uploadId).toBe(firstKey);
   });
 
   it("preserves a NUL filename anomaly as durable escaped evidence", async () => {
