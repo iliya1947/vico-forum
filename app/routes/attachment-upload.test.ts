@@ -66,7 +66,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
   const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
   const removeDraftAttachment = vi.fn(async () => true);
-  const discardDraftAttachments = vi.fn(async () => "discarded" as const);
+  const discardDraftAttachments = vi.fn(async (): Promise<"discarded" | "already-rebound"> => "discarded");
   const rebindDraftAttachments = vi.fn(async () => 0);
   ctx.set(forumAttachmentStoreContext, {
     createDraftAttachment,
