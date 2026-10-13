@@ -91,7 +91,7 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
 }
 
 function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean {
-  return isForumAttachmentUuid(input.uploadId)
+  return (isForumAttachmentUuid(input.uploadId) || /^attachment-v1:[0-9a-f]{64}$/u.test(input.uploadId))
     && input.uploadedByUserId.length > 0
     && isEditorDraftContextKey(input.contextKey)
     && input.contextKey.length <= 4096

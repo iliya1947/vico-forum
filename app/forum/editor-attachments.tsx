@@ -39,6 +39,7 @@ interface Props {
   draftId: string;
   draftReady: boolean;
   draftRevision: number;
+  selectionEpoch: number;
   rebindFrom: string | null;
   rebindVersion: number | null;
   disabled: boolean;
@@ -143,6 +144,7 @@ export function useEditorAttachments({
   draftId,
   draftReady,
   draftRevision,
+  selectionEpoch,
   rebindFrom,
   rebindVersion,
   disabled,
@@ -181,7 +183,9 @@ export function useEditorAttachments({
   draftIdRef.current = draftId;
   const previousIdentityRef = useRef(identity);
   const removedIdsRef = useRef(new Set<string>());
-  const scope = identity ? `${identity}\u0000${draftId}` : null;
+  // A confirmed explicit server selection invalidates losing local attachment state,
+  // even when the text draft ID is unchanged. Routine refresh does not change it.
+  const scope = identity ? `${identity}\u0000${draftId}\u0000${selectionEpoch}` : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
 
@@ -342,6 +346,7 @@ export function useEditorAttachments({
     const generation = originalDraftId ?? callbacksRef.current.reserveGeneration();
     if (!generation || (!originalDraftId && generation !== draftId)) return;
     const identityAtStart = identity;
+    const scopeAtStart = scope;
     const next: UploadEntry = {
       id: stableId,
       draftId: generation,
@@ -361,7 +366,8 @@ export function useEditorAttachments({
 
     const request = new XMLHttpRequest();
     requestsRef.current.set(stableId, request);
-    const active = () => identityRef.current === identityAtStart
+    const active = () => scopeRef.current === scopeAtStart
+      && identityRef.current === identityAtStart
       && entriesRef.current.some((entry) => entry.id === stableId
         && entry.draftId === generation && entry.status === "uploading");
     request.upload.onprogress = (event) => {
@@ -442,13 +448,15 @@ export function useEditorAttachments({
       || entry.uncertainCommit
     ) return;
     const identityAtStart = identity;
+    const scopeAtStart = scope;
     if (entry.error === "gone") {
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       return;
     }
     const previousStatus = entry.attachment ? "stored" as const : "error" as const;
     setEntry(entry.id, (current) => ({ ...current, status: "removing", removeError: false }));
-    const activeRemoval = () => identityRef.current === identityAtStart
+    const activeRemoval = () => scopeRef.current === scopeAtStart
+      && identityRef.current === identityAtStart
       && entriesRef.current.some((item) => item.id === entry.id
         && item.draftId === entry.draftId && item.status === "removing");
     try {

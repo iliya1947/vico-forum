@@ -50,6 +50,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [attachmentRebindFrom, setAttachmentRebindFrom] = useState<string | null>(null);
   const [attachmentRebindVersion, setAttachmentRebindVersion] = useState<number | null>(null);
   const [attachmentRevision, setAttachmentRevision] = useState(0);
+  const [attachmentSelectionEpoch, setAttachmentSelectionEpoch] = useState(0);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
   callbacksRef.current = { restore };
@@ -134,7 +135,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setConflict(null);
     setStatus("idle");
   }
-  function applyRemote(ctx: Runtime, remote: DraftRemote): boolean {
+  function applyRemote(ctx: Runtime, remote: DraftRemote, discardLocalAttachments = false): boolean {
     if (!current(ctx)) return false;
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: remote.draftId,
@@ -142,7 +143,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       baseVersion: remote.version, syncedEditedAt: remote.editedAt,
       payload: remote.payload,
       // Retain attachment provenance when refreshing text within the same generation.
-      attachmentDraftId: ctx.local?.draftId === remote.draftId
+      attachmentDraftId: !discardLocalAttachments && ctx.local?.draftId === remote.draftId
         ? ctx.local.attachmentDraftId : undefined,
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
@@ -433,8 +434,13 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const conflictNow = ctx.conflict;
     let verified = false;
     if (which === "server") {
-      if ("payload" in conflictNow.server) verified = applyRemote(ctx, conflictNow.server);
-      else reset(ctx, conflictNow.server.version);
+      if ("payload" in conflictNow.server) {
+        verified = applyRemote(ctx, conflictNow.server, true);
+        // Keep the conflict when the local winner snapshot could not be persisted.
+        if (!verified) return;
+      } else reset(ctx, conflictNow.server.version);
+      // Same text draft ID does not imply the same attachment selection.
+      setAttachmentSelectionEpoch((value) => value + 1);
     } else {
       // Explicit selection is the only way to replace another generation.
       const local = conflictNow.local;
@@ -587,6 +593,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
     preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
+    attachmentSelectionEpoch,
     noteAttachmentChange,
     reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
     element: ownerId && contextKey ? (

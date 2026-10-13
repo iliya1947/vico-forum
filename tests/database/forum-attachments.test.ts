@@ -235,6 +235,30 @@ describe("forum attachment lifecycle foundation", () => {
     expect(rows.rows).toEqual([{ draft_id: nextDraftId }]);
   });
 
+  it("enforces one derived security event across concurrent database writers", async () => {
+    const uploadId = `attachment-v1:${"a".repeat(64)}`;
+    const event = {
+      uploadId, uploadedByUserId: ownerId, contextKey, draftId,
+      fileName: "retry.txt", declaredMime: "text/plain", detectedType: "executable",
+      reason: "executable-signature", declaredByteSize: 4,
+    };
+    const connections = Array.from({ length: 2 }, () => new Client({
+      connectionString: databaseUrl, options: `-c search_path=${schema}`,
+    }));
+    await Promise.all(connections.map((connection) => connection.connect()));
+    try {
+      await Promise.all(connections.map((connection) =>
+        new DrizzleForumAttachments(drizzle(connection)).recordSecurityEvent(event)));
+    } finally {
+      await Promise.all(connections.map((connection) => connection.end()));
+    }
+    const rows = await client.query("select id, upload_id from forum_attachment_security_events where upload_id = $1", [uploadId]);
+    expect(rows.rowCount).toBe(1);
+    expect(rows.rows[0]?.id).toMatch(/^[0-9a-f-]{36}$/u);
+    await expect(store.recordSecurityEvent({ ...event, uploadId: "attachment-v1:invalid" }))
+      .rejects.toBeInstanceOf(InvalidForumAttachmentError);
+  });
+
   it("durably records one security event per upload even without an attachment row", async () => {
     const uploadId = "137b6246-8d59-4f20-a8dc-6fd3d54f0e86";
     const event = {

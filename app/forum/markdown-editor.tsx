@@ -191,6 +191,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       draftId: draft.draftId,
       draftReady: draft.attachmentReady,
       draftRevision: draft.attachmentRevision,
+      selectionEpoch: draft.attachmentSelectionEpoch,
       rebindFrom: draft.attachmentRebindFrom,
       rebindVersion: draft.attachmentRebindVersion,
       disabled,

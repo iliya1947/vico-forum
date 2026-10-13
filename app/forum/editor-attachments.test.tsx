@@ -106,6 +106,7 @@ interface HarnessProps {
   id?: string;
   ready?: boolean;
   revision?: number;
+  selectionEpoch?: number;
   rebindFrom?: string | null;
   rebindVersion?: number | null;
   ownerId?: string;
@@ -121,6 +122,7 @@ function Harness({
   id = draftId,
   ready = true,
   revision = 0,
+  selectionEpoch = 0,
   rebindFrom = null,
   rebindVersion = 4,
   ownerId = "alice",
@@ -136,6 +138,7 @@ function Harness({
     draftId: id,
     draftReady: ready,
     draftRevision: revision,
+    selectionEpoch,
     rebindFrom,
     rebindVersion,
     disabled: false,
@@ -293,6 +296,53 @@ describe("editor attachment UI", () => {
     } });
     expect(screen.queryByText("retained.txt")).not.toBeInTheDocument();
     expect(noteChange).not.toHaveBeenCalled();
+  });
+
+  it("invalidates losing uploads on explicit server selection in the same text generation", async () => {
+    const noteChange = vi.fn();
+    const winner = { id: attachmentId, fileName: "winner.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 4, verificationStatus: "type-checked" };
+    let selected = false;
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) =>
+      init?.method === "GET" ? Response.json({ attachments: selected ? [winner] : [] })
+        : Response.json({ error: "unexpected" }, { status: 500 })));
+    const view = renderHarness({ noteChange });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["hello"], "loser.txt")] },
+    });
+    const staleUpload = FakeXMLHttpRequest.instances[0]!;
+    expect(screen.getByText("loser.txt")).toBeInTheDocument();
+    selected = true;
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness id={draftId} selectionEpoch={1} noteChange={noteChange} />
+    </I18nextProvider>);
+    await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
+    staleUpload.complete(201, { outcome: "stored", attachment: {
+      id: staleUpload.headers.get("X-Vico-Attachment-Id"), fileName: "loser.txt",
+      detectedType: "text", responseMime: "text/plain", byteSize: 5,
+      verificationStatus: "type-checked",
+    } });
+    await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
+    expect(noteChange).not.toHaveBeenCalled();
+  });
+
+  it("discards failed ambiguous retries when the server version wins without changing draft ID", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: [] })));
+    const view = renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["x"], "failed.txt")] },
+    });
+    FakeXMLHttpRequest.instances[0]!.fail();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness selectionEpoch={1} />
+    </I18nextProvider>);
+    await waitFor(() => expect(screen.queryByText("failed.txt")).not.toBeInTheDocument());
+    expect(screen.getByLabelText("Attach")).toBeEnabled();
   });
 
   it("fences rebind by the saved target version and waits for the ordinary draft save", async () => {

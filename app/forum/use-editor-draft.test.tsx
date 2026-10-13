@@ -46,6 +46,7 @@ function Harness({ ownerId }: { ownerId: string | null }) {
     <output data-testid="attachment-ready">{draft.attachmentReady ? "ready" : "blocked"}</output>
     <output data-testid="attachment-rebind">{draft.attachmentRebindFrom ?? "none"}</output>
     <output data-testid="attachment-rebind-version">{draft.attachmentRebindVersion ?? "none"}</output>
+    <output data-testid="attachment-selection-epoch">{draft.attachmentSelectionEpoch}</output>
     <output data-testid="attachment-reservation">{reserved ?? "none"}</output>
     <button type="button" onClick={() => {
       if (draft.attachmentRebindFrom) {
@@ -265,6 +266,46 @@ describe("editor draft lifecycle", () => {
     await flush();
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
     expect(posts).toHaveLength(1);
+  });
+
+  it("discards losing attachment provenance after Keep local then a same-generation Keep server", async () => {
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
+      attachmentDraftId: oldId, editedAt: new Date().toISOString(), baseVersion: 1,
+      syncedEditedAt: null, payload: { ...empty, body: "Local A" } });
+    let remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
+      title: "", snippet: "Server B", editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server B" } };
+    const posts: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
+      if (init?.method === "POST") { posts.push(init.body); throw new Error("Unexpected eager POST"); }
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
+      draftId: newId, attachmentDraftId: oldId,
+    });
+    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("0");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "Edited local B" } });
+    fireEvent.click(screen.getByRole("button", { name: "Leave editor" }));
+    remote = { ...remote, version: 5, editedAt: new Date().toISOString(),
+      payload: { ...empty, body: "New server B" } };
+    await act(async () => { window.dispatchEvent(new Event("online")); });
+    await flush();
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("New server B");
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
+      draftId: newId, baseVersion: 5, payload: { ...empty, body: "New server B" },
+    });
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
+    expect(screen.getByTestId("attachment-rebind")).toHaveTextContent("none");
+    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("1");
+    expect(posts).toHaveLength(0);
   });
 
   it("retains attachment provenance when a clean local draft refreshes text in the same generation", async () => {
