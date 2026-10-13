@@ -49,6 +49,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [attachmentReady, setAttachmentReady] = useState(false);
   const [attachmentRebindFrom, setAttachmentRebindFrom] = useState<string | null>(null);
   const [attachmentRebindVersion, setAttachmentRebindVersion] = useState<number | null>(null);
+  const [attachmentDiscardFrom, setAttachmentDiscardFrom] = useState<string | null>(null);
+  const [attachmentDiscardVersion, setAttachmentDiscardVersion] = useState<number | null>(null);
+  const [attachmentSelectionEpoch, setAttachmentSelectionEpoch] = useState(0);
   const [attachmentRevision, setAttachmentRevision] = useState(0);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
@@ -67,16 +70,24 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     if (!current(ctx)) return;
     ctx.attachmentVerified = verified;
     const attachmentDraftId = ctx.local?.attachmentDraftId;
-    const rebindFrom = !ctx.conflict
+    const pendingDiscardId = ctx.local?.pendingAttachmentDiscardId;
+    const discardFrom = !ctx.conflict
+      && pendingDiscardId && pendingDiscardId !== ctx.draftId
+      ? pendingDiscardId
+      : null;
+    const rebindFrom = !ctx.conflict && !discardFrom
       && attachmentDraftId && attachmentDraftId !== ctx.draftId
       ? attachmentDraftId
       : null;
+    setAttachmentDiscardFrom(discardFrom);
     setAttachmentRebindFrom(rebindFrom);
-    // Only move refs after the selected text has reached its regular CAS save.
-    // Waiting for R2 must never suspend that 60-second save cycle.
-    setAttachmentRebindVersion(verified && rebindFrom && ctx.local
-      && ctx.local.editedAt === ctx.local.syncedEditedAt ? ctx.local.baseVersion : null);
-    setAttachmentReady(verified && !ctx.conflict && rebindFrom === null);
+    // Only change attachment generation state against a text version that is already
+    // authoritative. Waiting for R2 must never suspend the regular 60-second save cycle.
+    const reconciledVersion = verified && ctx.local
+      && ctx.local.editedAt === ctx.local.syncedEditedAt ? ctx.local.baseVersion : null;
+    setAttachmentDiscardVersion(discardFrom ? reconciledVersion : null);
+    setAttachmentRebindVersion(rebindFrom ? reconciledVersion : null);
+    setAttachmentReady(verified && !ctx.conflict && discardFrom === null && rebindFrom === null);
     if (verified && !ctx.conflict) setAttachmentRevision((value) => value + 1);
   }
   function updateConflict(ctx: Runtime, next: Conflict | null) {
@@ -101,6 +112,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       baseVersion: previous?.baseVersion ?? ctx.startVersion,
       syncedEditedAt: previous?.syncedEditedAt ?? null,
       attachmentDraftId: previous?.attachmentDraftId,
+      pendingAttachmentDiscardId: previous?.pendingAttachmentDiscardId,
     };
     if (!writeLocalEditorDraft(next)) {
       if (!final && current(ctx)) setStatus("error");
@@ -134,16 +146,27 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setConflict(null);
     setStatus("idle");
   }
-  function applyRemote(ctx: Runtime, remote: DraftRemote): boolean {
+  function applyRemote(ctx: Runtime, remote: DraftRemote, rejectLocalAttachments = false): boolean {
     if (!current(ctx)) return false;
+    const previous = ctx.local;
+    const sameGeneration = previous?.draftId === remote.draftId;
+    const losingAttachmentDraftId = rejectLocalAttachments
+      && previous?.attachmentDraftId && previous.attachmentDraftId !== remote.draftId
+      ? previous.attachmentDraftId
+      : undefined;
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: remote.draftId,
       editedAt: remote.editedAt,
       baseVersion: remote.version, syncedEditedAt: remote.editedAt,
       payload: remote.payload,
-      // Retain attachment provenance when refreshing text within the same generation.
-      attachmentDraftId: ctx.local?.draftId === remote.draftId
-        ? ctx.local.attachmentDraftId : undefined,
+      // A clean refresh preserves provenance. Explicit Keep-server preserves only refs
+      // that already belong to the selected generation and retires losing provenance.
+      attachmentDraftId: rejectLocalAttachments
+        ? previous?.attachmentDraftId === remote.draftId ? remote.draftId : undefined
+        : sameGeneration ? previous?.attachmentDraftId : undefined,
+      pendingAttachmentDiscardId: rejectLocalAttachments
+        ? previous?.pendingAttachmentDiscardId ?? losingAttachmentDraftId
+        : sameGeneration ? previous?.pendingAttachmentDiscardId : undefined,
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
     ctx.local = next;
@@ -369,6 +392,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx) || !ctx.attachmentVerified || ctx.conflict
       || ctx.reading || ctx.syncing || ctx.publishing) return null;
+    if (ctx.local?.pendingAttachmentDiscardId) return null;
     if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return null;
     if (ctx.hasInput) {
       capture(ctx);
@@ -402,6 +426,28 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx = runtimeRef.current;
     if (ctx && current(ctx)) void checkRemote(ctx);
   }
+  function completeAttachmentDiscard(fromDraftId: string, toDraftId: string): boolean {
+    const ctx = runtimeRef.current;
+    if (
+      !ctx
+      || !current(ctx)
+      || ctx.conflict
+      || !ctx.attachmentVerified
+      || ctx.draftId !== toDraftId
+    ) return false;
+    const local = ctx.local;
+    if (!local || local.pendingAttachmentDiscardId !== fromDraftId) return false;
+    const next = { ...local, pendingAttachmentDiscardId: undefined };
+    if (!writeLocalEditorDraft(next)) {
+      setStatus("error");
+      return false;
+    }
+    ctx.local = next;
+    setAttachmentVerified(ctx, true);
+    void checkRemote(ctx);
+    return true;
+  }
+
   function completeAttachmentRebind(fromDraftId: string, toDraftId: string, retired = false): boolean {
     const ctx = runtimeRef.current;
     if (
@@ -433,8 +479,14 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const conflictNow = ctx.conflict;
     let verified = false;
     if (which === "server") {
-      if ("payload" in conflictNow.server) verified = applyRemote(ctx, conflictNow.server);
-      else reset(ctx, conflictNow.server.version);
+      if ("payload" in conflictNow.server) {
+        const rejectsAttachmentState = !!ctx.local?.pendingAttachmentDiscardId
+          || !!(ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== conflictNow.server.draftId);
+        verified = applyRemote(ctx, conflictNow.server, true);
+        if (verified && rejectsAttachmentState) {
+          setAttachmentSelectionEpoch((value) => value + 1);
+        }
+      } else reset(ctx, conflictNow.server.version);
     } else {
       // Explicit selection is the only way to replace another generation.
       const local = conflictNow.local;
@@ -476,6 +528,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       setAttachmentReady(false);
       setAttachmentRebindFrom(null);
       setAttachmentRebindVersion(null);
+      setAttachmentDiscardFrom(null);
+      setAttachmentDiscardVersion(null);
+      setAttachmentSelectionEpoch(0);
       setStatus("idle");
       setConflict(null);
       return;
@@ -494,6 +549,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setAttachmentReady(false);
     setAttachmentRebindFrom(null);
     setAttachmentRebindVersion(null);
+    setAttachmentDiscardFrom(null);
+    setAttachmentDiscardVersion(null);
+    setAttachmentSelectionEpoch(0);
     setStatus("idle");
     const local = readLocalEditorDraft(ownerId, contextKey);
     if (local) {
@@ -586,9 +644,10 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   );
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
-    preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
+    preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion,
+    attachmentDiscardFrom, attachmentDiscardVersion, attachmentSelectionEpoch, attachmentRevision,
     noteAttachmentChange,
-    reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
+    reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentDiscard, completeAttachmentRebind,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
