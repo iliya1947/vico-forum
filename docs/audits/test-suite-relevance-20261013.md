@@ -25,14 +25,14 @@
 | Этап | Область | Тестовых файлов | Статус |
 | --- | --- | ---: | --- |
 | 1 | Миграции, CI, production-workflow (без credentials) | 8 | Завершено: 83 тест-кейса |
-| 2 | Доступы и восстановление production web credential | 9 | Не начато |
+| 2 | Доступы и восстановление production web credential | 9 | Завершено: 66 тест-кейсов |
 | 3 | Аутентификация и авторизация | 12 | Не начато |
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Не начато |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Не начато |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Не начато |
 | 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **8 файлов / 83 тест-кейса проверено** |
+| **Итого** | **Без повторного включения файлов** | **118** | **17 файлов / 149 тест-кейсов проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -51,17 +51,17 @@
 - [x] `.github/scripts/runtime-privileges.test.mjs`
 - [x] `.github/scripts/verify-production-migration-identity.test.mjs`
 
-### 2. Доступы и восстановление production web credential — 9 файлов, не начато
+### 2. Доступы и восстановление production web credential — 9 файлов, завершено
 
-- [ ] `.github/scripts/bootstrap-production-web-credential.test.mjs`
-- [ ] `.github/scripts/diagnose-production-web-credential.test.mjs`
-- [ ] `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs`
-- [ ] `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs`
-- [ ] `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs`
-- [ ] `.github/scripts/production-web-credential-recovery-workflow.test.mjs`
-- [ ] `.github/scripts/recover-production-web-credential.test.mjs`
-- [ ] `.github/scripts/validate-production-web-credential-input.test.mjs`
-- [ ] `.github/scripts/verify-recovery-v2-validation-run.test.mjs`
+- [x] `.github/scripts/bootstrap-production-web-credential.test.mjs`
+- [x] `.github/scripts/diagnose-production-web-credential.test.mjs`
+- [x] `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs`
+- [x] `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs`
+- [x] `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs`
+- [x] `.github/scripts/production-web-credential-recovery-workflow.test.mjs`
+- [x] `.github/scripts/recover-production-web-credential.test.mjs`
+- [x] `.github/scripts/validate-production-web-credential-input.test.mjs`
+- [x] `.github/scripts/verify-recovery-v2-validation-run.test.mjs`
 
 ### 3. Аутентификация и авторизация — 12 файлов, не начато
 
@@ -206,13 +206,49 @@
 - **Потенциальное пересечение для этапа 8:** сравнить `migration-history.test.mjs` с `tests/database/migrations.test.ts` и `tests/production-migration-verifier.test.ts`; сравнить ACL fixture tests с native PostgreSQL ACL probes (`verify-runtime-privilege-probes.mjs`, `verify-web-relation-provisioning-probes.mjs`). Подозрение **не подтверждено**: уровни testing различаются.
 - **Следующее действие:** этап 2 — 9 тестовых файлов credential recovery/bootstrap; **не начат**, нужен отдельный запрос владельца.
 
+### Проход 2 — web credential bootstrap, diagnostics и recovery (2026-10-13)
+
+- **Основание:** тот же exact `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`; прочитаны полностью девять `.test.mjs`, сопоставлены с шестью credential workflows, их entrypoint/модульными реализациями, `ci.yml` и фактической хронологией из [`docs/database/HYPERDRIVE.md`](../../docs/database/HYPERDRIVE.md).
+- **Учтено:** **9/118 тестовых файлов, 66/1 075 тест-кейсов** в этом проходе (суммарно **17/118 файлов, 149/1 075 кейсов**). Числа сверены с отдельными `ℹ pass` 9 Node-команд из [CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268). На этом head все 66 прошли; тесты не перезапускались.
+- **Текущее состояние, установленное по source of truth:** [`HYPERDRIVE.md`](../../docs/database/HYPERDRIVE.md) § One-time web credential bootstrap / Web credential failure diagnostics / recovery v2 / Accepted web credential (2026-09-28) фиксирует:
+  1. Bootstrap workflow уже использован и consumed; one-shot `GITHUB_RUN_NUMBER=1` запрещает повторное исполнение.
+  2. Recovery V1 и V2 также externally использованы и consumed; v2 завершился неуспехом на `COMMIT` с компенсацией.
+  3. Rollback-only diagnostic one-shot уже успешно выполнен и исчерпан, а **read-only preflight diagnostic** повторно запускаем.
+  4. После этого принят рабочий web credential через отдельный owner-authorized Neon `ALTER ROLE`; существующий unbound cache-disabled Hyperdrive создан и проверен.
+  Это **документально подтверждённая историческая позиция**, а не выполненная заново live DB-диагностика. Workflow/test implementation согласуется с такими одноразовыми границами.
+- **Файлы / самостоятельная или условная ценность:**
+  - [`.github/scripts/bootstrap-production-web-credential.test.mjs`](../../.github/scripts/bootstrap-production-web-credential.test.mjs) — **13** кейсов. Смешанный набор: shared validation/Neon target/SCRAM/ACL preflight используются также diagnostics и recovery; bootstrap-specific one-shot/CLI относится к исчерпанной процедуре. Не удалять файл целиком.
+  - [`.github/scripts/diagnose-production-web-credential.test.mjs`](../../.github/scripts/diagnose-production-web-credential.test.mjs) — **6** кейсов. Нужен для повторно доступной read-only диагностики и для rollback-probe; second branch одноразовый и уже выполненный — рассмотреть позже отдельно.
+  - [`.github/scripts/production-web-credential-bootstrap-workflow.test.mjs`](../../.github/scripts/production-web-credential-bootstrap-workflow.test.mjs) — **3** кейсов. Прямые проверки первого одноразового workflow, документально исчерпанного после неудачного dispatch. Условный кандидат на совместную очистку workflow+тест.
+  - [`.github/scripts/production-web-credential-diagnostic-workflows.test.mjs`](../../.github/scripts/production-web-credential-diagnostic-workflows.test.mjs) — **4** кейсов. Одна половина о повторной read-only диагностике; другая — о уже использованном одноразовом rollback-probe. Нельзя удалять без разделения.
+  - [`.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs`](../../.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs) — **5** кейсов. Охрана v2 one-shot и сопряжённой repeatable validation; v2 уже исчерпан; кандидат только вместе с выводом всего v2 path.
+  - [`.github/scripts/production-web-credential-recovery-workflow.test.mjs`](../../.github/scripts/production-web-credential-recovery-workflow.test.mjs) — **5** кейсов. Тесты одноразового recovery V1: documented consumed; условный кандидат на удаление вместе с неиспользуемым workflow.
+  - [`.github/scripts/recover-production-web-credential.test.mjs`](../../.github/scripts/recover-production-web-credential.test.mjs) — **18** кейсов. Проверка bounded failure stages, compensation и secret-safe output; runtime V2 делегирует сюда. Самостоятельно убрать нельзя, даже если V1 workflow уже consumed.
+  - [`.github/scripts/validate-production-web-credential-input.test.mjs`](../../.github/scripts/validate-production-web-credential-input.test.mjs) — **9** кейсов. Повторяемый read-only gate к V2; несмотря на consumed V2, формально validation workflow ещё запускаем — решение о его выводе нужно принимать вместе с v2 path.
+  - [`.github/scripts/verify-recovery-v2-validation-run.test.mjs`](../../.github/scripts/verify-recovery-v2-validation-run.test.mjs) — **3** кейсов. Проверка GitHub evidence gate перед V2; используется только соответствующим recovery-v2 workflow; условный кандидат при полном выводе этого workflow.
+- **Вывод:**
+  1. Все девять test files включены в CI; **удалять отдельный test file сейчас нельзя** без коррекции самого CI.
+  2. **Подтверждены уже исчерпанные операционные workflow** (bootstrap, recovery V1, recovery V2 и rollback-only probe) и связанные исторические проверки. Это кандидаты на **согласованную cleanup-операцию**, не на немедленное удаление кейсов.
+  3. Нет установленного случая, в котором два теста проверяют строго одну и ту же гарантию без дополнительного уровня защиты; пересечения в проверках secret safety и one-shot guard относятся к нескольким независимым entrypoints.
+  4. `bootstrap-production-web-credential.mjs` также предоставляет общие SCRAM, target и preflight helpers для diagnostics/validation/recovery; `recover-production-web-credential-v2.mjs` делегирует в V1 recovery core. Пофайловое удаление исторических скриптов или тестов может сломать оставшиеся пути. Сначала определить, какие целые операционные пути можно вывести, затем сохранить/перенести реально используемые helper-тесты.
+  5. **0 подтверждённых тест-кейсов, безопасных для изолированного удаления**. Подтверждён один класс исторической избыточности (consumed one-shot operations); точный набор удаляемых тестов зависит от последующей проверки зависимостей и политики хранения этих workflow.
+- **Следующий проход:** этап 3 — аутентификация/авторизация (12 файлов), **не начат**; остановка до команды владельца.
+
 ## Подтверждённые кандидаты на оптимизацию
 
-Пока нет. Добавлять сюда только подтверждённые кандидаты с ID, ссылкой на кейс, сравнением с другими тестами и обоснованием без потери защитного покрытия.
+### CRED-01 — условная очистка исчерпанных одноразовых credential workflows
+
+- **Факт:** bootstrap V1, recovery V1/V2 и rollback-probe уже consumed (см. `HYPERDRIVE.md` §§ соответствующих операций), текущий рабочий web credential принят другим способом.
+- **Кандидаты целыми test files:** [bootstrap workflow tests](../../.github/scripts/production-web-credential-bootstrap-workflow.test.mjs), [recovery V1 workflow tests](../../.github/scripts/production-web-credential-recovery-workflow.test.mjs), [recovery V2 workflow tests](../../.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs) и [validation-run gate tests](../../.github/scripts/verify-recovery-v2-validation-run.test.mjs) — только **после** вывода зависимых workflow/script entrypoints.
+- **Смешанные наборы, не удалять целиком без миграции покрытия:** [bootstrap helper tests](../../.github/scripts/bootstrap-production-web-credential.test.mjs), [recovery V1 core tests](../../.github/scripts/recover-production-web-credential.test.mjs), [diagnostic workflow tests](../../.github/scripts/production-web-credential-diagnostic-workflows.test.mjs); [input validation tests](../../.github/scripts/validate-production-web-credential-input.test.mjs) относятся к repeatable validation, но его текущий практический смысл после consumed V2 требует окончательного решения.
+- **Граница:** повторяемую read-only preflight диагностику сохранить до подтверждения наличия эквивалентной безопасной диагностики. Нельзя удалять тесты при сохранении исполнительных workflow или используемых helper-функций. CI содержит явные `node --test` записи, их также потребуется обновить при будущем cleanup.
+- **Статус:** обоснованное предложение по совместному cleanup **после** полной проверки, но **не разрешение немедленно удалять**. Число безопасно удаляемых отдельно тест-кейсов — 0.
 
 ## Открытые вопросы и гипотезы
 
 Проверить возможное пересечение migration/ACL integration probes с тестами этапа 1 после завершения блоков 7–8. Похожие имена и пересекающиеся ограничения сами по себе не доказывают лишность.
+
+Проверить влияние удаления старых credential workflow/scripts на повторяемую read-only диагностику и на используемые shared helper exports перед любой cleanup-реализацией. Live состояние external credentials в рамках этого audit-only прохода не проверялось.
 
 ## Итоговая сверка
 
