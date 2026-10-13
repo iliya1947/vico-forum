@@ -5463,3 +5463,36 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-614163253
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6acdec96d5a88191afbe36bca573734a)
+
+
+## PR #215 — Codex implementation: Stage 5 attachment/draft concurrency handoff — 2026-10-13
+
+Executor: Codex, explicitly appointed by the owner for this task; that direct instruction overrides the earlier default role/writer allocation. GPT-5.6 Sol and GPT-6 remain independent reviewers of this result. Their earlier findings and architectural proposals were treated as hypotheses, then checked against the implementation and reproductions.
+
+Exact implementation head: `bb2d49eccf32efe8a300b4c88ccbeb5397998193`.
+Fix commit: `8ca994a` (`fix(editor): preserve attachment bindings across draft concurrency`).
+The final merge commit only integrates the four current-main process/AGENTS commits through `83219af`; it does not merge PR #215 into main.
+
+Verified causal defects and corrections:
+- PATCH could finish A→B before a pending POST created its A ref, including another client whose originating tab closed. Snapshot ref locks cannot cover absent/late rows. Migration `0037` adds a durable owner/context generation redirect, written even for an empty source. Final POST persistence, old-ID retry/list/remove and rebind resolve the canonical generation under one short transaction advisory scope lock; R2 byte streaming remains outside that transaction.
+- PATCH trusted a syntactically valid target without checking its authoritative draft. It now locks and checks active target ID plus `X-Vico-Draft-Version`. The selected local text first reaches its ordinary 60-second CAS save, then refs move using the resulting version. Text sync/reconciliation no longer freezes behind R2 or rebind; new file additions remain blocked during a pending move.
+- A single latest text tombstone could be replaced by the next draft head before a delayed upload finished. NULL generation targets permanently retire completed IDs. Publish/delete/expiry retire atomically; save rejects retired/redirected IDs. A terminal conflict choice starts a fresh UUID. API 409 means stale CAS; 410 means retired source and allows bounded client reconciliation without an infinite ambiguous retry.
+- Scope reset discarded active/ambiguous upload identity during local-winner transitions, and repeated GET responses could overwrite newer entries. Retained same-owner/context A→B→C operations keep their original upload ID/file/request generation; obsolete restore/rebind responses are fenced and server snapshots preserve live mutations/removal evidence. A successful late response can refresh a reopened editor; successful draft checks refresh refs even if React batches readiness updates.
+- Attachment membership changes did not renew clean draft editedAt or trigger its next save. Local dirty/editedAt now changes, with no eager server text POST and no unchanged-snapshot retry.
+- Another tab with a stale empty attachment list could bypass the provisional text-only publication guard. The server now checks live refs under the same scope lock and rolls back the whole publication transaction. Scope lock is acquired before topic/user row locks; native contention tests exposed and verified the correction of a real FK/user-lock deadlock, including first save versus publication.
+- An unavailable/lost DB COMMIT acknowledgement could be followed by unconditional deletion of an already referenced private R2 object. Unknown ownership now retains the private object; stable-ID retry converges to the committed asset and deletes only its duplicate private write. Confirmed logical rejection still cleans the new object. Physical orphan cleanup remains the next separate Stage 5 unit.
+
+Choice/isolation checks: choosing another server generation does not create a transition from the losing local generation or import its files; retained local choice preserves origin until the server transition is acknowledged. Retired bindings are discarded while the explicitly selected text remains. Owner/context scoping is preserved throughout. Generation coordinator metadata cascades with owner deletion, matching text drafts; private asset/ref lifetime is unchanged. New runtime table grants are only INSERT/SELECT; unnecessary asset/ref row locks requiring UPDATE were removed.
+
+Verification of the exact head:
+- [CI #38408910874](https://github.com/iliya1947/vico-forum/actions/runs/38408910874): **checks SUCCESS, database SUCCESS**, first attempt, exact `bb2d49e`.
+- 906 application tests / 90 files; 257 native PostgreSQL 17 tests / 27 files.
+- lint/typecheck, accepted migration-history checks, application + UI preview builds, migration metadata/Drizzle parity, actual PostgreSQL structural manifest parity (43 tables), runtime privilege/provisioning/credential probes and local Workers/Hyperdrive smoke all passed in CI.
+- Native regressions force separate PostgreSQL clients through both POST↔PATCH and DELETE↔PATCH orders, empty source, alias chains, old-ID retry, stale/terminal CAS, retirement after a fresh head, ownership and minimal runtime grants. Publication regressions verify complete rollback and both upload/publication orders plus first-save contention.
+- Before the final head, one parallel local application run timed out an unchanged public-read test at 5 seconds. The separate 50-test public-read file and the complete 904-test local repeat (maxWorkers=2) passed; final CI passed the ordinary default command with all 906 tests. No test timeout or CI configuration was relaxed.
+- PROJECT_STATE.md and temporary EDITOR_SPEC.md updated. Dependencies unchanged. No external migration, R2 provisioning, production deployment or merge performed. Live R2/browser owner acceptance is not claimed by this fix.
+
+Independent handoff for GPT-5.6 Sol and GPT-6:
+Please independently review this exact head and its delta from `8fff707`, against current Stage 5 requirements. Reproduce the concurrency/CAS/retirement/restore invariants rather than accepting this account as proof. Review independently before comparing results; record model, exact SHA, confirmed current-scope findings or no-findings result here. Keep this implementation head stable during review and do not edit it concurrently. Codex's implementation assignment remains the authority for any resulting bounded fixes.
+
+This completes the requested concurrency correction only. Attachment publication promotion/download, inline public delivery, physical orphan cleanup, AV, mentions/edit/history and Stage 6 provisioning are outside this package. The whole Editor 2.0 PR remains unfinished and is not presented as merge-ready. No intermediate manual Codex Code Review was launched.
