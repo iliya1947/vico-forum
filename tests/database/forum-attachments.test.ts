@@ -103,6 +103,23 @@ describe("forum attachment lifecycle foundation", () => {
     expect(draftRows.rows[0]?.count).toBe("0");
     expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
     expect(await store.listDraftAttachments(otherId, contextKey, draftId)).toEqual([]);
+
+    const retried = await store.createDraftAttachment({
+      id: attachmentId,
+      ownerId,
+      contextKey,
+      draftId,
+      objectKey: "private/11f6fb5c-8ca9-4b47-a456-0cbdb8a92dd0",
+      fileName: "changed-name.txt",
+      declaredMime: "text/plain",
+      detectedType: "text",
+      responseMime: "text/plain; charset=utf-8",
+      byteSize: 99,
+      verificationStatus: "type-checked",
+    });
+    expect(retried.objectKey).toBe("private/8cd55954-9cb6-48fd-a42f-e4a5e85ae90c");
+    expect(retried.fileName).toBe("example.txt");
+    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
   });
 
   it("rolls back asset creation when the uploader identity does not exist", async () => {
