@@ -5885,3 +5885,29 @@ Verified code paths and their regression coverage:
 6. Merge выполняет только владелец. EDITOR_SPEC.md сохраняется пока PR незавершён; перенос постоянных правил и удаление временного файла — перед окончательным merge, после полной реализации/приёмки.
 
 **Текущий следующий шаг:** GPT-6 — сверить refs/документы и выполнить проектирование минимальной границы пакета 1, затем его реализацию и собственные проверки в PR #215. GPT-5.6 Sol — независимая проверка переданного стабильного head. Codex — постановка задач, техническое согласование и приёмка; implementation-код не меняет.
+
+---
+
+## PR #215 — GPT-6: Stage 5 package 1 boundary mapping — 2026-10-14
+
+**Executor GPT-6; starting implementation head:** `6e76b1abdbe7f528293cbae107892cc0a3041ad6`. This completes the *separate planning/diagnosis subtask* of Codex's package 1, not implementation or acceptance. No implementation changes/tests, branch or CI run in this step.
+
+### Actual chain and minimal changes
+
+| Boundary | Existing | Required change |
+| --- | --- | --- |
+| Actions | `app/forum/actions.server.ts`: topic/Help/reply permission, Origin, editor draft ID/version fence | Carry validated exact ready-attachment-ID list from submit |
+| Writer/service | `db/hyperdrive-forum.ts` → `ForumService` | Forward list to existing transaction; no parallel publication system |
+| DB transaction | `createTopicWithInitialPost`/`createPost` already acquire owner/context scope lock before topic/author rows, insert post/revision and call `finishPublishedDraft` | Verify server-owned eligible ref metadata, owner/context/canonical generation, selected set; insert `forum_post_attachments`, remove only promoted draft refs; retain CAS and rollback together |
+| Draft | `finishPublishedDraft` has active/version CAS, first-save version=0 terminal path, terminal generation retirement and temporary text-only ref guard | Lift guard only after atomic correct promotion; block stale/foreign/losing refs |
+| Read/render | Existing `PrivateAttachmentBucket.get` supports bounded range-stream; `readTopicPage`/TopicView render text but not file metadata; current attachment route lists private metadata, not bytes | Controlled DB-authorized owner-draft/post attachment download and set-based post metadata, no object key exposed |
+
+**Critical concurrency boundary:** Text CAS alone does not version file refs. Send exact stored IDs from the settled editor (including explicitly empty list) and compare with *all* current eligible canonical draft refs inside the existing scope-locked publication transaction. Client manifest is never treated as proof of ownership/verification. Any mismatch from upload/remove/rebind is a conflict and rolls back the post, refs and draft completion. Mutations committing earlier affect that comparison; later mutations observe terminal generation and cannot resurrect it. Same lock ordering as existing upload/rebind/delete. A legitimate immediate upload before the first 60-second text save remains publishable by the existing first-version fence without forcing a text save.
+
+**Access boundary:** Draft bytes only for authenticated owner + current valid draft ref, published bytes only for a current `postId + attachmentId` ref and readable post. Retrieval checks DB before private bucket access. Return streamed bytes with conservative attachment-only disposition, encoded filename, `application/octet-stream`, nosniff and private/no-store; active source/SVG/HTML never execute on forum origin. Missing/broken storage yields unavailable, never fake success; removal/deletion revokes that access while separate valid refs remain usable.
+
+**Scope:** Topic initial post, Help question and reply with meaningful text. Keep ordinary text-only path; UI blocks unsettled/error uploads, retains text on failed submit and releases publication guard after failure. Inline images/preview and orphan cleanup are later packages; attachment-only publication, general publication exactly-once, edit-published and external R2/Neon/Queues/AV/production remain outside this package. Existing 0035/0037 schema reused; check and add only necessary runtime grants for published refs, with normal forward migration if needed.
+
+**Implementation verification required:** full transaction rollback and actual PG double-connection races for both orderings; owner/context/generation/CAS/metadata rejection and terminal late upload; topic/Help/reply route→service→repository; private/public/guest/deleted/shared downloads, unsafe file names/types, storage unavailable; composed editor browser flow; lint/typecheck/test, DB/schema/grants, both builds and exact-head CI. Baseline 933 app / 261 DB tests is not a new-head result.
+
+**Next step:** owner continuation for implementing this bounded package in the *existing* PR #215 branch; only then publish stable implementation head for Sol/Codex independent review. No implementation PR/branch was created or changed by this planning step.
