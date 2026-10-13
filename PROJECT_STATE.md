@@ -562,8 +562,15 @@ Vico Forum находится в ранней pre-release разработке.
   filename/size/download metadata through a batch read; editor only permits submit
   when uploads/deletions are settled. No external bucket provisioned and no
   publication/idempotency, inline-image or cleanup scope expanded. This is an
-  implementation-progress record, NOT an acceptance claim; tests and exact-head CI
-  must still be completed and checked. 
+  implementation-progress record, NOT an acceptance claim.
+  Code and integration checks on head 8ce041b (CI #38485636560): checks + database
+  successful; 939 application tests / 92 files and 276 PostgreSQL tests / 27 files,
+  with lint/typecheck, application/UI-preview builds and schema/grants guards green.
+  Sol's independent review of previous code head 8c47966 found no code defect,
+  but identified missing package-1 evidence: rebind/publication orderings and real
+  action→writer→service→DB tests are now covered by the additional regressions.
+  Real-browser upload→publication→download and failure-preservation with fake
+  storage has NOT been executed; package acceptance remains pending.
 - Stage 5 attachment/draft concurrency correction (2026-10-13): Codex выполняет реализацию
   по прямому назначению владельца. Stale GET restore отсекается cleanup fence; выполняющиеся
   upload/retry/remove сохраняют исходную identity при retained переходах A→B→C.
