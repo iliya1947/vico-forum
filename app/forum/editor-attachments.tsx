@@ -39,6 +39,7 @@ interface Props {
   draftId: string;
   draftReady: boolean;
   draftRevision: number;
+  selectionEpoch: number;
   rebindFrom: string | null;
   rebindVersion: number | null;
   disabled: boolean;
@@ -50,6 +51,10 @@ interface Props {
 
 function encoded(value: string): string {
   return encodeURIComponent(value);
+}
+
+function notifyAttachmentChange(identity: string): void {
+  window.dispatchEvent(new CustomEvent("vico:attachment-change", { detail: identity }));
 }
 
 function fallbackClipboardName(file: File): string {
@@ -143,6 +148,7 @@ export function useEditorAttachments({
   draftId,
   draftReady,
   draftRevision,
+  selectionEpoch,
   rebindFrom,
   rebindVersion,
   disabled,
@@ -181,9 +187,13 @@ export function useEditorAttachments({
   draftIdRef.current = draftId;
   const previousIdentityRef = useRef(identity);
   const removedIdsRef = useRef(new Set<string>());
-  const scope = identity ? `${identity}\u0000${draftId}` : null;
+  // A confirmed explicit server selection invalidates losing local attachment state,
+  // even when the text draft ID is unchanged. Routine refresh does not change it.
+  const scope = identity ? `${identity}\u0000${draftId}\u0000${selectionEpoch}` : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
+  const selectionEpochRef = useRef(selectionEpoch);
+  selectionEpochRef.current = selectionEpoch;
 
   useEffect(() => () => {
     scopeRef.current = null;
@@ -342,6 +352,7 @@ export function useEditorAttachments({
     const generation = originalDraftId ?? callbacksRef.current.reserveGeneration();
     if (!generation || (!originalDraftId && generation !== draftId)) return;
     const identityAtStart = identity;
+    const selectionAtStart = selectionEpoch;
     const next: UploadEntry = {
       id: stableId,
       draftId: generation,
@@ -361,7 +372,8 @@ export function useEditorAttachments({
 
     const request = new XMLHttpRequest();
     requestsRef.current.set(stableId, request);
-    const active = () => identityRef.current === identityAtStart
+    const active = () => selectionEpochRef.current === selectionAtStart
+      && identityRef.current === identityAtStart
       && entriesRef.current.some((entry) => entry.id === stableId
         && entry.draftId === generation && entry.status === "uploading");
     request.upload.onprogress = (event) => {
@@ -377,7 +389,7 @@ export function useEditorAttachments({
         // The originating editor may have unmounted while R2 was streaming.
         // A reopened editor restores its own exact generation, never this response's files.
         if (!active()) {
-          window.dispatchEvent(new CustomEvent("vico:attachment-change", { detail: identityAtStart }));
+          notifyAttachmentChange(identityAtStart);
           return;
         }
         setEntry(stableId, () => restoredEntry(attachment, generation));
@@ -437,18 +449,21 @@ export function useEditorAttachments({
   async function remove(entry: UploadEntry) {
     if (
       !contextKey
+      || !identity
       || entry.status === "uploading"
       || entry.status === "removing"
       || entry.uncertainCommit
     ) return;
     const identityAtStart = identity;
+    const selectionAtStart = selectionEpoch;
     if (entry.error === "gone") {
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       return;
     }
     const previousStatus = entry.attachment ? "stored" as const : "error" as const;
     setEntry(entry.id, (current) => ({ ...current, status: "removing", removeError: false }));
-    const activeRemoval = () => identityRef.current === identityAtStart
+    const activeRemoval = () => selectionEpochRef.current === selectionAtStart
+      && identityRef.current === identityAtStart
       && entriesRef.current.some((item) => item.id === entry.id
         && item.draftId === entry.draftId && item.status === "removing");
     try {
@@ -467,6 +482,10 @@ export function useEditorAttachments({
         setEntries((current) => current.filter((item) => item.id !== entry.id));
         if (response.status === 410) callbacksRef.current.retryDraftReconciliation();
         else callbacksRef.current.noteAttachmentChange(draftIdRef.current);
+      } else {
+        // A late commit can invalidate the new selection's GET snapshot. Refresh
+        // authoritative refs without applying this obsolete UI operation.
+        notifyAttachmentChange(identityAtStart);
       }
     } catch {
       if (activeRemoval()) {
@@ -475,6 +494,9 @@ export function useEditorAttachments({
           status: previousStatus,
           removeError: true,
         }));
+      } else {
+        // A lost acknowledgement does not establish that DELETE rolled back.
+        notifyAttachmentChange(identityAtStart);
       }
     }
   }

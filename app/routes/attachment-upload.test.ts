@@ -350,7 +350,7 @@ describe("private attachment upload API", () => {
     expect(env.r2.put).not.toHaveBeenCalled();
     expect(env.createDraftAttachment).not.toHaveBeenCalled();
     expect(env.recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({
-      uploadId: expect.stringMatching(/^[0-9a-f-]{36}$/u),
+      uploadId: expect.stringMatching(/^attachment-v1:[0-9a-f]{64}$/u),
       uploadedByUserId: "real-user",
       contextKey,
       draftId,
@@ -360,6 +360,29 @@ describe("private attachment upload API", () => {
       declaredByteSize: bytes.length,
     }));
     expect(env.recordSecurityEvent.mock.calls[0]?.[0].uploadId).not.toBe(uploadId);
+  });
+
+  it("derives one stable security event key for identical suspicious retries", async () => {
+    const env = setup();
+    const bytes = Uint8Array.from([0x4d, 0x5a, 0x90, 0x00]);
+    const responses = await Promise.all([
+      action({ request: request(bytes, { fileName: "masked.txt" }), context: env.ctx }),
+      action({ request: request(bytes, { fileName: "masked.txt" }), context: env.ctx }),
+    ]);
+    expect(responses.map((item) => item.status)).toEqual([422, 422]);
+    const recorded = env.recordSecurityEvent.mock.calls.map(([event]) => event);
+    expect(recorded).toHaveLength(2);
+    expect(recorded[0]?.uploadId).toMatch(/^attachment-v1:[0-9a-f]{64}$/u);
+    expect(recorded[1]?.uploadId).toBe(recorded[0]?.uploadId);
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+    expect(env.r2.put).not.toHaveBeenCalled();
+
+    const otherOwner = setup({ owner: "different-user" });
+    expect((await action({ request: request(bytes, { fileName: "masked.txt" }), context: otherOwner.ctx })).status).toBe(422);
+    expect(otherOwner.recordSecurityEvent.mock.calls[0]?.[0].uploadId).not.toBe(recorded[0]?.uploadId);
+
+    expect((await action({ request: request(bytes, { fileName: "other.txt" }), context: env.ctx })).status).toBe(422);
+    expect(env.recordSecurityEvent.mock.calls[2]?.[0].uploadId).not.toBe(recorded[0]?.uploadId);
   });
 
   it("preserves a NUL filename anomaly as durable escaped evidence", async () => {

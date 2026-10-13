@@ -6,6 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { useEditorAttachments } from "./editor-attachments";
+import { MarkdownEditor } from "./markdown-editor";
+import { HeaderAuthProvider } from "../auth/auth-controls";
+import { readLocalEditorDraft, writeLocalEditorDraft } from "./draft-client";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -106,6 +109,7 @@ interface HarnessProps {
   id?: string;
   ready?: boolean;
   revision?: number;
+  selectionEpoch?: number;
   rebindFrom?: string | null;
   rebindVersion?: number | null;
   ownerId?: string;
@@ -121,6 +125,7 @@ function Harness({
   id = draftId,
   ready = true,
   revision = 0,
+  selectionEpoch = 0,
   rebindFrom = null,
   rebindVersion = 4,
   ownerId = "alice",
@@ -136,6 +141,7 @@ function Harness({
     draftId: id,
     draftReady: ready,
     draftRevision: revision,
+    selectionEpoch,
     rebindFrom,
     rebindVersion,
     disabled: false,
@@ -175,6 +181,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -292,6 +299,126 @@ describe("editor attachment UI", () => {
       responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked",
     } });
     expect(screen.queryByText("retained.txt")).not.toBeInTheDocument();
+    expect(noteChange).not.toHaveBeenCalled();
+  });
+
+  it("invalidates losing uploads on explicit server selection in the same text generation", async () => {
+    const noteChange = vi.fn();
+    const winner = { id: attachmentId, fileName: "winner.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 4, verificationStatus: "type-checked" };
+    let selected = false;
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) =>
+      init?.method === "GET" ? Response.json({ attachments: selected ? [winner] : [] })
+        : Response.json({ error: "unexpected" }, { status: 500 })));
+    const view = renderHarness({ noteChange });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["hello"], "loser.txt")] },
+    });
+    const staleUpload = FakeXMLHttpRequest.instances[0]!;
+    expect(screen.getByText("loser.txt")).toBeInTheDocument();
+    selected = true;
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness id={draftId} selectionEpoch={1} noteChange={noteChange} />
+    </I18nextProvider>);
+    await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
+    staleUpload.complete(201, { outcome: "stored", attachment: {
+      id: staleUpload.headers.get("X-Vico-Attachment-Id"), fileName: "loser.txt",
+      detectedType: "text", responseMime: "text/plain", byteSize: 5,
+      verificationStatus: "type-checked",
+    } });
+    await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
+    expect(noteChange).not.toHaveBeenCalled();
+  });
+
+  it("discards failed ambiguous retries when the server version wins without changing draft ID", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ attachments: [] })));
+    const view = renderHarness();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["x"], "failed.txt")] },
+    });
+    FakeXMLHttpRequest.instances[0]!.fail();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness selectionEpoch={1} />
+    </I18nextProvider>);
+    await waitFor(() => expect(screen.queryByText("failed.txt")).not.toBeInTheDocument());
+    expect(screen.getByLabelText("Attach")).toBeEnabled();
+  });
+
+  it("rejects a stale GET snapshot after explicit server selection inside the same generation", async () => {
+    let resolveFirst: ((response: Response) => void) | undefined;
+    let reads = 0;
+    const winner = { id: attachmentId, fileName: "winner-get.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    const loser = { ...winner, fileName: "loser-get.txt" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method !== "GET") throw new Error("Unexpected operation");
+      reads++;
+      return reads === 1
+        ? new Promise<Response>((resolve) => { resolveFirst = resolve; })
+        : Promise.resolve(Response.json({ attachments: [winner] }));
+    }));
+    const view = renderHarness();
+    await waitFor(() => expect(reads).toBe(1));
+    view.rerender(<I18nextProvider i18n={runtime()}><Harness selectionEpoch={1} /></I18nextProvider>);
+    await screen.findByText("winner-get.txt");
+    await act(async () => { resolveFirst?.(Response.json({ attachments: [loser] })); });
+    expect(screen.queryByText("loser-get.txt")).not.toBeInTheDocument();
+    expect(screen.getByText("winner-get.txt")).toBeInTheDocument();
+  });
+
+  it("ignores the stale rebind response after rejecting local attachments", async () => {
+    let resolvePatch: ((response: Response) => void) | undefined;
+    const completeRebind = vi.fn(() => true);
+    const winner = { id: attachmentId, fileName: "winner-patch.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return new Promise<Response>((resolve) => { resolvePatch = resolve; });
+      }
+      return Promise.resolve(Response.json({ attachments: [winner] }));
+    }));
+    const view = renderHarness({ ready: false, rebindFrom: oldDraftId, rebindVersion: 5,
+      completeRebind });
+    await waitFor(() => expect(resolvePatch).toBeDefined());
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness ready selectionEpoch={1} completeRebind={completeRebind} />
+    </I18nextProvider>);
+    await screen.findByText("winner-patch.txt");
+    await act(async () => { resolvePatch?.(Response.json({ outcome: "rebound", moved: 1 })); });
+    expect(completeRebind).not.toHaveBeenCalled();
+    expect(screen.getByText("winner-patch.txt")).toBeInTheDocument();
+  });
+
+  it("ignores an obsolete DELETE result after choosing server attachments", async () => {
+    let resolveDelete: ((response: Response) => void) | undefined;
+    let selected = false;
+    const noteChange = vi.fn();
+    const loser = { id: attachmentId, fileName: "loser-delete.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    const winner = { ...loser, id: "96b93562-0550-4eef-88af-f951d6ea6138", fileName: "winner-delete.txt" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return new Promise<Response>((resolve) => { resolveDelete = resolve; });
+      }
+      return Promise.resolve(Response.json({ attachments: [selected ? winner : loser] }));
+    }));
+    const view = renderHarness({ noteChange });
+    await screen.findByText("loser-delete.txt");
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(resolveDelete).toBeDefined());
+    selected = true;
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness selectionEpoch={1} noteChange={noteChange} />
+    </I18nextProvider>);
+    await screen.findByText("winner-delete.txt");
+    await act(async () => { resolveDelete?.(Response.json({ outcome: "removed" })); });
+    expect(screen.queryByText("loser-delete.txt")).not.toBeInTheDocument();
+    expect(screen.getByText("winner-delete.txt")).toBeInTheDocument();
     expect(noteChange).not.toHaveBeenCalled();
   });
 
@@ -616,5 +743,188 @@ describe("editor attachment UI", () => {
       "This file may contain passwords or tokens. Upload it anyway?",
     );
     expect(FakeXMLHttpRequest.instances).toHaveLength(0);
+  });
+});
+
+
+describe("late attachment removal", () => {
+  it.each([
+    { change: "selection", lostAck: false }, { change: "selection", lostAck: true },
+    { change: "reopen", lostAck: false }, { change: "reopen", lostAck: true },
+  ])("refreshes authoritative refs after DELETE across $change; lost acknowledgement=$lostAck", async ({ change, lostAck }) => {
+    let committed = false;
+    let acknowledge: ((response: Response) => void) | undefined;
+    let reject: ((reason: Error) => void) | undefined;
+    const noteChange = vi.fn();
+    const saved = { id: attachmentId, fileName: "late-delete.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") return new Promise<Response>((resolve, fail) => { acknowledge = resolve; reject = fail; });
+      return Promise.resolve(Response.json({ attachments: committed ? [] : [saved] }));
+    }));
+    const first = renderHarness({ noteChange });
+    await screen.findByText("late-delete.txt");
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(acknowledge).toBeDefined());
+    if (change === "selection") {
+      first.rerender(<I18nextProvider i18n={runtime()}><Harness selectionEpoch={1} noteChange={noteChange} /></I18nextProvider>);
+    } else {
+      first.unmount();
+      renderHarness({ noteChange });
+    }
+    await waitFor(() => expect(screen.getByRole("button", { name: "Remove" })).toBeEnabled());
+    committed = true;
+    await act(async () => {
+      if (lostAck) reject!(new Error("DELETE acknowledgement lost"));
+      else acknowledge!(Response.json({ outcome: "removed" }));
+    });
+    await waitFor(() => expect(screen.queryByText("late-delete.txt")).not.toBeInTheDocument());
+    expect(noteChange).not.toHaveBeenCalled();
+  });
+
+  it("does not refresh another owner's editor after an obsolete DELETE", async () => {
+    let otherOwner = false;
+    let acknowledge: ((response: Response) => void) | undefined;
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") return new Promise<Response>((resolve) => { acknowledge = resolve; });
+      return Promise.resolve(Response.json({ attachments: [{
+        id: otherOwner ? "96b93562-0550-4eef-88af-f951d6ea6138" : attachmentId,
+        fileName: otherOwner ? "bob.txt" : "alice.txt", detectedType: "text",
+        responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked",
+      }] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const view = renderHarness();
+    await screen.findByText("alice.txt");
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(acknowledge).toBeDefined());
+    otherOwner = true;
+    view.rerender(<I18nextProvider i18n={runtime()}><Harness ownerId="bob" /></I18nextProvider>);
+    await screen.findByText("bob.txt");
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    const reads = fetchMock.mock.calls.filter(([, init]) => init?.method === "GET").length;
+    await act(async () => { acknowledge!(Response.json({ outcome: "removed" })); });
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "GET")).toHaveLength(reads);
+    expect(screen.getByText("bob.txt")).toBeInTheDocument();
+  });
+});
+
+function renderDraftEditor() {
+  return render(<I18nextProvider i18n={runtime()}>
+    <HeaderAuthProvider initialUser={{ id: "alice", name: "Author" }}>
+      <form>
+        <label htmlFor="attachment-draft-body">Body</label>
+        <MarkdownEditor id="attachment-draft-body" name="body" defaultAuthoringMode="advanced"
+          draftContextKey={contextKey} draftLocale="en" />
+      </form>
+    </HeaderAuthProvider>
+  </I18nextProvider>);
+}
+
+const emptyDraftPayload = { title: "", body: "", tags: "" };
+function remoteDraft(generation: string, version: number, body: string) {
+  const now = new Date().toISOString();
+  return { contextKey, draftId: generation, version, status: "active" as const,
+    title: "", snippet: body, editedAt: now, updatedAt: now, payload: { ...emptyDraftPayload, body } };
+}
+async function reconcileDraft() {
+  await act(async () => { window.dispatchEvent(new Event("online")); });
+}
+
+describe("MarkdownEditor attachment and draft integration", () => {
+  it.each(["uploading", "ambiguous"] as const)("discards same-generation %s state on explicit Keep server", async (state) => {
+    let remote = remoteDraft(draftId, 1, "Initial server text");
+    const winner = { id: attachmentId, fileName: "winner.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    const fetchMock = vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
+      if (uri.includes("mode=content")) return Response.json({ draft: remote });
+      if (init?.method === "GET") return Response.json({ attachments: [winner] });
+      throw new Error("Unexpected eager mutation");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderDraftEditor();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "loser.txt")] } });
+    const upload = FakeXMLHttpRequest.instances[0]!;
+    expect(upload.headers.get("X-Vico-Draft-Id")).toBe(draftId);
+    if (state === "ambiguous") upload.fail();
+    remote = remoteDraft(draftId, 2, "Incompatible server text");
+    await reconcileDraft();
+    fireEvent.click(await screen.findByRole("button", { name: "Keep other version" }));
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue(remote.payload.body);
+    await waitFor(() => expect(screen.queryByText("loser.txt")).not.toBeInTheDocument());
+    expect(await screen.findByText("winner.txt")).toBeInTheDocument();
+    expect(upload.aborted).toBe(false);
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
+  });
+
+  it("keeps the conflict retryable when storing the selected server snapshot fails", async () => {
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId, attachmentDraftId: oldDraftId,
+      editedAt: new Date().toISOString(), baseVersion: 4, syncedEditedAt: null,
+      payload: { ...emptyDraftPayload, body: "Local losing text" } });
+    const remote = remoteDraft(draftId, 5, "Chosen server text");
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
+      if (uri.includes("mode=content")) return Response.json({ draft: remote });
+      if (init?.method === "GET") return Response.json({ attachments: [] });
+      throw new Error("Unexpected mutation");
+    }));
+    renderDraftEditor();
+    await screen.findByRole("button", { name: "Keep other version" });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new Error("Quota exceeded"); });
+    fireEvent.click(screen.getByRole("button", { name: "Keep other version" }));
+    expect(readLocalEditorDraft("alice", contextKey)?.payload.body).toBe("Local losing text");
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Local losing text");
+    expect(screen.getByRole("button", { name: "Keep other version" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep other version" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Keep other version" })).not.toBeInTheDocument());
+    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue(remote.payload.body);
+    expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
+  });
+
+  it.each([false, true])("restores late origin-A completion only through authoritative refs; prior redirect=%s", async (redirected) => {
+    let remote = remoteDraft(oldDraftId, 1, "Initial A text");
+    let committed = false;
+    let originId: string | null = null;
+    const winner = { id: attachmentId, fileName: "authoritative-winner.txt", detectedType: "text",
+      responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
+    const fetchMock = vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
+      if (uri.includes("mode=content")) return Response.json({ draft: remote });
+      if (init?.method === "GET") {
+        const generation = new Headers(init.headers).get("X-Vico-Draft-Id");
+        return Response.json({ attachments: generation === draftId
+          ? [winner, ...(committed && redirected ? [{ ...winner, id: originId, fileName: "late-origin-A.txt" }] : [])]
+          : [] });
+      }
+      throw new Error("No rebind before the regular text CAS");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderDraftEditor();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "late-origin-A.txt")] } });
+    const upload = FakeXMLHttpRequest.instances[0]!;
+    originId = upload.headers.get("X-Vico-Attachment-Id");
+    remote = remoteDraft(draftId, 4, "First remote B");
+    await reconcileDraft();
+    fireEvent.click(await screen.findByRole("button", { name: "Keep this version" }));
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId, attachmentDraftId: oldDraftId });
+    remote = remoteDraft(draftId, 5, "Incompatible remote B");
+    await reconcileDraft();
+    fireEvent.click(await screen.findByRole("button", { name: "Keep other version" }));
+    await screen.findByText("authoritative-winner.txt");
+    expect(screen.queryByText("late-origin-A.txt")).not.toBeInTheDocument();
+    expect(upload.aborted).toBe(false);
+    committed = true;
+    upload.complete(201, { outcome: "stored", attachment: { ...winner, id: originId, fileName: "late-origin-A.txt" } });
+    if (redirected) await screen.findByText("late-origin-A.txt");
+    else {
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(screen.queryByText("late-origin-A.txt")).not.toBeInTheDocument();
+    }
+    expect(screen.getByText("authoritative-winner.txt")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
   });
 });

@@ -575,6 +575,25 @@ Vico Forum находится в ранней pre-release разработке.
   успешны. Статус exact-head CI фиксируется в checks PR, независимые GPT-5.6 Sol/GPT-6
   проверки и merge не выполнены. Publication promotion/download,
   orphan cleanup, AV и external R2 provisioning не реализуются этим исправлением.
+- Дополнительная коррекция Stage 5 attachment/draft lifecycle (2026-10-13): по прямому
+  назначению владельца Codex переносит проверенную основу GPT-6 из соревновательного
+  PR #222 (d6495c0) в основной PR #215. Explicit Keep-server успешно сохраняет выбранный
+  snapshot без проигравшего attachment provenance и меняет отдельный selection epoch,
+  в том числе при прежнем text draft ID. Ошибка localStorage сохраняет конфликт и текст.
+  Clean refresh/Keep-local сохраняют текущие загрузки, исходные IDs и штатный 60-second CAS.
+  Устаревшие upload/GET/PATCH/DELETE callbacks не применяются к новому выбору; поздний
+  DELETE, включая потерю подтверждения, уведомляет только соответствующий owner/context
+  и инициирует authoritative GET текущего поколения, а не прямое изменение нового UI.
+  Suspicious retries используют versioned server-derived SHA-256 key по authenticated
+  owner, stable upload UUID, original context/draft и bounded rejection evidence поверх
+  существующего UNIQUE upload_id. Primary event ID остаётся серверным, исторические UUID
+  keys читаются; новая схема, discard endpoint и внешние зависимости не добавлены.
+  Регрессии используют настоящий MarkdownEditor с обоими hooks, управляемые transport/R2
+  заглушки и actual upload route → pooled native PostgreSQL. Новый exact-head CI и
+  независимая проверка фиксируются в checks и служебном канале по факту; результаты
+  предыдущих heads не считаются доказательством новых проверок. Рабочая среда потеряла
+  связь до локального прогона этого пакета; новое выполнение local tests не заявляется.
+  Real R2 provisioning, bindings/live acceptance и Stage 6 остаются отложенными.
 - Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
   не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
   интерфейса и корректных механизмов; подтверждённые functional/security/data/authz

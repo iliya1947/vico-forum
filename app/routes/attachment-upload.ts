@@ -51,6 +51,31 @@ function durableSecurityFilename(value: string): string {
   return value.replaceAll("\0", "\\u{0}");
 }
 
+// Stable, server-derived identity for one observed suspicious upload. The tuple is
+// length-safe through JSON encoding and domain/version-separated for future changes.
+async function securityEventKey(input: {
+  ownerId: string;
+  attachmentId: string;
+  contextKey: string;
+  draftId: string;
+  fileName: string;
+  declaredMime: string;
+  size: number;
+  detectedType: string;
+  reason: string;
+}): Promise<string> {
+  const evidence = [
+    "vico:attachment-security-event:v1", input.ownerId, input.attachmentId.toLowerCase(),
+    input.contextKey, input.draftId.toLowerCase(), input.fileName, input.declaredMime,
+    input.size, input.detectedType, input.reason,
+  ];
+  const digest = await crypto.subtle.digest(
+    "SHA-256", new TextEncoder().encode(JSON.stringify(evidence)),
+  );
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `attachment-v1:${hex}`;
+}
+
 function attachmentSize(request: Request): number | null {
   const raw = request.headers.get("X-Vico-Attachment-Size");
   if (!raw || !/^(0|[1-9][0-9]*)$/u.test(raw)) return null;
@@ -216,7 +241,11 @@ export async function action({ request, context }: { request: Request; context: 
     if (result.inspection.suspicious) {
       try {
         await store.recordSecurityEvent({
-          uploadId: crypto.randomUUID(),
+          uploadId: await securityEventKey({
+            ownerId: scope.userId, attachmentId, contextKey: scope.contextKey,
+            draftId: scope.draftId, fileName, declaredMime, size,
+            detectedType: result.inspection.detected, reason: result.inspection.reason,
+          }),
           uploadedByUserId: scope.userId,
           contextKey: scope.contextKey,
           draftId: scope.draftId,

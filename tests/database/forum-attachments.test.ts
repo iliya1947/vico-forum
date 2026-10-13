@@ -1,6 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client, type DatabaseError } from "pg";
+import { Client, Pool, type DatabaseError } from "pg";
+import { RouterContextProvider } from "react-router";
+import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
+import { authorizationContext } from "../../app/authorization/request-context";
+import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
+import { forumDraftStoreContext } from "../../app/forum/draft-request-context";
+import { action as uploadAction } from "../../app/routes/attachment-upload";
+import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
@@ -233,6 +241,32 @@ describe("forum attachment lifecycle foundation", () => {
       "select draft_id from forum_attachment_draft_refs where attachment_id = $1", [attachmentId],
     );
     expect(rows.rows).toEqual([{ draft_id: nextDraftId }]);
+  });
+
+  it("enforces one derived security event across concurrent database writers", async () => {
+    const uploadId = `attachment-v1:${"a".repeat(64)}`;
+    const event = {
+      uploadId, uploadedByUserId: ownerId, contextKey, draftId,
+      fileName: "retry.txt", declaredMime: "text/plain", detectedType: "executable",
+      reason: "executable-signature", declaredByteSize: 4,
+    };
+    const connections = Array.from({ length: 2 }, () => new Client({
+      connectionString: databaseUrl, options: `-c search_path=${schema}`,
+    }));
+    await Promise.all(connections.map((connection) => connection.connect()));
+    try {
+      await Promise.all(connections.map((connection) =>
+        new DrizzleForumAttachments(drizzle(connection)).recordSecurityEvent(event)));
+    } finally {
+      await Promise.all(connections.map((connection) => connection.end()));
+    }
+    const rows = await client.query("select id, upload_id from forum_attachment_security_events where upload_id = $1", [uploadId]);
+    expect(rows.rowCount).toBe(1);
+    expect(rows.rows[0]?.id).toMatch(/^[0-9a-f-]{36}$/u);
+    await expect(store.recordSecurityEvent({ ...event, uploadId: "attachment-v1:invalid" }))
+      .rejects.toBeInstanceOf(InvalidForumAttachmentError);
+    // Other tests assert a fresh, single-event queue; do not leak this fixture.
+    await client.query("delete from forum_attachment_security_events where upload_id = $1", [uploadId]);
   });
 
   it("durably records one security event per upload even without an attachment row", async () => {
@@ -484,5 +518,111 @@ describe("forum attachment lifecycle foundation", () => {
       await client.query(`drop owned by ${role}`);
       await client.query(`drop role ${role}`);
     }
+  });
+});
+
+
+async function withSecurityUploadRoute(run: (fixture: {
+  post(options?: { owner?: string; context?: string; generation?: string; fileName?: string; clientId?: string }): Promise<Response>;
+  rows(): Promise<{ id: string; upload_id: string }[]>;
+  loseNextAcknowledgement(): void;
+}) => Promise<void>): Promise<void> {
+  // A pool lets the actual route/repository execute simultaneous INSERTs on
+  // independent PostgreSQL connections, rather than a single client's queue.
+  const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schema}`, max: 4 });
+  const repository = new DrizzleForumAttachments(drizzle(pool));
+  const events: RecordAttachmentSecurityEventInput[] = [];
+  const clientId = crypto.randomUUID();
+  let loseAck = false;
+  const bucket = {
+    async put(): Promise<never> { throw new Error("Suspicious bytes must not reach private storage"); },
+    async get() { return null; },
+    async delete() {},
+  };
+  try {
+    await run({
+      async post(options = {}) {
+        const context = new RouterContextProvider();
+        context.set(authSessionContext, { user: { id: options.owner ?? ownerId } } as AuthSession);
+        context.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
+        context.set(forumDraftStoreContext, { assertContextExists: async () => {} } as never);
+        context.set(privateAttachmentBucketContext, bucket);
+        context.set(forumAttachmentStoreContext, {
+          async recordSecurityEvent(event: RecordAttachmentSecurityEventInput) {
+            events.push(event);
+            await repository.recordSecurityEvent(event);
+            if (loseAck) {
+              loseAck = false;
+              throw new ForumAttachmentStorageUnavailableError();
+            }
+          },
+        } as never);
+        return uploadAction({
+          context,
+          request: new Request("https://forum.test/api/attachments", {
+            method: "POST",
+            headers: {
+              Origin: "https://forum.test", "Content-Type": "text/plain",
+              "X-Vico-Attachment-Id": options.clientId ?? clientId,
+              "X-Vico-Attachment-Name": encodeURIComponent(options.fileName ?? "masked.txt"),
+              "X-Vico-Attachment-Size": "4",
+              "X-Vico-Draft-Context": encodeURIComponent(options.context ?? contextKey),
+              "X-Vico-Draft-Id": options.generation ?? draftId,
+            },
+            body: new Uint8Array([0x4d, 0x5a, 0x90, 0x00]).buffer,
+          }),
+        });
+      },
+      async rows() {
+        const result = await client.query<{ id: string; upload_id: string }>(
+          "select id, upload_id from forum_attachment_security_events where upload_id = ANY($1::text[])",
+          [events.map((event) => event.uploadId)],
+        );
+        return result.rows;
+      },
+      loseNextAcknowledgement() { loseAck = true; },
+    });
+    const attachments = await client.query("select id from forum_attachments where id = $1", [clientId]);
+    expect(attachments.rowCount).toBe(0);
+  } finally {
+    await client.query("delete from forum_attachment_security_events where upload_id = ANY($1::text[])",
+      [events.map((event) => event.uploadId)]);
+    await pool.end();
+  }
+}
+
+describe("suspicious upload route and PostgreSQL integration", () => {
+  it("deduplicates concurrent suspicious requests with independent database connections", async () => {
+    await withSecurityUploadRoute(async ({ post, rows }) => {
+      const results = await Promise.all([post(), post()]);
+      expect(results.map((result) => result.status)).toEqual([422, 422]);
+      const recorded = await rows();
+      expect(recorded).toHaveLength(1);
+      expect(recorded[0]!.id).toMatch(/^[0-9a-f-]{36}$/u);
+      expect(recorded[0]!.upload_id).toMatch(/^attachment-v1:[0-9a-f]{64}$/u);
+    });
+  });
+
+  it("converges after the real event commit is acknowledged as unavailable", async () => {
+    await withSecurityUploadRoute(async ({ post, rows, loseNextAcknowledgement }) => {
+      loseNextAcknowledgement();
+      expect((await post()).status).toBe(503);
+      expect((await rows())).toHaveLength(1);
+      expect((await post()).status).toBe(422);
+      expect((await rows())).toHaveLength(1);
+    });
+  });
+
+  it("preserves distinct owners, contexts, draft IDs and changed rejection evidence", async () => {
+    await withSecurityUploadRoute(async ({ post, rows }) => {
+      const requests = [
+        {}, { owner: otherId }, { context: "topic:other-context:reply" },
+        { generation: crypto.randomUUID() }, { fileName: "different.txt" },
+      ];
+      for (const options of requests) expect((await post(options)).status).toBe(422);
+      const recorded = await rows();
+      expect(recorded).toHaveLength(5);
+      expect(new Set(recorded.map((event) => event.id)).size).toBe(5);
+    });
   });
 });
