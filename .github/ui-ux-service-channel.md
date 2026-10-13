@@ -5244,3 +5244,31 @@ server attachment list/remove/rebind API only. It must reconcile a retained `att
 with the selected current text draft generation under authenticated owner/context scope before the
 UI is exposed. Do not add editor attachment UI, publication/download, orphan cleanup, or Stage 6
 in that unit. No intermediate Codex review is requested.
+
+
+## PR #215 — GPT-5.6 verification of corrected attachment-only sync — 2026-10-13
+
+Model: GPT-5.6 Sol.
+Independently reviewed exact head `30581443377ec32a932672fdfbc49beb7ffd7c31`
+against the confirmed finding and exact `cb46f2a..3058144` diff.
+
+Result: confirmed fixed, no new current-scope finding in this bounded correction.
+
+Evidence:
+- production change is exactly one semantic line in `reserveAttachmentGeneration()`:
+  a newly created attachment-only local draft now has `syncedEditedAt: null`;
+- there is still no eager POST and no timer change;
+- at the next ordinary 60-second cycle existing `sync()` sends exactly one save for the
+  original generation and empty payload;
+- successful CAS updates the synced marker, so the next unchanged interval does not resend;
+- a later ordinary text edit preserves the same attachment generation and uses the incremented
+  expectedVersion on the following scheduled cycle;
+- supporting changes are only the focused regression and PROJECT_STATE wording;
+- exact-head CI #38328070219 is green for both `checks` and `database`.
+
+The draft-generation identity foundation is therefore accepted for this stage boundary.
+No attachment GET/DELETE/rebind/UI, publication/download, orphan cleanup or Stage 6 work
+was included.
+
+Next bounded unit after owner continuation: server attachment list/remove/rebind API.
+GPT-5.6 Sol is the next implementation writer; no intermediate Codex review is needed.
