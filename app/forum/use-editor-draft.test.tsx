@@ -43,7 +43,13 @@ function Harness({ ownerId }: { ownerId: string | null }) {
     <button type="button" onClick={() => setReserved(draft.reserveAttachmentGeneration())}>Reserve attachment</button>
     <button type="button" onClick={draft.retryAttachmentReconciliation}>Retry attachment check</button>
     <output data-testid="attachment-ready">{draft.attachmentReady ? "ready" : "blocked"}</output>
+    <output data-testid="attachment-rebind">{draft.attachmentRebindFrom ?? "none"}</output>
     <output data-testid="attachment-reservation">{reserved ?? "none"}</output>
+    <button type="button" onClick={() => {
+      if (draft.attachmentRebindFrom) {
+        draft.completeAttachmentRebind(draft.attachmentRebindFrom, draft.draftId);
+      }
+    }}>Complete attachment rebind</button>
     <button type="button" onClick={() => draft.acknowledgePublished(draft.draftId, draft.expectedVersion + 1)}>
       Published
     </button>
@@ -164,8 +170,17 @@ describe("editor draft lifecycle", () => {
       draftId: newId, attachmentDraftId: oldId, baseVersion: 4,
     });
     expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
+    expect(screen.getByTestId("attachment-rebind")).toHaveTextContent(oldId);
     fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
     expect(screen.getByTestId("attachment-reservation")).toHaveTextContent("none");
+
+    fireEvent.click(screen.getByRole("button", { name: "Complete attachment rebind" }));
+    expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
+      draftId: newId, attachmentDraftId: newId, baseVersion: 4,
+    });
+    await flush();
+    expect(screen.getByTestId("attachment-rebind")).toHaveTextContent("none");
+    expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   });
 
   it("retains attachment provenance when a clean local draft refreshes text in the same generation", async () => {
