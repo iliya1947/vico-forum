@@ -18,6 +18,11 @@ import {
   ForumEditorDraftContextNotFoundError,
   InvalidForumEditorDraftError,
 } from "../../db/forum-editor-drafts";
+import {
+  InvalidForumAttachmentError,
+  isForumAttachmentUuid,
+  type ForumAttachmentMetadata,
+} from "../../db/forum-attachments";
 import { ForumDraftStorageUnavailableError } from "../../db/hyperdrive-editor-drafts";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 
@@ -52,6 +57,17 @@ function attachmentSize(request: Request): number | null {
   return Number.isSafeInteger(size) ? size : null;
 }
 
+function safeAttachment(attachment: ForumAttachmentMetadata) {
+  return {
+    id: attachment.id,
+    fileName: attachment.fileName,
+    detectedType: attachment.detectedType,
+    responseMime: attachment.responseMime,
+    byteSize: attachment.byteSize,
+    verificationStatus: attachment.verificationStatus,
+  };
+}
+
 async function contextFailure(
   context: RouterContextProvider,
   contextKey: string,
@@ -67,49 +83,105 @@ async function contextFailure(
   }
 }
 
-export async function action({
-  request,
-  context,
-}: {
-  request: Request;
-  context: RouterContextProvider;
-}) {
-  if (request.method !== "POST") return json({ error: "method" }, 405);
+async function requestScope(
+  request: Request,
+  context: RouterContextProvider,
+  mutation: boolean,
+): Promise<
+  | { response: Response }
+  | { userId: string; contextKey: string; draftId: string }
+> {
   const session = authSessionForRequest(context);
-  if (!session) return json({ error: "unauthenticated" }, 401);
-  if (!requireSameOrigin(request)) return json({ error: "origin" }, 403);
+  if (!session) return { response: json({ error: "unauthenticated" }, 401) };
+  if (mutation && !requireSameOrigin(request)) {
+    return { response: json({ error: "origin" }, 403) };
+  }
 
-  const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);
   const contextKey = decodedHeader(request, "X-Vico-Draft-Context", 4096);
   const draftId = request.headers.get("X-Vico-Draft-Id")?.trim() ?? "";
-  const size = attachmentSize(request);
-  const declaredMime = request.headers.get("Content-Type")?.trim() ?? "";
-  if (
-    fileName === null
-    || contextKey === null
-    || contextKey.includes("\0")
-    || !/^[0-9a-f-]{36}$/iu.test(draftId)
-    || size === null
-    || declaredMime.length > 512
-    || !request.body
-  ) {
-    return json({ error: "invalid" }, 400);
+  if (contextKey === null || contextKey.includes("\0") || !isForumAttachmentUuid(draftId)) {
+    return { response: json({ error: "invalid" }, 400) };
   }
 
   const authorization = await authorizeEditorDraftWrite(context, session.user.id, contextKey);
   if (authorization.outcome !== "allowed") {
-    return json({ error: authorization.outcome }, authorization.status);
+    return { response: json({ error: authorization.outcome }, authorization.status) };
   }
   const missingContext = await contextFailure(context, contextKey);
-  if (missingContext) return missingContext;
+  if (missingContext) return { response: missingContext };
+  return { userId: session.user.id, contextKey, draftId };
+}
+
+function attachmentStoreFailure(error: unknown): Response | null {
+  if (error instanceof InvalidForumAttachmentError) return json({ error: "invalid" }, 400);
+  if (error instanceof ForumAttachmentStorageUnavailableError) return json({ error: "unavailable" }, 503);
+  return null;
+}
+
+export async function loader({ request, context }: { request: Request; context: RouterContextProvider }) {
+  if (request.method !== "GET") return json({ error: "method" }, 405);
+  const scope = await requestScope(request, context, false);
+  if ("response" in scope) return scope.response;
+  try {
+    const attachments = await attachmentStoreForRequest(context).listDraftAttachments(
+      scope.userId, scope.contextKey, scope.draftId,
+    );
+    return json({ attachments: attachments.map(safeAttachment) });
+  } catch (error) {
+    const response = attachmentStoreFailure(error);
+    if (response) return response;
+    throw error;
+  }
+}
+
+export async function action({ request, context }: { request: Request; context: RouterContextProvider }) {
+  if (!["POST", "DELETE", "PATCH"].includes(request.method)) return json({ error: "method" }, 405);
+  const scope = await requestScope(request, context, true);
+  if ("response" in scope) return scope.response;
+  const store = attachmentStoreForRequest(context);
+
+  if (request.method === "DELETE") {
+    const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
+    if (!isForumAttachmentUuid(attachmentId)) return json({ error: "invalid" }, 400);
+    try {
+      const removed = await store.removeDraftAttachment(
+        scope.userId, scope.contextKey, scope.draftId, attachmentId,
+      );
+      return removed ? json({ outcome: "removed" }) : json({ error: "notFound" }, 404);
+    } catch (error) {
+      const response = attachmentStoreFailure(error);
+      if (response) return response;
+      throw error;
+    }
+  }
+
+  if (request.method === "PATCH") {
+    const fromDraftId = request.headers.get("X-Vico-Attachment-From-Draft-Id")?.trim() ?? "";
+    if (!isForumAttachmentUuid(fromDraftId)) return json({ error: "invalid" }, 400);
+    try {
+      const moved = await store.rebindDraftAttachments(
+        scope.userId, scope.contextKey, fromDraftId, scope.draftId,
+      );
+      return json({ outcome: "rebound", moved });
+    } catch (error) {
+      const response = attachmentStoreFailure(error);
+      if (response) return response;
+      throw error;
+    }
+  }
+
+  const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);
+  const size = attachmentSize(request);
+  const declaredMime = request.headers.get("Content-Type")?.trim() ?? "";
+  if (fileName === null || size === null || declaredMime.length > 512 || !request.body) {
+    return json({ error: "invalid" }, 400);
+  }
 
   let bucket;
   try {
     bucket = attachmentBucketForRequest(context);
   } catch (error) {
-    if (error instanceof AttachmentBucketUnavailableError) {
-      return json({ error: "unavailable" }, 503);
-    }
+    if (error instanceof AttachmentBucketUnavailableError) return json({ error: "unavailable" }, 503);
     throw error;
   }
 
@@ -117,30 +189,24 @@ export async function action({
   let result;
   try {
     result = await storePrivateAttachmentStream(bucket, {
-      fileName,
-      declaredMime,
-      size,
-      body: request.body,
+      fileName, declaredMime, size, body: request.body,
     });
   } catch (error) {
     if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
       return json({ error: "invalid" }, 400);
     }
-    if (error instanceof AttachmentStorageError) {
-      return json({ error: "unavailable" }, 503);
-    }
+    if (error instanceof AttachmentStorageError) return json({ error: "unavailable" }, 503);
     throw error;
   }
 
-  const store = attachmentStoreForRequest(context);
   if (result.outcome === "rejected") {
     if (result.inspection.suspicious) {
       try {
         await store.recordSecurityEvent({
           uploadId,
-          uploadedByUserId: session.user.id,
-          contextKey,
-          draftId,
+          uploadedByUserId: scope.userId,
+          contextKey: scope.contextKey,
+          draftId: scope.draftId,
           fileName: durableSecurityFilename(fileName),
           declaredMime,
           detectedType: result.inspection.detected,
@@ -148,9 +214,8 @@ export async function action({
           declaredByteSize: size,
         });
       } catch (error) {
-        if (error instanceof ForumAttachmentStorageUnavailableError) {
-          return json({ error: "unavailable" }, 503);
-        }
+        const response = attachmentStoreFailure(error);
+        if (response) return response;
         throw error;
       }
     }
@@ -165,9 +230,9 @@ export async function action({
   try {
     const attachment = await store.createDraftAttachment({
       id: uploadId,
-      ownerId: session.user.id,
-      contextKey,
-      draftId,
+      ownerId: scope.userId,
+      contextKey: scope.contextKey,
+      draftId: scope.draftId,
       objectKey: result.objectKey,
       fileName: result.inspection.fileName,
       declaredMime,
@@ -176,22 +241,11 @@ export async function action({
       byteSize: result.bytes,
       verificationStatus: result.inspection.scanStatus,
     });
-    return json({
-      outcome: "stored",
-      attachment: {
-        id: attachment.id,
-        fileName: attachment.fileName,
-        detectedType: attachment.detectedType,
-        responseMime: attachment.responseMime,
-        byteSize: attachment.byteSize,
-        verificationStatus: attachment.verificationStatus,
-      },
-    }, 201);
+    return json({ outcome: "stored", attachment: safeAttachment(attachment) }, 201);
   } catch (error) {
     await bucket.delete(result.objectKey).catch(() => {});
-    if (error instanceof ForumAttachmentStorageUnavailableError) {
-      return json({ error: "unavailable" }, 503);
-    }
+    const response = attachmentStoreFailure(error);
+    if (response) return response;
     throw error;
   }
 }
