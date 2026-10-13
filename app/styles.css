@@ -9425,3 +9425,14 @@ a.topic-tag:focus-visible {
 @media (max-width: 44rem) {
   .home-shell .markdown-editor-draft-versions { grid-template-columns: minmax(0, 1fr); }
 }
+.topic-message-attachments {
+  display: grid;
+  gap: .35rem;
+  margin-block: .65rem;
+  min-inline-size: 0;
+}
+.topic-message-attachments a {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--color-accent);
+}

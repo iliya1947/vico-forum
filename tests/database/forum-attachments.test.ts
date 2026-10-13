@@ -637,8 +637,11 @@ describe("atomic publication of selected draft refs", () => {
     "atomically publishes initial post attachments for %s",
     async (kind) => {
       const isHelp = kind === "help-question";
-      const sectionId = isHelp ? HELP_SOLUTIONS_SERVICE_SECTION_ID : "attachment-section";
-      const context = isHelp ? "help:new" : "section:attachment-section:new";
+      const sectionId = isHelp ? HELP_SOLUTIONS_SERVICE_SECTION_ID : `attachment-section-${crypto.randomUUID()}`;
+      if (!isHelp) await repository.createSection({
+        id: sectionId, categoryId: "attachment-category", name: "Publication section",
+      });
+      const context = isHelp ? "help:new" : `section:${sectionId}:new`;
       const draft = crypto.randomUUID();
       const asset = await store.createDraftAttachment(upload(context, draft));
       const topicId = crypto.randomUUID();
