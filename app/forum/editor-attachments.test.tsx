@@ -106,11 +106,15 @@ interface HarnessProps {
   id?: string;
   ready?: boolean;
   revision?: number;
+  selectionEpoch?: number;
+  discardFrom?: string | null;
+  discardVersion?: number | null;
   rebindFrom?: string | null;
   rebindVersion?: number | null;
   ownerId?: string;
   noteChange?: (draftId: string) => void;
   reserve?: () => string | null;
+  completeDiscard?: (fromDraftId: string, toDraftId: string) => boolean;
   completeRebind?: (fromDraftId: string, toDraftId: string) => boolean;
   retryDraft?: () => void;
   childPaste?: () => void;
@@ -121,11 +125,15 @@ function Harness({
   id = draftId,
   ready = true,
   revision = 0,
+  selectionEpoch = 0,
+  discardFrom = null,
+  discardVersion = 4,
   rebindFrom = null,
   rebindVersion = 4,
   ownerId = "alice",
   noteChange = () => {},
   reserve = () => id,
+  completeDiscard = () => true,
   completeRebind = () => true,
   retryDraft = () => {},
   childPaste = () => {},
@@ -136,10 +144,14 @@ function Harness({
     draftId: id,
     draftReady: ready,
     draftRevision: revision,
+    selectionEpoch,
+    discardFrom,
+    discardVersion,
     rebindFrom,
     rebindVersion,
     disabled: false,
     reserveGeneration: reserve,
+    completeDiscard,
     completeRebind,
     retryDraftReconciliation: retryDraft,
     noteAttachmentChange: noteChange,
@@ -237,6 +249,74 @@ describe("editor attachment UI", () => {
     expect(screen.getByText("first.txt")).toBeInTheDocument();
     expect(screen.getByText("second.txt")).toBeInTheDocument();
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
+  });
+
+  it("invalidates losing transient uploads on explicit server selection and restores only authoritative refs", async () => {
+    const noteChange = vi.fn();
+    const completeDiscard = vi.fn(() => true);
+    const winner = {
+      id: "13f859e9-7bd8-4957-b756-e6c74f35360b",
+      fileName: "winner.txt",
+      detectedType: "text",
+      responseMime: "text/plain",
+      byteSize: 6,
+      verificationStatus: "type-checked",
+    };
+    let discarded = false;
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(attachmentId);
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        expect(new Headers(init.headers).get("X-Vico-Attachment-Transition")).toBe("discard");
+        discarded = true;
+        return Response.json({ outcome: "discarded", disposition: "discarded" });
+      }
+      return Response.json({ attachments: discarded ? [winner] : [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = renderHarness({ noteChange });
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Attach"), {
+      target: { files: [new File(["loser"], "loser.txt")] },
+    });
+    const request = FakeXMLHttpRequest.instances[0]!;
+    expect(request.aborted).toBe(false);
+    expect(screen.getByText("loser.txt")).toBeInTheDocument();
+
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness
+        ready={false}
+        selectionEpoch={1}
+        discardFrom={oldDraftId}
+        discardVersion={5}
+        completeDiscard={completeDiscard}
+        noteChange={noteChange}
+      />
+    </I18nextProvider>);
+
+    await waitFor(() => expect(completeDiscard).toHaveBeenCalledWith(oldDraftId, draftId));
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
+    expect(request.aborted).toBe(false);
+
+    request.complete(201, {
+      outcome: "stored",
+      attachment: {
+        id: attachmentId,
+        fileName: "loser.txt",
+        detectedType: "text",
+        responseMime: "text/plain",
+        byteSize: 5,
+        verificationStatus: "type-checked",
+      },
+    });
+    expect(noteChange).not.toHaveBeenCalled();
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
+
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <Harness ready selectionEpoch={1} noteChange={noteChange} />
+    </I18nextProvider>);
+    expect(await screen.findByText("winner.txt")).toBeInTheDocument();
+    expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
   });
 
   it("keeps late upload and ambiguous retry under their original identity across a retained rebind", async () => {
