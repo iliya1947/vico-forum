@@ -188,6 +188,8 @@ export function useEditorAttachments({
   const scope = identity ? `${identity}\u0000${draftId}\u0000${selectionEpoch}` : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
+  const selectionEpochRef = useRef(selectionEpoch);
+  selectionEpochRef.current = selectionEpoch;
 
   useEffect(() => () => {
     scopeRef.current = null;
@@ -346,7 +348,7 @@ export function useEditorAttachments({
     const generation = originalDraftId ?? callbacksRef.current.reserveGeneration();
     if (!generation || (!originalDraftId && generation !== draftId)) return;
     const identityAtStart = identity;
-    const scopeAtStart = scope;
+    const selectionAtStart = selectionEpoch;
     const next: UploadEntry = {
       id: stableId,
       draftId: generation,
@@ -366,7 +368,7 @@ export function useEditorAttachments({
 
     const request = new XMLHttpRequest();
     requestsRef.current.set(stableId, request);
-    const active = () => scopeRef.current === scopeAtStart
+    const active = () => selectionEpochRef.current === selectionAtStart
       && identityRef.current === identityAtStart
       && entriesRef.current.some((entry) => entry.id === stableId
         && entry.draftId === generation && entry.status === "uploading");
@@ -448,14 +450,14 @@ export function useEditorAttachments({
       || entry.uncertainCommit
     ) return;
     const identityAtStart = identity;
-    const scopeAtStart = scope;
+    const selectionAtStart = selectionEpoch;
     if (entry.error === "gone") {
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       return;
     }
     const previousStatus = entry.attachment ? "stored" as const : "error" as const;
     setEntry(entry.id, (current) => ({ ...current, status: "removing", removeError: false }));
-    const activeRemoval = () => scopeRef.current === scopeAtStart
+    const activeRemoval = () => selectionEpochRef.current === selectionAtStart
       && identityRef.current === identityAtStart
       && entriesRef.current.some((item) => item.id === entry.id
         && item.draftId === entry.draftId && item.status === "removing");
