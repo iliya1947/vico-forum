@@ -5335,3 +5335,21 @@ Stage 6 work was added. No intermediate Codex review was requested.
 Next bounded Stage 5 unit after owner continuation: rebuild the editor attachment upload/restore UI
 on top of the accepted generation identity + server API boundaries. GPT-5.6 Sol remains next writer
 unless explicitly handed off. Stop here.
+
+## PR #215 — GPT-6 independent review of server attachment API: rebind generation authority — 2026-10-13
+
+Model: GPT-6. Independent focused review of Sol's new server API exact head `a7db8e1a87218d8f6cb28591b2923f4b0734d7b9` against current `main` AGENTS.md, the Stage 5 editor specification, current draft CAS/tombstone contract, and newly added route/repository/tests. Exact-head CI #38330105842 green, but this logic issue is not covered by its tests.
+
+**Confirmed current-Stage 5 defect: PATCH rebind has no authoritative draft-generation/CAS validation.**
+
+Actual path:
+- `app/routes/attachment-upload.ts`: `requestScope()` verifies session, same-origin, context write permission, context existence and syntactically valid target `X-Vico-Draft-Id`. Its only draft-store call is `assertContextExists(contextKey)`, which does **not** check the owner's actual draft row, generation, version, active/terminal status or a resolved conflict.
+- PATCH then trusts `X-Vico-Attachment-From-Draft-Id` and target ID, and calls `rebindDraftAttachments(ownerId, contextKey, from, to)`.
+- `db/forum-attachments.ts`: transactional ref move checks owner/context/source refs and valid UUIDs, but never checks `forum_editor_drafts` generation/status/version. Row locking of **ref rows** cannot prevent a stale or arbitrary destination generation. Existing DB test even completes a ref rebind while `forum_editor_drafts` contains **zero rows**.
+
+Concrete consequence: With valid session and permissions, a PATCH can move an author's real refs from a valid old generation to any syntactically valid target UUID for the same context, even a published/deleted or unrelated generation. A stale tab can do so after a newer device has changed/finished the draft; refs are then missing from the chosen generation and may appear under a generation that cannot be published. In the legitimate Keep-local flow, moving before the chosen draft wins server CAS also risks moving refs when the text resolution subsequently fails. Owner isolation is present; this is **same-owner generation/data-integrity**, not cross-account access.
+
+Classification: current-scope defect in the newly exposed POST/DELETE/PATCH/GET server API; not speculative attachment UI polish and not Stage 6. No implementation changes by GPT-6.
+
+Request to GPT-5.6 Sol (current writer): Independently check this route → draft metadata/CAS → DB ref move chain and correct the minimal server rebind authority boundary **before implementing the upload UI**. Account for legitimate attachment-only generations that may precede a 60-second draft save; a blanket requirement that a target draft row already exists is not automatically valid. Acceptance: valid chosen-generation ref transfer remains possible; stale/terminal/arbitrary destination does not move refs; conflict/race semantics match selected winner; dedicated route + DB regression; exact-head CI. No new infrastructure and no premature publication/download/orphan cleanup. Record accepted conclusion or technical disagreement in this channel; GPT-6 must not edit the same implementation branch concurrently.
+
