@@ -30,9 +30,9 @@
 | 4 | Форум, интерфейс, маршруты, функциональные DB-сценарии | 24 | Завершено: 24 файла, 227 кейсов |
 | 5 | Локали, UI-ресурсы и маршрутизация языков | 15 | Завершено: 130 тест-кейсов |
 | 6 | Переводы, генерация, фоновые задачи и хранилища | 44 | Завершено: 44 файла, 438 кейсов; 1 узкий кандидат SRC-01 |
-| 7 | Оставшиеся DB/runtime контракты | 4 | Не начато |
+| 7 | Оставшиеся DB/runtime контракты | 4 | Завершено: 71 тест-кейс; 1 кандидат WIRE-01 |
 | 8 | Общие тесты и итоговая межблочная сверка | 2 | Не начато |
-| **Итого** | **Без повторного включения файлов** | **118** | **112 файлов / 1 001 тест-кейс проверен** |
+| **Итого** | **Без повторного включения файлов** | **118** | **116 файлов / 1 072 тест-кейса проверено** |
 
 Для крупных этапов **4** и **6** использовать несколько небольших проходов (обычно до 10–12 взаимосвязанных файлов за раз), без искусственного разрыва одной причинно связанной проверки. Этап 8 включает также поиск повторов между всеми предыдущими этапами. Распределение ниже — учётное, связанные тесты из разных этапов допустимо сопоставлять вместе.
 
@@ -170,12 +170,12 @@
 - [x] `tests/database/ui-translation-storage.test.ts`
 - [x] `tests/database/ui-translation-store.test.ts`
 
-### 7. Оставшиеся DB/runtime контракты — 4 файлов, не начато
+### 7. Оставшиеся DB/runtime контракты — 4 файла, завершено
 
-- [ ] `db/postgres-deadlines.test.ts`
-- [ ] `db/web-runtime-wiring.test.ts`
-- [ ] `tests/database/migrations.test.ts`
-- [ ] `workers/database-bindings.test.ts`
+- [x] `db/postgres-deadlines.test.ts`
+- [x] `db/web-runtime-wiring.test.ts`
+- [x] `tests/database/migrations.test.ts`
+- [x] `workers/database-bindings.test.ts`
 
 ### 8. Общие тесты и итоговая межблочная сверка — 2 файлов, не начато
 
@@ -183,6 +183,27 @@
 - [ ] `tests/production-migration-verifier.test.ts`
 
 ## Журнал завершённых проходов
+
+### Проход 7 — PostgreSQL deadlines, Worker wiring, full migrations (2026-10-14)
+
+- **База:** GitHub `main` SHA `83219af2c36a99dd292b6ab1a9550f49b1011c0d`, без изменений. Полностью рассмотрены 4 test files, `it.each` vectors, setup/teardown and SQL assertions (включая `tests/database/migrations.test.ts`, 3 061 строк). Сверены с `db/postgres-deadlines.ts`, `workers/{database-bindings,app}.ts`, `app/auth/auth.server.ts`, `db/{hyperdrive-forum,hyperdrive-authorization}.ts`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, и уже проверенными интеграционными тестами этапов 1–6. В этом проходе PostgreSQL не запускалась и миграции не применялись.
+- **CI:** **4 файла, 71 test execution** = `13 + 2 + 48 + 8`, все прошли в [checks CI #38372052543](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177268) (13+2+8) и [database job того же workflow](https://github.com/iliya1947/vico-forum/actions/runs/38372052543/job/115211177318) (48), source-equivalent PR #221. `postgres-deadlines.test.ts` раскрывает четыре accepted и четыре refused timeout variants; `migrations.test.ts` раскрывает 5 malformed registry fields + 6 reserved tags + 6 malformed arrays; `workers/database-bindings.test.ts` раскрывает два invalid connection string variants. Никаких дополнительных live checks не выполнялось.
+- **Файлы и границы ответственности:**
+  - [`db/postgres-deadlines.test.ts`](../../db/postgres-deadlines.test.ts) — **13** case executions. Live pg Client/Pool deadline options, strict 57014/55P03/code-less timeout classification with 8 positive/negative vectors, best-effort client cleanup sync/async.
+  - [`db/web-runtime-wiring.test.ts`](../../db/web-runtime-wiring.test.ts) — **2** case executions. Source-level shared web Client/Pool factory assignment across auth/forum/authz, plus disabled generation status reader/context guard in Worker.
+  - [`tests/database/migrations.test.ts`](../../tests/database/migrations.test.ts) — **48** case executions. Full real PostgreSQL 17 migrator idempotence, 34 migrations with seeded Help, forum roles/read states/notifications/cooldown/pins/revisions, Better Auth schema, locale graph/controlled writer, SQL invalid-row parameter cases.
+  - [`workers/database-bindings.test.ts`](../../workers/database-bindings.test.ts) — **8** case executions. Direct dual Hyperdrive binding fail-closed resolver and invalid blank bindings (2 variants), worker source wiring for localization vs web adapters and disabled generation context.
+- **Проверка реальных пересечений:**
+  1. `db/postgres-deadlines.test.ts` проверяет **сам классификатор pg SQLSTATE/error message и реальные опции Client/Pool**. `db/hyperdrive-{forum,content-translations,content-generation-status,ui-translations,registry}.test.ts` проверяют **как независимые адаптеры используют этот классификатор** для конкретной typed availability classification, fail-safe presentation и cleanup. Удаление upstream classifier vectors ослабит гарантию strict error taxonomy.
+  2. `tests/database/migrations.test.ts` (48 cases) — настоящий **полный migrator в disposable PostgreSQL 17** плюс seed/DDL и интеграционная проверка смешанных форумных и локализационных контрактов. Сценарии Help, pinned/unread, reply notifications, Better Auth, authorization, immutable revisions и locale writer тематически пересекаются с выделенными Stage 3–6 тестами, но **не эквивалентны**: dedicated tests проверяют отдельные runtime/DB stores и adversarial/multi-session paths, тогда как здесь проверяется результат **применения всей последовательности миграций** и её общие service invariants. Первый smoke case устанавливает version UTF8 и second application migrator; семантические checks зависят от полного schema migration lineage. Нет оснований удалить любой отдельный migration `it` по одному лишь тематическому сходству.
+  3. `workers/database-bindings.test.ts` проверяет **runtime dual binding resolver** на реальном вызове (`HYPERDRIVE` vs `WEB_HYPERDRIVE`), error class и отсутствие failover; другой кусок этого же file проверяет composition `workers/app.ts` статически. `db/web-runtime-wiring.test.ts` проверяет source-level **default web Client/Pool factory** у auth/forum/authorization adapter classes. Это разные требования: соответствующий test №1 web-runtime-wiring должен сохраниться.
+  4. **Подтверждённый узкий кандидат `WIRE-01`:** [`db/web-runtime-wiring.test.ts:22–28`](../../db/web-runtime-wiring.test.ts#L22-L28), `keeps the disabled generation-status database capability unbound in the production Worker`, читает `workers/app.ts` и утверждает:
+     `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME` присутствует; `createHyperdriveContentGenerationStatusReader` отсутствует; `contentGenerationStatusReaderContext` отсутствует.
+     [`workers/database-bindings.test.ts:67–74`](../../workers/database-bindings.test.ts#L67-L74), `keeps database binding lookup fail-closed and content generation disabled`, **читает тот же `workers/app.ts`** и уже утверждает первые **две точные строки** в том же направлении, наряду со своими `resolveRuntimeDatabaseConnectionStrings(env)` и no-direct-env assertions. Единственная уникальная третья negative-guard assertion `contentGenerationStatusReaderContext` может быть перенесена **в этот существующий test** с сохранением всего coverage. Тогда можно убрать **ровно 1 целый case** из `db/web-runtime-wiring.test.ts`, оставив file и его web factory test. Это не runtime defect и не срочная работа; **пока не менять тесты**.
+  5. Source-text `toContain()` assertions в `db/web-runtime-wiring.test.ts` и `workers/database-bindings.test.ts` brittle при безопасном рефакторинге форматирования/выделения helper, но реально охраняют действующее Stage 5 wiring. Их сходство не оправдывает удаления **всех** static checks без другого integration harness. Аналогично отмеченному в 6D `QUALITY-01`, улучшение testing approach отдельно от измерения избыточности.
+- **Состояние Stage:** `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME` и отсутствие status reader binding — **текущая осознанная disabled-production граница Stage 5**, а не будущее «недоделали значит можно удалять». В CI PostgreSQL integration в `*_test` и scoped schema с обязательным guard; production DB/Worker не тронуты.
+- **Результат этапа 7:** **4 файла, 71 кейс; 1 подтверждённый узкий кандидат на объединение `WIRE-01` и 0 целиком лишних файлов**. Три из четырёх файлов полностью сохраняются с ценностью всех кейсов, в четвёртом предлагается сохранить 1 web-factory test, а другой merged guard перенести в уже существующий `workers/database-bindings.test.ts`. Без реальных code/test changes.
+- **Общий прогресс:** **116/118 файлов, 1 072/1 075 исходных case executions**; остаётся **2 файла / 3 кейса** и финальное межэтапное сопоставление **Stage 8**, начинать только после команды владельца.
 
 ### Разбиение этапа 6 (44 файла, без повторов)
 
@@ -192,7 +213,7 @@
 - **6D (6Г) — DB/Hyperdrive адаптеры** — **5 файлов, 31 кейс, завершён**: `db/content-translation-store.test.ts`, `db/hyperdrive-content-generation-status.test.ts`, `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-ui-translations.test.ts`, `db/ui-translation-bundle-store.test.ts`.
 - **6E (6Д) — content generation PostgreSQL** — **8 файлов, 78 кейсов, завершён**: `tests/database/content-generation-status.test.ts`, `tests/database/content-post-body-task-planning.test.ts`, `tests/database/content-request-budget-store.test.ts`, `tests/database/content-topic-title-execution.test.ts`, `tests/database/content-topic-title-task-planning.test.ts`, `tests/database/content-translation-store.test.ts`, `tests/database/source-locale-correction.test.ts`, `tests/database/translation-generation-authorization.test.ts`.
 - **6F (6Е) — tasks/UI storage PostgreSQL** — **7 файлов, 68 кейсов, завершён**: `tests/database/translation-task-generation-isolation.test.ts`, `tests/database/translation-task-reconciliation.test.ts`, `tests/database/translation-task-store.test.ts`, `tests/database/ui-translation-bundle-store.test.ts`, `tests/database/ui-translation-publication-store.test.ts`, `tests/database/ui-translation-storage.test.ts`, `tests/database/ui-translation-store.test.ts`.
-- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Не начинать этап 7 до команды владельца.
+- Сумма 7 + 9 + 8 + 5 + 8 + 7 = **44**. Каждая позиция сверена с реестром: без пропусков и повторов. Этап 6 завершён; этап 7 завершён отдельным проходом ниже.
 
 ### Проход 6F / 6Е — PostgreSQL task lifecycle, recovery, UI publication/storage (2026-10-14)
 
@@ -553,6 +574,13 @@
 - **Почему пересечение настоящее:** обе вызывают `ContentSourceLocaleResolver.resolve` для канонического известного исходного `ru`; основная гарантия — `detector.detect` не вызывается. Во втором тесте TinyLD только конструируется, а подменённый underlying runner ни разу не запускается, так что адаптер не получает собственного meaningful execution coverage.
 - **После аудита:** оставить тест в `content-source-locale.test.ts`, удалить или объединить **1 кейс** из `tinyld-source-locale-detector.test.ts`; остальные TinyLD language/gating/semantic filtering test cases оставить.
 - **Классификация:** подтверждённый повтор одной branch guarantee текущего Stage 5; low-risk потенциальная оптимизация, не дефект приложения и не обязательное срочное исправление. **В рабочем PR только запись.**
+
+### WIRE-01 — повторный Worker guard на отключённый content generation status reader
+
+- **Два текущих кейса:** `db/web-runtime-wiring.test.ts` `keeps the disabled generation-status database capability unbound in the production Worker` и `workers/database-bindings.test.ts` `keeps database binding lookup fail-closed and content generation disabled`.
+- **Общая часть:** чтение одного `workers/app.ts`; оба утверждают presence `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME` и absence `createHyperdriveContentGenerationStatusReader`. **Уникальная часть первого кейса** — `not.toContain("contentGenerationStatusReaderContext")`; **уникальная часть второго** — binding resolver/direct-env restrictions.
+- **Кандидат:** добавить единственную уникальную assertion `contentGenerationStatusReaderContext` к существующему `workers/database-bindings.test.ts` case и убрать 1 полностью поглощённый кейс из `db/web-runtime-wiring.test.ts`. Сохраняются все semantic guards и обе test files, т.к. другое `db/web-runtime-wiring.test.ts` test проверяет отдельную factory config.
+- **Классификация:** подтверждённое **case-level consolidation** для current Stage 5, не runtime defect, не immediate fix. Аудит фиксирует предложение, production/tests не меняются.
 
 ## Подтверждённые пробелы тестового покрытия (не кандидаты на удаление)
 
