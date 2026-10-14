@@ -618,7 +618,7 @@ export const authzPermissions = pgTable("authz_permissions", {
   'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
-  'forum.translation.generate',
+  'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
   'access.authorization.manage'
 )`)]);
 
@@ -860,6 +860,7 @@ export const forumPosts = pgTable(
     solutionOutdatedReason: text("solution_outdated_reason"),
     solutionOutdatedReasonKind: text("solution_outdated_reason_kind"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
   },
   (table) => [
     index("forum_posts_topic_id_idx").on(table.topicId),
