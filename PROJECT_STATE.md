@@ -1730,3 +1730,8 @@ Stage 5 завершён только в repository/local-CI boundary. Real Goog
 production runtime rollout, Cloudflare Queues/providers, authoritative production
 allowance/anti-abuse values, final preview isolation, deployed smoke и backup/restore остаются
 Stage 6 работой и не входят в UI/UX product pass.
+
+
+### Editor 2.0 edit lifecycle E1 — 2026-10-14 (in progress)
+
+PR #215: targeted change at `f6539ff` keeps the published-post edit controls and draft publication barrier pending during React Router `loading` after an `editPost` submission, rather than unlocking immediately after `submitting`. Independent Codex diagnosis records the underlying loss-of-late-input scenario in shared service PR #147. CI on this new head and a dedicated `submitting → loading → idle` regression are not yet verified; E1 must not be marked closed. Related E2/E3 findings remain open, and whole-Editor acceptance/review is not complete.
