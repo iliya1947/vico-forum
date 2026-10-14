@@ -2728,7 +2728,8 @@ describe("forum read states", () => {
 
     resolveAction();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(form).toHaveAttribute("aria-busy", "false");
     });
   });
 
