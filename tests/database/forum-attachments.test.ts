@@ -870,11 +870,11 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     return ctx;
   }
 
-  function publishRequest(path: string, intent: string, generation: string, version: number, ids: string[]) {
+  function publishRequest(path: string, intent: string, generation: string, version: number, ids: string[], text = "Attached body") {
     const body = new FormData();
     body.set("intent", intent);
     body.set("title", "Live route attachment");
-    body.set("body", "Attached body");
+    body.set("body", text);
     body.set("editorDraftId", generation);
     body.set("editorDraftVersion", String(version));
     body.set("editorAttachmentIds", JSON.stringify(ids));
@@ -946,6 +946,66 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       expect(await store.readPublishedAttachment(published!.id, file.id)).not.toBeNull();
       await expect(store.readDraftAttachment(ownerId, context, generation, file.id))
         .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    },
+  );
+
+  it.each(["section-topic", "help-question", "reply"] as const)(
+    "publishes a file-only %s once and replays a lost-ACK request without new writes",
+    async (kind) => {
+      const generation = crypto.randomUUID();
+      let contextKey: string, path: string, params: { locale: string; sectionId?: string; categoryId?: string; topicId?: string };
+      if (kind === "section-topic") {
+        const sectionId = `attachment-fileonly-${crypto.randomUUID()}`;
+        await client.query("insert into forum_sections (id, category_id, name) values ($1,'attachment-category','Files')", [sectionId]);
+        contextKey = `section:${sectionId}:new`;
+        path = `/en/sections/${sectionId}`;
+        params = { locale: "en", sectionId };
+      } else if (kind === "help-question") {
+        contextKey = "help:new";
+        path = `/en/categories/${HELP_SOLUTIONS_CATEGORY_ID}`;
+        params = { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID };
+      } else {
+        const id = crypto.randomUUID();
+        await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+          id, sectionId: "attachment-section", authorId: ownerId,
+          titleRevision: { id: crypto.randomUUID(), originalContent: "Parent for file-only reply", sourceLocale: "en" },
+          initialPost: { id: crypto.randomUUID(), topicId: id, authorId: ownerId,
+            bodyRevision: { id: crypto.randomUUID(), originalContent: "Parent", sourceLocale: "en" } },
+        });
+        contextKey = `topic:${id}:reply`;
+        path = `/en/topics/${id}`;
+        params = { locale: "en", topicId: id };
+      }
+      await setDraft(ownerId, contextKey, generation, "active", 1);
+      const file = await store.createDraftAttachment(upload(contextKey, generation));
+      const intent = kind === "section-topic" ? "createTopic" : kind === "help-question" ? "createHelpQuestion" : "reply";
+      const action = (body: string) => {
+        const request = publishRequest(path, intent, generation, 1, [file.id], body);
+        const input = { request, params, context: realContext() };
+        return kind === "section-topic" ? sectionAction(input)
+          : kind === "help-question" ? helpSolutionsCategoryAction(input) : topicAction(input);
+      };
+      const first = await action("");
+      expect(responseStatus(first)).toBe(302);
+      if (!(first instanceof Response)) throw new Error("Expected redirect");
+      // Client never observes the first successful response (simulated lost ACK).
+      const replay = await action("");
+      expect(responseStatus(replay)).toBe(302);
+      if (!(replay instanceof Response)) throw new Error("Expected replay redirect");
+      expect(replay.headers.get("Location")).toBe(first.headers.get("Location"));
+      const receipt = await client.query<{ topic_id: string; post_id: string }>(
+        "select topic_id, post_id from forum_publication_receipts where owner_id=$1 and context_key=$2 and draft_id=$3",
+        [ownerId, contextKey, generation],
+      );
+      expect(receipt.rows).toHaveLength(1);
+      const postId = receipt.rows[0]!.post_id;
+      expect((await client.query("select id from forum_posts where id=$1", [postId])).rowCount).toBe(1);
+      expect((await client.query("select attachment_id from forum_post_attachments where post_id=$1", [postId])).rows)
+        .toEqual([{ attachment_id: file.id }]);
+      const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(receipt.rows[0]!.topic_id);
+      expect(page?.posts.find((post) => post.id === postId)?.body.originalContent).toBe("");
+      expect(responseStatus(await action("a different body"))).toBe(409);
+      expect((await client.query("select id from forum_posts where id=$1", [postId])).rowCount).toBe(1);
     },
   );
 
