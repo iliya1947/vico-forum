@@ -199,15 +199,27 @@ function ForumCodeBlock({
   const [wrap, setWrap] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(false);
   useEffect(() => {
-    try {
-      setWrap(accountId ? localStorage.getItem("vico:editor:code-wrap:" + accountId) === "true" : false);
-      setLineNumbers(accountId ? localStorage.getItem("vico:editor:code-lines:" + accountId) === "true" : false);
-    } catch { setWrap(false); setLineNumbers(false); }
+    function readPreferences() {
+      try {
+        setWrap(accountId ? localStorage.getItem("vico:editor:code-wrap:" + accountId) === "true" : false);
+        setLineNumbers(accountId ? localStorage.getItem("vico:editor:code-lines:" + accountId) === "true" : false);
+      } catch { setWrap(false); setLineNumbers(false); }
+    }
+    readPreferences();
+    window.addEventListener("vico:code-preferences", readPreferences);
+    window.addEventListener("storage", readPreferences);
+    return () => {
+      window.removeEventListener("vico:code-preferences", readPreferences);
+      window.removeEventListener("storage", readPreferences);
+    };
   }, [accountId]);
 
   function setPreference(key: "code-wrap" | "code-lines", enabled: boolean) {
     if (!accountId) return;
-    try { localStorage.setItem("vico:editor:" + key + ":" + accountId, String(enabled)); } catch { /* Storage denied. */ }
+    try {
+      localStorage.setItem("vico:editor:" + key + ":" + accountId, String(enabled));
+      window.dispatchEvent(new Event("vico:code-preferences"));
+    } catch { /* Storage denied; the current block still updates locally. */ }
   }
   const displayLanguage = language?.trim() || null;
   const allowHighlight = useContext(HighlightBudgetContext);
