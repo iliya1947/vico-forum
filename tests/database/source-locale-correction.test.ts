@@ -115,6 +115,7 @@ beforeAll(async () => {
     "0036_forum_attachment_security_events.sql",
     "0037_forum_attachment_draft_generations.sql",
     "0038_forum_attachment_cleanup_claims.sql",
+    "0040_post_edit_history_permissions.sql",
   ]) {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
