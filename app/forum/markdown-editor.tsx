@@ -110,6 +110,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const visualSelectionRef = useRef<EditorSelection | null>(null);
     const visualSelectionKnownRef = useRef(false);
     const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
+    const [spellCheckPreference, setSpellCheckPreference] = useState<boolean | null>(null);
+    const spellCheck = spellCheckPreference ?? authoringMode === "simple";
     const [fullScreen, setFullScreen] = useState(false);
     const [pasteWarning, setPasteWarning] = useState(false);
     const [findOpen, setFindOpen] = useState(false);
@@ -122,13 +124,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     useEffect(() => {
       if (!accountId) {
         setAuthoringMode(defaultAuthoringMode);
+        setSpellCheckPreference(null);
         return;
       }
       try {
         const stored = window.localStorage.getItem("vico:editor:mode:" + accountId);
+        const storedSpellCheck = window.localStorage.getItem("vico:editor:spellcheck:" + accountId);
         setAuthoringMode(stored === "advanced" || stored === "simple" ? stored : defaultAuthoringMode);
+        setSpellCheckPreference(storedSpellCheck === "true" ? true : storedSpellCheck === "false" ? false : null);
       } catch {
         setAuthoringMode(defaultAuthoringMode);
+        setSpellCheckPreference(null);
       }
     }, [accountId, defaultAuthoringMode]);
 
@@ -959,6 +965,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     onClick={() => insertBlockAfterSelection("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
                   <button type="button" disabled={disabled} aria-label={t("editorClearFormatting")}
                     onClick={clearInlineFormatting}>{t("editorClearFormatting")}</button>
+                  <label className="markdown-editor-spellcheck"><input type="checkbox" checked={spellCheck} disabled={disabled}
+                    onChange={(event) => {
+                      const enabled = event.target.checked;
+                      setSpellCheckPreference(enabled);
+                      if (accountId) {
+                        try { window.localStorage.setItem("vico:editor:spellcheck:" + accountId, String(enabled)); }
+                        catch { /* private browsing */ }
+                      }
+                    }} />{t("editorSpellcheck")}</label>
                   <button type="button" disabled={disabled} aria-label={t("editorPastePlain")}
                     onClick={() => void pasteFromClipboard("plain")}>{t("editorPastePlain")}</button>
                   {authoringMode === "advanced" ? (
@@ -1042,7 +1057,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         <div className={"markdown-editor-workspace is-" + mode}>
           {authoringMode === "simple" && mode !== "preview" ? (
             <VisualMarkdownEditor
-              markdown={value} disabled={disabled}
+              markdown={value} disabled={disabled} spellCheck={spellCheck}
               onTextEdit={updateVisualText}
               onSelection={(selection) => {
                 visualSelectionKnownRef.current = true;
@@ -1068,6 +1083,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               tabIndex={mode === "preview" || authoringMode === "simple" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
+              spellCheck={spellCheck}
               aria-describedby={describedBy}
               value={textareaMarkdown(value)}
               onChange={(event) => commitTextareaValue(
