@@ -17,6 +17,7 @@ import {
   forumHelpDuplicateRelationships,
   forumHelpSignals,
   forumPostRevisions,
+  forumPublicationReceipts,
   forumPosts,
   forumReplyNotifications,
   forumSections,
@@ -441,6 +442,12 @@ export class ForumAuthorizationError extends Error {}
 export class ForumStateConflictError extends Error {}
 export type SolutionManagementScope = "own" | "any";
 
+async function publicationFingerprint(input: unknown): Promise<string> {
+  const payload = new TextEncoder().encode(JSON.stringify(input));
+  const hash = await crypto.subtle.digest("SHA-256", payload);
+  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export class DrizzleForumRepository {
   constructor(
     private readonly database: NodePgDatabase,
@@ -542,9 +549,34 @@ export class DrizzleForumRepository {
   }
 
   async createTopicWithInitialPost(input: CreateTopicWithInitialPostInput): Promise<{ topic: ForumTopic; post: ForumPost }> {
+    const fingerprint = input.publishedDraft?.draftId
+      ? await publicationFingerprint({
+        kind: "topic", sectionId: input.sectionId,
+        title: input.titleRevision.originalContent, titleLocale: input.titleRevision.sourceLocale,
+        body: input.initialPost.bodyRevision.originalContent,
+        bodyLocale: input.initialPost.bodyRevision.sourceLocale,
+        tags: (input.tags ?? []).map((tag) => [tag.key, tag.name]),
+        attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
+        draftVersion: input.publishedDraft.expectedVersion,
+      }) : null;
     return this.database.transaction(async (tx) => {
       if (input.publishedDraft) {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
+        const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
+        if (existing) {
+          return {
+            topic: {
+              id: existing.topicId, sectionId: input.sectionId, authorId: input.authorId,
+              title: input.titleRevision, isSolved: false, bestAnswerPostId: null,
+            },
+            post: {
+              id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
+              parentPostId: null, solutionModerationStatus: null,
+              solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+              body: input.initialPost.bodyRevision,
+            },
+          };
+        }
       }
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
@@ -583,6 +615,7 @@ export class DrizzleForumRepository {
       }
       if (input.publishedDraft) {
         await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.initialPost.id);
+        await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.id, input.initialPost.id);
       }
       return {
         topic: {
@@ -608,9 +641,25 @@ export class DrizzleForumRepository {
   }
 
   async createPost(input: CreatePostInput): Promise<ForumPost> {
+    const fingerprint = input.publishedDraft?.draftId
+      ? await publicationFingerprint({
+        kind: "reply", topicId: input.topicId, parentPostId: input.parentPostId ?? null,
+        body: input.bodyRevision.originalContent, bodyLocale: input.bodyRevision.sourceLocale,
+        attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
+        draftVersion: input.publishedDraft.expectedVersion,
+      }) : null;
     return this.database.transaction(async (tx) => {
       if (input.publishedDraft) {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
+        const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
+        if (existing) {
+          return {
+            id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
+            parentPostId: input.parentPostId ?? null,
+            solutionModerationStatus: null, solutionOutdatedReason: null,
+            solutionOutdatedReasonKind: null, body: input.bodyRevision,
+          };
+        }
       }
       const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId))
@@ -670,6 +719,7 @@ export class DrizzleForumRepository {
 
       if (input.publishedDraft) {
         await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.id);
+        await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.topicId, input.id);
       }
       return {
         id: input.id,
@@ -681,6 +731,43 @@ export class DrizzleForumRepository {
         solutionOutdatedReasonKind: null,
         body: input.bodyRevision,
       };
+    });
+  }
+
+  private async publicationReceipt(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    ownerId: string,
+    draft: { contextKey: string; draftId?: string },
+    fingerprint: string | null,
+  ) {
+    if (!draft.draftId || !fingerprint) return null;
+    const [receipt] = await tx.select({
+      fingerprint: forumPublicationReceipts.fingerprint,
+      topicId: forumPublicationReceipts.topicId,
+      postId: forumPublicationReceipts.postId,
+    }).from(forumPublicationReceipts).where(and(
+      eq(forumPublicationReceipts.ownerId, ownerId),
+      eq(forumPublicationReceipts.contextKey, draft.contextKey),
+      eq(forumPublicationReceipts.draftId, draft.draftId),
+    )).limit(1);
+    if (receipt && receipt.fingerprint !== fingerprint) {
+      throw new ForumStateConflictError("published draft generation cannot be reused for a different request");
+    }
+    return receipt ?? null;
+  }
+
+  private async recordPublicationReceipt(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    ownerId: string,
+    draft: { contextKey: string; draftId?: string },
+    fingerprint: string | null,
+    topicId: string,
+    postId: string,
+  ) {
+    if (!draft.draftId || !fingerprint) return;
+    await tx.insert(forumPublicationReceipts).values({
+      ownerId, contextKey: draft.contextKey, draftId: draft.draftId, fingerprint,
+      topicId, postId, createdAt: new Date(),
     });
   }
 
