@@ -442,6 +442,7 @@ export const reviewedCommonFingerprints = {
   editorAttachmentErrorUnavailable: "73de5754232e265c380c9c352a30f30f127fff0d7921c400a9aa0d914f4f5226",
   editorAttachmentErrorGeneric: "32bc180c8ed2844276e6d2755735ae7f45beaec7c23f8eb241c461edaa34827b",
   editorSimple: "03dbc348c380913c678687b4d0915395ce0698c09d613da8db8bc89b0f9b3d00",
+  editorSpellcheck: "4abf41d3a783fbe7045d6e666749837ccb4df098d5ada0452c8c40f167ae8cdc",
   editorAdvanced: "487ee8dbe557dcd2dc3f3eea547e753eb826739bb3c35bffe04db1f9dce8d5d4",
   editorUndo: "a8c1a687999065e7a1c65c1be6e342d8c90a94857a5503fb03ff7d471cbd63eb",
   editorRedo: "4ce6f7e24e0126c3ab95b7d461fc1f50fd8d47af083feb2112edef9559c291d3",
