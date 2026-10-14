@@ -853,6 +853,7 @@ select {
 }
 
 .forum-code-block .forum-code-line {
+  min-height: 1lh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   width: max-content;
