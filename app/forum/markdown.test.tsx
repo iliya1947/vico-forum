@@ -217,7 +217,7 @@ const longValue = "code";
   });
 
   it("preserves source newlines and multiline tokens through code presentation controls", async () => {
-    const source = "\\n/* multiline\\n\\ncomment */\\nconst value = 1;\\n\\n".replaceAll("\\n", "\n");
+    const source = "\n/* multiline\n\ncomment */\nconst value = 1;\n\n";
     const fence = "```";
     const { container } = renderMarkdown(fence + "ts\n" + source + "\n" + fence);
     const sourceText = () => Array.from(container.querySelectorAll(".forum-code-line-text"))
