@@ -23,7 +23,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog
-AS $
+AS $attachment_claim$
 DECLARE current_status text;
 BEGIN
   -- The trigger's table schema is the only identifier, quoted as an identifier.
@@ -36,7 +36,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$attachment_claim$;
 --> statement-breakpoint
 CREATE TRIGGER "forum_attachment_draft_refs_active_gate"
   BEFORE INSERT OR UPDATE OF "attachment_id"
