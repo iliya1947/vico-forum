@@ -214,6 +214,7 @@ function ForumCodeBlock({
   const tokens = allowHighlight ? highlightCode(code, displayLanguage ?? undefined) : [{ text: code }];
   // Split presentation at source newlines, not at syntax-token boundaries. This
   // keeps gutter rows aligned even when highlighting spans multiple lines.
+  const sourceLines = code.split("\n");
   const codeRows: ReactNode[][] = [[]];
   let fragmentKey = 0;
   for (const token of tokens) {
@@ -277,8 +278,8 @@ function ForumCodeBlock({
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
           {codeRows.map((parts, index) => (
             <span className={displayLanguage?.toLowerCase() === "diff"
-              ? code.split("\n")[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
-                : code.split("\n")[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
+              ? sourceLines[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
+                : sourceLines[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
                   : "forum-code-line"
               : "forum-code-line"} key={index}>
               {lineNumbers ? <span className="forum-code-line-number" aria-hidden="true">{index + 1}</span> : null}
