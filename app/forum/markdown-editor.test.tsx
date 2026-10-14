@@ -685,13 +685,14 @@ describe("MarkdownEditor", () => {
       </HeaderAuthProvider>,
     );
     await waitFor(() => expect(document.querySelector('[data-visual-text="true"]')).toHaveAttribute("spellcheck", "true"));
+    await userEvent.click(screen.getByText("•••"));
     const control = screen.getByRole("checkbox", { name: "Check spelling" });
     expect(control).toBeChecked();
     await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
-    expect(screen.getByLabelText("Body")).toHaveAttribute("spellcheck", "false");
+    expect(document.querySelector("textarea")!).toHaveAttribute("spellcheck", "false");
     expect(control).not.toBeChecked();
     await userEvent.click(control);
-    expect(screen.getByLabelText("Body")).toHaveAttribute("spellcheck", "true");
+    expect(document.querySelector("textarea")!).toHaveAttribute("spellcheck", "true");
     expect(window.localStorage.getItem(key(owner))).toBe("true");
     first.unmount();
 
@@ -700,6 +701,7 @@ describe("MarkdownEditor", () => {
         <MarkdownEditor id="spell-b" name="body" defaultAuthoringMode="advanced" />
       </HeaderAuthProvider>,
     );
+    await userEvent.click(screen.getByText("•••"));
     expect(screen.getByRole("checkbox", { name: "Check spelling" })).not.toBeChecked();
     expect(window.localStorage.getItem(key(other))).toBeNull();
     second.unmount();
@@ -709,8 +711,9 @@ describe("MarkdownEditor", () => {
         <MarkdownEditor id="spell-c" name="body" defaultAuthoringMode="advanced" />
       </HeaderAuthProvider>,
     );
+    await userEvent.click(screen.getByText("•••"));
     await waitFor(() => expect(screen.getByRole("checkbox", { name: "Check spelling" })).toBeChecked());
-    expect(screen.getByLabelText("Body")).toHaveAttribute("spellcheck", "true");
+    expect(document.querySelector("textarea")!).toHaveAttribute("spellcheck", "true");
     window.localStorage.removeItem(key(owner));
   });
 
