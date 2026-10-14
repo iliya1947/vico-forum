@@ -10,10 +10,11 @@ interface Attachment {
 }
 
 /** Only server-verified raster media can use the controlled inline route. */
-export function ForumAttachmentDisplay({ attachment, url, deferImage = false }: {
+export function ForumAttachmentDisplay({ attachment, url, deferImage = false, compact = false }: {
   attachment: Attachment;
   url: string;
   deferImage?: boolean;
+  compact?: boolean;
 }) {
   const { t } = useTranslation("common");
   const [expanded, setExpanded] = useState(false);
@@ -22,15 +23,17 @@ export function ForumAttachmentDisplay({ attachment, url, deferImage = false }: 
   return (
     <div className="forum-attachment-display">
       {raster && (!deferImage || expanded) ? (
-        <a href={url} download={attachment.fileName}>
+        <a href={url} download={attachment.fileName} aria-label={`Open original ${attachment.fileName}`}>
           <img src={url + "&view=inline"} loading="lazy" decoding="async" alt={attachment.fileName} />
         </a>
       ) : null}
       <div className="forum-attachment-details">
-        <a href={url} download={attachment.fileName}>
+        {compact ? (
+          <a href={url} download={attachment.fileName} aria-label={`Download ${attachment.fileName}`}>↓</a>
+        ) : <a href={url} download={attachment.fileName}>
           <bdi dir="auto">{attachment.fileName}</bdi>
-        </a>
-        <span>{new Intl.NumberFormat().format(attachment.byteSize)} B</span>
+        </a>}
+        {!compact ? <span>{new Intl.NumberFormat().format(attachment.byteSize)} B</span> : null}
         {raster && deferImage && !expanded ? (
           <button type="button" onClick={() => setExpanded(true)}>{t("editorModePreview")}</button>
         ) : null}
