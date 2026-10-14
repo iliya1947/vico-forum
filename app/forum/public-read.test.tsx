@@ -2286,6 +2286,47 @@ describe("published edit revision fence", () => {
     await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
   });
 
+  it("restores a server-synced edit's original revision fence on another device", async () => {
+    const postId = "edit-remote-fence-post";
+    const ownerId = "edit-remote-fence-owner";
+    const contextKey = `post:${postId}:edit`;
+    const published = { ...topic, posts: [{
+      ...topic.posts[0]!, id: postId, authorId: ownerId,
+      body: { ...topic.posts[0]!.body, id: "fence-r2", originalContent: "Updated published message" },
+    }] };
+    const now = new Date().toISOString();
+    const remoteDraft = {
+      contextKey, draftId: crypto.randomUUID(), version: 4, status: "active",
+      title: "", snippet: "Remote unsaved edit ", editedAt: now, updatedAt: now,
+      payload: { body: "Remote unsaved edit ", title: "", tags: "", parentPostId: null,
+        publishedRevisionId: "fence-r1" },
+    };
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [remoteDraft] });
+      if (url.startsWith("/en/drafts/data?mode=content&key=")) return json({ draft: remoteDraft });
+      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute,
+      loader: () => topicRenderData(published, { editablePostIds: [postId], canReadPostHistory: false }),
+    }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Remote unsaved edit "));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
+  });
+
   it.each([
     ["versioned", "fence-r1"],
     ["legacy without a baseline", undefined],
