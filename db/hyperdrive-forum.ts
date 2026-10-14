@@ -159,7 +159,7 @@ export function createHyperdriveForumWriter(
     },
     createTopic: ({ sectionId, authorId, title, body, tags = [], draftId, draftVersion, attachmentIds }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
-      await forum.createTopicWithInitialPost({
+      const created = await forum.createTopicWithInitialPost({
         id: topicId,
         sectionId,
         authorId,
@@ -175,11 +175,11 @@ export function createHyperdriveForumWriter(
           bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
         },
       });
-      return { topicId };
+      return { topicId: created.topic.id };
     }),
     createReply: ({ topicId, authorId, body, parentPostId = null, draftId, draftVersion, attachmentIds }) => write(async (forum) => {
       const postId = crypto.randomUUID();
-      await forum.createPost({
+      const created = await forum.createPost({
         id: postId, topicId, authorId, parentPostId,
         publishedDraft: {
           contextKey: `topic:${topicId}:reply`,
@@ -188,7 +188,7 @@ export function createHyperdriveForumWriter(
         },
         bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
       });
-      return { postId };
+      return { postId: created.id };
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
