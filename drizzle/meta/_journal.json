@@ -281,6 +281,13 @@
       "when": 1791990000000,
       "tag": "0039_forum_publication_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792000000000,
+      "tag": "0040_post_edit_history_permissions",
+      "breakpoints": true
     }
   ]
 }
