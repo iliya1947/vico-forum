@@ -939,6 +939,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       const published = page!.posts.find((post) => post.attachments?.some((entry) => entry.id === file.id));
       expect(published?.attachments).toEqual([{
         id: file.id, fileName: file.fileName, byteSize: file.byteSize,
+        detectedType: file.detectedType,
       }]);
       expect(await store.readPublishedAttachment(published!.id, file.id)).not.toBeNull();
       await expect(store.readDraftAttachment(ownerId, context, generation, file.id))
@@ -1024,6 +1025,69 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     expect(await client.query(
       "select attachment_id from forum_attachment_draft_refs where attachment_id=$1", [asset.id],
     )).toMatchObject({ rowCount: 0 });
+  });
+
+  it("retires an expired attachment-only generation so a late POST cannot resurrect it", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await client.query(
+      "update forum_attachment_draft_refs set created_at = now() - interval '31 days' where attachment_id = $1",
+      [asset.id],
+    );
+    await client.query(
+      "update forum_attachments set created_at = now() - interval '31 days' where id = $1",
+      [asset.id],
+    );
+    const result = await new ForumAttachmentCleanup(
+      drizzle(client), { delete: vi.fn(async () => {}) },
+    ).runOnce();
+    expect(result.prunedRefs).toBe(1);
+    expect(result.deleted).toBe(1);
+    const markers = await client.query(
+      "select target_draft_id from forum_attachment_draft_generations where owner_id=$1 and context_key=$2 and draft_id=$3",
+      [ownerId, context, generation],
+    );
+    expect(markers.rows).toEqual([{ target_draft_id: null }]);
+    await expect(store.createDraftAttachment(upload(context, generation))).rejects
+      .toMatchObject({ reason: "gone" });
+    expect(await store.listDraftAttachments(ownerId, context, generation)).rejects
+      .toMatchObject({ reason: "gone" });
+  });
+
+  it("keeps an unsaved generation active when one of its refs is still fresh", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await store.createDraftAttachment(upload(context, generation));
+    await client.query(
+      "update forum_attachment_draft_refs set created_at = now() - interval '31 days' where attachment_id = $1",
+      [asset.id],
+    );
+    const result = await new ForumAttachmentCleanup(
+      drizzle(client), { delete: vi.fn(async () => {}) },
+    ).runOnce();
+    expect(result.prunedRefs).toBe(1);
+    const current = await store.listDraftAttachments(ownerId, context, generation);
+    expect(current).toHaveLength(1);
+    expect(await store.createDraftAttachment(upload(context, generation))).toMatchObject({
+      detectedType: "text",
+    });
+  });
+
+  it("denies direct draft-file reads after saved draft TTL without touching storage or renewal", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await setDraft(ownerId, context, generation, "active", 1);
+    await client.query(
+      "update forum_editor_drafts set edited_at = now() - interval '31 days' where owner_id=$1 and context_key=$2",
+      [ownerId, context],
+    );
+    expect(await store.readDraftAttachment(ownerId, context, generation, asset.id)).toBeNull();
+    const status = await client.query<{ status: string }>(
+      "select status from forum_editor_drafts where owner_id=$1 and context_key=$2",
+      [ownerId, context],
+    );
+    expect(status.rows).toEqual([{ status: "active" }]);
+    // The explicit metadata endpoint can independently purge this stale draft.
+    await new DrizzleForumEditorDrafts(drizzle(client)).get(ownerId, context);
+    await expect(store.readDraftAttachment(ownerId, context, generation, asset.id)).rejects
+      .toMatchObject({ reason: "gone" });
   });
 
   it("retains a durable claim on lost delete ACK and retries idempotently after the lease", async () => {
