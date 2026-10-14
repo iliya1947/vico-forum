@@ -1,5 +1,5 @@
-import { StrictMode, type ReactNode } from "react";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode, useState, type ReactNode } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   },
   revalidate: vi.fn(),
   revalidator: { state: "idle" as "idle" | "loading" },
+  locationKey: "location-1",
 }));
 
 vi.mock("react-router", () => ({
@@ -42,7 +43,7 @@ vi.mock("react-router", () => ({
     revalidate: mocks.revalidate,
   }),
   useLocation: () => ({
-    key: "location-1",
+    key: mocks.locationKey,
     pathname: "/he/topics/topic-1",
     search: "",
     hash: "",
@@ -59,6 +60,7 @@ vi.mock("react-i18next", () => ({
 
 import {
   ContentGenerationManager,
+  ContentGenerationNavigationBoundary,
   ContentGenerationUnitStatus,
 } from "./content-generation-controls";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
@@ -110,6 +112,7 @@ describe("content generation client orchestration", () => {
   });
 
   beforeEach(() => {
+    mocks.locationKey = "location-1";
     mocks.autoSubmit.mockClear();
     mocks.explicitSubmit.mockClear();
     mocks.revalidate.mockClear();
@@ -241,6 +244,30 @@ describe("content generation client orchestration", () => {
     const submitted = mocks.autoSubmit.mock.calls[0]![0];
     expect(submitted.get("postId")).toBe("post-1");
     expect(mocks.autoSubmit.mock.calls[0]![1]?.defaultShouldRevalidate).toBe(false);
+  });
+
+  it("resets translation navigation work without remounting same-topic authoring children", async () => {
+    const units = [unit("post-1")];
+    function PreservedEditor() {
+      const [text, setText] = useState("unsaved");
+      return <input aria-label="Working editor" value={text} onChange={(event) => setText(event.target.value)} />;
+    }
+    const view = (children: ReactNode) => (
+      <ContentGenerationNavigationBoundary pageIdentity="topic-1" units={units}>
+        {children}
+      </ContentGenerationNavigationBoundary>
+    );
+    const rendered = render(view(<PreservedEditor />));
+    const editor = screen.getByRole("textbox", { name: "Working editor" });
+    fireEvent.change(editor, { target: { value: "typed, not persisted" } });
+    await waitFor(() => expect(mocks.autoSubmit).toHaveBeenCalledTimes(1));
+
+    mocks.locationKey = "location-2";
+    rendered.rerender(view(<PreservedEditor />));
+
+    await waitFor(() => expect(mocks.autoSubmit).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("textbox", { name: "Working editor" })).toBe(editor);
+    expect(editor).toHaveValue("typed, not persisted");
   });
 
   it("polls pending and convergence states only through finite read-only revalidation", async () => {
