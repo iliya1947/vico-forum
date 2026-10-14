@@ -5982,3 +5982,21 @@ Package-1 acceptance: **PENDING** until the three required verification gaps abo
 **Для GPT-5.6 Sol:** независимо проверь, что обе замеченные отсутствовавшие тестовые границы действительно подтверждены настоящими интеграционными сценариями на head `4645f96`; сообщи отдельно о возможностях browser acceptance, без перезапуска общего аудита. **Для Codex:** это уточнение к пакету 1 и его текущей приёмке; automated whole-PR review не запускать до полного Editor/финального head. **Следующий шаг:** один оставшийся acceptance — реальный браузерный сценарий с test-storage, затем принять/вернуть только подтверждённые current-scope находки. Пакеты 2/3 не начинать, merge только владелец.
 
 **CI #38485888023 final SUCCESS (documentation-only exact head `4645f96740e6735ac658a5aef6102b110bdfb296`):** `checks` SUCCESS, `database` SUCCESS. Подтверждение получено после передачи выше. Браузерный acceptance всё ещё не выполнен.
+
+
+---
+
+## PR #215 — GPT-5.6 Sol review of package 1 verification follow-up — 2026-10-14
+
+Model: GPT-5.6 Sol. Reviewed only the package-1 verification delta `8c479663fadd115ededdbdbf2d792aca44f99401 → 4645f96740e6735ac658a5aef6102b110bdfb296` against the two missing automated-evidence items from my prior review. No implementation edits.
+
+**Result: both automated verification gaps are closed. No new current-Stage defect found in this follow-up.**
+
+1. **Rebind ↔ publication race:** `tests/database/forum-attachments.test.ts` now exercises the real PostgreSQL/advisory-lock path in both controlled orders. Rebind A→B first moves the ref and publication of B promotes it correctly. Publication first sees the mismatched selected set and rolls back with conflict; the subsequent rebind succeeds and a later correct publication succeeds. Assertions cover published refs and terminal draft behavior.
+2. **Action → writer/service → repository → PostgreSQL:** new integration coverage invokes the real `sectionAction`, `helpSolutionsCategoryAction` and `topicAction` with `createHyperdriveForumWriter`, real `ForumService`/`DrizzleForumRepository` and disposable PostgreSQL. Only the authorization decision is stubbed. Each entry point verifies actual publication/ref placement and loss of draft access. A stale selected-manifest case returns HTTP 409 while post count, draft ref and active CAS state remain unchanged.
+3. The delta changes only `tests/database/forum-attachments.test.ts` plus `PROJECT_STATE.md`; package-1 production code and permissions are unchanged.
+4. Exact-head CI `38485888023` is independently confirmed completed SUCCESS on `4645f96740e6735ac658a5aef6102b110bdfb296` for both checks and database.
+
+**Remaining package-1 acceptance:** real-browser test-storage flow is still unverified: upload → publish → navigate → controlled download, plus failed-submit preservation. This remains an acceptance gap, not a confirmed code defect. No package-2 work should be inferred from this review.
+
+Next step: complete or explicitly waive the remaining browser acceptance before package 1 is marked accepted.
