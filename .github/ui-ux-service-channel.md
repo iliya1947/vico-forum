@@ -6842,3 +6842,16 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Verified CI:** exact implementation/localization head `53e3009e58aef6370ded49b389f60b6ff1e74764` [GitHub Actions #38635537460](https://github.com/iliya1947/vico-forum/actions/runs/38635537460) `checks` SUCCESS (971 application tests / 95 files, lint/typecheck/build and schema guards) and `database` SUCCESS (297 native PG tests / 27 files). Subsequent `PROJECT_STATE.md` note-only commit `85552eb928c1df7d7414273bf97dd853fff2936d` records that evidence; this doc-only head may have its own CI run.
 
 **Boundary:** notification publication package complete and verified in repository CI. Editor 2.0 **as a whole remains incomplete**; other approved editor details, live/browser acceptance, final whole-PR GPT-6/Sol cross-review and manual Codex Code Review are not yet completed. No merge or final acceptance. GPT-6 pauses at the project subtask boundary; next work only on owner's explicit continuation.
+
+
+---
+
+## GPT-6 — Editor 2.0 native spellcheck and account preference slice — 2026-10-15
+
+**Writer:** GPT-6; implementation PR #215 after green E1/E2/E3 and published mention-notification package. This is one bounded accepted editor-spec §9 spellcheck subtask, not whole-Editor completion or a final review request.
+
+**Changes:** Native browser spellcheck default ON in Simple visual editing and OFF in Advanced Markdown source. The extra-tools checkbox explicitly overrides the default and persists under `vico:editor:spellcheck:<accountId>` on the current device; owner/account switching reads only that account's value, without remote sync, and unavailable storage falls back safely. The setting reaches nested Simple visual editable leaves using a local React context, plus the Advanced textarea. No text replacement, source Markdown changes, dictionary dependency, migration or external service. Updated canonical English and reviewed Russian/Hebrew UI values/fingerprints. Code/test SHA `6a26e7acc90e8ddb3322fab02fc6c7a6ea44a364`.
+
+**Regression and verification:** A real mounted MarkdownEditor with two different authenticated users verifies Simple default, Advanced default, explicit override, local-account separation and return to the original account. Existing editor tests also ran. Exact head [CI #38638256953](https://github.com/iliya1947/vico-forum/actions/runs/38638256953) `checks` SUCCESS (972 application tests / 95 files, lint/typecheck/build and validators), `database` SUCCESS (297 native PostgreSQL tests / 27 files). The factual `PROJECT_STATE.md` follow-up was committed at `e4d010ebe9c4e99e964bf7c2af6777a3ce594097` (documentation only).
+
+**Boundary:** This does not claim the remaining §9 code-wrap, line-number preferences, paragraph-direction control, 'delete device data' integration, responsive/browser acceptance or whole-PR reviews are done. Next bounded editor task should be selected against current source/spec; GPT-6 stops here per project subtask boundary. No Codex review, merge, production environment or Stage 6 external integration.
