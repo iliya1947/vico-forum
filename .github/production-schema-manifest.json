@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0040_post_edit_history_permissions",
+  "targetMigration": "0041_published_mentions",
   "tables": {
     "account": {
       "columns": [
@@ -2959,6 +2959,12 @@
           "defaultSha256": null
         },
         {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "PENDING"
+        },
+        {
           "name": "created_at",
           "type": "timestamp with time zone",
           "nullable": false,
@@ -3049,7 +3055,15 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "forum_reply_notifications_kind_check",
+          "columns": [
+            "kind"
+          ],
+          "definitionSha256": "PENDING"
+        }
+      ],
       "indexes": [
         {
           "name": "forum_reply_notifications_recipient_created_idx",
