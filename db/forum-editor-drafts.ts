@@ -58,7 +58,10 @@ export function validEditorDraftPayload(input: unknown): input is ForumEditorDra
     && typeof item.title === "string"
     && typeof item.tags === "string"
     && (item.parentPostId === undefined || item.parentPostId === null
-      || typeof item.parentPostId === "string");
+      || typeof item.parentPostId === "string")
+    && (item.publishedRevisionId === undefined
+      || (typeof item.publishedRevisionId === "string" && item.publishedRevisionId.length > 0
+        && item.publishedRevisionId.length <= 128));
 }
 
 function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
