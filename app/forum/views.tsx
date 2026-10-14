@@ -2295,6 +2295,8 @@ export function TopicView({
     );
   }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
 
+  const isEditSubmitting = navigation.state === "submitting"
+    && navigation.formData?.get("intent") === "editPost";
   const isReplySubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "reply";
@@ -2707,6 +2709,16 @@ export function TopicView({
                             <button type="button" onClick={() => void copyMessageLink(post.id)}>
                               {t("copyMessageLink")}
                             </button>
+                            {editablePostIds.includes(post.id) && (
+                              <button type="button" onClick={() => { setEditingPostId(post.id); setEditReady(false); }}>
+                                {t("postEdit")}
+                              </button>
+                            )}
+                            {canReadPostHistory && (
+                              <button type="button" onClick={() => openPostHistory(post.id)}>
+                                {t("postHistory")}
+                              </button>
+                            )}
                             {quoteSelectionErrorPostId === post.id && (
                               <span className="topic-message-mobile-action-feedback" role="status" aria-live="polite">
                                 {t("quoteSelectionRequired")}
@@ -2768,6 +2780,72 @@ export function TopicView({
                       </ForumInlineAttachmentProvider>
                     </div>
 
+                    {post.editedAt ? (
+                      <small className="topic-message-edited">
+                        {t("postEditedAt", { date: new Date(post.editedAt).toLocaleString(locale) })}
+                      </small>
+                    ) : null}
+
+                    {editingPostId === post.id && editablePostIds.includes(post.id) ? (
+                      <Form method="post" className="forum-write-form topic-post-edit-form"
+                        aria-label={t("postEditHeading")} aria-busy={isEditSubmitting}>
+                        <input type="hidden" name="postId" value={post.id} />
+                        <input type="hidden" name="expectedRevisionId" value={post.body.id} />
+                        <h3>{t("postEditHeading")}</h3>
+                        <MarkdownEditor
+                          key={post.id + ":" + post.body.id}
+                          ref={editEditorRef}
+                          id={"edit-post-" + post.id}
+                          name="body"
+                          rows={8}
+                          defaultValue={post.body.originalContent}
+                          draftContextKey={`post:${post.id}:edit`}
+                          draftLocale={locale}
+                          draftPublicationIntent="editPost"
+                          draftPublicationPending={isEditSubmitting}
+                          onPublicationReadyChange={setEditReady}
+                          disabled={isEditSubmitting}
+                          existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
+                            ...attachment,
+                            url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                          }))}
+                        />
+                        <p>{t("postEditDraftHint")}</p>
+                        <div className="forum-write-actions">
+                          <button type="button" onClick={() => setEditingPostId(null)}>
+                            {t("postEditCancel")}
+                          </button>
+                          <button type="submit" name="intent" value="editPost"
+                            disabled={!editReady || isEditSubmitting}>
+                            {t("postEditSave")}
+                          </button>
+                        </div>
+                      </Form>
+                    ) : null}
+
+                    {canReadPostHistory && historyPostId === post.id ? (
+                      <section className="topic-post-history" aria-label={t("postHistoryHeading")}>
+                        <h3>{t("postHistoryHeading")}</h3>
+                        {historyFetcher.state !== "idle" ? (
+                          <p role="status">{t("editorAttachmentRestoring")}</p>
+                        ) : historyFetcher.data && "operation" in historyFetcher.data
+                          && historyFetcher.data.operation === "postHistory"
+                          && historyFetcher.data.postId === post.id ? (
+                          <ol>
+                            {historyFetcher.data.revisions.map((revision) => (
+                              <li key={revision.id}>
+                                <strong>{t("postRevisionBy", {
+                                  author: revision.authorName,
+                                  date: new Date(revision.createdAt).toLocaleString(locale),
+                                })}</strong>
+                                <pre dir="auto">{revision.originalContent}</pre>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : <p role="alert">{t("postHistoryUnavailable")}</p>}
+                      </section>
+                    ) : null}
+
                     {post.attachments && post.attachments.length > 0 ? (
                       <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
                         {post.attachments.map((attachment) => (
@@ -2821,6 +2899,16 @@ export function TopicView({
                           feedback={messageLinkFeedback}
                           onCopy={copyMessageLink}
                         />
+                        {editablePostIds.includes(post.id) && (
+                          <button type="button" onClick={() => { setEditingPostId(post.id); setEditReady(false); }}>
+                            {t("postEdit")}
+                          </button>
+                        )}
+                        {canReadPostHistory && (
+                          <button type="button" onClick={() => openPostHistory(post.id)}>
+                            {t("postHistory")}
+                          </button>
+                        )}
                         {canParticipate && (
                           <div className="topic-message-participation">
                             <div className="topic-message-participation-actions">
