@@ -13,6 +13,8 @@ describe("attachment presentation shared between the editor and posts", () => {
   it("renders a verified raster in a published post without changing Markdown", () => {
     render(<ForumAttachmentDisplay attachment={file} url={path} />);
     expect(screen.getByAltText(file.fileName)).toHaveAttribute("src", path + "&view=inline");
+    expect(screen.getByRole("link", { name: `Open original ${file.fileName}` })).toHaveAttribute("href", path + "&view=inline");
+    expect(screen.getByRole("link", { name: `Open original ${file.fileName}` })).not.toHaveAttribute("download");
     expect(screen.getByRole("link", { name: file.fileName })).toHaveAttribute("download", file.fileName);
     expect(screen.getByText(/1,234 B/u)).toBeInTheDocument();
   });
