@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
-import { ForumMarkdown, highlightCode } from "./markdown";
+import { ForumMarkdown, ForumInlineAttachmentProvider, highlightCode } from "./markdown";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -53,6 +53,40 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+describe("authorized inline attachment image Markdown", () => {
+  const id = "23b93562-0550-4eef-88af-f951d6ea6138";
+  const url = `/api/attachments/file/${id}?post=post-123`;
+  const body = `Before ![shot](vico-attachment:${id}) after\n\n![remote](https://example.invalid/tracker.png)`;
+
+  it("uses only a current server-verified raster reference, never arbitrary image URLs", () => {
+    const attached = { id, fileName: "shot.png", byteSize: 5, detectedType: "png", url };
+    const view = render(<I18nextProvider i18n={runtime()}>
+      <ForumInlineAttachmentProvider attachments={[attached]}>
+        <ForumMarkdown>{body}</ForumMarkdown>
+      </ForumInlineAttachmentProvider>
+    </I18nextProvider>);
+    expect(screen.getByAltText("shot.png")).toHaveAttribute("src", url + "&view=inline");
+    expect(screen.queryByAltText("remote")).not.toBeInTheDocument();
+    view.rerender(<I18nextProvider i18n={runtime()}>
+      <ForumInlineAttachmentProvider attachments={[]}>
+        <ForumMarkdown>{body}</ForumMarkdown>
+      </ForumInlineAttachmentProvider>
+    </I18nextProvider>);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("does not turn non-raster and unrecognized IDs into working images", () => {
+    render(<I18nextProvider i18n={runtime()}>
+      <ForumInlineAttachmentProvider attachments={[{
+        id, fileName: "source.txt", byteSize: 5, detectedType: "text", url,
+      }]}>
+        <ForumMarkdown>{body}</ForumMarkdown>
+      </ForumInlineAttachmentProvider>
+    </I18nextProvider>);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
 });
 
 describe("Editor 2.0 technical rendering", () => {
