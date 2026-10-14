@@ -1061,6 +1061,7 @@ export const hebrewCommonValues = {
   editorModeMarkdown: "Markdown",
   editorFullScreen: "מסך מלא",
   editorToolbar: "עיצוב Markdown",
+  editorMentionSuggestions: "אזכור משתתף",
   editorViewMode: "תצוגת העורך",
   editorModeWrite: "כתיבה",
   editorModePreview: "תצוגה מקדימה",
