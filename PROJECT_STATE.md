@@ -150,11 +150,35 @@ Vico Forum находится в ранней pre-release разработке.
   direct draft TTL and published metadata. Editor composition, parser/route
   rendering, Undo/Redo and original-link tests were added.
   These corrections do NOT implement the remaining Editor 2.0 features
-  (mentions, edit-published, attachment-only publication, lost-ACK publication,
-  quote expansion and settings). Real-browser test-bucket, mobile/RTL and owner
+  (mentions, edit-published, quoted source attribution/expansion and
+  direction/spellcheck/preferences/UX settings). Real-browser test-bucket, mobile/RTL and owner
   acceptance remain unverified; external storage/scheduler/production rollout
   remain deferred. CI evidence must be recorded against the final exact head
   rather than inferred from preceding commits.
+
+- Editor 2.0 publication package (2026-10-14, PR #215): new topic, Help question
+  and reply actions now accept a blank body **only** with a selected, verified
+  and transactionally promoted attachment set; title, permissions, generation
+  CAS and rejection of empty/unsettled selection remain. The shared editor
+  computes submission readiness from meaningful body or settled files,
+  blocks pending/error uploads and prevents keyboard bypass via Ctrl+Enter.
+  UI creates no attachment-only placeholder text.
+  A first accepted publication durably records its request fingerprint and
+  created topic/post IDs keyed by (owner, context, draft ID), in the same
+  PostgreSQL transaction as the post, draft retirement, attachments and reply
+  notifications. An identical lost-response retry under the existing scope
+  lock returns the *same* ID without a second post or notifications; a different
+  payload for that draft ID is a conflict. The writer returns stored receipt IDs
+  rather than newly generated provisional IDs on replay. New forward migration
+  `0039_forum_publication_receipts` adds receipts and removes the former
+  post-body NOT BLANK database constraint; the service preserves the stricter
+  text-only contract and the repository validates actual file references
+  transactionally. Drizzle snapshot, manifest and runtime web-role grants
+  include the new table. Integration regression tests exercise all three
+  real action→writer→PostgreSQL paths, exact replay and altered retries.
+  Browser/test-bucket and owner visual acceptance are not yet recorded;
+  no infrastructure rollout, merge or Codex Code Review occurred.
+  Whole Editor 2.0 remains incomplete.
 
 - Editor 2.0: PR #215 открыт в обычном режиме и ещё не готов к merge. После merge #217 в `main`
   в первом foundation-срезе добавлены lossless Markdown document/history utilities,
