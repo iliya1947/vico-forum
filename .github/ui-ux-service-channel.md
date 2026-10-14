@@ -6791,3 +6791,5 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Verification:** exact code+test head `c89f38c` [CI #38623649760](https://github.com/iliya1947/vico-forum/actions/runs/38623649760): both `checks` and `database` SUCCESS; lint/typecheck/test/build covered by checks. Factual `PROJECT_STATE.md` updates `ed5451f` and `df31de5` are documentation-only, with no intervening runtime changes.
 
 **Status:** E2 corrected with repository CI evidence; no deployed-browser/whole-Editor acceptance implied. E1 previously covered, E3 (published revision baseline drift) is still an open current-scope finding for the next bounded task. PR #215 remains open; GPT-6 writing ownership, no Codex final review or merge.
+
+**Final documented implementation head:** PR #215 `df31de5870312ac35e14a4a52129a4bed1c6f1bf` also passed both `checks` and `database` in [CI #38623959510](https://github.com/iliya1947/vico-forum/actions/runs/38623959510). That follow-up changed only `PROJECT_STATE.md`.
