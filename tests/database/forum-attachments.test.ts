@@ -1095,6 +1095,27 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     expect((await cleanup.runOnce()).deleted).toBeGreaterThan(0);
   });
 
+  it("prunes an already-terminal old generation without trying to retire it twice", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await client.query(
+      "insert into forum_attachment_draft_generations (owner_id, context_key, draft_id, target_draft_id) values ($1,$2,$3,null)",
+      [ownerId, context, generation],
+    );
+    await client.query(
+      "update forum_attachment_draft_refs set created_at = now() - interval '31 days' where attachment_id=$1",
+      [asset.id],
+    );
+    await client.query(
+      "update forum_attachments set created_at = now() - interval '31 days' where id=$1",
+      [asset.id],
+    );
+    const result = await new ForumAttachmentCleanup(
+      drizzle(client), { delete: vi.fn(async () => {}) },
+    ).runOnce();
+    expect(result.prunedRefs).toBeGreaterThan(0);
+    expect(await row(asset.id)).toBeUndefined();
+  });
+
   it("retains a durable claim on lost delete ACK and retries idempotently after the lease", async () => {
     const { asset, context, generation } = await makeOrphan();
     await store.removeDraftAttachment(ownerId, context, generation, asset.id);
