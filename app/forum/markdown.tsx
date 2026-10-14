@@ -261,17 +261,19 @@ function ForumCodeBlock({
           <button
             type="button"
             aria-pressed={wrap}
-            onClick={() => setWrap((current) => {
-              setPreference("code-wrap", !current);
-              return !current;
-            })}
+            onClick={() => {
+              const enabled = !wrap;
+              setWrap(enabled);
+              setPreference("code-wrap", enabled);
+            }}
           >
             {t(wrap ? "codeNoWrap" : "codeWrap")}
           </button>
-          <button type="button" aria-pressed={lineNumbers} onClick={() => setLineNumbers((current) => {
-            setPreference("code-lines", !current);
-            return !current;
-          })}>{t("editorLineNumbers")}</button>
+          <button type="button" aria-pressed={lineNumbers} onClick={() => {
+            const enabled = !lineNumbers;
+            setLineNumbers(enabled);
+            setPreference("code-lines", enabled);
+          }}>{t("editorLineNumbers")}</button>
           <button type="button" onClick={() => void copyCode()}>
             {t("codeCopy")}
           </button>
