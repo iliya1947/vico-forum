@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
@@ -227,6 +227,7 @@ function ForumCodeBlock({
   // Split presentation at source newlines, not at syntax-token boundaries. This
   // keeps gutter rows aligned even when highlighting spans multiple lines.
   const sourceLines = code.split("\n");
+  const highlightDiff = allowHighlight && code.length <= 20_000 && displayLanguage?.toLowerCase() === "diff";
   const codeRows: ReactNode[][] = [[]];
   let fragmentKey = 0;
   for (const token of tokens) {
@@ -289,16 +290,17 @@ function ForumCodeBlock({
         )}
       </figcaption>
       <pre tabIndex={0} dir="ltr" data-line-numbers={lineNumbers ? "true" : "false"}>
-        <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
+        <code className={displayLanguage ? `language-${displayLanguage}` : undefined}
+          style={{ "--forum-code-gutter-width": `${String(codeRows.length).length}ch` } as CSSProperties}>
           {codeRows.map((parts, index) => (
-            <span className={displayLanguage?.toLowerCase() === "diff"
+            <span className={highlightDiff
               ? sourceLines[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
                 : sourceLines[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
                   : "forum-code-line"
               : "forum-code-line"} key={index}>
               {lineNumbers ? <span className="forum-code-line-number" aria-hidden="true">{index + 1}</span> : null}
               <span className="forum-code-line-text">{parts}{index < codeRows.length - 1
-                ? <span className="forum-code-source-newline">{"\n"}</span> : null}</span>
+                ? "\n" : null}</span>
             </span>
           ))}
         </code>
