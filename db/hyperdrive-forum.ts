@@ -79,6 +79,7 @@ export function createHyperdriveForumReader(
   }
 
   return {
+    searchMentionableUsers: (query) => read((repository) => repository.searchMentionableUsers(query)),
     readOnlinePresence: () => read((repository) => repository.readOnlinePresence()),
     readProfile: (userId) => read((repository) => repository.readProfile(userId)),
     listCategories: () => read((repository) => repository.listCategories()),
