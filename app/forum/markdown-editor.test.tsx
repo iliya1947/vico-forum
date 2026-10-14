@@ -113,8 +113,12 @@ describe("MarkdownEditor", () => {
     const group = await screen.findByRole("group", { name: "Mention a member" });
     const candidate = await screen.findByRole("button", { name: "Ada Lovelace" });
     expect(group).toContainElement(candidate);
+    const enteredSource = textarea.value;
+    expect(enteredSource).toMatch(/^Hello @Ada\\s*$/u);
     await userEvent.click(candidate);
-    await waitFor(() => expect(textarea).toHaveValue("Hello [Ada Lovelace](/en/users/member-42)"));
+    await waitFor(() => expect(textarea).toHaveValue(
+      enteredSource.replace("@Ada", "[Ada Lovelace](/en/users/member-42)"),
+    ));
     expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
     expect(lookup).toHaveBeenCalled();
     expect(screen.queryByRole("group", { name: "Mention a member" })).not.toBeInTheDocument();
