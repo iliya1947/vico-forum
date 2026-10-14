@@ -180,6 +180,30 @@ Vico Forum находится в ранней pre-release разработке.
   no infrastructure rollout, merge or Codex Code Review occurred.
   Whole Editor 2.0 remains incomplete.
 
+- Editor 2.0 published-post editing package (2026-10-14, PR #215):
+  post authors with effective `forum.post.editOwn` can open the same Simple/Advanced
+  Markdown editor using distinct `post:<postId>:edit` local/remote drafts;
+  Cancel leaves the published revision unchanged and the edit draft recoverable
+  via the drafts page, while explicit Save runs a version-fenced transaction.
+  New published revisions retain prior immutable versions and editor identities,
+  set `forum_posts.edited_at`, and expose a public "Edited" timestamp only.
+  Revision history body/author/time is fetched only via a separate server
+  action requiring effective `forum.post.history.read`; default grants are
+  moderator/admin, with no public/own-message history disclosure.
+  Migration `0040_post_edit_history_permissions` adds the timestamp and the two
+  code-backed dynamic permissions; catalog, grants, schema snapshot and schema
+  manifest are updated. The transaction validates post author and current
+  revision, completes only the edit-generation draft, promotes newly selected
+  verified references, and records a replay fingerprint/receipt atomically:
+  identical lost-response Save is idempotent and modified replay conflicts.
+  Existing published attachments survive content edits, including removal
+  of all text from attachment-bearing posts.
+  Unit/route/PostgreSQL regression tests exercise authorization, separate
+  drafts, history, CAS/stale edit, attached and text-only revisions and retry.
+  Browser/visual acceptance, final whole-Editor review and subsequent Editor
+  packages are still outstanding; no merge, production migrations or rollout.
+  CI for the final exact head must be verified independently.
+
 - Editor 2.0: PR #215 открыт в обычном режиме и ещё не готов к merge. После merge #217 в `main`
   в первом foundation-срезе добавлены lossless Markdown document/history utilities,
   ограниченное текстовыми AST-диапазонами безопасное visual-edit API (без пересериализации
