@@ -192,7 +192,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const selection = sourceSelection() ?? historyRef.current.current.selection;
       const start = Math.min(source.length, Math.max(0, selection.start));
       const end = Math.min(source.length, Math.max(start, selection.end));
-      const alt = fileName.replace(/[\\\]\[\r\n]/gu, " ").slice(0, 160);
+      const alt = fileName.replaceAll("\\", " ").replaceAll("[", " ").replaceAll("]", " ").replace(/[\r\n]/gu, " ").slice(0, 160);
       const token = `![${alt}](vico-attachment:${id})`;
       const next = source.slice(0, start) + token + source.slice(end);
       const after = { start: start + token.length, end: start + token.length };
@@ -210,8 +210,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     function removeImage(id: string) {
       const source = historyRef.current.current.markdown;
-      const token = new RegExp(String.raw`!\[[^\]\n]*\]\(vico-attachment:${id}\)`, "gu");
-      const next = source.replace(token, "");
+      const suffix = `](vico-attachment:${id})`;
+      let next = source;
+      let end = next.indexOf(suffix);
+      while (end !== -1) {
+        const start = next.lastIndexOf("![", end);
+        if (start < 0 || next.slice(start + 2, end).includes("\n")) break;
+        next = next.slice(0, start) + next.slice(end + suffix.length);
+        end = next.indexOf(suffix);
+      }
+
       if (next === source) return;
       const oldSelection = historyRef.current.current.selection;
       const pos = Math.min(oldSelection.start, next.length);
