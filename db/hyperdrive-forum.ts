@@ -110,6 +110,7 @@ export function createHyperdriveForumReader(
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
     readPostHistory: (postId, topicId) => read((repository) => repository.readPostHistory(postId, topicId)),
+    readPostLocation: (postId) => read((repository) => repository.readPostLocation(postId)),
   };
 }
 
