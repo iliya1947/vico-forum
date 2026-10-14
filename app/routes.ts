@@ -21,6 +21,7 @@ export default [
     route("sign-up", "routes/credential-sign-up.tsx"),
     route("presence", "routes/presence.ts"),
     route("notifications", "routes/notifications.tsx"),
+    route("mentions", "routes/mentions.ts"),
     route("drafts/data", "routes/draft-data.ts"),
     route("drafts", "routes/drafts.tsx"),
     route("attention", "routes/attention.tsx"),
