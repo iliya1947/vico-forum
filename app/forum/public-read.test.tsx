@@ -269,6 +269,8 @@ const reader: ForumReader = {
   }] : [],
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
+  readPostHistory: async () => [],
+  readPostLocation: async () => undefined,
   readTopicPage: async (id) => id === topic.id ? topic : id === helpTopic.id ? helpTopic : undefined,
 };
 
