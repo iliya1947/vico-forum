@@ -105,6 +105,8 @@ const reader: ForumReader = {
   readHelpSignal: async () => undefined,
   readCategory: async () => undefined,
   readSection: async (id) => id === section.id ? section : undefined,
+  readPostHistory: async () => [],
+  readPostLocation: async () => undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
 };
 
