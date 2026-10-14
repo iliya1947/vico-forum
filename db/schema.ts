@@ -1174,6 +1174,7 @@ export const forumReplyNotifications = pgTable(
     readAt: timestamp("read_at", { withTimezone: true }),
   },
   (table) => [
+    check("forum_reply_notifications_kind_check", sql`${table.kind} in (\'reply\', \'mention\')`),
     unique("forum_reply_notifications_recipient_post_unique").on(table.recipientUserId, table.postId),
     index("forum_reply_notifications_recipient_created_idx").on(
       table.recipientUserId,
