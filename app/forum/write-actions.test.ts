@@ -192,7 +192,7 @@ describe("post edit and protected history action permissions", () => {
     body: "Changed text", editorDraftId: "76568e3b-7cf0-4f32-9847-051d5a9b8071",
     editorDraftVersion: "0", editorAttachmentIds: "[]",
   };
-  const input = (writer: ForumWriter, permissions: readonly PermissionKey[], values = fields) => ({
+  const input = (writer: ForumWriter, permissions: readonly PermissionKey[], values: Record<string, string> = fields) => ({
     request: request("/en/topics/topic-1", values),
     params: { locale: "en", topicId: "topic-1" },
     context: context(writer, true, permissions),
