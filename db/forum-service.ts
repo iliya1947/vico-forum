@@ -56,7 +56,7 @@ export class ForumService {
         throw new InvalidForumContentError("post cannot reply to itself");
       }
     }
-    const bodyRevision = normalizeRevision(input.bodyRevision);
+    const bodyRevision = normalizeRevision(input.bodyRevision, !!input.publishedDraft?.attachmentIds?.length);
     return this.repository.createPost({ ...input, parentPostId: input.parentPostId ?? null, bodyRevision });
   }
 
@@ -74,7 +74,7 @@ export class ForumService {
       ...input,
       titleRevision: normalizeRevision(input.titleRevision),
       tags: normalizeTags(input.tags ?? []),
-      initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision) },
+      initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision, !!input.publishedDraft?.attachmentIds?.length) },
     });
   }
 
@@ -410,9 +410,9 @@ function validateEntity(id: string, authorId: string) {
   requireText(authorId, "author id");
 }
 
-function normalizeRevision(revision: ForumRevisionContent): ForumRevisionContent {
+function normalizeRevision(revision: ForumRevisionContent, allowBlankBody = false): ForumRevisionContent {
   requireText(revision.id, "revision id");
-  requireText(revision.originalContent, "original content");
+  if (!allowBlankBody) requireText(revision.originalContent, "original content");
   const sourceLocale = canonicalizeTranslationLocale(revision.sourceLocale);
   if (!sourceLocale) {
     throw new InvalidForumContentError(
