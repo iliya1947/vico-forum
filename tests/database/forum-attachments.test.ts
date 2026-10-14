@@ -489,6 +489,7 @@ describe("forum attachment lifecycle foundation", () => {
       await connection.query((await readFile("drizzle/0037_forum_attachment_draft_generations.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0038_forum_attachment_cleanup_claims.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0039_forum_publication_receipts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
+      await connection.query((await readFile("drizzle/0040_post_edit_history_permissions.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       const drafts = new DrizzleForumEditorDrafts(drizzle(connection));
       expect((await drafts.save(ownerId, "help:new", fresh, { title: "Fresh", body: "new", tags: "" }, 1)).outcome).toBe("saved");
       const attachments = new DrizzleForumAttachments(drizzle(connection));
