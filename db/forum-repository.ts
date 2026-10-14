@@ -326,6 +326,7 @@ export interface ForumThreadPost extends ForumPost {
   authorImage?: string | null;
   authorName: string;
   createdAt: Date;
+  editedAt?: Date | null;
 }
 
 export interface ForumTopicPage extends ForumTopic {
@@ -376,6 +377,10 @@ export interface ForumReader {
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
+  readPostHistory(postId: string, topicId: string): Promise<Array<{
+    id: string; authorId: string; authorName: string; originalContent: string;
+    sourceLocale: string; createdAt: Date;
+  }>>;
 }
 
 export interface ForumRevisionContent {
@@ -2709,7 +2714,7 @@ export class DrizzleForumRepository {
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
         parentPostId: forumPosts.parentPostId,
-        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
+        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, editedAt: forumPosts.editedAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
         solutionModerationStatus: forumPosts.solutionModerationStatus,
         solutionOutdatedReason: forumPosts.solutionOutdatedReason,
@@ -2752,7 +2757,7 @@ export class DrizzleForumRepository {
       tags: tags.get(id) ?? [],
       posts: posts.map((post) => ({
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
-        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt,
+        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt, editedAt: post.editedAt,
         attachments: attachmentsByPost.get(post.id) ?? [],
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
@@ -2760,6 +2765,21 @@ export class DrizzleForumRepository {
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
       })),
     };
+  }
+
+  async readPostHistory(postId: string, topicId: string) {
+    return this.database.select({
+      id: forumPostRevisions.id,
+      authorId: forumPostRevisions.authorId,
+      authorName: user.name,
+      originalContent: forumPostRevisions.originalContent,
+      sourceLocale: forumPostRevisions.sourceLocale,
+      createdAt: forumPostRevisions.createdAt,
+    }).from(forumPostRevisions)
+      .innerJoin(forumPosts, eq(forumPosts.id, forumPostRevisions.postId))
+      .innerJoin(user, eq(user.id, forumPostRevisions.authorId))
+      .where(and(eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId)))
+      .orderBy(desc(forumPostRevisions.createdAt), desc(forumPostRevisions.id));
   }
 
   private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {
@@ -3757,6 +3777,60 @@ export class DrizzleForumRepository {
         .returning({ id: forumPosts.id });
       if (updated.length === 0) throw new ConcurrentRevisionError("post body current revision changed");
       return revision;
+    });
+  }
+
+  async editPublishedPost(input: {
+    postId: string; topicId: string; actorId: string;
+    expectedRevisionId: string; body: string;
+    draftId: string; expectedVersion: number; attachmentIds: readonly string[];
+  }) {
+    const contextKey = `post:${input.postId}:edit`;
+    const draft = {
+      contextKey, draftId: input.draftId,
+      expectedVersion: input.expectedVersion, attachmentIds: input.attachmentIds,
+    };
+    const fingerprint = await publicationFingerprint({
+      kind: "edit", postId: input.postId, topicId: input.topicId,
+      expectedRevisionId: input.expectedRevisionId, body: input.body,
+      draftVersion: input.expectedVersion, attachmentIds: [...input.attachmentIds].sort(),
+    });
+    return this.database.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, input.actorId, contextKey);
+      const replay = await this.publicationReceipt(tx, input.actorId, draft, fingerprint);
+      if (replay) {
+        if (replay.topicId !== input.topicId || replay.postId !== input.postId)
+          throw new ForumStateConflictError("edit receipt references another post");
+        return;
+      }
+      const [post] = await tx.select({
+        id: forumPosts.id, authorId: forumPosts.authorId,
+        revisionId: forumPosts.currentRevisionId,
+      }).from(forumPosts).where(and(
+        eq(forumPosts.id, input.postId), eq(forumPosts.topicId, input.topicId),
+      )).for("update");
+      if (!post) throw new ForumEntityNotFoundError("post does not exist");
+      if (post.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit post");
+      if (post.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("post revision changed before edit");
+      if (!input.body.trim() && input.attachmentIds.length === 0) {
+        const [existing] = await tx.select({ id: forumPostAttachments.attachmentId })
+          .from(forumPostAttachments).where(eq(forumPostAttachments.postId, input.postId)).limit(1);
+        if (!existing) throw new ForumStateConflictError("post requires body or attachments");
+      }
+      const now = new Date();
+      const revisionId = crypto.randomUUID();
+      await tx.insert(forumPostRevisions).values({
+        id: revisionId, postId: input.postId, authorId: input.actorId,
+        originalContent: input.body, sourceLocale: "und", createdAt: now,
+      });
+      const updated = await tx.update(forumPosts)
+        .set({ currentRevisionId: revisionId, editedAt: now })
+        .where(and(eq(forumPosts.id, input.postId), eq(forumPosts.currentRevisionId, input.expectedRevisionId)))
+        .returning({ id: forumPosts.id });
+      if (!updated.length) throw new ForumStateConflictError("post revision changed before edit");
+      await this.finishPublishedDraft(tx, input.actorId, draft, input.postId);
+      await this.recordPublicationReceipt(tx, input.actorId, draft, fingerprint, input.topicId, input.postId);
     });
   }
 
