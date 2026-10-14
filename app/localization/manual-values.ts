@@ -487,6 +487,7 @@ export const russianCommonValues = {
   editorModeMarkdown: "Markdown",
   editorFullScreen: "Полный экран",
   editorToolbar: "Форматирование Markdown",
+  editorMentionSuggestions: "Упомянуть участника",
   editorViewMode: "Режим редактора",
   editorModeWrite: "Написать",
   editorModePreview: "Предпросмотр",
