@@ -59,7 +59,7 @@ export const reviewedCommonFingerprints = {
   searchResultCount: "9d88817b7ce11121f125820fb843f719fc39c0f43216004f387a982f7589f9b4",
   notifications: "94807270c53e77c0f80551f454efe7d7551d789390a2e2d120163129a97234fa",
   notificationsUnreadLabel: "b5285dcdf3b5c0acef7aba6dd13acb7a22e3f50cffa29b829e8e31f8ec27f9ea",
-  notificationIntro: "de649340bd44756dc6bf44b9daac69ee6bb553af75d01906d76d63c4c2b63cf7",
+  notificationIntro: "d76917a3bf6350a9cb9dd3cf4fff4bd237d7330ce390e815bc44d701354ad67a",
   notificationEmpty: "b009333b9f07dd710421f8f21203ac5a28bf66204faccac7a4c3a404de185d7c",
   notificationReplyBy: "65a50faf2bdd2c40f7ccdda3dd74a346dc9fe98cebdfa549a4ebb2dc57e0195d",
   notificationMentionBy: "603fc830178cc4f5f8dca1a92b53cb7066a5aa379d18d1c46668db48bb2f5051",
