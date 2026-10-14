@@ -63,6 +63,7 @@ export const russianCommonValues = {
   notificationIntro: "Ответы на ваши темы и сообщения.",
   notificationEmpty: "Уведомлений нет.",
   notificationReplyBy: "Ответ от {{actor}}",
+  notificationMentionBy: "Упоминание от {{actor}}",
   notificationUnread: "Непрочитано",
   notificationRead: "Прочитано",
   notificationOpen: "Открыть ответ",
