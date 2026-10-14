@@ -6383,3 +6383,21 @@ Unicode и arbitrary scripts без списка разрешённых язык
 Before coding: use one durable Markdown image token `![alt](vico-attachment:<stable UUID>)`, inserted synchronously at the current editor selection when an image is accepted for upload. It is ordinary source text, so the existing Markdown history, Simple/Advanced/Preview and draft CAS own it; no temporary URLs or private object keys enter persisted content. Render that token **only** when its UUID matches an authorized, server-verified raster attachment available in the current draft/post presentation context. Every actual byte request remains guarded by the existing attachment route. Unmatched, rejected or deleted refs never yield a functioning image. Upload generation/selection fences remain responsible for stale callbacks. This design reuses existing source/history, attachment refs and read authority, not a second document model.
 
 Current #215 branch is in the integrated correction subtask. No intermediate independent review requested.
+
+
+---
+
+## PR #215 — GPT-6 S5-1–S5-4 corrections and exact-head CI — 2026-10-14
+
+**Implementation:** GPT-6, PR #215 exact head `c8d34f7a34fc75ae09bd7f85df577965e8443aee` (open, unmerged). This is one cohesive attachment/draft foundation correction package under the approved whole-Editor task, **not** completion or final review of Editor 2.0.
+
+- **S5-1:** cleanup closes genuinely expired unsaved attachment generations under the existing owner/context lock before orphan pruning; prior terminal/redirect markers, active text drafts and recent refs are respected. Late same-generation uploads cannot resurrect an expired draft. Added native-PG expiry/retry, mixed-age and prior-terminal tests.
+- **S5-2:** private draft-file reader checks authoritative saved draft expiry on every direct read, without extending TTL or forcing a 60-second text sync. Added real-PG regression before and after normal draft expiry processing.
+- **S5-3:** published topic repository projection transports server-verified `detectedType`, including source/text files, into TopicView instead of trusting extension. DB and TopicRoute regressions cover safe source preview and misnamed raster files.
+- **S5-4:** image paste/drop/picker inserts an opaque `![alt](vico-attachment:UUID)` source-history reference at selection before asynchronous upload; current scoped verified raster draft/post refs alone resolve it through authorized inline delivery. Undo/Redo, preview/source, rejection/no-ref and removal paths tested; original-view and download actions are separate. No object keys or temporary URLs stored in Markdown. Scope design recorded earlier here.
+
+**Verification on this exact head:** [GitHub Actions #38568603420](https://github.com/iliya1947/vico-forum/actions/runs/38568603420) — `checks` SUCCESS (**947 application tests, 93 files**), `database` SUCCESS (**286 native PostgreSQL tests, 27 files**). Lint, typecheck, migration/schema manifest parity, runtime privileges and app/preview builds completed in green jobs. Intermediate CI failures were traced to test assertions/fixture lifetime and corrected; these runs are not presented as passing evidence.
+
+**Scope and limits:** `PROJECT_STATE.md` updated with actual correction scope. No schema migration, new infrastructure, merge, other PR or automated Codex review. Real browser with controlled test-storage and mobile/RTL owner acceptance remain unverified. The remaining whole-Editor features (attachment-only + lost-ACK publication, edit-published/history, mentions, attributed quotes, preferences/UX) are **not implemented by this package**.
+
+**Next work:** continue previously authorized whole-Editor implementation in PR #215, beginning with publication identity/attachment-only, then edit/history, mentions and UI integration. Only after all approved functions and self-check/browser evidence, hand off a single stable whole-Editor head to Sol and Codex for independent review. Do not initiate an intermediate formal review.
