@@ -618,7 +618,7 @@ export function useEditorAttachments({
               {entry.status === "stored" && entry.attachment && contextKey ? (
                 <ForumAttachmentDisplay attachment={entry.attachment}
                   url={`/api/attachments/file/${encoded(entry.id)}?draft=${encoded(draftId)}&context=${encoded(contextKey)}`}
-                  deferImage />
+                  deferImage compact />
               ) : null}
               <div className="markdown-editor-attachment-actions">
                 {entry.status === "error" && entry.file ? (
