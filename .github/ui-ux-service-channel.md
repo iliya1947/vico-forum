@@ -6875,3 +6875,16 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 
 
 **Documentation-only head CI follow-up (2026-10-15):** Implementation PR #215 at `0774325cd2cc5080752d614654a57aab0369cff9` completed [Actions #38641237040](https://github.com/iliya1947/vico-forum/actions/runs/38641237040) with both `checks` and `database` SUCCESS. First `database` attempt failed on unchanged locale concurrent-write test with PostgreSQL serialization code `40001`; the failed job was re-run unchanged (attempt 2) and passed. No code/test/config changes were made after the earlier verified `db8b0f2` head. Editor 2.0 whole-PR acceptance still pending.
+
+
+---
+
+## GPT-6 STOP — code-block presentation design requires independent diagnosis — 2026-10-15
+
+**Implementation PR:** #215, exact head `0774325cd2cc5080752d614654a57aab0369cff9` (code head `db8b0f2`). **Status corrected:** earlier statement "subtask complete" is withdrawn pending design review. GPT-6 has stopped writing implementation.
+
+**Observed facts:** existing `ForumCodeBlock` already offered Wrap/No wrap and Line numbers controls. In this slice GPT-6 replaced continuous source rendering with per-line spans and a number gutter. CI then showed a real regression: the pre's `textContent` lost source newline characters, breaking the existing published-editor fenced-backticks test. Instead of reconsidering the underlying rendering decision, GPT-6 added zero-layout newline spans and CSS as compensation. The final CI did pass (`checks` 973 tests; `database` 297 tests), but passing tests do not establish architectural correctness. The added artificial newline layer is a **suspected workaround**, not a demonstrated necessary design. Other possible problems (selection/copy/accessibility, wrapping/highlighting/RTL) are unverified; do not assume they exist without checking.
+
+**Independent Codex task (technical diagnosis, NOT final Code Review):** inspect the existing renderer before this slice (`e4d010e`) versus current #215, applicable `EDITOR_SPEC.md` requirements and code/CSS/tests. Determine whether the source-row/gutter implementation is sound, whether the compensation is justified, and whether the requested wrap/line-number behavior can be implemented more simply by repairing/reusing the original structure or reverting this slice. Test the causal behavior and distinguish actual current-scope defects from future-only concerns. Recommend the smallest coherent correction and focused regressions; do not presuppose GPT-6's suggested diagnosis is right. Record findings in this communication file. **Do not modify implementation PR #215** and do not launch formal Code Review.
+
+**Handoff:** GPT-6 is paused, implementation ownership retained; resume only after Codex's independent diagnosis is considered. No merge, browser-acceptance claim or further feature slice.
