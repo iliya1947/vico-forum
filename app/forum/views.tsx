@@ -2167,6 +2167,7 @@ export function TopicView({
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [replyReady, setReplyReady] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editBaseRevisionId, setEditBaseRevisionId] = useState<string | null>(null);
   const [editReady, setEditReady] = useState(false);
   const [historyPostId, setHistoryPostId] = useState<string | null>(null);
   const editEditorRef = useRef<MarkdownEditorHandle>(null);
@@ -2200,16 +2201,28 @@ export function TopicView({
     replyPublicationRef.current = null;
     editPublicationRef.current = null;
     setEditingPostId(null);
+    setEditBaseRevisionId(null);
     setHistoryPostId(null);
   }, [topic.id]);
 
   useEffect(() => {
     const requested = new URLSearchParams(location.search).get("editPost");
-    if (requested && editablePostIds.includes(requested)) setEditingPostId(requested);
+    if (requested && editablePostIds.includes(requested) && editingPostId !== requested) {
+      setEditBaseRevisionId(topic.posts.find((post) => post.id === requested)?.body.id ?? null);
+      setEditReady(false);
+      setEditingPostId(requested);
+    }
   }, [location.search, topic.id, editablePostIds]);
+
+  function openPostEditor(postId: string, revisionId: string) {
+    setEditBaseRevisionId(revisionId);
+    setEditReady(false);
+    setEditingPostId(postId);
+  }
 
   function closePostEditor() {
     setEditingPostId(null);
+    setEditBaseRevisionId(null);
     setEditReady(false);
     const params = new URLSearchParams(location.search);
     if (!params.has("editPost")) return;
@@ -2728,7 +2741,7 @@ export function TopicView({
                               {t("copyMessageLink")}
                             </button>
                             {editablePostIds.includes(post.id) && (
-                              <button type="button" onClick={() => { setEditingPostId(post.id); setEditReady(false); }}>
+                              <button type="button" onClick={() => openPostEditor(post.id, post.body.id)}>
                                 {t("postEdit")}
                               </button>
                             )}
@@ -2808,15 +2821,17 @@ export function TopicView({
                       <Form method="post" className="forum-write-form topic-post-edit-form"
                         aria-label={t("postEditHeading")} aria-busy={isEditSubmitting}>
                         <input type="hidden" name="postId" value={post.id} />
-                        <input type="hidden" name="expectedRevisionId" value={post.body.id} />
+                        <input type="hidden" name="expectedRevisionId" value={editBaseRevisionId ?? ""} />
                         <h3>{t("postEditHeading")}</h3>
                         <MarkdownEditor
-                          key={post.id + ":" + post.body.id}
+                          key={post.id}
                           ref={editEditorRef}
                           id={"edit-post-" + post.id}
                           name="body"
                           rows={8}
                           defaultValue={post.body.originalContent}
+                          initialPublishedRevisionId={post.body.id}
+                          onDraftRestorePublishedRevisionId={setEditBaseRevisionId}
                           draftContextKey={`post:${post.id}:edit`}
                           draftLocale={locale}
                           draftPublicationIntent="editPost"
@@ -2829,12 +2844,21 @@ export function TopicView({
                           }))}
                         />
                         <p>{t("postEditDraftHint")}</p>
+                        {editBaseRevisionId !== post.body.id ? (
+                          <div className="topic-page-alert" role="alert">
+                            <p>{t(editBaseRevisionId ? "postEditRevisionChanged" : "postEditRevisionUnknown")}</p>
+                            <button type="button" disabled={isEditSubmitting} onClick={() => {
+                              editEditorRef.current?.setDraftPublishedRevisionId(post.body.id);
+                              setEditBaseRevisionId(post.body.id);
+                            }}>{t("postEditAcceptCurrentRevision")}</button>
+                          </div>
+                        ) : null}
                         <div className="forum-write-actions">
                           <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>
                             {t("postEditCancel")}
                           </button>
                           <button type="submit" name="intent" value="editPost"
-                            disabled={!editReady || isEditSubmitting}>
+                            disabled={!editReady || isEditSubmitting || editBaseRevisionId !== post.body.id}>
                             {t("postEditSave")}
                           </button>
                         </div>
@@ -2918,7 +2942,7 @@ export function TopicView({
                           onCopy={copyMessageLink}
                         />
                         {editablePostIds.includes(post.id) && (
-                          <button type="button" onClick={() => { setEditingPostId(post.id); setEditReady(false); }}>
+                          <button type="button" onClick={() => openPostEditor(post.id, post.body.id)}>
                             {t("postEdit")}
                           </button>
                         )}
