@@ -41,6 +41,7 @@ export interface MarkdownEditorHandle {
   focus: () => void;
   insertText: (text: string) => void;
   setDraftParentPostId: (parentPostId: string | null) => void;
+  setDraftPublishedRevisionId: (revisionId: string) => void;
   acknowledgePublished: (draftId: string, publishedVersion: number) => void;
 }
 
@@ -57,6 +58,8 @@ export interface MarkdownEditorProps {
   draftContextKey?: string;
   draftLocale?: string;
   onDraftRestoreParent?: (parentPostId: string | null) => void;
+  initialPublishedRevisionId?: string;
+  onDraftRestorePublishedRevisionId?: (revisionId: string | null) => void;
   draftPublicationIntent?: string;
   draftPublicationPending?: boolean;
   onPublicationReadyChange?: (ready: boolean) => void;
@@ -91,6 +94,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       draftContextKey,
       draftLocale,
       onDraftRestoreParent,
+      initialPublishedRevisionId,
+      onDraftRestorePublishedRevisionId,
       draftPublicationIntent,
       draftPublicationPending = false,
       onPublicationReadyChange,
@@ -178,8 +183,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     const draft = useEditorDraft({
       ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
-      initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null },
+      initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null,
+        ...(initialPublishedRevisionId ? { publishedRevisionId: initialPublishedRevisionId } : {}) },
       restore: (payload) => {
+        onDraftRestorePublishedRevisionId?.(payload.publishedRevisionId ?? null);
         historyRef.current = createEditorHistory(payload.body);
         onDraftRestoreParent?.(payload.parentPostId ?? null);
         setValue(payload.body);
@@ -815,6 +822,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
       setDraftParentPostId(parentPostId: string | null) {
         draft.noteFields({ parentPostId }, true);
+      },
+      setDraftPublishedRevisionId(revisionId: string) {
+        draft.noteFields({ publishedRevisionId: revisionId }, true);
       },
       acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
         draft.acknowledgePublished(publishedDraftId, publishedVersion);
