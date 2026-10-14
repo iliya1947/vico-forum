@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { createRef, useState, type ReactNode } from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -83,6 +83,43 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
+  it.each(["advanced", "simple"] as const)("suggests and inserts a stable profile link in %s mode", async (mode) => {
+    const lookup = vi.fn(async (url: string) => {
+      if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
+      return new Response(JSON.stringify({ users: [{ id: "member-42", name: "Ada Lovelace" }] }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", lookup);
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: "mention-author-" + mode, name: "Author" }}>
+        <form>
+          <label htmlFor="mention-body">Body</label>
+          <MarkdownEditor id="mention-body" name="body" draftLocale="en"
+            defaultAuthoringMode={mode} defaultValue="Hello " />
+        </form>
+      </HeaderAuthProvider>,
+    );
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    if (mode === "advanced") {
+      fireEvent.change(textarea, {
+        target: { value: "Hello @Ada", selectionStart: 10, selectionEnd: 10 },
+      });
+    } else {
+      const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+      leaf.textContent = "Hello @Ada";
+      fireEvent.input(leaf);
+    }
+    const group = await screen.findByRole("group", { name: "Mention a member" });
+    const candidate = await screen.findByRole("button", { name: "Ada Lovelace" });
+    expect(group).toContainElement(candidate);
+    await userEvent.click(candidate);
+    await waitFor(() => expect(textarea).toHaveValue("Hello [Ada Lovelace](/en/users/member-42)"));
+    expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
+    expect(lookup).toHaveBeenCalled();
+    expect(screen.queryByRole("group", { name: "Mention a member" })).not.toBeInTheDocument();
+  });
+
   it("wraps the selected text and restores selection/focus", async () => {
     renderEditor(
       <>
