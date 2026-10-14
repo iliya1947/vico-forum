@@ -26,7 +26,7 @@ export async function loader({ request, params, context }: {
   request: Request;
   params: { attachmentId?: string };
   context: RouterContextProvider;
-}) {
+}): Promise<Response> {
   const attachmentId = params.attachmentId ?? "";
   if (!isForumAttachmentUuid(attachmentId)) return failure(404);
   const query = new URL(request.url).searchParams;
