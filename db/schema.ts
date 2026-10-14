@@ -1205,7 +1205,6 @@ export const forumPostRevisions = pgTable(
       columns: [table.postId],
       foreignColumns: [forumPosts.id],
     }).onDelete("cascade"),
-    check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
     check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
   ],
 );
