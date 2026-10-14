@@ -2962,7 +2962,7 @@
           "name": "kind",
           "type": "text",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "a73d4e692033988ebd366311dcda276227e550c45aaf5ca0f1f45df41d1abba0"
         },
         {
           "name": "created_at",
@@ -3061,7 +3061,7 @@
           "columns": [
             "kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "39a07de9c42344eb2d5e429022d873ec13392d386f6d12a767e0df1de5ba57c1"
         }
       ],
       "indexes": [
