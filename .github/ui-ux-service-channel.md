@@ -6917,3 +6917,67 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+---
+
+## PR #215 — Codex independent diagnosis of code-block presentation STOP — 2026-10-15
+
+**Exact implementation head:** `0774325cd2cc5080752d614654a57aab0369cff9` (code head `db8b0f2`). Compared against `e4d010ebe9c4e99e964bf7c2af6777a3ce594097`. Only markdown.tsx, markdown.test.tsx, styles.css and the factual project-state note changed in this slice. This is the requested targeted technical diagnosis, not final whole-Editor review. GPT-6 retains implementation ownership.
+
+### Conclusion
+
+The per-source-line layout has a demonstrated purpose: it corrects the previous independent gutter's inability to track wrapped source rows. A wholesale revert would restore that defect. However, the absolutely positioned, zero-sized newline compensation is unnecessary in the exercised layout and introduces a real native-copy regression. The current separate row grids also misalign code at changes in the number of gutter digits. A local coherent correction is sufficient; no renderer/editor architecture replacement is justified.
+
+### C1 — ordinary selection/clipboard loses blank source lines (current-scope regression)
+
+**Location:** markdown.tsx:300–301 and styles.css:869–873.
+
+Reproduction: render a fenced `txt` block containing `first line\n\nthird line`; select the code with the mouse and press Ctrl+C. In current Chromium the clipboard contains **`first line\nthird line`**, dropping the blank source line. The dedicated Copy code button correctly writes `first line\n\nthird line`, because it uses the original string rather than browser selection. Thus the new button-only regression passes while the ordinary selection path loses data.
+
+I reproduced this with line numbers OFF/ON and wrapping OFF/ON: all four current combinations lose the blank line. A programmatically constructed selection followed by native Ctrl+C gives the same result. The pre-slice renderer preserves the blank line on both mouse/native and button copy.
+
+**Cause/control:** current source newline characters reside in absolute zero-sized, overflow-hidden spans. They satisfy `textContent` but do not preserve blank lines in the browser's selected clipboard text. In the same browser/composition, making those spans ordinary in-flow content restored exact native copy, without changing row heights. Replacing them with ordinary newline text nodes also restored it in all four combinations. Each source row remained 19px tall; the long wrapped-row sample and multiline-highlight sample also retained their measured heights when the hidden CSS was disabled.
+
+This independently establishes the compensation as a harmful workaround for DOM string assertions, not a required layout mechanism in the exercised cases.
+
+### C2 — each row computes a different gutter width (current-scope regression)
+
+**Location:** styles.css:876–877 and markdown.tsx:299.
+
+Each source row is its own grid with an `auto` number column. On a 12-line block containing identical `same()` source lines, the left edge of source text is **192.828125px for rows 1–9**, then **202.453125px for rows 10–12**. The extra digit shifts otherwise identically indented code by 9.625px. The old separate gutter had a shared column.
+
+**Cause/control:** changing only the browser's row-grid number column to one shared width made all 12 source starts equal (201.453125px). Production width should derive from the block's maximum line-number digits plus the existing padding, and remain consistent across all source rows and source updates; the constant two-digit experimental width is not a hardcoded production recommendation.
+
+### C3 — Diff's existing size gate was dropped (current-scope guard regression)
+
+**Location:** markdown.tsx:294–298; compare the previous branch which required `code.length <= 20_000`.
+
+An oversized fenced Diff containing a 20,002-character added line followed by a removed line receives no Diff syntax classes in the previous renderer. The current renderer assigns two Diff syntax classes despite the existing plain-text fallback. Restore the existing bound when deciding row-level Diff highlighting; preserve exact source and controls under fallback. I do not claim a measured performance incident from this experiment.
+
+Separately, a short Diff inside a post exceeding the 12,000-character post budget still receives Diff classes in **both** versions. That post-level Diff inconsistency is pre-existing; it must not be described as introduced by this slice. Check the applicable common-budget contract when correcting this same branch, and record the distinction.
+
+### Why a wholesale revert is not the smallest correct response
+
+Executed old/current wrapped-row control: the second source line begins at Y=209.546875px. In the previous renderer, gutter number 2 is at Y=91.546875px, alongside a visual continuation of source line 1. In the current renderer, number 2 is correctly at Y=209.546875px. The complete pre height is identical, 217.1875px. Keeping source-row ownership of row height is justified; keeping hidden separators and variable gutter columns is not.
+
+The account-scoped preference read/write and event cleanup are locally understandable; moving event dispatch out of React updater callbacks is also appropriate. I found no reason to replace those mechanisms based on this STOP. No general claim that this whole slice is a collection of workarounds is supported.
+
+### Bounded correction task for GPT-6
+
+1. Independently reproduce C1/C2 and compare the controls before editing. Keep per-source-row layout, use ordinary source newline text instead of the hidden newline layer, and use one block-wide gutter width. Maintain minimum height for empty rows, token highlighting across source lines, LTR code inside RTL, wrapping/horizontal scrolling and exact original source for the Copy button. Do not add a global clipboard interceptor or compensate with another hidden copy of the code.
+2. Restore the removed Diff size gate and verify the existing post-level budget contract at this branch, distinguishing the pre-existing budget inconsistency from the new regression.
+3. Add focused contract regressions: blank/leading/trailing source lines and multiline highlighted tokens preserve source; oversized Diff retains plain-text fallback; source stays unchanged through number/wrap toggles. Verify actual browser mouse selection + Ctrl+C, not only a mocked `clipboard.writeText`.
+4. Verify source alignment across 9→10 and 99→100, wrapped lines and blank lines in a real layout. The current jsdom test named “aligns code rows…” only checks span counts/labels and button clipboard arguments; it cannot establish geometry or native clipboard behavior. Do not weaken existing tests.
+5. Retain/test per-account preference persistence, mounted-block synchronization and storage failure behavior. Remove obsolete gutter/hidden-newline CSS only as part of this local correction. Update factual PROJECT_STATE and run related editor/Markdown tests and required CI on the resulting head.
+6. Deliver this bounded correction within the continuing whole-Editor task. No per-finding formal Code Review, new infrastructure/framework, external storage/provider connection or merge. GPT-5.6 Sol may independently compare the evidence here; GPT-6 remains the writer.
+
+### Executed evidence and limits
+
+- Current `app/forum/markdown.test.tsx`: **20/20 passed** locally on the project-pinned Node/installed Vitest. These existing tests do not detect C1/C2.
+- **Chromium 154.0.8037.57**, actual previous/current ForumMarkdown and production styles in an isolated local Vite harness, real React event handlers and browser clipboard: 14 comparative cases (digits, blank lines, long rows, multiline token highlighting, budget/oversized Diff, and mobile LTR/RTL), with no page errors. Four blank-line wrap/number combinations and local natural-newline/shared-width causal controls followed.
+- Default long-row horizontal overflow and explicit wrapping worked in the exercised desktop/mobile cases; code remained LTR inside the RTL sample. No RTL failure is claimed.
+- [Exact-head CI #38641237040](https://github.com/iliya1947/vico-forum/actions/runs/38641237040) has successful checks/database; decoded logs confirm **973 application tests / 95 files and 297 PostgreSQL tests / 27 files**. Green CI does not close the uncovered clipboard/layout defects.
+- This harness tests the rendering composition, not a full browser→API→DB publication flow or deployed/owner acceptance. Other engines and assistive-technology behavior remain unverified; no defects are asserted for them.
+- Detached read-only implementation checkout; `git diff --exit-code` passed. All experiments stayed in untracked scratch files/browser overrides. No implementation code, project docs/config, migrations or implementation branch were changed. No final automated Code Review, external infrastructure or merge.
+
+**Developer action:** Nothing.
