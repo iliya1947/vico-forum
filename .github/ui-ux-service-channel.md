@@ -6145,3 +6145,100 @@ Still-unverified acceptance evidence also remains: actual-browser test-bucket fl
 **Package 3:** code review PASS with no confirmed defect; required regression/acceptance evidence incomplete.
 
 Stage 5 packages 1–3 therefore **must not be accepted yet**. GPT-6 should address only the confirmed package-2 findings and close the package-3 verification gaps on the existing PR #215 branch; no package beyond current Stage scope, branch, merge, deployment or final automated Codex Code Review is requested. Codex should independently assess the same exact pre-correction head/findings before they are treated as jointly confirmed, per AGENTS.md.
+
+---
+
+## PR #215 — Codex independent Stage 5 packages 1–3 assessment: corrections required — 2026-10-14
+
+**Role:** Codex, technical lead/reviewer per the owner's latest instruction. GPT-6 remains the implementation writer; Codex has not modified implementation code, documentation, migrations or the implementation branch.
+
+**Exact reviewed head:** `ac1257273de0b03bdb0f89285367f50ce6103422`. Independently examined the packages 1–3 delta from the previously accepted correction head `6e76b1abdbe7f528293cbae107892cc0a3041ad6`, production callers, current Stage 5 requirements and relevant regressions. PR #215 remains open/unmerged at the reviewed SHA. Main remains the previously observed baseline. No automatic final Codex Code Review was requested.
+
+**Result: Stage 5 acceptance is BLOCKED by the four supported current-scope findings below, in addition to the still-unverified full browser/owner acceptance.** These findings are derived from my code inspection and executed diagnostics, not from GPT-6/Sol assertions. Sol's earlier PASS was package-1 production/verification scope, not independent approval of these packages 2–3 paths. The automatic “no major issues” comment above inspected service commit `47220a6d1e`; it is not an implementation review of `ac12572`.
+
+### S5-1 — Cleanup expires an unsaved attachment generation without closing it, so a late POST resurrects it
+
+**Location:** [db/forum-attachment-cleanup.ts:51](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/db/forum-attachment-cleanup.ts#L51), prune/recheck at lines 63–95; generation resolution in db/attachment-draft-generation.ts.
+
+**Executed reproduction:** In a valid new-topic context, immediately create a real attachment/ref under generation A with no server text-draft row (a permitted state before the first 60-second save). Age the asset and ref by 31 days. Execute the actual cleanup processor with a fake private delete adapter. It prunes the expired ref and physically deletes the object/asset. Querying forum_attachment_draft_generations finds **no terminal marker for A**. Then call the **actual upload action** with the same owner/context/A and stable upload UUID, valid text bytes, a real draft context store and real attachment repository. Only the permission decision and private storage transport are test adapters. Result: **HTTP 201 stored**, and listDraftAttachments returns a new live ref under the supposedly expired A.
+
+**Cause:** purgeExpired(owner) closes only generations with an active forum_editor_drafts row. The cleanup path also expires refs when that text row is absent, but merely deletes the ref; resolveAttachmentDraftGeneration subsequently accepts A because it has no terminal marker. Once the old asset row has been physically deleted, stable-ID insertion can create it again.
+
+**Violated invariant:** expired/deleted working generations must not be restored by stale upload/retry; immediate upload must not require an eager server text save. This is an implemented cleanup/generation defect, not a missing external scheduler.
+
+**Minimum correction boundary:** determine that the canonical unsaved generation is actually expired and close it durably under the existing owner/context scope lock before pruning its last valid refs. Preserve legitimate immediate uploads, fresh refs and live redirected destinations; do not blindly retire an alias that resolves to an active B. Reuse the existing retirement machinery where valid, without creating server text snapshots or accelerating the 60-second cycle.
+
+**Regressions:** the executed no-text-row expiry→cleanup→late action POST must fail closed (gone, no revived ref), also after a fresh generation appears; controlled cleanup/upload orderings; recent unsaved upload remains valid; mixed-age refs/live redirect are not mistakenly retired.
+
+### S5-2 — Direct download serves an expired saved draft until another draft API performs expiry
+
+**Location:** [db/forum-attachments.ts:208](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/db/forum-attachments.ts#L208), called by [attachment-download.ts:51](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/app/routes/attachment-download.ts#L51).
+
+**Executed reproduction:** Create a real attachment and an active saved text generation A, then set the authoritative edited_at to 31 days ago. Invoke the actual download loader with the authenticated owner, real attachment repository and fake private get adapter. It returns **HTTP 200 and the file bytes**. Invoke DrizzleForumEditorDrafts.get for that same owner/context: it correctly purges the expired draft to deleted. Calling the same attachment read now throws the terminal generation error.
+
+**Cause:** readDraftAttachment checks ownership, generation redirects/markers and ref existence, but does not enforce the server draft's current expiry. Its result depends on whether some other endpoint happened to purge the text draft first. The new download endpoint bypasses the existing expiry boundary.
+
+**Violated invariant:** EDITOR_SPEC §5 specifies expiry after 30 days without edits; §6 draft delivery requires a currently valid draft ref. Viewing must not extend TTL. This is owner-scoped expired data delivery, **not a demonstrated cross-owner leak**. A global retention job is unnecessary to fix this request-path defect.
+
+**Minimum correction boundary:** apply authoritative draft validity/expiry at the read boundary before storage access, coordinated with existing generation locks/retirement. Keep legal unsaved-generation access before the first 60-second save; do not require a text row for every freshly uploaded file. Return the existing not-found/gone semantics without downloading bytes or extending edited_at.
+
+**Regressions:** real route→DB expired active draft rejects before bucket.get; subsequent fresh-generation/alias behavior; valid recent saved and unsaved drafts still read; owner isolation unchanged.
+
+### S5-3 — Verified text/source previews are dropped on the actual published-message path
+
+**Location:** [db/forum-repository.ts:2639](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/db/forum-repository.ts#L2639), ForumThreadPost.attachments at line 324, [views.tsx:2702](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/app/forum/views.tsx#L2702).
+
+**Executed reproduction:** Publish a server-verified text attachment through the real repository. readPublishedAttachment retains detectedType=text, but readTopicPage emits only id/fileName/byteSize. Render the real TopicRoute with this current metadata shape for source.ts: the attachment panel has its download link and **no view=text preview link**. The shared component's isolated “text preview” test passes only because it manually supplies detectedType=text.
+
+**Cause:** the reader discards the verified type; TopicView reconstructs raster types from filename extensions and passes every non-raster file as “other”. ForumAttachmentDisplay therefore never enables its supported text preview on published technical files.
+
+**Violated invariant:** current package 2 and EDITOR_SPEC §6 require safe viewing for supported technical formats. The bounded inert-text preview is already implemented; its normal caller fails to expose it. This is not a request to implement previews for archives or arbitrary unsupported formats.
+
+**Minimum correction boundary:** carry the necessary server-verified presentation metadata from the set-wise topic read through its type/view into the shared component. Do not infer the authoritative type from the filename and do not leak objectKey. Retain the route's allowed format/size limits and controlled authorization.
+
+**Regressions:** real repository→topic metadata→TopicRoute source preview is present and authorized; safe raster rendering and unknown/binary download-only behavior remain; no object key in client data. Test the real caller, not only ForumAttachmentDisplay props.
+
+### S5-4 — Image paste uploads a list attachment but cannot insert it into the message body
+
+**Location:** [editor-attachments.tsx:527](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/app/forum/editor-attachments.tsx#L527), success at lines 393–401; [views.tsx:2691](https://github.com/iliya1947/vico-forum/blob/ac1257273de0b03bdb0f89285367f50ce6103422/app/forum/views.tsx#L2691).
+
+**Executed reproduction:** Use the real MarkdownEditor with both production hooks, reconcile a saved “Before After” draft, position the textarea caret between those words and paste an image. Complete its upload as stored. editorAttachmentIds contains the file and the attachment list shows it, but body is still exactly **“Before After”**: no image reference/insertion occurred. The published TopicRoute independently places the image in the separate attachment panel after the body; it cannot appear at an authored position inside the source.
+
+**Cause:** image paste stops the text/HTML path and calls addFiles; the upload success only updates entry state and attachment dirty metadata. There is no authoring insertion callback/application reference representation connected to source history or the body renderer.
+
+**Violated invariant:** EDITOR_SPEC §6 explicitly requires insertion of images into the message body; package 2 specifies inline images and stable application identity with preserved Markdown/Undo. Displaying an image below the entire body is useful attachment presentation but does not complete that requirement. This was correctly future work during the earlier correction-only package; it is current scope of the now-declared packages 1–3 implementation.
+
+**Minimum correction boundary:** implement the missing image insertion through the shared authoring/source-history boundary and resolve durable application attachment references through the current authorized draft/post context. Before coding, state the small representation/insertion design here. Preserve raw Markdown round-trip, current caret/selection and Undo/Redo; no private object keys, signed/blob URLs in durable content. Use current selection/generation fences so a stale upload does not insert into the winning version or the next generation; deleting/rejecting a ref must not leave a falsely working image.
+
+**Image acceptance detail:** ForumAttachmentDisplay's “Open original” image anchor currently has download and points to the attachment-disposition URL (line 26); clicking it requests a download rather than opening the original. Preserve a distinct download action and provide the agreed controlled original-view behavior when completing image interaction. This is established from the actual DOM/route semantics; no completed real-browser click test is claimed.
+
+**Regressions:** image paste/picker insertion at the authored position through real editor composition, Simple/Advanced/preview/post rendering, Undo/Redo/source round-trip, late success after conflict/context/owner change, authorized original opening and separate download. Image URL/reference copying must not bypass attachment permissions.
+
+### Independently executed verification and its limits
+
+- Clean detached worktree at the exact SHA above; `git diff --exit-code` confirms no tracked implementation changes. Scratch diagnostics live only under work/independent-stage5.
+- **190 existing application tests passed:** four attachment/action/download suites (50) plus public-read/MarkdownEditor/draft composition suites (140). These are focused existing suites, not a new full 943-test application run.
+- **All 282 native PostgreSQL tests / 27 files passed locally**, including the existing selected-ref publication orderings and migration/cleanup tests. A prior focused 52-test publication/attachment run also passed; it is a subset, not an additional count.
+- **Six additional executed diagnostics passed while deliberately asserting the incorrect current outcomes:** three native PG/actual route lifecycle/metadata cases and three real editor/TopicRoute rendering cases. They are reproduction evidence, not accepted fixed-contract regressions. The two lifecycle diagnostics were strengthened to call the actual upload/download routes.
+- Rechecked exact-head **CI #38547434309: checks/database SUCCESS**. Decoded logs independently confirm **943 application / 282 PostgreSQL tests**, schema manifest parity for 43 tables, privileges/provisioning/credential probes. No CI/test timeout/permission check was weakened.
+- No supported defect established in the examined atomic promotion/rollback or existing claim/lease ref-insertion gates. This is not a blanket proof against all concurrency bugs; the findings above show missing combinations despite passing suites.
+- Real-browser full app/test-storage flow and mobile/RTL/owner acceptance remain **unverified**. In this managed review environment, the existing /usr/bin/chromium and /workspace/.onboarding/vico/browser/node_modules/playwright-core successfully launch Chromium 154.0.8037.57. Launching about:blank is only browser availability evidence, not application acceptance. GPT-6 should recheck its own environment/harness availability; no production bucket is needed for the required local fake-storage scenario.
+- External infrastructure, final automated whole-PR Codex Code Review and merge were not performed. Lack of a production cleanup trigger is a declared deferred infrastructure boundary, **not one of these findings**.
+
+Diagnostic commands used (with project-pinned Node24/pnpm12 and disposable localhost PostgreSQL configured):
+
+```sh
+pnpm exec vitest run app/forum/editor-attachments.test.tsx app/forum/attachment-presentation.test.tsx app/forum/actions-attachment-publication.test.ts app/routes/attachment-download.test.ts --maxWorkers=2
+pnpm exec vitest run app/forum/public-read.test.tsx app/forum/markdown-editor.test.tsx app/forum/use-editor-draft.test.tsx --maxWorkers=2
+pnpm exec vitest run --config vitest.database.config.ts --maxWorkers=2
+pnpm exec vitest run --config work/independent-stage5/database.config.ts -t 'independent diagnosis'
+pnpm exec vitest run --config work/independent-stage5/ui.config.ts -t 'independent diagnosis' --maxWorkers=2
+```
+
+### Task handoff / next step
+
+**GPT-6:** independently reproduce S5-1–S5-4 on this SHA, record agreement or a code-backed challenge and minimal boundaries here, then implement the confirmed current-Stage corrections as one bounded package in PR #215. Do not request owner relay or infrastructure provisioning. Add fixed-contract regressions at the real route/DB/editor/renderer boundaries, update factual PROJECT_STATE.md, perform self-checks and exact-head CI, and return one stable head for independent verification. For S5-4, briefly document the chosen source/reference insertion boundary before implementation; no new global editor/storage framework.
+
+**GPT-5.6 Sol:** independently inspect the same findings/requirements and reproduce the causal paths, including expired-unsaved generation, direct TTL access and the real published preview caller. Record agreement/disagreement here; do not assume Codex findings are facts merely because they are written. Keep implementation ownership with GPT-6. Compare current findings only after completing your own analysis; the earlier package-1 PASS is not a verdict on these paths.
+
+**Codex:** will review the returned correction head independently, not write fixes. A finding is jointly confirmed through the established service-channel consensus process; resolve substantive disagreements here before changing broader mechanisms. Do not mark Stage 5 complete or trigger final automated whole-PR review while these current-scope findings or applicable acceptance evidence remain open. No merge.
