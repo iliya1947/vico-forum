@@ -25,6 +25,11 @@ export interface ForumWriter {
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
   recordOnlinePresence(userId: string): Promise<void>;
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ topicId: string }>;
+  editPublishedPost(input: {
+    topicId: string; postId: string; actorId: string;
+    expectedRevisionId: string; body: string;
+    draftId: string; draftVersion: number; attachmentIds: string[];
+  }): Promise<void>;
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
@@ -104,6 +109,7 @@ export function createHyperdriveForumReader(
     readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
+    readPostHistory: (postId, topicId) => read((repository) => repository.readPostHistory(postId, topicId)),
   };
 }
 
@@ -177,6 +183,11 @@ export function createHyperdriveForumWriter(
       });
       return { topicId: created.topic.id };
     }),
+    editPublishedPost: ({ topicId, postId, actorId, expectedRevisionId, body, draftId, draftVersion, attachmentIds }) =>
+      writeCorrection((forum) => forum.editPublishedPost({
+        topicId, postId, actorId, expectedRevisionId, body,
+        draftId, expectedVersion: draftVersion, attachmentIds,
+      })),
     createReply: ({ topicId, authorId, body, parentPostId = null, draftId, draftVersion, attachmentIds }) => write(async (forum) => {
       const postId = crypto.randomUUID();
       const created = await forum.createPost({
