@@ -12,12 +12,13 @@ import { forumDraftStoreContext } from "../../app/forum/draft-request-context";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
 import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
+import { ForumAttachmentCleanup, ATTACHMENT_CLEANUP_CLAIM_LEASE_MS } from "../../db/forum-attachment-cleanup";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -976,5 +977,142 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       [ownerId, context],
     );
     expect(row.rows).toMatchObject([{ status: "active", version: 1 }]);
+  });
+});
+
+
+describe("durable orphan cleanup behind the existing private storage boundary", () => {
+  const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+
+  async function contextFixture() {
+    const section = `attachment-cleanup-${crypto.randomUUID()}`;
+    await repository.createSection({ id: section, categoryId: "attachment-category", name: "Cleanup" });
+    return `section:${section}:new`;
+  }
+  async function makeOrphan() {
+    const context = await contextFixture();
+    const generation = crypto.randomUUID();
+    const asset = await store.createDraftAttachment(upload(context, generation));
+    await client.query("update forum_attachments set created_at = now() - interval '2 hours' where id = $1", [asset.id]);
+    return { asset, context, generation };
+  }
+  const row = async (id: string) => (await client.query<{
+    cleanup_status: string; cleanup_claim_token: string | null;
+  }>("select cleanup_status, cleanup_claim_token from forum_attachments where id=$1", [id])).rows[0];
+
+  it("preserves valid immediate uploads before the first text save and deletes only detached old assets", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    const bucket = { delete: vi.fn(async () => {}) };
+    const cleanup = new ForumAttachmentCleanup(drizzle(client), bucket);
+    expect((await cleanup.runOnce()).deleted).toBe(0);
+    expect(bucket.delete).not.toHaveBeenCalled();
+    expect(await store.listDraftAttachments(ownerId, context, generation)).toHaveLength(1);
+    await store.removeDraftAttachment(ownerId, context, generation, asset.id);
+    expect((await cleanup.runOnce()).deleted).toBe(1);
+    expect(bucket.delete).toHaveBeenCalledWith(asset.objectKey);
+    expect(await row(asset.id)).toBeUndefined();
+  });
+
+  it("releases stale refs of deleted drafts and deletes their objects without per-user intervention", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await setDraft(ownerId, context, generation, "deleted", 2);
+    const bucket = { delete: vi.fn(async () => {}) };
+    const outcome = await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect(outcome.prunedRefs).toBeGreaterThan(0);
+    expect(outcome.deleted).toBeGreaterThan(0);
+    expect(await row(asset.id)).toBeUndefined();
+    expect(await client.query(
+      "select attachment_id from forum_attachment_draft_refs where attachment_id=$1", [asset.id],
+    )).toMatchObject({ rowCount: 0 });
+  });
+
+  it("retains a durable claim on lost delete ACK and retries idempotently after the lease", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await store.removeDraftAttachment(ownerId, context, generation, asset.id);
+    let time = new Date();
+    const bucket = { delete: vi.fn()
+      .mockRejectedValueOnce(new Error("lost object delete ACK"))
+      .mockResolvedValueOnce(undefined),
+    };
+    const processor = new ForumAttachmentCleanup(drizzle(client), bucket, () => time);
+    expect(await processor.runOnce()).toMatchObject({ claimed: 1, deleted: 0, failed: 1 });
+    expect(await row(asset.id)).toMatchObject({ cleanup_status: "deleting" });
+    expect((await processor.runOnce()).claimed).toBe(0);
+    time = new Date(time.getTime() + ATTACHMENT_CLEANUP_CLAIM_LEASE_MS + 1);
+    expect(await processor.runOnce()).toMatchObject({ claimed: 1, deleted: 1, failed: 0 });
+    expect(bucket.delete).toHaveBeenCalledTimes(2);
+    expect(await row(asset.id)).toBeUndefined();
+  });
+
+  it("preserves a shared published object until its last live post ref is removed", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await store.removeDraftAttachment(ownerId, context, generation, asset.id);
+    const topicId = crypto.randomUUID();
+    const first = crypto.randomUUID(), second = crypto.randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Shared cleanup", sourceLocale: "en" },
+      initialPost: { id: first, topicId, authorId: ownerId,
+        bodyRevision: { id: crypto.randomUUID(), originalContent: "One", sourceLocale: "en" } },
+    });
+    await repository.createPost({ id: second, topicId, authorId: ownerId,
+      bodyRevision: { id: crypto.randomUUID(), originalContent: "Two", sourceLocale: "en" } });
+    await client.query("insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1,$3,now()),($2,$3,now())",
+      [first, second, asset.id]);
+    const bucket = { delete: vi.fn(async () => {}) };
+    const worker = new ForumAttachmentCleanup(drizzle(client), bucket);
+    expect((await worker.runOnce()).deleted).toBe(0);
+    await client.query("delete from forum_posts where id=$1", [first]);
+    expect((await worker.runOnce()).deleted).toBe(0);
+    expect(await store.readPublishedAttachment(second, asset.id)).not.toBeNull();
+    await client.query("delete from forum_posts where id=$1", [second]);
+    expect((await worker.runOnce()).deleted).toBe(1);
+    expect(await row(asset.id)).toBeUndefined();
+  });
+
+  it("a claimed object refuses a concurrent new draft ref at the database boundary", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await store.removeDraftAttachment(ownerId, context, generation, asset.id);
+    const blocker = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    const writer = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    await Promise.all([blocker.connect(), writer.connect()]);
+    try {
+      await blocker.query("begin");
+      await blocker.query("select id from forum_attachments where id=$1 for update", [asset.id]);
+      const pending = writer.query(
+        "insert into forum_attachment_draft_refs (attachment_id, owner_id, context_key, draft_id, created_at) values ($1,$2,$3,$4,now())",
+        [asset.id, ownerId, context, generation],
+      );
+      void pending.catch(() => {});
+      await blocker.query(
+        "update forum_attachments set cleanup_status='deleting', cleanup_claim_token=$2, cleanup_claimed_at=now() where id=$1",
+        [asset.id, crypto.randomUUID()],
+      );
+      await blocker.query("commit");
+      await expect(pending).rejects.toMatchObject({ code: "23514" });
+      expect(await client.query(
+        "select 1 from forum_attachment_draft_refs where attachment_id=$1", [asset.id],
+      )).toMatchObject({ rowCount: 0 });
+    } finally {
+      await blocker.query("rollback");
+      await Promise.all([blocker.end(), writer.end()]);
+    }
+  });
+
+  it("does not double-claim an in-flight deletion across overlapping processor runs", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await store.removeDraftAttachment(ownerId, context, generation, asset.id);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const storage = { delete: vi.fn(async () => { await gate; }) };
+    const first = new ForumAttachmentCleanup(drizzle(client), storage);
+    const second = new ForumAttachmentCleanup(drizzle(client), storage);
+    const running = first.runOnce();
+    await vi.waitFor(() => expect(storage.delete).toHaveBeenCalledTimes(1));
+    const other = await second.runOnce();
+    expect(other.claimed).toBe(0);
+    release();
+    expect((await running).deleted).toBe(1);
+    expect(storage.delete).toHaveBeenCalledTimes(1);
   });
 });
