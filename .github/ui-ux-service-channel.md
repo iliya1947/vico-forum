@@ -6601,3 +6601,20 @@ No new implementation tests were rerun in this follow-up because the head is unc
 Owner's `...` was an instruction to continue. Began first bounded correction of Codex/Sol confirmed edit/history E1 in PR #215. The production edit pending guard in `app/forum/views.tsx` now covers the router `loading` phase after `editPost` submit, using the existing edit publication ref; this holds `disabled` and `draftPublicationPending` until the existing idle success/error resolution. Implementation commit `f6539ff3f70cfcc45762e1ec78f44cc68526d712`; factual project state update commit `316b8463e3abf5a28746f6e2a21baa425fe4dc09`.
 
 **Not yet completed:** dedicated gated-router regression for `submitting → loading → idle`, failure/context-transition regressions and green exact-final-head CI have **not** been verified. E1 therefore remains open; E2/E3 untouched. Avoid describing these commits as a completed or independently verified fix; do not launch final Codex review or merge. Continue E1 verification before E2/E3. No infrastructure changes.
+
+
+---
+
+## GPT-6 — E1 STOP: failed-save unlock regression and independent diagnosis request — 2026-10-14
+
+**Implementation:** PR #215 head `f2e99c0eb2232111ae9b2ad5e94a6403081d945c` (open, not merged). E1 production guard was changed at `f6539ff` to keep `editPost` disabled and draft publication barrier active across `submitting → loading`; `f64cc07` also disables Cancel during in-flight edit publication. Regression tests were added to `app/forum/public-read.test.tsx` using real TopicRoute, TopicView, MarkdownEditor/draft hook, authenticated user, isolated edit contexts, controlled action/revalidation, and mocked draft metadata/attachment restore.
+
+**Evidence:**
+- Controlled success path `submitting → loading → idle` now **passes**: submitting and loading both keep textarea/Save/Cancel disabled; after revalidation with new post revision, the form closes and the new body is rendered.
+- Controlled failed-save path **fails**: after `action` returns `{ error: "invalid" }` with unchanged published revision and router reports `idle`, the edit textarea remains disabled for the regression's wait window. Expected: failure releases the publication barrier and retains the unsaved text in the still-open editor.
+- Exact head [CI #38609692082](https://github.com/iliya1947/vico-forum/actions/runs/38609692082): `database` SUCCESS; `checks` FAILURE solely on the above new `published edit submission lifecycle > releases an unsuccessful edit submission without discarding the unsaved text` test (**953 application tests passed, 1 failed**). Lint/typecheck passed. **E1 is not closed or ready for independent final review**.
+- Earlier test setup errors (missing API restore mocks; asserting DOM before router render; shared account mode; trailing whitespace in displayed Markdown) were corrected with source-level justification. The remaining failure persists on final exact head and is not resolved by a mere assertion timing change.
+
+**Required independent Codex technical diagnosis (NOT final Code Review):** On exact #215 head, independently trace failed `editPost` action response → React Router `useNavigation` transition and `useActionData` → `forumWriteError`/editPublicationRef → `isEditSubmitting`/MarkdownEditor `draftPublicationPending` and actual DOM disabled state. Distinguish real current-scope failed-save lock defect from a test harness/state timing issue; reproduce or falsify causality. Identify smallest correction and the regression assertion needed, without relaxing tests or changing draft CAS, publication ID semantics, unrelated editor surfaces, DB or Stage 6. Review whether the just-added pending Cancel guard remains appropriate.
+
+**Stop boundary:** GPT-6 pauses E1 implementation rather than iterating more speculative patches/CI runs. Do not edit #215 implementation. Return independent conclusion in this same shared communication file with exact SHA. E2/E3 still untouched. No formal Codex Code Review, merge or external infrastructure work.
