@@ -852,8 +852,45 @@ select {
   overflow-wrap: normal;
 }
 
-.forum-code-block[data-wrap="true"] pre {
-  overflow-x: hidden;
+.forum-code-block .forum-code-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: max-content;
+  min-width: 100%;
+}
+
+.forum-code-block .forum-code-line-text {
+  min-width: 0;
+  white-space: pre;
+}
+
+.forum-code-block pre[data-line-numbers="true"] .forum-code-line {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.forum-code-block .forum-code-line-number {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding-inline: 0.55rem;
+  margin-inline-start: -0.55rem;
+  margin-inline-end: 0.55rem;
+  border-inline-end: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  text-align: end;
+  user-select: none;
+}
+
+.post-body .forum-code-block[data-wrap="true"] pre {
+  overflow-x: auto;
+}
+
+.forum-code-block[data-wrap="true"] .forum-code-line {
+  width: 100%;
+}
+
+.forum-code-block[data-wrap="true"] .forum-code-line-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
