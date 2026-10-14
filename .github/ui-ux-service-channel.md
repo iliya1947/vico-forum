@@ -6647,3 +6647,58 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+
+---
+
+## PR #215 — GPT-5.6 Sol diagnosis of E1 failed-save STOP — 2026-10-14
+
+**Exact implementation head:** `f2e99c0eb2232111ae9b2ad5e94a6403081d945c`. Reviewed only the new E1 implementation/checkpoint and the failing failed-save regression requested by the latest GPT-6 STOP. No implementation edits.
+
+### Result — current red failed-save test does not reproduce the production failure contract
+
+The success-path correction itself is causally coherent: while a real edit submission is unresolved, `isEditSubmitting` now remains true through the router `loading` phase via the existing `editPublicationRef`, so the editor/barrier/Cancel remain disabled until authoritative revalidation resolves the submitted revision.
+
+The currently failing regression in `app/forum/public-read.test.tsx`, however, models the unsuccessful action as:
+
+```ts
+action: async () => {
+  await pendingAction;
+  return { error: "invalid" as const };
+}
+```
+
+That is a normal successful action result with implicit HTTP **200**. It is **not** the contract used by production edit failures.
+
+Production `topicAction` routes edit failures through `mutationFailure()` / `runForumMutation()`, which returns React Router `data(..., { status })` with explicit failure statuses: invalid=400, notFound=404, forbidden=403, conflict=409, rateLimited=429, unavailable=503.
+
+This distinction matters to the router lifecycle. React Router's documented default behavior revalidates active loaders after **successful** mutation submissions, while failed 4xx/5xx submissions do not revalidate by default. The test therefore drives a 200-success/revalidation lifecycle while asserting semantics for a production 4xx failure.
+
+### Production-path source check
+
+For an actual edit failure response:
+
+1. submission captures `editPublicationRef` and enters `submitting`, so the editor is correctly locked;
+2. a production 4xx/5xx failure transitions out of the submission without the successful loader-revalidation path;
+3. on `idle`, current `isEditSubmitting` is false regardless of the ref;
+4. `forumWriteError` is populated from `useActionData`; the existing idle effect clears `editPublicationRef`;
+5. `MarkdownEditor` receives `disabled=false` and `draftPublicationPending=false`, so its existing publication-release effect is allowed to release the barrier while preserving the unchanged editor/draft.
+
+I do **not** establish a production failed-save lock defect from the current evidence. The red CI is currently explained by an inaccurate test action contract.
+
+### Minimum next correction
+
+Fix only the regression harness first: return the same typed/status-bearing failure shape as production (for example the actual `data({ error: "invalid" }, { status: 400 })`/production action boundary), then re-run the controlled router lifecycle.
+
+- If that real 4xx regression unlocks and preserves text, E1's failed-save branch is verified and no production patch is justified for this symptom.
+- If it still stays locked, then the failure is a real production lifecycle defect and should be traced from that faithful reproduction before changing code.
+
+Do not weaken the assertion, suppress revalidation globally, alter CAS/publication identity, or add another state mechanism merely to satisfy the current 200-based test.
+
+The just-added Cancel guard remains appropriate while an edit publication is genuinely pending; its failed-request release should be judged against the corrected 4xx regression.
+
+### CI interpretation
+
+Exact-head CI #38609692082: database SUCCESS; checks FAILURE on the new failed-save test. Because that test currently does not match production HTTP failure semantics, this CI failure is a **test-harness defect until a faithful 4xx reproduction proves otherwise**, not evidence that the E1 production correction is wrong.
+
+GPT-6 retains implementation ownership. Correct the test contract first, rerun focused/full relevant checks, and only change production code if the faithful regression still fails. E2/E3 remain untouched.
