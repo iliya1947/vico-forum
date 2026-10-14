@@ -387,6 +387,31 @@ describe("published post editing and revision history", () => {
     expect((await forum.readPost(postId))?.body.id).toBe(revisionId);
   });
 
+  it("allows an attachment-only published message after removing its body text", async () => {
+    const postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    const publicationGeneration = crypto.randomUUID();
+    const initialDraft = await savedDraft(publicationGeneration);
+    const file = attachment(publicationGeneration);
+    await attachments.createDraftAttachment(file);
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      publishedDraft: {
+        contextKey, draftId: publicationGeneration, expectedVersion: initialDraft.version,
+        attachmentIds: [file.id],
+      },
+      bodyRevision: { id: revisionId, originalContent: "Caption to remove", sourceLocale: "en" },
+    });
+    const editGeneration = crypto.randomUUID();
+    const editDraft = await savedDraft(editGeneration, `post:${postId}:edit`);
+    await forum.editPublishedPost({
+      postId, topicId, actorId: ownerId, expectedRevisionId: revisionId,
+      body: "", draftId: editGeneration, expectedVersion: editDraft.version, attachmentIds: [],
+    });
+    expect((await forum.readPost(postId))?.body.originalContent).toBe("");
+    expect(await attachments.readPublishedAttachment(postId, file.id)).toMatchObject({ id: file.id });
+    expect(await forum.readPostHistory(postId, topicId)).toHaveLength(2);
+  });
+
   it("atomically publishes new edit attachments while retaining already published ones", async () => {
     const postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
     await forum.createPost({
