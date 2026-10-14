@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0039_forum_publication_receipts",
+  "targetMigration": "0040_post_edit_history_permissions",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "836922af18e2f8bb844f8a71db49667e23a8ce1af8b4873fc6de94611704d56e"
+          "definitionSha256": "0000000000000000000000000000000000000000000000000000000000000000"
         }
       ],
       "indexes": []
@@ -2606,6 +2606,12 @@
         {
           "name": "solution_outdated_reason_kind",
           "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "edited_at",
+          "type": "timestamp with time zone",
           "nullable": true,
           "defaultSha256": null
         }
