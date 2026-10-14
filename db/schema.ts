@@ -513,6 +513,20 @@ export const forumEditorDrafts = pgTable("forum_editor_drafts", {
   index("forum_editor_drafts_owner_edited_idx").on(table.ownerId, table.editedAt),
 ]);
 
+// One durable result per client draft generation. A retry is checked under the
+// same attachment scope lock before cooldown and before any new write.
+export const forumPublicationReceipts = pgTable("forum_publication_receipts", {
+  ownerId: text("owner_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  contextKey: text("context_key").notNull(),
+  draftId: text("draft_id").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  topicId: text("topic_id").notNull(),
+  postId: text("post_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  primaryKey({ name: "forum_publication_receipts_pk", columns: [table.ownerId, table.contextKey, table.draftId] }),
+]);
+
 export const forumOnlinePresence = pgTable("forum_online_presence", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
