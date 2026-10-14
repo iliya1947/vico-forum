@@ -2188,8 +2188,11 @@ export function TopicView({
   const navigation = useNavigation();
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
+  const mountedTopicIdRef = useRef(topic.id);
 
   useEffect(() => {
+    if (mountedTopicIdRef.current === topic.id) return;
+    mountedTopicIdRef.current = topic.id;
     setReplyTargetPostId(null);
     setQuoteSelectionErrorPostId(null);
     setOpenMessageActionsPostId(null);
