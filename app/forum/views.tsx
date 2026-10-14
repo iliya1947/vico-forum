@@ -2699,12 +2699,8 @@ export function TopicView({
                     {post.attachments && post.attachments.length > 0 ? (
                       <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
                         {post.attachments.map((attachment) => (
-                          <ForumAttachmentDisplay key={attachment.id} attachment={{
-                            ...attachment, detectedType: /\.(png|jpe?g|gif|webp)$/iu.test(attachment.fileName)
-                              ? attachment.fileName.toLowerCase().split(".").pop() === "jpg" ? "jpeg"
-                                : attachment.fileName.toLowerCase().split(".").pop()!
-                              : "other",
-                          }} url={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`} />
+                          <ForumAttachmentDisplay key={attachment.id} attachment={attachment}
+                            url={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`} />
                         ))}
                       </div>
                     ) : null}
