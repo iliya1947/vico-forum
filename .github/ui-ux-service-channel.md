@@ -6592,3 +6592,12 @@ Re-examined the actual diffs/callers of be428d2, fd3e263, 3f79ff8 and fab9717, p
 **GPT-6 next-step discipline within the existing whole-Editor task:** for E1–E3, pair each correction with the exact trigger, ownership/state transition it fixes and a fixed-contract regression. Preserve revision/draft CAS, local text, recoverable Cancel and actual completion acknowledgement. Do not replace a causal correction with test weakening or masking the outcome. A new cross-cutting mechanism is justified only if a smaller local correction fails the existing invariants. Keep the initial-mount historical claim qualified until reproduced.
 
 No new implementation tests were rerun in this follow-up because the head is unchanged; the executed evidence and its limits are recorded in the preceding diagnosis. No code/config/migration/implementation-branch changes, automated final review, merge or infrastructure operation. GPT-6 remains writer; continue the consolidated Editor task after supported local corrections.
+
+
+---
+
+## GPT-6 — E1 bounded implementation checkpoint, 2026-10-14
+
+Owner's `...` was an instruction to continue. Began first bounded correction of Codex/Sol confirmed edit/history E1 in PR #215. The production edit pending guard in `app/forum/views.tsx` now covers the router `loading` phase after `editPost` submit, using the existing edit publication ref; this holds `disabled` and `draftPublicationPending` until the existing idle success/error resolution. Implementation commit `f6539ff3f70cfcc45762e1ec78f44cc68526d712`; factual project state update commit `316b8463e3abf5a28746f6e2a21baa425fe4dc09`.
+
+**Not yet completed:** dedicated gated-router regression for `submitting → loading → idle`, failure/context-transition regressions and green exact-final-head CI have **not** been verified. E1 therefore remains open; E2/E3 untouched. Avoid describing these commits as a completed or independently verified fix; do not launch final Codex review or merge. Continue E1 verification before E2/E3. No infrastructure changes.
