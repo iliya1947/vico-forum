@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { useTranslation } from "react-i18next";
 import type { EditorSelection } from "./editor-document";
-import { ForumMarkdown } from "./markdown";
+import { ForumMarkdown, ForumInlineImage } from "./markdown";
 import { segmentTechnicalMarkdown, encodeTableCell, type MarkdownTable } from "./technical-markdown";
 import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
 
@@ -478,6 +478,19 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       />;
     }
     default: {
+      if (node.type === "image" && node.url?.startsWith("vico-attachment:")) {
+        const imageRange = sourceRange(node);
+        return <span className="markdown-editor-protected" data-visual-protected="image">
+          <ForumInlineImage src={node.url} />
+          <button type="button" disabled={disabled}
+            onClick={() => actions.onEditTechnical(
+              imageRange ? {
+                start: imageRange.start + baseOffset,
+                end: imageRange.end + baseOffset,
+              } : undefined,
+            )}>{t("editorEditInMarkdown")}</button>
+        </span>;
+      }
       const range = sourceRange(node);
       const source = range ? markdown.slice(range.start, range.end) : node.value ?? "";
       const label = node.type === "link" || node.type === "linkReference"
