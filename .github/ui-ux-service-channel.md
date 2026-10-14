@@ -6428,3 +6428,23 @@ Current #215 branch is in the integrated correction subtask. No intermediate ind
 - **Restricted history:** separate topic action reads revision bodies, edit authors and timestamps only after fresh effective `forum.post.history.read` authorization. Built-in moderator/admin receive this permission; user does not, including for own posts. Runtime action is the boundary, not hidden UI. Permission additions + editable post timestamp in migration `0040_post_edit_history_permissions`; schema catalog, snapshot, manifest, role defaults and documentation updated.
 - **Evidence:** exact-head [CI #38596152638](https://github.com/iliya1947/vico-forum/actions/runs/38596152638): **checks SUCCESS** (952 application tests, 93 files; lint, typecheck, builds, migrations/Drizzle parity); **database SUCCESS** (293 PostgreSQL tests, 27 files; schema manifest parity for 44 public tables, runtime grants and Workers smoke). Regression tests cover owner permissions, denial of history reads, edit draft/CAS, immutable history, retries, attachment-only edits, and UI cancel/status. Historical intermediate CI/test-fixture errors were resolved; they do not represent passing evidence.
 - **Status:** implementation and CI of this package complete; no external bucket/production DB operation, merge or Codex Code Review. Browser/test-bucket and owner visual acceptance of the **whole Editor** not yet performed. **Next work** under previously authorized whole-Editor implementation: @mentions + notification dedupe, attributed quotes/collapse, language direction/spellcheck/preferences, responsive integration, then final self-review and one coordinated independent Sol/Codex review of stable exact head. Do not initiate intermediate formal review.
+
+
+---
+
+## GPT-6 — STOP / independent root-cause diagnosis request: published edit/history — 2026-10-14
+
+**Status:** implementation paused for technical diagnosis; do not treat this entry as a verified defect finding or as a final whole-Editor review. Owner explicitly called for escalation rather than another chain of speculative corrections.
+
+**Scope:** Editor 2.0 published-message editing/history package in implementation PR #215. At the last verified PR metadata inspection, the implementation head was `83219af2c36a99dd292b6ab1a9550f49b1011c0d`; independently recheck exact head before analysis. The previous service record reports published-edit/history complete at `fab9717bfce3b6040dc5e32cb0aa78471a583684`, with exact-head green checks/database CI #38596152638; that evidence **does not certify later heads**.
+
+**Observed development symptoms from previous ChatGPT execution (not independently reproduced):**
+1. Initial UI regression failed because test setup lacked authenticated editor context; test authentication was changed.
+2. Saving a post with an existing published attachment and empty text required revisiting Save readiness; a PostgreSQL regression was added.
+3. A subsequent regression used a shared context with an already occupied edit draft; test contexts were separated.
+4. Opening the edit form could be affected by initial React-effect state reset; reset behavior was changed to occur on actual topic transitions.
+5. Multiple CI/test/revision checks and fixes followed. A previous assistant message says final checks were in progress, but there is **no verified green CI or acceptance evidence for the current head in this handoff**. Do not infer a production defect solely from a test failure or automatically call a prior patch a workaround.
+
+**Required independent Codex analysis, not automatic final Code Review:** inspect actual current #215 implementation and recent commits against EDITOR_SPEC.md/PROJECT_STATE.md. Reproduce or disprove relevant symptoms, trace state ownership/initialization, topic transitions, authenticated draft contexts, save eligibility for existing attachments, server CAS and revision persistence. Distinguish (a) real current-scope implementation flaws, (b) fixture/test mistakes, (c) future-only concerns. Specifically determine whether recent changes fix the underlying causes or only mask them; compare with previously working behavior. Do not assume the user's concern about 'костыли' is itself proof. State smallest causally complete changes and focused regressions if needed; otherwise state that no defect is established.
+
+**Boundary/next step:** Codex does not edit implementation PR #215; record independent findings and exact SHA in this shared communication file. ChatGPT must not continue speculative patching or run a premature formal Codex Code Review. After technical diagnosis, ChatGPT may address only confirmed current-scope defects, with evidence and CI. Whole-Editor final review/merge remain separate.
