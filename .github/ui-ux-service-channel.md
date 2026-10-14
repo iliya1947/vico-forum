@@ -6810,3 +6810,18 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Status and boundary:** E1, E2, E3 correction packages are now individually green in repository CI. This is **not** a whole Editor 2.0 completion, deployed/browser validation, final GPT-5.6 Sol independent review, final Codex Code Review or owner approval. PR #215 remains open; only the owner merges. Next work is the already-authorized remaining Editor 2.0 scope and later whole-Editor verification under AGENTS; do not launch per-finding formal reviews or start Stage 6 infrastructure.
 
 **Final documentation-only head CI:** PR #215 `ae413cf3fd9d81c88a77af1ddfdedfc3a6cd15cc` passed both `checks` and `database` in [CI #38626675690](https://github.com/iliya1947/vico-forum/actions/runs/38626675690). E3 correction and coverage remain green; the only intervening change updated `PROJECT_STATE.md`.
+
+
+---
+
+## GPT-6 — PR #215 / Editor 2.0 Stage 6 @mention authoring slice — 2026-10-14
+
+**Writer:** GPT-6, existing implementation PR #215. Started after E1/E2/E3 causal corrections and their passed CI. This is one bounded UI/editor-authoring subtask, not final mention delivery or a Codex review request.
+
+**Code:** Authenticated `GET /:locale/mentions?q=<fragment>` uses the current forum reader's bounded, literal-case-insensitive user-name query. Only `id` and public `name` are projected (max eight matches), never email; empty/invalid queries and missing session are handled at route boundary; responses are private/no-store. The SQL pattern escapes literal wildcard characters. Same query is wired through existing Hyperdrive reader adapter. Editor 2.0 in both authoring modes detects `@name-fragment` at its source caret, offers accessible localized selectable member suggestions, and commits a Markdown profile link with stable ID using existing selection, history, and draft autosave. No new DB schema, migration, dependency, notification side effect, external service or realtime channel.
+
+**Verification:** exact code/test head `22c3d3b4123960ef22bf2be097813dcaef1489be` [CI #38629891041](https://github.com/iliya1947/vico-forum/actions/runs/38629891041): `checks` SUCCESS (968 app tests, 95 files, lint/typecheck/build/schema/guards), `database` SUCCESS (294 native PostgreSQL tests, 27 files). Tests cover API authorization/privacy/error, SQL literal name matching and wildcard escaping, Unicode caret matching and Markdown escaping, and actual Simple/Advanced editor insertion with exact FormData body. The earlier CI attempt for this same subtask had two test expectation mismatches (the explicit route list and preserved Simple-mode trailing whitespace), corrected before green code head. An intervening PostgreSQL 40001 transient arose exclusively in an unchanged locale-concurrency test; final exact-head DB run passed with no unrelated code change.
+
+**Project state:** `PROJECT_STATE.md` updated in implementation commit `f68c99d30997d3ac106269d14ddc07ccac700485` (documentation only after verified code head). Final exact-doc-head CI should be checked separately if needed.
+
+**Next Editor 2.0 subtask, not yet executed:** persist and deliver mention notifications only on successful publish or successful published edit; deduplicate mentions, exclude quote/code, dedupe against reply notifications, and preserve the lifetime notified-set per published post even if a mention is removed and re-added. Implement only after the next explicit owner continuation. Browser/owner acceptance and whole-PR final review remain separate; no Codex formal review, merge or Stage 6 external infrastructure.
