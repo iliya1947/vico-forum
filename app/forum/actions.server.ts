@@ -465,6 +465,44 @@ export async function topicAction({ request, params, context }: {
       return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });
   }
+  if (intent === "readPostHistory") {
+    const forbidden = await requireForumPermission(context, "forum.post.history.read");
+    if (forbidden) return forbidden;
+    const postId = requiredFormText(formData, "postId");
+    if (!postId) return mutationFailure("invalid", 400);
+    try {
+      const revisions = await forumReaderForRequest(context).readPostHistory(postId, topicId);
+      if (!revisions.length) return mutationFailure("notFound", 404);
+      return data({
+        operation: "postHistory" as const,
+        postId,
+        revisions: revisions.map((revision) => ({
+          ...revision, createdAt: revision.createdAt.toISOString(),
+        })),
+      }, { status: 200 });
+    } catch (error) {
+      if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
+      throw error;
+    }
+  }
+  if (intent === "editPost") {
+    const forbidden = await requireForumPermission(context, "forum.post.editOwn");
+    if (forbidden) return forbidden;
+    const postId = requiredFormText(formData, "postId");
+    const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
+    const body = formData.get("body");
+    const draftFence = validatedDraftPublicationFence(formData);
+    const attachmentIds = selectedAttachmentIds(formData);
+    if (!postId || !expectedRevisionId || typeof body !== "string"
+      || !draftFence || !attachmentIds) return mutationFailure("invalid", 400);
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.editPublishedPost({
+        topicId, postId, actorId, expectedRevisionId, body,
+        draftId: draftFence.draftId, draftVersion: draftFence.draftVersion, attachmentIds,
+      });
+      return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
+    });
+  }
   if (intent !== "reply") return mutationFailure("invalid", 400);
   const forbidden = await requireForumPermission(context, "forum.reply.create");
   if (forbidden) return forbidden;
