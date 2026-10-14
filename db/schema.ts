@@ -1169,6 +1169,7 @@ export const forumReplyNotifications = pgTable(
       .notNull()
       .references(() => forumTopics.id, { onDelete: "cascade" }),
     postId: text("post_id").notNull(),
+    kind: text("kind").$type<"reply" | "mention">().notNull().default("reply"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     readAt: timestamp("read_at", { withTimezone: true }),
   },
