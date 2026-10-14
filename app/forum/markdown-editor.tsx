@@ -59,6 +59,7 @@ export interface MarkdownEditorProps {
   onDraftRestoreParent?: (parentPostId: string | null) => void;
   draftPublicationIntent?: string;
   draftPublicationPending?: boolean;
+  onPublicationReadyChange?: (ready: boolean) => void;
 }
 
 interface PendingSelection {
@@ -89,6 +90,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       onDraftRestoreParent,
       draftPublicationIntent,
       draftPublicationPending = false,
+      onPublicationReadyChange,
     },
     forwardedRef,
   ) {
@@ -254,6 +256,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       removeImage,
     });
 
+    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0;
+    const publicationReady = !disabled && !draftPublicationPending && !attachments.blocking && hasPublishContent;
+    useEffect(() => { onPublicationReadyChange?.(publicationReady); }, [onPublicationReadyChange, publicationReady]);
+
     useEffect(() => {
       if (draftPublicationPending) {
         if (publicationPreparedRef.current) publicationPendingSeenRef.current = true;
@@ -306,9 +312,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
         if (intent !== draftPublicationIntent) return;
 
-        if (attachments.blocking) {
+        if (!hasPublishContent || attachments.blocking || disabled || draftPublicationPending) {
           event.preventDefault();
-          attachments.markPublicationAttempt();
+          if (attachments.blocking) attachments.markPublicationAttempt();
           return;
         }
 
@@ -821,7 +827,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
-            editorRef.current?.closest("form")?.requestSubmit();
+            const form = editorRef.current?.closest("form");
+            if (!form || !publicationReady) return;
+            const explicit = draftPublicationIntent
+              ? [...form.querySelectorAll<HTMLButtonElement>('button[type="submit"]')]
+                .find((button) => button.name === "intent" && button.value === draftPublicationIntent)
+              : undefined;
+            form.requestSubmit(explicit);
             return;
           }
           if (authoringMode !== "simple" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -991,7 +1003,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <textarea
               ref={textareaRef}
               id={id}
-              required={required}
+              required={required && attachments.selectedAttachmentIds.length === 0}
               tabIndex={mode === "preview" || authoringMode === "simple" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
