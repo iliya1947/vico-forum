@@ -200,10 +200,10 @@ const longValue = "code";
   });
 
   it("aligns code rows and line numbers without adding numbers to copied source", async () => {
-    const code = "first line\\nsecond line\\n";
+    const code = "first line\n\nthird line";
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
-    const { container } = renderMarkdown(" ```txt\\n" + code + "```".trimStart());
+    const { container } = renderMarkdown("```txt\n" + code + "\n```");
 
     const block = container.querySelector(".forum-code-block");
     expect(block?.querySelectorAll(".forum-code-line")).toHaveLength(3);
@@ -213,7 +213,7 @@ const longValue = "code";
     expect(Array.from(block?.querySelectorAll(".forum-code-line-number") ?? []).map((node) => node.textContent))
       .toEqual(["1", "2", "3"]);
     await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
-    expect(writeText).toHaveBeenCalledWith(code.replace(/\\n$/u, ""));
+    expect(writeText).toHaveBeenCalledWith(code);
   });
 
   it("reports clipboard failure without changing the code", async () => {
