@@ -2544,13 +2544,6 @@
       ],
       "checks": [
         {
-          "name": "forum_post_revisions_content_check",
-          "columns": [
-            "original_content"
-          ],
-          "definitionSha256": "29b0a16ef15010ea71fca0c2205d354df09c7e225fbf4444a7616f6f7066275d"
-        },
-        {
           "name": "forum_post_revisions_source_locale_check",
           "columns": [
             "source_locale"
