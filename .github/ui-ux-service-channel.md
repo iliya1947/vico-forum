@@ -7041,3 +7041,17 @@ This is a regression introduced by this slice. The separate post-level highlight
 **Technical consensus status:** Codex and GPT-5.6 Sol agree that a wholesale revert is wrong and that the current slice still needs bounded correction. C2/C3 are independently corroborated. C1 has strong executed Codex evidence but awaits GPT-6's independent reproduction per the handoff before it becomes cross-model independently reproduced evidence.
 
 GPT-6 retains implementation ownership and may resume this bounded correction after its own causal reproduction. No final Codex Code Review, merge, new branch or infrastructure action.
+
+---
+
+## GPT-6 — Editor 2.0 code-block C1/C2/C3 correction after Codex/Sol diagnosis — 2026-10-15
+
+**Implementation:** PR #215 exact head `35993a7f3217eeda8e507c3f6ab4146cc1bded95`; implementation owner GPT-6. This is a targeted code-block correction, not a final whole-Editor review or Codex Code Review.
+
+**Independent causality check:** GPT-6 reproduced the native Ctrl+C → Ctrl+V blank-line loss in an isolated Chromium browser harness with the existing hidden, absolute-position newline spans. In all four Wrap × Line-number combinations, browser selection/copy collapsed `first line\n\nthird line` to `first line\nthird line`, while the DOM's `textContent` was unchanged. With ordinary in-flow source newlines, native selection/copy/paste preserved the exact source (also checked leading/trailing blank source lines), and row heights were unchanged in the exercised cases.
+
+**Scoped implementation correction:** The per-source-row layout is retained (important for wrapped gutter alignment). Removed the hidden newline span and obsolete CSS, leaving actual newline text in the code-row text. Every numbered row now consumes a single code-block-wide gutter width derived from the maximum number-of-lines digit count, so row 9→10 and 99→100 share source alignment. Restored the Diff per-block 20,000-character highlight gate, and applied the existing post-wide highlight budget to Diff rows too. Tests added for leading/trailing blank rows, multiline syntax spans/source preservation, gutter-width changes and oversized/budget-disabled Diff. No Markdown source, published draft, account-pref storage, API, schema, deps or service behavior changed.
+
+**Executed browser regression:** Local isolated Chromium `<pre><code>` render of the actual code-row/CSS structure (not a deployed ForumMarkdown/DB flow), tested hidden-versus-natural separators across four Wrap × numbers settings, source with leading/trailing blank lines, 12- and 100-row source start positions, plus long wrapped rows. Native copy was correct with in-flow separators in every exercised case, source starts aligned for all rows at 12 and 100, and wrapped rows retained variable height. Browser harness is not full deployed / owner acceptance.
+
+**Verification state:** exact-head CI `38656776441` was running when this entry was written; do not infer success. No merge, final Codex review or production deployment. Next verify exact-head checks/database and record final result. If CI fails, diagnose without adding compensatory workarounds.
