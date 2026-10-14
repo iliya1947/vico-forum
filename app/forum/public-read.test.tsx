@@ -2280,7 +2280,7 @@ describe("published edit submission lifecycle", () => {
     await waitFor(() => {
       expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
     });
-    expect(screen.getByText("Submitted text ")).toBeInTheDocument();
+    expect(screen.getByText("Submitted text")).toBeInTheDocument();
   });
   it("releases an unsuccessful edit submission without discarding the unsaved text", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), {
