@@ -23,12 +23,12 @@ export function mentionProfileLink(name: string, profilePath: string): string {
 export function publishedMentionRecipients(markdown: string): string[] {
   const recipients = new Set<string>();
   const root = fromMarkdown(markdown);
-  function visit(node: { type: string; url?: string; children?: readonly unknown[] }, excluded: boolean) {
-    if (excluded || node.type === "blockquote" || node.type === "code" || node.type === "inlineCode"
+  function visit(node: { type: string; url?: string; children?: readonly unknown[] }) {
+    if (node.type === "blockquote" || node.type === "code" || node.type === "inlineCode"
       || node.type === "html" || node.type === "image") return;
     if (node.type === "link" && node.url) {
       // Profile URLs inserted by the editor contain an immutable, path-encoded ID.
-      const match = /^\\/[^/?#]+\\/users\\/([^/?#]+)\\/?$/u.exec(node.url);
+      const match = /^\/[^/?#]+\/users\/([^/?#]+)\/?$/u.exec(node.url);
       if (match) {
         try {
           const id = decodeURIComponent(match[1]!);
@@ -38,10 +38,10 @@ export function publishedMentionRecipients(markdown: string): string[] {
     }
     for (const child of node.children ?? []) {
       if (child && typeof child === "object" && "type" in child) {
-        visit(child as { type: string; url?: string; children?: readonly unknown[] }, false);
+        visit(child as { type: string; url?: string; children?: readonly unknown[] });
       }
     }
   }
-  visit(root, false);
+  visit(root);
   return [...recipients];
 }
