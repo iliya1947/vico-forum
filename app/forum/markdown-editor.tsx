@@ -210,7 +210,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     function removeImage(id: string) {
       const source = historyRef.current.current.markdown;
-      const token = new RegExp(String.raw`!\\[[^\\]\\n]*\\]\\(vico-attachment:${id}\\)`, "gu");
+      const token = new RegExp(String.raw`!\[[^\]\n]*\]\(vico-attachment:${id}\)`, "gu");
       const next = source.replace(token, "");
       if (next === source) return;
       const oldSelection = historyRef.current.current.selection;
