@@ -149,6 +149,8 @@ function Harness({
     completeRebind,
     retryDraftReconciliation: retryDraft,
     noteAttachmentChange: noteChange,
+    insertImage: () => {},
+    removeImage: () => {},
   });
   return (
     <div
