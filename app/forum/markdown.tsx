@@ -1,9 +1,47 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import { remarkForumStrikethrough } from "../markdown-syntax";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
+
+export interface ForumInlineAttachment {
+  id: string;
+  fileName: string;
+  byteSize: number;
+  detectedType: string;
+  url: string;
+}
+
+const InlineAttachmentsContext = createContext<readonly ForumInlineAttachment[]>([]);
+// The only nonstandard Markdown URL is an opaque attachment reference, not a
+// network URL. Actual bytes resolve solely through an authorized attachment ref.
+const inlineImageId = /^vico-attachment:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/iu;
+const rasterTypes = new Set(["png", "jpeg", "gif", "webp"]);
+
+export function ForumInlineAttachmentProvider({ attachments, children }: {
+  attachments: readonly ForumInlineAttachment[];
+  children: ReactNode;
+}) {
+  return <InlineAttachmentsContext.Provider value={attachments}>{children}</InlineAttachmentsContext.Provider>;
+}
+
+function forumUrlTransform(url: string, key: string): string {
+  return key === "src" && inlineImageId.test(url) ? url : defaultUrlTransform(url);
+}
+
+export function ForumInlineImage({ src }: { src?: string }) {
+  const attachments = useContext(InlineAttachmentsContext);
+  const match = src ? inlineImageId.exec(src) : null;
+  if (!match) return null;
+  const attachment = attachments.find((item) => item.id === match[1]);
+  if (!attachment || !rasterTypes.has(attachment.detectedType)) return null;
+  const inlineUrl = attachment.url + "&view=inline";
+  return <a href={inlineUrl} target="_blank" rel="noopener noreferrer"
+    aria-label={attachment.fileName}>
+    <img src={inlineUrl} alt={attachment.fileName} loading="lazy" decoding="async" />
+  </a>;
+}
 
 const HIGHLIGHTED_POST_LENGTH_LIMIT = 12_000;
 const HighlightBudgetContext = createContext(true);
@@ -242,7 +280,7 @@ function ForumCodeBlock({
 }
 
 const markdownComponents: Components = {
-  img: () => null,
+  img: ({ src }) => <ForumInlineImage src={src} />,
   a: ({ children: linkChildren, href, title }) => (
     <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
   ),
@@ -278,13 +316,13 @@ function ForumTable({ table }: { table: MarkdownTable }) {
       <table className="forum-markdown-table">
         <thead><tr>{table.headers.map((cell, index) => (
           <th key={index} scope="col" style={{ textAlign: table.align[index] ?? undefined }}>
-            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]}>{cell.text}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
           </th>
         ))}</tr></thead>
         <tbody>{table.rows.map((row, index) => <tr key={index}>
           {row.map((cell, column) => (
             <td key={column} style={{ textAlign: table.align[column] ?? undefined }}>
-              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]}>{cell.text}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
             </td>
           ))}
         </tr>)}</tbody>
@@ -310,7 +348,7 @@ function ForumMarkdownBody({ children }: { children: string }) {
           <ReactMarkdown
             components={markdownComponents}
             key={index}
-            remarkPlugins={[remarkForumStrikethrough]}
+            remarkPlugins={[remarkForumStrikethrough]} urlTransform={forumUrlTransform}
           >
             {segment.source}
           </ReactMarkdown>
