@@ -60,7 +60,7 @@ export const russianCommonValues = {
   },
   notifications: "Уведомления",
   notificationsUnreadLabel: "Уведомления, непрочитанных: {{count}}",
-  notificationIntro: "Ответы на ваши темы и сообщения.",
+  notificationIntro: "Ответы на ваши темы и сообщения, а также упоминания вашего аккаунта.",
   notificationEmpty: "Уведомлений нет.",
   notificationReplyBy: "Ответ от {{actor}}",
   notificationMentionBy: "Упоминание от {{actor}}",
