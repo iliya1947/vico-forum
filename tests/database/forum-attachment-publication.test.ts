@@ -388,15 +388,25 @@ describe("published post editing and revision history", () => {
   });
 
   it("allows an attachment-only published message after removing its body text", async () => {
+    const localTopicId = crypto.randomUUID();
+    const localContext = `topic:${localTopicId}:reply`;
+    await forum.createTopicWithInitialPost({
+      id: localTopicId, sectionId, authorId: "publication-topic-author",
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Topic with attachment-only edit", sourceLocale: "en" },
+      initialPost: {
+        id: crypto.randomUUID(), topicId: localTopicId, authorId: "publication-topic-author",
+        bodyRevision: { id: crypto.randomUUID(), originalContent: "Question", sourceLocale: "en" },
+      },
+    });
     const postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
     const publicationGeneration = crypto.randomUUID();
-    const initialDraft = await savedDraft(publicationGeneration);
-    const file = attachment(publicationGeneration);
+    const initialDraft = await savedDraft(publicationGeneration, localContext);
+    const file = attachment(publicationGeneration, localContext);
     await attachments.createDraftAttachment(file);
     await forum.createPost({
-      id: postId, topicId, authorId: ownerId,
+      id: postId, topicId: localTopicId, authorId: ownerId,
       publishedDraft: {
-        contextKey, draftId: publicationGeneration, expectedVersion: initialDraft.version,
+        contextKey: localContext, draftId: publicationGeneration, expectedVersion: initialDraft.version,
         attachmentIds: [file.id],
       },
       bodyRevision: { id: revisionId, originalContent: "Caption to remove", sourceLocale: "en" },
@@ -404,12 +414,12 @@ describe("published post editing and revision history", () => {
     const editGeneration = crypto.randomUUID();
     const editDraft = await savedDraft(editGeneration, `post:${postId}:edit`);
     await forum.editPublishedPost({
-      postId, topicId, actorId: ownerId, expectedRevisionId: revisionId,
+      postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: revisionId,
       body: "", draftId: editGeneration, expectedVersion: editDraft.version, attachmentIds: [],
     });
     expect((await forum.readPost(postId))?.body.originalContent).toBe("");
     expect(await attachments.readPublishedAttachment(postId, file.id)).toMatchObject({ id: file.id });
-    expect(await forum.readPostHistory(postId, topicId)).toHaveLength(2);
+    expect(await forum.readPostHistory(postId, localTopicId)).toHaveLength(2);
   });
 
   it("atomically publishes new edit attachments while retaining already published ones", async () => {
