@@ -2816,7 +2816,7 @@ export function TopicView({
                         />
                         <p>{t("postEditDraftHint")}</p>
                         <div className="forum-write-actions">
-                          <button type="button" onClick={() => setEditingPostId(null)}>
+                          <button type="button" disabled={isEditSubmitting} onClick={() => setEditingPostId(null)}>
                             {t("postEditCancel")}
                           </button>
                           <button type="submit" name="intent" value="editPost"
