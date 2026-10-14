@@ -2185,6 +2185,83 @@ describe("published editing presentation permissions", () => {
   });
 });
 
+describe("published edit submission lifecycle", () => {
+  it("keeps the editor and its publication barrier locked through loader revalidation", async () => {
+    let resolveAction!: () => void;
+    let resolveRevalidation!: (value: ReturnType<typeof topicRenderData>) => void;
+    const actionPending = new Promise<void>((resolve) => { resolveAction = resolve; });
+    const revalidationPending = new Promise<ReturnType<typeof topicRenderData>>((resolve) => {
+      resolveRevalidation = resolve;
+    });
+    let holdRevalidation = false;
+    let actionBody: FormDataEntryValue | null = null;
+    const permissions = { editablePostIds: ["answer"], canReadPostHistory: false };
+    let currentData = topicRenderData(topic, permissions);
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => holdRevalidation ? revalidationPending : currentData,
+      action: async ({ request }) => {
+        const submitted = await request.formData();
+        expect(submitted.get("intent")).toBe("editPost");
+        expect(submitted.get("postId")).toBe("answer");
+        expect(submitted.get("expectedRevisionId")).toBe("post-r1");
+        actionBody = submitted.get("body");
+        await actionPending;
+        return null;
+      },
+    }], { initialEntries: ["/en/topics/typed-api"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: "lin", name: "Lin" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    const textarea = form.querySelector("textarea")!;
+    const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    fireEvent.change(textarea, { target: { value: "Submitted text " } });
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+
+    await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+    expect(textarea).toBeDisabled();
+    expect(save).toBeDisabled();
+    expect(form).toHaveAttribute("aria-busy", "true");
+    await waitFor(() => expect(actionBody).toBe("Submitted text "));
+
+    const updatedTopic = {
+      ...topic,
+      posts: [{
+        ...topic.posts[0]!,
+        body: { ...topic.posts[0]!.body, id: "post-r2", originalContent: "Submitted text " },
+      }],
+    };
+    currentData = topicRenderData(updatedTopic, permissions);
+    holdRevalidation = true;
+    resolveAction();
+    await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+    expect(textarea).toBeDisabled();
+    expect(save).toBeDisabled();
+    expect(form).toHaveAttribute("aria-busy", "true");
+    expect(textarea).toHaveValue("Submitted text ");
+
+    resolveRevalidation(currentData);
+    await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    await waitFor(() => {
+      expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Submitted text ")).toBeInTheDocument();
+  });
+});
+
 describe("published attachment caller integration", () => {
   it("resolves inline images and inert source previews from verified types, not names", async () => {
     const imageId = "23b93562-0550-4eef-88af-f951d6ea6138";
