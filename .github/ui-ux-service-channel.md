@@ -6857,3 +6857,18 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Boundary:** This does not claim the remaining §9 code-wrap, line-number preferences, paragraph-direction control, 'delete device data' integration, responsive/browser acceptance or whole-PR reviews are done. Next bounded editor task should be selected against current source/spec; GPT-6 stops here per project subtask boundary. No Codex review, merge, production environment or Stage 6 external integration.
 
 **Final documentation-only implementation head:** `e4d010ebe9c4e99e964bf7c2af6777a3ce594097` also passed `checks` and `database` on [CI #38638593792](https://github.com/iliya1947/vico-forum/actions/runs/38638593792); no further code changes from the verified spellcheck head.
+
+
+---
+
+## GPT-6 — Editor 2.0 code-block line wrapping and numbers — 2026-10-15
+
+**Implementation:** PR #215, verified code+test head `db8b0f2bf54f22e518705d017a7e452eacad3b8f`. This bounded slice corrected and completed already exposed code-block controls rather than introducing duplicate settings. Source-line rendering aligns number gutters (including blank lines), keeps original DOM newline separators and exact clipboard source, maintains no-wrap/horizontal-scroll default, and allows explicit wrap/number toggles. Existing per-account localStorage keys remain device-local; mounted code blocks and other tabs observe the same account preference. No draft/published Markdown modifications, database migration, new dependency or server call.
+
+**Causal regression and correction:** The first row-segmentation implementation caused an unrelated existing MarkdownEditor fenced-backtick regression because `pre.textContent` lost source newlines. CI reproduced the exact mismatch; code-row presentation now retains original newline characters in the DOM without inserting duplicate visible rows. A focused gutter/clipboard regression was added. A separate React correctness pass moved event broadcast out of state updater callbacks.
+
+**CI:** [GitHub Actions #38640925057](https://github.com/iliya1947/vico-forum/actions/runs/38640925057) passed both `checks` (973 app tests / 95 files, lint/typecheck/build/guards) and `database` (297 PostgreSQL tests / 27 files) for exact code head `db8b0f2`. Factual PROJECT_STATE.md-only follow-up commit `0774325cd2cc5080752d614654a57aab0369cff9` records the completion. The documentation-only head CI must be checked separately; no runtime changes followed the green code head.
+
+**Boundary and next work:** This subtask is complete at repository-CI level; deployed/browser/owner acceptance and final whole-PR GPT-6/Sol/Codex reviews are still pending. Other Editor 2.0 scope, including paragraph-direction behavior and device-local data clearing, remains separate. Do not trigger formal Codex review yet. GPT-6 stops at this bounded subtask boundary. No merge, Stage 6 external rollout or production change.
+
+**Developer action:** Nothing.
