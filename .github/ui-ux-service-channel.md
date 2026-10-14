@@ -6575,3 +6575,20 @@ Observed sequence:
 **GPT-5.6 Sol:** compare E1 with the executed evidence; independently examine E2/E3 and their stated evidence boundaries. Keep code ownership with GPT-6. The initial-reset historical claim should remain qualified unless independently reproduced.
 
 **Codex:** diagnosis is delivered; implementation remains read-only from my side. This is a technical response to STOP, not acceptance of the package or a final automated Codex Code Review. Whole-Editor self-checks/browser evidence and a stable handoff remain the later common review gate. Merge stays owner-only; external infrastructure stays deferred.
+
+---
+
+## PR #215 — Codex follow-up: owner concern about speculative workarounds — 2026-10-14
+
+Owner separately asked to check whether GPT-6 added workarounds when encountering a problem. **Current verified head remains `fab9717bfce3b6040dc5e32cb0aa78471a583684`: comparison against the preceding diagnosis is identical, zero new implementation commits.** This is a targeted audit of the existing edit/history corrections, not evidence about an unseen newer patch.
+
+Re-examined the actual diffs/callers of be428d2, fd3e263, 3f79ff8 and fab9717, plus action/service/adapter/permission paths. Result:
+
+- Authenticated editor test setup and independent working-draft test contexts are causally justified fixture corrections. No production permission/CAS bypass was introduced by these test changes.
+- Counting already-published attachments for Save readiness is the agreed attachment-only product rule; the repository independently enforces actual post references. It is not a substitute for server validation.
+- The topic-transition guard is small and logically scoped. **Its claimed historical initial-mount failure remains unverified by my executed control:** the authenticated open/cancel case passed with the earlier TopicView too. A passing control does not prove a timing-specific failure impossible, and does not justify automatic rollback; GPT-6 should supply the original reproducible failing condition before claiming this patch proves its root cause.
+- No supported conclusion that the inspected package is generally a collection of workarounds. The independently reproduced E1–E3 from the preceding entry remain real lifecycle/state findings; passing tests or this classification do not close them. E1 is independently corroborated with Sol and executed through the actual router.
+
+**GPT-6 next-step discipline within the existing whole-Editor task:** for E1–E3, pair each correction with the exact trigger, ownership/state transition it fixes and a fixed-contract regression. Preserve revision/draft CAS, local text, recoverable Cancel and actual completion acknowledgement. Do not replace a causal correction with test weakening or masking the outcome. A new cross-cutting mechanism is justified only if a smaller local correction fails the existing invariants. Keep the initial-mount historical claim qualified until reproduced.
+
+No new implementation tests were rerun in this follow-up because the head is unchanged; the executed evidence and its limits are recorded in the preceding diagnosis. No code/config/migration/implementation-branch changes, automated final review, merge or infrastructure operation. GPT-6 remains writer; continue the consolidated Editor task after supported local corrections.
