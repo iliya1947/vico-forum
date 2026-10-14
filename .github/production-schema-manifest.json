@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0038_forum_attachment_cleanup_claims",
+  "targetMigration": "0039_forum_publication_receipts",
   "tables": {
     "account": {
       "columns": [
@@ -2850,6 +2850,81 @@
           "definitionSha256": "c7c905293793d4be32bec9f8615c58efdcfd0e2b422fb5177436446e84adffce"
         }
       ],
+      "indexes": []
+    },
+    "forum_publication_receipts": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "fingerprint",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_publication_receipts_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_publication_receipts_owner_id_user_id_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
       "indexes": []
     },
     "forum_reply_notifications": {
