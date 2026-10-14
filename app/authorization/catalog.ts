@@ -35,6 +35,7 @@ export const INITIAL_ROLE_GRANTS = {
   ],
   moderator: [
     "forum.topic.create",
+    "forum.post.editOwn",
     "forum.post.history.read",
     "forum.reply.create",
     "forum.topic.pin",
