@@ -114,7 +114,7 @@ describe("MarkdownEditor", () => {
     const candidate = await screen.findByRole("button", { name: "Ada Lovelace" });
     expect(group).toContainElement(candidate);
     const enteredSource = textarea.value;
-    expect(enteredSource).toMatch(/^Hello @Ada\\s*$/u);
+    expect(enteredSource).toMatch(/^Hello @Ada\s*$/u);
     await userEvent.click(candidate);
     await waitFor(() => expect(textarea).toHaveValue(
       enteredSource.replace("@Ada", "[Ada Lovelace](/en/users/member-42)"),
