@@ -1,7 +1,7 @@
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router";
+import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
@@ -2153,6 +2153,7 @@ export function TopicView({
   }
   const { t } = useTranslation("common");
   const location = useLocation();
+  const navigate = useNavigate();
   const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
   const promptedBestAnswerPostId =
     isTopicAuthor
@@ -2207,6 +2208,20 @@ export function TopicView({
     if (requested && editablePostIds.includes(requested)) setEditingPostId(requested);
   }, [location.search, topic.id, editablePostIds]);
 
+  function closePostEditor() {
+    setEditingPostId(null);
+    setEditReady(false);
+    const params = new URLSearchParams(location.search);
+    if (!params.has("editPost")) return;
+    params.delete("editPost");
+    const search = params.toString();
+    void navigate({
+      pathname: location.pathname,
+      search: search ? `?${search}` : "",
+      hash: location.hash,
+    }, { replace: true, preventScrollReset: true });
+  }
+
   useEffect(() => {
     if (navigation.state !== "submitting" || navigation.formData?.get("intent") !== "editPost") return;
     const postId = navigation.formData.get("postId");
@@ -2229,8 +2244,7 @@ export function TopicView({
     if (!updated || updated.body.id === submitted.expectedRevisionId) return;
     editEditorRef.current?.acknowledgePublished(submitted.draftId, submitted.expectedVersion + 1);
     editPublicationRef.current = null;
-    setEditingPostId(null);
-    setEditReady(false);
+    closePostEditor();
   }, [navigation.state, forumWriteError, topic.posts]);
 
   useEffect(() => {
@@ -2816,7 +2830,7 @@ export function TopicView({
                         />
                         <p>{t("postEditDraftHint")}</p>
                         <div className="forum-write-actions">
-                          <button type="button" disabled={isEditSubmitting} onClick={() => setEditingPostId(null)}>
+                          <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>
                             {t("postEditCancel")}
                           </button>
                           <button type="submit" name="intent" value="editPost"
