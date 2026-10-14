@@ -260,7 +260,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       removeImage,
     });
 
-    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0;
+    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0
+      || existingInlineAttachments.length > 0;
     const publicationReady = !disabled && !draftPublicationPending && !attachments.blocking && hasPublishContent;
     useEffect(() => { onPublicationReadyChange?.(publicationReady); }, [onPublicationReadyChange, publicationReady]);
 
