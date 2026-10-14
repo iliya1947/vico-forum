@@ -2153,6 +2153,37 @@ describe("forum path encoding", () => {
   });
 });
 
+describe("published editing presentation permissions", () => {
+  it("shows no edit/history control to a non-owner, but displays public edit date", async () => {
+    const edited = {
+      ...topic,
+      posts: [{ ...topic.posts[0]!, editedAt: new Date("2026-10-10T10:00:00Z") }],
+    };
+    renderRoute(TopicRoute, topicRenderData(edited, {
+      editablePostIds: [], canReadPostHistory: false,
+    }), "/en/topics/typed-api", "en", "ltr");
+    await screen.findByText(/Edited /u);
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit history" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Private old revision")).not.toBeInTheDocument();
+  });
+
+  it("lets an authorized author open and cancel a distinct post edit draft", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      editablePostIds: ["answer"], canReadPostHistory: false,
+    }), "/en/topics/typed-api", "en", "ltr");
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const editorForm = await screen.findByRole("form", { name: "Edit published message" });
+    expect(editorForm.querySelector('input[name="postId"]')).toHaveValue("answer");
+    expect(editorForm.querySelector('input[name="expectedRevisionId"]')).toHaveValue("post-r1");
+    expect(editorForm.querySelector('input[name="editorDraftId"]')).not.toBeNull();
+    expect(editorForm.querySelector('input[name="body"]')).toHaveValue("Start with an explicit response type.");
+    fireEvent.click(within(editorForm).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+    expect(screen.getByText("Start with an explicit response type.")).toBeInTheDocument();
+  });
+});
+
 describe("published attachment caller integration", () => {
   it("resolves inline images and inert source previews from verified types, not names", async () => {
     const imageId = "23b93562-0550-4eef-88af-f951d6ea6138";
