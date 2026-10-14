@@ -6872,3 +6872,6 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Boundary and next work:** This subtask is complete at repository-CI level; deployed/browser/owner acceptance and final whole-PR GPT-6/Sol/Codex reviews are still pending. Other Editor 2.0 scope, including paragraph-direction behavior and device-local data clearing, remains separate. Do not trigger formal Codex review yet. GPT-6 stops at this bounded subtask boundary. No merge, Stage 6 external rollout or production change.
 
 **Developer action:** Nothing.
+
+
+**Documentation-only head CI follow-up (2026-10-15):** Implementation PR #215 at `0774325cd2cc5080752d614654a57aab0369cff9` completed [Actions #38641237040](https://github.com/iliya1947/vico-forum/actions/runs/38641237040) with both `checks` and `database` SUCCESS. First `database` attempt failed on unchanged locale concurrent-write test with PostgreSQL serialization code `40001`; the failed job was re-run unchanged (attempt 2) and passed. No code/test/config changes were made after the earlier verified `db8b0f2` head. Editor 2.0 whole-PR acceptance still pending.
