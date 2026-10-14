@@ -2227,6 +2227,120 @@ describe("published edit resume navigation", () => {
   });
 });
 
+describe("published edit revision fence", () => {
+  const json = (body: unknown) => new Response(JSON.stringify(body), {
+    status: 200, headers: { "Content-Type": "application/json" },
+  });
+
+  it("keeps the original revision fence and typed text on same-topic revalidation until explicit rebase", async () => {
+    const postId = "edit-fence-post";
+    const ownerId = "edit-fence-owner";
+    const original = { ...topic, posts: [{
+      ...topic.posts[0]!, id: postId, authorId: ownerId,
+      body: { ...topic.posts[0]!.body, id: "fence-r1" },
+    }] };
+    let current = original;
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute,
+      loader: () => topicRenderData(current, {
+        editablePostIds: [postId], canReadPostHistory: false,
+      }),
+    }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const textarea = form.querySelector("textarea")!;
+    fireEvent.change(textarea, { target: { value: "My original unsaved edit " } });
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
+
+    current = { ...original, posts: [{
+      ...original.posts[0]!, body: {
+        ...original.posts[0]!.body, id: "fence-r2", originalContent: "Someone else's current edit",
+      },
+    }] };
+    await router.revalidate();
+    await waitFor(() => expect(screen.getByText("Someone else's current edit")).toBeInTheDocument());
+    expect(screen.getByRole("form", { name: "Edit published message" })).toBe(form);
+    expect(textarea).toHaveValue("My original unsaved edit ");
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
+
+    fireEvent.click(within(form).getByRole("button", { name: "Apply my draft to the current revision" }));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+    expect(textarea).toHaveValue("My original unsaved edit ");
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+  });
+
+  it.each([
+    ["versioned", "fence-r1"],
+    ["legacy without a baseline", undefined],
+  ])("blocks a %s restored edit from silently inheriting the current published revision", async (_label, savedRevision) => {
+    const postId = "edit-resume-fence-post";
+    const ownerId = "edit-resume-fence-owner";
+    const contextKey = `post:${postId}:edit`;
+    const storageKey = "vico:editor:draft:" + encodeURIComponent(ownerId) + ":" + encodeURIComponent(contextKey);
+    const existing = { ...topic, posts: [{
+      ...topic.posts[0]!, id: postId, authorId: ownerId,
+      body: { ...topic.posts[0]!.body, id: "fence-r2", originalContent: "Updated publication" },
+    }] };
+    const now = new Date().toISOString();
+    localStorage.setItem(storageKey, JSON.stringify({
+      ownerId, contextKey, draftId: crypto.randomUUID(), baseVersion: 1,
+      editedAt: now, syncedEditedAt: null,
+      payload: { body: "Recovered offline edit ", title: "", tags: "", parentPostId: null,
+        ...(savedRevision ? { publishedRevisionId: savedRevision } : {}) },
+    }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+    try {
+      const router = createMemoryRouter([{
+        id: "page", path: "*", Component: TopicRoute,
+        loader: () => topicRenderData(existing, {
+          editablePostIds: [postId], canReadPostHistory: false,
+        }),
+      }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
+      render(
+        <div lang="en" dir="ltr">
+          <I18nextProvider i18n={runtime("en", "ltr")}>
+            <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
+              <RouterProvider router={router} />
+            </HeaderAuthProvider>
+          </I18nextProvider>
+        </div>,
+      );
+      const form = await screen.findByRole("form", { name: "Edit published message" });
+      await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Recovered offline edit "));
+      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue(savedRevision ?? "");
+      expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+      expect(within(form).getByRole("alert")).toHaveTextContent(savedRevision
+        ? "This message changed" : "no recorded source revision");
+      fireEvent.click(within(form).getByRole("button", { name: "Apply my draft to the current revision" }));
+      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+      expect(form.querySelector('input[name="body"]')).toHaveValue("Recovered offline edit ");
+    } finally {
+      localStorage.removeItem(storageKey);
+    }
+  });
+});
+
 describe("published edit submission lifecycle", () => {
   it("keeps the editor and its publication barrier locked through loader revalidation", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), {
