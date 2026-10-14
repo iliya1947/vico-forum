@@ -825,6 +825,7 @@ function previewNotifications(locale: PreviewLocale) {
     },
     {
       id: "notification-2",
+      kind: "reply" as const,
       actorName: hebrew ? "סם צ'ן" : "Sam Chen",
       topicId: "worker-auth",
       topicTitle: hebrew
