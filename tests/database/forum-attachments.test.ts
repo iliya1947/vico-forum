@@ -477,7 +477,7 @@ describe("forum attachment lifecycle foundation", () => {
     await client.query(`create schema ${migrationSchema}`);
     await connection.connect();
     try {
-      for (const tag of migrations.slice(0, -1)) {
+      for (const tag of migrations.slice(0, -2)) {
         await connection.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       }
       await connection.query('insert into "user" (id, name, email) values ($1, $1, $2)', [ownerId, `${ownerId}@test.invalid`]);
@@ -486,6 +486,7 @@ describe("forum attachment lifecycle foundation", () => {
       await connection.query(`insert into forum_editor_drafts (owner_id, context_key, draft_id, version, status, payload, edited_at, updated_at)
         values ($1, 'help:new', $2, 1, 'published', '{"title":"","body":"","tags":""}', now(), now())`, [ownerId, retired]);
       await connection.query((await readFile("drizzle/0037_forum_attachment_draft_generations.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
+      await connection.query((await readFile("drizzle/0038_forum_attachment_cleanup_claims.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       const drafts = new DrizzleForumEditorDrafts(drizzle(connection));
       expect((await drafts.save(ownerId, "help:new", fresh, { title: "Fresh", body: "new", tags: "" }, 1)).outcome).toBe("saved");
       const attachments = new DrizzleForumAttachments(drizzle(connection));
