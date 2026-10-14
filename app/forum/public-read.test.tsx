@@ -2249,10 +2249,12 @@ describe("published edit submission lifecycle", () => {
     fireEvent.click(save);
 
     await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
-    expect(textarea).toBeDisabled();
-    expect(save).toBeDisabled();
-    expect(cancel).toBeDisabled();
-    expect(form).toHaveAttribute("aria-busy", "true");
+    await waitFor(() => {
+      expect(textarea).toBeDisabled();
+      expect(save).toBeDisabled();
+      expect(cancel).toBeDisabled();
+      expect(form).toHaveAttribute("aria-busy", "true");
+    });
     await waitFor(() => expect(actionBody).toBe("Submitted text "));
 
     const updatedTopic = {
@@ -2264,10 +2266,12 @@ describe("published edit submission lifecycle", () => {
     holdRevalidation = true;
     resolveAction();
     await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
-    expect(textarea).toBeDisabled();
-    expect(save).toBeDisabled();
-    expect(cancel).toBeDisabled();
-    expect(form).toHaveAttribute("aria-busy", "true");
+    await waitFor(() => {
+      expect(textarea).toBeDisabled();
+      expect(save).toBeDisabled();
+      expect(cancel).toBeDisabled();
+      expect(form).toHaveAttribute("aria-busy", "true");
+    });
     expect(textarea).toHaveValue("Submitted text ");
 
     resolveRevalidation(currentData);
@@ -2329,8 +2333,10 @@ describe("published edit submission lifecycle", () => {
     fireEvent.click(save);
 
     await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
-    expect(textarea).toBeDisabled();
-    expect(cancel).toBeDisabled();
+    await waitFor(() => {
+      expect(textarea).toBeDisabled();
+      expect(cancel).toBeDisabled();
+    });
     resolveAction();
     await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
     await waitFor(() => expect(textarea).toBeEnabled());
