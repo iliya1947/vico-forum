@@ -904,6 +904,9 @@ export const forumAttachments = pgTable(
     responseMime: text("response_mime").notNull(),
     byteSize: integer("byte_size").notNull(),
     verificationStatus: text("verification_status").notNull(),
+    cleanupStatus: text("cleanup_status").notNull().default("active"),
+    cleanupClaimToken: text("cleanup_claim_token"),
+    cleanupClaimedAt: timestamp("cleanup_claimed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
@@ -915,6 +918,14 @@ export const forumAttachments = pgTable(
     unique("forum_attachments_object_key_unique").on(table.objectKey),
     unique("forum_attachments_id_owner_unique").on(table.id, table.ownerId),
     index("forum_attachments_owner_created_idx").on(table.ownerId, table.createdAt),
+    index("forum_attachments_cleanup_queue_idx").on(table.cleanupStatus, table.createdAt),
+    check("forum_attachments_cleanup_status_check",
+      sql`${table.cleanupStatus} in ('active', 'deleting')`),
+    check("forum_attachments_cleanup_claim_check", sql`
+      (${table.cleanupStatus} = 'active' and ${table.cleanupClaimToken} is null and ${table.cleanupClaimedAt} is null)
+      or
+      (${table.cleanupStatus} = 'deleting' and ${table.cleanupClaimToken} is not null and ${table.cleanupClaimedAt} is not null)
+    `),
   ],
 );
 
