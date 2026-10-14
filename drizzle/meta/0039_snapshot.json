@@ -2447,10 +2447,6 @@
       },
       "policies": {},
       "checkConstraints": {
-        "forum_post_revisions_content_check": {
-          "name": "forum_post_revisions_content_check",
-          "value": "btrim(\"forum_post_revisions\".\"original_content\") <> ''"
-        },
         "forum_post_revisions_source_locale_check": {
           "name": "forum_post_revisions_source_locale_check",
           "value": "\"forum_post_revisions\".\"source_locale\" = btrim(\"forum_post_revisions\".\"source_locale\") and \"forum_post_revisions\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
