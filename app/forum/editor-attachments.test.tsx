@@ -832,6 +832,57 @@ async function reconcileDraft() {
   await act(async () => { window.dispatchEvent(new Event("online")); });
 }
 
+describe("MarkdownEditor inline image source/history integration", () => {
+  it("inserts at the caret, preserves Undo/Redo and renders only an authorized stored image", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(attachmentId);
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=metadata")) return Response.json({ drafts: [] });
+      if (uri === "/api/attachments" && init?.method === "GET") {
+        return Response.json({ attachments: [] });
+      }
+      if (uri === "/api/attachments" && init?.method === "DELETE") {
+        return Response.json({ outcome: "removed" });
+      }
+      throw new Error("Unexpected fetch: " + uri);
+    }));
+    renderDraftEditor();
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    const textarea = screen.getByRole("textbox", { name: "Body" }) as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: "Before After" } });
+    textarea.focus();
+    textarea.setSelectionRange(7, 7);
+
+    fireEvent.paste(textarea, { clipboardData: {
+      files: [new File(["raster"], "shot.png", { type: "image/png" })],
+    } });
+    const token = `![shot.png](vico-attachment:${attachmentId})`;
+    expect(textarea.value).toBe("Before " + token + "After");
+    expect(FakeXMLHttpRequest.instances).toHaveLength(1);
+
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
+    expect(textarea).toHaveValue("Before After");
+    fireEvent.keyDown(textarea, { key: "y", ctrlKey: true });
+    expect(textarea).toHaveValue("Before " + token + "After");
+
+    FakeXMLHttpRequest.instances[0]!.complete(201, { outcome: "stored", attachment: {
+      id: attachmentId, fileName: "shot.png", detectedType: "png",
+      responseMime: "image/png", byteSize: 6, verificationStatus: "type-checked",
+    } });
+    const menu = document.querySelector(".markdown-editor-preview-menu");
+    if (!menu) throw new Error("Missing preview menu");
+    fireEvent.click(menu.querySelector("summary")!);
+    const preview = [...menu.querySelectorAll("button")].find((item) => item.textContent === "Preview");
+    if (!preview) throw new Error("Missing preview action");
+    fireEvent.click(preview);
+    expect(screen.getAllByAltText("shot.png").some((image) =>
+      image.getAttribute("src")?.includes("&view=inline"))).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(textarea).toHaveValue("Before After"));
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+});
+
 describe("MarkdownEditor attachment and draft integration", () => {
   it.each(["uploading", "ambiguous"] as const)("discards same-generation %s state on explicit Keep server", async (state) => {
     let remote = remoteDraft(draftId, 1, "Initial server text");
