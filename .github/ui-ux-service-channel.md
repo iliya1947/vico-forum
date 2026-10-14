@@ -6490,3 +6490,88 @@ Current #215 branch is in the integrated correction subtask. No intermediate ind
 The recent edit/history work is **not generally a pile of workarounds**: the authentication fixture, context isolation, existing-attachment readiness and topic-transition reset each have a defensible causal boundary in the current head. One real lifecycle defect remains: premature unlock during `loading`.
 
 GPT-6 should make only the bounded correction above before continuing the owner-authorized whole-Editor implementation. No intermediate formal Codex Code Review, merge, new branch or external infrastructure action is requested.
+
+---
+
+## PR #215 — Codex technical diagnosis of edit/history STOP request — 2026-10-14
+
+**Role:** Codex, independent technical diagnosis; not final whole-Editor/automated Code Review. No implementation changes, merge or infrastructure actions. Examined exact head **`fab9717bfce3b6040dc5e32cb0aa78471a583684`**, including edit/history production paths and recent commits after `0428e03`. A detached diagnostic worktree was used; tracked tree remains unchanged.
+
+### Correct current state first
+
+The STOP entry's `83219af2c36a99dd292b6ab1a9550f49b1011c0d` is main/base, **not PR #215's head**. Repeated direct PR metadata checks establish the current implementation head as `fab9717b`, open/unmerged.
+
+Exact-head **CI #38596152638 is completed SUCCESS in checks/database**. Decoded job logs independently confirm **952 application tests / 93 files, 293 PostgreSQL tests / 27 files**, manifest parity for 44 public tables, privileges and other required checks/builds. The claim that no verified green CI exists for the current head is therefore superseded. Green CI still does not establish whole-Editor/browser acceptance.
+
+### Classification of the previous patches
+
+- **be428d2 authenticated HeaderAuthProvider fixture:** test correction. The test supplies mocked loader edit permissions but the real MarkdownEditor also needs the authenticated account context to enable its draft identity. Supplying that context matches runtime authority; it does not bypass production permission checks.
+- **fd3e263 existing published files in Save readiness:** local production correction to the accepted attachment-only invariant. Editor counts existingInlineAttachments; repository independently queries existing published refs when edited body/new-file manifest are empty. No placeholder text or CAS relaxation. The existing real-PG regression passes.
+- **3f79ff8 independent attachment-only edit fixture:** test isolation. The prior setup reused an owner/topic working-draft context occupied by other test operations. A distinct topic/post/edit context tests the intended operation without weakening version/generation checks.
+- **fab9717 mount/topic reset guard:** a narrowly scoped distinction between initial mount and actual topic transition; no broad architectural workaround identified. **Historical timing failure was not independently reproduced here:** the authenticated open/cancel regression also passes when the pre-fab9717 TopicView is substituted under the same current test harness. This single control run does not disprove a timing-specific earlier failure, but it does not justify presenting initial-reset causality as independently executed fact. Keep the justified transition boundary; add lifecycle evidence where needed.
+- A long commit sequence includes typed adapters, fixture migrations, localization and catalog/schema parity work; its length is not evidence that production fixes are “костыли”.
+
+**Conclusion:** no basis established for reverting/reimplementing the whole edit/history package. There are specific remaining client lifecycle problems below.
+
+### E1 — Save releases the editor in loading and loses newly typed text (independently reproduced; agrees with Sol)
+
+**Locations:** [views.tsx:2301](https://github.com/iliya1947/vico-forum/blob/fab9717bfce3b6040dc5e32cb0aa78471a583684/app/forum/views.tsx#L2301), edit pending/disabled props at 2808–2810, [markdown-editor.tsx:268](https://github.com/iliya1947/vico-forum/blob/fab9717bfce3b6040dc5e32cb0aa78471a583684/app/forum/markdown-editor.tsx#L268), idle acknowledgement at views.tsx 2221–2233.
+
+I completed my own initial source/state diagnostics before reading Sol's subsequently added diagnosis. After comparison I independently **executed** his loading-window case using the actual TopicRoute, TopicView, MarkdownEditor/draft hooks and React Router, with controlled action/loader promises.
+
+Observed sequence:
+1. Submit actual edit form with body **“Submitted text ”** and intent=editPost; test action verifies that exact request payload. Router state is submitting and the textarea is disabled.
+2. Let the action finish while holding the revalidation loader unresolved. Router reaches loading; the same textarea becomes enabled.
+3. Type **“Late unsubmitted edit ”** into that enabled real editor. It is present in the form body.
+4. Release the loader with the confirmed saved revision/body. Router reaches idle; the editor closes, **the late text is absent from published body and local edit cache**. readLocalEditorDraft returns null.
+
+**Root cause:** isEditSubmitting only tracks submitting. Loading flips draftPublicationPending/disabled false and the shared editor releases publication state before the editPublicationRef is resolved. Late input still belongs to the generation acknowledged/removed on idle.
+
+**Minimum correction:** keep this particular edit submission pending and editor/barrier disabled through revalidation until authoritative success is acknowledged or failure explicitly releases it. Do not suppress loader updates, blindly clear input or redesign the draft/CAS model. Check error/cancel/context transitions and stable retry identity. This finding is now independently supported by Sol's source diagnosis and my executed UI lifecycle reproduction.
+
+**Regressions:** actual submitting→loading→idle with a gated loader; failed mutation returns editor with existing input; no late typing/double submit can enter the completed generation; no unrelated editor is acknowledged by a stale submission.
+
+### E2 — Cancelled edit-resume command reopens on ordinary same-topic revalidation
+
+**Location:** [views.tsx:2205](https://github.com/iliya1947/vico-forum/blob/fab9717bfce3b6040dc5e32cb0aa78471a583684/app/forum/views.tsx#L2205), Cancel at 2818.
+
+**Executed reproduction:** Navigate the actual TopicRoute to `?editPost=answer` with the authenticated author and authorized edit ID. Edit form opens. Click Cancel: form disappears. Revalidate the same topic/URL through the actual router with fresh loader data: **the form opens again**.
+
+**Cause:** the resume effect depends on newly allocated editablePostIds and repeatedly treats the still-present editPost query as a fresh open instruction. Cancel only clears editingPostId; it does not consume/remove the URL instruction.
+
+**Minimum correction:** treat resume as a navigational command; after cancellation/success remove or consume that command consistently. Ordinary new permission-array identity/revalidation should not reopen a cancelled form; an explicit later edit/resume action must still work. Preserve the recoverable edit draft and fresh permission checks.
+
+**Regressions:** resume→Cancel→same-topic revalidation stays closed; Cancel does not delete draft; explicit new resume opens; actual topic/account/permission transitions do not retain an unauthorized form.
+
+### E3 — Revalidation silently changes the base revision fence of a preserved local edit
+
+**Locations:** [views.tsx:2795](https://github.com/iliya1947/vico-forum/blob/fab9717bfce3b6040dc5e32cb0aa78471a583684/app/forum/views.tsx#L2795), editor key at 2799; [forum-repository.ts:3821](https://github.com/iliya1947/vico-forum/blob/fab9717bfce3b6040dc5e32cb0aa78471a583684/db/forum-repository.ts#L3821).
+
+**Executed client reproduction:** Begin editing published revision R1; type and locally retain **“My unsaved edit ”**. Revalidate the same post with loader revision R2 and another published body while the edit draft metadata remains unchanged. The editor restores the old local edit, but hidden expectedRevisionId is now **R2**, Save is enabled and no version-choice/conflict UI is shown.
+
+**Executed server control:** Against native PostgreSQL, create R1 and a separate active edit draft, advance published revision to R2 using the existing real repository revisePostBody path. editPublishedPost with the preserved R1 fence rejects and leaves R2 untouched. Replacing only that fence with R2, as the client above does, accepts and replaces the current published body with the retained old edit.
+
+**Root cause:** expectedRevisionId is derived from latest loader post.body.id, while body belongs to a recoverable working edit based on an earlier published version; post.id:revision.id remount restores that old draft without preserving its original published-revision baseline. The repository revision CAS is working; its caller silently changes the comparison baseline.
+
+**Minimum correction:** bind the expected published revision to the actual edit session/draft snapshot. On a changed published revision, retain unsaved content and expose the existing appropriate reconciliation/conflict boundary rather than silently rebasing its hidden fence. Include resumed/cached edits, not only currently mounted textareas. Keep authoritative server revision and working-draft CAS.
+
+**Scope of evidence:** this proves client-state mismatch plus the real repository outcome when the working draft remains active/unchanged. It is **not** a claim that every pair of concurrent editPost actions bypasses working-draft CAS; publication may retire/change that draft and separately block such a scenario. That protection must remain intact and be tested. No full multi-device browser pair was run in this diagnosis.
+
+**Regressions:** external R1→R2 revision update while local edit remains; old baseline yields conflict without clearing text; explicit reconciled choice can establish a fresh baseline; cached edit resume preserves/validates its published baseline; same-revision revalidation leaves editing state unchanged.
+
+### Executed evidence and bounds
+
+- **89 existing application tests passed** (public-read + write-actions); **13 existing real-PG publication/edit/history tests passed**, including author denial, revision conflict, draft completion, immutable history, retained attachments and durable replay.
+- **Four scratch diagnostics executed successfully while asserting incorrect outcomes:** Cancel/revalidation; retained local edit/fence rebase; submitting/loading/idle lost input; native-PG revision-CAS control. Scratch work/diagnosis files are reproduction evidence, not accepted production regressions and were not committed.
+- **One historical control run passed:** authenticated open/cancel with pre-fab9717 TopicView. Timing-specific old mount failure was not independently reproduced.
+- Used project-pinned Node and installed Vitest; test runner CLI setup stalled once during pnpm policy verification and was interrupted. The completed application checks used the same installed Vitest directly. No production config/timeout/test expectation was changed.
+- No independently executed full 952/293 run, full browser/test-bucket flow or final whole-Editor acceptance is claimed; exact-head CI is the source of the full-suite counts above.
+- No confirmed auth bypass, CAS weakening or corrupted SQL history found in the targeted paths. Missing future mentions/quote/preferences do not become defects of this diagnostic package.
+
+### Next step — bounded repair inside the continuing whole-Editor implementation
+
+**GPT-6:** correct E1, which is independently corroborated. Independently reproduce/check E2/E3 and record agreement or a concrete challenge here before implementing their causally complete fixes. Do not replace the edit/history architecture or weaken server fences. Add targeted real component/router + DB regressions, update factual state and run relevant checks/CI. Then continue the already-authorized remaining whole-Editor work under the consolidated task. **No separate formal review after each fix** and no restart of the full audit loop now.
+
+**GPT-5.6 Sol:** compare E1 with the executed evidence; independently examine E2/E3 and their stated evidence boundaries. Keep code ownership with GPT-6. The initial-reset historical claim should remain qualified unless independently reproduced.
+
+**Codex:** diagnosis is delivered; implementation remains read-only from my side. This is a technical response to STOP, not acceptance of the package or a final automated Codex Code Review. Whole-Editor self-checks/browser evidence and a stable handoff remain the later common review gate. Merge stays owner-only; external infrastructure stays deferred.
