@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ForumMarkdown } from "./markdown";
+import { ForumMarkdown, ForumInlineAttachmentProvider } from "./markdown";
 import {
   applyTextareaEdit,
   clearInlineMarkdownFormatting,
@@ -185,6 +185,49 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
     });
 
+    // Source insertion is synchronous with the paste/picker action. The stable
+    // ID is inert Markdown until a verified attachment is present in this scope.
+    function insertImage(id: string, fileName: string) {
+      const source = historyRef.current.current.markdown;
+      const selection = sourceSelection() ?? historyRef.current.current.selection;
+      const start = Math.min(source.length, Math.max(0, selection.start));
+      const end = Math.min(source.length, Math.max(start, selection.end));
+      const alt = fileName.replace(/[\\\]\[\r\n]/gu, " ").slice(0, 160);
+      const token = `![${alt}](vico-attachment:${id})`;
+      const next = source.slice(0, start) + token + source.slice(end);
+      const after = { start: start + token.length, end: start + token.length };
+      historyRef.current = recordEditorEdit(historyRef.current, next, { start, end }, after);
+      if (authoringMode === "simple") {
+        visualSelectionRef.current = after;
+        visualSelectionKnownRef.current = true;
+        pendingVisualSelectionRef.current = after;
+      } else {
+        pendingSelectionRef.current = after;
+      }
+      setValue(next);
+      draft.noteEdit(next, true);
+    }
+
+    function removeImage(id: string) {
+      const source = historyRef.current.current.markdown;
+      const token = new RegExp(String.raw`!\\[[^\\]\\n]*\\]\\(vico-attachment:${id}\\)`, "gu");
+      const next = source.replace(token, "");
+      if (next === source) return;
+      const oldSelection = historyRef.current.current.selection;
+      const pos = Math.min(oldSelection.start, next.length);
+      const after = { start: pos, end: pos };
+      historyRef.current = recordEditorEdit(historyRef.current, next, oldSelection, after);
+      if (authoringMode === "simple") {
+        visualSelectionRef.current = after;
+        visualSelectionKnownRef.current = true;
+        pendingVisualSelectionRef.current = after;
+      } else {
+        pendingSelectionRef.current = after;
+      }
+      setValue(next);
+      draft.noteEdit(next, true);
+    }
+
     const attachments = useEditorAttachments({
       ownerId: accountId,
       contextKey: accountId ? draftContextKey : undefined,
@@ -199,6 +242,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       completeRebind: draft.completeAttachmentRebind,
       retryDraftReconciliation: draft.retryAttachmentReconciliation,
       noteAttachmentChange: draft.noteAttachmentChange,
+      insertImage,
+      removeImage,
     });
 
     useEffect(() => {
@@ -758,6 +803,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }), [mode, value, authoringMode, draft]);
 
     return (
+      <ForumInlineAttachmentProvider attachments={attachments.previewAttachments}>
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
         onDragOver={attachments.handleDragOver}
@@ -1024,6 +1070,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         {attachments.element}
         {draft.element}
       </div>
+      </ForumInlineAttachmentProvider>
     );
   },
 );
