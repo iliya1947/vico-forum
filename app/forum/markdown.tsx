@@ -215,12 +215,13 @@ function ForumCodeBlock({
   // Split presentation at source newlines, not at syntax-token boundaries. This
   // keeps gutter rows aligned even when highlighting spans multiple lines.
   const codeRows: ReactNode[][] = [[]];
+  let fragmentKey = 0;
   for (const token of tokens) {
     const fragments = token.text.split("\n");
     fragments.forEach((fragment, index) => {
       if (index > 0) codeRows.push([]);
       if (fragment) codeRows[codeRows.length - 1].push(
-        token.kind ? <span className={`syntax-${token.kind}`}>{fragment}</span> : fragment,
+        token.kind ? <span key={fragmentKey++} className={`syntax-${token.kind}`}>{fragment}</span> : fragment,
       );
     });
   }
@@ -281,7 +282,7 @@ function ForumCodeBlock({
                   : "forum-code-line"
               : "forum-code-line"} key={index}>
               {lineNumbers ? <span className="forum-code-line-number" aria-hidden="true">{index + 1}</span> : null}
-              <span className="forum-code-line-text">{parts.length ? parts : "\u200b"}</span>
+              <span className="forum-code-line-text">{parts}</span>
             </span>
           ))}
         </code>
