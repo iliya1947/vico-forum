@@ -442,3 +442,87 @@ describe("published post editing and revision history", () => {
     expect(await forum.readPostHistory(postId, topicId)).toHaveLength(2);
   });
 });
+
+
+describe("durable mention notifications", () => {
+  async function notifications(postId: string) {
+    const result = await client.query<{ recipient_user_id: string; kind: string }>(
+      "select recipient_user_id, kind from forum_reply_notifications where post_id = $1 order by recipient_user_id",
+      [postId],
+    );
+    return result.rows.map((row) => [row.recipient_user_id, row.kind]);
+  }
+
+  it("notifies only published profile recipients and deduplicates against topic replies", async () => {
+    const postId = crypto.randomUUID();
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      bodyRevision: {
+        id: crypto.randomUUID(), sourceLocale: "en",
+        originalContent: [
+          "[Topic author](/en/users/publication-topic-author)",
+          "[Other user](/en/users/publication-other) [Again](/ru/users/publication-other)",
+          "> [Quoted](/en/users/publication-other)",
+          "`[Inline](/en/users/publication-other)`",
+          "[Self](/en/users/publication-owner) [Missing](/en/users/does-not-exist)",
+        ].join("\n"),
+      },
+    });
+    expect(await notifications(postId)).toEqual([
+      ["publication-other", "mention"],
+      ["publication-topic-author", "reply"],
+    ]);
+    const inbox = await forum.readReplyNotifications("publication-other");
+    expect(inbox.find((item) => item.postId === postId)?.kind).toBe("mention");
+  });
+
+  it("persists the per-post notified set across deletion and re-addition of an edited mention", async () => {
+    const postId = crypto.randomUUID();
+    const initialRevision = crypto.randomUUID();
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      bodyRevision: { id: initialRevision, originalContent: "No mentions", sourceLocale: "en" },
+    });
+    const context = `post:${postId}:edit`;
+    const firstDraft = await savedDraft(crypto.randomUUID(), context);
+    await forum.editPublishedPost({
+      postId, topicId, actorId: ownerId, expectedRevisionId: initialRevision,
+      body: "[Other](/en/users/publication-other)", draftId: firstDraft.draftId,
+      expectedVersion: firstDraft.version, attachmentIds: [],
+    });
+    expect(await notifications(postId)).toEqual([
+      ["publication-topic-author", "reply"], ["publication-other", "mention"],
+    ].sort((a, b) => a[0]!.localeCompare(b[0]!)));
+    const secondDraft = await savedDraft(crypto.randomUUID(), context);
+    const revision2 = (await forum.readPost(postId))!.body.id;
+    await forum.editPublishedPost({
+      postId, topicId, actorId: ownerId, expectedRevisionId: revision2,
+      body: "No mention now", draftId: secondDraft.draftId,
+      expectedVersion: secondDraft.version, attachmentIds: [],
+    });
+    const thirdDraft = await savedDraft(crypto.randomUUID(), context);
+    const revision3 = (await forum.readPost(postId))!.body.id;
+    await forum.editPublishedPost({
+      postId, topicId, actorId: ownerId, expectedRevisionId: revision3,
+      body: "[Other again](/he/users/publication-other)", draftId: thirdDraft.draftId,
+      expectedVersion: thirdDraft.version, attachmentIds: [],
+    });
+    const rows = await notifications(postId);
+    expect(rows.filter(([id]) => id === "publication-other")).toEqual([["publication-other", "mention"]]);
+  });
+
+  it("never creates mention notifications when an edit revision check fails", async () => {
+    const postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      bodyRevision: { id: revisionId, sourceLocale: "en", originalContent: "Original" },
+    });
+    const draft = await savedDraft(crypto.randomUUID(), `post:${postId}:edit`);
+    await expect(forum.editPublishedPost({
+      postId, topicId, actorId: ownerId, expectedRevisionId: "obsolete-revision",
+      body: "[Other](/en/users/publication-other)", draftId: draft.draftId,
+      expectedVersion: draft.version, attachmentIds: [],
+    })).rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await notifications(postId)).toEqual([["publication-topic-author", "reply"]]);
+  });
+});
