@@ -131,6 +131,31 @@ Vico Forum находится в ранней pre-release разработке.
   two documentation findings. Both were corrected and resolved without modifying
   application code; subsequent exact-head CI #38121847206 passed `checks` and
   `database` on `eec38b0`. PR #217 merged 2026-10-11.
+- Editor 2.0 Stage 5 attachment/draft integration corrections (2026-10-14, PR #215):
+  The authoring branch now durably retires a genuinely expired *unsaved*
+  attachment generation before cleanup of its last old ref, under the existing
+  owner/context scope lock, without forcing an early text-draft save or retiring
+  a live redirect/recent-generation ref. Private draft download also checks
+  authoritative server text-draft TTL on each direct read without prolonging it.
+  Published topic reads preserve verified attachment detectedType from PostgreSQL
+  to presentation rather than reconstructing a security/display type from the
+  filename, so supported inert text/source preview remains available.
+  Image paste/drop/picker inserts an opaque stable `vico-attachment:<UUID>`
+  Markdown image reference through shared editor source/Undo history immediately,
+  and authorized draft/post presentation resolves that identity only through
+  current verified raster refs and the existing controlled download route.
+  Rejected/removed/other-user refs cannot render active inline image bytes;
+  image original-view and download now have distinct actions.
+  Focused PostgreSQL regressions cover expiry/retry, mixed-age unsaved refs,
+  direct draft TTL and published metadata. Editor composition, parser/route
+  rendering, Undo/Redo and original-link tests were added.
+  These corrections do NOT implement the remaining Editor 2.0 features
+  (mentions, edit-published, attachment-only publication, lost-ACK publication,
+  quote expansion and settings). Real-browser test-bucket, mobile/RTL and owner
+  acceptance remain unverified; external storage/scheduler/production rollout
+  remain deferred. CI evidence must be recorded against the final exact head
+  rather than inferred from preceding commits.
+
 - Editor 2.0: PR #215 открыт в обычном режиме и ещё не готов к merge. После merge #217 в `main`
   в первом foundation-срезе добавлены lossless Markdown document/history utilities,
   ограниченное текстовыми AST-диапазонами безопасное visual-edit API (без пересериализации
