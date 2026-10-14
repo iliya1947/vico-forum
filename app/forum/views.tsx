@@ -2298,8 +2298,9 @@ export function TopicView({
     );
   }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
 
-  const isEditSubmitting = navigation.state === "submitting"
-    && navigation.formData?.get("intent") === "editPost";
+  const isEditSubmitting = navigation.state !== "idle"
+    && (navigation.formData?.get("intent") === "editPost"
+      || (navigation.state === "loading" && editPublicationRef.current !== null));
   const isReplySubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "reply";
