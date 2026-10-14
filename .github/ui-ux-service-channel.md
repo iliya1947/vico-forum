@@ -6825,3 +6825,5 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Project state:** `PROJECT_STATE.md` updated in implementation commit `f68c99d30997d3ac106269d14ddc07ccac700485` (documentation only after verified code head). Final exact-doc-head CI should be checked separately if needed.
 
 **Next Editor 2.0 subtask, not yet executed:** persist and deliver mention notifications only on successful publish or successful published edit; deduplicate mentions, exclude quote/code, dedupe against reply notifications, and preserve the lifetime notified-set per published post even if a mention is removed and re-added. Implement only after the next explicit owner continuation. Browser/owner acceptance and whole-PR final review remain separate; no Codex formal review, merge or Stage 6 external infrastructure.
+
+**Final implementation/documentation head CI:** PR #215 `f68c99d30997d3ac106269d14ddc07ccac700485` passed both `checks` and `database` in [CI #38630291751](https://github.com/iliya1947/vico-forum/actions/runs/38630291751). Change from code/test head was limited to factual `PROJECT_STATE.md` update.
