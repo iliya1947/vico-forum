@@ -2243,6 +2243,7 @@ describe("published edit submission lifecycle", () => {
     fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
     const textarea = form.querySelector("textarea")!;
     const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const cancel = within(form).getByRole("button", { name: "Cancel" });
     fireEvent.change(textarea, { target: { value: "Submitted text " } });
     await waitFor(() => expect(save).toBeEnabled());
     fireEvent.click(save);
@@ -2250,6 +2251,7 @@ describe("published edit submission lifecycle", () => {
     await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
     expect(textarea).toBeDisabled();
     expect(save).toBeDisabled();
+    expect(cancel).toBeDisabled();
     expect(form).toHaveAttribute("aria-busy", "true");
     await waitFor(() => expect(actionBody).toBe("Submitted text "));
 
@@ -2264,6 +2266,7 @@ describe("published edit submission lifecycle", () => {
     await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
     expect(textarea).toBeDisabled();
     expect(save).toBeDisabled();
+    expect(cancel).toBeDisabled();
     expect(form).toHaveAttribute("aria-busy", "true");
     expect(textarea).toHaveValue("Submitted text ");
 
@@ -2274,6 +2277,69 @@ describe("published edit submission lifecycle", () => {
     });
     expect(screen.getByText("Submitted text ")).toBeInTheDocument();
   });
+  it("releases an unsuccessful edit submission without discarding the unsaved text", async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+
+    const postId = "edit-failed-answer";
+    const original = {
+      ...topic,
+      posts: [{ ...topic.posts[0]!, id: postId,
+        body: { ...topic.posts[0]!.body, id: "edit-failed-r1" } }],
+    };
+    let resolveAction!: () => void;
+    const pendingAction = new Promise<void>((resolve) => { resolveAction = resolve; });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => topicRenderData(original, {
+        editablePostIds: [postId], canReadPostHistory: false,
+      }),
+      action: async () => {
+        await pendingAction;
+        return { error: "invalid" as const };
+      },
+    }], { initialEntries: ["/en/topics/typed-api"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: "lin", name: "Lin" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const textarea = form.querySelector("textarea")!;
+    const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const cancel = within(form).getByRole("button", { name: "Cancel" });
+    fireEvent.change(textarea, { target: { value: "Failed edit stays local " } });
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+
+    await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+    expect(textarea).toBeDisabled();
+    expect(cancel).toBeDisabled();
+    resolveAction();
+    await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    await waitFor(() => expect(textarea).toBeEnabled());
+    expect(textarea).toHaveValue("Failed edit stays local ");
+    expect(save).toBeEnabled();
+    expect(cancel).toBeEnabled();
+    expect(screen.getByRole("form", { name: "Edit published message" })).toBeInTheDocument();
+  });
+
 });
 
 describe("published attachment caller integration", () => {
