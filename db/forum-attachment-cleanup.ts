@@ -86,6 +86,12 @@ export class ForumAttachmentCleanup {
                 and recent.created_at >= ${expiry}
             )
             and not exists (
+              select 1 from forum_attachment_draft_generations prior
+              where prior.owner_id = r.owner_id
+                and prior.context_key = r.context_key
+                and prior.draft_id = r.draft_id
+            )
+            and not exists (
               select 1 from forum_editor_drafts d
               where d.owner_id = r.owner_id and d.context_key = r.context_key
                 and d.draft_id = r.draft_id and d.status = 'active'
