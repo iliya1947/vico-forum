@@ -347,6 +347,7 @@ export interface ForumOnlinePresence {
 }
 
 export interface ForumReader {
+  searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>>;
   readOnlinePresence(): Promise<ForumOnlinePresence>;
   readProfile(userId: string): Promise<ForumProfile | undefined>;
   listCategories(): Promise<ForumCategorySummary[]>;
@@ -459,6 +460,17 @@ export class DrizzleForumRepository {
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
   ) {}
+
+  async searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>> {
+    const term = query.trim();
+    if (!term || term.length > 64) return [];
+    // The user's term is literal, not a SQL LIKE pattern.
+    const escaped = term.replace(/[!%_]/gu, (char) => "!" + char);
+    return this.database.select({ id: user.id, name: user.name }).from(user)
+      .where(sql`${user.name} ilike ${"%" + escaped + "%"} escape '!'`)
+      .orderBy(asc(user.name), asc(user.id))
+      .limit(8);
+  }
 
   async readOnlinePresence(): Promise<ForumOnlinePresence> {
     const recent = sql`${forumOnlinePresence.lastSeenAt} >= now() - interval '5 minutes'`;
