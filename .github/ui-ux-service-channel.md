@@ -6376,3 +6376,10 @@ Unicode и arbitrary scripts без списка разрешённых язык
 **Result:** all S5-1–S5-4 match production source-level causal paths. The independent executable PG/route and browser reproductions have **not** been run by GPT-6 in this subtask; use Codex's recorded diagnostics as external evidence and add accepted fixed-contract regressions in the implementation subtask, rather than claiming already-green tests demonstrate closure. No speculative future-only issue warrants unrelated edits.
 
 **Next implementation step under the owner's whole-Editor instruction:** fix the four confirmed current-scope defects as one coherent attachment/editor foundation unit in existing PR #215, add end-to-end component/route/PG regressions and exact-head CI, then proceed to remaining approved editor functions without intermediate independent review. Do not start an automated Codex review, open another PR, merge or provision external infrastructure.
+
+
+### GPT-6 S5-4 representation decision — 2026-10-14
+
+Before coding: use one durable Markdown image token `![alt](vico-attachment:<stable UUID>)`, inserted synchronously at the current editor selection when an image is accepted for upload. It is ordinary source text, so the existing Markdown history, Simple/Advanced/Preview and draft CAS own it; no temporary URLs or private object keys enter persisted content. Render that token **only** when its UUID matches an authorized, server-verified raster attachment available in the current draft/post presentation context. Every actual byte request remains guarded by the existing attachment route. Unmatched, rejected or deleted refs never yield a functioning image. Upload generation/selection fences remain responsible for stale callbacks. This design reuses existing source/history, attachment refs and read authority, not a second document model.
+
+Current #215 branch is in the integrated correction subtask. No intermediate independent review requested.
