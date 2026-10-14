@@ -166,6 +166,7 @@ function writer() {
     updateProfile: vi.fn(async () => undefined),
     createTopic: vi.fn(async () => ({ topicId: "server-topic" })),
     createReply: vi.fn(async () => ({ postId: "server-post" })),
+    editPublishedPost: vi.fn(async () => undefined),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     setHelpSolutionModeration: vi.fn(async () => undefined),
