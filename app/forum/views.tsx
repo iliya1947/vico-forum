@@ -1,4 +1,5 @@
 import { ForumAttachmentDisplay } from "./attachment-presentation";
+import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -2693,7 +2694,12 @@ export function TopicView({
                         ? "topic-message-body has-translation"
                         : "topic-message-body"}
                     >
-                      <PostBodyContent presentation={postPresentation} />
+                      <ForumInlineAttachmentProvider attachments={(post.attachments ?? []).map((attachment) => ({
+                        ...attachment,
+                        url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                      }))}>
+                        <PostBodyContent presentation={postPresentation} />
+                      </ForumInlineAttachmentProvider>
                     </div>
 
                     {post.attachments && post.attachments.length > 0 ? (
