@@ -23,7 +23,7 @@ export function ForumAttachmentDisplay({ attachment, url, deferImage = false, co
   return (
     <div className="forum-attachment-display">
       {raster && (!deferImage || expanded) ? (
-        <a href={url} download={attachment.fileName} aria-label={`Open original ${attachment.fileName}`}>
+        <a href={url + "&view=inline"} target="_blank" rel="noopener noreferrer" aria-label={`Open original ${attachment.fileName}`}>
           <img src={url + "&view=inline"} loading="lazy" decoding="async" alt={attachment.fileName} />
         </a>
       ) : null}
