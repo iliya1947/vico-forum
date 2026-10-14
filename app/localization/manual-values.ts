@@ -645,6 +645,7 @@ export const hebrewCommonValues = {
   notificationIntro: "תגובות לנושאים ולהודעות שלך.",
   notificationEmpty: "אין לך התראות.",
   notificationReplyBy: "תגובה מאת {{actor}}",
+  notificationMentionBy: "אזכור מאת {{actor}}",
   notificationUnread: "לא נקרא",
   notificationRead: "נקרא",
   notificationOpen: "פתיחת התגובה",
