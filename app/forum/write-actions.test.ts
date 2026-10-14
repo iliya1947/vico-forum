@@ -186,6 +186,79 @@ function writer() {
   } satisfies ForumWriter;
 }
 
+describe("post edit and protected history action permissions", () => {
+  const fields = {
+    intent: "editPost", postId: "post-1", expectedRevisionId: "post-r1",
+    body: "Changed text", editorDraftId: "76568e3b-7cf0-4f32-9847-051d5a9b8071",
+    editorDraftVersion: "0", editorAttachmentIds: "[]",
+  };
+  const input = (writer: ForumWriter, permissions: readonly PermissionKey[], values = fields) => ({
+    request: request("/en/topics/topic-1", values),
+    params: { locale: "en", topicId: "topic-1" },
+    context: context(writer, true, permissions),
+  });
+
+  it("requires editOwn and forwards server session actor rather than client identity", async () => {
+    const denied = writer();
+    expect(await topicAction(input(denied, ["forum.reply.create"])))
+      .toMatchObject({ init: { status: 403 } });
+    expect(denied.editPublishedPost).not.toHaveBeenCalled();
+
+    const permitted = writer();
+    const result = await topicAction(input(permitted, ["forum.post.editOwn"], {
+      ...fields, actorId: "spoofed",
+    }));
+    expect(result).toBeInstanceOf(Response);
+    expect((result as Response).status).toBe(302);
+    expect(permitted.editPublishedPost).toHaveBeenCalledWith({
+      topicId: "topic-1", postId: "post-1", actorId: "session-user",
+      expectedRevisionId: "post-r1", body: "Changed text",
+      draftId: fields.editorDraftId, draftVersion: 0, attachmentIds: [],
+    });
+  });
+
+  it("rejects missing publication generation and invalid attachment manifest", async () => {
+    const w = writer();
+    for (const invalid of [
+      { ...fields, editorDraftVersion: "-1" },
+      { ...fields, editorAttachmentIds: '["not-a-uuid"]' },
+      { ...fields, postId: "" },
+    ]) {
+      expect(await topicAction(input(w, ["forum.post.editOwn"], invalid)))
+        .toMatchObject({ init: { status: 400 } });
+    }
+    expect(w.editPublishedPost).not.toHaveBeenCalled();
+  });
+
+  it("does not expose previous revisions without history capability", async () => {
+    const w = writer();
+    const denied = context(w, true, ["forum.post.editOwn"]);
+    denied.set(forumReaderContext, {
+      readPostHistory: vi.fn(async () => {
+        throw new Error("forbidden reader access");
+      }),
+    } as never);
+    const deniedResult = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "readPostHistory", postId: "post-1" }),
+      params: { locale: "en", topicId: "topic-1" }, context: denied,
+    });
+    expect(deniedResult).toMatchObject({ init: { status: 403 } });
+
+    const allowed = context(w, true, ["forum.post.history.read"]);
+    const readPostHistory = vi.fn(async () => [{
+      id: "r1", authorId: "owner", authorName: "Owner",
+      originalContent: "Private old revision", sourceLocale: "en", createdAt: new Date("2026-01-01"),
+    }]);
+    allowed.set(forumReaderContext, { readPostHistory } as never);
+    const response = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "readPostHistory", postId: "post-1" }),
+      params: { locale: "en", topicId: "topic-1" }, context: allowed,
+    });
+    expect(response).toMatchObject({ init: { status: 200 } });
+    expect(readPostHistory).toHaveBeenCalledWith("post-1", "topic-1");
+  });
+});
+
 describe("forum write route actions", () => {
   it("pins and unpins only with the effective server permission", async () => {
     const allowed = writer();
