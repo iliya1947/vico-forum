@@ -2185,6 +2185,48 @@ describe("published editing presentation permissions", () => {
   });
 });
 
+describe("published edit resume navigation", () => {
+  it("consumes the resume URL on Cancel, stays closed after same-topic refresh, and permits explicit reentry", async () => {
+    const ownerId = "edit-resume-owner";
+    const args = { editablePostIds: ["answer"], canReadPostHistory: false };
+    const topicPath = "/en/topics/typed-api";
+    const resumedUrl = topicPath + "?editPost=answer&view=compact#post-answer";
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => topicRenderData(topic, { ...args, editablePostIds: [...args.editablePostIds] }),
+    }], { initialEntries: [resumedUrl] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Lin" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    const editorDraftId = form.querySelector('input[name="editorDraftId"]')?.getAttribute("value");
+    expect(editorDraftId).toBeTruthy();
+    fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+      expect(router.state.location.search).toBe("?view=compact");
+    });
+    expect(router.state.location.hash).toBe("#post-answer");
+    await router.revalidate();
+    expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+    expect(router.state.location.search).toBe("?view=compact");
+
+    await router.navigate(resumedUrl);
+    const resumed = await screen.findByRole("form", { name: "Edit published message" });
+    expect(resumed.querySelector('input[name="editorDraftId"]')).not.toBeNull();
+  });
+});
+
 describe("published edit submission lifecycle", () => {
   it("keeps the editor and its publication barrier locked through loader revalidation", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), {
@@ -2227,7 +2269,7 @@ describe("published edit submission lifecycle", () => {
         await actionPending;
         return null;
       },
-    }], { initialEntries: ["/en/topics/typed-api"] });
+    }], { initialEntries: ["/en/topics/typed-api?editPost=edit-lifecycle-answer&view=compact"] });
 
     render(
       <div lang="en" dir="ltr">
@@ -2239,7 +2281,6 @@ describe("published edit submission lifecycle", () => {
       </div>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
     const form = await screen.findByRole("form", { name: "Edit published message" });
     fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
     const textarea = form.querySelector("textarea")!;
@@ -2281,6 +2322,7 @@ describe("published edit submission lifecycle", () => {
       expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
     });
     expect(screen.getByText("Submitted text")).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.search).toBe("?view=compact"));
   });
   it("preserves the live edit and retry body after a real 400 failure even when local storage writes fail", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), {
