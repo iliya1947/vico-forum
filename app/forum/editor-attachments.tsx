@@ -48,6 +48,8 @@ interface Props {
   completeRebind(fromDraftId: string, toDraftId: string, retired?: boolean): boolean;
   retryDraftReconciliation(): void;
   noteAttachmentChange(draftId: string): void;
+  insertImage(id: string, fileName: string): void;
+  removeImage(id: string): void;
 }
 
 function encoded(value: string): string {
@@ -157,6 +159,8 @@ export function useEditorAttachments({
   completeRebind,
   retryDraftReconciliation,
   noteAttachmentChange,
+  insertImage,
+  removeImage,
 }: Props) {
   const { t, i18n } = useTranslation("common");
   const [entries, setEntries] = useState<UploadEntry[]>([]);
@@ -174,12 +178,16 @@ export function useEditorAttachments({
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
+    insertImage,
+    removeImage,
   });
   callbacksRef.current = {
     reserveGeneration,
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
+    insertImage,
+    removeImage,
   };
   const identity = ownerId && contextKey ? JSON.stringify([ownerId, contextKey]) : null;
   const identityRef = useRef(identity);
@@ -374,6 +382,11 @@ export function useEditorAttachments({
     if (replacing) setEntry(stableId, () => next);
     else setEntries((current) => [...current, next]);
     setPublicationWarning(false);
+    // Reserve the source position before the asynchronous upload. An old upload
+    // completion may not inject an image into a different draft or selection.
+    if (!replacing && namedFile.type.startsWith("image/")) {
+      callbacksRef.current.insertImage(stableId, namedFile.name);
+    }
 
     const request = new XMLHttpRequest();
     requestsRef.current.set(stableId, request);
@@ -469,6 +482,7 @@ export function useEditorAttachments({
     const identityAtStart = identity;
     const selectionAtStart = selectionEpoch;
     if (entry.error === "gone") {
+      callbacksRef.current.removeImage(entry.id);
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       return;
     }
@@ -491,6 +505,7 @@ export function useEditorAttachments({
       if (!response.ok && response.status !== 404 && response.status !== 410) throw new Error(String(response.status));
       if (activeRemoval()) {
         removedIdsRef.current.add(entry.id);
+        callbacksRef.current.removeImage(entry.id);
         setEntries((current) => current.filter((item) => item.id !== entry.id));
         if (response.status === 410) callbacksRef.current.retryDraftReconciliation();
         else callbacksRef.current.noteAttachmentChange(draftIdRef.current);
@@ -659,6 +674,14 @@ export function useEditorAttachments({
   return {
     blocking,
     selectedAttachmentIds,
+    previewAttachments: entries.filter((entry) => entry.status === "stored" && entry.attachment && contextKey)
+      .map((entry) => ({
+        id: entry.id,
+        fileName: entry.fileName,
+        byteSize: entry.byteSize,
+        detectedType: entry.attachment!.detectedType,
+        url: `/api/attachments/file/${encoded(entry.id)}?draft=${encoded(entry.draftId)}&context=${encoded(contextKey!)}`,
+      })),
     element,
     handleDrop,
     handleDragOver,
