@@ -1051,6 +1051,7 @@ export function HelpSolutionsView({
       : undefined;
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
+  const [questionReady, setQuestionReady] = useState(false);
   const draftUser = useHeaderAuthUser();
   const location = useLocation();
   useEffect(() => {
@@ -1308,8 +1309,8 @@ export function HelpSolutionsView({
                   draftContextKey="help:new" draftLocale={locale}
                   draftPublicationIntent="createHelpQuestion"
                   draftPublicationPending={isQuestionSubmitting}
+                  onPublicationReadyChange={setQuestionReady}
                   name="body"
-                  required
                   rows={8}
                   defaultValue={similarAction?.draft.body}
                   disabled={isQuestionFormBusy}
@@ -1394,7 +1395,7 @@ export function HelpSolutionsView({
                 type="submit"
                 name="intent"
                 value="createHelpQuestion"
-                disabled={isQuestionFormBusy}
+                disabled={isQuestionFormBusy || !questionReady}
               >
                 {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
               </button>
@@ -1838,6 +1839,7 @@ export function SectionView({
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
+  const [topicReady, setTopicReady] = useState(false);
   const isCreateTopicSubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "createTopic";
@@ -1987,8 +1989,8 @@ export function SectionView({
                 draftContextKey={`section:${section.id}:new`} draftLocale={locale}
                 draftPublicationIntent="createTopic"
                 draftPublicationPending={isCreateTopicSubmitting}
+                onPublicationReadyChange={setTopicReady}
                 name="body"
-                required
                 rows={8}
                 disabled={isCreateTopicSubmitting}
                 describedBy="create-topic-body-help"
@@ -1999,7 +2001,7 @@ export function SectionView({
 
           <footer className="forum-write-actions">
             <p>{t("authoringRequiredHint")}</p>
-            <button type="submit" disabled={isCreateTopicSubmitting}>
+            <button type="submit" disabled={isCreateTopicSubmitting || !topicReady}>
               {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
             </button>
           </footer>
@@ -2151,6 +2153,7 @@ export function TopicView({
       : null;
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
+  const [replyReady, setReplyReady] = useState(false);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
   const activeReplyTargetPostId =
@@ -2864,9 +2867,9 @@ export function TopicView({
                   draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
                   draftPublicationIntent="reply"
                   draftPublicationPending={isReplySubmitting}
+                  onPublicationReadyChange={setReplyReady}
                   onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
-                  required
                   rows={8}
                   disabled={isReplySubmitting}
                   describedBy="reply-body-help"
@@ -2877,7 +2880,7 @@ export function TopicView({
 
             <footer className="forum-write-actions">
               <p>{t("authoringRequiredHint")}</p>
-              <button type="submit" disabled={isReplySubmitting}>
+              <button type="submit" disabled={isReplySubmitting || !replyReady}>
                 {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
               </button>
             </footer>
