@@ -811,6 +811,7 @@ function previewNotifications(locale: PreviewLocale) {
   return [
     {
       id: "notification-1",
+      kind: "mention" as const,
       actorName: hebrew ? "מאיה כהן" : "Maya Cohen",
       topicId: "typed-api",
       topicTitle: hebrew
