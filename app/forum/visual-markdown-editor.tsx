@@ -290,6 +290,7 @@ function VisualTextLeaf({
   onPasteFallback: VisualEditorProps["onPasteFallback"];
 }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const spellCheck = useContext(visualSpellcheckContext);
   const forcePlainPasteRef = useRef(false);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -328,7 +329,7 @@ function VisualTextLeaf({
       role="textbox"
       aria-multiline="false"
       suppressContentEditableWarning
-      spellCheck={useContext(visualSpellcheckContext)}
+      spellCheck={spellCheck}
       data-visual-text="true"
       data-source-start={range.start}
       data-source-end={range.end}
@@ -574,12 +575,13 @@ function VisualTable({
 export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: number; spellCheck?: boolean }) {
   const { markdown, disabled = false, sourceBase = 0, spellCheck, ...actions } = props;
   const { t } = useTranslation("common");
+  const inheritedSpellCheck = useContext(visualSpellcheckContext);
   const segments = segmentTechnicalMarkdown(markdown);
   const reportSurfaceSelection = (root: HTMLElement) => {
     actions.onSelection(visualDomSelection(root, markdown, sourceBase));
   };
   return (
-    <visualSpellcheckContext.Provider value={spellCheck ?? useContext(visualSpellcheckContext)}>
+    <visualSpellcheckContext.Provider value={spellCheck ?? inheritedSpellCheck}>
     <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
       onSelect={(event) => reportSurfaceSelection(event.currentTarget)}
       onMouseUp={(event) => reportSurfaceSelection(event.currentTarget)}
