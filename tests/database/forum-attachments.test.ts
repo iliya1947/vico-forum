@@ -41,7 +41,7 @@ const migrations = [
   "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
   "0034_forum_editor_drafts", "0035_forum_attachments_foundation",
   "0036_forum_attachment_security_events",
-  "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts",
+  "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts", "0040_post_edit_history_permissions",
 ];
 
 const ownerId = "attachment-owner";
@@ -478,7 +478,7 @@ describe("forum attachment lifecycle foundation", () => {
     await client.query(`create schema ${migrationSchema}`);
     await connection.connect();
     try {
-      for (const tag of migrations.slice(0, -3)) {
+      for (const tag of migrations.slice(0, -4)) {
         await connection.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       }
       await connection.query('insert into "user" (id, name, email) values ($1, $1, $2)', [ownerId, `${ownerId}@test.invalid`]);
