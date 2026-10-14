@@ -9,7 +9,7 @@ import { loader } from "./mentions";
 function setup(authenticated = true) {
   const context = new RouterContextProvider();
   context.set(authSessionContext, authenticated ? { user: { id: "author" } } as AuthSession : null);
-  const searchMentionableUsers = vi.fn(async (term: string) => [
+  const searchMentionableUsers = vi.fn(async () => [
     { id: "user-42", name: "Ada Lovelace" },
   ]);
   context.set(forumReaderContext, { searchMentionableUsers } as never);
