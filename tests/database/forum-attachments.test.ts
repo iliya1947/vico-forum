@@ -41,7 +41,7 @@ const migrations = [
   "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
   "0034_forum_editor_drafts", "0035_forum_attachments_foundation",
   "0036_forum_attachment_security_events",
-  "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims",
+  "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts",
 ];
 
 const ownerId = "attachment-owner";
@@ -488,6 +488,7 @@ describe("forum attachment lifecycle foundation", () => {
         values ($1, 'help:new', $2, 1, 'published', '{"title":"","body":"","tags":""}', now(), now())`, [ownerId, retired]);
       await connection.query((await readFile("drizzle/0037_forum_attachment_draft_generations.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0038_forum_attachment_cleanup_claims.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
+      await connection.query((await readFile("drizzle/0039_forum_publication_receipts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       const drafts = new DrizzleForumEditorDrafts(drizzle(connection));
       expect((await drafts.save(ownerId, "help:new", fresh, { title: "Fresh", body: "new", tags: "" }, 1)).outcome).toBe("saved");
       const attachments = new DrizzleForumAttachments(drizzle(connection));
