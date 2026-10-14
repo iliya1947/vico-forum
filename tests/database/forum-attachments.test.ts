@@ -665,6 +665,7 @@ describe("atomic publication of selected draft refs", () => {
       const loaded = await repository.readTopicPage(topicId);
       expect(loaded?.posts[0]?.attachments).toEqual([{
         id: asset.id, fileName: asset.fileName, byteSize: asset.byteSize,
+        detectedType: asset.detectedType,
       }]);
     },
   );
