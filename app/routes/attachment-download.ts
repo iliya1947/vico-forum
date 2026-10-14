@@ -33,6 +33,8 @@ export async function loader({ request, params, context }: {
   const postId = query.get("post");
   const draftId = query.get("draft");
   const contextKey = query.get("context");
+  const view = query.get("view");
+  if (view !== null && view !== "inline" && view !== "text") return failure(400);
   if ((postId !== null) === (draftId !== null) || (postId !== null && contextKey !== null)) {
     return failure(400);
   }
@@ -59,11 +61,21 @@ export async function loader({ request, params, context }: {
       range: { offset: 0, length: attachment.byteSize },
     });
     if (!object?.body || object.size !== attachment.byteSize) return failure(503);
+    // Restrict inline rendering to signatures verified by the upload gate.
+    // Source, SVG and HTML remain inert plain-text previews by explicit user action.
+    const rasterMimes: Record<string, string> = {
+      png: "image/png", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp",
+    };
+    const raster = view === "inline" ? rasterMimes[attachment.detectedType] : undefined;
+    const textPreview = view === "text" && attachment.detectedType === "text"
+      && attachment.byteSize <= 1_000_000;
+    if (view && !raster && !textPreview) return failure(404);
     return new Response(object.body, {
       status: 200,
       headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": disposition(attachment.fileName),
+        "Content-Type": raster ?? (textPreview ? "text/plain; charset=utf-8" : "application/octet-stream"),
+        "Content-Disposition": raster || textPreview ? "inline" : disposition(attachment.fileName),
+        "Content-Security-Policy": "sandbox",
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
