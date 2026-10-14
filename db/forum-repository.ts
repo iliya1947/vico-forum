@@ -377,6 +377,7 @@ export interface ForumReader {
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
+  readPostLocation(postId: string): Promise<{ topicId: string; authorId: string } | undefined>;
   readPostHistory(postId: string, topicId: string): Promise<Array<{
     id: string; authorId: string; authorName: string; originalContent: string;
     sourceLocale: string; createdAt: Date;
@@ -2765,6 +2766,12 @@ export class DrizzleForumRepository {
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
       })),
     };
+  }
+
+  async readPostLocation(postId: string) {
+    const [post] = await this.database.select({ topicId: forumPosts.topicId, authorId: forumPosts.authorId })
+      .from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);
+    return post;
   }
 
   async readPostHistory(postId: string, topicId: string) {
