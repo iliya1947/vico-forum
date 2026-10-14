@@ -1,10 +1,12 @@
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, type ReactNode } from "react";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { useTranslation } from "react-i18next";
 import type { EditorSelection } from "./editor-document";
 import { ForumMarkdown, ForumInlineImage } from "./markdown";
 import { segmentTechnicalMarkdown, encodeTableCell, type MarkdownTable } from "./technical-markdown";
 import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
+
+const visualSpellcheckContext = createContext(true);
 
 interface VisualNode {
   type: string;
@@ -326,7 +328,7 @@ function VisualTextLeaf({
       role="textbox"
       aria-multiline="false"
       suppressContentEditableWarning
-      spellCheck
+      spellCheck={useContext(visualSpellcheckContext)}
       data-visual-text="true"
       data-source-start={range.start}
       data-source-end={range.end}
@@ -569,14 +571,15 @@ function VisualTable({
   </div>;
 }
 
-export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: number }) {
-  const { markdown, disabled = false, sourceBase = 0, ...actions } = props;
+export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: number; spellCheck?: boolean }) {
+  const { markdown, disabled = false, sourceBase = 0, spellCheck, ...actions } = props;
   const { t } = useTranslation("common");
   const segments = segmentTechnicalMarkdown(markdown);
   const reportSurfaceSelection = (root: HTMLElement) => {
     actions.onSelection(visualDomSelection(root, markdown, sourceBase));
   };
   return (
+    <visualSpellcheckContext.Provider value={spellCheck ?? useContext(visualSpellcheckContext)}>
     <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
       onSelect={(event) => reportSurfaceSelection(event.currentTarget)}
       onMouseUp={(event) => reportSurfaceSelection(event.currentTarget)}
@@ -616,5 +619,6 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
           onReplaceRange={actions.onReplaceRange} onPasteFallback={actions.onPasteFallback} /></p>
       ) : null}
     </section>
+    </visualSpellcheckContext.Provider>
   );
 }
