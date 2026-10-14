@@ -581,7 +581,7 @@ describe("Help & solutions modes and authoring", () => {
     const form = await screen.findByRole("form", { name: "Ask a question" });
     expect(within(form).getByLabelText("Question title")).toBeRequired();
     const questionDetails = within(form).getByLabelText("Question details");
-    expect(questionDetails).toBeRequired();
+    expect(questionDetails).not.toBeRequired();
     expect(within(form).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
     expect(within(form).getByRole("button", { name: "Advanced" })).toBeInTheDocument();
     fireEvent.change(questionDetails, { target: { value: "Draft body with **Markdown**." } });
@@ -592,7 +592,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(similarButton).toHaveAttribute("name", "intent");
     expect(similarButton).toHaveAttribute("value", "checkSimilarHelpQuestions");
     const askQuestionButton = within(form).getByRole("button", { name: "Ask question" });
-    expect(askQuestionButton).toBeEnabled();
+    await waitFor(() => expect(askQuestionButton).toBeEnabled());
     expect(askQuestionButton).toHaveAttribute("name", "intent");
     expect(askQuestionButton).toHaveAttribute("value", "createHelpQuestion");
     expect(within(form).queryByText("All fields are required.")).not.toBeInTheDocument();
@@ -2659,7 +2659,7 @@ describe("forum read states", () => {
     expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
     expect(within(replyForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
     expect(within(replyForm).getByRole("button", { name: "Advanced" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Post reply" })).toBeDisabled();
   });
 
   it("shows a pending state while create-topic submission is in flight", async () => {
@@ -2684,6 +2684,7 @@ describe("forum read states", () => {
     );
 
     const form = await screen.findByRole("form", { name: "Create a new topic" });
+    fireEvent.change(form.querySelector("textarea")!, { target: { value: "Ready topic body" } });
     fireEvent.submit(form);
 
     expect(await screen.findByRole("button", { name: "Creating topic…" })).toBeDisabled();
@@ -2718,6 +2719,7 @@ describe("forum read states", () => {
     );
 
     const form = await screen.findByRole("form", { name: "Add a reply" });
+    fireEvent.change(form.querySelector("textarea")!, { target: { value: "Ready reply body" } });
     fireEvent.submit(form);
 
     expect(await screen.findByRole("button", { name: "Posting reply…" })).toBeDisabled();
