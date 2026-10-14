@@ -839,6 +839,7 @@ function previewNotifications(locale: PreviewLocale) {
     },
     {
       id: "notification-3",
+      kind: "reply" as const,
       actorName: hebrew ? "נועה לוי" : "Noa Levi",
       topicId: "rtl-markdown",
       topicTitle: hebrew
