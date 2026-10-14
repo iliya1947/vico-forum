@@ -68,6 +68,8 @@ export async function loader({ params, context }: {
   let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
+  let editablePostIds: string[] = [];
+  let canReadPostHistory = false;
   let topicReadState: ForumTopicReadState | null = null;
   if (session) {
     try {
@@ -78,7 +80,7 @@ export async function loader({ params, context }: {
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, editOwn, historyRead] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -87,8 +89,12 @@ export async function loader({ params, context }: {
         resolver.has("forum.sourceLocale.correctOwn"),
         resolver.has("forum.translation.generate"),
         resolver.has("forum.topic.pin"),
+        resolver.has("forum.post.editOwn"),
+        resolver.has("forum.post.history.read"),
       ]);
       canReply = reply;
+      editablePostIds = editOwn ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
+      canReadPostHistory = historyRead;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
       canManageAnySolution = solutionAny;
       canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
@@ -174,6 +180,8 @@ export async function loader({ params, context }: {
     canManagePin,
     canUseAdminPanel,
     correctablePostIds,
+    editablePostIds,
+    canReadPostHistory,
     topicReadState,
   };
 }
