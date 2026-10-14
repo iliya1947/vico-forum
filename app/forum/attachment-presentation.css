@@ -1,0 +1,13 @@
+.forum-attachment-display { display: grid; gap: .4rem; min-inline-size: 0; padding-block: .35rem; }
+.forum-attachment-display img {
+  display: block;
+  inline-size: auto;
+  max-inline-size: min(100%, 34rem);
+  max-block-size: 24rem;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: .3rem;
+}
+.forum-attachment-details { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; min-inline-size: 0; }
+.forum-attachment-details a { overflow-wrap: anywhere; }
+.forum-attachment-details button { font: inherit; cursor: pointer; }
