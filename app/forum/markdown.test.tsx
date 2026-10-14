@@ -220,14 +220,15 @@ const longValue = "code";
     const source = "\\n/* multiline\\n\\ncomment */\\nconst value = 1;\\n\\n".replaceAll("\\n", "\n");
     const fence = "```";
     const { container } = renderMarkdown(fence + "ts\n" + source + "\n" + fence);
-    const code = container.querySelector(".forum-code-block code");
-    expect(code?.textContent).toBe(source);
+    const sourceText = () => Array.from(container.querySelectorAll(".forum-code-line-text"))
+      .map((node) => node.textContent).join("");
+    expect(sourceText()).toBe(source);
     expect(container.querySelectorAll(".forum-code-line")).toHaveLength(source.split("\n").length);
     expect(container.querySelector(".forum-code-source-newline")).toBeNull();
     expect(container.querySelectorAll(".syntax-comment")).toHaveLength(2);
     await userEvent.click(screen.getByRole("button", { name: "Line numbers" }));
     await userEvent.click(screen.getByRole("button", { name: "Wrap lines" }));
-    expect(code?.textContent).toBe(source);
+    expect(sourceText()).toBe(source);
   });
 
   it("shares the full code gutter width across digit-count boundaries", async () => {
@@ -246,7 +247,8 @@ const longValue = "code";
     const updatedCode = container.querySelector(".forum-code-block code") as HTMLElement;
     expect(updatedCode.style.getPropertyValue("--forum-code-gutter-width")).toBe("3ch");
     expect(container.querySelectorAll(".forum-code-line-number")).toHaveLength(100);
-    expect(updatedCode.textContent).toBe(hundred);
+    expect(Array.from(container.querySelectorAll(".forum-code-line-text"))
+      .map((node) => node.textContent).join("")).toBe(hundred);
   });
 
   it("respects Diff size and post-wide syntax highlighting budgets", () => {
