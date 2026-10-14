@@ -34,6 +34,8 @@ Permission key означает существующую capability прилож
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.post.editOwn`;
+- `forum.post.history.read`;
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
@@ -44,6 +46,8 @@ Permission key означает существующую capability прилож
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
 - `access.authorization.manage`.
+
+`forum.post.editOwn` применяется только к сообщениям с authoritative `author_id`, совпадающим с пользователем; `forum.post.history.read` открывает историю ревизий любому сообщению при наличии effective permission и не предоставляет права редактирования. По умолчанию editOwn получают все built-in роли, history.read — moderator/admin; изменяемые grants и overrides остаются authoritative.
 
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
 catalog, после чего он становится доступен role/user configuration UI.
@@ -72,6 +76,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 ### `user`
 
+- `forum.post.editOwn`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
@@ -81,6 +86,8 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 ### `moderator`
 
+- `forum.post.editOwn`;
+- `forum.post.history.read`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
@@ -95,6 +102,8 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 ### `admin`
 
+- `forum.post.editOwn`;
+- `forum.post.history.read`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
