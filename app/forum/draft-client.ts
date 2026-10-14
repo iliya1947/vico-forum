@@ -60,7 +60,10 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
       || (typeof data.attachmentDraftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.attachmentDraftId)))
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
     && !!data.payload && typeof data.payload.body === "string"
-    && typeof data.payload.title === "string" && typeof data.payload.tags === "string";
+    && typeof data.payload.title === "string" && typeof data.payload.tags === "string"
+    && (data.payload.publishedRevisionId === undefined
+      || (typeof data.payload.publishedRevisionId === "string"
+        && data.payload.publishedRevisionId.length > 0 && data.payload.publishedRevisionId.length <= 128));
 }
 export function readLocalEditorDraft(ownerId: string, contextKey: string): LocalEditorDraft | null {
   try {
