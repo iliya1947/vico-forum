@@ -216,6 +216,53 @@ const longValue = "code";
     expect(writeText).toHaveBeenCalledWith(code);
   });
 
+  it("preserves source newlines and multiline tokens through code presentation controls", async () => {
+    const source = "\\n/* multiline\\n\\ncomment */\\nconst value = 1;\\n\\n".replaceAll("\\n", "\n");
+    const fence = "```";
+    const { container } = renderMarkdown(fence + "ts\n" + source + "\n" + fence);
+    const code = container.querySelector(".forum-code-block code");
+    expect(code?.textContent).toBe(source);
+    expect(container.querySelectorAll(".forum-code-line")).toHaveLength(source.split("\n").length);
+    expect(container.querySelector(".forum-code-source-newline")).toBeNull();
+    expect(container.querySelectorAll(".syntax-comment")).toHaveLength(2);
+    await userEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    await userEvent.click(screen.getByRole("button", { name: "Wrap lines" }));
+    expect(code?.textContent).toBe(source);
+  });
+
+  it("shares the full code gutter width across digit-count boundaries", async () => {
+    const fence = "```";
+    const ninetyNine = Array.from({ length: 99 }, () => "same()").join("\n");
+    const { container, rerender } = renderMarkdown(fence + "txt\n" + ninetyNine + "\n" + fence);
+    await userEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    const code = container.querySelector(".forum-code-block code") as HTMLElement;
+    expect(code.style.getPropertyValue("--forum-code-gutter-width")).toBe("2ch");
+    expect(container.querySelectorAll(".forum-code-line-number")).toHaveLength(99);
+
+    const hundred = ninetyNine + "\nsame()";
+    rerender(<I18nextProvider i18n={runtime()}>
+      <div><ForumMarkdown>{fence + "txt\n" + hundred + "\n" + fence}</ForumMarkdown></div>
+    </I18nextProvider>);
+    const updatedCode = container.querySelector(".forum-code-block code") as HTMLElement;
+    expect(updatedCode.style.getPropertyValue("--forum-code-gutter-width")).toBe("3ch");
+    expect(container.querySelectorAll(".forum-code-line-number")).toHaveLength(100);
+    expect(updatedCode.textContent).toBe(hundred);
+  });
+
+  it("respects Diff size and post-wide syntax highlighting budgets", () => {
+    const fence = "```";
+    const oversized = "+" + "x".repeat(20_001) + "\n-removed";
+    const large = renderMarkdown(fence + "diff\n" + oversized + "\n" + fence);
+    expect(large.container.querySelector(".syntax-diff-add, .syntax-diff-remove")).toBeNull();
+    expect(large.container.querySelector(".forum-code-block code")?.textContent).toBe(oversized);
+    large.unmount();
+
+    const post = "Before " + "x".repeat(12_001) + "\n\n" + fence + "diff\n+added\n-removed\n" + fence;
+    const budget = renderMarkdown(post);
+    expect(budget.container.querySelector(".syntax-diff-add, .syntax-diff-remove")).toBeNull();
+    expect(budget.container.querySelector(".forum-code-block code")?.textContent).toBe("+added\n-removed");
+  });
+
   it("reports clipboard failure without changing the code", async () => {
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
 
