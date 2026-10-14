@@ -497,6 +497,8 @@ export interface ForumEditorDraftPayload {
   title: string;
   tags: string;
   parentPostId?: string | null;
+  /** Immutable published revision baseline for a recoverable post-edit draft. */
+  publishedRevisionId?: string;
 }
 
 export const forumEditorDrafts = pgTable("forum_editor_drafts", {
