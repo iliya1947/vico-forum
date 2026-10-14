@@ -2151,6 +2151,33 @@ describe("forum path encoding", () => {
   });
 });
 
+describe("published attachment caller integration", () => {
+  it("resolves inline images and inert source previews from verified types, not names", async () => {
+    const imageId = "23b93562-0550-4eef-88af-f951d6ea6138";
+    const sourceId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
+    const published = { ...topic, posts: [{
+      ...topic.posts[0]!,
+      body: {
+        ...topic.posts[0]!.body,
+        originalContent: `Before ![shot](vico-attachment:${imageId}) after`,
+      },
+      attachments: [
+        { id: imageId, fileName: "verified-source-name.txt", byteSize: 7, detectedType: "png" },
+        { id: sourceId, fileName: "misleading.png", byteSize: 21, detectedType: "text" },
+      ],
+    }] };
+    renderRoute(TopicRoute, topicRenderData(published), "/en/topics/typed-api", "en", "ltr");
+    const body = document.querySelector("[data-message-body]");
+    expect(body).not.toBeNull();
+    const image = within(body as HTMLElement).getByAltText("verified-source-name.txt");
+    expect(image).toHaveAttribute("src", `/api/attachments/file/${imageId}?post=answer&view=inline`);
+    const safePreview = screen.getByRole("link", { name: "Preview" });
+    expect(safePreview).toHaveAttribute("href",
+      `/api/attachments/file/${sourceId}?post=answer&view=text`);
+    expect(screen.queryByAltText("misleading.png")).not.toBeInTheDocument();
+  });
+});
+
 describe("forum read states", () => {
   it("targets direct replies, exposes parent/child anchors, and quotes only selected message text", async () => {
     const seed = topic.posts[0]!;
