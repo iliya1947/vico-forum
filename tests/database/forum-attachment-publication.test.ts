@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
 import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
-import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
+import { DrizzleForumRepository, ForumAuthorizationError, ForumStateConflictError } from "../../db/forum-repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -327,5 +327,83 @@ describe("text-only publication attachment fence", () => {
       await client.query("rollback");
       await Promise.all([saveClient.end(), publicationClient.end()]);
     }
+  });
+});
+
+describe("published post editing and revision history", () => {
+  it("keeps edits as separate drafts until Save, then preserves history and replays lost ACK once", async () => {
+    const postId = crypto.randomUUID();
+    const originalRevisionId = crypto.randomUUID();
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      bodyRevision: { id: originalRevisionId, originalContent: "Published before edit", sourceLocale: "en" },
+    });
+    const editContext = `post:${postId}:edit`;
+    const generation = crypto.randomUUID();
+    const saved = await savedDraft(generation, editContext);
+    expect((await forum.readPost(postId))?.body.originalContent).toBe("Published before edit");
+    const request = {
+      postId, topicId, actorId: ownerId, expectedRevisionId: originalRevisionId,
+      body: "Updated **Markdown**", draftId: generation,
+      expectedVersion: saved.version, attachmentIds: [] as string[],
+    };
+    await forum.editPublishedPost(request);
+    const updated = await forum.readPost(postId);
+    expect(updated?.body.originalContent).toBe("Updated **Markdown**");
+    expect(updated?.body.id).not.toBe(originalRevisionId);
+    const page = await forum.readTopicPage(topicId);
+    expect(page?.posts.find((post) => post.id === postId)?.editedAt).toBeInstanceOf(Date);
+    const history = await forum.readPostHistory(postId, topicId);
+    expect(history).toHaveLength(2);
+    expect(history.map((item) => item.originalContent)).toContain("Published before edit");
+    expect(history.map((item) => item.originalContent)).toContain("Updated **Markdown**");
+    expect(history.find((item) => item.originalContent === "Updated **Markdown**")?.authorId).toBe(ownerId);
+    expect(await draftStore.get(ownerId, editContext)).toMatchObject({ status: "published" });
+    await forum.editPublishedPost(request);
+    expect(await forum.readPostHistory(postId, topicId)).toHaveLength(2);
+    await expect(forum.editPublishedPost({ ...request, body: "Changed replay" }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+  });
+
+  it("rejects another user's edit, stale revision and blank body without a file", async () => {
+    const postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      bodyRevision: { id: revisionId, originalContent: "Keep original", sourceLocale: "en" },
+    });
+    const generation = crypto.randomUUID();
+    const edit = {
+      postId, topicId, actorId: ownerId, expectedRevisionId: revisionId,
+      body: "Changed", draftId: generation, expectedVersion: 0, attachmentIds: [] as string[],
+    };
+    await expect(forum.editPublishedPost({ ...edit, actorId: "publication-other" }))
+      .rejects.toBeInstanceOf(ForumAuthorizationError);
+    await expect(forum.editPublishedPost({ ...edit, body: "  " }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect((await forum.readPost(postId))?.body.id).toBe(revisionId);
+    const saved = await savedDraft(generation, `post:${postId}:edit`);
+    await expect(forum.editPublishedPost({ ...edit, expectedRevisionId: crypto.randomUUID(), expectedVersion: saved.version }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect((await forum.readPost(postId))?.body.id).toBe(revisionId);
+  });
+
+  it("atomically publishes new edit attachments while retaining already published ones", async () => {
+    const postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await forum.createPost({
+      id: postId, topicId, authorId: ownerId,
+      bodyRevision: { id: revisionId, originalContent: "Original", sourceLocale: "en" },
+    });
+    const editContext = `post:${postId}:edit`;
+    const generation = crypto.randomUUID();
+    const draft = await savedDraft(generation, editContext);
+    const file = attachment(generation, editContext);
+    await attachments.createDraftAttachment(file);
+    await forum.editPublishedPost({
+      postId, topicId, actorId: ownerId, expectedRevisionId: revisionId,
+      body: "", draftId: generation, expectedVersion: draft.version, attachmentIds: [file.id],
+    });
+    expect(await attachments.readPublishedAttachment(postId, file.id)).toMatchObject({ id: file.id });
+    expect((await forum.readPost(postId))?.body.originalContent).toBe("");
+    expect(await forum.readPostHistory(postId, topicId)).toHaveLength(2);
   });
 });
