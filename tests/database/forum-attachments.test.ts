@@ -42,6 +42,7 @@ const migrations = [
   "0034_forum_editor_drafts", "0035_forum_attachments_foundation",
   "0036_forum_attachment_security_events",
   "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts", "0040_post_edit_history_permissions",
+  "0041_published_mentions",
 ];
 
 const ownerId = "attachment-owner";
