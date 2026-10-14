@@ -673,6 +673,47 @@ describe("MarkdownEditor", () => {
     window.localStorage.removeItem("vico:editor:mode:" + firstId);
   });
 
+  it("uses browser spelling defaults per mode and remembers explicit choice by account", async () => {
+    const owner = "spell-owner-a";
+    const other = "spell-owner-b";
+    const key = (id: string) => "vico:editor:spellcheck:" + id;
+    window.localStorage.removeItem(key(owner));
+    window.localStorage.removeItem(key(other));
+    const first = renderEditor(
+      <HeaderAuthProvider initialUser={{ id: owner, name: "First" }}>
+        <MarkdownEditor id="spell-a" name="body" defaultValue="Typoo" />
+      </HeaderAuthProvider>,
+    );
+    await waitFor(() => expect(document.querySelector('[data-visual-text="true"]')).toHaveAttribute("spellcheck", "true"));
+    const control = screen.getByRole("checkbox", { name: "Check spelling" });
+    expect(control).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    expect(screen.getByLabelText("Body")).toHaveAttribute("spellcheck", "false");
+    expect(control).not.toBeChecked();
+    await userEvent.click(control);
+    expect(screen.getByLabelText("Body")).toHaveAttribute("spellcheck", "true");
+    expect(window.localStorage.getItem(key(owner))).toBe("true");
+    first.unmount();
+
+    const second = renderEditor(
+      <HeaderAuthProvider initialUser={{ id: other, name: "Second" }}>
+        <MarkdownEditor id="spell-b" name="body" defaultAuthoringMode="advanced" />
+      </HeaderAuthProvider>,
+    );
+    expect(screen.getByRole("checkbox", { name: "Check spelling" })).not.toBeChecked();
+    expect(window.localStorage.getItem(key(other))).toBeNull();
+    second.unmount();
+
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: owner, name: "First" }}>
+        <MarkdownEditor id="spell-c" name="body" defaultAuthoringMode="advanced" />
+      </HeaderAuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "Check spelling" })).toBeChecked());
+    expect(screen.getByLabelText("Body")).toHaveAttribute("spellcheck", "true");
+    window.localStorage.removeItem(key(owner));
+  });
+
   it("inserts text in a new visual paragraph without losing native submission", () => {
     renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="First" /></form>);
     const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
