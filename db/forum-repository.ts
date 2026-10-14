@@ -321,7 +321,7 @@ export interface ForumSectionPage {
 }
 
 export interface ForumThreadPost extends ForumPost {
-  attachments?: Array<{ id: string; fileName: string; byteSize: number }>;
+  attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
   authorName: string;
   createdAt: Date;
@@ -2641,14 +2641,15 @@ export class DrizzleForumRepository {
       id: forumAttachments.id,
       fileName: forumAttachments.fileName,
       byteSize: forumAttachments.byteSize,
+      detectedType: forumAttachments.detectedType,
     }).from(forumPostAttachments).innerJoin(forumAttachments,
       eq(forumAttachments.id, forumPostAttachments.attachmentId),
     ).where(inArray(forumPostAttachments.postId, posts.map((post) => post.id)))
       .orderBy(asc(forumPostAttachments.createdAt), asc(forumAttachments.id));
-    const attachmentsByPost = new Map<string, Array<{ id: string; fileName: string; byteSize: number }>>();
+    const attachmentsByPost = new Map<string, Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>>();
     for (const attachment of attached) {
       const list = attachmentsByPost.get(attachment.postId) ?? [];
-      list.push({ id: attachment.id, fileName: attachment.fileName, byteSize: attachment.byteSize });
+      list.push({ id: attachment.id, fileName: attachment.fileName, byteSize: attachment.byteSize, detectedType: attachment.detectedType });
       attachmentsByPost.set(attachment.postId, list);
     }
     return {
