@@ -216,7 +216,7 @@ function ForumCodeBlock({
   // keeps gutter rows aligned even when highlighting spans multiple lines.
   const codeRows: ReactNode[][] = [[]];
   for (const token of tokens) {
-    const fragments = token.text.split("\\n");
+    const fragments = token.text.split("\n");
     fragments.forEach((fragment, index) => {
       if (index > 0) codeRows.push([]);
       if (fragment) codeRows[codeRows.length - 1].push(
@@ -276,12 +276,12 @@ function ForumCodeBlock({
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
           {codeRows.map((parts, index) => (
             <span className={displayLanguage?.toLowerCase() === "diff"
-              ? code.split("\\n")[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
-                : code.split("\\n")[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
+              ? code.split("\n")[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
+                : code.split("\n")[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
                   : "forum-code-line"
               : "forum-code-line"} key={index}>
               {lineNumbers ? <span className="forum-code-line-number" aria-hidden="true">{index + 1}</span> : null}
-              <span className="forum-code-line-text">{parts.length ? parts : "\\u200b"}</span>
+              <span className="forum-code-line-text">{parts.length ? parts : "\u200b"}</span>
             </span>
           ))}
         </code>
