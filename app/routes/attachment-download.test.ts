@@ -57,6 +57,30 @@ describe("controlled attachment read", () => {
     expect(response.headers.get("Content-Disposition")).not.toContain(metadata.objectKey);
   });
 
+  it("allows inline rendering only for safe signature-verified raster formats", async () => {
+    const path = `/api/attachments/file/${attachmentId}?post=${postId}`;
+    const disallowed = setup();
+    expect((await run(disallowed.context, path + "&view=inline")).status).toBe(404);
+    expect((await run(disallowed.context, path + "&view=text")).status).toBe(404);
+    const raster = setup();
+    raster.readPublishedAttachment.mockResolvedValueOnce({
+      ...metadata, detectedType: "png", responseMime: "image/png",
+    });
+    const image = await run(raster.context, path + "&view=inline");
+    expect(image.status).toBe(200);
+    expect(image.headers.get("Content-Type")).toBe("image/png");
+    expect(image.headers.get("Content-Disposition")).toBe("inline");
+    expect(image.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(image.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    const text = setup();
+    text.readPublishedAttachment.mockResolvedValueOnce({
+      ...metadata, detectedType: "text", responseMime: "text/plain; charset=utf-8",
+    });
+    const source = await run(text.context, path + "&view=text");
+    expect(source.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
+    expect(source.headers.get("Content-Security-Policy")).toBe("sandbox");
+  });
+
   it("requires the account owner for draft access and never reads storage before authorization", async () => {
     const guest = setup();
     expect((await run(guest.context, `/api/attachments/file/${attachmentId}?draft=${draftId}&context=help%3Anew`)).status).toBe(401);
