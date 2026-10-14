@@ -1050,7 +1050,7 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     expect(markers.rows).toEqual([{ target_draft_id: null }]);
     await expect(store.createDraftAttachment(upload(context, generation))).rejects
       .toMatchObject({ reason: "gone" });
-    expect(await store.listDraftAttachments(ownerId, context, generation)).rejects
+    await expect(store.listDraftAttachments(ownerId, context, generation)).rejects
       .toMatchObject({ reason: "gone" });
   });
 
