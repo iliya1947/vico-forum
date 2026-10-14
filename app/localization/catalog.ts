@@ -527,6 +527,7 @@ export const canonicalEnglishCatalog = {
     editorModeMarkdown: message("editorModeMarkdown", "Markdown", "View only editable Markdown source."),
     editorFullScreen: message("editorFullScreen", "Full screen", "Toggle full-screen editor."),
     editorToolbar: message("editorToolbar", "Markdown formatting", "Accessible label for the Markdown editor formatting toolbar."),
+    editorMentionSuggestions: message("editorMentionSuggestions", "Mention a member", "Accessible heading for the member suggestions shown after typing @ in the editor."),
     editorViewMode: message("editorViewMode", "Editor view", "Accessible label for choosing the Markdown editor view mode."),
     editorModeWrite: message("editorModeWrite", "Write", "Markdown editor mode that shows the editable source."),
     editorModePreview: message("editorModePreview", "Preview", "Markdown editor mode that shows the rendered preview."),
