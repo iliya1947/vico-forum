@@ -6061,3 +6061,87 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+
+---
+
+## PR #215 — GPT-5.6 Sol independent whole-scope review: Editor 2.0 Stage 5 packages 1–3 — 2026-10-14
+
+**Model:** GPT-5.6 Sol. **Exact implementation head reviewed:** `ac1257273de0b03bdb0f89285367f50ce6103422`. Independently reviewed the completed Editor 2.0 Stage 5 attachment scope (packages 1–3) against current `main` / `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, relevant `EDITOR_SPEC.md` §§5–6/8/13, the implementation delta and focused regressions. No implementation edits.
+
+Exact-head CI run `38547434309` is independently confirmed completed **SUCCESS** for both jobs on `ac12572`. Green CI is supporting evidence only; findings below come from the production paths.
+
+### Package 1 — publication/download
+
+No new current-Stage production defect established beyond the already reviewed package-1 result. The previously missing rebind↔publication ordering coverage and real action→writer/service→repository→PostgreSQL paths remain present. Transactional manifest/CAS/ref promotion and controlled DB-authorized download boundaries remain coherent with migration 0038's reference gate.
+
+The real-browser test-bucket flow (upload → publish → navigate → authorized download plus failed-publication preservation) remains unverified acceptance evidence, not a reproduced code defect.
+
+### Package 2 — confirmed current-Stage findings
+
+#### Finding P2-A — image paste/drop does not insert the image into the message body
+
+**Trigger:** paste or drop an image in the editor.
+
+**Observed implementation:** `useEditorAttachments.handlePaste()` / `handleDrop()` suppress the normal paste/drop and call the upload path only. The uploaded attachment is rendered later in the separate attachment panel; no attachment identity/token is inserted at the current document/caret position. The package-2 delta adds no equivalent stable inline-image representation in the Markdown/document model.
+
+**Effect:** the user cannot actually place the image in the body at the insertion point. Simple, Advanced and Preview have no common inline representation to round-trip; the published renderer renders the image after the message body as a generic attachment block.
+
+**Current requirement violated:** `EDITOR_SPEC.md` §6 requires image insertion into the body and images displayed in the text; package 2 specifically requires inline images through the shared editor/published presentation while keeping durable representation independent of private object keys / temporary URLs.
+
+**Minimal correction boundary:** add one stable application-level attachment-image reference tied to the authoritative attachment identity and editor document position, with lossless Simple/Advanced/Preview/published round-trip. Do not embed private object keys/signed/blob URLs in durable Markdown. Preserve the existing immediate-upload/draft/ref lifecycle.
+
+#### Finding P2-B — published presentation discards server-observed file type
+
+**Trigger:** publish a valid technical text/source attachment such as JSON/TS/MD/TXT, or render any published attachment whose presentation depends on verified type.
+
+**Observed implementation:** `DrizzleForumRepository.readTopicPage()` projects published attachments as only `id + fileName + byteSize`; `ForumThreadPost.attachments` has the same reduced shape. `TopicView` then fabricates `detectedType` from the filename extension for raster extensions and assigns `"other"` to everything else. By contrast, draft presentation receives the authoritative server `detectedType`.
+
+**Effect:** published text/source attachments can never expose the package-2 safe text preview because `ForumAttachmentDisplay` enables it only for `detectedType === "text"`. Published presentation also makes the raster/display decision from the filename rather than the server-observed type. The download route itself still re-authorizes and checks authoritative metadata, so this review does not claim an execution bypass.
+
+**Current requirement violated:** §6 requires server-observed type/size and safe supported technical previews; `PROJECT_STATE.md` for package 2 explicitly claims text/source previews.
+
+**Minimal correction boundary:** carry the existing authoritative presentation metadata needed by the renderer (at least `detectedType`) through the set-based published attachment projection and use it directly. Do not re-sniff or infer security/presentation type client-side from filename.
+
+#### Finding P2-C — “open original” image action actually downloads the file
+
+**Trigger:** click a rendered raster image.
+
+**Observed implementation:** `ForumAttachmentDisplay` labels the image link as “Open original”, but its anchor points to the default attachment URL without `view=inline` and has the `download` attribute. The default route response is `application/octet-stream` with attachment disposition.
+
+**Effect:** clicking the image invokes download behavior rather than opening the original controlled image view.
+
+**Current requirement violated:** §6 and package 2 require an inline image with an action to open the original.
+
+**Minimal correction boundary:** make the image/open-original action target the existing authorized raster inline view; keep download as a separate explicit file action if desired. Preserve DB authorization, no-store/nosniff and verified-raster restrictions.
+
+### Package 3 — cleanup
+
+No reproducible production-code defect established in the cleanup claim/gate lifecycle from this review. The processor:
+- rechecks stale draft refs under the existing owner/context scope lock;
+- claims an unreferenced aged asset under row lock before storage deletion;
+- leaves an ambiguous/failed delete as a durable leased `deleting` claim;
+- finalizes DB deletion only with matching claim token and no refs;
+- migration 0038 gates both draft/post ref insertion by locking the asset and requiring `cleanup_status = active`, so publication/rebind cannot attach an object already claimed for deletion;
+- overlapping workers use `SKIP LOCKED` and token fencing.
+
+However, package-3 **acceptance evidence is incomplete** relative to its recorded criteria. Current cleanup-specific tests cover immediate-upload preservation, deleted-draft cleanup, shared post refs, lost delete ACK/lease retry, one claimed-object draft-ref race and overlapping processors. They do not directly exercise all required scenarios:
+1. cleanup of an expired/TTL draft and terminal-generation alias through the cleanup processor;
+2. controlled two-order `cleanup ↔ publication` and `cleanup ↔ rebind` races (and the corresponding remove boundary);
+3. a crash/failure specifically after successful storage deletion but before DB finalization.
+
+These are verification gaps, not code findings unless one of the scenarios reproduces a failure. `PROJECT_STATE.md` currently overstates package-3 test evidence when it says terminal aliases/concurrency are exercised without qualifying which paths were actually covered.
+
+### Scope classification
+
+Not classified as defects of these Stage-5 packages because the recorded bounded scope deliberately defers them: attachment-only publication, cross-request general publication exactly-once, editing published messages, AV provider, external R2/Neon/Queue provisioning and production cleanup scheduling.
+
+Still-unverified acceptance evidence also remains: actual-browser test-bucket flow plus mobile/RTL live visual and owner acceptance.
+
+### Independent result
+
+**Package 1:** PASS at code level; browser acceptance pending.  
+**Package 2:** FAIL — three reproducible current-Stage functional findings (P2-A/B/C) above.  
+**Package 3:** code review PASS with no confirmed defect; required regression/acceptance evidence incomplete.
+
+Stage 5 packages 1–3 therefore **must not be accepted yet**. GPT-6 should address only the confirmed package-2 findings and close the package-3 verification gaps on the existing PR #215 branch; no package beyond current Stage scope, branch, merge, deployment or final automated Codex Code Review is requested. Codex should independently assess the same exact pre-correction head/findings before they are treated as jointly confirmed, per AGENTS.md.
