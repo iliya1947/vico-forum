@@ -2187,6 +2187,21 @@ describe("published editing presentation permissions", () => {
 
 describe("published edit submission lifecycle", () => {
   it("keeps the editor and its publication barrier locked through loader revalidation", async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+
+    const editPostId = "edit-lifecycle-answer";
+    const original = {
+      ...topic,
+      posts: [{ ...topic.posts[0]!, id: editPostId,
+        body: { ...topic.posts[0]!.body, id: "edit-lifecycle-r1" } }],
+    };
     let resolveAction!: () => void;
     let resolveRevalidation!: (value: ReturnType<typeof topicRenderData>) => void;
     const actionPending = new Promise<void>((resolve) => { resolveAction = resolve; });
@@ -2195,8 +2210,8 @@ describe("published edit submission lifecycle", () => {
     });
     let holdRevalidation = false;
     let actionBody: FormDataEntryValue | null = null;
-    const permissions = { editablePostIds: ["answer"], canReadPostHistory: false };
-    let currentData = topicRenderData(topic, permissions);
+    const permissions = { editablePostIds: [editPostId], canReadPostHistory: false };
+    let currentData = topicRenderData(original, permissions);
     const router = createMemoryRouter([{
       id: "page",
       path: "*",
@@ -2205,8 +2220,8 @@ describe("published edit submission lifecycle", () => {
       action: async ({ request }) => {
         const submitted = await request.formData();
         expect(submitted.get("intent")).toBe("editPost");
-        expect(submitted.get("postId")).toBe("answer");
-        expect(submitted.get("expectedRevisionId")).toBe("post-r1");
+        expect(submitted.get("postId")).toBe(editPostId);
+        expect(submitted.get("expectedRevisionId")).toBe("edit-lifecycle-r1");
         actionBody = submitted.get("body");
         await actionPending;
         return null;
@@ -2225,6 +2240,7 @@ describe("published edit submission lifecycle", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
     const form = await screen.findByRole("form", { name: "Edit published message" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
     const textarea = form.querySelector("textarea")!;
     const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
     fireEvent.change(textarea, { target: { value: "Submitted text " } });
@@ -2238,11 +2254,9 @@ describe("published edit submission lifecycle", () => {
     await waitFor(() => expect(actionBody).toBe("Submitted text "));
 
     const updatedTopic = {
-      ...topic,
-      posts: [{
-        ...topic.posts[0]!,
-        body: { ...topic.posts[0]!.body, id: "post-r2", originalContent: "Submitted text " },
-      }],
+      ...original,
+      posts: [{ ...original.posts[0]!,
+        body: { ...original.posts[0]!.body, id: "edit-lifecycle-r2", originalContent: "Submitted text " } }],
     };
     currentData = topicRenderData(updatedTopic, permissions);
     holdRevalidation = true;
