@@ -27,7 +27,7 @@ import {
 import { ForumDraftStorageUnavailableError } from "../../db/hyperdrive-editor-drafts";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 
-const json = (payload: unknown, status = 200) => Response.json(payload, {
+const json = (payload: unknown, status = 200): Response => Response.json(payload, {
   status,
   headers: {
     "Cache-Control": "no-store",
