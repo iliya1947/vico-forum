@@ -105,11 +105,12 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
 
   if (intent !== "createHelpQuestion") return mutationFailure("invalid", 400);
   const title = requiredFormText(formData, "title");
-  const body = requiredFormText(formData, "body");
-  if (!title || !body) return mutationFailure("invalid", 400);
+  const body = requiredFormText(formData, "body") ?? "";
+  if (!title) return mutationFailure("invalid", 400);
   const draftFence = validatedDraftPublicationFence(formData);
   const attachmentIds = selectedAttachmentIds(formData);
   if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
+  if (!body && (!attachmentIds?.length || !draftFence)) return mutationFailure("invalid", 400);
   const tags = draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createTopic({
@@ -165,8 +166,8 @@ export async function sectionAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const title = requiredFormText(formData, "title");
-  const body = requiredFormText(formData, "body");
-  if (!title || !body) return mutationFailure("invalid", 400);
+  const body = requiredFormText(formData, "body") ?? "";
+  if (!title) return mutationFailure("invalid", 400);
   const rawTags = formData.get("tags");
   const tags = typeof rawTags === "string"
     ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
@@ -174,6 +175,7 @@ export async function sectionAction({ request, params, context }: {
   const draftFence = validatedDraftPublicationFence(formData);
   const attachmentIds = selectedAttachmentIds(formData);
   if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
+  if (!body && (!attachmentIds?.length || !draftFence)) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createTopic({ sectionId, authorId, title, body, tags, ...(draftFence ?? {}), ...(attachmentIds === undefined ? {} : { attachmentIds }) });
     return redirect(forumTopicPath(locale, created.topicId));
@@ -466,8 +468,8 @@ export async function topicAction({ request, params, context }: {
   if (intent !== "reply") return mutationFailure("invalid", 400);
   const forbidden = await requireForumPermission(context, "forum.reply.create");
   if (forbidden) return forbidden;
-  const body = requiredFormText(formData, "body");
-  if (!body) return mutationFailure("invalid", 400);
+  const body = requiredFormText(formData, "body") ?? "";
+
   const rawParentPostId = formData.get("parentPostId");
   const parentPostId = typeof rawParentPostId === "string" && rawParentPostId.trim()
     ? rawParentPostId.trim()
@@ -475,6 +477,7 @@ export async function topicAction({ request, params, context }: {
   const draftFence = validatedDraftPublicationFence(formData);
   const attachmentIds = selectedAttachmentIds(formData);
   if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
+  if (!body && (!attachmentIds?.length || !draftFence)) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createReply({ topicId, authorId, body, parentPostId, ...(draftFence ?? {}), ...(attachmentIds === undefined ? {} : { attachmentIds }) });
     return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(created.postId));
