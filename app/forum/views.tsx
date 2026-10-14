@@ -2011,6 +2011,13 @@ export function SectionView({
   );
 }
 
+type PostHistoryActionData =
+  | { operation: "postHistory"; postId: string; revisions: Array<{
+      id: string; authorId: string; authorName: string; originalContent: string;
+      sourceLocale: string; createdAt: string;
+    }> }
+  | ForumMutationError;
+
 export type TopicViewActionData =
   | ForumMutationError
   | SourceLocaleCorrectionMutationError
@@ -2064,6 +2071,8 @@ export function TopicView({
   postPresentations,
   generationUnits,
   canReply,
+  editablePostIds = [],
+  canReadPostHistory = false,
   canManageSolution,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
@@ -2083,6 +2092,8 @@ export function TopicView({
   postPresentations: readonly ContentTranslationPresentation[];
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
+  editablePostIds?: readonly string[];
+  canReadPostHistory?: boolean;
   canManageSolution: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
@@ -2154,6 +2165,14 @@ export function TopicView({
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [replyReady, setReplyReady] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editReady, setEditReady] = useState(false);
+  const [historyPostId, setHistoryPostId] = useState<string | null>(null);
+  const editEditorRef = useRef<MarkdownEditorHandle>(null);
+  const historyFetcher = useFetcher<PostHistoryActionData>();
+  const editPublicationRef = useRef<{
+    postId: string; expectedRevisionId: string; draftId: string; expectedVersion: number;
+  } | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
   const activeReplyTargetPostId =
@@ -2175,7 +2194,41 @@ export function TopicView({
     setQuoteSelectionErrorPostId(null);
     setOpenMessageActionsPostId(null);
     replyPublicationRef.current = null;
+    editPublicationRef.current = null;
+    setEditingPostId(null);
+    setHistoryPostId(null);
   }, [topic.id]);
+
+  useEffect(() => {
+    const requested = new URLSearchParams(location.search).get("editPost");
+    if (requested && editablePostIds.includes(requested)) setEditingPostId(requested);
+  }, [location.search, topic.id, editablePostIds]);
+
+  useEffect(() => {
+    if (navigation.state !== "submitting" || navigation.formData?.get("intent") !== "editPost") return;
+    const postId = navigation.formData.get("postId");
+    const expectedRevisionId = navigation.formData.get("expectedRevisionId");
+    const draftId = navigation.formData.get("editorDraftId");
+    const version = Number(navigation.formData.get("editorDraftVersion"));
+    if (typeof postId !== "string" || typeof expectedRevisionId !== "string"
+      || typeof draftId !== "string" || !Number.isSafeInteger(version)) return;
+    editPublicationRef.current = { postId, expectedRevisionId, draftId, expectedVersion: version };
+  }, [navigation.state, navigation.formData]);
+
+  useEffect(() => {
+    const submitted = editPublicationRef.current;
+    if (!submitted || navigation.state !== "idle") return;
+    if (forumWriteError) {
+      editPublicationRef.current = null;
+      return;
+    }
+    const updated = topic.posts.find((post) => post.id === submitted.postId);
+    if (!updated || updated.body.id === submitted.expectedRevisionId) return;
+    editEditorRef.current?.acknowledgePublished(submitted.draftId, submitted.expectedVersion + 1);
+    editPublicationRef.current = null;
+    setEditingPostId(null);
+    setEditReady(false);
+  }, [navigation.state, forumWriteError, topic.posts]);
 
   useEffect(() => {
     if (
@@ -2245,6 +2298,16 @@ export function TopicView({
   const isReplySubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "reply";
+
+  function openPostHistory(postId: string) {
+    if (!canReadPostHistory) return;
+    if (historyPostId === postId) {
+      setHistoryPostId(null);
+      return;
+    }
+    setHistoryPostId(postId);
+    void historyFetcher.submit({ intent: "readPostHistory", postId }, { method: "post" });
+  }
 
   async function copyMessageLink(postId: string) {
     const requestId = ++messageLinkRequestId.current;
