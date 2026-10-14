@@ -21,18 +21,22 @@ CREATE INDEX "forum_attachments_cleanup_queue_idx"
 CREATE FUNCTION "forum_attachment_require_active_ref"()
 RETURNS trigger
 LANGUAGE plpgsql
-AS $$
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $
+DECLARE current_status text;
 BEGIN
-  PERFORM 1 FROM "forum_attachments"
-    WHERE "id" = NEW."attachment_id" AND "cleanup_status" = 'active'
-    FOR SHARE;
-  IF NOT FOUND THEN
+  -- The trigger's table schema is the only identifier, quoted as an identifier.
+  -- The owner-held row lock avoids granting web-role UPDATE on asset metadata.
+  EXECUTE format('SELECT cleanup_status FROM %I.forum_attachments WHERE id = $1 FOR SHARE', TG_TABLE_SCHEMA)
+    INTO current_status USING NEW.attachment_id;
+  IF current_status IS DISTINCT FROM 'active' THEN
     RAISE EXCEPTION 'attachment is not available for a new reference'
       USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END;
-$$;
+$;
 --> statement-breakpoint
 CREATE TRIGGER "forum_attachment_draft_refs_active_gate"
   BEFORE INSERT OR UPDATE OF "attachment_id"
