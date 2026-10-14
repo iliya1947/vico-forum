@@ -2167,6 +2167,7 @@ describe("published attachment caller integration", () => {
       ],
     }] };
     renderRoute(TopicRoute, topicRenderData(published), "/en/topics/typed-api", "en", "ltr");
+    await waitFor(() => expect(document.querySelector("[data-message-body]")).not.toBeNull());
     const body = document.querySelector("[data-message-body]");
     expect(body).not.toBeNull();
     const image = within(body as HTMLElement).getByAltText("verified-source-name.txt");
