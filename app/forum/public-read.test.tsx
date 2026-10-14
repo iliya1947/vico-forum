@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
+import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -2282,7 +2282,7 @@ describe("published edit submission lifecycle", () => {
     });
     expect(screen.getByText("Submitted text")).toBeInTheDocument();
   });
-  it("releases an unsuccessful edit submission without discarding the unsaved text", async () => {
+  it("preserves the live edit and retry body after a real 400 failure even when local storage writes fail", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), {
       status: 200, headers: { "Content-Type": "application/json" },
     });
@@ -2299,8 +2299,9 @@ describe("published edit submission lifecycle", () => {
       posts: [{ ...topic.posts[0]!, id: postId, authorId: ownerId,
         body: { ...topic.posts[0]!.body, id: "edit-failed-r1" } }],
     };
-    let resolveAction!: () => void;
-    const pendingAction = new Promise<void>((resolve) => { resolveAction = resolve; });
+    let resolveFirstAction!: () => void;
+    const pendingAction = new Promise<void>((resolve) => { resolveFirstAction = resolve; });
+    const submittedBodies: Array<FormDataEntryValue | null> = [];
     const router = createMemoryRouter([{
       id: "page",
       path: "*",
@@ -2308,9 +2309,11 @@ describe("published edit submission lifecycle", () => {
       loader: () => topicRenderData(original, {
         editablePostIds: [postId], canReadPostHistory: false,
       }),
-      action: async () => {
-        await pendingAction;
-        return { error: "invalid" as const };
+      action: async ({ request }) => {
+        const formData = await request.formData();
+        submittedBodies.push(formData.get("body"));
+        if (submittedBodies.length === 1) await pendingAction;
+        return data({ error: "invalid" as const }, { status: 400 });
       },
     }], { initialEntries: ["/en/topics/typed-api"] });
 
@@ -2330,22 +2333,40 @@ describe("published edit submission lifecycle", () => {
     const textarea = form.querySelector("textarea")!;
     const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
     const cancel = within(form).getByRole("button", { name: "Cancel" });
-    fireEvent.change(textarea, { target: { value: "Failed edit stays local " } });
-    await waitFor(() => expect(save).toBeEnabled());
-    fireEvent.click(save);
-
-    await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
-    await waitFor(() => {
-      expect(textarea).toBeDisabled();
-      expect(cancel).toBeDisabled();
+    const storageFailure = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage quota exceeded", "QuotaExceededError");
     });
-    resolveAction();
-    await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
-    await waitFor(() => expect(textarea).toBeEnabled());
-    expect(textarea).toHaveValue("Failed edit stays local ");
-    expect(save).toBeEnabled();
-    expect(cancel).toBeEnabled();
-    expect(screen.getByRole("form", { name: "Edit published message" })).toBeInTheDocument();
+    try {
+      fireEvent.change(textarea, { target: { value: "Failed edit stays local " } });
+      await waitFor(() => expect(save).toBeEnabled());
+      fireEvent.click(save);
+
+      await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+      await waitFor(() => {
+        expect(textarea).toBeDisabled();
+        expect(cancel).toBeDisabled();
+      });
+      expect(submittedBodies).toEqual(["Failed edit stays local "]);
+      resolveFirstAction();
+      await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+      await waitFor(() => {
+        expect(textarea).toBeEnabled();
+        expect(save).toBeEnabled();
+        expect(cancel).toBeEnabled();
+      });
+      expect(textarea.isConnected).toBe(true);
+      expect(screen.getByRole("form", { name: "Edit published message" })).toBe(form);
+      expect(textarea).toHaveValue("Failed edit stays local ");
+      expect(form.querySelector('input[name="body"]')).toHaveValue("Failed edit stays local ");
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+
+      fireEvent.click(save);
+      await waitFor(() => expect(submittedBodies).toHaveLength(2));
+      expect(submittedBodies[1]).toBe("Failed edit stays local ");
+      await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    } finally {
+      storageFailure.mockRestore();
+    }
   });
 
 });
