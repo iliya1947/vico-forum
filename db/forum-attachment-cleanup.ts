@@ -54,7 +54,12 @@ export class ForumAttachmentCleanup {
          ))
       order by r.created_at, r.attachment_id limit ${batchSize}
     `);
-    const rows = result.rows as StaleRef[];
+    const rows: StaleRef[] = result.rows.map((row) => ({
+      attachment_id: String(row.attachment_id),
+      owner_id: String(row.owner_id),
+      context_key: String(row.context_key),
+      draft_id: String(row.draft_id),
+    }));
     // Make expired active text drafts terminal before removing any of their refs.
     for (const ownerId of new Set(rows.map((row) => row.owner_id))) {
       await new DrizzleForumEditorDrafts(this.db).purgeExpired(ownerId);
@@ -116,6 +121,9 @@ export class ForumAttachmentCleanup {
       `);
       const candidate = result.rows[0];
       if (!candidate) return null;
+      if (typeof candidate.id !== "string" || typeof candidate.object_key !== "string") {
+        throw new Error("invalid attachment cleanup claim row");
+      }
       // The row is now exclusively locked. The recheck below observes a fresh
       // snapshot after any transaction which held a reference-trigger FOR SHARE.
       const refs = await tx.execute(sql`
