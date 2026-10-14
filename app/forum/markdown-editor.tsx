@@ -1048,7 +1048,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 visualSelectionKnownRef.current = true;
                 visualSelectionRef.current = selection;
                 rememberSelection(selection);
-                setMentionToken(selection.start === selection.end
+                setMentionToken(selection && selection.start === selection.end
                   ? mentionTokenAtCaret(value, selection.end) : null);
               }}
               onInsertParagraph={insertVisualParagraph}
