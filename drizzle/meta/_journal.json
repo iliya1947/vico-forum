@@ -267,6 +267,13 @@
       "when": 1791890456622,
       "tag": "0037_forum_attachment_draft_generations",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791973200000,
+      "tag": "0038_forum_attachment_cleanup_claims",
+      "breakpoints": true
     }
   ]
 }
