@@ -2968,7 +2968,7 @@
       "checkConstraints": {
         "forum_reply_notifications_kind_check": {
           "name": "forum_reply_notifications_kind_check",
-          "value": "\"forum_reply_notifications\".\"kind\" IN ('reply', 'mention')"
+          "value": "\"forum_reply_notifications\".\"kind\" in ('reply', 'mention')"
         }
       },
       "isRLSEnabled": false
