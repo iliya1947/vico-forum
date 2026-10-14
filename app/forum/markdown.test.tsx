@@ -199,6 +199,23 @@ const longValue = "code";
     expect(screen.getByText("Code copied")).toBeInTheDocument();
   });
 
+  it("aligns code rows and line numbers without adding numbers to copied source", async () => {
+    const code = "first line\\nsecond line\\n";
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const { container } = renderMarkdown(" ```txt\\n" + code + "```".trimStart());
+
+    const block = container.querySelector(".forum-code-block");
+    expect(block?.querySelectorAll(".forum-code-line")).toHaveLength(3);
+    expect(block?.querySelectorAll(".forum-code-line-number")).toHaveLength(0);
+    await userEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    expect(block?.querySelector("pre")).toHaveAttribute("data-line-numbers", "true");
+    expect(Array.from(block?.querySelectorAll(".forum-code-line-number") ?? []).map((node) => node.textContent))
+      .toEqual(["1", "2", "3"]);
+    await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith(code.replace(/\\n$/u, ""));
+  });
+
   it("reports clipboard failure without changing the code", async () => {
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
 
