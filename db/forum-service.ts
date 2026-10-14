@@ -84,6 +84,18 @@ export class ForumService {
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  editPublishedPost(input: {
+    topicId: string; postId: string; actorId: string;
+    expectedRevisionId: string; body: string;
+    draftId: string; expectedVersion: number; attachmentIds: readonly string[];
+  }) {
+    validateEntity(input.postId, input.actorId);
+    requireText(input.topicId, "topic id");
+    requireText(input.expectedRevisionId, "revision id");
+    if (typeof input.body !== "string") throw new InvalidForumContentError("body must be text");
+    return this.repository.editPublishedPost(input);
+  }
+
   revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
     validateEntity(postId, authorId);
     requireText(expectedRevisionId, "expected revision id");
