@@ -2197,9 +2197,10 @@ describe("published edit submission lifecycle", () => {
     }));
 
     const editPostId = "edit-lifecycle-answer";
+    const ownerId = "edit-lifecycle-author";
     const original = {
       ...topic,
-      posts: [{ ...topic.posts[0]!, id: editPostId,
+      posts: [{ ...topic.posts[0]!, id: editPostId, authorId: ownerId,
         body: { ...topic.posts[0]!.body, id: "edit-lifecycle-r1" } }],
     };
     let resolveAction!: () => void;
@@ -2231,7 +2232,7 @@ describe("published edit submission lifecycle", () => {
     render(
       <div lang="en" dir="ltr">
         <I18nextProvider i18n={runtime("en", "ltr")}>
-          <HeaderAuthProvider initialUser={{ id: "lin", name: "Lin" }}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Lin" }}>
             <RouterProvider router={router} />
           </HeaderAuthProvider>
         </I18nextProvider>
@@ -2292,9 +2293,10 @@ describe("published edit submission lifecycle", () => {
     }));
 
     const postId = "edit-failed-answer";
+    const ownerId = "edit-failed-author";
     const original = {
       ...topic,
-      posts: [{ ...topic.posts[0]!, id: postId,
+      posts: [{ ...topic.posts[0]!, id: postId, authorId: ownerId,
         body: { ...topic.posts[0]!.body, id: "edit-failed-r1" } }],
     };
     let resolveAction!: () => void;
@@ -2315,7 +2317,7 @@ describe("published edit submission lifecycle", () => {
     render(
       <div lang="en" dir="ltr">
         <I18nextProvider i18n={runtime("en", "ltr")}>
-          <HeaderAuthProvider initialUser={{ id: "lin", name: "Lin" }}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Lin" }}>
             <RouterProvider router={router} />
           </HeaderAuthProvider>
         </I18nextProvider>
