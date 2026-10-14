@@ -212,6 +212,18 @@ function ForumCodeBlock({
   const displayLanguage = language?.trim() || null;
   const allowHighlight = useContext(HighlightBudgetContext);
   const tokens = allowHighlight ? highlightCode(code, displayLanguage ?? undefined) : [{ text: code }];
+  // Split presentation at source newlines, not at syntax-token boundaries. This
+  // keeps gutter rows aligned even when highlighting spans multiple lines.
+  const codeRows: ReactNode[][] = [[]];
+  for (const token of tokens) {
+    const fragments = token.text.split("\\n");
+    fragments.forEach((fragment, index) => {
+      if (index > 0) codeRows.push([]);
+      if (fragment) codeRows[codeRows.length - 1].push(
+        token.kind ? <span className={`syntax-${token.kind}`}>{fragment}</span> : fragment,
+      );
+    });
+  }
 
   async function copyCode() {
     setCopyState(null);
@@ -262,18 +274,17 @@ function ForumCodeBlock({
       </figcaption>
       <pre tabIndex={0} dir="ltr" data-line-numbers={lineNumbers ? "true" : "false"}>
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
-          {displayLanguage?.toLowerCase() === "diff" && code.length <= 20_000
-            ? code.split("\n").map((line, index, rows) => (
-              <span className={line.startsWith("+") ? "syntax-diff-add" : line.startsWith("-") ? "syntax-diff-remove" : undefined} key={index}>
-                {line}{index < rows.length - 1 ? "\n" : ""}
-              </span>
-            ))
-            : tokens.map((token, index) =>
-              token.kind ? <span className={`syntax-${token.kind}`} key={index}>{token.text}</span> : token.text)}
+          {codeRows.map((parts, index) => (
+            <span className={displayLanguage?.toLowerCase() === "diff"
+              ? code.split("\\n")[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
+                : code.split("\\n")[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
+                  : "forum-code-line"
+              : "forum-code-line"} key={index}>
+              {lineNumbers ? <span className="forum-code-line-number" aria-hidden="true">{index + 1}</span> : null}
+              <span className="forum-code-line-text">{parts.length ? parts : "\\u200b"}</span>
+            </span>
+          ))}
         </code>
-        {lineNumbers ? <span className="forum-code-line-gutter" aria-hidden="true">
-          {code.split("\n").map((_, index) => <span key={index}>{index + 1}</span>)}
-        </span> : null}
       </pre>
     </figure>
   );
