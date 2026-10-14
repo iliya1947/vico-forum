@@ -1,6 +1,8 @@
 export const PERMISSION_CATALOG = [
   "forum.topic.create",
   "forum.reply.create",
+  "forum.post.editOwn",
+  "forum.post.history.read",
   "forum.topic.pin",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
@@ -25,6 +27,7 @@ export const INITIAL_ROLE_GRANTS = {
   user: [
     "forum.topic.create",
     "forum.reply.create",
+    "forum.post.editOwn",
     "forum.solution.manageOwn",
     "forum.helpSignal.create",
     "forum.sourceLocale.correctOwn",
@@ -32,6 +35,7 @@ export const INITIAL_ROLE_GRANTS = {
   ],
   moderator: [
     "forum.topic.create",
+    "forum.post.history.read",
     "forum.reply.create",
     "forum.topic.pin",
     "forum.solution.manageOwn",
