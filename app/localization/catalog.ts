@@ -99,6 +99,7 @@ export const canonicalEnglishCatalog = {
     notificationIntro: message("notificationIntro", "Replies to your topics and messages.", "Short explanation of the authenticated notification inbox."),
     notificationEmpty: message("notificationEmpty", "You have no notifications.", "Empty-state message for the authenticated notification inbox."),
     notificationReplyBy: message("notificationReplyBy", "Reply from {{actor}}", "Notification summary identifying the reply author.", ["actor"]),
+    notificationMentionBy: message("notificationMentionBy", "Mention from {{actor}}", "Notification summary identifying the author who mentioned the recipient.", ["actor"]),
     notificationUnread: message("notificationUnread", "Unread", "Status label for an unread reply notification."),
     notificationRead: message("notificationRead", "Read", "Status label for a read reply notification."),
     notificationOpen: message("notificationOpen", "Open reply", "Action that marks a reply notification read and opens the referenced reply."),
