@@ -482,6 +482,7 @@ export const russianCommonValues = {
   editorAttachmentErrorGeneric: "Не удалось загрузить вложение. Попробуйте снова.",
   editorSimple: "Простой",
   editorAdvanced: "Расширенный",
+  editorSpellcheck: "Проверка орфографии",
   editorUndo: "Отменить",
   editorRedo: "Повторить",
   editorStrike: "Зачёркнутый",
