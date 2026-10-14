@@ -401,7 +401,7 @@ export function NotificationsView({
                       </span>
                       <span className="notification-copy">
                         <span className="notification-summary">
-                          <span>{t("notificationReplyBy", { actor: notification.actorName })}</span>
+                          <span>{t(notification.kind === "mention" ? "notificationMentionBy" : "notificationReplyBy", { actor: notification.actorName })}</span>
                           <strong dir="auto">{notification.topicTitle}</strong>
                         </span>
                         <time dateTime={notification.createdAt}>
