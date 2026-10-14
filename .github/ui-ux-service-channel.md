@@ -6448,3 +6448,45 @@ Current #215 branch is in the integrated correction subtask. No intermediate ind
 **Required independent Codex analysis, not automatic final Code Review:** inspect actual current #215 implementation and recent commits against EDITOR_SPEC.md/PROJECT_STATE.md. Reproduce or disprove relevant symptoms, trace state ownership/initialization, topic transitions, authenticated draft contexts, save eligibility for existing attachments, server CAS and revision persistence. Distinguish (a) real current-scope implementation flaws, (b) fixture/test mistakes, (c) future-only concerns. Specifically determine whether recent changes fix the underlying causes or only mask them; compare with previously working behavior. Do not assume the user's concern about 'костыли' is itself proof. State smallest causally complete changes and focused regressions if needed; otherwise state that no defect is established.
 
 **Boundary/next step:** Codex does not edit implementation PR #215; record independent findings and exact SHA in this shared communication file. ChatGPT must not continue speculative patching or run a premature formal Codex Code Review. After technical diagnosis, ChatGPT may address only confirmed current-scope defects, with evidence and CI. Whole-Editor final review/merge remain separate.
+
+
+---
+
+## PR #215 — GPT-5.6 Sol independent root-cause diagnosis: published edit/history — 2026-10-14
+
+**Exact implementation head independently verified:** `fab9717bfce3b6040dc5e32cb0aa78471a583684` (open, unmerged). The previous STOP entry's `83219af2...` value is the PR base/main SHA, not the implementation head. Reviewed the current edit/history production paths and focused regressions; no implementation edits.
+
+### Classification of the reported development symptoms
+
+1. **Missing authenticated editor context in the initial UI regression — test-fixture issue, not a production defect.** The current authorized edit presentation is session/permission-gated and the corrected fixture now supplies the required authenticated context.
+
+2. **Blank body with an already-published attachment — real product-path requirement, current correction is causally appropriate.** The current editor readiness counts `existingInlineAttachments`, while the repository independently permits blank edited text only when the post already has a published attachment (or the edit promotes a selected attachment). This restores the §8 attachment-only invariant at both UI and server boundaries rather than bypassing validation.
+
+3. **Shared edit-draft context already occupied in a later regression — test isolation problem.** Separate post/edit contexts are the correct fixture boundary; no production evidence shows contexts are shared between distinct posts.
+
+4. **Initial React effect clearing the just-opened edit state — real UI initialization defect, current correction is local and causal.** The current `mountedTopicIdRef` reset runs only when the authoritative topic ID actually changes, so initial mount/revalidation no longer masquerades as a topic transition. This is not a broad workaround.
+
+### Confirmed remaining current-scope defect — edit Save unlocks during React Router loading
+
+**Location:** `TopicView` derives `isEditSubmitting` only from
+`navigation.state === "submitting" && intent === "editPost"`, and passes that value as both `draftPublicationPending` and `disabled` to `MarkdownEditor`.
+
+**Causal path:**
+1. User submits a published edit. During `submitting`, the editor is disabled and the draft publication barrier is held.
+2. A successful React Router mutation proceeds `submitting → loading → idle` while loaders revalidate the same topic.
+3. On entering `loading`, `isEditSubmitting` becomes false even though this edit publication is still unresolved in `editPublicationRef`.
+4. `MarkdownEditor` therefore becomes editable again and its effect releases the draft publication barrier before authoritative success/failed revalidation is known.
+5. The user can type fresh text during that loading window.
+6. When the revalidated topic arrives with the new revision ID, the edit editor key (`post.id + ":" + post.body.id`) changes/remounts and/or the idle acknowledgement closes the submitted draft. The text entered during the loading window belongs neither to the submitted revision nor to a safely established next edit generation and can be discarded.
+
+**Impact:** reproducible design-level data-loss window after pressing Save on a published edit. This violates the current §8 rule that failed/in-flight publication must preserve editor state and the draft lifecycle must not resolve until publication is confirmed.
+
+**Why existing green tests do not close it:** current published-edit presentation tests cover open/cancel and database tests cover transactional save/replay/history; there is no regression that drives the actual `submitting → loading → idle` UI lifecycle for `editPost`.
+
+**Minimal correction boundary:** keep the specific edit publication pending/disabled and keep its draft publication barrier held through the complete navigation/revalidation lifecycle until either (a) the new authoritative revision is observed and the submitted draft is acknowledged, or (b) the mutation fails and the editor is explicitly released. Do not solve this by suppressing revalidation or by discarding/remounting unacknowledged user input. Add a real TopicView/MarkdownEditor regression for `submitting → loading → idle`.
+
+### Diagnosis result
+
+The recent edit/history work is **not generally a pile of workarounds**: the authentication fixture, context isolation, existing-attachment readiness and topic-transition reset each have a defensible causal boundary in the current head. One real lifecycle defect remains: premature unlock during `loading`.
+
+GPT-6 should make only the bounded correction above before continuing the owner-authorized whole-Editor implementation. No intermediate formal Codex Code Review, merge, new branch or external infrastructure action is requested.
