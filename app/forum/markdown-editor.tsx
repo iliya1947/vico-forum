@@ -26,6 +26,8 @@ import {
   undoEditorEdit,
   type EditorSelection,
 } from "./editor-document";
+import { mentionTokenAtCaret, mentionProfileLink, type MentionToken } from "./mentions";
+import { forumProfilePath } from "./paths";
 import {
   VisualMarkdownEditor,
   escapeVisualMarkdownText,
@@ -113,6 +115,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [findOpen, setFindOpen] = useState(false);
     const [findText, setFindText] = useState("");
     const [replaceText, setReplaceText] = useState("");
+    const [mentionToken, setMentionToken] = useState<MentionToken | null>(null);
+    const [mentionCandidates, setMentionCandidates] = useState<Array<{ id: string; name: string }>>([]);
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
@@ -451,6 +455,46 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
     const [codeLanguage, setCodeLanguage] = useState("");
     const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "preview" : "write");
+
+    useEffect(() => {
+      const selection = historyRef.current.current.selection;
+      setMentionToken(accountId && draftLocale && mode === "write" && !disabled
+        && selection.start === selection.end
+        ? mentionTokenAtCaret(value, selection.end)
+        : null);
+    }, [value, mode, accountId, draftLocale, disabled]);
+
+    const mentionQuery = mentionToken?.query ?? null;
+    useEffect(() => {
+      setMentionCandidates([]);
+      if (!accountId || !draftLocale || !mentionQuery || disabled) return;
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => {
+        void fetch(`/${encodeURIComponent(draftLocale)}/mentions?q=${encodeURIComponent(mentionQuery)}`, {
+          signal: controller.signal,
+          credentials: "same-origin",
+        }).then((result) => result.ok ? result.json() : null)
+          .then((payload: unknown) => {
+            if (controller.signal.aborted || !payload || typeof payload !== "object") return;
+            const users = (payload as { users?: unknown }).users;
+            if (!Array.isArray(users)) return;
+            setMentionCandidates(users.filter((entry): entry is { id: string; name: string } =>
+              !!entry && typeof entry.id === "string" && typeof entry.name === "string").slice(0, 8));
+          }).catch(() => { /* Offline editor remains usable without suggestions. */ });
+      }, 120);
+      return () => { window.clearTimeout(timer); controller.abort(); };
+    }, [accountId, draftLocale, mentionQuery, disabled]);
+
+    function chooseMention(user: { id: string; name: string }) {
+      const token = mentionToken;
+      if (!token || !draftLocale || value.slice(token.start, token.end) !== "@" + token.query) return;
+      replaceSourceRange(
+        { start: token.start, end: token.end },
+        mentionProfileLink(user.name, forumProfilePath(draftLocale, user.id)),
+      );
+      setMentionToken(null);
+      setMentionCandidates([]);
+    }
 
     function syncSplitScroll(source: HTMLElement, target: HTMLElement | null) {
       if (mode !== "split" || !target) return;
@@ -1004,6 +1048,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 visualSelectionKnownRef.current = true;
                 visualSelectionRef.current = selection;
                 rememberSelection(selection);
+                setMentionToken(selection.start === selection.end
+                  ? mentionTokenAtCaret(value, selection.end) : null);
               }}
               onInsertParagraph={insertVisualParagraph}
               onEditTechnical={(range) => switchAuthoring("advanced", range)}
@@ -1029,10 +1075,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 event.currentTarget.selectionStart ?? event.currentTarget.value.length,
                 event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
               )}
-              onSelect={(event) => rememberSelection({
-                start: textareaOffsetToSourceOffset(value, event.currentTarget.selectionStart ?? 0),
-                end: textareaOffsetToSourceOffset(value, event.currentTarget.selectionEnd ?? 0),
-              })}
+              onSelect={(event) => {
+                const selection = {
+                  start: textareaOffsetToSourceOffset(value, event.currentTarget.selectionStart ?? 0),
+                  end: textareaOffsetToSourceOffset(value, event.currentTarget.selectionEnd ?? 0),
+                };
+                rememberSelection(selection);
+                setMentionToken(selection.start === selection.end
+                  ? mentionTokenAtCaret(value, selection.end) : null);
+              }}
               onKeyUp={(event) => {
                 rememberSelection(textareaSourceSelection());
                 if (event.key === " " || event.key === "Enter") draft.saveLocal();
@@ -1102,6 +1153,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             </section>
           )}
         </div>
+        {mentionToken && mentionCandidates.length > 0 && !disabled && mode === "write" ? (
+          <div className="markdown-editor-mentions" role="group" aria-label={t("editorMentionSuggestions")}>
+            {mentionCandidates.map((person) => (
+              <button type="button" key={person.id}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => chooseMention(person)}>
+                <bdi dir="auto">{person.name}</bdi>
+              </button>
+            ))}
+          </div>
+        ) : null}
         {attachments.element}
         {draft.element}
       </div>
