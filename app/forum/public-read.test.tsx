@@ -11,6 +11,7 @@ import {
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
 import { authSessionContext } from "../auth/request-context";
+import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { authorizationContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -380,11 +381,11 @@ function runtime(locale: string, direction: "ltr" | "rtl") {
   });
 }
 
-function renderRoute(Component: ComponentType, data: unknown, path: string, locale: string, direction: "ltr" | "rtl") {
+function renderRoute(Component: ComponentType, data: unknown, path: string, locale: string, direction: "ltr" | "rtl", headerUser: HeaderAuthUser | null = null) {
   const router = createMemoryRouter([{ id: "page", path: "*", Component, loader: () => data }], {
     initialEntries: [path],
   });
-  return render(<div lang={locale} dir={direction}><I18nextProvider i18n={runtime(locale, direction)}><RouterProvider router={router} /></I18nextProvider></div>);
+  return render(<div lang={locale} dir={direction}><I18nextProvider i18n={runtime(locale, direction)}><HeaderAuthProvider initialUser={headerUser}><RouterProvider router={router} /></HeaderAuthProvider></I18nextProvider></div>);
 }
 
 describe.each([
@@ -2171,7 +2172,7 @@ describe("published editing presentation permissions", () => {
   it("lets an authorized author open and cancel a distinct post edit draft", async () => {
     renderRoute(TopicRoute, topicRenderData(topic, {
       editablePostIds: ["answer"], canReadPostHistory: false,
-    }), "/en/topics/typed-api", "en", "ltr");
+    }), "/en/topics/typed-api", "en", "ltr", { id: "lin", name: "Lin" });
     fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
     const editorForm = await screen.findByRole("form", { name: "Edit published message" });
     expect(editorForm.querySelector('input[name="postId"]')).toHaveValue("answer");
