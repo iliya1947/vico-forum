@@ -31,6 +31,25 @@ async function topic(id: string, sectionId = "profile-section") {
 async function reply(id: string, topicId: string, authorId: string) {
   await repository.createPost({ id, topicId, authorId, bodyRevision: { id: `${id}-body`, originalContent: "Answer", sourceLocale: "en" } });
 }
+describe("mention candidate lookup", () => {
+  it("matches bounded case-insensitive member names, escapes wildcard input, and excludes private fields", async () => {
+    await client.query('insert into "user" (id,name,email) values ($1,$2,$3)', [
+      "mention-lovelace", "Ada Lovelace", "hidden-adal@example.test",
+    ]);
+    await client.query('insert into "user" (id,name,email) values ($1,$2,$3)', [
+      "mention-wildcard", "A_100%", "hidden-wildcard@example.test",
+    ]);
+    const nameMatches = await repository.searchMentionableUsers("LOVEL");
+    expect(nameMatches).toEqual([{ id: "mention-lovelace", name: "Ada Lovelace" }]);
+    expect(await repository.searchMentionableUsers("_100%")).toEqual([
+      { id: "mention-wildcard", name: "A_100%" },
+    ]);
+    expect(await repository.searchMentionableUsers("hidden-adal")).toEqual([]);
+    expect(await repository.searchMentionableUsers("")).toEqual([]);
+    expect(await repository.searchMentionableUsers("x".repeat(65))).toEqual([]);
+  });
+});
+
 describe("persisted forum profiles", () => {
   it("reads existing users without a profile row and exposes no private identity fields", async () => {
     const profile = await repository.readProfile("profile-newcomer");
