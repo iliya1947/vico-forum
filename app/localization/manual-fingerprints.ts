@@ -62,6 +62,7 @@ export const reviewedCommonFingerprints = {
   notificationIntro: "de649340bd44756dc6bf44b9daac69ee6bb553af75d01906d76d63c4c2b63cf7",
   notificationEmpty: "b009333b9f07dd710421f8f21203ac5a28bf66204faccac7a4c3a404de185d7c",
   notificationReplyBy: "65a50faf2bdd2c40f7ccdda3dd74a346dc9fe98cebdfa549a4ebb2dc57e0195d",
+  notificationMentionBy: "603fc830178cc4f5f8dca1a92b53cb7066a5aa379d18d1c46668db48bb2f5051",
   notificationUnread: "bbfe1e798f32e399cc1fcf981b921d63fbf63959c8e3bbac0da06ba30d397bfb",
   notificationRead: "c1c86541af8663a9a003e1a9692e6d148cf5dcb2c0324410b1ec81ba05842e7b",
   notificationOpen: "39d5e16282018851ca71a11461d7456a070f0bb77f334af55590a1a56923573c",
