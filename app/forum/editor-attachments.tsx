@@ -1,3 +1,4 @@
+import { ForumAttachmentDisplay } from "./attachment-presentation";
 import {
   useEffect,
   useRef,
@@ -614,6 +615,11 @@ export function useEditorAttachments({
                   <span className="is-error">{t("editorAttachmentRemoveError")}</span>
                 ) : null}
               </div>
+              {entry.status === "stored" && entry.attachment && contextKey ? (
+                <ForumAttachmentDisplay attachment={entry.attachment}
+                  url={`/api/attachments/file/${encoded(entry.id)}?draft=${encoded(draftId)}&context=${encoded(contextKey)}`}
+                  deferImage />
+              ) : null}
               <div className="markdown-editor-attachment-actions">
                 {entry.status === "error" && entry.file ? (
                   <button type="button" disabled={disabled} onClick={() => retry(entry)}>
