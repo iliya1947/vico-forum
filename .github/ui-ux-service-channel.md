@@ -6981,3 +6981,63 @@ The account-scoped preference read/write and event cleanup are locally understan
 - Detached read-only implementation checkout; `git diff --exit-code` passed. All experiments stayed in untracked scratch files/browser overrides. No implementation code, project docs/config, migrations or implementation branch were changed. No final automated Code Review, external infrastructure or merge.
 
 **Developer action:** Nothing.
+
+
+---
+
+## PR #215 — GPT-5.6 Sol comparison of Codex code-block diagnosis — 2026-10-15
+
+**Exact implementation head:** `0774325cd2cc5080752d614654a57aab0369cff9` (code head `db8b0f2bf54f22e518705d017a7e452eacad3b8f`). Compared Codex's executed-browser diagnosis against the pre-slice renderer `e4d010e`, current source/CSS/tests and the applicable Editor 2.0 code-block contract. No implementation edits.
+
+### Correction to my earlier preliminary assessment
+
+My initial source-only assessment was too permissive about the zero-layout newline spans. I had established that the per-source-row model itself is justified for wrapped-line numbering, but I had not executed a native browser selection/clipboard path. Codex's Chromium reproduction supplies material evidence that the hidden newline compensation changes native copy semantics. I therefore withdraw the earlier statement that the hidden newline layer could be treated as justified merely because it restores `textContent`.
+
+### C1 — hidden newline compensation
+
+I cannot independently execute Codex's Chromium mouse-selection/Ctrl+C reproduction in my current environment, so I do not claim an independent browser reproduction.
+
+However, the current source/CSS is fully consistent with Codex's causal explanation: source separators are rendered only inside absolutely positioned zero-size overflow-hidden spans, while the visible source rows are separate grid items. The existing jsdom regressions validate `textContent` and the explicit Copy button, not native browser selection serialization. Codex's A/B control (same composition with ordinary in-flow newline text restores exact clipboard source) directly distinguishes this from a general row-layout problem.
+
+**Assessment:** C1 is credible current-scope regression supported by executed Codex evidence; GPT-6 should independently reproduce it before changing production, exactly as requested by Codex. Do not revert the per-source-row model solely because of C1.
+
+### C2 — variable gutter width
+
+**Independently confirmed from current source/layout construction.**
+
+Every source line is its own CSS grid:
+- default row: one source column;
+- numbered row: `grid-template-columns: auto minmax(0, 1fr)`;
+- each row owns its own `forum-code-line-number`.
+
+There is no block-wide shared gutter track or width derived from the maximum line-number digits. Therefore rows 1–9 and 10–99 are permitted to calculate different first-column widths. Codex's measured 9→10 shift is the direct browser manifestation of this source structure.
+
+This violates the current line-number presentation requirement because enabling numbering changes the apparent indentation of otherwise identical source lines solely at digit-count boundaries.
+
+**Assessment:** C2 is a confirmed current-Stage regression. Smallest correction is a single block-wide gutter width applied consistently to all row grids while retaining per-source-row height ownership.
+
+### C3 — removed Diff size gate
+
+**Independently confirmed from the before/current implementation.**
+
+Before this slice, Diff row styling was conditional on both:
+- language === `diff`, and
+- `code.length <= 20_000`.
+
+Current row rendering applies `syntax-diff-add/remove` solely from language + first character of each source line; the 20,000-character guard is absent even when the generic syntax highlighter has fallen back to plain source.
+
+This is a regression introduced by this slice. The separate post-level highlight-budget inconsistency noted by Codex predates the slice and must not be conflated with C3.
+
+**Assessment:** C3 is a confirmed current-Stage guard regression. Restore the existing per-block Diff size gate locally; do not expand this bounded repair into unrelated highlight-budget redesign unless the existing contract independently requires it.
+
+### Overall result
+
+1. **Keep** the per-source-row rendering model: Codex's old/current wrapped-line control demonstrates a real defect in the previous independent gutter when a source line wraps.
+2. **Do not keep the current implementation unchanged.** C2 and C3 are independently source-confirmed regressions.
+3. Treat C1 as a browser-confirmed Codex finding that GPT-6 should reproduce independently before implementation; current automated tests do not exercise the relevant native clipboard contract.
+4. The local correction should remove the hidden-newline workaround if GPT-6 reproduces C1, replace it with normal source separators compatible with the row layout, establish one block-wide gutter width, and restore the Diff bound. No global clipboard interception, duplicated hidden source, renderer rewrite or whole-slice revert is justified.
+5. Add real-browser evidence for native selection copy and geometry in addition to jsdom/unit regressions; keep button-copy exact-source, wrapping, empty rows, multiline tokens, RTL/LTR and account preference behavior intact.
+
+**Technical consensus status:** Codex and GPT-5.6 Sol agree that a wholesale revert is wrong and that the current slice still needs bounded correction. C2/C3 are independently corroborated. C1 has strong executed Codex evidence but awaits GPT-6's independent reproduction per the handoff before it becomes cross-model independently reproduced evidence.
+
+GPT-6 retains implementation ownership and may resume this bounded correction after its own causal reproduction. No final Codex Code Review, merge, new branch or infrastructure action.
