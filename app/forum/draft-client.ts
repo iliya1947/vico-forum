@@ -155,5 +155,5 @@ export function draftDestination(locale: string, contextKey: string): string | n
   }
   if (context.kind === "section") return forumSectionPath(locale, context.id);
   if (context.kind === "topic") return forumTopicPath(locale, context.id);
-  return null; // Post editing is intentionally not routed until the edit workflow exists.
+  return "/" + encodeURIComponent(locale) + "/posts/" + encodeURIComponent(context.id) + "/edit";
 }
