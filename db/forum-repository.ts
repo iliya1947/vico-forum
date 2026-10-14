@@ -1,4 +1,5 @@
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
+import { publishedMentionRecipients } from "../app/forum/mentions";
 import { and, asc, count, desc, eq, gt, gte, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
@@ -142,6 +143,7 @@ export interface ForumUnreadTopicSummary {
 
 export interface ForumReplyNotificationSummary {
   id: string;
+  kind: "reply" | "mention";
   actorName: string;
   topicId: string;
   topicTitle: string;
@@ -624,6 +626,10 @@ export class DrizzleForumRepository {
         postId: input.initialPost.id,
         authorId: input.authorId,
       });
+      await this.recordPublishedMentions(tx, {
+        actorId: input.authorId, topicId: input.id, postId: input.initialPost.id,
+        body: input.initialPost.bodyRevision.originalContent, createdAt,
+      });
       if (input.tags?.length) {
         await tx.insert(forumTags).values([...input.tags]).onConflictDoNothing();
         await tx.insert(forumTopicTags).values(input.tags.map((tag) => ({
@@ -735,6 +741,11 @@ export class DrizzleForumRepository {
         });
       }
 
+      await this.recordPublishedMentions(tx, {
+        actorId: input.authorId, topicId: input.topicId, postId: input.id,
+        body: input.bodyRevision.originalContent, createdAt,
+      });
+
       if (input.publishedDraft) {
         await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.id);
         await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.topicId, input.id);
@@ -749,6 +760,27 @@ export class DrizzleForumRepository {
         solutionOutdatedReasonKind: null,
         body: input.bodyRevision,
       };
+    });
+  }
+
+  private async recordPublishedMentions(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    input: { actorId: string; topicId: string; postId: string; body: string; createdAt: Date },
+  ): Promise<void> {
+    const identifiers = publishedMentionRecipients(input.body).filter((id) => id !== input.actorId);
+    if (!identifiers.length) return;
+    const existing = await tx.select({ id: user.id }).from(user).where(inArray(user.id, identifiers));
+    if (!existing.length) return;
+    await tx.insert(forumReplyNotifications).values(existing.map(({ id }) => ({
+      id: crypto.randomUUID(),
+      recipientUserId: id,
+      actorUserId: input.actorId,
+      topicId: input.topicId,
+      postId: input.postId,
+      kind: "mention" as const,
+      createdAt: input.createdAt,
+    }))).onConflictDoNothing({
+      target: [forumReplyNotifications.recipientUserId, forumReplyNotifications.postId],
     });
   }
 
@@ -1499,6 +1531,7 @@ export class DrizzleForumRepository {
         topicId: forumReplyNotifications.topicId,
         topicTitle: forumTopicTitleRevisions.originalContent,
         postId: forumReplyNotifications.postId,
+        kind: forumReplyNotifications.kind,
         createdAt: forumReplyNotifications.createdAt,
         readAt: forumReplyNotifications.readAt,
       })
@@ -3848,6 +3881,10 @@ export class DrizzleForumRepository {
         .where(and(eq(forumPosts.id, input.postId), eq(forumPosts.currentRevisionId, input.expectedRevisionId)))
         .returning({ id: forumPosts.id });
       if (!updated.length) throw new ForumStateConflictError("post revision changed before edit");
+      await this.recordPublishedMentions(tx, {
+        actorId: input.actorId, topicId: input.topicId, postId: input.postId,
+        body: input.body, createdAt: now,
+      });
       await this.finishPublishedDraft(tx, input.actorId, draft, input.postId);
       await this.recordPublicationReceipt(tx, input.actorId, draft, fingerprint, input.topicId, input.postId);
     });
