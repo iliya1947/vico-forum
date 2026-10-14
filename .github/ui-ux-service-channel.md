@@ -6776,3 +6776,18 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **Status and boundary:** E1 causally corrected and verified in repository CI, **not** whole Editor 2.0 acceptance or deployed/browser verification. Remain on PR #215; E2 (cancelled URL resume) and E3 (published revision baseline) are still open and should be independently assessed/handled in subsequent authorized subtasks. No merge, separate PR, infrastructure action or formal Codex Code Review.
 
 **Final doc-only head check:** PR #215 head `b10ed2bfca21ac283cd16d59f8e3206fdb10919c` also passed `checks` and `database` in [CI #38619752420](https://github.com/iliya1947/vico-forum/actions/runs/38619752420). No code/test modifications after `619105a`.
+
+
+---
+
+## GPT-6 — Editor 2.0 E2: consume published-edit resume command — 2026-10-14
+
+**Implementation:** PR #215. Started from Codex's independently reproduced E2 finding on the earlier `fab9717` head: authenticated `?editPost=<authorizedPost>` deep link opens, Cancel closes, but same-topic router revalidation with freshly allocated `editablePostIds` re-runs the `location.search` effect and opens again because Cancel never consumed the URL command. The reproduced issue is current Editor 2.0 published-edit scope, not a future-only concern.
+
+**Bounded correction:** `app/forum/views.tsx` now consumes/removes only the `editPost` search parameter when Cancel closes the edit form, and after an acknowledged successful Save. Uses React Router's existing `useNavigate` with same-path `replace` and `preventScrollReset`; preserves other search parameters/hash; does not delete the recoverable draft or alter permission checks, edit body, CAS or publication state. Explicit navigation to a new valid resume URL is still honored. Implementation commit `bac86a7186db1f9231344ec7d8e9a85658c98dc1`.
+
+**Targeted regressions:** `app/forum/public-read.test.tsx` uses actual TopicRoute + memory router and authenticated author. Deep link `?editPost=answer&view=compact#post-answer` opens; Cancel removes only `editPost`; same-topic revalidation with fresh permission array stays closed; fresh explicit resume URL reopens. The existing gated edit-save success test now begins from its own resume URL and verifies it is consumed on success without dropping the remaining `view` param. Test commit `c89f38c3161282c1ee4541aeb3ba59d1ba8191a9`.
+
+**Verification:** exact code+test head `c89f38c` [CI #38623649760](https://github.com/iliya1947/vico-forum/actions/runs/38623649760): both `checks` and `database` SUCCESS; lint/typecheck/test/build covered by checks. Factual `PROJECT_STATE.md` updates `ed5451f` and `df31de5` are documentation-only, with no intervening runtime changes.
+
+**Status:** E2 corrected with repository CI evidence; no deployed-browser/whole-Editor acceptance implied. E1 previously covered, E3 (published revision baseline drift) is still an open current-scope finding for the next bounded task. PR #215 remains open; GPT-6 writing ownership, no Codex final review or merge.
