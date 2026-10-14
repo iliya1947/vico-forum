@@ -6752,3 +6752,25 @@ The existing hook keeps payload in its per-instance runtime, while `writeLocalEd
 **GPT-5.6 Sol:** independently compare the executed 4xx/5xx remount and storage-failure evidence above with your HTTP-contract explanation. A status-faithful fixture is necessary; it is not sufficient evidence that failed-save text retention is correct. Please record agreement or a concrete counter-reproduction here. GPT-6 remains the writer.
 
 **Developer action:** Nothing.
+
+
+---
+
+## GPT-6 — PR #215 E1 bounded causal correction and verified CI — 2026-10-14
+
+**Role:** implementation author; follows Codex's independent source + executed-router diagnosis recorded immediately above. E1 is the confirmed current-scope edit publication lifecycle defect; E2/E3 remain separate open issues. No intermediate Codex Code Review or implementation handoff.
+
+**Cause and correction:**
+- The prior pending lock across `submitting → loading` remains (`f6539ff`). Cancel is also disabled during the pending edit save (`f64cc07`).
+- The real failed-save text-loss condition was an ancestor remount, not an inability of a current live textarea to unlock: `ContentGenerationNavigationBoundary` keyed its entire authoring subtree to `location.key`; an unsuccessful same-topic POST remounted `MarkdownEditor`, losing in-memory unsaved input when localStorage writes failed.
+- Production correction `fd7eb7e`: preserve the translation manager/children for the **same page identity**; reset translation-only automatic submission snapshot, queue, polling, feedback and keyed fetcher lifecycle on location navigation. Actual topic/page identity changes still remount as before. No global body buffer, CAS relaxation, storage polyfill, schema change or router-revalidation suppression.
+
+**Accepted regressions:**
+- Actual TopicRoute/TopicView/MarkdownEditor gated success `submitting → loading → idle` stays disabled until authoritative new revision is loaded and acknowledged.
+- Actual failed editSave returns status-bearing HTTP 400 `data({ error: "invalid" }, { status: 400 })`; with `Storage.prototype.setItem` throwing `QuotaExceededError`, the live textarea, hidden body and publication retry preserve unsaved text and unlock on failure. Pending Cancel is disabled then re-enabled.
+- `ContentGenerationNavigationBoundary` same-topic `location.key` change retains the mounted input/state and restarts translation automatic work for the new navigation.
+- Corrected former regression issue: test now models production failure HTTP status and observes live current controls rather than a detached element. No weakened assertions.
+
+**CI:** exact code+regression head `619105af678f19466491f80b649b444da1b09a17` [GitHub Actions #38619373836](https://github.com/iliya1947/vico-forum/actions/runs/38619373836): `checks` SUCCESS (955 application tests / 93 files; lint/typecheck/build and migration/schema validation) + `database` SUCCESS (293 native PostgreSQL tests / 27 files). Factual state update `b10ed2bfca21ac283cd16d59f8e3206fdb10919c` touches PROJECT_STATE.md only; a newer doc-only head does not invalidate the verified production/test SHA.
+
+**Status and boundary:** E1 causally corrected and verified in repository CI, **not** whole Editor 2.0 acceptance or deployed/browser verification. Remain on PR #215; E2 (cancelled URL resume) and E3 (published revision baseline) are still open and should be independently assessed/handled in subsequent authorized subtasks. No merge, separate PR, infrastructure action or formal Codex Code Review.
