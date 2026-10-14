@@ -571,6 +571,29 @@ Vico Forum находится в ранней pre-release разработке.
   action→writer→service→DB tests are now covered by the additional regressions.
   Real-browser upload→publication→download and failure-preservation with fake
   storage has NOT been executed; package acceptance remains pending.
+- Editor 2.0 Stage 5 packages 2 and 3 — implementation (2026-10-14, PR #215):
+  Shared attachment presentation now displays published verified raster images through
+  the authorized inline stream and offers on-demand image previews for saved editor
+  files; text/source previews use inert text/plain, while SVG, HTML, archives and
+  other files remain download-only. RTL-safe file labels and responsive presentation
+  have focused tests. The download route checks the live owner-draft/post reference
+  before private bucket access and does not expose object keys.
+  Cleanup is implemented as a bounded, repeatable ForumAttachmentCleanup processor
+  behind the existing private storage adapter. Forward migration 0038 records durable
+  delete claims and DB reference-insertion gates; stale/terminal draft refs can be
+  pruned, truly unreferenced assets are leased/claimed before physical deletion,
+  and ambiguous delete outcomes remain recoverable. Tests exercise concurrent
+  processors, ref races, shared assets, terminal aliases, lease recovery and lost ACK.
+  Production scheduling/Queue, external R2/Neon provisioning and real deployed
+  acceptance are NOT implemented and remain outside this local/CI slice.
+  The production schema manifest now matches migration 0038 including its checks,
+  indexes, definer trigger function and draft/post insertion triggers. Exact code
+  head 0af5d76, CI #38547127273: checks and database SUCCESS (943 app tests,
+  282 PostgreSQL tests, lint, TypeScript, app and UI-preview builds, schema/grants).
+  All three package implementation changes are present in PR #215; this is NOT an
+  independent whole-Editor/owner browser acceptance. The real browser upload→publish
+  →navigate→download and failure-preservation path with a test bucket is still
+  unverified. Editor 2.0 PR is open and unmerged.
 - Stage 5 attachment/draft concurrency correction (2026-10-13): Codex выполняет реализацию
   по прямому назначению владельца. Stale GET restore отсекается cleanup fence; выполняющиеся
   upload/retry/remove сохраняют исходную identity при retained переходах A→B→C.
