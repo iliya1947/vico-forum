@@ -522,6 +522,7 @@ export const canonicalEnglishCatalog = {
     editorAttachmentErrorGeneric: message("editorAttachmentErrorGeneric", "The attachment could not be uploaded. Try again.", "Fallback attachment upload failure message."),
     editorSimple: message("editorSimple", "Simple", "Switch editor to visual Simple mode."),
     editorAdvanced: message("editorAdvanced", "Advanced", "Switch editor to Markdown Advanced mode."),
+    editorSpellcheck: message("editorSpellcheck", "Check spelling", "Toggle native browser spelling suggestions without changing the Markdown source."),
     editorUndo: message("editorUndo", "Undo", "Undo last editor text change."),
     editorRedo: message("editorRedo", "Redo", "Redo last undone editor text change."),
     editorStrike: message("editorStrike", "Strikethrough", "Mark selected text as struck through."),
