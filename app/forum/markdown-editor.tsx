@@ -60,6 +60,9 @@ export interface MarkdownEditorProps {
   draftPublicationIntent?: string;
   draftPublicationPending?: boolean;
   onPublicationReadyChange?: (ready: boolean) => void;
+  existingInlineAttachments?: Array<{
+    id: string; fileName: string; byteSize: number; detectedType: string; url: string;
+  }>;
 }
 
 interface PendingSelection {
@@ -91,6 +94,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       draftPublicationIntent,
       draftPublicationPending = false,
       onPublicationReadyChange,
+      existingInlineAttachments = [],
     },
     forwardedRef,
   ) {
@@ -817,7 +821,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }), [mode, value, authoringMode, draft]);
 
     return (
-      <ForumInlineAttachmentProvider attachments={attachments.previewAttachments}>
+      <ForumInlineAttachmentProvider attachments={[...existingInlineAttachments, ...attachments.previewAttachments]}>
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
         onDragOver={attachments.handleDragOver}
