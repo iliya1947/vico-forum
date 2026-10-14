@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0037_forum_attachment_draft_generations",
+  "targetMigration": "0038_forum_attachment_cleanup_claims",
   "tables": {
     "account": {
       "columns": [
@@ -1253,6 +1253,24 @@
           "defaultSha256": null
         },
         {
+          "name": "cleanup_status",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "PENDING"
+        },
+        {
+          "name": "cleanup_claim_token",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "cleanup_claimed_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
           "name": "created_at",
           "type": "timestamp with time zone",
           "nullable": false,
@@ -1300,8 +1318,42 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "forum_attachments_cleanup_claim_check",
+          "columns": [
+            "cleanup_claim_token",
+            "cleanup_claimed_at",
+            "cleanup_status"
+          ],
+          "definitionSha256": "PENDING"
+        },
+        {
+          "name": "forum_attachments_cleanup_status_check",
+          "columns": [
+            "cleanup_status"
+          ],
+          "definitionSha256": "PENDING"
+        }
+      ],
       "indexes": [
+        {
+          "name": "forum_attachments_cleanup_queue_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "cleanup_status",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
         {
           "name": "forum_attachments_owner_created_idx",
           "unique": false,
@@ -5052,6 +5104,10 @@
       "definitionSha256": "5860c2404fe0c5527ab3dcebdc2217a05ef9e4c95929d25c7f0a9236142fba12"
     },
     {
+      "name": "forum_attachment_require_active_ref",
+      "definitionSha256": "PENDING"
+    },
+    {
       "name": "reject_forum_revision_update",
       "definitionSha256": "682bc200a4ab73a933149dcfc43e9865712aafacd05b9745ab0adfd7b065e220"
     },
@@ -5081,6 +5137,20 @@
       "function": "delete_content_topic_title_task_with_metadata",
       "enabled": "O",
       "definitionSha256": "63b7d9ef7019295cb75a502533bf444e45b6267f92bb1f884c797a02069f7498"
+    },
+    {
+      "table": "forum_attachment_draft_refs",
+      "name": "forum_attachment_draft_refs_active_gate",
+      "function": "forum_attachment_require_active_ref",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "table": "forum_post_attachments",
+      "name": "forum_post_attachments_active_gate",
+      "function": "forum_attachment_require_active_ref",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
     },
     {
       "table": "forum_post_revisions",
