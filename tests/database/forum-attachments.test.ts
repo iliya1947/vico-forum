@@ -1089,6 +1089,10 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     await new DrizzleForumEditorDrafts(drizzle(client)).get(ownerId, context);
     await expect(store.readDraftAttachment(ownerId, context, generation, asset.id)).rejects
       .toMatchObject({ reason: "gone" });
+    // This suite shares a disposable schema; do not leave an expired ref/object
+    // for the following exact-claim-count lease test.
+    const cleanup = new ForumAttachmentCleanup(drizzle(client), { delete: vi.fn(async () => {}) });
+    expect((await cleanup.runOnce()).deleted).toBeGreaterThan(0);
   });
 
   it("retains a durable claim on lost delete ACK and retries idempotently after the lease", async () => {
