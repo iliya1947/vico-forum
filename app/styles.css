@@ -9358,6 +9358,28 @@ a.topic-tag:focus-visible {
   cursor: pointer;
 }
 
+.home-shell .markdown-editor-mentions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .55rem .65rem;
+  border-block-start: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+.home-shell .markdown-editor-mentions button {
+  min-block-size: 2rem;
+  padding: .3rem .65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .35rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.home-shell .markdown-editor-mentions button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* Editor 2.0 drafts — clear local/server status without blocking normal editing. */
 .home-shell .markdown-editor-draft-state {
   min-height: 1.85rem;
