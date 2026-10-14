@@ -10,6 +10,7 @@ import {
   forumPosts,
 } from "./schema";
 import { isEditorDraftContextKey } from "./editor-draft-context";
+import { EDITOR_DRAFT_EXPIRY_MS } from "./forum-editor-drafts";
 import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration } from "./attachment-draft-generation";
 
 export { ForumAttachmentDraftConflictError } from "./attachment-draft-generation";
@@ -211,6 +212,21 @@ export class DrizzleForumAttachments {
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
       const current = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      // A direct file request must honor the authoritative 30-day text-draft TTL
+      // even when no metadata/get request has run cleanup yet. This is read-only:
+      // viewing an attachment must never extend or accelerate draft sync.
+      const [textDraft] = await tx.select({
+        draftId: forumEditorDrafts.draftId,
+        status: forumEditorDrafts.status,
+        editedAt: forumEditorDrafts.editedAt,
+      }).from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, contextKey),
+      )).limit(1);
+      if (textDraft?.draftId === current && (
+        textDraft.status !== "active"
+        || textDraft.editedAt.getTime() < Date.now() - EDITOR_DRAFT_EXPIRY_MS
+      )) return null;
       const [row] = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
         .innerJoin(forumAttachments, and(
           eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
