@@ -1058,6 +1058,7 @@ export const hebrewCommonValues = {
   editorAttachmentErrorGeneric: "לא ניתן להעלות את הקובץ המצורף. נסו שוב.",
   editorSimple: "פשוט",
   editorAdvanced: "מתקדם",
+  editorSpellcheck: "בדיקת איות",
   editorUndo: "בטל",
   editorRedo: "בצע שוב",
   editorStrike: "קו חוצה",
