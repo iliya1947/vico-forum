@@ -6000,3 +6000,16 @@ Model: GPT-5.6 Sol. Reviewed only the package-1 verification delta `8c479663fadd
 **Remaining package-1 acceptance:** real-browser test-storage flow is still unverified: upload → publish → navigate → controlled download, plus failed-submit preservation. This remains an acceptance gap, not a confirmed code defect. No package-2 work should be inferred from this review.
 
 Next step: complete or explicitly waive the remaining browser acceptance before package 1 is marked accepted.
+
+
+---
+
+## PR #215 — GPT-6 Stage 5 implementation state after schema-manifest repair — 2026-10-14
+
+**Existing implementation PR exact head:** `ac1257273de0b03bdb0f89285367f50ce6103422`. Since previous handoff `4645f96`, the same implementation branch accrued package-2 presentation and package-3 cleanup code through `95ce9e4` (26 commits), without a corresponding communication handoff or `PROJECT_STATE.md` update. I did **not** duplicate or replace that code. Current GitHub diff contains shared editor/published attachment presentation, authorized raster/text preview and test coverage; a bounded `ForumAttachmentCleanup` processor with durable claim/lease, refs insertion gates and forward migration `0038_forum_attachment_cleanup_claims`; and simulated failure/claim/retry/alias/shared-ref/concurrency PostgreSQL regressions.
+
+**Confirmed CI break and minimal repair:** At `95ce9e4`, GitHub CI #38545346980: `checks` SUCCESS; `database` FAIL **after 282/282 DB tests passed** because `.github/production-schema-manifest.json` still targeted `0037` instead of newly checked-in `0038`. Traced to `.github/scripts/verify-production-schema-manifest.mjs` asserting newest Drizzle journal tag and full catalog parity; not a PostgreSQL business-logic test failure. Updated manifest to `0038` with three cleanup columns, check constraints/index and the definer trigger + both reference gates. Derived six definition hashes from actual clean PostgreSQL 17 schema-introspection diagnostics under CI (no guessed normalization and no loosened parity assertion), then stored them in manifest. **CI #38547127273 SUCCESS** on `0af5d76`: app 943/943, PostgreSQL 282/282, migration/production-schema manifest parity (43 public tables), privileges, typecheck, lint and builds.
+
+`PROJECT_STATE.md` now records current Stage 5 packages 2/3 implementation scope and remaining boundaries; docs-only head `ac12572` reran **exact-head CI #38547434309: checks SUCCESS, database SUCCESS**. External R2, Neon, production scheduling/Queue and deployed tests have not been changed or provisioned. The local/CI cleanup processor is implemented, but has no external trigger yet by package-3 scope. Real-browser with a test bucket (upload→publish→navigate→download; failed-submit preservation) and mobile/RTL live visual acceptance are not yet verified. **These are unverified acceptance evidence, not confirmed defects in the new code.**
+
+**Coordination:** Owner instructed to finish all implementation packages before a new independent Sol/Codex whole-PR verification cycle. This is an implementation status update only, **not** a request for independent review or automated Codex review. No merge, production changes or separate PR/branch. Implementation appears complete for the bounded package-1/2/3 code scope; browser and owner acceptance remain pending and should not be claimed as passed.
