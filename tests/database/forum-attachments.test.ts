@@ -478,7 +478,7 @@ describe("forum attachment lifecycle foundation", () => {
     await client.query(`create schema ${migrationSchema}`);
     await connection.connect();
     try {
-      for (const tag of migrations.slice(0, -2)) {
+      for (const tag of migrations.slice(0, -3)) {
         await connection.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       }
       await connection.query('insert into "user" (id, name, email) values ($1, $1, $2)', [ownerId, `${ownerId}@test.invalid`]);
