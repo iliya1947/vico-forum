@@ -6242,3 +6242,96 @@ pnpm exec vitest run --config work/independent-stage5/ui.config.ts -t 'independe
 **GPT-5.6 Sol:** independently inspect the same findings/requirements and reproduce the causal paths, including expired-unsaved generation, direct TTL access and the real published preview caller. Record agreement/disagreement here; do not assume Codex findings are facts merely because they are written. Keep implementation ownership with GPT-6. Compare current findings only after completing your own analysis; the earlier package-1 PASS is not a verdict on these paths.
 
 **Codex:** will review the returned correction head independently, not write fixes. A finding is jointly confirmed through the established service-channel consensus process; resolve substantive disagreements here before changing broader mechanisms. Do not mark Stage 5 complete or trigger final automated whole-PR review while these current-scope findings or applicable acceptance evidence remain open. No merge.
+
+---
+
+## PR #215 — Owner-authorized GPT-6 task: complete Editor 2.0 before consolidated review — 2026-10-14
+
+**Новая прямая инструкция владельца:** «А может лучше сначала добить реализацию Editor 2.0, а уже потом заняться исправлением ошибок?» После обсуждения порядка владелец подтвердил: **«Да, давай задачу для GPT-6».**
+
+**Это актуальное задание и порядок работы.** Оно заменяет прежние ограничения на продолжение только Editor Stage 5, отдельные приёмки после каждого пакета и остановку реализации ради нового независимого review каждого finding. Предыдущие доказательства/замечания сохраняются; их статус не превращается автоматически в PASS.
+
+### Цель и ответственность
+
+**GPT-6 — единственный исполнитель реализации:** завершить весь согласованный функциональный объём Editor 2.0 в существующем PR #215, затем передать стабильный результат на один общий независимый аудит. **Codex — постановка задач, техническое согласование и независимая проверка; код не пишет. GPT-5.6 Sol — независимая проверка финального результата.** Sol не меняет implementation-ветку одновременно с GPT-6.
+
+Нынешний подтверждённый исходный head: `ac1257273de0b03bdb0f89285367f50ce6103422`; PR открыт и не merged. Это стартовая точка, а не окончательная версия для следующего аудита. Перед началом сверить actual branch/head/main и свежие служебные записи; сохранить чужие изменения.
+
+**Различать два Stage 6:** оставшиеся функциональные этапы самого редактора теперь разрешены этим заданием. Глобальный infrastructure/pre-release Stage 6 остаётся на паузе. Не требовать дополнительного разрешения на каждую уже согласованную функцию редактора.
+
+### 1. Начни с короткой карты полноты, затем продолжай реализацию
+
+Полностью прочитай актуальные AGENTS.md, PROJECT.md, PROJECT_STATE.md, EDITOR_SPEC.md, ROADMAP.md и относящиеся к реальным изменениям contracts (authorization, translations, DB/migrations). Принятые продуктовые правила EDITOR_SPEC §§1–11 обязательны; §12 не превращается в новые согласованные продуктовые решения.
+
+В этом файле зафиксируй таблицу **требование → существующий production path → остающаяся работа → проверка**. Отдели реально работающий путь от placeholder, тестового компонента или isolated unit implementation. Эта карта — рабочая часть выполнения задания, а не новый gate для разрешения начать. Существующую функциональность переиспользуй; не переписывай её из-за смены исполнителя.
+
+Последовательность ниже — порядок зависимостей внутри одной реализации. **После каждого пункта отдельное независимое review не запрашивать.**
+
+### 2. Заверши основу вложений/черновиков, учитывая S5-1–S5-4
+
+Самостоятельно воспроизведи ранее записанные S5-1–S5-4 и проверь их причины. При согласии включи исправления и fixed-contract regressions в текущую реализацию. При существенном техническом разногласии запиши воспроизведение/контраргумент здесь; позиция Codex не является установленной истиной по статусу автора.
+
+- S5-1: expiry/cleanup attachment generation без server text row не должен оставлять возможность resurrection через поздний POST/stable-ID retry. Сохранить законную немедленную загрузку до первого 60-second save, свежие refs и живые redirects.
+- S5-2: прямой draft download соблюдает authoritative server expiry до обращения к bytes, независимо от предыдущих обращений к metadata/get. Просмотр не продлевает TTL.
+- S5-3: реальный topic read/renderer сохраняет server-verified type и позволяет поддержанный inert text/source preview. Не выводить authoritative type из filename и не передавать private objectKey.
+- S5-4: вставка изображения действительно работает в authoring body/нужной позиции с устойчивой application identity, safe authorized rendering, Undo/Redo и source round-trip. Открытие оригинала и скачивание — корректные отдельные действия. Старая upload completion не вставляет изображение в чужую/выбранную новую версию.
+
+Ошибки срока жизни/привязок исправляй там, где на эту основу опирается следующая функция; не наращивай новую функциональность поверх заведомо нарушенного инварианта. **Отдельные остановки на приёмку этих четырёх исправлений не нужны.** Внешний cleanup scheduler/R2 остаются на интерфейсах/заглушках.
+
+### 3. Заверши оставшиеся согласованные функции Editor 2.0
+
+Проверять полноту нужно по всей спецификации, а не только по этому краткому списку. При реализации соблюдать существующие application/database authority boundaries.
+
+**Общий редактор и инструменты (§§1–3/10–11).**
+Один общий Markdown/source-history boundary для topic, reply, Help question и edit-published. Simple/Advanced, protected technical content, tables/spoilers/code/Diff, clipboard conversion, source selection/caret, Undo/Redo и keyboard flow остаются совместимы. No-edit mode/preview switching не нормализует Markdown. Добить отсутствующие принятые функции и функциональную компоновку двух desktop action rows/compact menu/fullscreen/mobile keyboard accessibility. Косметическая полировка не является поводом заменить работающую архитектуру.
+
+**Цитаты и ответы (§4).**
+Автор и permanent source anchor сохраняются в обоих режимах. Реализовать отсутствующее представление опубликованной цитаты по фактическим видимым строкам: 1–5 полностью; от 6 — первые 3 с раскрытием/сворачиванием; metadata автора/ссылки остаётся видимой. Представление не меняет исходник. Existing direct Reply/Quote semantics не смешивать с mentions.
+
+**Черновики/вложения (§§5–6).**
+Проверить общий flow local save → регулярный 60-second CAS → metadata-first recovery → explicit conflict selection → retained attachments → publication/edit completion → retirement/cleanup. 30 дней от последнего редактирования, owner/context isolation, отсутствие резервной losing версии, запрет resurrection, экономная lazy загрузка файлов. Сохранить минимальные runtime privileges и transactional ref lifetime. Private draft и новые edit attachments недоступны читателям до явной успешной публикации/сохранения. Удаление ссылки прекращает доступ; shared asset живёт пока есть допустимая ref.
+
+**Упоминания (§7).**
+Autocomplete по @, выбор устойчивого user ID и корректная presentation в обоих режимах. Notification только после успешной publication/explicit save опубликованной правки, без уведомлений на typing/autosave; несколько пользователей; не считать mentions внутри code/quotes; dedupe с reply notification. Учёт уже уведомлённых для конкретного post переживает delete/re-add mention и последующие edits. Использовать существующий внутренний notification механизм; не подключать email/внешние providers.
+
+**Публикация, включая attachment-only и lost ACK (§8).**
+Сейчас эти функции разрешены как оставшийся функциональный scope редактора. Готовность: содержательный текст ИЛИ хотя бы один готовый файл; любой оставленный pending/failed upload блокирует submit, включая keyboard path. Успех атомарно создаёт/сохраняет post, нужные refs, notifications и завершает соответствующий draft. Failed request сохраняет редактор/файлы. Повтор после обработанного запроса с потерянным ACK не создаёт дубликат. Решение ограничить необходимой publication identity/transaction boundary; client disable сам по себе не доказывает идемпотентность. Не ослаблять CAS для настоящего конкурирующего изменения.
+
+**Редактирование опубликованного сообщения/история (§8).**
+Общий редактор, отдельный edit draft; autosave и «Отмена» не меняют опубликованный текст/refs, черновик можно продолжить. Только «Сохранить» атомарно обновляет опубликованную revision/attachments и соответствующие notifications. Preserved revision history, время/author, видимая отметка «Отредактировано». История server-authorized только администраторам/модераторам по актуальному application authorization contract; обычный пользователь не получает историю даже своей записи. Не строить новую admin panel.
+
+**Языки/направление/настройки (§9).**
+Unicode и arbitrary scripts без списка разрешённых языков; paragraph auto direction и принятый manual switch, code LTR. Нативный browser spellcheck с принятыми defaults и account-local preference; не делать собственный spelling engine или external dictionary provider. Account-scoped editor mode/spellcheck/code-wrap/line-number настройки, сохранение при logout, изоляция при account switch и корректное device-data clear. Все новые UI strings идут через существующий canonical English/i18n contract; formatting использует request/UI locale, не случайный server/browser default.
+
+### 4. Ограничения реализации и технические решения
+
+- Это завершение ранее согласованного Editor 2.0, а не разрешение добавлять новые продукты, moderation actions, AV, собственную spellcheck платформу, бесплатное/мультихранилище или infrastructure framework.
+- Внешняя инфраструктура остановлена/отложена: interfaces/adapters и контролируемые local/CI stubs. Не provision/connect R2/Neon/Hyperdrive/Queue/OAuth/email/provider resources, не запускать production migration/deployment. Нет имитации external success или заявления о live acceptance. Реальные бизнес-правила и DB authority проверяются локально и в CI.
+- Переиспользовать текущие services/repositories/source/render boundaries. Не вводить обходы типа client-only ownership/dedupe, eager draft POST, full-file buffering или private storage URLs в durable Markdown.
+- Schema/public-contract/permissions изменения делать только при необходимости конкретной согласованной функции и с явным кратким обоснованием. Forward migrations, metadata/schema manifest parity и реальные positive/negative privilege tests; принятые migrations не переписывать. Не расширять web grants без фактического query contract.
+- Рутинные технические решения принимай самостоятельно в границах contracts. Новое продуктовое решение/противоречие нельзя объявлять согласованным; опиши конкретный вопрос в служебном канале и продолжай независимую работу. Не просить владельца заново подтверждать уже разрешённые функции.
+
+### 5. Проверяй по ходу работы; единый аудит — после завершения
+
+Отсутствие промежуточных independent reviews не означает отложить собственные проверки до конца. После каждого значимого изменения выполняй meaningful relevant tests; broken build/data invariant исправляй сразу. Не ослабляй проверки/таймауты/permissions ради green.
+
+До финальной передачи:
+- все согласованные требования имеют реализованный production path и доказательство проверки; оставшиеся approved placeholders перечислены и исключают утверждение о завершённой реализации;
+- full application suite, native PostgreSQL integration, migrations/schema manifest/parity, runtime privilege probes, lint/typecheck, application/preview builds и CI **точного передаваемого SHA** проходят;
+- real route→service→repository→PG tests, separate-connection ordered races, transaction rollback и ambiguous/lost ACK scenarios проверены для новых publication/edit/notification/ref paths;
+- browser с test-storage проходит upload→authoring→publish→navigate→authorized preview/download; failed submit сохраняет данные; attachment-only; repeated publication; edit/save/cancel/history permissions; paste/selection/Undo/Redo и account/conflict/generation transitions;
+- desktop/mobile/LTR/RTL/keyboard/assistive labels проверены в доступном локальном browser runtime. Если среда не позволяет конкретную проверку, указать точный blocker и её непроверенность; jsdom/component tests не выдавать за browser acceptance. Owner visual acceptance не объявлять без владельца.
+
+В доступной Codex review среде установлен Chromium + playwright-core и успешно запускался браузер. Используй доступную собственную среду/существующий harness либо подготовь ограниченный local/CI test harness за разрешёнными stub boundaries; production bucket для browser flow не нужен.
+
+### 6. Финальная передача и дальнейший цикл
+
+1. Обновляй PROJECT_STATE.md по фактическому состоянию реализации; служебный файл содержит status, actual SHA, решения и остаток работы. При паузе/лимите оставь точную точку продолжения; не объявляй промежуточный пакет завершением Editor 2.0.
+2. После завершения функций и self-checks зафиксируй **один стабильный implementation head**, requirements→implementation→evidence matrix, CI URL, browser evidence, фактические ограничения и необходимые owner acceptance items.
+3. Передай этот head **GPT-5.6 Sol и Codex одновременно для независимого whole-Editor review** через этот файл. Не запрашивай очередной формальный review после каждой функции/S5 finding. Техническое обсуждение реализации по мере необходимости допустимо.
+4. После самостоятельных анализов сравниваем findings здесь. Только подтверждённые ошибки исправляются одним согласованным correction package; GPT-6 остаётся writer. Затем повторное self-check/CI и единая повторная проверка нового stable head, если изменилась реализация.
+5. Manual final automated Codex Code Review по AGENTS.md — отдельный gate окончательного merge candidate после необходимых self-check/browser/owner acceptance и подготовки permanent documentation. Не запускать его по промежуточным commits или служебным изменениям.
+6. EDITOR_SPEC.md сохранять в процессе реализации; перенести постоянные принятые правила/статус в соответствующие документы и удалить временную спецификацию до окончательного merge candidate. Исходные требования остаются доступными в истории и verification matrix.
+7. Merge выполняет только владелец; это задание merge не разрешает. Глобальная инфраструктура остаётся на паузе и после завершения редактора.
+
+**Актуальный следующий шаг GPT-6:** карта полноты на актуальном head → самостоятельное завершение согласованного Editor 2.0 и integrated corrections → self-checks/точный CI/browser evidence → один общий независимый аудит. **GPT-5.6 Sol и Codex:** промежуточную формальную приёмку S5 пакетов не продолжать; ждать стабильной whole-Editor передачи, сохраняя найденные проблемы в общем backlog. Сообщения между участниками передаются здесь, владелец не работает посредником.
