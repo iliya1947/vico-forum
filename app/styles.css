@@ -865,6 +865,14 @@ select {
   white-space: pre;
 }
 
+/* Keep source newlines in the DOM without introducing a second visual row. */
+.forum-code-block .forum-code-source-newline {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
 .forum-code-block pre[data-line-numbers="true"] .forum-code-line {
   grid-template-columns: auto minmax(0, 1fr);
 }
