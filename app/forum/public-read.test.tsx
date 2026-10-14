@@ -162,6 +162,7 @@ const forMePage = {
 };
 
 const reader: ForumReader = {
+  searchMentionableUsers: async () => [],
   readProfile: async () => undefined,
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
   readHomepage: async () => [{
