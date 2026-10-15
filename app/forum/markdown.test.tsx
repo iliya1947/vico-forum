@@ -305,6 +305,40 @@ const longValue = "code";
     expect(body.querySelector(".forum-code-block pre")).toHaveTextContent("const answer = 42;");
   });
 
+  it("renders authored paragraph direction and hides only recognized source markers", () => {
+    const source = [
+      "English **first** {:vico-dir=rtl}",
+      "",
+      "עברית \`build\` {:vico-dir=ltr}",
+      "",
+      "## عنوان {:vico-dir=ltr}",
+      "",
+      "- English item {:vico-dir=rtl}",
+      "- עברית item {:vico-dir=ltr}",
+      "",
+      "Literal {:vico-dir=auto} and \\{:vico-dir=rtl}",
+      "",
+      "\`\`\`txt",
+      "{:vico-dir=rtl}",
+      "\`\`\`",
+    ].join("\n");
+    const { container } = renderMarkdown(source, "ltr");
+    const prose = [...container.querySelectorAll(".post-body p")];
+    expect(prose[0]).toHaveAttribute("dir", "rtl");
+    expect(prose[0]).toHaveTextContent("English first");
+    expect(prose[0]).not.toHaveTextContent("vico-dir");
+    expect(prose[1]).toHaveAttribute("dir", "ltr");
+    expect(prose[1]).toHaveTextContent("עברית build");
+    expect(prose[1]?.querySelector("code")).toHaveAttribute("dir", "ltr");
+    expect(container.querySelector(".post-body h2")).toHaveAttribute("dir", "ltr");
+    const items = [...container.querySelectorAll(".post-body li")];
+    expect(items.map((item) => item.getAttribute("dir"))).toEqual(["rtl", "ltr"]);
+    expect(items.map((item) => item.textContent?.includes("vico-dir"))).toEqual([false, false]);
+    expect(prose.at(-1)).toHaveAttribute("dir", "auto");
+    expect(prose.at(-1)).toHaveTextContent("{:vico-dir=auto}");
+    expect(container.querySelector(".forum-code-block pre")).toHaveTextContent("{:vico-dir=rtl}");
+  });
+
   it("keeps rendered code LTR inside an RTL page context", () => {
     const { container } = renderMarkdown(
       "فقرة **مهمة**\n\n```ts\nconst x = 1;\n```",
