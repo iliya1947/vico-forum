@@ -7763,3 +7763,59 @@ The next gate is Sol whole-PR source/contract review of the current exact head a
 After a clean whole-PR source review, remaining browser-dependent/visual acceptance must be closed on the stable final head before any final manual Codex Code Review. The mobile correction has not yet received real 320/390px interactive browser/owner visual acceptance; unit tests are not substituted for that geometry/touch gate.
 
 Do not start formal Codex Code Review, infrastructure, deployment or merge from this entry.
+
+
+---
+
+## GPT-5.6 Sol — final whole-PR source/contract review: one authorization correction required — 2026-10-15
+
+**Implementation PR:** #215  
+**Exact reviewed head:** `177e4c30b0c926ee7ca61ec1a026c4a0e2ea37f4`
+
+### Whole-PR source/contract gate
+
+**NOT PASS / one confirmed current-scope defect remains.**
+
+Sol reviewed the current Editor 2.0 implementation as one integrated package against `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/EDITOR.md` and the relevant authorization/translation contracts rather than accepting prior bounded-stage results in isolation.
+
+No new confirmed current-scope defect was found in the checked Markdown/source-roundtrip, draft/CAS/tombstone, publication, attachment lifecycle/download/cleanup, mentions/notification dedupe, quote/translation protection, published-edit/history, account-local preferences, direction, keyboard/mode/preview/fullscreen source logic or schema/runtime-privilege boundaries. External R2/Neon/Queue/provider provisioning, AV provider and real cleanup scheduling remain Stage 6/future-only and are not findings for PR #215.
+
+### Confirmed finding — Security → Attachments has no independent application permission
+
+PR #215 adds a real protected read path for durable suspicious-upload events:
+`/attention?mode=security&group=attachments`.
+
+`app/routes/attention.tsx` currently authorizes the entire attention route only by resolving:
+- `forum.solution.manageAny`;
+- `forum.helpDuplicate.manage`;
+- `forum.helpNeedsDetails.manage`.
+
+Any one of those permissions is enough to enter the route. When `mode=security&group=attachments`, the loader then directly calls `readSecurityAttachmentEvents()` without an additional security-attachment capability check.
+
+The displayed record contains file name, rejection reason, declared/detected type, byte size, upload ID, uploader user ID, draft/context IDs and timestamp.
+
+This is not only a role-label concern. Vico authorization is deliberately dynamic and permission-based: custom roles and per-user allow/deny overrides may grant one Help moderation permission independently of other capabilities. Therefore a user granted only (for example) Needs-details moderation currently gains read access to the unrelated attachment-security event stream.
+
+This conflicts with both current source-of-truth boundaries:
+- `docs/EDITOR.md` requires Security → Attachments events to be available to the authorized administrator/moderator path and explicitly requires rights checks through the existing moderation center;
+- `docs/auth/AUTHORIZATION.md` requires each new protected capability to receive a code-backed permission key so it can be independently managed through dynamic role/user authorization.
+
+The current catalog contains no attachment-security read capability. The database catalog CHECK introduced/updated in migration 0040 likewise contains no such key.
+
+This is a **current Editor 2.0 defect**, not future hardening: PR #215 itself introduces and exposes the durable Security → Attachments reader.
+
+### Required bounded correction
+
+Correct only this authorization boundary.
+
+Ready criteria:
+- represent attachment-security event access as an appropriate code-backed application permission instead of inheriting access from unrelated Help moderation permissions;
+- preserve the dynamic authorization model: the new capability is available through the existing role/user grant/override UI and has appropriate initial built-in defaults for moderator/admin without hard-coding role names at runtime;
+- enforce that capability before reading Security → Attachments events; a user holding only one of the existing Help moderation permissions must not reach the attachment event reader;
+- preserve existing per-kind Help moderation visibility and actions unchanged;
+- update the database permission catalog constraint/data through the normal forward-migration path and keep schema/catalog parity;
+- add focused positive/negative authorization regression(s), including proof that the attachment store is not queried on denial;
+- update `docs/auth/AUTHORIZATION.md`, factual `PROJECT_STATE.md`, and any directly affected schema/runtime manifests;
+- run relevant focused tests plus exact-head CI and record exact head/evidence here, then STOP for Sol review.
+
+Do not redesign the attention center, add security-event actions, broaden moderation scope, start browser acceptance, external infrastructure, deployment, merge or formal Codex Code Review.
