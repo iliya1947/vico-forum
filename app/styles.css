@@ -9240,6 +9240,18 @@ a.topic-tag:focus-visible {
 }
 .home-shell .markdown-editor-extra-options button { justify-content: start; white-space: nowrap; }
 
+.home-shell .markdown-editor-direction {
+  display: grid;
+  gap: .2rem;
+  padding-block: .35rem;
+  border-block: 1px solid var(--color-border);
+}
+.home-shell .markdown-editor-direction > span {
+  color: var(--color-text-muted);
+  font-size: .8rem;
+}
+
+
 .home-shell .markdown-editor:not(.is-fullscreen) { overflow: visible; }
 .home-shell .markdown-editor.is-fullscreen .markdown-editor-preview-menu { z-index: 5; }
 
