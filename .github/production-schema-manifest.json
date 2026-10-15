@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0042_attachment_edit_snapshots",
+  "targetMigration": "0043_attachment_security_read_permission",
   "tables": {
     "account": {
       "columns": [
