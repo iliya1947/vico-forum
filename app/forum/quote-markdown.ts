@@ -6,7 +6,8 @@
 const QUOTE_SOURCE_PREFIX = "↳ ";
 
 function escapeLinkLabel(value: string): string {
-  return value.replace(/([\\\x60*_{}\[\]<>!])/gu, "\\$1").replace(/[\r\n]+/gu, " ");
+  return [...value.replace(/[\r
+]+/gu, " ")]\n    .map((character) => "\\`*_{}[]<>!".includes(character) ? "\\" + character : character).join("");
 }
 
 export function attributedQuoteMarkdown({
