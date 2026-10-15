@@ -20,6 +20,8 @@ import type { StoredContentTranslation } from "../localization/content-translati
 import { localeRegistry } from "../localization/registry";
 import {
   contentTranslationPresentationContext,
+  contentGenerationActionContext,
+  contentGenerationStatusReaderContext,
   localeContext,
   registryLoaderContext,
 } from "../localization/request-context";
@@ -2229,6 +2231,39 @@ describe("published edit resume navigation", () => {
 });
 
 describe("published edit revision fence", () => {
+  it.each(["", " \n"])("renders attachment-only posts without sending empty text to translation or generation (%j)", async (body) => {
+    const emptyPost = { ...topic.posts[0]!, id: "attachment-only-post",
+      body: { ...topic.posts[0]!.body, id: "attachment-only-revision", originalContent: body, sourceLocale: "und" },
+      attachments: [{ id: "23b93562-0550-4eef-88af-f951d6ea6138", fileName: "only-file.txt", byteSize: 12, detectedType: "text" }] };
+    const textPost = { ...topic.posts[0]!, id: "adjacent-text-post",
+      body: { ...topic.posts[0]!.body, id: "adjacent-text-revision", originalContent: "Adjacent source", sourceLocale: "en" } };
+    const page = { ...topic, posts: [emptyPost, textPost] };
+    const ctx = context("he", "rtl");
+    ctx.set(forumReaderContext, { ...reader, readTopicPage: async () => page });
+    const readBatch = vi.fn(async (identities: readonly { contentId: string }[]) => {
+      expect(identities.some((item) => item.contentId === emptyPost.id)).toBe(false);
+      return { translations: [{ contentType: "post-body" as const,
+      contentId: textPost.id, revisionId: textPost.body.id, targetLocale: "he", sourceLocale: "en",
+      translatedContent: "Adjacent translation", provenance: { origin: "persistent_manual" as const } }] };
+    });
+    ctx.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch }));
+    ctx.set(authSessionContext, { user: { id: "translation-capable-author" } } as never);
+    ctx.set(authorizationContext, { forUser: () => ({ has: async (permission: string) => permission === "forum.translation.generate" }) } as never);
+    ctx.set(contentGenerationActionContext, { enabled: true } as never);
+    const readStatuses = vi.fn(async (revisions: readonly { contentType: "topic-title" | "post-body"; contentId: string; revisionId: string }[]) =>
+      revisions.map((revision) => ({ ...revision, state: "idle" as const })));
+    ctx.set(contentGenerationStatusReaderContext, { readCurrent: readStatuses });
+    const loaded = await topicLoader({ params: { locale: "he", topicId: topic.id }, context: ctx });
+    expect(loaded.postPresentations[0]).toMatchObject({ contentId: emptyPost.id, selected: "original", content: body });
+    expect(loaded.postPresentations[1]).toMatchObject({ contentId: textPost.id, selected: "translation", content: "Adjacent translation" });
+    expect(readBatch.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
+    expect(readStatuses.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
+    expect(loaded.generationUnits.some((unit) => unit.contentId === emptyPost.id)).toBe(false);
+    renderRoute(TopicRoute, loaded, "/he/topics/typed-api", "he", "rtl");
+    expect(await screen.findByText("only-file.txt")).toBeInTheDocument();
+    expect(screen.getByText("Adjacent translation")).toBeInTheDocument();
+  });
+
   const json = (body: unknown) => new Response(JSON.stringify(body), {
     status: 200, headers: { "Content-Type": "application/json" },
   });

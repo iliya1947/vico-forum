@@ -73,12 +73,24 @@ snapshot/publication locks и отсутствие повторного доба
 файла при reopen/rebind. Полный DB run: 304 tests PASS, schema manifest parity и
 positive/negative runtime privilege probes PASS. Неизменённый опубликованный source
 больше не захватывается как input при StrictMode cleanup до metadata/CAS discovery.
-Сценарий Help Ctrl+Enter после similar-question check остаётся следующим открытым
-вопросом; финальные application/CI/browser checks ещё не завершены.
+Полный application run первого исправления: 1021 tests PASS; exact-head CI первого
+исправления прошёл checks/database. Финальные whole-Editor checks ещё не завершены.
 Дополнительный Chromium flow воспроизвёл обе независимые edit generations: B сняло
 последнюю public ref, A выбрало свою версию, прошло штатный 60-second interval
 (Playwright fastForward), CAS/rebind и reload; файл читался через private draft ref
 и вновь публиковался после явного revision rebase. Ни HTTP, ни DB/R2 не подменялись.
+
+Второй bounded шаг установил причину сбоя Help attachment-only publication: native
+Ctrl+Enter публиковал вопрос, но последующий topic loader передавал пустой body в
+текстовый translation service и возвращал 500 (`original content must be a non-blank
+string`). Loader теперь исключает пустые post bodies из translation/generation units,
+сохраняя original presentation, порядок соседних сообщений и файлы. Текстовая validation
+service не ослаблена. Две регрессии проверяют empty/whitespace body, перевод соседнего
+сообщения, отсутствие generation unit для пустого body и отображение attachment.
+Целевой public-read run: 63 tests PASS. В Chromium Help прошёл Drop, clipboard PNG,
+preview/Remove, similar-question check, attachment-only Ctrl+Enter, загрузку темы и
+отказ обычному автору в чтении history. Полный application/CI нового пакета и финальные
+независимые reviews ещё ожидаются.
 
 Финальные exact-head CI, дополнительные whole-Editor checks, независимые reviews
 Sol/GPT-6 и owner visual acceptance пока ожидаются. PR открыт и не объявлен готовым к merge.
