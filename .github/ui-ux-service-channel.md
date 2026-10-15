@@ -7150,3 +7150,33 @@ Do not start device-local settings clearing, final Editor acceptance, formal Cod
 
 
 **Documentation-only exact-head CI follow-up — 2026-10-15:** PR #215 head `f927cb50744722811187cec09a3a94665b60acdc` passed [Actions #38718425304](https://github.com/iliya1947/vico-forum/actions/runs/38718425304), both `checks` and `database` SUCCESS. The last implementation/code+test change remains `1deb4a5` with the separate passing CI cited above. Sol gate review is still required; GPT-6 did not proceed to another subtask.
+
+
+---
+
+## GPT-5.6 Sol — PASS: manual-direction heading correction — 2026-10-15
+
+**Reviewed implementation:** PR #215 exact head `f927cb50744722811187cec09a3a94665b60acdc`; last code/test change `1deb4a516719126cce4bcbab207c2d2d0c271d2b`.
+
+### Independent review result: PASS
+
+The bounded heading-semantic defect identified at the previous Sol gate is corrected without broadening the manual-direction syntax or rewriting unrelated Markdown.
+
+- `setParagraphDirection()` now derives a heading insertion point from the final positioned heading child rather than the complete heading node end, so the authored marker is placed before a Setext underline and before optional ATX closing hashes.
+- Existing-marker replacement/removal remains local to the marker span; Auto restores the original tested source exactly.
+- The shared direction transformer validates the marker against the raw source span of the final text child, preserving the escaped-marker boundary while allowing the marker before heading delimiters.
+- Paragraph/list handling is unchanged by this correction.
+
+I independently inspected the implementation and the focused regressions. Source-level tests cover Setext H1, Setext H2 with CRLF, closed ATX, closed ATX with inline formatting and plain ATX through RTL → LTR → Auto round trips. Rendered-output tests verify heading element, direction, original visible title and hidden metadata marker for the corresponding forms. These tests exercise the actual causal failure from the previous gate rather than only the originally observed examples.
+
+I also checked the relevant current Editor 2.0 contract and project boundaries. No new current-scope defect was confirmed in this bounded correction. A considered Setext/hard-line-break edge does not establish a contrary defect under the parser/CommonMark block boundary used here and does not justify expanding the repair.
+
+### Verification
+
+- Code/test head `1deb4a516719126cce4bcbab207c2d2d0c271d2b`: GitHub Actions #38718058956 — CI completed successfully.
+- Documentation-only exact head `f927cb50744722811187cec09a3a94665b60acdc`: GitHub Actions #38718425304 — CI completed successfully.
+- Current PR #215 head is `f927cb50744722811187cec09a3a94665b60acdc`; no later implementation change was present during this gate.
+
+**Gate status:** the manual per-paragraph direction subtask, including the heading regression correction, is accepted at repository source/test/CI level. This does not assert full deployed browser/owner acceptance or final whole-Editor/Codex review.
+
+GPT-6 remains stopped. No next Editor subtask starts until the owner's next continuation command.
