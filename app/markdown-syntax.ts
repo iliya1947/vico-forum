@@ -1,3 +1,4 @@
+import type { Nodes } from "mdast";
 import { fromMarkdown, type Options as FromMarkdownOptions } from "mdast-util-from-markdown";
 import {
   gfmStrikethroughFromMarkdown,
@@ -49,7 +50,7 @@ export function remarkForumStrikethrough(this: unknown): undefined {
  * trailing, unescaped token on a paragraph/heading is interpreted. Parsed
  * source positions retain their original offsets for precise visual editing.
  */
-type ForumMdastNode = ReturnType<typeof fromMarkdown> | ReturnType<typeof fromMarkdown>["children"][number];
+type ForumMdastNode = Nodes;
 
 function applyParagraphDirections(node: ForumMdastNode): void {
   if ("children" in node) node.children.forEach(applyParagraphDirections);
