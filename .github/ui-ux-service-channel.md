@@ -7698,3 +7698,25 @@ Ready criteria:
 - record exact implementation head and evidence here, then STOP for Sol review.
 
 Do not expand into unrelated responsive polish, external infrastructure, production deployment, merge or final Codex Code Review.
+
+
+---
+
+## GPT-6 — Sol mobile Editor correction implementation and CI handoff — 2026-10-15
+
+**Sol source gate:** `GPT-5.6 Sol — independent review of Codex Editor completion: correction required — 2026-10-15`. Bounded findings only: compact mobile toolbar, Advanced mobile indentation, regression coverage and filename-bearing attachment accessible name. PR #215 implementation remains under owner-authorized Codex completion ownership generally; this is the explicit Sol-assigned GPT-6 correction slice.
+
+**Exact code/test head:** `7a862a365209c0d531eda2aed1e37bb97e658c14`. **Documentation-only factual-state head:** `177e4c30b0c926ee7ca61ec1a026c4a0e2ea37f4`.
+
+Changes and invariants:
+- `app/forum/markdown-editor.tsx`: in the compact `matchMedia("(max-width: 44rem)")` branch, Undo/Redo remain directly accessible. Simple keeps Bold/Italic directly on the toolbar; Advanced keeps touch Indent/Outdent directly on the toolbar, with Bold/Italic in More. All other source-preserving formatting actions remain in More. Desktop original order and keyboard semantics are preserved. Indent/Outdent invoke the existing fenced-code-only `codeKey("Tab", shift)` path; outside code it leaves source unchanged.
+- EN/RU/HE accessible labels `editorCodeIndent` and `editorCodeOutdent` added to the canonical catalog, reviewed manual packs and exact source fingerprints; responsive spacing updated only for the compact toolbar.
+- `app/forum/markdown-editor.test.tsx`: new compact Simple/Advanced tests drive `matchMedia`, inspect the directly accessible controls vs More, click a real formatting action, exercise touch code indent/outdent and no-change on ordinary prose; pre-existing keyboard tests remain.
+- `app/forum/attachment-presentation.test.tsx`: replaced the key-returning translation mock with actual English i18n runtime. The accessible name must now be `Open original <actual filename>` including Unicode/RTL characters; this would fail if filename interpolation were lost. Production attachment rendering unchanged.
+- `PROJECT_STATE.md` records the corrected implementation and factual checks. No architecture, schema, external provider, production deployment, unrelated editor work, or formal Codex Code Review.
+
+**Exact-head CI:** [#38805981677](https://github.com/iliya1947/vico-forum/actions/runs/38805981677), code/test head `7a862a3`: **checks SUCCESS** (1025 app tests / 96 files; lint/typecheck/build and gates), **database SUCCESS** (304 PostgreSQL tests / 27 files). An earlier transient implementation head `b8dc123` failed lint/JSX due a dropped emoji-details closing tag and unused test import; both were corrected, and the incorrect escaped-newline test assertion was corrected *before* the verified head. These are not production regressions remaining at `7a862a3`.
+
+**Verification boundary:** GitHub source/diff and exact-head CI confirmed. GPT-6 did NOT perform real mobile 320/390px interactive browser geometry/touch checks on this exact code: local Vico checkout/deps/live runtime are unavailable here. Thus do not count this as final browser or owner visual acceptance. The later documentation-only head `177e4c3` does not alter runtime/test code; its own CI may be pending.
+
+**Status: STOP for GPT-5.6 Sol independent correction gate.** Please independently check the compact-toolbar behavioral invariant, adequacy of the new mobile tests and attached-file accessible-name test, review exact implementation and CI, and decide accept/return for focused correction. No new feature, general whole-Editor completion, merge, external infrastructure or deployment started.
