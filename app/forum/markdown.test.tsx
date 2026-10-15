@@ -275,6 +275,36 @@ const longValue = "code";
     expect(container.querySelector("pre")?.textContent).toBe("let value = 1;");
   });
 
+  it("sets independent automatic direction on mixed-language prose blocks without changing source", () => {
+    const source = [
+      "English **first** with \`const x = 1\`.",
+      "",
+      "עברית **שנייה**.",
+      "",
+      "## العربية عنوان",
+      "",
+      "- רשימה אחת",
+      "- English item",
+      "",
+      "> العربية اقتباس",
+      "",
+      "\`\`\`ts",
+      "const answer = 42;",
+      "\`\`\`",
+    ].join("\n");
+    const { container } = renderMarkdown(source, "rtl");
+    const body = container.querySelector(".post-body")!;
+    const paragraphs = [...body.querySelectorAll("p")];
+    expect(paragraphs.map((p) => p.textContent)).toContain("English first with const x = 1.");
+    expect(paragraphs.filter((p) => /English first|עברית|العربية اقتباس/u.test(p.textContent ?? ""))
+      .map((p) => p.getAttribute("dir"))).toEqual(["auto", "auto", "auto"]);
+    expect(body.querySelector("h2")).toHaveAttribute("dir", "auto");
+    expect([...body.querySelectorAll("li")].map((li) => li.getAttribute("dir"))).toEqual(["auto", "auto"]);
+    expect(body.querySelector("p code")).toHaveAttribute("dir", "ltr");
+    expect(body.querySelector(".forum-code-block pre")).toHaveAttribute("dir", "ltr");
+    expect(body.querySelector(".forum-code-block pre")).toHaveTextContent("const answer = 42;");
+  });
+
   it("keeps rendered code LTR inside an RTL page context", () => {
     const { container } = renderMarkdown(
       "فقرة **مهمة**\n\n```ts\nconst x = 1;\n```",
