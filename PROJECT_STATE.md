@@ -1,184 +1,1144 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-11
+Последнее обновление: 2026-10-11
 
-## Состояние
+## Назначение
 
-Этап 0, Stage 1 и Stage 2 завершены. После Stage 1 acceptance выполнен hardening locale
-routing, registry и UI translation validation/type contracts. Stage 2 persistence preflight
-и серия PR 2A/2B/2C завершены: production Neon migrations применены, read-only runtime role
-и cache-disabled Hyperdrive с direct Neon origin созданы, реальный Hyperdrive binding
-подключён к production Worker. Native Cloudflare Workers Builds работает от GitHub `main`,
-real deployed `workers.dev` Hyperdrive acceptance успешно пройден.
+Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
+ограничения и ближайший маршрут разработки.
 
-Перед Stage 3 завершён отдельный pre-Stage-3 hardening: registry failure boundaries больше не
-маскируют отсутствие request loader, transport-level `pg` outages классифицируются как degraded
-availability, degraded registry получает безопасную reason-only telemetry, required GitHub checks
-включают `checks` и `database` с требованием актуальности branch, accepted migration history
-защищена как append-only, production migration workflow ограничен `main`, а production verifier
-проверяет устойчивые invariants вместо mutable locale lifecycle state. Cloudflare non-production
-builds подтверждены как включённые; текущая preview capability допускается только при существующей
-read-only/public-data границе и должна быть изолирована до появления write-capability или private data.
+Постоянные продуктовые и архитектурные решения находятся в соответствующих source-of-truth
+документах:
 
-Stage 3 завершён. Stage 3A добавил и применил production schema persistent UI translations;
-Stage 3B подключил read-only persistent manual/machine sources к Worker runtime и прошёл реальный
-production Hyperdrive smoke; Stage 3C добавил deterministic compiled locale/namespace bundle identity,
-persistent bundle repository и cache/ETag boundary без Worker write-capability. Финальный deployed
-regression после merge Stage 3C подтвердил `/en/`, `/ru/`, `/he/`, Hebrew RTL, English fallback и
-отсутствие Worker errors в проверенной Observability выборке.
+- `PROJECT.md` — продуктовый и технический baseline;
+- `PROJECT_HISTORY.md` — значимая история решений, регрессий и последующих corrections;
+- `ROADMAP.md` — последовательность этапов;
+- `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*` — мультиязычность и переводы;
+- `docs/auth/AUTHORIZATION.md` — application authorization;
+- `docs/database/*` — migrations, Hyperdrive и external rollout.
 
-## Готово
+История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
+цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-- создан GitHub-репозиторий и базовая проектная документация;
-- зафиксирован последовательный roadmap до первого production-релиза;
-- зафиксирована расширяемая архитектура мультиязычности и переводов без hard-coded списка locale;
-- translation architecture разделена на обязательный contract и detail documents; все 49 component IDs привязаны к этапам реализации через `ROADMAP.md`;
-- завершён этап 0 и зафиксирован `SCAFFOLD_PLAN.md` с exact toolchain и границами Stage 1;
-- Stage 1 разделён на PR 1A (scaffold/quality gates), PR 1B (locale boundary/resolution) и PR 1C (UI translation resource runtime);
-- Stage 1A merged: добавлен минимальный React Router v8 Framework Mode SSR scaffold для Cloudflare Workers, exact toolchain, lockfile, ESLint, Vitest и CI;
-- для Stage 1B выбрана method-aware explicit-locale route policy: только `GET`/`HEAD` используют `307` fallback на `/en/...` или `308` canonicalization; любой non-`GET`/`HEAD` request, которому потребовался бы locale redirect, fail closed как `404` без `Location` и до matched action; active canonical locale остаётся доступным для normal route/action handling;
-- HTTP rationale для `307`/`308` и exact React Router `8.3.1` redirect contract зафиксированы в `docs/translation/RESEARCH.md`;
-- в Stage 1B реализованы generic `/:locale/*`, отдельный technical `/api/*` namespace, server locale loader и pre-action method-aware guard;
-- добавлены `LocaleRegistry` abstraction с bootstrap `en` и валидируемым in-memory adapter, `LocaleResolver`, BCP-47 canonicalization, aliases, explicit fallback metadata и publication-state checks;
-- root negotiation учитывает зарезервированный authenticated source, locale cookie, `Accept-Language` с q-values и deterministic `en` fallback; negotiation redirect имеет `Cache-Control: no-store`;
-- locale context содержит `lang`/`dir`, explicit fallback locales и детерминированный formatting context с `UTC`; SSR выставляет document attributes из loader snapshot;
-- targeted tests покрывают registry fixtures/invalid graphs, LTR/RTL, canonical/unavailable redirects, negotiation, cache policy и запрет downstream side effect для redirect-required mutations;
-- Stage 1C добавил canonical English UI catalog с typed message descriptors и semantic `sourceFingerprint`;
-- реализованы partial local translation packs за `LocalTranslationSource`, structural validation, stale classification/exclusion и независимость packs от `LocaleRegistry`;
-- `TranslationResourceLoader` собирает отдельные bundles для target/explicit fallback/`en`, сохраняет source priority и возвращает bundle/stale metadata;
-- canonical English остаётся authoritative source для `en`, а resource/source version меняется вместе с current bundle payload/semantics;
-- locale boundary создаёт request-scoped `i18next` runtime с `load: "currentOnly"` и explicit fallback, а SSR/hydration используют один сериализованный locale/resource/formatting snapshot без browser redetection;
-- Stage 1 acceptance выполнен на merged `main`: CI подтвердил `lint`, `typecheck`, 32 tests и `build`, а финальный build дополнительно проверен через Workers-compatible `vite preview`/`workerd`;
-- локальный Workers smoke подтвердил root negotiation `307` + `no-store`, locale canonicalization `308` с сохранением query, fail-closed `404` для redirect-required mutation, Hebrew SSR `lang="he" dir="rtl"`, English fallback и отдельный `/api/*` namespace;
-- первый реальный Cloudflare Workers deploy успешно выполнен для `vico-forum`; Worker доступен на `https://vico-forum.iliya1947a.workers.dev`;
-- deployed smoke на `workers.dev` подтвердил root negotiation, canonical locale redirect, fail-closed mutation policy и Hebrew RTL SSR/fallback behavior;
-- Stage 1 hardening исправляет порядок local translation validation: identity и freshness
-  проверяются до структуры, stale не попадает в current bundle и не является CI failure;
-  отдельная full-pack regression validation проверяет все реальные manual packs;
-- `LocaleRegistry` запрещает точные canonicalized collisions с централизованными reserved
-  segments `api`/`assets` и отдаёт defensive immutable runtime snapshots и matches;
-- i18next module augmentation выводит строгий resource/key shape из canonical English
-  descriptors без превращения descriptors в runtime resources;
-- Home внутри `/:locale` является index route, а неизвестный child path обрабатывается
-  отдельным locale-boundary catch-all с HTTP `404`;
-- hardening CI дополнен Workers-runtime smoke через Cloudflare Vite preview: canonical `/he/`
-  возвращает `200` с `lang="he"`/`dir="rtl"`, `/he/topic` возвращает настоящий `404`, а
-  `/api/test` остаётся отдельным technical `404`;
-- Stage 2 persistence preflight завершён: выбран PostgreSQL 17 + Neon + cache-disabled
-  Hyperdrive + `pg` + Drizzle path; `en` остаётся code-owned bootstrap, persistent registry
-  хранит только non-bootstrap locale; зафиксированы one-table registry model, request-scoped
-  loading, semantic registry hash, degraded behavior, read-only Stage 2 Worker,
-  forward-only migration policy и серия PR `2A → 2B → 2C`; detail contract и rationale
-  находятся в `docs/translation/LOCALES.md`, `STORAGE_AND_VERSIONING.md` и `RESEARCH.md`.
-- Stage 2 PR 2A добавил exact `pg 8.23.0`, `drizzle-orm 0.45.2`, `drizzle-kit 0.31.10` и
-  `@types/pg 8.23.1`, Drizzle configuration и checked-in migration metadata;
-- schema migration создаёт одну `locales` table с согласованными row-local PostgreSQL
-  constraints, а отдельная data migration добавляет exact `ru`/`he`/`ka` state без DB row
-  для code-owned bootstrap `en`;
-- CI получил disposable PostgreSQL 17 service и integration test чистой migration history,
-  UTF-8/exact initial data, повторного безопасного запуска и row-local constraints;
-- зафиксирован forward-only migration/recovery workflow: migrations before deploy,
-  application rollback и reviewed forward repair/restore без production `push` или
-  автоматического destructive down rollback.
-- Stage 2 PR 2B добавил strict runtime parser PostgreSQL rows, Drizzle repository и сборку
-  effective registry из code-owned `en` и validated persistent graph;
-- validated registry получает deterministic versioned SHA-256 semantic identity с
-  application-defined UTF-8 bytewise ordering, отдельно
-  от classified `healthy`/`degraded` load health; classified outage, schema mismatch и
-  integrity failure публикуют только bootstrap English без stale process-state recovery;
-- locale routes используют lazy memoized request registry service boundary, сохраняя
-  synchronous `LocaleRegistry`/`LocaleResolver`; degraded non-English read временно
-  перенаправляется на English с `307`/`no-store`, а write fail closed;
-- controlled writer реализует desired-state mutation в короткой `SERIALIZABLE` transaction,
-  whole-graph validation до DML, bounded whole-unit retry только для `40001`/`40P01` и
-  unknown-commit reconciliation через semantic pre/expected/actual state без blind retry;
-  rollback failure сохраняет исходную ошибку, production Worker DML path не добавлен;
-- unit tests покрывают row parsing, graph rejection, semantic identity, degraded
-  classification и request memoization; PostgreSQL integration suite дополнена persistent
-  Drizzle load и concurrent controlled writes.
-- Stage 2 PR 2C подключает Worker request context к lazy request-scoped `pg`/Drizzle
-  registry loader через `HYPERDRIVE.connectionString`; technical routes не инициируют
-  connect/query, а classified connection failure сохраняет bootstrap-only degraded state;
-- добавлены factory tests для lazy/memoized DB access и degraded connection behavior, а
-  operational runbook разделяет direct migration/admin credential и read-only Worker role,
-  фиксирует cache-disabled Hyperdrive provisioning, local connection override, deployed
-  smoke и forward-only recovery;
-- production migrations успешно применены и проверены существующим manual GitHub Actions
-  workflow; создан `vico_forum_runtime` без admin/superuser прав, с `SELECT` и без
-  `INSERT`/`UPDATE`/`DELETE` на `public.locales`;
-- создан `vico-forum-registry` Hyperdrive с direct Neon origin и отключённым caching; реальный
-  configuration ID объявлен как Worker binding;
-- persistent registry classification проходит безопасную cause-chain, включая PostgreSQL
-  errors внутри Drizzle `0.45.2` `DrizzleQueryError`; CI local Workers smoke использует только
-  disposable PostgreSQL 17 через Wrangler local connection override;
-- local Workers smoke фактически выполнен с PostgreSQL `17.11` и Wrangler Hyperdrive local
-  connection override: `/he/` и `/ru/` вернули `200`, alias `/iw/` — `308`, inactive `/ka/`
-  и unknown locale — `307`, `/he/topic` и `/api/test` — `404`;
-- native Cloudflare Workers Builds подключён к GitHub repository `iliya1947/vico-forum` с
-  production branch `main`; production build использует `pnpm run build`, deploy —
-  `npx wrangler deploy`, а `PNPM_VERSION` зафиксирован как `12.3.4`;
-- первый production build/deploy через native Git integration успешно выполнен из `main`;
-  active Worker deployment содержит binding `HYPERDRIVE` → `vico-forum-registry`;
-- real deployed Stage 2 acceptance на `workers.dev` подтверждён: `/he/` и `/ru/` открываются
-  через persistent locale registry, `/iw/` canonicalized на `/he/`, inactive `/ka/` и unknown
-  locale fallback на `/en/`, `/he/topic` и `/api/test` возвращают `404`, а `POST /IW/`
-  возвращает `404` без `Location`;
-- Hyperdrive metrics во время acceptance показали production query traffic через
-  `vico-forum-registry` с отключённым caching и `0` errors, что подтверждает deployed path
-  Neon → Hyperdrive → `pg` → Drizzle → persistent `LocaleRegistry`;
-- pre-Stage-3 H1 hardening удалил скрытый Stage 1 `ru`/`he`/`ka` healthy fallback при
-  отсутствии injected registry loader, классифицирует реальные Node/`pg` transport failures
-  как availability degradation без маскирования authentication/programming errors и пишет
-  одну structured reason-only degraded telemetry event на request loader;
-- GitHub `Protect main` требует оба status checks — `checks` и `database` — и требует
-  актуальность PR branch относительно `main` перед merge;
-- pre-Stage-3 H2 hardening добавил CI guard immutable accepted migration SQL/snapshots,
-  append-only Drizzle journal validation и one-to-one проверку новых SQL/journal entries;
-- production migration workflow имеет explicit `refs/heads/main` guard и checkout exact
-  dispatched `github.sha`; production verifier проверяет PostgreSQL/schema/ledger/reserved
-  locale invariants без фиксации mutable translation/publication lifecycle values;
-- Cloudflare Branch control проверен вручную: `Builds for non-production branches` включён;
-  текущий preview path допускается только при read-only Worker capability и публичных locale
-  registry data, а до write-capability или private production data требуется staging isolation
-  либо отключение non-production builds;
-- Stage 3A migration-only PR добавил `ui_translations` и `ui_translation_bundles` без runtime
-  dependency, после merge migration применена и verified в production, а `vico_forum_runtime`
-  получил только read-only `SELECT` на новые таблицы с вручную подтверждённым отсутствием DML и
-  других table-level mutation privileges;
-- Stage 3B read-only runtime PR добавил `UiTranslationStore`, persistent manual/machine sources,
-  runtime boundary validation, existing `local manual → persistent manual → machine` priority,
-  request-scoped memoized Hyperdrive reads и classified DB fallback без provider calls или writes;
-- deployed Stage 3B acceptance подтверждён временной approved production translation: Worker прочитал
-  `ru/common/stageSummary` из PostgreSQL через Hyperdrive и отдал её SSR; после удаления тестовой
-  записи English fallback восстановился;
-- Workers Observability включён repository-owned Wrangler config и после production deploy показывает
-  реальные request events без Worker errors в проверенной выборке;
-- Stage 3C добавил deterministic compiled locale/namespace bundles, semantic bundle version,
-  backend-independent cache identity/weak ETag boundary и Drizzle persistence поверх уже существующей
-  `ui_translation_bundles`; production Worker при этом остался read-only и runtime bundle writes не
-  добавлялись;
-- Stage 3 final deployed acceptance после merge Stage 3C подтвердил корректный SSR для `en`/`ru`/`he`,
-  Hebrew RTL, expected English fallback и отсутствие Worker errors в проверенной Observability выборке.
+## Текущая фаза
 
-## Сейчас
+Vico Forum находится в ранней pre-release разработке.
 
-Stage 3 закрыт. Перед Stage 4 выполняется отдельный pre-Stage-4 audit/hardening. Это необходимо,
-потому что Stage 4 впервые вводит authentication/session boundary, private auth data и runtime
-write-capability, поэтому существующий preview/non-production production-Hyperdrive допуск больше
-нельзя автоматически переносить на следующий этап.
+- Registration/email login merged by owner in PR #214 (2026-10-10): existing Better Auth 1.7.4
+  enables sign-up and sign-in with email/password, default auto-session and 8–128 character
+  password validation without mandatory email verification. Locale-prefixed guest routes
+  `sign-in` and `sign-up` preserve an origin-safe forum-local returnTo, leave Google OAuth
+  available and reuse Better Auth user/account/session/rate-limit tables and dynamic
+  forum authorizations. The email sender, verification and password reset are deliberately
+  deferred by owner decision 2026-10-10; no email provider or new DB schema introduced.
+  Exact implementation-head CI succeeded on `2dbea7c`: 671 application tests,
+  211 native PostgreSQL 17 tests including a real Better Auth HTTP registration/login
+  round-trip, all migrations/schema/privilege/Workers smoke, lint/typecheck/build.
+  GitHub Pages preview build/deploy succeeded. Full deployed browser screenshot and
+  owner-specific visual acceptance were not independently verified; static mock Pages
+  does not demonstrate external OAuth or production runtime. Independent Codex review
+  completed on `c94382f` on 2026-10-10 without new findings. Main later merged
+  editor PR #210, and registration PR #214 integrated that main revision on `a2d9816`.
+  Combined-head CI passed with 696 application tests, 211 native PostgreSQL 17
+  database tests and local Worker/schema/privilege checks; Pages preview also passed.
+  Independent review of the combined head identified three current-scope corrections:
+  reconcile PROJECT.md auth baseline, preserve message URL fragments during
+  credential redirects, and isolate the email input as LTR in RTL locales. This
+  follow-up revision includes those bounded corrections and regression tests.
+  Corrected-head CI passed on `0555d39` (698 application tests, 211 PostgreSQL
+  17 tests, schema/privileges/Workers checks); Pages preview passed. A further
+  independent Codex review identified three current-MVP auth issues: stale shared
+  header/presence state after email authentication, absent server-side sign-up
+  name validation, and misleading credential-specific feedback for Google errors.
+  This follow-up implements explicit post-auth session-loader revalidation, a
+  sign-up-only Better Auth before-hook that trims and validates names (1–100
+  characters), and a generic Google failure message; regression tests cover
+  both credential forms, OAuth error handling, and native PostgreSQL 17 rejection
+  of invalid names. Exact combined implementation head `d76db99` passed CI with
+  702 application tests, 214 native PostgreSQL 17 tests, lint/typecheck,
+  migration/schema/privilege checks, Worker smoke and application/preview builds.
+  Pages deployment succeeded. The final independent Codex review of `d76db99`
+  completed 2026-10-10 with no further findings. ChatGPT whole-PR review found
+  no confirmed outstanding defects in the current MVP scope. PR #214 is merged
+  into main; production/runtime acceptance and email verification/password recovery
+  remain deferred. No production rollout occurred.
 
-## Блокеры
+- PR #217 (in progress; not merged) delivers an independently routed,
+  permission-protected moderation attention center at `/:locale/attention`,
+  linked beside the ordinary header notification bell. Owner revision 2026-10-10
+  moved it out of Help & solutions (the obsolete Help `?mode=attention` URL
+  redirects). The center has three isolated modes `Signals`, `Complaints` and
+  `Security`, switched to the right of the page heading; groups for the active
+  mode appear in a separate toolbar directly below the heading. Signals show six individually selectable groups:
+  Needs details, Needs review, Solution outdated, Duplicate, Appeals, Mixed.
+  The backed queue selects only persisted pending signal/appeal cases and current
+  best-answer Needs review status; Mixed (2+ pending visible signals) duplicates
+  items in their category groups. Guests/users without effective moderation
+  permission are rejected. Complaints and Security are empty placeholders
+  with temporary Group 1–3 switches, deliberately without events/data/permission
+  workflows pending definition in their own chats. No schema or migration,
+  notification bell semantics, complaint processing, editor, or Stage 6 action
+  changes. The revised implementation head `ebb72df8` passed CI
+  #38082349666: 702 application tests, 217 native PostgreSQL 17 tests,
+  lint/typecheck and builds. A single unrelated transaction-serialization
+  concurrency test needed one successful failed-DB-job rerun with no code
+  changes. Pages #38082518153 built and deployed the same revision.
+  User review rejected the topic-list presentation as not actionable. In the first
+  implementation subtask, PR #217 now adds a separate permission-filtered
+  readHelpAttentionCases server reader for individual pending signals and appeals
+  (author, explanation, target answer, proposed/confirmed original, submission
+  date and stable case ID); Needs review includes a distinct authoritative
+  answer-status task instead of pretending it is a user report. Group-specific
+  database selection occurs before pagination (50 cases/page; Mixed paginates
+  topics with 2+ pending visible signals and projects their individual cases).
+  The second subtask replaces topic-only cards with case-specific records,
+  explanations, submitter/context links and protected Accept/Reject actions on
+  `/:locale/attention`. The handler validates Origin, session, current permission
+  and authoritative case-topic identity, returning to the selected group after
+  success; appeal mutation additionally verifies exact case ID under DB locks.
+  Existing Needs-review moderator statuses remain separate tasks linking to
+  the specific answer's moderation controls rather than fabricated user signals.
+  The final whole-PR pass restored group totals from all pending case sources:
+  each category shows the number of visible unresolved actions, including
+  answer-review status tasks; Mixed counts topics with 2+ visible pending signals.
+  Counts apply effective permission filtering before aggregation and do not inherit
+  any 100-topic cap or page-bound truncation.
+  GitHub Pages fixtures now preview realistic independent requests. Mode switches
+  sit beside the page heading and group switches below; redundant Moderation
+  eyebrow is removed. The aggregate topic reader remains available but is no
+  longer used by the attention route; no migrations or complaint/security
+  mechanics were introduced. CI #38100711549 passed on implementation code
+  head 492efd6 (checks + database). A Pages push from the implementation branch
+  built successfully but its deploy job failed before runner steps
+  (#38100709642): this branch cannot publish through the protected Pages
+  environment. The same code head 492efd6 published successfully through
+  the preview-only `chatgpt/ui-pr217-case-preview` branch
+  (Pages #38101437497, build + deploy success). The implementation workflow
+  therefore no longer pretends `chatgpt/help-attention-*` can deploy; preview
+  mirroring must use the allowed `chatgpt/ui-*` branch. The implementation
+  head `7351170` passed both CI jobs in #38101530150; the exact same revision
+  was built and published successfully to GitHub Pages in #38101534292 from
+  `chatgpt/ui-pr217-case-preview`.
+  Owner visual acceptance was granted on 2026-10-11 for the current usable MVP
+  presentation ("сойдёт"), explicitly with future UX/visual refinement deferred.
+  Keep separate post-MVP work to improve the moderation case-card layout,
+  readability, hierarchy, information density and moderator workflow usability;
+  this polish does not block PR #217 or require changes to its current mechanism.
+  Independent Codex review completed on implementation head `3480fc2` with
+  two documentation findings. Both were corrected and resolved without modifying
+  application code; subsequent exact-head CI #38121847206 passed `checks` and
+  `database` on `eec38b0`. PR #217 is Ready for review, not yet merged.
+- Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
+  не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
+  интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
+  defects исправляются в текущем scope. Переработка и детальный UX/visual polish
+  существующих экранов, включая профиль, — отдельный последующий проход, не критерий
+  готовности отдельных MVP-срезов. Финальная real-runtime acceptance перед публичным
+  выпуском по-прежнему обязательна.
+- Online presence («Кто сейчас на форуме») реализован в текущем bounded
+  MVP implementation PR #213: вошедший пользователь с видимой вкладкой посылает
+  same-origin POST heartbeat; сервер идентифицирует участника только по текущей
+  сессии, не доверяя ID из формы. Отдельная таблица хранит последний heartbeat
+  без IP/session token, максимум одну строку на пользователя; окно активности
+  5 минут. Публичная главная показывает действительный счётчик и до 12
+  зарегистрированных участников со ссылками на их профили; гости не
+  отслеживаются и не считаются. EN/RU/HE, RTL и GitHub Pages mock fixture
+  подключены. На implementation head d7931cd зелёные CI (lint/typecheck,
+  presentation/route tests и сборки), native PostgreSQL 17 DB tests,
+  миграция 0033, schema/privileges/Workers smoke и Pages deployment.
+  Собственная whole-PR проверка выполнена. Browser review опубликованного
+  Pages-preview недоступен в текущем окружении и не заявляется выполненным.
+  Независимое Codex review на c65d914 выявило четыре текущих MVP-дефекта:
+  частые DB writes при спаме heartbeat, race счётчика/списка, full-page
+  failure при transient presence outage и повторный polling после 401.
+  Исправление текущих defects завершено одним пакетом: server-side 45s write
+  cooldown, согласованный single-query read snapshot, честный unavailable UI
+  без отказа всего Home и остановка heartbeat после 401 с revalidation сессии.
+  На code head `42c06d8` exact-head CI успешно завершён (661 application tests,
+  208 native PostgreSQL 17 tests, migrations, schema parity, privileges, Worker smoke),
+  Pages build/deploy успешен. Повторное независимое Codex review
+  исправленного code head завершилось без новых findings 2026-10-10.
+  Подтверждённых незакрытых дефектов текущего MVP scope не осталось.
+  Production rollout evidence для миграции 0033 остаётся задачей Stage 6:
+  внешняя выкладка не разрешена и не выполнялась. Browser screenshot и
+  явная owner visual acceptance Pages в этом контексте не подтверждены;
+  Pages mock preview не заменяет real-runtime acceptance перед релизом.
+- Bounded блок форумных профилей реализован в текущем implementation set: public
+  `/:locale/users/:userId`, данные имени/аватара/даты регистрации из authoritative identity,
+  актуальная роль из DB, независимые persisted-message/current-best-answer счётчики,
+  optional bio/GitHub/site и owner-only same-origin сохранение. Header и авторы сообщений
+  ведут на реальные профили; EN/RU/HE и representative public/own/edit/error/empty Pages states
+  подключены. Forward migration `0032_forum_profiles` и schema/runtime privilege contracts
+  добавлены только для repository/local-CI path. Локально прошли lint, typecheck, 649 tests,
+  обе сборки и metadata checks на Node 24.21.0 / pnpm 12.3.4; все 33 migrations и full schema
+  manifest parity дополнительно проверены на PGlite PostgreSQL 17.5. Native PostgreSQL 17 CI
+  (205 database tests, schema/privilege verification и Worker smoke) и Pages build прошли.
+  Собственная browser проверка public/own/edit/error/empty/long-text states, EN/RU/HE,
+  светлой/тёмной темы и Desktop/Tablet/Mobile завершена. Owner review выявил смещение
+  латинского имени от аватара в RTL: heading теперь наследует направление страницы, а
+  bidi-изоляция применяется только к самому имени. Новый visual preview Pages успешен.
+  Владелец принял текущий вид профиля как достаточный для MVP 2026-10-10;
+  дальнейший UI polish отложен. На head `2faad98` exact-head CI
+  (включая PostgreSQL 17, 650 unit/presentation/route tests, migration/schema/ACL
+  и Worker smoke) и Pages прошли после восстановленного Docker Hub image pull.
+  Первое независимое Codex review выявило регрессию author-grid из-за нового profile link;
+  исправлено в `3264828`: вложенная двухколоночная ссылка сохраняет расположение аватара
+  и имени на desktop/mobile, EN/HE; DOM regression checks добавлены. На `3264828`
+  успешно прошли точный CI (checks + PostgreSQL 17/schema/ACL/Worker smoke, после
+  повторения ранее нестабильного неизменённого теста locale concurrency) и Pages.
+  Повторное независимое Codex review завершено на `3264828` без новых findings;
+  подтверждённых незакрытых defects текущего MVP scope не выявлено. Индекс для
+  best-answer count остаётся отложенной оптимизацией: текущий масштаб/latency
+  regression не подтверждены. Визуальная проверка browser-profile states ранее
+  выполнена, а после correction author-grid подтверждены DOM/CSS review и Pages build,
+  не новая browser screenshot. PR подготовлен к merge владельцем; production migration,
+  deploy и real-runtime acceptance не выполнялись.
+  Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
+- Stage 0–3 foundation завершён.
+- Stage 4 forum core завершён в local/CI path.
+- Stage 5 translations/background jobs завершён в repository/local-CI path.
+- Отдельная задача **UI/UX product pass** сейчас является активным продуктовым приоритетом;
+  актуальный target-product contract, порядок реализации и обязательная browser acceptance matrix
+  зафиксированы в `docs/UI_UX_PASS.md`.
+- Для общего служебного PR #147 repository содержит bounded GitHub Actions bridge: только новый
+  комментарий `chatgpt-codex-connector[bot]` в открытом PR #147 может быть append-нут в
+  `.github/ui-ux-service-channel.md` ветки `chatgpt/ui-ux-product-pass`. Workflow использует только
+  repository-scoped `GITHUB_TOKEN` с `contents: write`, не требует PAT/OpenAI API key, помечает
+  записанный GitHub comment ID для idempotent rerun и bounded повторяет refresh/append/push при
+  concurrent direct update service-ветки.
+- Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
+  presentation boundaries и GitHub Pages visual-progress preview.
+  Preview controller в текущем implementation state отделяет identity от page state: над `State`
+  используются отдельные `Guest / User / Manager` controls, а role-specific варианты не дублируются
+  в названиях State; theme/locale по-прежнему переключаются внутри самого forum UI. Preview iframe
+  показывается без искусственной светлой внешней подложки/рамки, чтобы визуальные границы страницы
+  не искажались. Текущий correction branch
+  дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
+  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Pages workflow
+  явно исключает общий service branch `chatgpt/ui-ux-product-pass`, чтобы технические updates
+  communication-файла не могли перезаписать visual preview артефактом из отставшей служебной ветки.
+  Это не заменяет будущую real-runtime acceptance.
+- В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
+  Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
+  approved shell/homepage foundation и общая локализованная страница `Under development`.
+  Merged PR #182 перенёс rich `Pinned / Latest topics / statistics` presentation с homepage на
+  category pages: runtime homepage читает реальные categories + sections + aggregate counts, а
+  category reader — bounded latest-topic activity по каждому section. Текущий PR #181 добавляет к
+  этому же category-reader boundary persisted pins, bounded DB-side rank/limit по section и
+  pin/unpin management; online-presence capability по-прежнему не имитируется real data. Exact-head
+  CI/Pages проходят, а owner visual acceptance PR #181 подтверждён 2026-10-06. Это не означает
+  финальную browser/real-runtime acceptance всего UI/UX pass.
+- Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
+  композиция homepage, icon-led discovery navigation `Unanswered · Tags · Popular` и
+  authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
+  trending-up symbol для `Popular`, theme-aware owner-provided Light/Dark logo marks,
+  `Vico` orange / `Forum` neutral по теме, compact stats и отдельная full-height orange entry
+  rail. После принятого redesign Category/Section homepage rail ведёт напрямую в реальную
+  locale-aware category page; временный `forum-discovery` entry удалён из `Under development`. Bounded реализация `Popular` merged через
+  PR #168: locale-aware public route показывает три одновременных activity-period колонки
+  `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages внутри
+  периода с latest-activity tie-break; targeted repository CI/Pages прошли, owner visual acceptance
+  подтверждён 2026-10-02. Следующая bounded discovery-функция `Unanswered` реализован в PR #169:
+  forum-wide public route выбирает только unsolved темы с ровно одним persisted post (initial post),
+  то есть без единого ответа; список показывает author и category/section context, сортируется по
+  новым темам первым и удаляет `Unanswered` из unfinished checklist. Migration/dependency/auth/
+  permission/Stage 6 изменений нет; targeted repository CI и GitHub Pages preview проходят,
+  owner visual acceptance подтверждён 2026-10-02. Tags реализован и merged через PR #170:
+  свободные topic-level technology tags нормализуются и переиспользуются, создаются атомарно
+  вместе с темой, доступны через public locale-aware `/:locale/tags` и
+  `/:locale/tags/:tagKey`, показываются в section/topic/tag presentation; forward migration
+  `0021_forum_tags` добавлена без Stage 6 rollout. Repository CI и GitHub Pages preview прошли,
+  owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
+  product-функция — global Search: текущая implementation-ветка добавляет public
+  `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
+  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Последующая hierarchy correction в PR #182
+  заменяет topic-oriented homepage blocks на category → section map и переносит прежнюю rich
+  section presentation на category pages. Owner visual acceptance реализации подтверждён
+  2026-10-05; schema/migration/auth/permission/Stage 6 изменений нет.
+- Текущий Unread/new slice подключает repository/database foundation к runtime/UI:
+  forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
+  authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
+  Repository semantics выводят `new / unread / read`, deterministic first-unread по authoritative
+  `createdAt + id` order, forum-wide set-based unread listing и monotonic cursor advancement:
+  stale/concurrent marker не может сдвинуть cursor назад, а reply после rendered snapshot остаётся
+  unread. Authenticated `/:locale/unread` показывает реальные unread и new topics отдельными
+  группами, без отдельной текстовой status-колонки: unread count вынесен в расширенный orange
+  entry action, который ведёт прямо к `#post-<firstUnreadPostId>`; section topic list получает
+  `new / unread / read` одним set-based
+  read-state snapshot без per-topic N+1. При открытии authenticated topic loader получает текущий
+  read snapshot, а после hydration отдельный same-origin POST продвигает marker до latest post
+  фактически отданного snapshot; monotonic repository update не позволяет stale/concurrent request
+  откатить cursor. Classified read-state storage failure не ломает публичное чтение topic/section,
+  тогда как authenticated Unread route возвращает controlled unavailable. External migration/rollout
+  для `0023` не выполнялся.
+- Persisted Pinned topics bounded slice реализуется в PR #181 поверх принятой hierarchy correction
+  PR #182: migration `0025_forum_topic_pins` хранит максимум один active pin на topic с DB-owned
+  `pinnedAt`, topic-delete cascade и actor reference `RESTRICT`. Code-backed
+  `forum.topic.pin` входит в initial grants moderator/admin, но не user; авторство темы само по
+  себе право не даёт. Pin/unpin остаются authenticated same-origin mutations с повторной
+  server-side effective-permission проверкой. Category reader выдаёт bounded deterministic pins
+  по section в порядке `pinnedAt DESC, topicId DESC`; Home остаётся category → section map.
+  Section/topic presentation показывает persisted pin state, а пустой category-page Pinned block
+  становится truthful non-link state. Exact-head CI/Pages и owner visual acceptance подтверждены
+  2026-10-06; External migration/Stage 6 rollout не выполнялись.
+- Merged PR #186 solution-model slice для будущей категории **Help & solutions** разводит выбранный
+  best answer и solved state: forward migration `0026_best_answer_independent_from_solved`
+  удаляет только прежний check `best_answer_post_id → is_solved`, сохраняя same-topic
+  deferred best-answer FK. Best answer теперь можно выбрать у нерешённой темы; после выбора
+  автор собственной нерешённой темы получает отдельное подтверждение `Problem solved?`,
+  где подтверждение использует существующий protected `markSolved`, а отказ оставляет
+  выбранный best answer без изменения solved state. Full repository CI, clean PostgreSQL 17,
+  schema/manifest parity, runtime privilege probes, Workers smoke и UI preview build проходят на
+  exact implementation head; external migration/Stage 6 rollout не выполнялся.
+- Merged PR #187 **Help & solutions foundation** добавил migration
+  `0027_help_solutions_foundation`: она создаёт reserved category `help-solutions` и
+  внутренний service section `help-solutions-questions` для хранения вопросов в существующей
+  topic/post model. Generic Home/category discovery, прямой section route и обычный create-topic
+  action этот service section не показывают/не используют; Home при этом сохраняет реальные
+  aggregate topic/message counts категории. External migration/Stage 6 rollout не выполнялся.
+- Merged PR #188 добавил первый реальный Q&A-режим **All / Все** на
+  `/:locale/categories/help-solutions`: dedicated reader читает вопросы только из internal
+  service section и возвращает current title/author, technology tags, число последующих сообщений
+  (`replies`) после original question, independent solved/best-answer state и latest activity.
+  Generic category UI для reserved category заменён специальным public Q&A list view; topic
+  breadcrumb больше не ведёт на скрытый service-section route.
+- Merged PR #190 добавил режим **Solutions / Решения** поверх существующего final
+  `isSolved = true`: query `?mode=solutions` фильтруется на DB boundary и использует тот же
+  Q&A list presentation; default URL без query остаётся `All`.
+- Merged PR #191 добавил dedicated создание вопроса прямо из
+  `/:locale/categories/help-solutions`. Presentation permission использует существующий
+  `forum.topic.create`; compact action в category heading раскрывает форму только по явному
+  действию пользователя, поэтому default Q&A view сохраняет modes/list выше authoring panel.
+  POST action повторно проверяет session/origin/permission и сервер сам фиксирует destination как
+  internal `help-solutions-questions`, поэтому browser не выбирает и не передаёт hidden section
+  identity. Запись переиспользует существующий
+  `writer.createTopic()` transaction для topic/initial post/revisions/tags. Exact-head repository
+  CI и GitHub Pages прошли; owner visual acceptance corrected authoring/list presentation
+  подтверждён 2026-10-07. External migration/Stage 6 rollout не выполнялся.
+- Merged PR #193 добавил режим **Needs help / Нужна помощь** через `?mode=open`: persisted
+  Help & solutions questions фильтруются на repository/DB boundary по существующему final
+  `isSolved = false`, сохраняя `All` canonical default и `Solutions` по
+  `isSolved = true`. Projection, ordering, карточки, topic destinations, authoring и hidden
+  service-section boundary переиспользуются без новой schema, migrations или permissions.
+- Merged PR #194 добавил необязательную проверку похожих вопросов перед публикацией. Проверка
+  использует persisted current title/body/tags только внутреннего `help-solutions-questions`,
+  возвращает bounded deterministic список с текущими solved/open состояниями и reply count и не
+  блокирует создание нового вопроса. Введённые title/body/tags сохраняются между
+  populated/empty/invalid/unavailable состояниями проверки; переход к найденному вопросу остаётся
+  обычной locale-aware ссылкой без mutation.
+- Merged PR #195 добавил authenticated режим **My questions / Мои** через `?mode=mine`.
+  Authoritative user identity берётся только из server-side session, а repository фильтрует
+  persisted вопросы по `forum_topics.author_id` внутри internal `help-solutions-questions`;
+  client не передаёт и не выбирает author identity. Режим виден в Q&A navigation только
+  authenticated пользователю, прямой guest-доступ fail-closed с unauthenticated route state.
+- Merged PR #196 добавил public режим **Active / Активные** через `?mode=active`: persisted
+  Help & solutions вопросы с хотя бы одним ответом выбираются server-side только из
+  `help-solutions-questions`, включают open и solved состояния, сортируются по existing
+  latest-activity projection и ограничены первыми 100 вопросами.
+- Merged PR #197 добавил permission-gated режим **Needs attention / Требуют внимания** через
+  `?mode=attention`: server-side выборка ограничена нерешёнными вопросами без ответов внутри
+  `help-solutions-questions`, а доступ использует существующую capability
+  `forum.solution.manageAny`. Guest и ordinary authenticated users не видят режим и не проходят
+  direct-route boundary; schema/migrations и новые permissions не добавлялись.
+- Merged PR #198 добавил authenticated режим **Want to help / Хочу помочь** через `?mode=help`.
+  Authoritative current user берётся только из server-side session, а repository/DB boundary
+  возвращает только нерешённые persisted Help & solutions вопросы других авторов внутри
+  `help-solutions-questions`; собственные и solved вопросы исключаются. Запрос использует
+  существующие deterministic activity tie-breaks и ограничен первыми 100 вопросами. Режим виден
+  только authenticated users; direct guest access возвращает 401. Сам режим не предоставляет reply
+  capability и не меняет существующие authentication/origin/validation/rate-limit/
+  effective-permission boundaries ответа. Existing cards, tags, statuses, authoring,
+  similar-question check и остальные Q&A modes переиспользуются без schema/migrations, новых
+  permissions, recommendation scoring, interests/subscriptions, notifications, visual polish или
+  Stage 6 работы. Owner visual acceptance populated/empty Pages presentation подтверждён
+  2026-10-07 для Guest/User/Manager identity switching.
+- Merged PR #199 добавил authenticated режим **For me / Для меня** через
+  `?mode=for-me`. Authoritative current user берётся только из server-side session. Repository
+  выводит interest tags из существующего persisted участия пользователя только внутри
+  `help-solutions-questions`: вопросов, созданных этим пользователем, и тем, где он оставлял
+  сообщения. Кандидаты ограничены нерешёнными вопросами других авторов с пересечением по этим
+  тегам; ranking прозрачно идёт по числу совпавших тегов, затем existing latest activity и
+  stable topic-id tie-break. Interest tag set ограничен 100 distinct tag keys, result — первыми
+  100 вопросами; no-signal/no-match возвращают честный empty state. Режим не создаёт новые
+  profile interests/subscriptions/tracking signals и не предоставляет reply capability. Existing
+  cards, tags, statuses и reply boundaries переиспользуются без schema/migrations, новых
+  permissions, opaque/AI scoring, notifications, visual polish, similar-search refinement или
+  Stage 6 работы. Owner visual acceptance populated/empty Pages presentation и Guest/User/Manager
+  identity switching подтверждён 2026-10-07.
+- PR #200 реализует первый шаг зафиксированной Help & solutions moderation/filter sequence:
+  migration `0028_help_solution_moderation` хранит persisted состояние решения
+  `needs-review | outdated` на конкретном answer post, а не на topic. `isSolved` остаётся
+  независимым final state и не сбрасывается этими пометками. Ручная moderation mutation применяется
+  к текущему выбранному best answer решённого вопроса внутреннего `help-solutions-questions`;
+  ручной `outdated` требует непустую persisted причину длиной до 1000 символов. При выборе другого
+  best answer прежний выбранный ответ атомарно получает `outdated` с системной reason-kind
+  `best-answer-replaced` (UI локализует её как «Выбран новый лучший ответ»), а новый best answer
+  начинает с очищенного moderation state и не наследует пометку прежнего решения. Protected
+  mutations повторно проверяют существующую effective capability `forum.solution.manageAny`;
+  новая permission не вводится. Public Help cards проецируют marker только текущего best answer;
+  topic page сохраняет marker и explanation у конкретного ответа, включая исторический заменённый
+  best answer, а explanation находится в самом низу соответствующего сообщения. Topic title/tags и
+  original question теперь составляют одну message-card композицию вместо двух соседних карточек;
+  выбранный best answer по-прежнему поднимается сразу следом с сохранением permanent номера/anchor.
+  Справа в строке breadcrumbs для actor с существующими moderator-level capabilities
+  `forum.solution.manageAny`, `forum.sourceLocale.correctAny` или `forum.topic.pin` показывается
+  общий `Admin panel`; каждое действие внутри сохраняет собственную server-side permission
+  проверку, а Help-specific solution moderation по-прежнему доступна только через
+  `forum.solution.manageAny` для применимого solved Help question. Выбор best answer больше не
+  находится в message-level `Message tools`: для actor с `forum.solution.manageOwn/manageAny`
+  отдельный compact selector стоит в той же breadcrumb action-zone, а при наличии admin panel —
+  непосредственно слева от неё; варианты внутри selector обозначены permanent message numbers.
+  Message-level source-locale correction UI на этом этапе скрыт вместе с `Message tools`;
+  существующая protected mutation/permission boundary сохранена для последующего включения в
+  спроектированную admin-panel систему по номеру сообщения. Own-only topic tools автора для
+  topic-level действий остаются отдельными. После независимого review подтверждён stale-form
+  дефект: uncontrolled причина `outdated` могла пережить same-route revalidation после смены
+  текущего best answer и затем быть отправлена уже для нового решения. Исправление remount-ит
+  только эту moderation-form при изменении authoritative best-answer/status/persisted-reason
+  identity; focused regression coverage проверяет reset после revalidation. Повторный independent
+  review также выявил SQL NULL-semantics defect в `forum_posts_solution_outdated_reason_check`:
+  orphan reason при `status = NULL` мог дать UNKNOWN и пройти PostgreSQL CHECK. Constraint
+  переведён на null-safe status comparison, а DB regression явно проверяет комбинацию
+  `status = NULL + reason != NULL + reason_kind = NULL`. Help Pages fixtures
+  выбирают best answer с более поздним исходным номером и визуально проверяют его promotion сразу
+  под original question.
+  User signals, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
+  фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
+- PR #204 реализует второй шаг зафиксированной Help & solutions moderation/filter sequence
+  как минимальную persisted system-label foundation: migration
+  `0029_help_question_needs_details` добавляет на `forum_topics` только boolean
+  `needs_details NOT NULL DEFAULT false`. Отдельной оси `quality`, состояния `normal`,
+  Help-only CHECK и обязательного backfill нет: метка отсутствует при `false` и присутствует
+  при `true`. Help list projections и topic-page read model возвращают `needsDetails` для
+  последующих workflow/filter steps. Existing и previous writers, которые не передают это поле,
+  остаются совместимы через database default `false`. В этот slice не входят user
+  signals/moderator confirmation (step 4), расширение `Needs attention` (step 5), combined
+  filters (step 6), duplicate workflow (step 3), новая permission/mutation, admin-panel redesign,
+  similar-search refinement или drafts/autosave. Предыдущий Codex rollout finding относился к
+  superseded обязательному `help_question_quality` CHECK; после упрощения модели его причинная
+  цепочка устранена в самом незамерженном `0029`. Исправленная implementation revision прошла
+  repository `checks` и `database`, включая migration metadata, Drizzle schema parity и clean
+  PostgreSQL 17 suite. Fresh whole-PR review исправленной модели не оставляет подтверждённых
+  дефектов текущего scope: writer omits `needs_details` and receives database default `false`,
+  snapshot changes only `forum_topics`, and Help projections expose the persisted flag without
+  adding moderation/filter behavior early. GitHub Pages preview build/deploy for the same reviewed
+  implementation revision succeeds; separate owner visual acceptance is not required because this
+  foundation slice adds no visible label/workflow presentation. Final exact-head Codex review
+  завершён без findings, PR #204 merged.
+- PR #205 реализует третий шаг зафиксированной Help & solutions moderation/filter sequence:
+  persisted Help-specific duplicate → canonical-original relationship и отдельный durable
+  appeal lifecycle. Active relation не допускает self-link, цепочки/циклы и превращение canonical
+  original в duplicate через штатный server-side repository path; confirm/remove/appeal/resolve
+  сериализуются транзакционно. Новая code-backed capability `forum.helpDuplicate.manage`
+  выдаётся initial built-in moderator/admin и защищает authoritative confirm/remove/resolve;
+  обычный author подтверждённого duplicate-вопроса может отдельно подать appeal с обязательным
+  explanation. Pending appeal не снимает authoritative duplicate status: на topic page публично
+  видна нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
+  duplicate-management capability. Reject сохраняет relation; accept или manual removal снимает
+  active duplicate relation. В штатном workflow подтверждённый duplicate и собственное решение
+  взаимоисключаемы: question с `isSolved=true` или выбранным best answer нельзя подтвердить как
+  duplicate; пока active duplicate relation существует, нельзя выбрать ему best answer,
+  пометить его solved или добавить новый reply. При pending appeal duplicate-manager видит
+  explanation автора прямо в duplicate notice на topic page; accept/reject остаются в admin panel. В Help question list публично остаются `Solved` и `Duplicate`;
+  отдельный `Best answer` badge там не показывается. `Solution outdated` публичен;
+  `Needs review` и pending `Disputed` badges видны только соответствующим moderation actors
+  и в списке, и на topic page; author pending appeal при этом видит собственное appeal-сообщение
+  без moderator-only badge. Topic page показывает locale-aware ссылку на canonical
+  original без раскрытия internal service section.
+  General user moderation signals остаются step 4, расширение `Needs attention` — step 5,
+  combined filters — step 6; admin-panel redesign, similar-search refinement и Stage 6 rollout
+  в этот slice не входят. Forward migration `0030_help_duplicate_workflow`, runtime ACL
+  contract, schema manifest, RU/HE localization, focused route/privacy/database coverage и Pages
+  fixtures добавлены. Owner visual acceptance representative Pages states была подтверждена
+  2026-10-09 после corrections duplicate-list statuses, solved-vs-duplicate exclusivity,
+  pending-appeal message visibility и блокировки новых replies у active duplicate. Последующий
+  whole-PR review уточнил moderator-only visibility для `Needs review` / pending `Disputed`
+  badges и на topic page. Короткий owner visual re-test этой последней correction подтверждён
+  2026-10-09: Guest не видит moderator-only badges, author pending appeal видит своё appeal-сообщение
+  без moderator-only badge, Manager видит moderation badges и explanation автора.
+  Final independent Codex review exact implementation head `6aa3115953cbddbdfb8e09f8c193ddc1f242f7fb`
+  завершён 2026-10-09 без major findings.
+- PR #206 реализует bounded backend/domain foundation четвёртого шага **user moderation signals** без
+  преждевременного step 5/6 UI/filter behavior. Forward migration
+  `0031_help_user_moderation_signals` добавляет durable signals для `Needs details`,
+  `Needs review`, `Solution outdated` и `Duplicate` с lifecycle
+  `pending → accepted | rejected | withdrawn | superseded`. Ordinary user submission не меняет
+  authoritative state; `Needs details`, `Needs review` и `Solution outdated` требуют
+  explanation, а `Duplicate` допускает optional explanation, но требует proposed canonical
+  original. Solution signals server-side фиксируют concrete current best-answer post; duplicate
+  signal фиксирует question + proposed original. Submission использует тот же bounded 5-second
+  ForumWritePolicy через отдельный per-user signal cooldown: topic row(s) блокируются перед
+  user-row mutex, то есть в том же порядке, что reply writes, чтобы concurrent reply + signal
+  одного actor не создавали lock-order cycle. Предыдущий signal независимо от
+  kind/target/terminal state предотвращает немедленное создание следующего. Это не вводит
+  lifetime-ограничение на тему и не связывает signal cooldown с обычным topic/reply cooldown.
+  Withdrawal принимает expected topic identity до repository и под lock проверяет, что signal
+  принадлежит именно текущей route-topic; stale/malformed form не может отозвать сигнал другой
+  темы. Help-signal lifecycle timestamps database-owned: creation и terminal/supersede transitions
+  используют PostgreSQL statement time, поэтому ожидание row lock не может сделать
+  `resolved_at < created_at` и сорвать authoritative mutation на lifecycle CHECK.
+  Accept повторно проверяет current applicability
+  под transaction locks и в той же transaction применяет уже существующий authoritative
+  Needs-details flag, solution moderation state или duplicate relationship; stale signals не
+  применяются и становятся `superseded`. Author может отозвать только собственный pending signal.
+  Новые code-backed capabilities: `forum.helpSignal.create` для submission и
+  `forum.helpNeedsDetails.manage` для authoritative рассмотрения Needs-details requests;
+  solution/duplicate review переиспользуют `forum.solution.manageAny` и
+  `forum.helpDuplicate.manage`. Server actions существуют уже в этом foundation slice и выбирают
+  review permission по persisted signal kind, а не client input. Visible submission/review
+  presentation, private moderation queue/author pending presentation и Pages states остаются
+  следующей bounded подзадачей step 4; расширение `Needs attention` остаётся step 5, combined
+  filters — step 6. Runtime ACL даёт web capability только `SELECT / INSERT / UPDATE` на новую
+  relation; external migration/Stage 6 rollout не выполняется.
+- PR #208 реализует независимый step-6 slice **combined filters** для Help & solutions поверх уже
+  существующих authoritative состояний, не дожидаясь отдельно проектируемых signals/reports и
+  admin-panel систем. Четыре optional query dimensions комбинируются поверх любого текущего Help
+  mode и применяются в repository/DB query до mode-specific ordering/limits:
+  `solution=open|solved|needs-review|outdated`, `answers=none|has`,
+  `quality=normal|needs-details`, `relation=standalone|duplicate`. `Needs review` остаётся
+  moderator-only: option показывается только actor с `forum.solution.manageAny`, guest direct
+  request получает 401, authenticated actor без capability — 403, classified authorization
+  unavailable — controlled 503. Остальные filter states используют уже публичные authoritative
+  данные. Mode navigation сохраняет активные filters, Reset очищает только filters и сохраняет mode;
+  persisted `Needs details` показывается public badge в Help list, чтобы quality-filter result был
+  объясним прямо в карточке.
+  Slice не меняет schema/migrations/permissions, не читает pending signals, не расширяет
+  `Needs attention` и не меняет signal/reports или admin-panel UI. EN/RU/HE presentation,
+  responsive Pages states и focused repository/route tests добавлены. Exact-head CI и Pages
+  проходят; owner visual acceptance подтверждён 2026-10-09 как достаточный для текущего
+  функционального прохода. Владелец отдельно зафиксировал, что текущая presentation комбинированного
+  фильтра временная и после завершения основного функционального прохода её нужно дополнительно
+  доработать/отполировать; это future polish, а не дефект текущего PR #208.
+- PR #209 уточняет ранее отложенную **similar-question search relevance/UX** для
+  Help & solutions без новой поисковой подсистемы. Optional pre-publish check использует bounded
+  Unicode-normalized terms из текущих draft title/body/tags и ищет только current persisted
+  title/post revisions и tags внутреннего `help-solutions-questions`. Ranking source-aware и
+  deterministic: exact title и exact draft-tag получают отдельный сильный приоритет, meaningful
+  multi-term title coverage идёт выше обычных tag/body/weak-title совпадений, а common question
+  scaffolding/stop words не участвуют в title coverage. Короткие технические title-токены
+  (включая `Go`, `AI`, `JS`, `DB`, `R`) сохраняются для boundary-aware title matching, но
+  не превращаются в широкие substring-поиски по body/tags. Title, tag и body используют отдельные
+  bounded term budgets, поэтому один источник не может вытеснить body полностью; общий query budget
+  остаётся ограниченным. Post и tag matching выполняются отдельными bounded `EXISTS`-проверками,
+  без post×tag Cartesian aggregation. Activity и stable topic-id используются как последующие
+  tie-breaks. Action path
+  сохраняет result limit 5. Result projection сообщает strongest match source и existing tags,
+  чтобы presentation могла кратко объяснить, почему вопрос предложен. Draft остаётся только request
+  input: проверка read-only, optional и не блокирует публикацию; existing
+  session/origin/permission/validation/write boundaries не меняются. Stale revisions и ordinary
+  forum sections не участвуют. Schema/migrations, search index, fuzzy/vector/AI search, duplicate
+  automation, signals/admin, `Needs attention` aggregation, combined-filter polish и Stage 6 в
+  slice не входят. Владелец подтвердил 2026-10-09, что acceptance boundary этого slice —
+  работающий механизм и пригодный для дальнейшего развития фундамент; текущая presentation
+  намеренно provisional и позже должна получить отдельную UX/визуальную доработку. Это deferred
+  polish, а не дефект текущего PR #209.
+- PR #210: после review на `e30a988` исправлены RTL-isolation для технических language IDs (в текущем head) и inline margins у figure blocks. Дальнейшие exact-head CI, Pages и Codex review требуют подтверждения.
+- PR #210: после Codex review устранены пять текущих editor/code findings: ограничение подсветки больших/токеноёмких блоков, корректные границы выделенных строк, исключение скрытого textarea из Tab-порядка Preview, локализованная подпись ссылки и LTR только для кода при RTL интерфейсе. Добавлены регрессионные тесты. Новые замечания повторного Codex review на `f72af07` касались позиции 0 при форматировании первой пустой строки, языка блока кода с `#` и сохранения состояния кнопок code preview в Split. Исправления и регрессионные тесты добавлены; CI и Pages на `29af5e7` прошли. Последующий Codex review обнаружил реальный дополнительный дефект: per-block ограничение подсветки допускает суммарно неограниченную подсветку множества блоков. Введено ограничение подсветки по размеру всего Markdown-сообщения с безопасным отображением кода без подсветки сверх порога; добавлен тест. CI на `e30a988` прошёл со второй попытки после несвязанного нестабильного теста навигации переводов; Pages успешен. Codex review выявил P2-дефект направления технических идентификаторов `c#`/`f#` в RTL — исправлена изоляция подписи языка и поля его ввода с регрессионными тестами. Отступы figure являются отложенной косметической доработкой редактора, а не блокером текущего Stage. Проверки и review после исправления RTL ещё не завершены.
+- PR #210 реализует ранее отложенный **full editor/code tooling** поверх текущих authoring
+  boundaries без изменения server mutation contracts. Один shared Markdown editor используется
+  обычным create-topic, reply и Help & solutions question authoring; Write / Preview / Split и
+  formatting controls работают поверх того же native `body` field. Inline/fenced code insertion
+  безопасен для уже выделенных backtick runs; fenced code поддерживает optional language.
+  Preview использует существующий safe `ForumMarkdown`, а rendered code показывает language,
+  copy feedback, wrap/no-wrap, bounded dependency-free syntax presentation и остаётся LTR внутри
+  RTL UI. Reply/Quote вставляет текст через editor boundary и при необходимости возвращает Preview
+  в Write; native required validation также раскрывает редактируемое поле. Help
+  `Check similar questions` и финальная публикация используют один и тот же editor-backed draft
+  body. Drafts/autosave, attachments, WYSIWYG, profiles, signals/reports/admin integration,
+  schema/migrations и Stage 6 не входят. Representative Pages states выделены отдельно для
+  create-topic, reply и Help draft; `editor` удалён из runtime `Under development`.
+- In-app reply notifications slice реализован в PR #180:
+  forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
+  references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
+  дубли одного события, а recipient-scoped indexes обслуживают bounded inbox/unread queries.
+  Успешный reply в той же transaction создаёт deduplicated notifications для topic author и
+  direct-parent author, исключая самого actor; failure notification insert откатывает и reply.
+  Authenticated `/:locale/notifications` читает только inbox текущего пользователя; header bell
+  показывает best-effort unread count, а открытие notification атомарно ставит `readAt` и
+  перенаправляет на permanent `#post-<id>` anchor. Runtime role имеет только необходимые
+  `INSERT / SELECT / UPDATE` на notification relation, без `DELETE`. RU/HE copy, responsive/RTL
+  presentation и representative mixed/empty Pages states добавлены; notifications удалены из
+  Under development. Clean PostgreSQL 17 tests, schema/manifest parity, runtime privilege probes и
+  полный repository CI проходят. External migration/Stage 6 rollout не выполнялись.
+- Category-page discovery baseline в PR #159 прошёл owner visual acceptance в GitHub Pages:
+  owner-approved header/logo/discovery nav, derived section/topic/message totals и
+  responsive/RTL/empty-category states сохранены. PR #182 supersede-ит только section-card
+  composition: category page теперь переиспользует прежний rich section block с
+  `Pinned / Latest topics / statistics / entry`; bounded latest-topic data читается реально по
+  каждому section, а текущий PR #181 подключает к той же section-card surface persisted pins.
+  Homepage остаётся прямым category → section map. Owner visual acceptance hierarchy correction
+  подтверждён 2026-10-05; persisted-pinning slice owner visual acceptance подтверждён 2026-10-06.
+- Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
+  approved header/logo/discovery nav переиспользованы без backend/DB изменений; heading показывает
+  только derived topic/message totals, topic rows стали full-card links с реальными author/message
+  данными и orange entry rail, create-topic остаётся существующим section-local write flow с
+  компактным in-page entry point, добавлены responsive/RTL/empty-section presentation states.
+  Repository CI и Pages для принятой реализации проходят. Следующая bounded UI/UX подзадача после
+  merge — Topics/messages/participation.
+- Topic-reading/messages slice в PR #161 прошёл owner visual acceptance в GitHub Pages:
+  принятый shell/header переиспользован без backend/DB изменений; original question остаётся
+  первой, selected best answer визуально переносится сразу после неё без изменения исходного
+  message number/permanent anchor, остальные сообщения сохраняют линейный repository order.
+  Message cards используют существующие author/content data, safe Markdown/code rendering,
+  translation provenance/original disclosure и текущие protected controls; добавлены
+  responsive/RTL-safe geometry и solved/unsolved/translated preview states. Repository CI и Pages
+  для принятой реализации проходят. Full authoring-form redesign и secondary-control cleanup
+  остаются отдельными следующими slices.
+- Reply/Create-topic authoring slice в PR #162 прошёл owner visual acceptance в GitHub Pages:
+  существующие section/topic write boundaries сохранены без backend/DB изменений, формы получили
+  компактную panel hierarchy, локализованную guidance/help copy, explicit required-field
+  presentation, touch-friendly actions и responsive/RTL geometry. Non-fetcher React Router
+  `Form` submissions используют `useNavigation` pending state: только отправляемая
+  create-topic/reply form получает `aria-busy`, disabled fields/action и локализованный pending
+  label. Existing server validation, permissions, origin protection и rate-limit semantics не
+  менялись; полноценный editor, drafts/autosave и reply/quote relationships остаются будущими
+  bounded tasks. Repository CI и Pages для принятой реализации проходят. Следующая bounded
+  UI/UX подзадача — secondary translation/source-locale/solution control cleanup.
+- Secondary topic-controls slice реализован в PR #163 без backend/DB/permission изменений:
+  translation-generation feedback остаётся видимым, но получает compact secondary presentation;
+  source-locale correction и solution-management mutations перемещены под native `details`
+  progressive disclosure на уровне topic/message, тогда как `Go to solution` остаётся прямым
+  reading action. По решению владельца перед visual acceptance этот же review branch дополнен
+  полными code-owned manual UI packs для `ru` и `he`: оба содержат значения для всех 170
+  текущих canonical `common` keys, используют отдельный fixed reviewed-fingerprint manifest и
+  остаются обычными `LocalTranslationSource` overrides без изменения generic LocaleRegistry.
+  Pages preview теперь читает те же manual packs вместо отдельного partial Hebrew dictionary.
+  Перед owner visual acceptance branch также получил compact header language selector, который
+  берёт варианты из active LocaleRegistry и сохраняет текущий route remainder/query/hash при смене
+  locale. По owner feedback preview `State` больше не дублирует EN/RU/HE/RTL варианты: он
+  выбирает только representative scenario/identity, а язык меняется внутри самого форума и
+  сохраняется между сменой preview state/viewport в session storage. Верхняя строка оставляет
+  только language/theme controls, а notifications + account identity + auth action вынесены в
+  правую часть второй строки рядом с discovery navigation.
+  Owner review также выявил desktop truncation forum tagline; current branch снимает искусственный
+  max-width/ellipsis на desktop и оставляет wrapping для узких viewport. RTL review дополнительно
+  выявил, что brand identity наследовал page direction и визуально превращался в `ForumVico`;
+  brand link теперь явно изолирован как LTR, при этом весь остальной Hebrew UI остаётся RTL.
+  Existing mutation intents, same-origin/authz/validation и immutable revision semantics сохранены.
+  Repository CI и Pages для locale-independent preview State correction проходят. Owner visual
+  acceptance PR #163 в GitHub Pages подтверждён 2026-10-01, включая RU/HE локализацию, header
+  language selector, LTR brand isolation внутри RTL UI, tagline/header corrections и
+  locale-independent preview State.
+- Auth presentation slice в PR #164 прошёл owner visual acceptance в GitHub Pages 2026-10-01:
+  guest sign-in, signed-in identity/sign-out, pending state и safe failed-auth feedback приведены
+  к compact header presentation без изменения Better Auth/session/callback behavior. Pages fixture
+  содержит deterministic pending/failed auth states, а существующие Home guest/user states остаются
+  representative normal identity states. В Pages auth-клики намеренно блокируются и используются
+  только для visual-state review; это не является real OAuth smoke. Backend/DB/permissions/OAuth
+  configuration не менялись. Repository CI и Pages для принятой реализации проходят.
+- Authorization-management presentation в PR #165 прошёл owner visual acceptance в GitHub Pages
+  2026-10-01: существующий protected admin flow переиспользует accepted forum shell/header, роли и
+  пользователи организованы в compact management cards, role grants/user assignment/per-user
+  overrides/effective permissions сгруппированы без изменения intent/field contracts. Custom-role
+  deletion визуально отделён как destructive action; Pages fixture включает custom Reviewer
+  role/user и saved/conflict states. Server-side permission checks, same-origin boundary, dynamic
+  permission model и lockout safeguards не менялись. Владелец отдельно отметил, что более глубокая
+  переработка самой модели/workflow управления ролями и permissions может потребоваться позже; это
+  не считается дефектом текущего visual slice и не меняет действующий authorization contract.
+  Repository CI и Pages для принятой реализации проходят.
+- System/error-state presentation в PR #166 прошёл owner visual acceptance в GitHub Pages
+  2026-10-01: route-level `401`, `403`, `404`, controlled `503` и unexpected failures используют
+  единый accepted forum shell и safe localized recovery action без показа internal error details.
+  Protected authorization route использует общий `ForumRouteError`; existing mutation-level
+  `409`/`429` feedback contracts не меняются. Pages fixture содержит locale-independent
+  representative states для каждого route failure. Repository CI и Pages для принятой реализации
+  проходят.
+- Первый responsive/RTL/accessibility hardening slice открыт в PR #167: shared shell получил
+  localized keyboard skip link к focusable forum content region, visible `focus-within` treatment
+  для language selector, unclipped header focus rings и min/max-width guards для zoom/reflow
+  pressure. Preview дополнен `Home · manager` для плотного account/header состояния; существующая
+  logical-direction/RTL geometry сохранена. Owner review выявил и подтвердил исправление mobile-only
+  homepage defects ниже `30rem`: browser-default section-enter SVG и первоначальный порядок
+  secondary content/footer action. Последний owner feedback заменяет прежнюю mobile-card
+  композицию более компактной: identity/description остаются видимыми, `Pinned` + `Latest topics`
+  + statistics по умолчанию скрыты за circular expand control, а orange section-entry action
+  перенесён из full-width footer в компактный inline-end rail рядом с identity. Эта latest
+  mobile-card correction реализована в текущей ветке; repository CI и Pages для неё проходят.
+  Следующий owner feedback по этой же карточке потребовал сделать section icons явно Vico Orange и
+  смягчить слишком тёмный circular expand control; эта correction прошла repository CI/Pages и
+  получила owner visual acceptance 2026-10-02. После acceptance владелец попросил тем же способом
+  смягчить narrow-mobile discovery pills и orange section-entry rail, но оставить их оттенок немного
+  насыщеннее circular expand control; после следующего visual review владелец отклонил этот оттенок
+  и дал отдельный reference-orange. После следующего visual review владелец попросил попробовать
+  yellow-orange `#ED760E` для narrow-mobile discovery pills, section-entry rail и `Sign in`;
+  circular expand control остаётся более светлым. Следующий owner visual review отклонил этот
+  вариант как слишком резкий для Light theme и запросил одновременное сравнение трёх более мягких
+  оттенков на одном mobile экране: `Sign in` — `#E8873A`, discovery pills — `#E27A32`,
+  section-entry rail — `#E9964A`. После comparison владелец выбрал единый muted-orange
+  `#D97838` для всех трёх групп: `Sign in`, narrow-mobile discovery pills и section-entry rail;
+  circular expand control остаётся без изменений. Следующий owner visual review предпочёл более
+  мягкий `#E9964A`; owner visual review принял этот оттенок для Light theme, но выявил, что
+  hard-coded mobile color также попал в Dark theme. После отдельного Dark review владелец отклонил
+  `#D25E28` как слишком резкий и запросил comparison трёх более мягких оттенков на одном экране.
+  Первый comparison также не прошёл visual acceptance; следующий промежуточный comparison использует:
+  `Sign in` — `#C56538`, narrow-mobile discovery pills — `#C76032`, section-entry rail —
+  `#C35F31`. После comparison владелец выбрал единый Dark оттенок `#C56538` для всех трёх
+  групп. Light theme сохраняет принятый `#E9964A`, circular expand control остаётся без изменений.
+  Repository CI и Pages для этой latest Dark color correction проходят; owner visual acceptance
+  подтверждён 2026-10-02. Предыдущий owner mobile review также выявил
+  переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
+  orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
+  text labels на wider layouts.
+  Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Следующий owner
+  review того же narrow-mobile header потребовал compact theme/locale controls: language показывает
+  current primary locale code (`EN/RU/HE` для review locales), theme — moon/sun target icon;
+  оба controls перенесены в компактную колонку напротив brand, с theme сверху и locale под ней,
+  а search остаётся отдельной строкой. Следующий owner review потребовал поменять порядок lower
+  mobile header: account/notification controls должны идти одной compact строкой сразу под brand,
+  search — следующей строкой, discovery pills — ниже поиска. Guest auth presentation дополнительно
+  сокращена до `Sign in`, а рядом добавлен `Sign up` как approved future registration entry
+  point на shared `Under development` page; реальная registration/auth backend semantics не
+  меняются. Wider layouts сохраняют текущую presentation. Repository CI и Pages для этого
+  lower-header/auth correction проходят; owner visual acceptance narrow-mobile shell и итоговых
+  Light/Dark action colors подтверждён 2026-10-02. Во время следующей browser-проверки владелец
+  выявил mobile disclosure defect: карточка раскрывалась через `mobileDetailsOpen`, но chevron
+  оставался привязан к desktop `expanded` и поэтому продолжал смотреть вниз. Текущая ветка
+  привязывает chevron к общему `controlExpanded` и добавляет regression coverage для open/close
+  direction. Source/automated keyboard/RTL review при этом подтверждает skip link первым keyboard
+  target, visible wrapper focus для language selector, отсутствие новых physical left/right
+  assumptions и RTL reversal directional entry arrows. Repository CI и Pages для этой latest
+  correction проходят; owner visual re-test disclosure chevron подтверждён 2026-10-02.
+  Keyboard browser acceptance для Desktop и Mobile подтверждён владельцем 2026-10-02: skip link,
+  Enter-to-content, forward/backward Tab traversal и visible unclipped focus прошли визуальную
+  проверку. Владелец также подтвердил текущий visual/RTL state как нормальный 2026-10-02 и попросил
+  не блокировать дальнейшую работу дополнительной полировкой этого slice; PR #167 считается
+  принятым по owner browser review в рамках Pages-preview, не подменяя будущую full real-runtime
+  acceptance matrix.
+- Target search, notifications и незавершённые footer/product entry points во время owner-only
+  pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
+- Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
+  вести на общую локализованную страницу `Under development` со списком оставшейся работы.
+  Публичный запуск не выполняется до завершения и acceptance утверждённого target product.
+- Stage 6 pre-release external integration поставлен владельцем на паузу; оставшиеся Stage 6
+  infrastructure gates не продолжаются до отдельного указания.
+- External production-like integration начинается только в Stage 6; завершение Stage 5 не означает,
+  что pending migrations, OAuth, runtime roles/Hyperdrive writes, Queues/providers или deployed smoke
+  уже приняты внешне.
+- Stage 6 dedicated migration identity подтверждена внешним manual read-only workflow из `main`:
+  production Environment secret реально подключается как exact `vico_forum_migrator`.
+- Production migration workflow больше не допускает database-owner connection: verifier требует
+  dedicated migration connection, совпадающую с application owner.
+- Production migration boundary разделяет verifier на две fail-closed фазы: pre-migration принимает
+  только exact checked-in migration ledger prefix по паре `created_at + Drizzle SHA-256 hash`,
+  а post-migration требует exact complete timestamp+hash ledger и repository-owned full structural
+  manifest `0000`–`0020` со schema/ownership/ACL invariants.
+- Stage 6 schema-first migration выполнена: production target прошёл metadata/preflight,
+  pending `0004`–`0020` применены, а postflight подтвердил complete `0000`–`0020`
+  ledger, full structural manifest и production privilege contract.
+- Repository-owned migration→runtime evidence теперь подтверждает accepted migration through
+  `0020_translation_generation_permission`. Это закрывает schema-first evidence gate, но не
+  означает, что schema-dependent Worker/runtime уже развёрнут.
+- Repository privilege boundary по-прежнему требует direct non-grantable `CREATE` на текущую
+  database именно для application owner/migrator и запрещает database `CREATE` для localization
+  runtime и `PUBLIC`; bounded identity/capability gate подтверждён external execution.
+- Stage 6 runtime contract разделяет existing `localization-read` и отдельную `web`
+  capability. Production sequence уже создала `vico_forum_web`, установила protected
+  `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed relation grants и приняла database-role
+  defaults `lock_timeout=2s` / `statement_timeout=5s`. После нескольких consumed
+  bootstrap/recovery попыток рабочий standalone `ALTER ROLE ... PASSWORD ...` precedent был
+  повторён под owner: usable web credential установлен без изменения grants/defaults, а Cloudflare
+  успешно создал отдельный unbound direct-origin `vico-forum-web` Hyperdrive с disabled query
+  caching. Split `HYPERDRIVE` / `WEB_HYPERDRIVE` wiring уже merged в `main`, но production
+  Worker всё ещё остаётся на старом baseline deployment и новый web binding/runtime ещё не принят
+  внешне. Content generation runtime остаётся disabled/fail-closed и не получает
+  task/provider/background DB capability.
+- Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
+  себе не является deployment/acceptance evidence.
 
-- Блокеров для закрытого Stage 3 нет.
-- До runtime writes или private auth data необходимо выполнить уже зафиксированный isolation gate:
-  создать отдельный staging Worker/Hyperdrive/DB для non-production/preview path либо отключить
-  non-production builds.
-- Exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle integration и auth
-  security boundary ещё не прошли отдельный pre-Stage-4 review; это задача следующего hardening.
+## Реализованный foundation
 
-## Следующий шаг
+Текущий repository baseline:
 
-Провести pre-Stage-4 audit/hardening по тому же принципу, что и перед Stage 3: проверить текущий
-код, документацию, CI/deploy/runtime boundaries и актуальную официальную документацию Better Auth,
-Google OAuth, React Router и Cloudflare; зафиксировать blockers/required changes и только после их
-закрытия начинать Stage 4 (Better Auth + Google OAuth).
+- React Router `8.3.1` Framework Mode + SSR + TypeScript на Cloudflare Workers;
+- Node `24.21.0`, pnpm `12.3.4`, React `19.3.0`, Vite `8.2.2`;
+- PostgreSQL 17 + Drizzle ORM с append-only migration history;
+- Better Auth `1.7.4` + PostgreSQL Drizzle adapter;
+- generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
+  `i18next`;
+- persistent locale registry, persistent UI translation storage и compiled bundle storage;
+- текущая repository migration history — `0000`–`0031`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+
+## Forum core — Stage 4
+
+Stage 4 реализован и проверяется локально/в CI:
+
+- публичное чтение `категория → раздел → тема → сообщения`;
+- Better Auth session boundary и `/api/auth/*`;
+- authenticated создание темы и ответа;
+- safe CommonMark rendering без raw HTML и внешних images;
+- transactional per-author cooldown для topic/reply writes;
+- solved topic и best answer;
+- immutable topic-title/post-body revisions с независимым `sourceLocale | und`;
+- dynamic PostgreSQL-backed authorization с built-in/custom roles, редактируемыми grants и
+  per-user `allow | deny | inherit` overrides;
+- locale-aware authorization management UI;
+- server-side `PermissionResolver`, server-derived solution scope и lockout protection;
+- authorization availability отделена от permission denial: только классифицированные
+  dependency availability failures используют controlled degradation/`503`, unexpected
+  programming/schema/configuration errors не маскируются;
+- полные `resolveUser()` и `readManagementState()` собираются из одного стабильного
+  PostgreSQL snapshot на composite read, сохраняя next-request freshness и request-scoped cache.
+
+Real Google OAuth credentials/smoke и внешний authorization bootstrap не входят в завершённый
+local/CI Stage 4 и остаются Stage 6.
+
+## Translation system — текущее состояние Stage 5
+
+### Stage 5A — реализованная часть
+
+В repository/local-CI path работают:
+
+- `UiTranslationService` для exact-target generation planning;
+- provider-neutral `TranslationProviderRouter` и capability boundary;
+- `LocaleRulesProvider` и validation provider output, включая structured plural units;
+- durable translation tasks в PostgreSQL;
+- commit task before enqueue и transport-neutral enqueue boundary;
+- task lifecycle `pending → processing → pending/stale/completed/failed`, claim token и lease/reclaim;
+- stale/source/policy/locale/manual preflight перед provider call;
+- durable monotonic generation ordering и current-generation fencing;
+- fresh-plan A-B-A reactivation stale stable identity через новую monotonic generation под существующим generation-head lock; completed identity и старая Queue delivery остаются terminal;
+- provider-neutral task executor;
+- concrete local/CI Cloudflare Workers AI `@cf/meta/m2m100-1.2b` adapter за provider-neutral boundary для bounded UI plain-text subset: provider-local exact language-code mapping, fixed model id, runtime response validation, typed retry/terminal failure mapping и fake-runner contract tests без real AI binding/live calls;
+- typed retryable/terminal translation-execution failure taxonomy и transport-neutral `ack` / `retry` / `terminal` outcome boundary;
+- bounded durable attempt budget с PostgreSQL-owned lifecycle time, claim-token-fenced retry/failure transitions и persistent `failed` terminal path как local/CI DLQ equivalent;
+- transport-neutral `JOB-06` reconciliation/observability: bounded PostgreSQL recovery batches резервируют aged `pending` и expired `processing` tasks через durable reconciliation progress и `SKIP LOCKED`, безопасно переживают duplicate/concurrent runs и partial enqueue failures; observability показывает status, age, attempt-budget, lease и bounded terminal-failure summaries без source/provider payloads;
+- conditional machine publication с provider/model provenance;
+- atomic `task completion + raw machine translation + whole namespace bundle` publication;
+- persisted exact-locale compiled bundles с deterministic current-deploy identity;
+- persistent `ui_translations` / `ui_translation_bundles` schema rejects canonical English
+  after trim + case-insensitive comparison; repository-owned production verifier uses the same boundary;
+- SSR/runtime чтение verified persisted bundles для canonical non-English locale с raw/local/
+  English fallback при miss или классифицированной storage degradation;
+- repository/local-CI команда `pnpm db:reconcile-ui-bundles` выполняет locked reverify/delete
+  convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
+  request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
+
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership; `0015` расширяет shared durable task storage отдельным `content-topic-title` kind с database-enforced title-revision ownership; `0016` добавляет отдельный `content-post-body` kind с exact post-body revision ownership и тем же shared generation/lifecycle foundation; `0017` добавляет отдельные PostgreSQL fixed-window request-budget counters для user-content translation.
+
+### Stage 5B — реализованный foundation
+
+В repository/local-CI path реализованы:
+
+- provider-neutral `ContentTranslationService` / `ContentTranslationStore` для topic title и post body;
+- отдельные PostgreSQL tables для topic-title и post-body translations с identity
+  `contentType + contentId + revisionId + targetLocale`;
+- database-backed revision-owner/source-locale foreign keys и cascade lifecycle без eligible orphan rows;
+- canonical non-`und` target locale, immutable revision source locale и validated
+  `persistent_manual | machine` provenance;
+- idempotent exact-identity writes с manual-over-machine trust preservation;
+- exact-current-revision reads: miss/stale/invalid/classified storage-unavailable result
+  возвращает original exact revision; unexpected storage/programming errors не маскируются;
+- provider-neutral source-locale resolution/planning boundary для immutable content revisions:
+  известный canonical source locale обходит detection, `und` использует только injected detector
+  с runtime validation и отдельной acceptance policy; unresolved/classified unavailable source
+  блокирует будущий provider job, а manual correction требует нового revision identity;
+- concrete local/CI TinyLD `1.3.4` adapter за CNT-03 boundary для revisions с `sourceLocale=und`:
+  detector работает process-local без API/credentials, использует explicit reviewed TinyLD-code →
+  canonical Vico language mapping, не выводит region/script, требует минимум 24 Unicode semantic
+  letters, native score ≥ 0.80 и top-vs-runner-up margin ≥ 0.20. Для post-body semantic text
+  извлекается через единый CNT-04 Markdown/technical-fragment boundary; weak/short/mixed/unmapped
+  evidence и Georgian script (модели `ka` в TinyLD 1.3.4 нет) остаются unresolved/original-safe.
+  Поле CNT-03 `confidence` переносит detector-native TinyLD score и не трактуется как
+  калиброванная вероятность; known revision source locale по-прежнему обходит detector;
+- request-budget foundation для user-content translation: server-only Web Crypto HMAC-SHA-256
+  pseudonymizer принимает уже классифицированный authenticated/anonymous requester identity,
+  domain-separates actor kind и key version и выдаёт только bounded base64url subject key; raw
+  user id/IP, session token и HMAC secret не сохраняются. Dedicated PostgreSQL fixed-window store
+  использует versioned global/requester scopes, caller-supplied positive cost/window/limits,
+  один database-owned transaction timestamp, deterministic global-before-requester admission,
+  atomic all-or-nothing consumption, typed denial/reset/retry metadata и bounded indexed cleanup.
+  Topic-title и post-body planners принимают уже pseudonymized subject + injected versioned
+  cost/window/limits/scopes и выполняют correctness-critical admission в той же PostgreSQL
+  transaction, что final current-revision/current-translation recheck и durable task
+  upsert/dedup/reactivation. Ineligible/current/completed work остаётся free, eligible
+  pending/processing duplicate request повторно учитывается budget, denial/error откатывает
+  counters вместе с task mutation, а enqueue остаётся after-commit. Authenticated generation routes
+  подключены через существующий topic POST boundary; anonymous enablement и финальные quota values
+  не выбраны;
+- on-demand durable planning для topic-title translation: planner повторно читает current immutable
+  title revision из PostgreSQL, проверяет active canonical target и provider-neutral support,
+  выполняет atomic request-budget admission вместе с final serialized revision/translation recheck
+  и durable task decision, не создаёт work для unresolved/same-locale/current/completed work, создаёт
+  revision-bound stable task через shared durable lifecycle и только после commit отправляет
+  transport message `{ translationTaskId }`; concurrent duplicate planning дедуплицируется
+  одной durable task identity;
+- provider-neutral execution/publication foundation для `content-topic-title`: persisted task kind
+  определяется до kind-specific claim; content task использует общий PostgreSQL claim/lease,
+  attempt budget, retry/terminal state и reconciliation/observability lifecycle; после claim
+  повторно проверяются exact current revision/source semantics, generation policy/head, active
+  target и отсутствие current translation; provider получает ровно один `domain: content`,
+  `plain` request с authoritative original title и resolved source locale;
+- machine topic-title result runtime-валидируется и публикуется conditional transaction:
+  claim token, current revision, generation/policy и translation trust повторно проверяются;
+  existing/manual translation не перезаписывается, а успешная machine write и task completion
+  коммитятся атомарно;
+- provider data-policy boundary для user content default-deny: machine request различает UI и
+  content classification, а topic-title planning и execution используют одну
+  `public-forum-topic-title` capability semantics. Существующий Cloudflare Workers AI M2M100
+  adapter сохраняет UI behavior и может локально/в CI принять только plain public topic title
+  для явно allowlisted canonical locale pair при injected policy; policy не получает source text,
+  повторно проверяется при execution, а denied/revoked content не достигает Workers AI runner.
+- provider-neutral CNT-04 protected CommonMark foundation для post-body translation:
+  source Markdown разбирается в mdast, translatable text получает deterministic AST-position IDs,
+  а code, raw HTML, image/link destinations, autolink URLs и embedded technical identifiers
+  остаются защищённой структурой/immutable placeholders. Restore принимает только exact bounded
+  segment set, проверяет protected-token preservation, вставляет provider values как text nodes,
+  deterministic сериализует и повторно проверяет AST structure; нарушение возвращает typed
+  `original-fallback` validation error. Результат остаётся input существующего safe
+  `ForumMarkdown` renderer, а source revision не изменяется.
+- on-demand durable planning для post-body translation: planner повторно читает exact current
+  immutable post revision, выполняет source-locale resolution и CNT-04 protection authoritative
+  Markdown, проверяет active canonical target, metadata-only provider/data-policy capability,
+  current exact-revision translation и выполняет injected request-budget admission атомарно с
+  final serialized revision/translation recheck и durable task decision. Stable `content-post-body`
+  identity/fingerprint учитывает revision/source semantics, protected representation,
+  `protectedContentPolicyVersion`, target и generation policy; PostgreSQL сохраняет только
+  revision/source/policy metadata, а transport после commit получает только
+  `{ translationTaskId }`. Concurrent duplicate planning сходится к одной durable identity,
+  live claim не сбрасывается, completed identity не оживляется, enqueue failure остаётся
+  recoverable через JOB-06;
+- provider-neutral execution/publication для `content-post-body`: dispatcher определяет persisted
+  kind до kind-specific claim, shared PostgreSQL lifecycle сохраняет claim/attempt/retry/terminal
+  semantics, а post-body preflight повторно проверяет current revision/source, generation/policies,
+  active target и отсутствие trusted current translation. CNT-04 заново строится только из
+  authoritative current Markdown и тем же versioned fingerprint связывает execution с durable
+  planning. Перед первым provider call применяются injected technical bounds по числу semantic
+  segments и их суммарной длине; затем каждый ordered segment отправляется отдельным
+  `domain: content`, `public-forum-post-body`, `plain` request с resolved source/target
+  locale, причём capability/data-policy boundary повторно проверяется для каждого вызова. Code,
+  URL destinations, raw HTML, Markdown structure и protected technical identifiers не передаются
+  как provider text;
+- post-body result публикуется только после полного успешного segment set: provider/model/
+  attribution provenance должен быть единообразным, CNT-04 restore повторно проверяет exact
+  segment IDs, protected tokens и Markdown structure, а invalid/unsafe output terminalizes без
+  partial translation. Publication transaction сохраняет lock order и повторно проверяет
+  generation head, processing task/claim token, current post/revision/source/policies и existing
+  translation trust; manual/current translation не перезаписывается, machine translation write и
+  task completion коммитятся атомарно. Истёкший, но не reclaimed claim с тем же token может
+  завершиться под row lock; реально reclaimed claim с новым token публиковать не может. Transient
+  provider/dependency failures используют общий bounded retry lifecycle, stale/current outcomes
+  ack-аются без публикации. Existing Cloudflare M2M100 path остаётся default-deny для post-body:
+  concrete provider allowlisting/data-policy approval, bindings и live calls не выбраны и не
+  входят в этот local/CI foundation;
+- provider-neutral pre-claim allowance admission для content translation execution:
+  каждый потенциальный provider attempt получает deterministic occurrence identity из durable task,
+  current generation и следующего attempt number; PostgreSQL хранит короткую admission lease,
+  admitted marker либо durable deferred `retryNotBefore`/bounded reason. Provider allowance
+  проверяется до content claim, поэтому denied/unavailable capacity не увеличивает JOB-04
+  `attemptCount`, не вызывает provider и не превращается в retry/terminal execution failure.
+  Успешный content claim атомарно потребляет admitted occurrence и только тогда начинает execution
+  attempt; retry получает новый occurrence, а stale reactivation/new generation инвалидирует старый
+  admission. Для post body allowance envelope строится из authoritative CNT-04 semantic segments и
+  покрывает весь bounded attempt. JOB-06 не re-enqueue deferred work до reset и не гоняется с live
+  admission lease, но восстанавливает ready deferred/expired lease/admitted-unclaimed work; bounded
+  observability показывает только aggregate admission/defer counts, age/reset timing и bounded
+  reasons. Migration `0019` добавляет nullable content-only allowance lifecycle metadata и recovery
+  index. Stage 5 default остаётся fail-closed без authoritative real allowance adapter: local/CI
+  contract проверяется injected fake и не утверждает реальное соблюдение 5% provider reserve;
+- manual source-locale correction для topic title и post body: code-backed permissions
+  `forum.sourceLocale.correctOwn` / `forum.sourceLocale.correctAny` используют dynamic
+  authorization и authoritative resource ownership. Correction принимает canonicalizable non-`und`
+  BCP-47 source language независимо от UI LocaleRegistry, копирует только authoritative current
+  original content в новую immutable revision и меняет только source-locale metadata.
+  Expected-revision CAS fencing делает stale/concurrent correction безопасной; предыдущие
+  translations/tasks остаются historical revision-bound. Locale-aware topic UI показывает
+  correction controls по optional presentation auth, а action повторно проверяет authentication,
+  same-origin, current permission и resource ownership server-side. Migration `0018` расширяет
+  code-backed permission catalog/check constraint и approved initial built-in grants;
+- authenticated one-unit generation planning actions для user-content translation: code-backed permission
+  `forum.translation.generate` добавлен в dynamic authorization catalog с initial grants built-in
+  `user`, `moderator` и `admin`; role grants и per-user overrides остаются authoritative.
+  Existing topic POST boundary поддерживает ровно один current topic title либо один current post body
+  текущей темы, требует authenticated session + same-origin + effective permission и выводит target
+  только из canonical validated URL locale. Actor pseudonymized server-side через существующий HMAC
+  boundary, а planner получает только subject key и injected versioned server-owned request-budget
+  policy; production cost/window/limits по-прежнему не выбраны. Route selection использует
+  authoritative current topic/page state, а planner сохраняет финальный revision/translation recheck
+  и atomic request-budget/task mutation. Automatic-eligible post action заново строит CNT-04 и
+  пропускает только semantic body `<= 3000` characters; более длинный body возвращает bounded
+  explicit-required no-op до pseudonymization/budget/task mutation. Budget denial возвращает bounded
+  `429 Retry-After`, classified authorization/forum/planning availability — controlled `503`,
+  normal no-job outcomes original-safe, unexpected errors не маскируются. Action не вызывает
+  provider allowance или translation provider synchronously. Migration `0020` добавляет permission
+  и initial grants. Default Worker generation capability явно disabled, поэтому local/CI foundation
+  не содержит production anti-spam values, HMAC secret, Queue/provider/allowance bindings или live
+  calls;
+- read-only presentation уже сохранённых current user-content translations на странице темы:
+  loader использует authoritative current title/post revisions и canonical validated URL locale,
+  выбирает только exact `contentType + contentId + revisionId + targetLocale` records через общую
+  validation semantics `ContentTranslationService` и выполняет bounded batch read максимум одним
+  title query и одним set-based post-body query. Доступный current translation автоматически и
+  независимо показывается для каждой единицы; missing/invalid/classified-unavailable данные
+  возвращают exact current original без generation side effects. Topic title и breadcrumb используют
+  одну selected presentation, translated post body по-прежнему проходит существующий safe
+  `ForumMarkdown` renderer, UI выводит provenance, optional stored attribution и `lang`/`dir`
+  metadata, а native `details` control позволяет открыть original без writes/provider calls. Guest
+  и authenticated user получают один и тот же persisted public read result.
+
+### Stage 5 — завершённый local/CI path
+
+В repository/local-CI path дополнительно реализована generation-side UX/status integration:
+
+- topic loader для authenticated reader с current effective `forum.translation.generate` читает
+  bounded current-generation status одним set-based batch query поверх существующих generation heads,
+  task rows и revision metadata; task/provider/claim/budget internals клиенту не сериализуются;
+- exact-current persisted translation остаётся authoritative presentation state; classified
+  generation-status storage unavailable сохраняет public/original-safe topic read и отключает
+  automatic generation hints для этого response, unexpected failures не маскируются;
+- eligible original content после hydration автоматически ставится в sequential one-unit generation
+  queue с exact `contentType + contentId + revisionId + targetLocale` guard и без повторной отправки
+  той же единицы в одном hydration cycle; SSR/GET не выполняет generation POST/provider work;
+- post body с CNT-04 semantic length `<= 3000` использует automatic action, более длинный body
+  получает отдельный explicit control. Explicit path обходит только automatic length gate и повторно
+  проходит те же authenticated permission, authoritative resource/revision/target, pseudonymization,
+  request-budget, planner и dispatch boundaries;
+- automatic queue подавляет per-item loader revalidation и после завершения выполняет один read-only
+  refresh; active `pending | processing | deferred` durable status и client-visible `converging`
+  state используют bounded finite polling через loader revalidation, а не повторные generation POST.
+  `converging` означает только original-safe cross-read convergence, когда independently read
+  presentation ещё original, а durable task уже completed; это не durable task status и backend
+  `completed` клиенту не раскрывается;
+- UI локализованно и accessibility-visible показывает requesting/pending/processing/converging/
+  deferred/failed/unavailable/current/explicit-required feedback. Request-budget `429` может
+  показывать только bounded retry timing без раскрытия quota internals;
+- regression coverage проверяет batch status semantics, revision/target isolation, original-safe
+  degradation, dynamic permission hints без GET side effects, explicit threshold bypass, same-hydration
+  dedupe, finite read-only polling и disposable PostgreSQL integration.
+
+Реальные Cloudflare Queue bindings, provider credentials/calls, authoritative production allowance
+adapter, production anti-abuse values, provider/data-policy approval и deployed provider/Queue smoke
+остаются отдельной Stage 6 external acceptance.
+
+## CI и migration state
+
+Обычный pull-request CI сейчас проверяет:
+
+- accepted migration history и repository-local migration/evidence contracts;
+- lint;
+- typecheck;
+- unit/route tests;
+- production build;
+- Drizzle migration metadata;
+- clean PostgreSQL 17 migration/integration suite;
+- production full-schema manifest parity против clean PostgreSQL 17;
+- named `localization-read` / `web` runtime privilege contract и disposable PostgreSQL 17
+  positive/negative grant probes, включая row-lock и forbidden cross-domain/DDL checks;
+- split-authority web relation-provisioning contract: exact grants derive-ятся из shared web
+  capability, а disposable PostgreSQL 17 проверяет successful migrator-owner phase и rollback
+  при forbidden prerequisite drift;
+- Workers build и local Hyperdrive smoke.
+
+Обычный PR CI не выполняет live GitHub Actions verification старого external migration evidence.
+Live migration→runtime verification относится только к фактическому external schema-dependent
+rollout по `docs/database/MIGRATIONS.md`.
+
+## External / deployed state
+
+Repository/local-CI state намеренно может опережать внешний pre-release environment.
+
+Текущее repository-owned migration evidence относится к
+`0020_translation_generation_permission` и подтверждает successful target migration +
+postflight verification полного `0000`–`0020` schema contract. Это evidence schema-first
+границы; schema-dependent runtime rollout ещё не выполнен.
+
+Существующий внешний localization foundation использует read-only Hyperdrive capability для
+`locales`, `ui_translations` и `ui_translation_bundles`. Ранее выполненный real Hyperdrive
+acceptance остаётся evidence этого localization path, но не является gate для обычных feature PR.
+
+Repository содержит reviewed exact ACL/verifier contract для отдельной web runtime
+capability (Better Auth + forum + dynamic authorization + persisted forum-content reads) и
+защищённый split-authority execution path. Production evidence подтверждает созданную
+`vico_forum_web` role, protected `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, exact 50/50
+non-grantable relation privilege pairs, successful read-only runtime privilege verifier,
+database-role defaults `lock_timeout=2s` / `statement_timeout=5s` и usable credential.
+Cloudflare отдельно содержит unbound direct-origin cache-disabled Hyperdrive `vico-forum-web`.
+Production Worker binding/routing и deployed web-runtime acceptance ещё не выполнены.
+
+Fresh Stage 6 pre-deploy recheck подтвердил: native Git Builds integration остаётся отключённой;
+Production продолжает обслуживаться baseline version `78f87645` со 100% traffic; owner подтвердил
+неизменный пустой `Previews Base` без bindings/runtime variables/secrets; production workers.dev
+URL — `https://vico-forum.iliya1947a.workers.dev`. Existing `vico-forum-web` Hyperdrive
+по-прежнему unbound/inactive и cache-disabled. Topology gate закрыт без deployment mutation.
+
+Dedicated least-privilege migration credential для production подтверждён external execution как
+`vico_forum_migrator`, production migration workflow не содержит database-owner exception, а
+required direct non-grantable database `CREATE` capability подтверждена manual read-only
+identity/capability workflow. Последующий authorized schema-first migration успешно применил
+`0004`–`0020`; production postflight подтвердил complete ledger, full structural manifest и
+privilege contract. Repository-owned evidence теперь покрывает `0020`, но Worker deployment,
+runtime roles/Hyperdrive writes и другие schema-dependent runtime capabilities ещё не выкатывались.
+
+До завершения Stage 6 ещё не выполнены:
+
+- real Google OAuth configuration и smoke;
+- server-controlled bootstrap первого authorization manager;
+- production Worker rollout merged split-binding revision + deployed web-runtime acceptance для
+  уже существующих usable credential и cache-disabled `vico-forum-web`;
+- отдельные translation background/maintenance runtime capabilities;
+- Cloudflare Queues и реальные translation providers;
+- final preview/private-data isolation recheck для write-capability rollout;
+- full production-like deployment smoke и backup/restore acceptance.
+
+## Ближайший маршрут
+
+Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
+
+1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
+2. Foundations/homepage correction slice прошёл owner visual acceptance в GitHub Pages.
+   Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
+3. `Popular` merged через PR #168 после green repository CI/Pages и owner visual
+   acceptance 2026-10-02.
+4. `Unanswered` реализован и merged через PR #169: реальный locale-aware public route использует
+   существующие topic/post данные и семантику `isSolved = false` + ровно один persisted post;
+   owner visual acceptance подтверждён 2026-10-02.
+5. `Tags` реализован и merged через PR #170: free-form topic tags, canonical
+   normalization/reuse, migration `0021_forum_tags`, public tag index/filter routes, topic creation
+   и presentation integration; owner visual acceptance подтверждён 2026-10-02.
+6. По выбору владельца следующая bounded product subtask — global Search. Текущая
+   implementation-ветка использует existing current topic-title/post revisions и tags, без новой
+   migration или отдельного search-index subsystem. Repository CI и GitHub Pages preview проходят;
+   owner visual acceptance подтверждён 2026-10-03.
+7. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
+   Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
+   отдельными bounded tasks.
+8. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+   approved entry points не имитируют работу и временно ведут на `Under development`.
+9. После каждого implementation slice выполнять targeted automated checks и browser review.
+10. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+   acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
+11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
+12. Message links реализован и merged через PR #172: permanent message anchor + public Copy link + localized success/failure feedback; owner visual acceptance подтверждён 2026-10-03.
+13. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03.
+14. Full editor/code tooling реализуется в PR #210 на одном shared editor для create-topic,
+    reply и Help question authoring; current implementation сохраняет existing body/mutation
+    contracts, Reply/Quote integration и optional similar-question flow. Drafts/autosave остаются
+    следующим отдельным authoring subsystem, а visual polish editor не расширяет текущий
+    функциональный scope.
+15. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+
+Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
+возобновлении Stage 6 актуальная последовательность остаётся следующей:
+
+1. `.github/workflows/production-worker-rollout.yml` — manual main-only workflow через отдельный
+   protected Environment `production-worker`, exact authorized SHA и explicit upload/promotion
+   confirmations.
+2. До Cloudflare access workflow повторно проверяет accepted live migration→runtime evidence для
+   `0020`, disposable PostgreSQL contract, exact build и local split-Hyperdrive Workers smoke.
+3. Exact pinned Wrangler `4.130.0` сначала создаёт новую Worker version через
+   `versions upload` без traffic promotion. Runtime auth values поступают только из protected
+   Environment; secrets используются из runner temp и не сохраняются как artifacts.
+4. Uploaded version должна пройти GET-only public/auth/database-read smoke через Version URL.
+   Promotion допускается только для version из того же authorized run и только при отдельном
+   confirmation input.
+5. После promotion выполняется production smoke. При automated failure workflow возвращает 100%
+   traffic на accepted baseline version prefix `78f87645` и проверяет rollback state.
+6. Interactive Google sign-in/session/logout остаётся owner post-deploy smoke и не автоматизируется
+   через CI.
+7. Подготовительный PR не создаёт `production-worker` Environment, Cloudflare API token,
+   Google OAuth client/auth secrets, Worker version/deployment и не меняет traffic. Всё это требует
+   отдельного explicit authorization после merge и review.
+
+Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
+production runtime rollout, Cloudflare Queues/providers, authoritative production
+allowance/anti-abuse values, final preview isolation, deployed smoke и backup/restore остаются
+Stage 6 работой и не входят в UI/UX product pass.

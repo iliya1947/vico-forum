@@ -22,6 +22,223 @@
       "when": 1789134327035,
       "tag": "0002_ui_translation_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789292409006,
+      "tag": "0003_gorgeous_donald_blake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789398277610,
+      "tag": "0004_forum_domain_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789425022551,
+      "tag": "0005_calm_proemial_gods",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789430803958,
+      "tag": "0006_loving_sentinels",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789494339867,
+      "tag": "0007_durable_translation_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789496313456,
+      "tag": "0008_translation_task_claim_lease",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789550800033,
+      "tag": "0009_translation_task_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789574281954,
+      "tag": "0010_translation_task_generation_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790093400000,
+      "tag": "0011_persistent_translation_locale_invariant",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790185800000,
+      "tag": "0012_translation_task_retry_dlq",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790229600000,
+      "tag": "0013_translation_task_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790238000000,
+      "tag": "0014_content_translation_persistence",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790247000000,
+      "tag": "0015_content_topic_title_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790250600000,
+      "tag": "0016_content_post_body_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790268000000,
+      "tag": "0017_content_translation_request_budget",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790319600000,
+      "tag": "0018_source_locale_correction_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790341200000,
+      "tag": "0019_content_provider_allowance_admission",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790344500000,
+      "tag": "0020_translation_generation_permission",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790973000000,
+      "tag": "0021_forum_tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791059400000,
+      "tag": "0022_forum_reply_relationships",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791063000000,
+      "tag": "0023_forum_topic_read_states",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791072000000,
+      "tag": "0024_forum_reply_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791162000000,
+      "tag": "0025_forum_topic_pins",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791328200000,
+      "tag": "0026_best_answer_independent_from_solved",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791334800000,
+      "tag": "0027_help_solutions_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791421200000,
+      "tag": "0028_help_solution_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791507600000,
+      "tag": "0029_help_question_needs_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791511200000,
+      "tag": "0030_help_duplicate_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791514800000,
+      "tag": "0031_help_user_moderation_signals",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791577526584,
+      "tag": "0032_forum_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791635400000,
+      "tag": "0033_forum_online_presence",
+      "breakpoints": true
     }
   ]
 }

@@ -25,14 +25,27 @@
 - Технический контент должен удобно поддерживать текст, Markdown и код.
 - AI-функции могут расширять форум, но не должны заменять его базовую механику.
 
-## Базовые роли
+## Авторизация и права доступа
 
-- гость;
-- пользователь;
-- модератор;
-- администратор.
+Пользовательская авторизация использует Better Auth с Google OAuth и регистрацией/входом
+по email и паролю. По решению владельца от 2026-10-10 подтверждение email пока не
+обязательно; отправка писем, подтверждение адреса и восстановление пароля отложены.
+Better Auth отвечает за authentication/session и authoritative identity пользователя;
+application permissions разрешаются отдельно server-side.
 
-Пользовательская авторизация планируется через Google OAuth.
+Права доступа строятся как dynamic permission-based authorization:
+
+- built-in роли `user`, `moderator`, `admin` существуют как стартовые системные роли;
+- администратор может через сайт создавать custom roles;
+- набор permissions любой роли, включая built-in roles, можно динамически изменять;
+- конкретному пользователю можно назначить роль и дополнительно поставить для permission
+  персональный `allow` или `deny`;
+- effective permissions берутся из актуального server-side DB state, а не из client input или
+  долгоживущего session role claim;
+- permission catalog состоит из реальных code-backed capabilities приложения: UI назначает
+  существующие permissions, но не создаёт исполняемую функциональность из произвольной строки.
+
+Полный source of truth для authorization — [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
 
 ## Техническая основа
 
@@ -42,7 +55,7 @@
 - React Router v8 Framework Mode + SSR + TypeScript;
 - Cloudflare Workers;
 - PostgreSQL + Drizzle ORM;
-- Better Auth + Google OAuth.
+- Better Auth + Google OAuth + email/password.
 
 ## Мультиязычность и переводы
 
@@ -69,6 +82,23 @@ detail documents.
 5. Translation providers, persistent storage, local packs, background jobs, plural/select
    rules, provider provenance, безопасность, fallback и caching реализуются только по
    контрактам из `TRANSLATION_ARCHITECTURE.md`.
+
+## Принцип разработки
+
+До pre-release приоритет — работающий продукт и обратимая local/CI разработка.
+
+- Уже созданный infrastructure/localization foundation сохраняется и переиспользуется, но
+  не развивается дальше без необходимости текущей продуктовой функции.
+- Обычная feature-разработка не должна зависеть от реального production rollout, Neon,
+  Hyperdrive, Google OAuth или translation providers, если задачу можно полноценно проверить
+  локально и в CI.
+- External deployment, production migrations, реальные OAuth/provider credentials,
+  infrastructure smoke и destructive/fault-injection проверки выполняются только когда
+  этого требует текущий этап pre-release/release либо конкретная задача действительно не
+  проверяется без внешней среды.
+- Решения, которые необходимо заложить заранее во избежание дорогой переделки, допускаются
+  как foundation boundary, но не должны превращаться в преждевременную реализацию всей
+  будущей подсистемы.
 
 ## Разработка
 

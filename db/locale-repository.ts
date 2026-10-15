@@ -2,7 +2,8 @@ import { asc } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { ClientBase, DatabaseError, QueryResult } from "pg";
 import { locales } from "./schema";
-import { parseLocaleCandidate, type LocaleDefinition } from "../app/localization/locale";
+import { isPostgresStatementTimeout } from "./postgres-deadlines";
+import { canonicalizeTranslationLocale, type LocaleDefinition } from "../app/localization/locale";
 import {
   RegistryIntegrityError,
   assemblePersistentRegistry,
@@ -48,8 +49,9 @@ export class ControlledLocaleWriter {
   ) {}
 
   async apply(mutation: LocaleDesiredState): Promise<void> {
+    const normalizedMutation = normalizeDesiredState(mutation);
     for (let attempt = 0; ; attempt++) {
-      try { await this.applyOnce(mutation); return; }
+      try { await this.applyOnce(normalizedMutation); return; }
       catch (error) {
         const code = (error as DatabaseError).code;
         if ((code === "40001" || code === "40P01") && attempt < this.maxRetries) continue;
@@ -64,6 +66,8 @@ export class ControlledLocaleWriter {
     let preState: string | undefined;
     let expectedPostState: string | undefined;
     try {
+      await this.client.query("set local lock_timeout = '2s'");
+      await this.client.query("set local statement_timeout = '10s'");
       const current = await this.client.query(`select tag, translation_status as "translationStatus",
         publication_status as "publicationStatus", direction, fallback_chain as "fallbackChain",
         aliases, match_tags as "matchTags", native_name as "nativeName",
@@ -71,9 +75,6 @@ export class ControlledLocaleWriter {
       const definitions = current.rows.map(parsePersistentLocaleRow);
       preState = (await assemblePersistentRegistry(asRows(definitions))).semanticIdentity;
       const tag = mutation.type === "put" ? mutation.locale.tag : mutation.tag;
-      if (parseLocaleCandidate(tag)?.translationTag === "en") {
-        throw new RegistryIntegrityError("controlled writer cannot mutate bootstrap en");
-      }
       const proposed = definitions.filter((locale) => locale.tag !== tag);
       if (mutation.type === "put") proposed.push(mutation.locale);
       expectedPostState = (await assemblePersistentRegistry(asRows(proposed))).semanticIdentity;
@@ -126,6 +127,19 @@ export class ControlledLocaleWriter {
   }
 }
 
+function normalizeDesiredState(mutation: LocaleDesiredState): LocaleDesiredState {
+  const rawTag = mutation.type === "put" ? mutation.locale.tag : mutation.tag;
+  const tag = canonicalizeTranslationLocale(rawTag);
+  if (!tag) {
+    throw new RegistryIntegrityError("controlled writer tag must be a translation locale without formatting extensions");
+  }
+  if (tag === "en") {
+    throw new RegistryIntegrityError("controlled writer cannot mutate bootstrap en");
+  }
+  if (mutation.type === "delete") return { type: "delete", tag };
+  return { type: "put", locale: { ...mutation.locale, tag } };
+}
+
 function asRows(locales: readonly LocaleDefinition[]): PersistentLocaleRow[] {
   return locales.map((locale) => ({
     ...locale,
@@ -137,5 +151,6 @@ function asRows(locales: readonly LocaleDefinition[]): PersistentLocaleRow[] {
 
 function isAmbiguousCommitError(error: unknown): boolean {
   const code = (error as DatabaseError | undefined)?.code;
-  return code === "40003" || code === "08007" || code?.startsWith("08") === true;
+  return code === "40003" || code === "08007" || code?.startsWith("08") === true ||
+    isPostgresStatementTimeout(error);
 }

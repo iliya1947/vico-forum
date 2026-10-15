@@ -8,7 +8,7 @@ import {
   registryForRequest,
   uiTranslationStoreForRequest,
 } from "../localization/request-context";
-import { TranslationResourceLoader, type TranslationSnapshot } from "../localization/resource-loader";
+import { TranslationResourceLoader } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
 import { createTranslationRuntime } from "../localization/runtime";
 import {
@@ -16,6 +16,14 @@ import {
   DatabaseManualTranslationSource,
 } from "../localization/persistent-sources";
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
+import { authSessionForRequest } from "../auth/request-context";
+import { HeaderAuthProvider } from "../auth/auth-controls";
+import { OnlinePresenceHeartbeat } from "../forum/online-presence-heartbeat";
+import { LocaleNavigationProvider } from "../localization/locale-navigation";
+import { authorizationForRequest } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -64,22 +72,77 @@ export async function loader(args: LocaleBoundaryArgs) {
     locale = await guardLocale(args);
   }
 
+  const loadedRegistry = await registryForRequest(args.context);
+  const activeLocales = loadedRegistry.registry.activeLocales()
+    .map(({ tag, nativeName, direction }) => ({ tag, nativeName, direction }))
+    .sort((left, right) => left.tag < right.tag ? -1 : left.tag > right.tag ? 1 : 0);
+
   const store = uiTranslationStoreForRequest(args.context);
   const resourceLoader = new TranslationResourceLoader([
     localSource,
     new DatabaseManualTranslationSource(store),
     new DatabaseMachineTranslationSource(store),
     canonicalEnglishSource,
-  ]);
-  return resourceLoader.load(locale, ["common"]);
+  ], store);
+  const snapshot = await resourceLoader.load(locale, ["common"]);
+  const session = authSessionForRequest(args.context);
+  let canManageAuthorization = false;
+  let canViewModerationAttention = false;
+  let unreadNotificationCount: number | undefined;
+  if (session) {
+    try {
+      const resolver = authorizationForRequest(args.context).forUser(session.user.id);
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage] = await Promise.all([
+        resolver.has("access.authorization.manage"),
+        resolver.has("forum.solution.manageAny"),
+        resolver.has("forum.helpDuplicate.manage"),
+        resolver.has("forum.helpNeedsDetails.manage"),
+      ]);
+      canManageAuthorization = authorizationManage;
+      canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage;
+    } catch (error) {
+      if (!(error instanceof AuthorizationUnavailableError)) throw error;
+      // The header link is presentation-only; the protected admin route checks permission independently.
+    }
+
+    try {
+      unreadNotificationCount = await forumReaderForRequest(args.context)
+        .countUnreadReplyNotifications(session.user.id);
+    } catch (error) {
+      if (
+        !(error instanceof ForumStorageUnavailableError)
+        && !(error instanceof ForumReaderConfigurationError)
+      ) throw error;
+      // Header notification count is presentation-only; the protected inbox route handles outage separately.
+    }
+  }
+  return {
+    ...snapshot,
+    activeLocales,
+    authUser: session
+      ? {
+          id: session.user.id,
+          image: session.user.image ?? null,
+          name: session.user.name,
+          canManageAuthorization,
+          canViewModerationAttention,
+          ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
+        }
+      : null,
+  };
 }
 
 export default function LocaleBoundary() {
-  const snapshot = useLoaderData<TranslationSnapshot>();
+  const snapshot = useLoaderData<typeof loader>();
   const i18n = useMemo(() => createTranslationRuntime(snapshot), [snapshot]);
   return (
     <I18nextProvider i18n={i18n} defaultNS="common">
-      <Outlet />
+      <LocaleNavigationProvider locales={snapshot.activeLocales}>
+        <HeaderAuthProvider initialUser={snapshot.authUser}>
+          <OnlinePresenceHeartbeat />
+          <Outlet />
+        </HeaderAuthProvider>
+      </LocaleNavigationProvider>
     </I18nextProvider>
   );
 }

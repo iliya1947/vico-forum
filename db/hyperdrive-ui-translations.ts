@@ -1,13 +1,26 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
+import {
+  isPostgresAvailabilityFailure,
+} from "../app/localization/persistent-registry";
 import type {
   PersistentUiTranslationRow,
   UiTranslationStore,
 } from "../app/localization/persistent-sources";
-import { isTransportUnavailableCode } from "../app/localization/persistent-registry";
+import type { CompiledNamespaceBundle, TranslationBundleReader } from "../app/localization/bundles";
+import {
+  DrizzleUiTranslationBundleStore,
+  PersistentBundleIntegrityError,
+} from "./ui-translation-bundle-store";
 import { DrizzleUiTranslationStore } from "./ui-translation-store";
+import {
+  bestEffortDiscardClient,
+  createLocalizationClient,
+  isPostgresConnectionTimeout,
+  isPostgresQueryTimeout,
+} from "./postgres-deadlines";
 
-export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch";
+export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch" | "timeout" | "invalid-bundle";
 
 type UiTranslationStoreDegradedReporter = (reason: UiTranslationStoreDegradedReason) => void;
 
@@ -22,9 +35,8 @@ class UiTranslationConnectionUnavailableError extends Error {
   }
 }
 
-const postgresUnavailableCodes = new Set(["57P01", "57P02", "57P03", "53300"]);
 const schemaMismatchCodes = new Set(["42P01", "42703", "42804"]);
-const defaultClientFactory: PostgreSqlClientFactory = (connectionString) => new Client({ connectionString });
+const defaultClientFactory: PostgreSqlClientFactory = createLocalizationClient;
 const defaultDegradedReporter: UiTranslationStoreDegradedReporter = (reason) => {
   console.warn(JSON.stringify({ event: "ui_translation_store_degraded", reason }));
 };
@@ -34,27 +46,37 @@ export function createHyperdriveUiTranslationStore(
   connectionString: string,
   createClient: PostgreSqlClientFactory = defaultClientFactory,
   reportDegraded: UiTranslationStoreDegradedReporter = defaultDegradedReporter,
-): UiTranslationStore {
-  let storePromise: Promise<DrizzleUiTranslationStore> | undefined;
+): UiTranslationStore & TranslationBundleReader {
+  let storePromise: Promise<{ raw: DrizzleUiTranslationStore; bundles: DrizzleUiTranslationBundleStore }> | undefined;
+  let client: Client | undefined;
+  let circuitOpen = false;
   let reportedDegraded = false;
   const reads = new Map<string, Promise<readonly PersistentUiTranslationRow[]>>();
+  const bundleReads = new Map<string, Promise<CompiledNamespaceBundle | undefined>>();
 
-  const loadStore = () => (storePromise ??= connectStore(connectionString, createClient));
+  const loadStore = () => (storePromise ??= connectStore(connectionString, createClient, (connected) => {
+    client = connected;
+  }));
+  const reportOnce = (reason: UiTranslationStoreDegradedReason) => {
+    if (reportedDegraded) return;
+    reportedDegraded = true;
+    reportDegraded(reason);
+  };
 
   const read = async (
     locale: string,
     namespaces: readonly string[],
   ): Promise<readonly PersistentUiTranslationRow[]> => {
     if (locale === "en" || namespaces.length === 0) return [];
+    if (circuitOpen) return [];
     try {
-      return await (await loadStore()).readApproved(locale, namespaces);
+      return await (await loadStore()).raw.readApproved(locale, namespaces);
     } catch (error) {
       const reason = classifyReadFailure(error);
       if (!reason) throw error;
-      if (!reportedDegraded) {
-        reportedDegraded = true;
-        reportDegraded(reason);
-      }
+      circuitOpen = true;
+      if (client) bestEffortDiscardClient(client);
+      reportOnce(reason);
       return [];
     }
   };
@@ -70,18 +92,53 @@ export function createHyperdriveUiTranslationStore(
       }
       return pending;
     },
+    read(locale, namespace) {
+      if (locale === "en") return Promise.resolve(undefined);
+      const key = JSON.stringify([locale, namespace]);
+      let pending = bundleReads.get(key);
+      if (!pending) {
+        pending = (async () => {
+          if (circuitOpen) return undefined;
+          try {
+            return await (await loadStore()).bundles.read(locale, namespace);
+          } catch (error) {
+            if (error instanceof PersistentBundleIntegrityError) {
+              reportOnce("invalid-bundle");
+              return undefined;
+            }
+            const reason = classifyReadFailure(error);
+            if (!reason) throw error;
+            circuitOpen = true;
+            if (client) bestEffortDiscardClient(client);
+            reportOnce(reason);
+            return undefined;
+          }
+        })();
+        bundleReads.set(key, pending);
+      }
+      return pending;
+    },
   };
 }
 
-async function connectStore(connectionString: string, createClient: PostgreSqlClientFactory) {
+async function connectStore(
+  connectionString: string,
+  createClient: PostgreSqlClientFactory,
+  connected: (client: Client) => void,
+) {
   const client = createClient(connectionString);
+  connected(client);
   try {
     await client.connect();
   } catch (error) {
-    if (!isConnectAvailabilityFailure(error)) throw error;
+    if (!isPostgresAvailabilityFailure(error) && !isPostgresConnectionTimeout(error)) throw error;
     throw new UiTranslationConnectionUnavailableError({ cause: error });
   }
-  return new DrizzleUiTranslationStore(drizzle(client));
+  const database = drizzle(client);
+  return {
+    raw: new DrizzleUiTranslationStore(database),
+    bundles: new DrizzleUiTranslationBundleStore(database),
+  };
 }
 
 function classifyReadFailure(error: unknown): UiTranslationStoreDegradedReason | undefined {
@@ -94,34 +151,11 @@ function classifyReadFailure(error: unknown): UiTranslationStoreDegradedReason |
 
     const candidate = current as { cause?: unknown; code?: unknown };
     const code = typeof candidate.code === "string" ? candidate.code : undefined;
+    if (isPostgresQueryTimeout(current)) return "timeout";
     if (code && schemaMismatchCodes.has(code)) return "schema-mismatch";
-    if (code?.startsWith("08") || postgresUnavailableCodes.has(code ?? "") || isTransportUnavailableCode(code)) {
-      return "unavailable";
-    }
+    if (isPostgresAvailabilityFailure(current)) return "unavailable";
     current = candidate.cause;
   }
 
   return undefined;
-}
-
-function isConnectAvailabilityFailure(error: unknown): boolean {
-  if (
-    error instanceof TypeError ||
-    error instanceof ReferenceError ||
-    error instanceof SyntaxError ||
-    error instanceof RangeError
-  ) {
-    return false;
-  }
-
-  const code =
-    error && (typeof error === "object" || typeof error === "function")
-      ? (error as { code?: unknown }).code
-      : undefined;
-
-  if (typeof code === "string") {
-    return code.startsWith("08") || postgresUnavailableCodes.has(code) || isTransportUnavailableCode(code);
-  }
-
-  return error instanceof Error;
 }

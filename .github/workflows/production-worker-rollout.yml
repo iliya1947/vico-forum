@@ -1,0 +1,321 @@
+name: Production Worker rollout
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main SHA authorized for this rollout
+        required: true
+        type: string
+      upload_confirmation:
+        description: Enter production-worker-version-upload-confirmed
+        required: true
+        type: string
+      promote:
+        description: Promote the uploaded and pre-traffic-smoked version to 100% production traffic
+        required: true
+        default: false
+        type: boolean
+      promotion_confirmation:
+        description: If promote=true, enter production-worker-promotion-confirmed
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: production-worker-rollout
+  cancel-in-progress: false
+
+env:
+  WORKER_NAME: vico-forum
+  BASELINE_VERSION_PREFIX: 78f87645
+  PRODUCTION_BASE_URL: https://vico-forum.iliya1947a.workers.dev
+
+jobs:
+  guard:
+    name: Verify rollout authorization boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Reject non-main, rerun, SHA drift, or missing confirmation
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          UPLOAD_CONFIRMATION: ${{ inputs.upload_confirmation }}
+          PROMOTE: ${{ inputs.promote }}
+          PROMOTION_CONFIRMATION: ${{ inputs.promotion_confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          case "$EXPECTED_SHA" in
+            *[!0-9a-f]*|'') exit 1 ;;
+          esac
+          test "${#EXPECTED_SHA}" = "40"
+          test "$UPLOAD_CONFIRMATION" = "production-worker-version-upload-confirmed"
+
+          if [ "$PROMOTE" = "true" ]; then
+            test "$PROMOTION_CONFIRMATION" = "production-worker-promotion-confirmed"
+          else
+            test "$PROMOTION_CONFIRMATION" != "production-worker-promotion-confirmed"
+          fi
+
+  verify:
+    name: Verify exact revision before Cloudflare access
+    needs: guard
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_forum_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_forum_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify exact checkout
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Verify accepted migration evidence for runtime rollout
+        run: node .github/scripts/verify-runtime-migration-evidence.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Verify disposable PostgreSQL runtime contract
+        run: pnpm db:test
+      - name: Build exact Worker artifact
+        run: pnpm build
+      - name: Run repository Workers smoke
+        shell: bash
+        run: |
+          pnpm exec vite preview --host 127.0.0.1 --port 4173 > /tmp/vico-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          ./scripts/smoke-workers.sh http://127.0.0.1:4173
+
+  rollout:
+    name: Upload and optionally promote exact Worker version
+    needs:
+      - guard
+      - verify
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production-worker
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify exact checkout and pinned Wrangler
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(node -p "require('./node_modules/wrangler/package.json').version")" = "4.130.0"
+      - name: Build exact upload artifact
+        run: pnpm build
+      - name: Validate protected Environment contract
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test "${#BETTER_AUTH_SECRET}" -ge 32
+          test -n "$GOOGLE_CLIENT_SECRET"
+          test "$BETTER_AUTH_URL" = "$PRODUCTION_BASE_URL"
+          test -n "$GOOGLE_CLIENT_ID"
+      - name: Verify exact rollback baseline before any mutation
+        id: baseline
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          versions_json="$RUNNER_TEMP/worker-versions-before.json"
+          deployment_json="$RUNNER_TEMP/worker-deployment-before.json"
+
+          pnpm exec wrangler versions list --name "$WORKER_NAME" --json > "$versions_json"
+          baseline_id="$(
+            node .github/scripts/production-worker-rollout.mjs               resolve-baseline "$versions_json" "$BASELINE_VERSION_PREFIX"
+          )"
+
+          pnpm exec wrangler deployments status --name "$WORKER_NAME" --json > "$deployment_json"
+          node .github/scripts/production-worker-rollout.mjs             assert-deployment "$deployment_json" "$baseline_id"
+
+          echo "baseline_version_id=$baseline_id" >> "$GITHUB_OUTPUT"
+      - name: Upload exact version without traffic
+        id: upload
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          secrets_file="$RUNNER_TEMP/production-worker-secrets.json"
+          output_file="$RUNNER_TEMP/production-worker-wrangler-output.ndjson"
+          trap 'rm -f "$secrets_file" "$output_file"' EXIT
+          umask 077
+
+          SECRETS_FILE="$secrets_file" node --input-type=module <<'NODE'
+          import { writeFileSync } from "node:fs";
+          const values = {
+            BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+            GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+          };
+          if (!values.BETTER_AUTH_SECRET || !values.GOOGLE_CLIENT_SECRET) process.exit(1);
+          writeFileSync(process.env.SECRETS_FILE, JSON.stringify(values), { mode: 0o600 });
+          NODE
+
+          short_sha="${GITHUB_SHA:0:12}"
+          if ! WRANGLER_OUTPUT_FILE_PATH="$output_file" pnpm exec wrangler versions upload \
+            --name "$WORKER_NAME" \
+            --tag "stage6-$short_sha" \
+            --message "Stage 6 exact $GITHUB_SHA" \
+            --var "BETTER_AUTH_URL:$BETTER_AUTH_URL" \
+            --var "GOOGLE_CLIENT_ID:$GOOGLE_CLIENT_ID" \
+            --secrets-file "$secrets_file" \
+            --strict; then
+            echo "::error::Worker version upload failed before any traffic promotion."
+            exit 1
+          fi
+
+          node .github/scripts/production-worker-rollout.mjs \
+            parse-upload "$output_file" "$GITHUB_OUTPUT"
+      - name: Verify uploaded version exists
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION_ID: ${{ steps.upload.outputs.version_id }}
+        run: |
+          set -euo pipefail
+          test -n "$VERSION_ID"
+          pnpm exec wrangler versions view "$VERSION_ID" --name "$WORKER_NAME" --json > /dev/null
+      - name: Pre-traffic smoke exact Version URL
+        shell: bash
+        env:
+          VERSION_URL: ${{ steps.upload.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          test -n "$VERSION_URL"
+          bash scripts/smoke-production-worker.sh "$VERSION_URL"
+      - name: Record upload-only result
+        if: ${{ !inputs.promote }}
+        shell: bash
+        env:
+          VERSION_ID: ${{ steps.upload.outputs.version_id }}
+          VERSION_URL: ${{ steps.upload.outputs.preview_url }}
+        run: |
+          {
+            echo "## Production Worker version prepared"
+            echo
+            echo "- exact SHA: `$GITHUB_SHA`"
+            echo "- version: `$VERSION_ID`"
+            echo "- Version URL: `$VERSION_URL`"
+            echo "- production traffic: unchanged"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Promote exact version, smoke, and rollback on failure
+        if: ${{ inputs.promote }}
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION_ID: ${{ steps.upload.outputs.version_id }}
+          BASELINE_VERSION_ID: ${{ steps.baseline.outputs.baseline_version_id }}
+        run: |
+          set -euo pipefail
+
+          rollout_failed=false
+          if ! pnpm exec wrangler versions deploy             "$VERSION_ID@100%"             --name "$WORKER_NAME"             --message "Stage 6 exact $GITHUB_SHA"             -y; then
+            rollout_failed=true
+          fi
+
+          if [ "$rollout_failed" = "false" ]; then
+            if ! bash scripts/smoke-production-worker.sh "$PRODUCTION_BASE_URL"; then
+              rollout_failed=true
+            fi
+          fi
+
+          if [ "$rollout_failed" = "false" ]; then
+            production_json="$RUNNER_TEMP/worker-deployment-after.json"
+            if ! pnpm exec wrangler deployments status \
+              --name "$WORKER_NAME" \
+              --json > "$production_json"; then
+              rollout_failed=true
+            elif ! node .github/scripts/production-worker-rollout.mjs \
+              assert-deployment "$production_json" "$VERSION_ID"; then
+              rollout_failed=true
+            fi
+          fi
+
+          if [ "$rollout_failed" = "true" ]; then
+            echo "::warning::Production rollout verification failed; restoring the accepted baseline."
+            pnpm exec wrangler versions deploy               "$BASELINE_VERSION_ID@100%"               --name "$WORKER_NAME"               --message "Stage 6 automatic rollback to baseline $BASELINE_VERSION_PREFIX"               -y
+
+            rollback_json="$RUNNER_TEMP/worker-deployment-rollback.json"
+            pnpm exec wrangler deployments status --name "$WORKER_NAME" --json > "$rollback_json"
+            node .github/scripts/production-worker-rollout.mjs               assert-deployment "$rollback_json" "$BASELINE_VERSION_ID"
+            exit 1
+          fi
+
+          {
+            echo "## Production Worker rollout"
+            echo
+            echo "- exact SHA: `$GITHUB_SHA`"
+            echo "- active version: `$VERSION_ID` at 100%"
+            echo "- rollback baseline: `$BASELINE_VERSION_ID`"
+            echo "- automated public/auth/database-read smoke: passed"
+            echo "- interactive Google sign-in/session/logout smoke: still required by operator"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,16 +1,23 @@
 import { canonicalEnglishCatalog, catalogDescriptors, type UiMessageDescriptor } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
+import { IntlLocaleRulesProvider, type LocaleRulesProvider } from "./locale-rules";
+export { TranslationValidationError, validateTranslation } from "./translation-validation";
+import {
+  validateProviderOutput,
+  type ProviderTranslationValue,
+} from "./translation-validation";
 
 export interface TranslationValue {
-  value: string;
+  value: ProviderTranslationValue;
   sourceFingerprint: string;
 }
 
 export type TranslationPack = Record<string, Record<string, TranslationValue>>;
+export type TranslationSourceBundle = Record<string, Record<string, ProviderTranslationValue>>;
 export type ResourceBundle = Record<string, Record<string, string>>;
 
 export interface TranslationSourceResult {
-  resources: ResourceBundle;
+  resources: TranslationSourceBundle;
   staleKeys: string[];
   version: string;
 }
@@ -24,13 +31,14 @@ export interface TranslationPackValidation {
 }
 
 const EMPTY_RESULT: TranslationSourceResult = { resources: {}, staleKeys: [], version: "empty" };
+const defaultLocaleRules = new IntlLocaleRulesProvider();
 
 function descriptorIndex(): Map<string, UiMessageDescriptor> {
   return new Map(catalogDescriptors().map((descriptor) => [`${descriptor.namespace}:${descriptor.key}`, descriptor]));
 }
 
-function placeholders(value: string): string[] {
-  return [...value.matchAll(/{{\s*([\w.-]+)\s*}}/g)].map((match) => match[1]!).sort();
+function isCanonicalUiNamespace(namespace: string): namespace is keyof typeof canonicalEnglishCatalog {
+  return Object.hasOwn(canonicalEnglishCatalog, namespace);
 }
 
 async function resourceVersion(parts: readonly string[]): Promise<string> {
@@ -38,33 +46,21 @@ async function resourceVersion(parts: readonly string[]): Promise<string> {
   return sha256Text(JSON.stringify([...parts].sort()));
 }
 
-export function validateTranslation(descriptor: UiMessageDescriptor, value: string): void {
-  if (!value.trim()) throw new Error(`Empty translation: ${descriptor.namespace}:${descriptor.key}`);
-  if (value.length > 10_000) throw new Error(`Translation is too long: ${descriptor.namespace}:${descriptor.key}`);
-  if (/<\/?[a-z][^>]*>/i.test(value)) {
-    throw new Error(`Markup is forbidden: ${descriptor.namespace}:${descriptor.key}`);
-  }
-  const expected = [...descriptor.placeholders].sort();
-  if (JSON.stringify(placeholders(value)) !== JSON.stringify(expected)) {
-    throw new Error(`Placeholder mismatch: ${descriptor.namespace}:${descriptor.key}`);
-  }
-  if (descriptor.messageKind === "plural" && !descriptor.placeholders.includes("count")) {
-    throw new Error(`Plural message requires count: ${descriptor.namespace}:${descriptor.key}`);
-  }
-}
-
 export class CanonicalEnglishSource implements TranslationSource {
+  constructor(private readonly localeRules: LocaleRulesProvider = defaultLocaleRules) {}
+
   async load(locale: string, namespaces: readonly string[]): Promise<TranslationSourceResult> {
     if (locale !== "en") return EMPTY_RESULT;
-    const resources: ResourceBundle = {};
+    const resources: TranslationSourceBundle = {};
     const versionParts: string[] = [];
     for (const namespace of namespaces) {
-      const messages = canonicalEnglishCatalog[namespace as keyof typeof canonicalEnglishCatalog];
-      if (!messages) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      const messages = canonicalEnglishCatalog[namespace];
       resources[namespace] = {};
       for (const descriptor of Object.values(messages) as UiMessageDescriptor[]) {
-        validateTranslation(descriptor, descriptor.source);
-        resources[namespace]![descriptor.key] = descriptor.source;
+        const source = descriptor.source;
+        validateProviderOutput(descriptor, "en", source, this.localeRules);
+        resources[namespace]![descriptor.key] = source;
         const fingerprint = await sourceFingerprint(descriptor);
         versionParts.push(JSON.stringify([namespace, descriptor.key, fingerprint]));
       }
@@ -76,7 +72,10 @@ export class CanonicalEnglishSource implements TranslationSource {
 export class LocalTranslationSource implements TranslationSource {
   readonly #packs: Readonly<Record<string, TranslationPack>>;
 
-  constructor(packs: Readonly<Record<string, TranslationPack>>) {
+  constructor(
+    packs: Readonly<Record<string, TranslationPack>>,
+    private readonly localeRules: LocaleRulesProvider = defaultLocaleRules,
+  ) {
     this.#packs = packs;
   }
 
@@ -85,13 +84,13 @@ export class LocalTranslationSource implements TranslationSource {
     const pack = this.#packs[locale];
     if (!pack) return EMPTY_RESULT;
     const known = descriptorIndex();
-    const resources: ResourceBundle = {};
+    const resources: TranslationSourceBundle = {};
     const staleKeys: string[] = [];
     const versionParts: string[] = [];
 
     for (const [namespace, messages] of Object.entries(pack)) {
       if (!namespaces.includes(namespace)) continue;
-      if (!(namespace in canonicalEnglishCatalog)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
       for (const [key, translation] of Object.entries(messages)) {
         const identity = `${namespace}:${key}`;
         const descriptor = known.get(identity);
@@ -101,9 +100,13 @@ export class LocalTranslationSource implements TranslationSource {
           staleKeys.push(identity);
           continue;
         }
-        validateTranslation(descriptor, translation.value);
+        validateProviderOutput(descriptor, locale, translation.value, this.localeRules);
         (resources[namespace] ??= {})[key] = translation.value;
-        versionParts.push(JSON.stringify([identity, translation.sourceFingerprint, translation.value]));
+        versionParts.push(JSON.stringify([
+          identity,
+          translation.sourceFingerprint,
+          canonicalPayload(translation.value),
+        ]));
       }
     }
     return { resources, staleKeys, version: await resourceVersion(versionParts) };
@@ -112,13 +115,14 @@ export class LocalTranslationSource implements TranslationSource {
 
 export async function validateTranslationPacks(
   packs: Readonly<Record<string, TranslationPack>>,
+  localeRules: LocaleRulesProvider = defaultLocaleRules,
 ): Promise<TranslationPackValidation> {
   const known = descriptorIndex();
   const staleKeys: Record<string, string[]> = {};
 
   for (const [locale, pack] of Object.entries(packs)) {
     for (const [namespace, messages] of Object.entries(pack)) {
-      if (!(namespace in canonicalEnglishCatalog)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
       for (const [key, translation] of Object.entries(messages)) {
         const identity = `${namespace}:${key}`;
         const descriptor = known.get(identity);
@@ -128,10 +132,19 @@ export async function validateTranslationPacks(
           (staleKeys[locale] ??= []).push(identity);
           continue;
         }
-        validateTranslation(descriptor, translation.value);
+        validateProviderOutput(descriptor, locale, translation.value, localeRules);
       }
     }
   }
 
   return { staleKeys };
+}
+
+export function canonicalPayload(value: ProviderTranslationValue): ProviderTranslationValue {
+  if (typeof value === "string") return value;
+  return Object.fromEntries(Object.entries(value).sort(([left], [right]) => deterministicCompare(left, right)));
+}
+
+function deterministicCompare(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }

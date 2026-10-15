@@ -7,6 +7,23 @@ describe("localized route shape", () => {
     const localeRoute = routes.find((candidate) => candidate.path === ":locale");
     expect(localeRoute?.children).toEqual([
       expect.objectContaining({ index: true, file: "routes/home.tsx" }),
+      expect.objectContaining({ path: "categories/:categoryId", file: "routes/category.tsx" }),
+      expect.objectContaining({ path: "sections/:sectionId", file: "routes/section.tsx" }),
+      expect.objectContaining({ path: "topics/:topicId", file: "routes/topic.tsx" }),
+      expect.objectContaining({ path: "search", file: "routes/search.tsx" }),
+      expect.objectContaining({ path: "popular", file: "routes/popular.tsx" }),
+      expect.objectContaining({ path: "unanswered", file: "routes/unanswered.tsx" }),
+      expect.objectContaining({ path: "unread", file: "routes/unread.tsx" }),
+      expect.objectContaining({ path: "users/:userId", file: "routes/profile.tsx" }),
+      expect.objectContaining({ path: "sign-in", file: "routes/credential-sign-in.tsx" }),
+      expect.objectContaining({ path: "sign-up", file: "routes/credential-sign-up.tsx" }),
+      expect.objectContaining({ path: "presence", file: "routes/presence.ts" }),
+      expect.objectContaining({ path: "notifications", file: "routes/notifications.tsx" }),
+      expect.objectContaining({ path: "attention", file: "routes/attention.tsx" }),
+      expect.objectContaining({ path: "tags", file: "routes/tags.tsx" }),
+      expect.objectContaining({ path: "tags/:tagKey", file: "routes/tag.tsx" }),
+      expect.objectContaining({ path: "admin/authorization", file: "routes/authorization-admin.tsx" }),
+      expect.objectContaining({ path: "under-development", file: "routes/under-development.tsx" }),
       expect.objectContaining({ path: "*", file: "routes/not-found.ts" }),
     ]);
   });

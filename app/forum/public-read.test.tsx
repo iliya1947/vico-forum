@@ -1,0 +1,2672 @@
+import "@testing-library/jest-dom/vitest";
+import type { ComponentType } from "react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { I18nextProvider } from "react-i18next";
+import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import {
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
+} from "../../db/forum-identifiers";
+import { authSessionContext } from "../auth/request-context";
+import { authorizationContext } from "../authorization/request-context";
+import { canonicalEnglishCatalog } from "../localization/catalog";
+import { createTranslationRuntime } from "../localization/runtime";
+import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
+import type { StoredContentTranslation } from "../localization/content-translation";
+import { localeRegistry } from "../localization/registry";
+import {
+  contentTranslationPresentationContext,
+  localeContext,
+  registryLoaderContext,
+} from "../localization/request-context";
+import CategoryRoute, { loader as categoryLoader } from "../routes/category";
+import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
+import Home, { loader as homeLoader } from "../routes/home";
+import PopularRoute, { loader as popularLoader } from "../routes/popular";
+import SearchRoute, { loader as searchLoader } from "../routes/search";
+import TagsRoute, { loader as tagsLoader } from "../routes/tags";
+import TagRoute, { loader as tagLoader } from "../routes/tag";
+import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
+import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
+import SectionRoute, { loader as sectionLoader } from "../routes/section";
+import TopicRoute, { loader as topicLoader } from "../routes/topic";
+import { forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
+import { forumReaderContext, forumWriterContext } from "./request-context";
+
+const category = {
+  id: "development/core",
+  name: "Development",
+  sections: [{
+    id: "typescript/basics",
+    name: "TypeScript",
+    topicCount: 1,
+    postCount: 1,
+    pinnedTopics: [{
+      id: "typed/api",
+      title: "How do I type an API?",
+      authorName: "Ada",
+      activityAt: new Date("2026-01-02"),
+    }],
+    latestTopics: [{
+      id: "typed/api",
+      title: "How do I type an API?",
+      authorName: "Ada",
+      activityAt: new Date("2026-01-02"),
+    }],
+  }],
+};
+const section = {
+  id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" },
+  topics: [{
+    id: "typed/api", authorName: "Ada", postCount: 1, createdAt: new Date("2026-01-01"),
+    isPinned: true,
+    tags: [{ key: "typescript", name: "TypeScript" }],
+    title: { id: "title-r1", originalContent: "How do I type an API?", sourceLocale: "en" },
+  }],
+};
+const topic = {
+  id: "typed/api", sectionId: "typescript/basics", authorId: "ada", authorName: "Ada", createdAt: new Date("2026-01-01"),
+  isPinned: true, isSolved: false, bestAnswerPostId: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false,
+  title: section.topics[0]!.title,
+  section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
+  tags: [{ key: "typescript", name: "TypeScript" }],
+  posts: [{
+    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", parentPostId: null, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: new Date("2026-01-02"),
+    body: { id: "post-r1", originalContent: "Start with an explicit response type.", sourceLocale: "en" },
+  }],
+};
+
+const helpTopic = {
+  id: "help-question", sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "ada", authorName: "Ada",
+  createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer", needsDetails: false, duplicateOf: null, duplicateDisputed: false,
+  title: { id: "help-title-r1", originalContent: "Why does my Worker lose auth state?", sourceLocale: "en" },
+  section: {
+    id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions",
+    category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
+  },
+  tags: [{ key: "cloudflare", name: "Cloudflare" }],
+  posts: [
+    {
+      id: "help-question-post", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: null,
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+      createdAt: new Date("2026-01-03"),
+      body: { id: "help-question-body", originalContent: "The session disappears after redirect.", sourceLocale: "en" },
+    },
+    {
+      id: "help-answer", topicId: "help-question", authorId: "lin", authorName: "Lin", parentPostId: "help-question-post",
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+      createdAt: new Date("2026-01-04"),
+      body: { id: "help-answer-body", originalContent: "Check the callback cookie boundary.", sourceLocale: "en" },
+    },
+    {
+      id: "help-followup", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: "help-answer",
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+      createdAt: new Date("2026-01-05"),
+      body: { id: "help-followup-body", originalContent: "That helped, but the issue is not fully solved.", sourceLocale: "en" },
+    },
+  ],
+};
+
+const helpPage = {
+  id: HELP_SOLUTIONS_CATEGORY_ID,
+  name: "Help & solutions",
+  questions: [{
+    id: helpTopic.id,
+    title: helpTopic.title.originalContent,
+    authorName: helpTopic.authorName,
+    replyCount: 2,
+    isSolved: false,
+    hasBestAnswer: true,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
+    solutionOutdatedReasonKind: null,
+    needsDetails: helpTopic.needsDetails,
+    duplicateOf: helpTopic.duplicateOf,
+    duplicateDisputed: helpTopic.duplicateDisputed,
+    createdAt: helpTopic.createdAt,
+    activityAt: helpTopic.posts.at(-1)!.createdAt,
+    tags: helpTopic.tags,
+  }],
+};
+const solvedHelpPage = {
+  ...helpPage,
+  questions: helpPage.questions.map((question) => ({ ...question, isSolved: true })),
+};
+const needsAttentionHelpPage = {
+  ...helpPage,
+  questions: helpPage.questions.map((question) => ({
+    ...question,
+    // Questions with replies are actionable only because a pending moderation signal exists.
+    attention: { signals: { "needs-details": 1, duplicate: 1 }, totalSignals: 2, appeal: true },
+  })),
+};
+const wantToHelpPage = {
+  ...helpPage,
+  questions: helpPage.questions.map((question) => ({
+    ...question,
+    authorName: "Lin",
+    isSolved: false,
+  })),
+};
+const forMePage = {
+  ...wantToHelpPage,
+  questions: wantToHelpPage.questions.map((question) => ({
+    ...question,
+    tags: [{ key: "workers", name: "Workers" }],
+  })),
+};
+
+const reader: ForumReader = {
+  readProfile: async () => undefined,
+  listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
+  readHomepage: async () => [{
+    id: category.id,
+    name: category.name,
+    sectionCount: 1,
+    topicCount: 1,
+    messageCount: 1,
+    sections: [{
+      id: section.id,
+      name: section.name,
+      topicCount: 1,
+      messageCount: 1,
+    }],
+  }],
+  readPopular: async () => ({
+    "24h": [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityCount: 3,
+      latestActivityAt: topic.posts[0]!.createdAt,
+    }],
+    "7d": [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityCount: 5,
+      latestActivityAt: topic.posts[0]!.createdAt,
+    }],
+    "30d": [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityCount: 8,
+      latestActivityAt: topic.posts[0]!.createdAt,
+    }],
+  }),
+  readUnanswered: async () => [{
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    createdAt: topic.createdAt,
+    section: topic.section,
+    category: topic.section.category,
+  }],
+  readTags: async () => [{ key: "typescript", name: "TypeScript", topicCount: 1 }],
+  readTag: async (key) => key === "typescript" ? {
+    tag: { key: "typescript", name: "TypeScript" },
+    topics: [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      postCount: topic.posts.length,
+      createdAt: topic.createdAt,
+      section: { id: topic.section.id, name: topic.section.name },
+      category: topic.section.category,
+      tags: topic.tags,
+    }],
+  } : undefined,
+  readUnreadForUser: async () => [{
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    state: "new" as const,
+    firstUnreadPostId: topic.posts[0]!.id,
+    latestPostId: topic.posts.at(-1)!.id,
+    unreadCount: topic.posts.length,
+    activityAt: topic.posts.at(-1)!.createdAt,
+    section: { id: topic.section.id, name: topic.section.name },
+    category: topic.section.category,
+  }],
+  readTopicReadState: async (_userId, id) => id === topic.id ? {
+    topicId: topic.id,
+    state: "new" as const,
+    lastReadPostId: null,
+    firstUnreadPostId: topic.posts[0]!.id,
+    latestPostId: topic.posts.at(-1)!.id,
+  } : undefined,
+  readOnlinePresence: async () => ({ count: 1, members: [{ id: "lin", name: "Lin", image: null }] }),
+  readReplyNotifications: async () => [],
+  countUnreadReplyNotifications: async () => 0,
+  readTopicPinState: async (id) => id === topic.id,
+  readHelpSolutionsAll: async () => helpPage,
+  readHelpSolutionsOpen: async () => helpPage,
+  readHelpSolutionsActive: async () => helpPage,
+  readHelpSolutionsNeedsAttention: async () => needsAttentionHelpPage,
+  readHelpAttentionCases: async (_group, _visibility, page = 0) => ({ cases: [], hasMore: false, page }),
+  readHelpAttentionCounts: async () => ({ "needs-details": 0, "needs-review": 0, "solution-outdated": 0, duplicate: 0, appeals: 0, mixed: 0 }),
+  readHelpSolutionsSolved: async () => solvedHelpPage,
+  readHelpSolutionsMine: async () => helpPage,
+  readHelpSolutionsWantToHelp: async () => wantToHelpPage,
+  readHelpSolutionsForMe: async () => forMePage,
+  searchHelpSolutionsSimilar: async () => [],
+  readPendingHelpDuplicateAppeal: async () => undefined,
+  readHelpSignal: async () => undefined,
+  search: async (query) => query.toLowerCase().includes("type") ? [{
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    postCount: topic.posts.length,
+    activityAt: topic.posts[0]!.createdAt,
+    section: { id: topic.section.id, name: topic.section.name },
+    category: topic.section.category,
+    tags: topic.tags,
+  }] : [],
+  readCategory: async (id) => id === category.id ? category : undefined,
+  readSection: async (id) => id === section.id ? section : undefined,
+  readTopicPage: async (id) => id === topic.id ? topic : id === helpTopic.id ? helpTopic : undefined,
+};
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+function context(
+  locale = "en",
+  direction: "ltr" | "rtl" = locale === "he" ? "rtl" : "ltr",
+  translations: readonly StoredContentTranslation[] = [],
+) {
+  const value = new RouterContextProvider();
+  value.set(forumReaderContext, reader);
+  value.set(localeContext, {
+    translationLocale: locale,
+    fallbackLocales: locale === "en" ? [] : ["en"],
+    direction,
+    formatting: { locale, timeZone: "UTC" },
+    nativeName: locale,
+    presentationMetadata: {},
+  });
+  value.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test",
+    health: { status: "healthy" as const },
+  }));
+  value.set(
+    contentTranslationPresentationContext,
+    new ContentTranslationPresentationService({
+      readBatch: async () => ({ translations }),
+    }),
+  );
+  return value;
+}
+
+function originalPresentation(
+  contentType: "topic-title" | "post-body",
+  contentId: string,
+  revision: { id: string; originalContent: string; sourceLocale: string },
+): ContentTranslationPresentation {
+  const originalLocale = revision.sourceLocale === "und" ? undefined : revision.sourceLocale;
+  return {
+    contentType,
+    contentId,
+    revisionId: revision.id,
+    selected: "original",
+    content: revision.originalContent,
+    contentLocale: originalLocale,
+    contentDirection: originalLocale === "he" ? "rtl" : originalLocale ? "ltr" : "auto",
+    originalContent: revision.originalContent,
+    originalLocale,
+    originalDirection: originalLocale === "he" ? "rtl" : originalLocale ? "ltr" : "auto",
+    fallbackReason: "missing",
+  };
+}
+
+function topicRenderData(
+  value: ForumTopicPage = topic,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    locale: "en",
+    topic: value,
+    titlePresentation: originalPresentation("topic-title", value.id, value.title),
+    postPresentations: value.posts.map((post) =>
+      originalPresentation("post-body", post.id, post.body)
+    ),
+    generationUnits: [],
+    canReply: false,
+    canManageSolution: false,
+    canManageAnySolution: false,
+    isTopicAuthor: false,
+    canCorrectTitleSourceLocale: false,
+    canCorrectAnySourceLocale: false,
+    canManagePin: false,
+    canUseAdminPanel: false,
+    correctablePostIds: [],
+    topicReadState: null,
+    ...overrides,
+  };
+}
+
+function canonicalCommonResources(): Record<string, string> {
+  const resources: Record<string, string> = {};
+  for (const [key, descriptor] of Object.entries(canonicalEnglishCatalog.common)) {
+    if (typeof descriptor.source === "string") {
+      resources[key] = descriptor.source;
+      continue;
+    }
+    for (const [branch, value] of Object.entries(descriptor.source)) {
+      resources[`${key}_${branch}`] = value;
+    }
+  }
+  return resources;
+}
+
+function runtime(locale: string, direction: "ltr" | "rtl") {
+  const common = canonicalCommonResources();
+  return createTranslationRuntime({
+    locale: { translationLocale: locale, fallbackLocales: locale === "en" ? [] : ["en"], direction, formatting: { locale, timeZone: "UTC" }, nativeName: locale, presentationMetadata: {} },
+    fallbackLocales: locale === "en" ? [] : ["en"], resourcesByLocale: { en: { common } }, bundleVersions: { en: { common: "test" } }, staleKeys: {},
+  });
+}
+
+function renderRoute(Component: ComponentType, data: unknown, path: string, locale: string, direction: "ltr" | "rtl") {
+  const router = createMemoryRouter([{ id: "page", path: "*", Component, loader: () => data }], {
+    initialEntries: [path],
+  });
+  return render(<div lang={locale} dir={direction}><I18nextProvider i18n={runtime(locale, direction)}><RouterProvider router={router} /></I18nextProvider></div>);
+}
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("public forum read flow ($locale)", ({ locale, direction }) => {
+  it("loads and links category → section → topic → posts with the canonical locale", async () => {
+    const requestContext = context(locale, direction);
+    const home = await homeLoader({ params: { locale }, context: requestContext });
+    const categoryData = await categoryLoader({ params: { locale, categoryId: category.id }, context: requestContext });
+    const sectionData = await sectionLoader({ params: { locale, sectionId: section.id }, context: requestContext });
+    const topicData = await topicLoader({ params: { locale, topicId: topic.id }, context: requestContext });
+
+    expect(home.categories).toHaveLength(1);
+    expect(home.onlinePresence).toMatchObject({ count: 1, members: [{ id: "lin", name: "Lin" }] });
+    expect(categoryData.kind).toBe("category");
+    if (categoryData.kind !== "category") throw new Error("expected regular category page");
+    expect(categoryData.category.sections).toHaveLength(1);
+    expect(sectionData.section.topics).toHaveLength(1);
+    expect(topicData.topic.posts[0]?.body.originalContent).toBe("Start with an explicit response type.");
+    expect(topicData.generationUnits).toEqual([]);
+
+    const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
+    expect(await screen.findByRole("link", { name: "Development" }))
+      .toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(screen.getByRole("link", { name: /TypeScript/ }))
+      .toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    expect(screen.queryByRole("button", { name: "Development" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lin" })).toHaveAttribute("href", `/${locale}/users/lin`);
+    expect(document.querySelector(".home-online-members")).toHaveTextContent("Lin");
+    expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
+    homeView.unmount();
+
+    const categoryView = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, category.id), locale, direction);
+    const categorySectionLink = await screen.findByRole("link", { name: "TypeScript" });
+    expect(categorySectionLink).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    expect(categorySectionLink.closest("article")).toHaveClass("home-section-card");
+    expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
+    categoryView.unmount();
+
+    const sectionView = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, section.id), locale, direction);
+    expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    const sectionTopicLink = await screen.findByRole("link", { name: /How do I type an API\?/ });
+    expect(sectionTopicLink).toHaveAttribute("href", `/${locale}/topics/typed%2Fapi`);
+    expect(sectionTopicLink).toHaveClass("section-topic-card");
+    sectionView.unmount();
+
+    renderRoute(TopicRoute, topicData, forumTopicPath(locale, topic.id), locale, direction);
+    expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(await screen.findByRole("link", { name: "TypeScript" })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    expect(await screen.findByText("Start with an explicit response type.")).toBeInTheDocument();
+    const messageAuthor = document.querySelector(".topic-shell .topic-message .topic-message-author");
+    const authorLink = messageAuthor?.querySelector(".topic-message-profile-link");
+    expect(authorLink).toHaveAttribute("href", `/${locale}/users/lin`);
+    expect(authorLink).toHaveClass("topic-message-profile-link");
+    expect(authorLink?.querySelector(".topic-message-avatar")).toBeInTheDocument();
+    expect(authorLink?.querySelector(".topic-message-author-copy > strong")).toHaveTextContent("Lin");
+    expect(messageAuthor?.querySelector(".topic-message-author-statuses")).toBeInTheDocument();
+  });
+});
+
+describe("optional homepage presence failures", () => {
+  it("keeps categories available when online presence storage is temporarily unavailable", async () => {
+    const ctx = context();
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readOnlinePresence: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const data = await homeLoader({ params: { locale: "en" }, context: ctx });
+    expect(data.categories).toHaveLength(1);
+    expect(data.onlinePresence).toBeNull();
+    const page = renderRoute(Home, data, "/en", "en", "ltr");
+    expect(await screen.findByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
+    page.unmount();
+  });
+
+  it("does not swallow unexpected online reader defects", async () => {
+    const ctx = context();
+    const bug = new Error("unexpected");
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readOnlinePresence: async () => { throw bug; },
+    });
+    await expect(homeLoader({ params: { locale: "en" }, context: ctx })).rejects.toBe(bug);
+  });
+});
+
+describe("Help & solutions modes and authoring", () => {
+  it("renders real service-section questions and keeps the storage section out of navigation", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({
+        id: helpTopic.id, replyCount: 2, isSolved: false, hasBestAnswer: true,
+      }),
+    ]);
+
+    const pageView = renderRoute(
+      CategoryRoute, data, forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID), "en", "ltr",
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeVisible();
+    expect(screen.getByText("All")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Needs help" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
+    expect(screen.queryByRole("link", { name: "Want to help" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "For me" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Active" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active");
+    expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Solutions" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
+    expect(screen.queryByRole("link", { name: "My questions" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
+    expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
+    expect(screen.getByText("Open")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
+    expect(screen.getByText("2 replies")).toBeVisible();
+    expect(screen.getByText("#Cloudflare")).toBeVisible();
+    expect(screen.getByRole("link", { name: /Why does my Worker lose auth state/ }))
+      .toHaveAttribute("href", forumTopicPath("en", helpTopic.id));
+    pageView.unmount();
+
+    const topicData = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: requestContext,
+    });
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    expect(await screen.findByRole("link", { name: "Help & solutions" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
+    expect(screen.queryByRole("link", { name: "Questions" })).not.toBeInTheDocument();
+    expect(document.querySelector(`a[href="/en/sections/${HELP_SOLUTIONS_SERVICE_SECTION_ID}"]`)).toBeNull();
+  });
+
+  it("shows dedicated question authoring only when topic creation is allowed", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "session-user",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session",
+        token: "token",
+        userId: "session-user",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.topic.create"),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.canAskQuestion).toBe(true);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID),
+      "en",
+      "ltr",
+    );
+
+    const askButton = await screen.findByRole("button", { name: "Ask a question" });
+    expect(askButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Want to help" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=help");
+    expect(screen.getByRole("link", { name: "For me" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=for-me");
+    expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
+
+    fireEvent.click(askButton);
+
+    expect(askButton).toHaveAttribute("aria-expanded", "true");
+    const form = await screen.findByRole("form", { name: "Ask a question" });
+    expect(within(form).getByLabelText("Question title")).toBeRequired();
+    const questionDetails = within(form).getByLabelText("Question details");
+    expect(questionDetails).toBeRequired();
+    expect(within(form).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(form).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    fireEvent.change(questionDetails, { target: { value: "Draft body with **Markdown**." } });
+    expect(new FormData(form as HTMLFormElement).get("body")).toBe("Draft body with **Markdown**.");
+    expect(within(form).getByLabelText("Tags")).not.toBeRequired();
+    const similarButton = within(form).getByRole("button", { name: "Check similar questions" });
+    expect(similarButton).toBeEnabled();
+    expect(similarButton).toHaveAttribute("name", "intent");
+    expect(similarButton).toHaveAttribute("value", "checkSimilarHelpQuestions");
+    const askQuestionButton = within(form).getByRole("button", { name: "Ask question" });
+    expect(askQuestionButton).toBeEnabled();
+    expect(askQuestionButton).toHaveAttribute("name", "intent");
+    expect(askQuestionButton).toHaveAttribute("value", "createHelpQuestion");
+    expect(within(form).queryByText("All fields are required.")).not.toBeInTheDocument();
+    expect(form.querySelector('input[name="intent"]')).toBeNull();
+    expect(form.querySelector('[name="sectionId"]')).toBeNull();
+  });
+
+  it("shows Needs help from persisted unsolved questions and falls back unknown modes to All", async () => {
+    const requestContext = context("en", "ltr");
+    const openData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=open"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(openData.kind).toBe("help-solutions");
+    if (openData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(openData.mode).toBe("open");
+    expect(openData.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, isSolved: false }),
+    ]);
+
+    const openView = renderRoute(
+      CategoryRoute,
+      openData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Needs help" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions needing help" })).toBeVisible();
+    expect(screen.getByText("Open")).toBeVisible();
+    openView.unmount();
+
+    const unknownData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=unknown"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    expect(unknownData.kind).toBe("help-solutions");
+    if (unknownData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(unknownData.mode).toBe("all");
+    expect(unknownData.page.questions).toHaveLength(1);
+  });
+
+  it("combines Help filters at the reader boundary and preserves them across modes", async () => {
+    const filters = {
+      solution: "open" as const,
+      answers: "has" as const,
+      quality: "needs-details" as const,
+      relation: "standalone" as const,
+    };
+    const combinedPage = {
+      ...helpPage,
+      questions: helpPage.questions.map((question) => ({
+        ...question,
+        needsDetails: true,
+        duplicateOf: null,
+      })),
+    };
+    const readActive = vi.fn(async () => combinedPage);
+    const requestContext = context("en", "ltr");
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsActive: readActive,
+    });
+
+    const url = "https://forum.example/en/categories/help-solutions?mode=active&solution=open&answers=has&quality=needs-details&relation=standalone";
+    const data = await categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.filters).toEqual(filters);
+    expect(readActive).toHaveBeenCalledWith(filters);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      "/en/categories/help-solutions?mode=active&solution=open&answers=has&quality=needs-details&relation=standalone",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("open");
+    expect(screen.getByRole("combobox", { name: "Answers" })).toHaveValue("has");
+    expect(screen.getByRole("combobox", { name: "Quality" })).toHaveValue("needs-details");
+    expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("standalone");
+    expect(document.querySelector(".help-question-quality.is-needs-details")).toHaveTextContent("Needs details");
+    expect(screen.queryByRole("option", { name: "Needs review" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Solutions" })).toHaveAttribute(
+      "href",
+      "/en/categories/help-solutions?mode=solutions&solution=open&answers=has&quality=needs-details&relation=standalone",
+    );
+    expect(screen.getByRole("link", { name: "Reset" })).toHaveAttribute(
+      "href",
+      "/en/categories/help-solutions?mode=active",
+    );
+  });
+
+  it("keeps the Needs review filter behind solution moderation permission", async () => {
+    const url = "https://forum.example/en/categories/help-solutions?solution=needs-review";
+    const readAll = vi.fn(async () => helpPage);
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    await expect(categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readAll).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "filter-user",
+        name: "Filter user",
+        email: "filter-user@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "filter-user-session",
+        token: "filter-user-token",
+        userId: "filter-user",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    await expect(categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    })).rejects.toMatchObject({ status: 403 });
+    expect(readAll).not.toHaveBeenCalled();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: {
+        id: "filter-manager",
+        name: "Filter manager",
+        email: "filter-manager@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "filter-manager-session",
+        token: "filter-manager-token",
+        userId: "filter-manager",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    managerContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(readAll).toHaveBeenCalledWith({ solution: "needs-review" });
+    expect(data.canViewSolutionModeration).toBe(true);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      "/en/categories/help-solutions?solution=needs-review",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
+    expect(screen.getByRole("option", { name: "Needs review" })).toBeVisible();
+  });
+
+  it("shows Want to help only to authenticated users and binds exclusion to the session identity", async () => {
+    const helpUrl = "https://forum.example/en/categories/help-solutions?mode=help&userId=lin";
+    const readWantToHelp = vi.fn(async () => wantToHelpPage);
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsWantToHelp: readWantToHelp });
+    await expect(categoryLoader({
+      request: new Request(helpUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readWantToHelp).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-help",
+        token: "token-help",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsWantToHelp: readWantToHelp });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request(helpUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    });
+
+    expect(readWantToHelp).toHaveBeenCalledWith("ada", {});
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("help");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, authorName: "Lin", isSolved: false }),
+    ]);
+
+    const helpView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=help",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Want to help" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions you can help with" })).toBeVisible();
+    helpView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(authSessionContext, userContext.get(authSessionContext));
+    emptyContext.set(authorizationContext, userContext.get(authorizationContext));
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsWantToHelp: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=help"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=help",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no open questions from other users right now.")).toBeVisible();
+  });
+
+  it("shows For me only to authenticated users and binds recommendation signals to the session identity", async () => {
+    const forMeUrl = "https://forum.example/en/categories/help-solutions?mode=for-me&userId=lin&tags=postgresql";
+    const readForMe = vi.fn(async () => forMePage);
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe });
+    await expect(categoryLoader({
+      request: new Request(forMeUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readForMe).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-for-me",
+        token: "token-for-me",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request(forMeUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    });
+
+    expect(readForMe).toHaveBeenCalledWith("ada", {});
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("for-me");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, authorName: "Lin", isSolved: false }),
+    ]);
+
+    const forMeView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=for-me",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "For me" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions for you" })).toBeVisible();
+    forMeView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(authSessionContext, userContext.get(authSessionContext));
+    emptyContext.set(authorizationContext, userContext.get(authorizationContext));
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsForMe: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=for-me"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=for-me",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no matching open questions for you right now.")).toBeVisible();
+  });
+
+  it("shows Active questions with replies and renders its empty state", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=active"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("active");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, replyCount: 2 }),
+    ]);
+
+    const activeView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Active" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Active questions" })).toBeVisible();
+    expect(screen.getByText("2 replies")).toBeVisible();
+    activeView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsActive: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=active"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no active questions right now.")).toBeVisible();
+  });
+
+  it("presents the protected moderator queue as individual actionable cases", async () => {
+    const legacyPath = forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention";
+    const guestContext = context("en", "ltr");
+    const readQueueCounts = vi.fn(async () => ({
+      "needs-details": 2, "needs-review": 1, "solution-outdated": 0,
+      duplicate: 1, appeals: 1, mixed: 1,
+    }));
+    const readQueue = vi.fn(async (_group: string, _visibility: unknown, page = 0) => ({
+      cases: [{
+        type: "signal" as const, id: "report-123", kind: "needs-details" as const,
+        topicId: "help/topic", topicTitle: "Why are sessions lost?",
+        submittedByUserId: "alice", submittedByName: "Alice",
+        explanation: "Please include the session configuration.",
+        createdAt: new Date("2026-10-10T12:00:00Z"),
+        targetPostId: null, original: null,
+      }],
+      hasMore: true, page,
+    }));
+    guestContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue });
+    await expect(categoryLoader({
+      request: new Request(`https://forum.example${legacyPath}`),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: guestContext,
+    })).rejects.toMatchObject({ status: 302 });
+
+    await expect(attentionLoader({
+      request: new Request("https://forum.example/en/attention"),
+      params: { locale: "en" }, context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+
+    const regularContext = context("en", "ltr");
+    regularContext.set(authSessionContext, {
+      user: { id: "regular-user", name: "User", email: "u@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "user-session", token: "u-token", userId: "regular-user", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    regularContext.set(authorizationContext, {
+      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async (permission) => permission === "forum.topic.create") }),
+    } as never);
+    regularContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue });
+    await expect(attentionLoader({
+      request: new Request("https://forum.example/en/attention"),
+      params: { locale: "en" }, context: regularContext,
+    })).rejects.toMatchObject({ status: 403 });
+    expect(readQueue).not.toHaveBeenCalled();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "m@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "m-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => [
+          "forum.solution.manageAny", "forum.helpDuplicate.manage", "forum.helpNeedsDetails.manage",
+        ].includes(permission)),
+      }),
+    } as never);
+    managerContext.set(forumReaderContext, { ...reader, readHelpAttentionCases: readQueue, readHelpAttentionCounts: readQueueCounts });
+    const signals = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=signals&group=needs-details&page=1"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(signals.mode).toBe("signals");
+    expect(readQueue).toHaveBeenCalledWith("needs-details", {
+      signalKinds: ["needs-details", "needs-review", "solution-outdated", "duplicate"],
+      appeals: true,
+    }, 1);
+    const view = renderRoute(AttentionRoute, signals, "/en/attention?mode=signals&group=needs-details&page=1", "en", "ltr");
+    expect(await screen.findByRole("heading", { level: 1, name: "Needs attention" })).toBeVisible();
+    expect(screen.queryByText("Moderation")).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Attention groups" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "Attention modes" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Signals" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Mixed (1)" })).toHaveAttribute("href", "/en/attention?mode=signals&group=mixed");
+    expect(screen.getByRole("link", { name: "Needs details (2)" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Please include the session configuration.")).toBeVisible();
+    expect(screen.getByText("Alice")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept signal" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reject signal" })).toBeEnabled();
+    expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute("href", "/en/attention?mode=signals&group=needs-details&page=2");
+    expect(screen.getByRole("link", { name: "Previous" })).toHaveAttribute("href", "/en/attention?mode=signals&group=needs-details");
+    view.unmount();
+
+    const calls = readQueue.mock.calls.length;
+    const complaints = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=complaints&group=group2"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(complaints).toMatchObject({ mode: "complaints", group: "group2", queue: null });
+    expect(readQueue).toHaveBeenCalledTimes(calls);
+    expect(readQueueCounts).toHaveBeenCalledTimes(calls);
+    expect(readQueueCounts).toHaveBeenCalledTimes(calls);
+    const complaintView = renderRoute(AttentionRoute, complaints, "/en/attention?mode=complaints&group=group2", "en", "ltr");
+    expect(await screen.findByRole("link", { name: "Group 2" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("This section is not connected yet.")).toBeVisible();
+    complaintView.unmount();
+
+    const security = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=security"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(security).toMatchObject({ mode: "security", group: "group1", queue: null });
+    expect(readQueue).toHaveBeenCalledTimes(calls);
+  });
+
+  it("requires origin and effective per-kind permission before processing a signal", async () => {
+    const ctx = context("en", "ltr");
+    const resolveHelpSignal = vi.fn(async () => {});
+    const sampleSignal = {
+      id: "signal-1", kind: "needs-details" as const,
+      topicId: "help-1", targetPostId: null, proposedOriginalTopicId: null,
+      submittedByUserId: "reporter", explanation: "Needs context",
+      status: "pending" as const, createdAt: new Date(),
+      resolvedByUserId: null, resolvedAt: null,
+    };
+    ctx.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "m@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "m-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    const has = vi.fn(async (permission: string) => permission === "forum.helpNeedsDetails.manage");
+    ctx.set(authorizationContext, { forUser: () => ({ has, resolve: vi.fn() }) } as never);
+    ctx.set(forumReaderContext, {
+      ...reader, readHelpSignal: async () => sampleSignal,
+    });
+    ctx.set(forumWriterContext, { resolveHelpSignal } as never);
+    const request = (topicId: string, origin: string) => new Request("https://forum.example/en/attention?mode=signals&group=needs-details", {
+      method: "POST",
+      headers: { Origin: origin },
+      body: new URLSearchParams({ intent: "acceptHelpSignal", caseId: "signal-1", topicId }),
+    });
+    expect(await attentionAction({ request: request("help-1", "https://evil.example"), context: ctx })).toMatchObject({ init: { status: 403 } });
+    expect(await attentionAction({ request: request("other-topic", "https://forum.example"), context: ctx })).toMatchObject({ init: { status: 404 } });
+    expect(resolveHelpSignal).not.toHaveBeenCalled();
+    const success = await attentionAction({ request: request("help-1", "https://forum.example"), context: ctx });
+    expect(success).toBeInstanceOf(Response);
+    if (!(success instanceof Response)) throw new Error("expected redirect response");
+    expect(success.status).toBe(302);
+    expect(success.headers.get("Location")).toBe("/en/attention?mode=signals&group=needs-details");
+    expect(resolveHelpSignal).toHaveBeenCalledWith({
+      signalId: "signal-1", actorId: "manager", resolution: "accepted",
+    });
+    has.mockImplementation(async () => false);
+    const denied = await attentionAction({ request: request("help-1", "https://forum.example"), context: ctx });
+    expect(denied).toMatchObject({ init: { status: 403 } });
+    expect(resolveHelpSignal).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects stale appeal ids before issuing a moderation mutation", async () => {
+    const ctx = context("en", "ltr");
+    ctx.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "m@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "m-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    ctx.set(authorizationContext, {
+      forUser: () => ({ has: vi.fn(async () => true), resolve: vi.fn() }),
+    } as never);
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readPendingHelpDuplicateAppeal: async () => ({
+        id: "appeal-current", relationshipId: "rel-1",
+        explanation: "Disputed", createdAt: new Date(),
+      }),
+    });
+    const resolveHelpDuplicateAppeal = vi.fn(async () => {});
+    ctx.set(forumWriterContext, { resolveHelpDuplicateAppeal } as never);
+    const request = new Request("https://forum.example/en/attention?mode=signals&group=appeals", {
+      method: "POST", headers: { Origin: "https://forum.example" },
+      body: new URLSearchParams({
+        intent: "rejectHelpDuplicateAppeal", topicId: "help-1", caseId: "appeal-stale",
+      }),
+    });
+    expect(await attentionAction({ request, context: ctx })).toMatchObject({ init: { status: 409 } });
+    expect(resolveHelpDuplicateAppeal).not.toHaveBeenCalled();
+  });
+
+  it("shows My questions only to authenticated users and binds it to the session identity", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-mine",
+        token: "token-mine",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    const readHelpSolutionsMine = vi.fn(async () => helpPage);
+    requestContext.set(forumReaderContext, { ...reader, readHelpSolutionsMine });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine&authorId=lin"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(readHelpSolutionsMine).toHaveBeenCalledWith("ada", {});
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("mine");
+    expect(data.isAuthenticated).toBe(true);
+    expect(data.canAskQuestion).toBe(false);
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, authorName: "Ada" }),
+    ]);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=mine",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "My questions" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "My questions" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Ask a question" })).not.toBeInTheDocument();
+  });
+
+  it("renders the authenticated My questions empty state", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-mine-empty",
+        token: "token-mine-empty",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsMine: async () => ({ ...helpPage, questions: [] }),
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=mine",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("You have not asked any questions yet.")).toBeVisible();
+  });
+
+  it("rejects direct guest access to My questions without querying an author", async () => {
+    const requestContext = context("en", "ltr");
+    const readHelpSolutionsMine = vi.fn(async () => helpPage);
+    requestContext.set(forumReaderContext, { ...reader, readHelpSolutionsMine });
+
+    await expect(categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readHelpSolutionsMine).not.toHaveBeenCalled();
+  });
+
+  it("keeps duplicate appeal details private and disputed badge moderator-only", async () => {
+    const duplicateTopic = {
+      ...helpTopic,
+      bestAnswerPostId: null,
+      duplicateOf: { id: "help-original", title: "Canonical original question" },
+      duplicateDisputed: true,
+    };
+    const pendingAppeal = {
+      id: "appeal-1",
+      relationshipId: "duplicate-relation-1",
+      explanation: "Private appeal reason.",
+      createdAt: new Date("2026-10-08T18:00:00Z"),
+    };
+
+    const guestReadAppeal = vi.fn(async () => pendingAppeal);
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: guestReadAppeal,
+    });
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: guestContext,
+    });
+    expect(guestReadAppeal).not.toHaveBeenCalled();
+    const guestView = renderRoute(
+      TopicRoute,
+      guestData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Canonical original question" }))
+      .toHaveAttribute("href", forumTopicPath("en", "help-original"));
+    expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const authorReadAppeal = vi.fn(async () => pendingAppeal);
+    const authorContext = context("en", "ltr");
+    authorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "author-session", token: "author-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    authorContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    authorContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: authorReadAppeal,
+    });
+    const authorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: authorContext,
+    });
+    expect(authorReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    const authorView = renderRoute(
+      TopicRoute,
+      authorData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("This duplicate status is disputed.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Accept dispute and remove duplicate" })).not.toBeInTheDocument();
+    authorView.unmount();
+
+    const managerReadAppeal = vi.fn(async () => pendingAppeal);
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.helpDuplicate.manage"
+          || permission === "forum.solution.manageAny"
+          || permission === "forum.reply.create"
+        ),
+      }),
+    } as never);
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: managerReadAppeal,
+    });
+    const managerData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: managerContext,
+    });
+    expect(managerReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    expect(managerData.canManageHelpDuplicate).toBe(true);
+    expect(managerData.canReply).toBe(true);
+    const managerView = renderRoute(
+      TopicRoute,
+      managerData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.getByText("Started by Ada")).toBeVisible();
+    expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Add reply" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByText("Admin panel"));
+    expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
+    managerView.unmount();
+
+    const degradedAuthorContext = context("en", "ltr");
+    degradedAuthorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "degraded-author-session", token: "degraded-author-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    degradedAuthorContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    degradedAuthorContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: vi.fn(async () => {
+        throw new ForumStorageUnavailableError();
+      }),
+    });
+    const degradedAuthorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: degradedAuthorContext,
+    });
+    const degradedAuthorView = renderRoute(
+      TopicRoute,
+      degradedAuthorData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("This duplicate status is disputed.")).toBeVisible();
+    expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit dispute" })).not.toBeInTheDocument();
+    degradedAuthorView.unmount();
+  });
+
+  it("duplicate-only permission does not expose an empty admin panel on ordinary topics", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "duplicate-manager", name: "Duplicate manager", email: "duplicate@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "duplicate-manager-session", token: "duplicate-manager-token", userId: "duplicate-manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpDuplicate.manage"),
+      }),
+    } as never);
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: requestContext,
+    });
+    expect(data.canManageHelpDuplicate).toBe(false);
+    expect(data.canUseAdminPanel).toBe(false);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", topic.id), "en", "ltr");
+    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
+  });
+
+  it("shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists", async () => {
+    const moderatedPage = {
+      ...helpPage,
+      questions: [
+        {
+          ...solvedHelpPage.questions[0]!,
+          solutionModerationStatus: "outdated" as const,
+          solutionOutdatedReason: "The provider removed the API used by this workaround.",
+          solutionOutdatedReasonKind: null,
+          duplicateOf: null,
+          duplicateDisputed: false,
+        },
+        {
+          ...helpPage.questions[0]!,
+          id: "help-duplicate-list-question",
+          title: "Repeated unresolved question",
+          isSolved: false,
+          hasBestAnswer: false,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+          duplicateOf: { id: "help-original", title: "Canonical original question" },
+          duplicateDisputed: true,
+        },
+      ],
+    };
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsAll: async () => moderatedPage,
+    });
+
+    const guestData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    });
+    if (guestData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    const guestView = renderRoute(
+      CategoryRoute,
+      guestData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      "en",
+      "ltr",
+    );
+    await waitFor(() => expect(document.querySelector(".help-question-duplicate")).toHaveTextContent("Duplicate"));
+    expect(screen.getByText("Solution outdated")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
+    expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsAll: async () => moderatedPage,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.solution.manageAny" || permission === "forum.helpDuplicate.manage"
+        ),
+      }),
+    } as never);
+
+    const managerData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(managerData.canViewSolutionModeration).toBe(true);
+    expect(managerData.canViewDuplicateDispute).toBe(true);
+    renderRoute(
+      CategoryRoute,
+      managerData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      "en",
+      "ltr",
+    );
+    await waitFor(() => expect(document.querySelector(".help-question-duplicate")).toHaveTextContent("Duplicate"));
+    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.getByText("Solution outdated")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
+
+    cleanup();
+    const topicContext = context("en", "ltr");
+    topicContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === helpTopic.id
+        ? {
+            ...helpTopic,
+            isSolved: true,
+            posts: helpTopic.posts.map((post) => post.id === "help-answer"
+              ? {
+                  ...post,
+                  solutionModerationStatus: "outdated" as const,
+                  solutionOutdatedReason: "The provider removed the API used by this workaround.",
+                  solutionOutdatedReasonKind: null,
+                }
+              : post),
+          }
+        : undefined,
+    });
+    topicContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    topicContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.solution.manageAny" || permission === "forum.helpDuplicate.manage"
+        ),
+      }),
+    } as never);
+    const topicData = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: topicContext,
+    });
+    expect(topicData.canModerateHelpSolution).toBe(true);
+    expect(topicData.canUseAdminPanel).toBe(true);
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
+    const bestAnswer = screen.getByText("Best answer").closest("li");
+    expect(bestAnswer).not.toBeNull();
+    if (!bestAnswer) throw new Error("expected best answer message");
+    expect(bestAnswer).toHaveTextContent("Solution outdated");
+    expect(within(bestAnswer).getByText("The provider removed the API used by this workaround.")).toBeVisible();
+    expect(bestAnswer.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
+    expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Admin panel"));
+    expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" }))
+      .toHaveValue("The provider removed the API used by this workaround.");
+    expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Confirm duplicate" })).not.toBeInTheDocument();
+  });
+
+  it("keeps needs-review topic badge hidden from public readers and visible to moderators", async () => {
+    const needsReviewTopic = {
+      ...helpTopic,
+      isSolved: true,
+      posts: helpTopic.posts.map((post) => post.id === "help-answer"
+        ? { ...post, solutionModerationStatus: "needs-review" as const }
+        : post),
+    };
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === needsReviewTopic.id ? needsReviewTopic : undefined,
+    });
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: needsReviewTopic.id },
+      context: guestContext,
+    });
+    const guestView = renderRoute(
+      TopicRoute,
+      guestData,
+      forumTopicPath("en", needsReviewTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === needsReviewTopic.id ? needsReviewTopic : undefined,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const managerData = await topicLoader({
+      params: { locale: "en", topicId: needsReviewTopic.id },
+      context: managerContext,
+    });
+    renderRoute(
+      TopicRoute,
+      managerData,
+      forumTopicPath("en", needsReviewTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Needs review")).toBeVisible();
+  });
+
+  it("keeps needs-review hidden from public Help lists and visible to moderators", async () => {
+    const reviewPage = {
+      ...solvedHelpPage,
+      questions: solvedHelpPage.questions.map((question) => ({
+        ...question,
+        solutionModerationStatus: "needs-review" as const,
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+      })),
+    };
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => reviewPage,
+    });
+    const guestData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    });
+    if (guestData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    const guestView = renderRoute(
+      CategoryRoute,
+      guestData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => reviewPage,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const managerData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    renderRoute(
+      CategoryRoute,
+      managerData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    await waitFor(() => expect(document.querySelector(".help-question-solution-moderation.is-needs-review")).toHaveTextContent("Needs review"));
+  });
+
+  it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
+    const buildData = (bestAnswerPostId: string, outdatedReason: string | null) => {
+      const solvedTopic = {
+        ...helpTopic,
+        isSolved: true,
+        bestAnswerPostId,
+        posts: helpTopic.posts.map((post) => {
+          if (post.id === "help-answer") {
+            return {
+              ...post,
+              solutionModerationStatus: bestAnswerPostId === post.id && outdatedReason ? "outdated" as const : null,
+              solutionOutdatedReason: bestAnswerPostId === post.id ? outdatedReason : null,
+              solutionOutdatedReasonKind: null,
+            };
+          }
+          return {
+            ...post,
+            solutionModerationStatus: null,
+            solutionOutdatedReason: null,
+            solutionOutdatedReasonKind: null,
+          };
+        }),
+      };
+      return topicRenderData(solvedTopic, {
+        canManageSolution: true,
+        canManageAnySolution: true,
+        canModerateHelpSolution: true,
+        canUseAdminPanel: true,
+      });
+    };
+
+    let currentData = buildData("help-answer", "Persisted old reason.");
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => currentData,
+    }], {
+      initialEntries: [forumTopicPath("en", helpTopic.id)],
+    });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByText("Admin panel"));
+    const reason = screen.getByRole("textbox", { name: "Reason the solution is outdated" });
+    expect(reason).toHaveValue("Persisted old reason.");
+    fireEvent.change(reason, { target: { value: "Unsaved stale reason." } });
+    expect(reason).toHaveValue("Unsaved stale reason.");
+
+    currentData = buildData("help-followup", null);
+    await router.revalidate();
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" })).toHaveValue("");
+    });
+  });
+
+  it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("solutions");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, isSolved: true }),
+    ]);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Solutions" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "All" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
+    expect(screen.getByRole("heading", { level: 2, name: "Solved questions" })).toBeVisible();
+    expect(screen.queryByText("Open")).not.toBeInTheDocument();
+    expect(document.querySelector(".help-question-status.is-solved")).toHaveTextContent("Solved");
+  });
+});
+describe("Popular topics", () => {
+  it("loads all three activity periods and keeps topic links locale-aware", async () => {
+    const data = await popularLoader({
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    expect(data.periods["24h"][0]).toMatchObject({ id: topic.id, activityCount: 3 });
+    expect(data.periods["7d"][0]).toMatchObject({ id: topic.id, activityCount: 5 });
+    expect(data.periods["30d"][0]).toMatchObject({ id: topic.id, activityCount: 8 });
+
+    renderRoute(PopularRoute, data, forumPopularPath("en"), "en", "ltr");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Popular topics" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "24 hours" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "7 days" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "30 days" })).toBeInTheDocument();
+
+    const links = screen.getAllByRole("link", { name: /How do I type an API\?/ });
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", forumTopicPath("en", topic.id));
+    }
+    expect(screen.getByText("3 messages")).toBeInTheDocument();
+    expect(screen.getByText("5 messages")).toBeInTheDocument();
+    expect(screen.getByText("8 messages")).toBeInTheDocument();
+  });
+});
+
+describe("Forum search", () => {
+  it("loads a query through the public reader and keeps result links locale-aware", async () => {
+    const request = new Request("https://forum.example/en/search?q=TypeScript");
+    const data = await searchLoader({
+      request,
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    expect(data.query).toBe("TypeScript");
+    expect(data.results).toHaveLength(1);
+
+    renderRoute(SearchRoute, data, forumSearchPath("en") + "?q=TypeScript", "en", "ltr");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Search query" })).toHaveValue("TypeScript");
+    expect(screen.getByRole("link", { name: /How do I type an API\?/ }))
+      .toHaveAttribute("href", forumTopicPath("en", topic.id));
+    expect(screen.getByText("#TypeScript")).toBeInTheDocument();
+  });
+
+  it("renders a truthful no-results state", async () => {
+    const data = await searchLoader({
+      request: new Request("https://forum.example/en/search?q=WebAssembly"),
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    renderRoute(SearchRoute, data, forumSearchPath("en") + "?q=WebAssembly", "en", "ltr");
+    expect(await screen.findByText("No topics found for “WebAssembly”.")).toBeInTheDocument();
+  });
+});
+
+describe("Technology tags", () => {
+  it("loads the tag index and a filtered tag page with locale-aware topic links", async () => {
+    const indexData = await tagsLoader({ params: { locale: "en" }, context: context("en", "ltr") });
+    renderRoute(TagsRoute, indexData, forumTagsPath("en"), "en", "ltr");
+    expect(await screen.findByRole("heading", { level: 1, name: "Technology tags" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /#TypeScript/ })).toHaveAttribute("href", forumTagPath("en", "typescript"));
+
+    cleanup();
+    const pageData = await tagLoader({ params: { locale: "en", tagKey: "typescript" }, context: context("en", "ltr") });
+    renderRoute(TagRoute, pageData, forumTagPath("en", "typescript"), "en", "ltr");
+    expect(await screen.findByRole("heading", { level: 1, name: "#TypeScript" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How do I type an API\?/ })).toHaveAttribute("href", forumTopicPath("en", topic.id));
+  });
+});
+
+describe("Unanswered topics", () => {
+  it("loads unanswered topics and keeps topic links locale-aware", async () => {
+    const data = await unansweredLoader({
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    expect(data.topics).toEqual([{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      section: topic.section,
+      category: topic.section.category,
+    }]);
+
+    renderRoute(UnansweredRoute, data, forumUnansweredPath("en"), "en", "ltr");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Unanswered topics" })).toBeInTheDocument();
+    expect(screen.getByText("No replies yet")).toBeInTheDocument();
+    expect(screen.getByText("Development")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How do I type an API\?/ }))
+      .toHaveAttribute("href", forumTopicPath("en", topic.id));
+  });
+});
+
+describe("content translation presentation", () => {
+  it("shows persisted current translations to a guest with provenance, original toggle, metadata and safe Markdown", async () => {
+    const translations: StoredContentTranslation[] = [
+      {
+        contentType: "topic-title",
+        contentId: topic.id,
+        revisionId: topic.title.id,
+        targetLocale: "he",
+        sourceLocale: "en",
+        translatedContent: "כותרת מתורגמת",
+        provenance: {
+          origin: "machine",
+          provider: "provider",
+          model: "model",
+          attribution: "Provider attribution",
+        },
+      },
+      {
+        contentType: "post-body",
+        contentId: topic.posts[0]!.id,
+        revisionId: topic.posts[0]!.body.id,
+        targetLocale: "he",
+        sourceLocale: "en",
+        translatedContent: "**טקסט מתורגם** <script>alert('x')</script> [Example](https://example.com)",
+        provenance: {
+          origin: "machine",
+          provider: "provider",
+          model: "model",
+        },
+      },
+    ];
+
+    const data = await topicLoader({
+      params: { locale: "he", topicId: topic.id },
+      context: context("he", "rtl", translations),
+    });
+
+    expect(data.titlePresentation).toMatchObject({
+      selected: "translation",
+      content: "כותרת מתורגמת",
+      contentLocale: "he",
+      contentDirection: "rtl",
+    });
+    expect(data.postPresentations[0]).toMatchObject({
+      selected: "translation",
+      contentLocale: "he",
+      contentDirection: "rtl",
+    });
+
+    renderRoute(TopicRoute, data, "/he/topics/typed-api", "he", "rtl");
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
+    expect(heading).toHaveAttribute("lang", "he");
+    expect(heading).toHaveAttribute("dir", "rtl");
+    const originalQuestion = document.querySelector("#post-answer");
+    const topicHeading = originalQuestion?.querySelector(".topic-question-heading");
+    expect(originalQuestion).not.toBeNull();
+    expect(topicHeading).not.toBeNull();
+    expect(within(topicHeading as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
+    expect(within(originalQuestion as HTMLElement).getAllByText("Automatic translation")).toHaveLength(2);
+    expect(screen.getByText("Provider attribution")).toBeInTheDocument();
+    expect(within(topicHeading as HTMLElement).getByText("Show original")).toBeInTheDocument();
+    expect(within(topicHeading as HTMLElement).getByText("Show translation")).toBeInTheDocument();
+    expect(within(originalQuestion as HTMLElement).getAllByText("Show original")).toHaveLength(2);
+    expect(within(originalQuestion as HTMLElement).getByText("Hide original")).toBeInTheDocument();
+    expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
+    expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
+    expect(document.querySelector("script")).toBeNull();
+    expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+    expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("target", "_blank");
+  });
+});
+
+describe("section topic count presentation", () => {
+  it("keeps localized message count semantics inside compact topic rows", async () => {
+    const data = {
+      locale: "en",
+      section: {
+        id: "typescript",
+        name: "TypeScript",
+        category: { id: "development", name: "Development" },
+        topics: [
+          {
+            id: "one",
+            authorName: "Alex",
+            postCount: 1,
+            createdAt: new Date("2026-09-27T10:00:00Z"),
+            tags: [],
+            title: { id: "title-one", originalContent: "One message topic", sourceLocale: "en" },
+          },
+          {
+            id: "two",
+            authorName: "Sam",
+            postCount: 2,
+            createdAt: new Date("2026-09-27T11:00:00Z"),
+            tags: [],
+            title: { id: "title-two", originalContent: "Two message topic", sourceLocale: "en" },
+          },
+        ],
+      },
+      canCreateTopic: false,
+    };
+
+    renderRoute(SectionRoute, data, "/en/sections/typescript", "en", "ltr");
+
+    expect(await screen.findByRole("group", { name: "1 message" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "2 messages" })).toBeInTheDocument();
+  });
+});
+
+describe("category count presentation", () => {
+  it("composes topic and message totals through independent plural lookups", async () => {
+    const data = {
+      locale: "en",
+      referenceTime: "2026-01-03T00:00:00.000Z",
+      category: {
+        ...category,
+        sections: [
+          {
+            id: "mixed-one",
+            name: "Mixed one",
+            topicCount: 1,
+            postCount: 2,
+            pinnedTopics: [],
+            latestTopics: [],
+          },
+          {
+            id: "mixed-two",
+            name: "Mixed two",
+            topicCount: 2,
+            postCount: 1,
+            pinnedTopics: [],
+            latestTopics: [],
+          },
+        ],
+      },
+    };
+
+    renderRoute(CategoryRoute, data, "/en/categories/development", "en", "ltr");
+
+    expect(await screen.findByRole("group", { name: "1 topic · 2 messages" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "2 topics · 1 message" })).toBeInTheDocument();
+  });
+});
+
+describe("forum path encoding", () => {
+  it("encodes an opaque forum id as one path segment and round-trips the route param", () => {
+    const categoryId = "a/b?c#d%e тема";
+    const path = forumCategoryPath("en", categoryId);
+    expect(path).toBe("/en/categories/a%2Fb%3Fc%23d%25e%20%D1%82%D0%B5%D0%BC%D0%B0");
+    const matches = matchRoutes([{ path: "/:locale/categories/:categoryId" }], path);
+    expect(matches?.[0]?.params).toMatchObject({ locale: "en", categoryId });
+  });
+});
+
+describe("forum read states", () => {
+  it("targets direct replies, exposes parent/child anchors, and quotes only selected message text", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorName: "Ada",
+      parentPostId: null,
+      body: { id: "post-q", originalContent: "Selected words from the question.", sourceLocale: "en" },
+    };
+    const reply = {
+      ...seed,
+      id: "reply",
+      authorName: "Lin",
+      parentPostId: "question",
+      body: { id: "post-r", originalContent: "Direct reply.", sourceLocale: "en" },
+    };
+    const replyTopic = { ...topic, posts: [question, reply] };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(replyTopic, { canReply: true }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    await screen.findByText("Selected words from the question.");
+    const questionCard = document.querySelector("#post-question");
+    const replyCard = document.querySelector("#post-reply");
+    expect(questionCard).not.toBeNull();
+    expect(replyCard).not.toBeNull();
+
+    const parentLinks = within(replyCard as HTMLElement).getAllByRole("link", { name: "Reply to #1" });
+    expect(parentLinks).toHaveLength(2);
+    for (const parentLink of parentLinks) {
+      expect(parentLink).toHaveAttribute("href", "#post-question");
+    }
+    expect(within(questionCard as HTMLElement).getByRole("navigation", { name: "Direct replies" })
+      .querySelector('a[href="#post-reply"]')).not.toBeNull();
+
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Reply" }));
+    const replyForm = screen.getByRole("form", { name: "Add a reply" });
+    expect(await screen.findByText("Replying to Message #1")).toBeInTheDocument();
+    expect(replyForm.querySelector('input[name="parentPostId"]')).toHaveValue("question");
+
+    const replyBody = within(replyForm).getByLabelText("Reply");
+    const replyEditor = replyBody.closest(".markdown-editor");
+    fireEvent.click(within(replyForm).getByRole("button", { name: "Preview" }));
+    expect(replyEditor).toHaveAttribute("data-mode", "preview");
+
+    const bodyElement = questionCard!.querySelector("[data-message-body]");
+    if (!bodyElement) throw new Error("message body selection target missing");
+    vi.spyOn(window, "getSelection").mockReturnValue({
+      rangeCount: 1,
+      isCollapsed: false,
+      toString: () => "Selected words",
+      getRangeAt: () => ({
+        startContainer: bodyElement,
+        endContainer: bodyElement,
+      }),
+    } as unknown as Selection);
+
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
+    expect(replyEditor).toHaveAttribute("data-mode", "write");
+    expect(replyBody).toHaveValue("> Selected words\n\n");
+    expect(replyBody).toHaveFocus();
+
+    vi.spyOn(window, "getSelection").mockReturnValue({
+      rangeCount: 0,
+      isCollapsed: true,
+      toString: () => "",
+    } as unknown as Selection);
+    fireEvent.click(within(replyCard as HTMLElement).getByRole("button", { name: "Quote" }));
+    expect(screen.getByText("Select text in this message to quote it.")).toBeInTheDocument();
+  });
+
+  it("copies a clean permanent locale-aware message link, keeps one active status, and reports clipboard failure", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+
+    const secondPost = {
+      ...topic.posts[0]!,
+      id: "follow-up",
+      authorName: "Maya",
+      body: { id: "post-r2", originalContent: "Follow-up.", sourceLocale: "en" },
+    };
+    const multiPostTopic = { ...topic, posts: [topic.posts[0]!, secondPost] };
+
+    renderRoute(TopicRoute, topicRenderData(multiPostTopic), "/en/topics/typed-api?temporary=1", "en", "ltr");
+
+    const firstCopyButton = await screen.findByRole("button", { name: "Copy link to Message #1" });
+    fireEvent.click(firstCopyButton);
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/en\/topics\/typed%2Fapi#post-answer$/));
+    });
+    expect(screen.getAllByText("Copied")).toHaveLength(1);
+
+    const secondCopyButton = screen.getByRole("button", { name: "Copy link to Message #2" });
+    fireEvent.click(secondCopyButton);
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/en\/topics\/typed%2Fapi#post-follow-up$/));
+      expect(screen.getAllByText("Copied")).toHaveLength(1);
+    });
+
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    fireEvent.click(firstCopyButton);
+    expect(await screen.findByText("Could not copy link.")).toBeInTheDocument();
+    expect(screen.queryByText("Copied")).not.toBeInTheDocument();
+  });
+
+  it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const answer = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer", posts: [question, answer] };
+    renderRoute(TopicRoute, topicRenderData(solvedTopic), "/en/topics/typed-api", "en", "ltr");
+    expect(await screen.findByText("Solved")).toBeInTheDocument();
+    expect(screen.getByText("Best answer").closest("li")).toHaveAttribute("id", "post-answer");
+    expect(screen.getByText("Best answer").closest("li")).toHaveClass("best-answer");
+    expect(screen.getByRole("link", { name: "Go to solution" })).toHaveAttribute("href", "#post-answer");
+    expect(screen.queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
+  });
+
+  it("promotes the selected best answer after the original question without renumbering anchors", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorName: "Ada",
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const reply = {
+      ...seed,
+      id: "reply",
+      authorName: "Lin",
+      body: { id: "post-r2", originalContent: "First reply.", sourceLocale: "en" },
+    };
+    const best = {
+      ...seed,
+      id: "best",
+      authorName: "Sam",
+      body: { id: "post-r3", originalContent: "Selected answer.", sourceLocale: "en" },
+    };
+    const later = {
+      ...seed,
+      id: "later",
+      authorName: "Maya",
+      body: { id: "post-r4", originalContent: "Later reply.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...topic,
+      isSolved: true,
+      bestAnswerPostId: "best",
+      posts: [question, reply, best, later],
+    };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(solvedTopic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+
+    const cards = Array.from(document.querySelectorAll(".topic-message"));
+    expect(cards.map((card) => card.id)).toEqual([
+      "post-question",
+      "post-best",
+      "post-reply",
+      "post-later",
+    ]);
+    expect(cards.map((card) => card.querySelector(".topic-message-anchor")?.textContent)).toEqual([
+      "Message #1",
+      "Message #3",
+      "Message #2",
+      "Message #4",
+    ]);
+  });
+
+  it("keeps a replaced Help answer marked outdated while the new best answer stays clean", async () => {
+    const seed = helpTopic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const oldBest = {
+      ...helpTopic.posts[1]!,
+      id: "old-best",
+      solutionModerationStatus: "outdated" as const,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: "best-answer-replaced" as const,
+      body: { id: "post-old", originalContent: "Old solution.", sourceLocale: "en" },
+    };
+    const newBest = {
+      ...helpTopic.posts[2]!,
+      id: "new-best",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
+      body: { id: "post-new", originalContent: "Current solution.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...helpTopic,
+      isSolved: true,
+      bestAnswerPostId: "new-best",
+      posts: [question, oldBest, newBest],
+    };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(solvedTopic),
+      "/en/topics/help-question",
+      "en",
+      "ltr",
+    );
+
+    const currentBest = await screen.findByText("Best answer");
+    expect(currentBest.closest("li")).toHaveAttribute("id", "post-new-best");
+    expect(currentBest.closest("li")).not.toHaveTextContent("Solution outdated");
+
+    const oldAnswer = document.querySelector("#post-old-best");
+    expect(oldAnswer).not.toBeNull();
+    expect(oldAnswer).toHaveTextContent("Solution outdated");
+    expect(within(oldAnswer as HTMLElement).getByText("A new best answer was selected.")).toBeVisible();
+    expect(oldAnswer?.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
+  });
+
+  it("keeps message metadata in the author column while best-answer selection stays beside topic controls", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const answer = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const followup = {
+      ...seed,
+      id: "followup",
+      authorId: "sam",
+      authorName: "Sam",
+      createdAt: new Date("2026-01-03"),
+      body: { id: "post-r2", originalContent: "Follow-up explanation.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...topic,
+      isSolved: true,
+      bestAnswerPostId: "answer",
+      posts: [question, answer, followup],
+    };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(solvedTopic, { canManageSolution: true }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+
+    const bestPost = document.querySelector("#post-answer");
+    const followupPost = document.querySelector("#post-followup");
+    expect(bestPost).not.toBeNull();
+    expect(followupPost).not.toBeNull();
+
+    const bestHeader = bestPost!.children.item(0);
+    const bestContent = bestPost!.children.item(1);
+    expect(bestPost!.children).toHaveLength(2);
+    expect(bestHeader?.tagName).toBe("HEADER");
+    expect(bestContent).toHaveClass("forum-post-content");
+    expect(bestHeader).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestHeader).toContainElement(bestPost!.querySelector(".topic-message-anchor"));
+    expect(bestContent).toContainElement(bestPost!.querySelector(".post-body"));
+    expect(bestHeader).not.toContainElement(bestContent as HTMLElement);
+
+    const followupHeader = followupPost!.children.item(0);
+    const followupContent = followupPost!.children.item(1);
+    expect(followupPost!.children).toHaveLength(2);
+    expect(followupHeader?.tagName).toBe("HEADER");
+    expect(followupContent).toHaveClass("forum-post-content");
+    expect(followupHeader).toContainElement(followupPost!.querySelector(".topic-message-anchor"));
+    expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
+    expect(followupContent!.querySelector(".solution-form")).toBeNull();
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+
+    const bestAnswerSelector = screen.getByText("Select as best answer").closest("details");
+    expect(bestAnswerSelector).not.toBeNull();
+    expect(bestAnswerSelector?.closest(".topic-breadcrumb-actions")).not.toBeNull();
+    fireEvent.click(screen.getByText("Select as best answer"));
+    expect(within(bestAnswerSelector as HTMLElement).getByRole("button", { name: "Message #3" })).toBeVisible();
+  });
+
+  it("keeps the topic title and original question in one message card", async () => {
+    renderRoute(
+      TopicRoute,
+      topicRenderData(topic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "How do I type an API?" });
+    const originalQuestion = heading.closest("li");
+    expect(originalQuestion).not.toBeNull();
+    expect(originalQuestion).toHaveClass("original-question");
+    if (!originalQuestion) throw new Error("expected original question card");
+    expect(within(originalQuestion).getByText("Start with an explicit response type.")).toBeVisible();
+    expect(document.querySelector(".topic-heading")).not.toBeInTheDocument();
+  });
+
+  it("shows the admin panel on regular topics for moderation capabilities only", async () => {
+    const unsolvedTopic = { ...topic, isSolved: false, bestAnswerPostId: null };
+
+    const managerView = renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedTopic, {
+        canManageSolution: true,
+        canManageAnySolution: true,
+        canCorrectTitleSourceLocale: true,
+        canCorrectAnySourceLocale: true,
+        canManagePin: true,
+        canUseAdminPanel: true,
+      }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const adminPanel = await screen.findByText("Admin panel");
+    expect(adminPanel.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(adminPanel.closest("details"));
+    expect(screen.getByRole("button", { name: /Pin topic|Unpin topic/ }).closest("details")).toBe(adminPanel.closest("details"));
+    managerView.unmount();
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedTopic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
+  });
+
+  it("shows solution controls only to the topic author behind progressive disclosure", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const reply = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const unsolvedTopic = { ...topic, posts: [question, reply] };
+    const unsolved = topicRenderData(unsolvedTopic, { canReply: true, canManageSolution: true, isTopicAuthor: true });
+    const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
+    const topicTools = await screen.findByText("Topic tools");
+    const topicToolsDetails = topicTools.closest("details");
+    expect(topicToolsDetails).not.toBeNull();
+    expect(topicToolsDetails).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(topicToolsDetails);
+
+    const bestAnswerSelector = screen.getByText("Select as best answer").closest("details");
+    expect(bestAnswerSelector).not.toBeNull();
+    expect(bestAnswerSelector?.closest(".topic-breadcrumb-actions")).not.toBeNull();
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Select as best answer"));
+    expect(within(bestAnswerSelector as HTMLElement).getByRole("button", { name: "Message #2" })).toBeVisible();
+    authorView.unmount();
+
+    renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
+    expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a selected best answer on an unsolved topic and asks only the topic author whether the problem is solved", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const answer = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const unsolvedWithBest = { ...topic, isSolved: false, bestAnswerPostId: "answer", posts: [question, answer] };
+    const authorView = renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: true }),
+      "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+    expect(screen.getByText("Problem solved?").closest("section")).toHaveAttribute("id", "solution-confirmation");
+    expect(screen.getByRole("button", { name: "Yes, mark as solved" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "No, keep it unsolved" }))
+      .toHaveAttribute("href", "/en/topics/typed%2Fapi#post-answer");
+    authorView.unmount();
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: false }),
+      "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+    expect(screen.queryByText("Problem solved?")).not.toBeInTheDocument();
+  });
+
+  it("keeps title source-locale correction while message-level correction waits for the admin-panel redesign", async () => {
+    renderRoute(
+      TopicRoute,
+      topicRenderData(topic, {
+        canCorrectTitleSourceLocale: true,
+        correctablePostIds: ["answer"],
+      }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const topicTools = await screen.findByText("Topic tools");
+    const topicToolsDetails = topicTools.closest("details");
+    expect(topicToolsDetails).not.toHaveAttribute("open");
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+
+    const correctionButtons = screen.getAllByRole("button", { name: "Correct language" });
+    expect(correctionButtons).toHaveLength(1);
+    expect(within(topicToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeInTheDocument();
+    expect(screen.getAllByText("Source language: en")).toHaveLength(1);
+    expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
+    expect(document.querySelector('input[name="postId"][value="answer"]')).toBeNull();
+  });
+
+  it("shows accessible forum write forms only for an authenticated loader result", async () => {
+    const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false, topicReadStates: null }, "/en/sections/typescript", "en", "ltr");
+    expect(screen.queryByRole("form", { name: "Create a new topic" })).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: true, topicReadStates: { [topic.id]: "read" } }, "/en/sections/typescript", "en", "ltr");
+    const createTopicForm = await screen.findByRole("form", { name: "Create a new topic" });
+    expect(createTopicForm).toHaveClass("section-create-form");
+    expect(createTopicForm.querySelector('input[name="intent"]')).toHaveValue("createTopic");
+    expect(screen.getByLabelText("Topic title")).toHaveAttribute("aria-describedby", "create-topic-title-help");
+    expect(within(createTopicForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(createTopicForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    expect(screen.getByText("Markdown and fenced code blocks are supported.")).toBeInTheDocument();
+    authenticatedView.unmount();
+
+    renderRoute(TopicRoute, topicRenderData(topic, { canReply: true }), "/en/topics/typed-api", "en", "ltr");
+    const replyForm = await screen.findByRole("form", { name: "Add a reply" });
+    expect(replyForm).toHaveClass("topic-reply-form");
+    expect(replyForm.querySelector('input[name="intent"]')).toHaveValue("reply");
+    expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
+    expect(within(replyForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(replyForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+  });
+
+  it("shows a pending state while create-topic submission is in flight", async () => {
+    let resolveAction!: () => void;
+    const actionPromise = new Promise<null>((resolve) => {
+      resolveAction = () => resolve(null);
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: SectionRoute,
+      loader: () => ({ locale: "en", section, canCreateTopic: true }),
+      action: () => actionPromise,
+    }], { initialEntries: ["/en/sections/typescript"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Create a new topic" });
+    fireEvent.submit(form);
+
+    expect(await screen.findByRole("button", { name: "Creating topic…" })).toBeDisabled();
+    expect(screen.getByLabelText("Topic title")).toBeDisabled();
+    expect(form).toHaveAttribute("aria-busy", "true");
+
+    resolveAction();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Create topic" })).toBeEnabled();
+    });
+  });
+
+  it("shows a pending state only for the reply submission", async () => {
+    let resolveAction!: () => void;
+    const actionPromise = new Promise<null>((resolve) => {
+      resolveAction = () => resolve(null);
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => topicRenderData(topic, { canReply: true }),
+      action: () => actionPromise,
+    }], { initialEntries: ["/en/topics/typed-api"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Add a reply" });
+    fireEvent.submit(form);
+
+    expect(await screen.findByRole("button", { name: "Posting reply…" })).toBeDisabled();
+    expect(screen.getByLabelText("Reply")).toBeDisabled();
+    expect(form).toHaveAttribute("aria-busy", "true");
+
+    resolveAction();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+    });
+  });
+
+  it("returns route-level 404 responses for missing entities", async () => {
+    await expect(categoryLoader({ params: { locale: "en", categoryId: "missing" }, context: context() })).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("renders the localized forum not-found state for an unknown locale-scoped URL", async () => {
+    const router = createMemoryRouter([{
+      path: "*",
+      loader: notFoundLoader,
+      ErrorBoundary: NotFoundErrorBoundary,
+    }], {
+      initialEntries: ["/en/does-not-exist"],
+    });
+
+    render(<I18nextProvider i18n={runtime("en", "ltr")}><RouterProvider router={router} /></I18nextProvider>);
+
+    expect(await screen.findByRole("heading", { name: "Forum page not found" })).toBeInTheDocument();
+    expect(screen.getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+    expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
+  });
+});

@@ -2,25 +2,35 @@
 
 Классический веб-форум для обсуждения разработки с ChatGPT, Codex, Cursor, Claude и другими AI-инструментами.
 
-Проект находится на ранней стадии разработки.
+Проект находится на ранней стадии разработки. Stage 0–5 завершены в repository/local-CI path;
+текущий продуктовый приоритет — standalone UI/UX product pass, а Stage 6 external integration
+временно поставлен на паузу.
 
 ## Документация
 
-- [`PROJECT.md`](./PROJECT.md) — постоянный контекст и принятые основы проекта.
-- [`PROJECT_STATE.md`](./PROJECT_STATE.md) — текущее состояние разработки.
-- [`ROADMAP.md`](./ROADMAP.md) — последовательный план разработки до первого production-релиза.
-- [`SCAFFOLD_PLAN.md`](./SCAFFOLD_PLAN.md) — проверенные версии, команды и executable plan этапа 1.
-- [`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) — обязательный архитектурный контракт мультиязычности и переводов; detail documents находятся в [`docs/translation/`](./docs/translation/).
+- [`PROJECT.md`](./PROJECT.md) — постоянный продуктовый и технический baseline.
+- [`PROJECT_STATE.md`](./PROJECT_STATE.md) — текущее фактическое состояние и следующий шаг.
+- [`PROJECT_HISTORY.md`](./PROJECT_HISTORY.md) — история значимых решений, регрессий и последующих исправлений.
+- [`ROADMAP.md`](./ROADMAP.md) — последовательный путь до первого production-релиза.
+- [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md) — архитектурный контракт dynamic roles/permissions и per-user overrides.
+- [`SCAFFOLD_PLAN.md`](./SCAFFOLD_PLAN.md) — завершённый executable plan Stage 1 и зафиксированный toolchain.
+- [`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) — архитектурный контракт мультиязычности и переводов; detail documents находятся в [`docs/translation/`](./docs/translation/).
+- [`docs/database/`](./docs/database/) — migration/Hyperdrive contracts и operational runbooks.
+- [`docs/UI_UX_PASS.md`](./docs/UI_UX_PASS.md) — scope, план, GitHub Pages progress preview и обязательная real-runtime browser acceptance matrix текущего UI/UX pass.
 - [`AGENTS.md`](./AGENTS.md) — правила работы Codex с репозиторием.
 
 ## Разработка
 
-Stage 1 и Stage 2 завершены. Persistent `LocaleRegistry` работает в production через Neon,
-cache-disabled Cloudflare Hyperdrive, `pg` и Drizzle. Перед Stage 3 выполнен hardening failure
-boundaries и migration/release safety: required CI включает `checks` и `database`, migration
-history защищена как append-only, а production migration workflow ограничен `main`.
-Следующий продуктовый этап — Stage 3; последовательность работ зафиксирована в `ROADMAP.md`,
-а актуальное состояние — в `PROJECT_STATE.md`.
+Stage 0–5 завершены в текущем repository/local-CI path. Forum MVP включает public read, Better Auth session boundary, authenticated topic/reply participation, safe Markdown, anti-spam cooldown, solved/best-answer flow и dynamic PostgreSQL-backed authorization с management UI по [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
+
+Текущий следующий шаг — **UI/UX product pass** согласно [`PROJECT_STATE.md`](./PROJECT_STATE.md),
+[`ROADMAP.md`](./ROADMAP.md) и [`docs/UI_UX_PASS.md`](./docs/UI_UX_PASS.md): polished existing
+forum shell and flows, лёгкий GitHub Pages preview для просмотра прогресса и обязательная
+real-runtime browser acceptance. Pending Stage 6 infrastructure work остаётся на паузе.
+
+Обычная разработка до pre-release проверяется локально и в CI. Merge feature-кода сам по себе не должен означать production rollout. Реальные external environment migrations/deploy/smoke являются отдельным pre-release/release процессом.
+
+Текущая production-like инфраструктура и ранее выполненные Hyperdrive acceptance остаются полезным foundation, но не являются gate для каждого нового feature PR.
 
 Требования:
 

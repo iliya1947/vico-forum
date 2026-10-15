@@ -19,6 +19,7 @@ export class DrizzleUiTranslationStore implements UiTranslationStore {
         status: uiTranslations.status,
         sourceFingerprint: uiTranslations.sourceFingerprint,
         translatedPayload: uiTranslations.translatedPayload,
+        generationPolicyVersion: uiTranslations.generationPolicyVersion,
       })
       .from(uiTranslations)
       .where(

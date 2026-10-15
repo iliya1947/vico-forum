@@ -1,9 +1,12 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { localeContext, registryLoaderContext } from "../localization/request-context";
+import { localeContext, registryLoaderContext, uiTranslationStoreContext } from "../localization/request-context";
 import { assemblePersistentRegistry } from "../localization/persistent-registry";
 import { localeRegistry } from "../localization/registry";
-import { middleware } from "./locale-boundary";
+import { loader, middleware } from "./locale-boundary";
+import { authSessionContext } from "../auth/request-context";
+import { authorizationContext } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 function contextWithFixtureRegistry() {
   const context = new RouterContextProvider();
@@ -36,6 +39,16 @@ describe("locale boundary middleware", () => {
   it("sets typed request context and reaches downstream handling for a canonical locale", async () => {
     const next = vi.fn(async () => new Response("handled"));
     const context = contextWithFixtureRegistry();
+    context.set(authSessionContext, {
+      user: {
+        id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
+        createdAt: new Date(), updatedAt: new Date(), locale: "ru",
+      },
+      session: {
+        id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(), updatedAt: new Date(),
+      },
+    });
 
     const response = await middleware[0](
       {
@@ -101,5 +114,62 @@ describe("locale boundary middleware", () => {
       expect(response.headers.get("Cache-Control")).toBe("no-store");
     }
     expect(next).not.toHaveBeenCalled();
+  });
+});
+
+function localeLoaderContext(authorizationError: Error) {
+  const context = new RouterContextProvider();
+  context.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test-fixture",
+    health: { status: "healthy" },
+  }));
+  context.set(localeContext, {
+    translationLocale: "en", fallbackLocales: [], direction: "ltr",
+    formatting: { locale: "en", timeZone: "UTC" }, nativeName: "English", presentationMetadata: {},
+  });
+  context.set(uiTranslationStoreContext, {
+    readApproved: vi.fn(async () => []),
+    read: vi.fn(async () => undefined),
+  });
+  context.set(authSessionContext, {
+    user: {
+      id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
+      createdAt: new Date(), updatedAt: new Date(), locale: "en",
+    },
+    session: {
+      id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(), updatedAt: new Date(),
+    },
+  });
+  context.set(authorizationContext, {
+    forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => { throw authorizationError; }) }),
+  } as never);
+  return context;
+}
+
+describe("locale boundary loader", () => {
+  it("keeps public pages available for a classified optional authorization outage", async () => {
+    const context = localeLoaderContext(new AuthorizationUnavailableError());
+    const snapshot = await loader({
+      request: new Request("https://vico.test/en/"), params: { locale: "en" }, context,
+    });
+
+    expect(snapshot.authUser).toEqual({ id: "user-1", image: null, name: "Vico", canManageAuthorization: false, canViewModerationAttention: false });
+    expect(snapshot.locale.translationLocale).toBe("en");
+    expect(snapshot.activeLocales).toEqual([
+      { tag: "en", nativeName: "English", direction: "ltr" },
+      { tag: "he", nativeName: "עברית", direction: "rtl" },
+      { tag: "ru", nativeName: "Русский", direction: "ltr" },
+    ]);
+  });
+
+  it("does not hide unexpected optional authorization errors", async () => {
+    const failure = new Error("unexpected authorization bug");
+    await expect(loader({
+      request: new Request("https://vico.test/en/"),
+      params: { locale: "en" },
+      context: localeLoaderContext(failure),
+    })).rejects.toBe(failure);
   });
 });

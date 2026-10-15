@@ -143,9 +143,22 @@ override того же locale.
 внутри того же locale. Если current value для message unit в этом locale отсутствует,
 i18next переходит к следующему locale из explicit fallback chain.
 
+При successful conditional machine publication persisted bundle пересобирается для всего
+exact-locale namespace тем же priority/freshness merge и existing bundle compiler в одной
+transaction с raw publication и task completion. Fallback resources в эту persisted запись
+не входят.
+
 При недоступности PostgreSQL runtime может собрать доступные locale bundles из current
 local overrides и canonical English. Если нужные persistent resources недоступны, English
 остаётся resource fallback; translation provider в request path не вызывается.
+
+Stage 5A runtime сначала читает проверенный persisted compiled bundle для каждого canonical
+non-English `(locale, namespace)`. На hit raw `ui_translations` для этого namespace не читаются.
+На miss выполняется прежняя сборка из local/persistent raw sources; при classified database
+unavailable/timeout/schema failure остаются current local overrides и code-owned English.
+Invalid structural payload, несовпадающая version или bundle от несовместимого deploy не
+обслуживаются и используют тот же безопасный miss path. Остальные programming/configuration
+ошибки не классифицируются как degradation.
 
 ## Local translation packs (`UI-05`)
 
@@ -330,7 +343,7 @@ CanonicalUiCatalog
 → TranslationProviderRouter
 → TranslationValidator
 → UiTranslationStore
-→ compiled namespace bundles
+→ compiled bundles
 ```
 
 Основные triggers:
@@ -340,6 +353,13 @@ locale registration/activation → bulk generation
 canonical source changed       → selective regeneration
 missing/stale key observed     → controlled deduplicated self-healing enqueue
 ```
+
+Generation eligibility для UI определяется одним общим predicate, который используют и
+planner, и consumer preflight. В текущем Stage 5 baseline machine generation разрешена
+только для зарегистрированного canonical non-English locale. `publicationStatus=active` и
+`publicationStatus=inactive` допустимы: inactive locale можно подготовить до публикации.
+`publicationStatus=disabled` generation запрещает, пока locale явно не вернётся в разрешённое
+состояние.
 
 Self-healing enqueue допустим только для зарегистрированного locale и проходит internal
 policy/deduplication/rate-or-budget boundary. Обычный page request никогда напрямую не
@@ -391,6 +411,11 @@ UiMessageDescriptor
 → locale-specific i18next resource
 ```
 
+Canonical descriptor может хранить plural source как одну логическую base-key структуру
+(`one/other` для English), а target machine/manual payload — как validated map required target
+branches. Raw structured payload остаётся одной translation unit для freshness, priority и
+publication; отдельные plural branches не получают независимый lifecycle.
+
 Основной `LocaleRulesProvider` может использовать `Intl.PluralRules`. Если runtime не
 имеет данных для нужного locale, adapter можно заменить/дополнить CLDR/polyfill data без
 изменения translation domain.
@@ -410,5 +435,18 @@ SSR/runtime не должен выполнять N storage queries по одно
 locale/namespace bundle. Bundle version является output metadata loader/storage layer, а
 не обязательным аргументом обычного resource lookup.
 
-Persistence, versioning, ETag/cache contract описаны в
+Для plural unit compiler преобразует validated logical structured payload в i18next JSON v4
+runtime keys с locale-specific suffixes (`key_one`, `key_few`, `key_many`, `key_other` и т. п.).
+Persistent raw translation может оставаться structured JSON, но persisted compiled bundle
+содержит уже runtime-ready string resources; bundle verification собирает branches обратно
+только для structural validation и deterministic semantic identity.
+
+Stage 3C реализовал deterministic compilation/version identity и persistence/cache primitives.
+Stage 5A переключил SSR/runtime на verified persisted compiled bundles для canonical non-English
+locale. English всегда компилируется из code-owned canonical catalog. Bundle identity включает
+semantic identity всего canonical namespace и точное состояние local manual pack данного
+`(locale, namespace)`, включая отсутствие overrides. Поэтому изменение или удаление local value
+инвалидирует bundle предыдущего deploy без request-time чтения whole raw namespace.
+
+Persistence, versioning, ETag/cache contract и точная Stage 3C/Stage 5 boundary описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).

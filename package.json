@@ -11,21 +11,29 @@
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:reconcile-ui-bundles": "tsx scripts/reconcile-ui-translation-bundles.ts",
     "db:test": "vitest run --config vitest.database.config.ts",
     "dev": "react-router dev",
     "preview": "pnpm build && vite preview",
     "lint": "eslint .",
     "typecheck": "wrangler types && react-router typegen && tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ui-preview:build": "vite build --config app/ui-preview/vite.config.ts"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.4",
+    "better-auth": "1.7.4",
     "drizzle-orm": "0.45.2",
     "i18next": "26.4.2",
+    "mdast-util-from-markdown": "2.0.3",
+    "mdast-util-to-markdown": "2.1.2",
     "pg": "8.23.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-i18next": "17.0.13",
-    "react-router": "8.3.1"
+    "react-markdown": "10.1.0",
+    "react-router": "8.3.1",
+    "tinyld": "1.3.4"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.6",
@@ -42,6 +50,7 @@
     "eslint": "10.10.0",
     "globals": "17.12.0",
     "jsdom": "30.0.1",
+    "tsx": "4.23.13",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.0",
     "vite": "8.2.2",

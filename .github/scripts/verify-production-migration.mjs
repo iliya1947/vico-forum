@@ -2,14 +2,46 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import pg from "pg";
+import {
+  assertMigrationHistoryForPhase,
+  parseProductionMigrationPhase,
+  readExpectedMigrationHistory,
+} from "./production-migration-contract.mjs";
+import {
+  applicationTables as baselineApplicationTables,
+  assertProductionPrivilegeContract,
+  readProductionPrivilegeSnapshot,
+} from "./production-privileges.mjs";
+import {
+  assertProductionSchemaManifest,
+  loadProductionSchemaManifest,
+  readProductionSchemaSnapshot,
+} from "./production-schema-manifest.mjs";
 
 const databaseUrl = globalThis.process.env.DATABASE_URL;
 assert.ok(databaseUrl, "DATABASE_URL is required");
-
+const runtimeRole = globalThis.process.env.RUNTIME_DATABASE_ROLE;
+assert.ok(runtimeRole, "RUNTIME_DATABASE_ROLE is required");
+const phase = parseProductionMigrationPhase(globalThis.process.env.PRODUCTION_MIGRATION_PHASE);
+const migrationMembershipsValue = globalThis.process.env.MIGRATION_DATABASE_ROLE_MEMBERSHIPS;
+assert.notEqual(
+  migrationMembershipsValue,
+  undefined,
+  "MIGRATION_DATABASE_ROLE_MEMBERSHIPS is required (use an empty value for no memberships)",
+);
+const migrationMemberships = migrationMembershipsValue
+  .split(",")
+  .map((role) => role.trim())
+  .filter(Boolean);
+assert.equal(
+  new Set(migrationMemberships).size,
+  migrationMemberships.length,
+  "MIGRATION_DATABASE_ROLE_MEMBERSHIPS must not contain duplicates",
+);
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
-const expectedMigrationHistory = journal.entries.map(({ when }) => String(when));
+const expectedMigrationHistory = await readExpectedMigrationHistory(journal);
 
-const requiredTables = new Map([
+const requiredBaselineTables = new Map([
   [
     "locales",
     new Map([
@@ -54,9 +86,41 @@ const requiredTables = new Map([
       ["compiled_at", "timestamptz"],
     ]),
   ],
+  ["user", new Map([
+    ["id", "text"], ["name", "text"], ["email", "text"], ["email_verified", "bool"],
+    ["image", "text"], ["created_at", "timestamp"], ["updated_at", "timestamp"], ["locale", "text"],
+  ])],
+  ["session", new Map([
+    ["id", "text"], ["expires_at", "timestamp"], ["token", "text"], ["created_at", "timestamp"],
+    ["updated_at", "timestamp"], ["ip_address", "text"], ["user_agent", "text"], ["user_id", "text"],
+  ])],
+  ["account", new Map([
+    ["id", "text"], ["account_id", "text"], ["provider_id", "text"], ["user_id", "text"],
+    ["access_token", "text"], ["refresh_token", "text"], ["id_token", "text"],
+    ["access_token_expires_at", "timestamp"], ["refresh_token_expires_at", "timestamp"],
+    ["scope", "text"], ["password", "text"], ["created_at", "timestamp"], ["updated_at", "timestamp"],
+  ])],
+  ["verification", new Map([
+    ["id", "text"], ["identifier", "text"], ["value", "text"], ["expires_at", "timestamp"],
+    ["created_at", "timestamp"], ["updated_at", "timestamp"],
+  ])],
+  ["rate_limit", new Map([
+    ["id", "text"], ["key", "text"], ["count", "int4"], ["last_request", "int8"],
+  ])],
 ]);
 
-const nullableColumns = new Set([
+const nullableBaselineColumns = new Set([
+  "user.image",
+  "user.locale",
+  "session.ip_address",
+  "session.user_agent",
+  "account.access_token",
+  "account.refresh_token",
+  "account.id_token",
+  "account.access_token_expires_at",
+  "account.refresh_token_expires_at",
+  "account.scope",
+  "account.password",
   "ui_translations.generation_policy_version",
   "ui_translations.provider",
   "ui_translations.provider_model",
@@ -80,35 +144,34 @@ try {
   assert.equal(server.rows[0].server_encoding, "UTF8", "Expected UTF-8 server encoding");
 
   const migrationHistory = await client.query(`
-    SELECT created_at::text AS created_at
+    SELECT created_at::text AS created_at, hash
     FROM drizzle.__drizzle_migrations
     ORDER BY created_at
   `);
-  assert.deepEqual(
-    migrationHistory.rows.map(({ created_at }) => created_at),
-    expectedMigrationHistory,
-    "Database migration history does not match the checked-in Drizzle journal",
-  );
+  assertMigrationHistoryForPhase({
+    phase,
+    journal,
+    expectedHistory: expectedMigrationHistory,
+    actualHistory: migrationHistory.rows.map(({ created_at, hash }) => ({
+      createdAt: created_at,
+      hash,
+    })),
+  });
 
-  for (const [tableName, requiredColumns] of requiredTables) {
-    const tableColumns = await client.query(
-      `SELECT column_name, udt_name, is_nullable
-       FROM information_schema.columns
-       WHERE table_schema = 'public' AND table_name = $1`,
-      [tableName],
+  let targetManifest;
+  if (phase === "pre") {
+    await verifyKnownAppliedBaseline(client);
+  } else {
+    targetManifest = await loadProductionSchemaManifest();
+    assert.equal(
+      targetManifest.targetMigration,
+      journal.entries.at(-1)?.tag,
+      "Production schema manifest must target the newest checked-in migration",
     );
-    const columnsByName = new Map(tableColumns.rows.map((row) => [row.column_name, row]));
-    for (const [columnName, udtName] of requiredColumns) {
-      const column = columnsByName.get(columnName);
-      assert.ok(column, `Expected public.${tableName}.${columnName} to exist`);
-      assert.equal(column.udt_name, udtName, `Unexpected type for public.${tableName}.${columnName}`);
-      const expectedNullable = nullableColumns.has(`${tableName}.${columnName}`) ? "YES" : "NO";
-      assert.equal(
-        column.is_nullable,
-        expectedNullable,
-        `Unexpected nullability for public.${tableName}.${columnName}`,
-      );
-    }
+    assertProductionSchemaManifest(
+      await readProductionSchemaSnapshot(client),
+      targetManifest,
+    );
   }
 
   const reservedLocaleRows = await client.query(`
@@ -124,9 +187,9 @@ try {
   );
 
   const persistentEnglishRows = await client.query(`
-    SELECT 'translation' AS source, locale FROM public.ui_translations WHERE lower(locale) = 'en'
+    SELECT 'translation' AS source, locale FROM public.ui_translations WHERE lower(btrim(locale, chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) = 'en'
     UNION ALL
-    SELECT 'bundle' AS source, locale FROM public.ui_translation_bundles WHERE lower(locale) = 'en'
+    SELECT 'bundle' AS source, locale FROM public.ui_translation_bundles WHERE lower(btrim(locale, chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) = 'en'
   `);
   assert.deepEqual(
     persistentEnglishRows.rows,
@@ -134,7 +197,54 @@ try {
     "Canonical English UI resources must remain code-owned rather than persistent rows",
   );
 
-  globalThis.console.log("Production database migration verification passed.");
+  const identity = await client.query("SELECT current_user AS migration_role");
+  const migrationRole = identity.rows[0].migration_role;
+  const expectedApplicationTables = phase === "post"
+    ? Object.keys(targetManifest.tables).sort()
+    : baselineApplicationTables;
+  const privilegeSnapshot = await readProductionPrivilegeSnapshot(client, {
+    migrationRole,
+    runtimeRole,
+    applicationTables: expectedApplicationTables,
+  });
+  assertProductionPrivilegeContract(privilegeSnapshot, {
+    migrationRole,
+    runtimeRole,
+    migrationMemberships,
+    applicationTables: expectedApplicationTables,
+  });
+
+  globalThis.console.log(
+    `Production database ${phase}-migration schema and privilege verification passed.`,
+  );
 } finally {
   await client.end();
+}
+
+async function verifyKnownAppliedBaseline(database) {
+  for (const [tableName, requiredColumns] of requiredBaselineTables) {
+    const tableColumns = await database.query(
+      `SELECT column_name, udt_name, is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1`,
+      [tableName],
+    );
+    const columnsByName = new Map(tableColumns.rows.map((row) => [row.column_name, row]));
+    assert.equal(
+      columnsByName.size,
+      requiredColumns.size,
+      `Unexpected column set for public.${tableName}`,
+    );
+    for (const [columnName, udtName] of requiredColumns) {
+      const column = columnsByName.get(columnName);
+      assert.ok(column, `Expected public.${tableName}.${columnName} to exist`);
+      assert.equal(column.udt_name, udtName, `Unexpected type for public.${tableName}.${columnName}`);
+      const expectedNullable = nullableBaselineColumns.has(`${tableName}.${columnName}`) ? "YES" : "NO";
+      assert.equal(
+        column.is_nullable,
+        expectedNullable,
+        `Unexpected nullability for public.${tableName}.${columnName}`,
+      );
+    }
+  }
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { registryLoaderContext } from "../localization/request-context";
 import { localeRegistry } from "../localization/registry";
 import { loader } from "./locale-negotiation";
+import { authSessionContext } from "../auth/request-context";
 
 function contextWithFixtureRegistry() {
   const context = new RouterContextProvider();
@@ -15,6 +16,33 @@ function contextWithFixtureRegistry() {
 }
 
 describe("root locale negotiation route", () => {
+  it("uses authenticated user.locale before cookie and Accept-Language", async () => {
+    const request = new Request("https://vico.test/", {
+      headers: { Cookie: "vico_locale=ru", "Accept-Language": "en" },
+    });
+    const context = contextWithFixtureRegistry();
+    context.set(authSessionContext, {
+      user: {
+        id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
+        createdAt: new Date(), updatedAt: new Date(), locale: "he",
+      },
+      session: {
+        id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(), updatedAt: new Date(),
+      },
+    });
+
+    await expect(loader({ request, context })).rejects.toMatchObject({
+      status: 307,
+      headers: expect.objectContaining({}),
+    });
+    try {
+      await loader({ request, context });
+    } catch (error) {
+      expect((error as Response).headers.get("Location")).toBe("/he/");
+    }
+  });
+
   it("returns a non-cacheable request-specific redirect", async () => {
     const request = new Request("https://vico.test/?from=root", {
       headers: { Cookie: "vico_locale=ru" },

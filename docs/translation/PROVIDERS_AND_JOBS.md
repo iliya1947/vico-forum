@@ -140,10 +140,46 @@ target locale всё ещё разрешён для generation policy
 Если task устарела до provider call, consumer завершает/помечает её stale/cancelled без
 внешнего вызова.
 
+`stale/cancelled` является terminal состоянием для текущей Queue delivery и её retry: старое
+message не должно самостоятельно возвращать task в execution. Но terminal state не означает
+вечный запрет той же stable logical identity. Если более поздний fresh generation plan снова
+определяет ровно ту же identity как актуальную и нуждающуюся в работе, durable store может
+атомарно вернуть соответствующую stale task в `pending`, сохранив её stable identity/id и
+очистив старую claim/stale metadata. Это новая planning decision, а не Queue retry.
+
+`completed` имеет более строгую семантику: успешно опубликованная stable logical identity
+остаётся terminal и не возвращается в `pending` ни duplicate Queue delivery, ни duplicate
+planning. Новая machine generation после изменения source semantics или generation policy
+получает новую stable identity через новый `sourceFingerprint` и/или
+`generationPolicyVersion`.
+
+Duplicate planning не должно сбрасывать или продлевать живой `processing` claim. Durable
+claim/lease/stale/completion timestamps, которые определяют lifecycle/reclaim, используют
+единый PostgreSQL-owned clock, а не wall clock вызывающего Worker.
+
+Для UI unit `(translationKind, namespace, key, targetLocale)` PostgreSQL хранит отдельный
+durable generation head и монотонный номер каждой впервые увиденной stable identity. Planning
+новой identity и conditional publication берут row lock одного head в общей transaction
+boundary. Поэтому concurrent planning сериализуется в однозначный persistent порядок, а
+publication разрешена только task, чей номер всё ещё равен `currentGeneration`. Само обнаружение
+уже известной stale identity или старая Queue delivery не передвигают head и не делают stale work
+актуальной. Но более поздний eligible fresh generation plan может снова выбрать ту же stable
+identity после промежуточной identity (`A → B → A`). Такая новая planning decision обязана
+получить более новый authoritative ordering position и может сделать stale identity
+current/reactivated, не переиспользуя её старую позицию. Точное storage/schema представление новой
+planning occurrence не является частью этого контракта. `completed` identity остаётся terminal.
+`sourceFingerprint`, `taskIdentity` и `generationPolicyVersion` участвуют в identity/validation,
+но не сравниваются как хронологические значения.
+
 После provider response и validation запись результата должна быть conditional относительно
 исходной task identity. Если source/policy изменилась во время вызова, старый result не
 может быть опубликован как current translation. Его можно отбросить или сохранить как
 historical/audit result согласно storage policy.
+
+Для current Stage 5 UI machine publication durable result и переход актуального claim
+`processing → completed` выполняются в одной PostgreSQL transaction boundary. Publication
+разрешена только пока совпадают текущая durable generation и claim token; потерянный/reclaimed claim не может
+опубликовать machine row и отдельно «дозавершить» task.
 
 Гарантируемый контракт Vico:
 

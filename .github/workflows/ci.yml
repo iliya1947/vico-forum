@@ -4,6 +4,7 @@ on:
   pull_request:
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -24,6 +25,22 @@ jobs:
       - name: Protect accepted migration history
         run: |
           node --test .github/scripts/migration-history.test.mjs
+          node --test .github/scripts/production-privileges.test.mjs
+          node --test .github/scripts/runtime-privileges.test.mjs
+          node --test .github/scripts/provision-production-web-relations.test.mjs
+          node --test .github/scripts/bootstrap-production-web-credential.test.mjs
+          node --test .github/scripts/production-web-credential-bootstrap-workflow.test.mjs
+          node --test .github/scripts/diagnose-production-web-credential.test.mjs
+          node --test .github/scripts/production-web-credential-diagnostic-workflows.test.mjs
+          node --test .github/scripts/recover-production-web-credential.test.mjs
+          node --test .github/scripts/production-web-credential-recovery-workflow.test.mjs
+          node --test .github/scripts/validate-production-web-credential-input.test.mjs
+          node --test .github/scripts/verify-recovery-v2-validation-run.test.mjs
+          node --test .github/scripts/production-web-credential-recovery-v2-workflows.test.mjs
+          node --test .github/scripts/production-worker-rollout.test.mjs
+          node --test .github/scripts/production-migration-contract.test.mjs
+          node --test .github/scripts/runtime-migration-evidence.test.mjs
+          node --test .github/scripts/verify-production-migration-identity.test.mjs
           node .github/scripts/verify-migration-history.mjs
       - name: Lint
         run: pnpm lint
@@ -33,8 +50,18 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Build UI preview
+        run: pnpm ui-preview:build
       - name: Validate migration metadata
         run: pnpm db:check
+      - name: Verify Drizzle schema parity
+        run: |
+          pnpm exec drizzle-kit generate --name=ci-schema-parity
+          if [ -n "$(git status --porcelain -- drizzle)" ]; then
+            git status --short -- drizzle
+            git diff -- drizzle
+            exit 1
+          fi
   database:
     runs-on: ubuntu-latest
     services:
@@ -54,6 +81,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -66,9 +94,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Test clean PostgreSQL 17 migrations and constraints
         run: pnpm db:test
+      - name: Verify production schema manifest parity
+        run: node .github/scripts/verify-production-schema-manifest.mjs
+      - name: Verify runtime privilege probes
+        run: node .github/scripts/verify-runtime-privilege-probes.mjs
+      - name: Verify split-authority web relation provisioning
+        run: node .github/scripts/verify-web-relation-provisioning-probes.mjs
+      - name: Verify web credential diagnostics and rollback-only probe
+        run: node .github/scripts/verify-web-credential-diagnostic-probes.mjs
+      - name: Verify web credential recovery and compensation
+        run: node .github/scripts/verify-web-credential-recovery-probes.mjs
+      - name: Verify web credential bootstrap and compensation
+        run: node .github/scripts/verify-web-credential-bootstrap-probes.mjs
       - name: Build for Workers smoke
         run: pnpm build
-      - name: Workers smoke with local Hyperdrive override
+      - name: Workers smoke with split local Hyperdrive overrides
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4173 > /tmp/vico-preview.log 2>&1 &
           preview_pid=$!

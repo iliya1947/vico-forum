@@ -1,10 +1,13 @@
 import { redirect, type RouterContextProvider } from "react-router";
 import { registryForRequest } from "../localization/request-context";
 import { negotiateLocale } from "../localization/resolver";
+import { authSessionForRequest } from "../auth/request-context";
 
 export async function loader({ request, context }: { request: Request; context: RouterContextProvider }) {
   const loaded = await registryForRequest(context);
-  const locale = negotiateLocale(request, loaded.registry);
+  const locale = negotiateLocale(request, loaded.registry, {
+    locale: authSessionForRequest(context)?.user.locale ?? undefined,
+  });
   if (!locale) throw new Response("Not Found", { status: 404 });
   const search = new URL(request.url).search;
 

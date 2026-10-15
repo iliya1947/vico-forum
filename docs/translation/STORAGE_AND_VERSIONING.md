@@ -116,7 +116,7 @@ runtime bundle.
 
 ## Bundles и cache (`STO-05`)
 
-Runtime должен читать locale/namespace bundle, а не выполнять N storage queries по keys.
+Целевой runtime должен читать locale/namespace bundle, а не выполнять N storage queries по keys.
 
 Compiled bundle имеет version/hash. `TranslationBundleCache` — optimization layer вокруг
 готового compiled bundle, а не translation source и не участник source-priority merge.
@@ -131,6 +131,54 @@ HTTP ETag / Cache-Control
 ```
 
 Конкретный cache backend не входит в domain contract.
+
+### Stage 3C / Stage 5 implementation boundary
+
+Stage 3C реализовал deterministic bundle compiler/identity, persistence adapter и
+backend-independent cache/ETag primitives. Stage 5A активировал следующий SSR path:
+
+```text
+canonical non-English locale/namespace
+→ read + structural/current-deploy verification ui_translation_bundles
+→ hit: runtime-ready resources без чтения ui_translations
+→ miss/degraded/invalid: local + доступные persistent raw sources
+→ canonical code-owned English fallback
+→ request-scoped i18next
+```
+
+Каждый locale chain member читается отдельным bundle; fallback resources не flatten-ятся.
+Canonical English никогда не читается из bundle table. Translation provider не вызывается
+из request path.
+
+Stage 5A publication теперь атомарно завершает claimed task, записывает raw machine result и
+пересобирает persisted exact-locale namespace bundle в одной PostgreSQL transaction. Ошибка
+компиляции/записи bundle откатывает также raw result и completion, поэтому successful completion
+не может оставить permanent stale bundle. Concurrent publications разных keys одного
+`(locale, namespace)` сериализуются через deterministic `FOR UPDATE` всех существующих
+generation-head rows этого namespace; после ожидания следующая transaction читает уже
+закоммиченный whole-namespace state и не может затереть предыдущий result. Advisory locks и
+Queue ordering для correctness не используются. Schema для этого не изменялась.
+
+Bundle строится существующим source merge `local manual → persistent manual → current machine`,
+с текущими fingerprint/generation-policy checks. Он содержит только exact locale, не включает
+fallback locale, а structured plural raw JSON компилируется существующим compiler в i18next v4
+suffix resources.
+
+Самосогласованного `bundleVersion`, вычисленного только по stored resources, недостаточно для
+currentness. Версия bundle format v2 дополнительно включает deterministic code-owned input
+identity: fingerprints всех canonical descriptors namespace и exact current local manual pack
+для locale/namespace (keys, сохранённые fingerprints и payloads, включая факт отсутствия key).
+Runtime пересчитывает эту identity из текущего deploy при verification. Поэтому изменение либо
+удаление local override меняет ожидаемую version, и старый bundle уходит в miss path. Это не
+требует schema migration: existing `bundle_version` уже хранит semantic hash, а публикация и
+runtime используют один compiler/verifier.
+
+Безопасный runtime miss является availability fallback, но не заменяет durable convergence.
+Persisted bundle, отклонённый как obsolete относительно текущего format/deploy identity, обязан
+иметь durable path к актуальному representation: обычные повторные reads не должны бесконечно
+читать и отклонять одну и ту же obsolete row. Этот path не вызывает translation provider из
+request path. Конкретный trigger, backfill/delete-and-rebuild mechanism и orchestration относятся
+к implementation/remediation, а не к storage contract.
 
 ### Cache identity
 

@@ -2,15 +2,41 @@ import { createContext, type RouterContextProvider } from "react-router";
 import type { ResolvedLocaleContext } from "./locale";
 import type { LoadedLocaleRegistry } from "./persistent-registry";
 import type { UiTranslationStore } from "./persistent-sources";
+import type { TranslationBundleReader } from "./bundles";
+import type { ContentTranslationPresentationService } from "./content-translation-presentation";
+import type { ContentGenerationActionCapability } from "./content-generation-action.server";
+import type { ContentGenerationStatusReader } from "./content-generation-status";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
 export const registryLoaderContext = createContext<() => Promise<LoadedLocaleRegistry>>();
-export const uiTranslationStoreContext = createContext<UiTranslationStore>();
+export type RuntimeUiTranslationStore = UiTranslationStore & TranslationBundleReader;
+export const uiTranslationStoreContext = createContext<RuntimeUiTranslationStore>();
+export const contentTranslationPresentationContext = createContext<ContentTranslationPresentationService>();
+export const contentGenerationStatusReaderContext = createContext<ContentGenerationStatusReader>();
+
+export type ContentGenerationActionRuntime =
+  | { readonly enabled: false }
+  | { readonly enabled: true; readonly capability: ContentGenerationActionCapability };
+
+export const DISABLED_CONTENT_GENERATION_ACTION_RUNTIME: ContentGenerationActionRuntime = Object.freeze({
+  enabled: false,
+});
+export const contentGenerationActionContext = createContext<ContentGenerationActionRuntime>(
+  DISABLED_CONTENT_GENERATION_ACTION_RUNTIME,
+);
 
 export class RegistryLoaderConfigurationError extends Error {
   constructor(options?: ErrorOptions) {
     super("registry loader is not configured", options);
     this.name = "RegistryLoaderConfigurationError";
+  }
+}
+
+
+export class ContentTranslationPresentationConfigurationError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("content translation presentation is not configured", options);
+    this.name = "ContentTranslationPresentationConfigurationError";
   }
 }
 
@@ -31,10 +57,33 @@ export async function registryForRequest(context: RouterContextProvider) {
   return load();
 }
 
-export function uiTranslationStoreForRequest(context: RouterContextProvider): UiTranslationStore {
+export function uiTranslationStoreForRequest(context: RouterContextProvider): RuntimeUiTranslationStore {
   try {
     return context.get(uiTranslationStoreContext);
   } catch (error) {
     throw new UiTranslationStoreConfigurationError({ cause: error });
   }
+}
+
+export function contentTranslationPresentationForRequest(
+  context: RouterContextProvider,
+): ContentTranslationPresentationService {
+  try {
+    return context.get(contentTranslationPresentationContext);
+  } catch (error) {
+    throw new ContentTranslationPresentationConfigurationError({ cause: error });
+  }
+}
+
+
+export function contentGenerationActionForRequest(
+  context: RouterContextProvider,
+): ContentGenerationActionRuntime {
+  return context.get(contentGenerationActionContext);
+}
+
+export function contentGenerationStatusReaderForRequest(
+  context: RouterContextProvider,
+): ContentGenerationStatusReader {
+  return context.get(contentGenerationStatusReaderContext);
 }

@@ -47,6 +47,63 @@ describe("UI translation resources", () => {
     );
   });
 
+  it("compiles canonical English plural branches into real i18next runtime lookup", async () => {
+    const englishLocale = {
+      ...locale,
+      translationLocale: "en",
+      fallbackLocales: [],
+      formatting: { locale: "en", timeZone: "UTC" },
+      nativeName: "English",
+    };
+    const snapshot = await new TranslationResourceLoader([new CanonicalEnglishSource()]).load(
+      englishLocale,
+      ["common"],
+    );
+    const runtime = createTranslationRuntime(snapshot);
+
+    expect(snapshot.resourcesByLocale.en?.common).toMatchObject({
+      sectionCount_one: "{{count}} section",
+      sectionCount_other: "{{count}} sections",
+    });
+    expect(runtime.t("sectionCount", { count: 1 })).toBe("1 section");
+    expect(runtime.t("sectionCount", { count: 2 })).toBe("2 sections");
+  });
+
+  it("resolves topic and message totals through independent plural descriptors", async () => {
+    const englishLocale = {
+      ...locale,
+      translationLocale: "en",
+      fallbackLocales: [],
+      formatting: { locale: "en", timeZone: "UTC" },
+      nativeName: "English",
+    };
+    const snapshot = await new TranslationResourceLoader([new CanonicalEnglishSource()]).load(
+      englishLocale,
+      ["common"],
+    );
+    const runtime = createTranslationRuntime(snapshot);
+    const topicDescriptor = canonicalEnglishCatalog.common.topicCount;
+    const messageDescriptor = canonicalEnglishCatalog.common.messageCount;
+
+    expect(topicDescriptor).toMatchObject({
+      messageKind: "plural",
+      placeholders: ["count"],
+      source: { one: "{{count}} topic", other: "{{count}} topics" },
+    });
+    expect(messageDescriptor).toMatchObject({
+      messageKind: "plural",
+      placeholders: ["count"],
+      source: { one: "{{count}} message", other: "{{count}} messages" },
+    });
+    await expect(sourceFingerprint(topicDescriptor)).resolves.toMatch(/^[0-9a-f]{64}$/);
+    await expect(sourceFingerprint(messageDescriptor)).resolves.toMatch(/^[0-9a-f]{64}$/);
+
+    expect(runtime.t("topicCount", { count: 1 })).toBe("1 topic");
+    expect(runtime.t("topicCount", { count: 2 })).toBe("2 topics");
+    expect(runtime.t("messageCount", { count: 1 })).toBe("1 message");
+    expect(runtime.t("messageCount", { count: 2 })).toBe("2 messages");
+  });
+
   it("keeps canonical English authoritative over local pack data", async () => {
     const englishLocale = {
       ...locale,
@@ -111,8 +168,71 @@ describe("UI translation resources", () => {
     );
   });
 
-  it("validates every real manual pack for CI while allowing stale values", async () => {
-    await expect(validateTranslationPacks(manualTranslationPacks)).resolves.toBeDefined();
+  it("keeps the reviewed Russian and Hebrew packs complete and current", async () => {
+    const canonicalKeys = Object.keys(canonicalEnglishCatalog.common).sort();
+    const validation = await validateTranslationPacks(manualTranslationPacks);
+
+    expect(Object.keys(manualTranslationPacks.ru?.common ?? {}).sort()).toEqual(canonicalKeys);
+    expect(Object.keys(manualTranslationPacks.he?.common ?? {}).sort()).toEqual(canonicalKeys);
+    expect(validation.staleKeys.ru ?? []).toEqual([]);
+    expect(validation.staleKeys.he ?? []).toEqual([]);
+  });
+
+  it.each([
+    {
+      locale: "ru",
+      direction: "ltr" as const,
+      nativeName: "Русский",
+      expected: {
+        topicTools: "Инструменты темы",
+        messageTools: "Инструменты сообщения",
+        sourceLocale: "Язык оригинала: en",
+        one: "1 сообщение",
+        two: "2 сообщения",
+        many: "5 сообщений",
+      },
+    },
+    {
+      locale: "he",
+      direction: "rtl" as const,
+      nativeName: "עברית",
+      expected: {
+        topicTools: "כלי נושא",
+        messageTools: "כלי הודעה",
+        sourceLocale: "שפת המקור: en",
+        one: "1 הודעה",
+        two: "2 הודעות",
+        many: "5 הודעות",
+      },
+    },
+  ])("loads the complete $locale manual pack without English fallback for reviewed UI", async ({
+    locale: targetLocale,
+    direction,
+    nativeName,
+    expected,
+  }) => {
+    const snapshot = await new TranslationResourceLoader([
+      new LocalTranslationSource(manualTranslationPacks),
+      new CanonicalEnglishSource(),
+    ]).load({
+      translationLocale: targetLocale,
+      fallbackLocales: ["en"],
+      direction,
+      formatting: { locale: targetLocale, timeZone: "UTC" },
+      nativeName,
+      presentationMetadata: {},
+    }, ["common"]);
+    const runtime = createTranslationRuntime(snapshot);
+
+    expect(snapshot.staleKeys[targetLocale] ?? []).toEqual([]);
+    expect(Object.keys(snapshot.resourcesByLocale[targetLocale]?.common ?? {}).length)
+      .toBeGreaterThan(Object.keys(canonicalEnglishCatalog.common).length);
+    expect(runtime.t("topicTools")).toBe(expected.topicTools);
+    expect(runtime.t("messageTools")).toBe(expected.messageTools);
+    expect(runtime.t("sourceLocaleCurrent", { locale: "en" })).toBe(expected.sourceLocale);
+    expect(runtime.t("messageCount", { count: 1 })).toBe(expected.one);
+    expect(runtime.t("messageCount", { count: 2 })).toBe(expected.two);
+    expect(runtime.t("messageCount", { count: 5 })).toBe(expected.many);
   });
 
   it("rejects unknown identities and invalid current translations during full-pack validation", async () => {
@@ -126,6 +246,21 @@ describe("UI translation resources", () => {
     const broken = await currentPack("Broken {{name}}");
     await expect(validateTranslationPacks({ xx: broken })).rejects.toThrow("Placeholder mismatch");
   });
+
+  it.each(["toString", "constructor", "__proto__", "hasOwnProperty"])(
+    "rejects inherited namespace name %s across UI translation sources",
+    async (namespace) => {
+      const pack = Object.fromEntries([[namespace, {}]]) as TranslationPack;
+
+      await expect(new CanonicalEnglishSource().load("en", [namespace])).rejects.toThrow(
+        "Unknown canonical namespace",
+      );
+      await expect(new LocalTranslationSource({ xx: pack }).load("xx", [namespace])).rejects.toThrow(
+        "Unknown canonical namespace",
+      );
+      await expect(validateTranslationPacks({ xx: pack })).rejects.toThrow("Unknown canonical namespace");
+    },
+  );
 
   it("creates isolated runtimes from the same serialized server snapshot", async () => {
     const snapshot = await new TranslationResourceLoader([new CanonicalEnglishSource()]).load(

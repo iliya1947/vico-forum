@@ -1,0 +1,3 @@
+ALTER TABLE "translation_tasks" ADD COLUMN "reconciliation_attempted_at" timestamp with time zone;--> statement-breakpoint
+CREATE INDEX "translation_tasks_reconcile_pending_idx" ON "translation_tasks" USING btree ("status","reconciliation_attempted_at" ASC NULLS FIRST,"updated_at","id");--> statement-breakpoint
+CREATE INDEX "translation_tasks_reconcile_processing_idx" ON "translation_tasks" USING btree ("status","reconciliation_attempted_at" ASC NULLS FIRST,"updated_at","id","lease_expires_at");

@@ -1,70 +1,397 @@
 # Neon and Hyperdrive operations
 
-## Capability boundary
+## Назначение
 
-The production Worker receives only the `HYPERDRIVE` binding. Its `vico_forum_runtime`
-PostgreSQL role has `CONNECT`, `USAGE` on the application schema, and `SELECT` on `locales`;
-it does not own the schema and has no `INSERT`, `UPDATE`, or `DELETE` privileges.
-`DATABASE_URL` is never configured as a Worker secret or variable.
+Этот документ описывает уже существующий Neon/Hyperdrive foundation и правила его
+использования. Он **не является обязательным gate для каждого feature PR**.
 
-## Provision and deploy
+До Stage 6 default development path — local/CI PostgreSQL. Реальный Hyperdrive используется
+для задач, которым действительно нужны его pooling/caching/network semantics, и для
+pre-release/release external integration.
 
-The Neon PostgreSQL 17 schema is migrated only through the existing manually dispatched
-production migration workflow. Do not run `pnpm db:test` against Neon: that command is an
-explicitly destructive clean-database integration test and accepts only a local database
-whose name ends in `_test`.
+## Current localization capability boundary
 
-The `vico-forum-registry` Hyperdrive configuration uses the direct Neon endpoint with caching
-disabled. Its ID is declared as the `HYPERDRIVE` binding in `wrangler.jsonc`. Normal production
-Worker deployment is performed by native Cloudflare Workers Builds from GitHub `main`.
-
-### Schema-dependent release ordering
-
-A production schema change must become safe in production before runtime code is allowed to
-depend on it. For the first introduction of any schema required by runtime, use this sequence:
+Production Worker получает `HYPERDRIVE` binding существующего localization path.
+`vico_forum_runtime` имеет только необходимые read-only privileges:
 
 ```text
-migration-only PR
-→ merge to main
-→ run production migration workflow from main
-→ verify the production migration
-→ runtime PR that depends on the new schema
+public.locales
+public.ui_translations
+public.ui_translation_bundles
 ```
 
-Do not combine the first production migration for a schema and runtime code that requires that
-schema in one PR. The migration PR must remain forward-compatible with the currently deployed
-Worker, so an automatic Workers Build after its merge cannot make the existing runtime depend
-on unapplied database state.
+Role не должен иметь schema ownership/`CREATE`, table ownership, `INSERT`, `UPDATE`,
+`DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`, migration или admin capability.
+`DATABASE_URL` не является Worker secret/variable.
 
-Smoke-test `/ru/`, `/he/`, `/iw/`, `/ka/`, `/unknown/`, and `/api/test` after a relevant
-production deployment. A healthy registry serves `ru`/`he`, canonicalizes `iw`, and treats
-inactive/unknown locales by the established routing policy. Bootstrap-only English behavior is
-an availability fallback, not successful deployment acceptance; inspect Worker and Hyperdrive
-diagnostics before proceeding if it occurs.
+Stage 5A использует `ui_translation_bundles` как первый read для canonical non-English
+locale/namespace. Это остаётся той же request-scoped read-only capability: на bundle miss
+допустим fallback-read `ui_translations`, а canonical English DB не читает. Новых grants или
+отдельного connection pool для runtime-read slice не требуется.
 
-## Preview / non-production isolation gate
+Новые forum/auth/translation write-capabilities не добавляются в этот role механически.
+Они проектируются по фактическим runtime operations на Stage 6 external integration.
 
-Cloudflare Branch control has been verified with **Builds for non-production branches enabled**.
-No separate staging Hyperdrive/DB binding is configured in the repository, so preview/non-production
-uploads must be treated as potentially receiving the top-level production `HYPERDRIVE` binding.
+## Stage 6 reviewed web capability contract
 
-The current setup is accepted only while the production database capability exposed to the Worker
-remains strictly read-only and the data reachable through that capability is public locale registry
-data. Before either of the following becomes true:
+После schema-first acceptance through `0020` repository фиксирует две отдельные HTTP runtime
+capabilities:
 
-- a preview/non-production Worker receives any runtime `INSERT`, `UPDATE`, or `DELETE` capability;
-- the bound production database exposes non-public translation, admin, auth, or other private data;
+1. `localization-read` — существующие `HYPERDRIVE` + environment-specific localization role,
+   только `SELECT` на `locales`, `ui_translations`, `ui_translation_bundles`;
+2. `web` — отдельная cache-disabled capability для Better Auth, forum, dynamic authorization и
+   persisted forum-content presentation.
 
-preview/non-production execution must be isolated from production by a separate staging
-Worker/Hyperdrive/database (for example through an explicit Wrangler environment) or the
-non-production build path must be disabled. A public Preview URL is not a substitute for this
-capability boundary.
+Production role names остаются environment-specific inputs. Current production evidence использует
+`vico_forum_runtime` через `RUNTIME_DATABASE_ROLE` и provisioned `vico_forum_web` через
+protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants, shared runtime privilege
+verification и server-side `lock_timeout=2s` / `statement_timeout=5s` defaults приняты.
+Standalone owner-controlled password assignment по рабочему migrator precedent создал usable web
+credential, а Cloudflare принял отдельный direct-origin cache-disabled Hyperdrive
+`vico-forum-web`. Он пока не подключён к deployed Worker; production binding/routing/deploy
+остаются отдельным gate.
 
-## Local Workers integration
+Reviewed web relation ACL:
 
-Start a disposable PostgreSQL 17 instance, run the guarded integration test to apply and
-verify the complete migration history, and expose that same local URL only through Wrangler's
-documented override. The binding remains named `HYPERDRIVE`, so production code is unchanged:
+```text
+user, session, account, verification, rate_limit
+  SELECT, INSERT, UPDATE, DELETE
+
+forum_categories, forum_sections
+  SELECT
+
+forum_topics, forum_posts
+  SELECT, INSERT, UPDATE
+
+forum_help_duplicate_relationships, forum_help_duplicate_appeals, forum_help_signals
+  SELECT, INSERT, UPDATE
+
+forum_topic_title_revisions, forum_post_revisions
+  SELECT, INSERT
+
+forum_topic_title_translations, forum_post_body_translations
+  SELECT
+
+authz_roles
+  SELECT, INSERT, UPDATE, DELETE
+
+authz_role_permissions
+  SELECT, INSERT, DELETE
+
+authz_user_roles
+  SELECT, INSERT, UPDATE
+
+authz_user_permission_overrides
+  SELECT, INSERT, UPDATE, DELETE
+
+authz_mutation_lock
+  SELECT, UPDATE
+```
+
+`user.UPDATE` также нужен существующему forum cooldown mutex через `SELECT ... FOR UPDATE`.
+При текущем Worker composition content generation остаётся disabled, поэтому web capability
+намеренно **не** получает direct grants на `authz_permissions`, translation task/generation-head
+tables, request-budget counters либо UI localization tables.
+
+Обе runtime capabilities требуют:
+
+- LOGIN и effective database `CONNECT`;
+- no SUPERUSER / CREATEDB / CREATEROLE / REPLICATION / BYPASSRLS;
+- no inherited role membership; existing managed database-owner inbound admin control допустим
+  только в той же non-inheriting/non-SET форме, которую уже принимает production DB contract;
+- no schema/table/sequence/view ownership;
+- `public.USAGE` без `CREATE`;
+- complete database ACL snapshot по `CONNECT` / `CREATE` / `TEMPORARY`: runtime role может
+  иметь только optional direct non-grantable `CONNECT`; direct `TEMPORARY`, `CREATE`, grant
+  option или иная database capability запрещены;
+- `PUBLIC` database ACL допускает только hard-wired-equivalent non-grantable
+  `CONNECT` / `TEMPORARY` либо их отсутствие; `CREATE` и grant options запрещены;
+- no grant options, column ACL, sequence grants или direct function grants;
+- никаких custom default grants runtime roles; для `PUBLIC` сохраняется только уже принятая
+  hard-wired-equivalent function `EXECUTE` / type `USAGE` default semantics, без
+  relation/sequence/schema defaults.
+
+Repository verifier/provisioning preparation:
+- `.github/scripts/runtime-privileges.mjs` хранит named capability contracts и читает полный
+  database ACL через `aclexplode(COALESCE(datacl, acldefault('d', datdba)))`, поэтому default
+  `datacl IS NULL` и explicit runtime grants проверяются одной fail-closed границей;
+- `.github/scripts/verify-runtime-privilege-probes.mjs` применяет exact grants к disposable
+  PostgreSQL 17 и выполняет positive/negative SQL probes;
+- manual main-only relation-provisioning workflow использует existing protected migration
+  connection как exact `vico_forum_migrator`, проверяет observable owner-phase prerequisites и
+  derive-ит все table GRANT statements только из `runtimeCapabilityContracts.web`;
+- passwordlessness не читается migrator из `pg_roles`: owner phase создаёт role exact
+  `PASSWORD NULL`, а provisioning workflow до DB connection требует reviewed confirmation token
+  `owner-phase-password-null-confirmed`; token — operator evidence, не DB-derived password check;
+- relation GRANTs выполняются одной transaction и перед commit проходят shared full runtime
+  privilege assertion; CI отдельно моделирует successful split-authority path и rollback при
+  prerequisite drift;
+- manual main-only `Production runtime privilege verification` после отдельного external
+  provisioning выполняет read-only catalog verification обоих roles.
+
+Current production sequence уже прошла owner phase, migrator-owned exact relation grants и
+successful read-only runtime privilege verification для `vico_forum_runtime` и
+`vico_forum_web`. Migration workflow при этом остаётся независимым от наличия web role:
+runtime privilege verification — отдельная post-schema acceptance boundary.
+
+Fresh auth/session/permission и read-after-write paths должны использовать cache-disabled
+Hyperdrive. Для текущего repository wiring выбран отдельный binding `WEB_HYPERDRIVE` на existing
+configuration `vico-forum-web` (ID `a4e99f358a9f4953a7045db8f733974d`). Existing
+`HYPERDRIVE` остаётся localization-only. Наличие binding в repository config не означает, что он
+уже применён к deployed Worker: production binding mutation и deploy выполняются только отдельным
+external gate.
+
+### One-time web credential bootstrap preparation
+
+Repository содержит manual main-only workflow
+`.github/workflows/production-web-credential-bootstrap.yml` для единственного bootstrap usable
+credential уже принятой SQL-created `vico_forum_web`. Workflow использует protected
+`NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и временный Environment secret
+`WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; merge сам по себе ничего во внешней БД не меняет.
+
+Этот one-shot path уже был externally использован один раз и завершился failure. Post-failure
+reconciliation подтвердила `PASSWORD NULL`, `rolvaliduntil IS NULL`, сохранность accepted
+`2s/5s` defaults/grants и отсутствие созданного web Hyperdrive. Поэтому исходный bootstrap
+workflow считается **consumed**: его нельзя rerun-ить или использовать новым dispatch как recovery
+mechanism.
+
+До доступа к Environment secrets/production DB отдельный guard job требует exact
+`refs/heads/main`, `GITHUB_RUN_NUMBER=1`, `GITHUB_RUN_ATTEMPT=1` и exact confirmation token.
+Поэтому новый dispatch либо rerun этого workflow после первого run не может дойти до bootstrap
+step. В самом bootstrap script тот же run/attempt contract проверяется повторно до DB connection.
+
+Перед password mutation workflow fail closed проверяет exact production owner/session/database,
+safe role attributes/membership, принятые `2s/5s` defaults, полный localization/web ACL contract,
+direct/unpooled Neon owner target, disabled bind-parameter values in error logging и отключённые
+statement/duration logging/sampling paths. Cleartext password не включается в SQL: runner локально
+строит PostgreSQL SCRAM-SHA-256 verifier, а server получает verifier bind-параметром через
+transaction-local setting.
+
+Первичная password mutation атомарно ставит verifier вместе с server-owned bounded
+`VALID UNTIL` lease на **30 минут** от PostgreSQL server clock. После commit workflow выполняет
+отдельный bounded login как `vico_forum_web` и проверяет exact database + `2s/5s` defaults.
+Обычный caught post-mutation failure без retry сначала возвращает `PASSWORD NULL`. Если runner
+будет аварийно остановлен, отменён, потерян или убит timeout после commit и JavaScript compensation
+не успеет выполниться, password authentication автоматически перестанет принимать этот credential
+после истечения `VALID UNTIL`; role/grants/defaults при этом не меняются.
+
+30-minute lease — только bootstrap safety window, а не production credential lifetime.
+До accepted Hyperdrive evidence его запрещено продлевать. После successful creation и проверки
+ровно одного unbound cache-disabled `vico-forum-web` на direct Neon origin, пока lease ещё active,
+ChatGPT координирует отдельную owner-controlled transaction в Neon SQL Editor: exact
+owner/session/database + safe role/default/ACL assertions → проверка finite future
+`pg_roles.rolvaliduntil` → только `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'` → post-check
+`rolvaliduntil = 'infinity'::timestamptz` → commit. Только этот post-Hyperdrive шаг превращает
+leased bootstrap password в durable web credential.
+
+Если Hyperdrive evidence либо owner-finalization не завершены до expiry, workflow не dispatch-ится
+и не rerun-ится повторно. Gate считается failed: owner-controlled reconciliation сначала оставляет
+или возвращает `PASSWORD NULL`, затем удаляется любой созданный unbound `vico-forum-web`;
+accepted grants/defaults сохраняются, после чего требуется новый reviewed recovery path. Если
+finalization outcome неоднозначен, сначала выполняется read-only check `pg_roles.rolvaliduntil`;
+`infinity` означает finalized success, любое finite/expired значение не считается acceptance.
+
+Этот workflow является временным bootstrap mechanism. До отдельного explicit authorization,
+охватывающего bootstrap + Hyperdrive creation + finalize/compensation boundary, запрещено создавать
+bootstrap secret или dispatch-ить workflow. После accepted Hyperdrive + finalized credential
+evidence временный GitHub Environment secret удаляется, а lifecycle bootstrap workflow/script
+удаляются отдельным cleanup PR. Successful credential bootstrap сам по себе не означает
+Hyperdrive/binding/deploy acceptance.
+
+
+### Web credential failure diagnostics
+
+Recovery после consumed one-shot отделён от нового credential bootstrap. Repository предоставляет
+два manual main-only diagnostic workflows с общей `production-db-migrations` concurrency и
+protected Environment `production-db`:
+
+- `.github/workflows/production-web-credential-preflight-diagnostic.yml` — read-only повторяет
+  exact owner/direct-target, PostgreSQL logging/SCRAM, role/membership, `2s/5s` defaults и полный
+  localization/web ACL preflight. Temporary web password ему не передаётся.
+- `.github/workflows/production-web-credential-rollback-probe.yml` — отдельный one-shot
+  diagnostic, доступный только после exact confirmation и отдельного external authorization.
+  Он использует temporary password только in-memory, выполняет тот же SCRAM + finite
+  `VALID UNTIL` operation внутри PostgreSQL transaction, проверяет lease внутри transaction и
+  **всегда завершает mutation path через `ROLLBACK`; `COMMIT` в diagnostic implementation
+  отсутствует**. После rollback заново проверяются accepted preflight contract и исходное
+  `rolvaliduntil`.
+
+Diagnostic output намеренно ограничен одной машинно-читаемой строкой
+`WEB_CREDENTIAL_DIAGNOSTIC stage=<stage> reason=<bounded-code> rollback=<status>`. Исходные
+exception message, connection URL, cleartext password, SCRAM verifier и SQL text не логируются.
+PostgreSQL SQLSTATE выводится только как bounded `sqlstate_XXXXX`; assertion drift —
+`contract_mismatch`; известные transport failures — bounded transport code.
+
+Rollback-only probe не является новым credential acceptance и не разрешает Hyperdrive creation.
+Его единственная задача — различить `apply-verifier`, `lease-read/lease-assert` и соседние
+preflight stages без сохранения credential в production.
+
+Оба production diagnostics уже были отдельно разрешены и выполнены после merge diagnostic path:
+read-only preflight завершился `stage=preflight reason=ok rollback=ok`, rollback-only probe —
+`stage=rollback-probe reason=ok rollback=verified`. Это подтверждает текущую работоспособность
+accepted preflight и exact in-transaction SCRAM/finite-lease operation, но не восстанавливает
+историческую причину failed bootstrap. Temporary diagnostic secret после gate удалён и не может
+переиспользоваться.
+
+### Production web credential recovery preparation
+
+Этот change set добавляет новый, отдельный от consumed bootstrap и diagnostics, manual main-only
+workflow `.github/workflows/production-web-credential-recovery.yml`. Merge сам по себе не создаёт
+credential и не выполняет external operation.
+
+Recovery boundary:
+
+- отдельный workflow identity/run counter и exact confirmation
+  `web-credential-recovery-confirmed`;
+- pre-Environment guard без secrets требует exact `refs/heads/main`,
+  `GITHUB_RUN_NUMBER=1` и `GITHUB_RUN_ATTEMPT=1`; recovery script повторяет first-run/attempt
+  assertions до DB access;
+- protected inputs: existing `NEON_OWNER_DATABASE_URL`,
+  `WEB_RUNTIME_DATABASE_ROLE` и **новый** temporary Environment secret
+  `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY`. Старое diagnostic/bootstrap значение не
+  переиспользуется;
+- до mutation повторяется exact direct-owner/bootstrap preflight;
+- runner локально derive-ит SCRAM verifier; одна transaction применяет verifier вместе с
+  server-clock 30-minute `VALID UNTIL`, затем до commit проверяет active/bounded lease;
+- после commit отдельный exact login как `vico_forum_web` проверяет database и принятые
+  `lock_timeout=2s` / `statement_timeout=5s`;
+- bounded output имеет только
+  `WEB_CREDENTIAL_RECOVERY stage=<stage> reason=<bounded-code> compensation=<status>`.
+  Exception text, URLs, cleartext password, verifier и SQL text не логируются;
+- ordinary failure после начала credential mutation сначала пытается `PASSWORD NULL`, затем
+  bounded reconciliation требует PostgreSQL authentication rejection exact candidate credential и
+  повторно проверяет accepted preflight. Результат compensation ограничен
+  `verified | reconciled-safe | failed`;
+- неконтролируемое завершение после commit ограничено server-owned 30-minute expiry, как и в
+  reviewed bootstrap safety model.
+
+Disposable PostgreSQL 17 CI покрывает successful recovery/login, finite-expiry rejection и
+post-commit forced-failure compensation; unit/contract tests покрывают каждый bounded recovery
+stage, secret-safe output и one-shot workflow boundary.
+
+Этот recovery workflow **не** создаёт Hyperdrive, не меняет Worker binding/routing и не deploy-ит.
+Новый recovery secret создаётся только в будущем непрерывном execution window после отдельного
+explicit authorization и только после merge + полного независимого review этого PR. Successful
+recovery сам по себе остаётся leased credential evidence; Hyperdrive creation и post-Hyperdrive
+`VALID UNTIL 'infinity'` finalization выполняются только в отдельно согласованной choreography.
+
+Official reference:
+
+```text
+https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+```
+
+### Validated-input recovery v2 preparation
+
+Первый reviewed recovery workflow был затем externally запущен ровно один раз на exact `main`.
+Pre-Environment one-shot guard прошёл, но recovery job завершился bounded result:
+
+```text
+WEB_CREDENTIAL_RECOVERY stage=input reason=contract_mismatch compensation=not-required
+```
+
+Failure произошёл до owner DB connection и credential mutation. Post-failure live read-only
+reconciliation снова подтвердила `PASSWORD NULL` и `rolvaliduntil IS NULL`; temporary recovery
+secret удалён, `vico-forum-web` Hyperdrive не создавался, finalization/binding/routing/deploy не
+выполнялись. Этот recovery workflow consumed: rerun и второй dispatch запрещены. Bounded output не
+различает exact input assertion, поэтому password-format mismatch не считается доказанной root
+cause.
+
+Recovery v2 preparation разделяет проверку input и one-shot mutation boundary:
+
+- отдельный repeatable manual main-only workflow
+  `.github/workflows/production-web-credential-input-validation.yml` использует protected
+  `NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и будущий temporary
+  `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`;
+- validator до mutation различает bounded input reasons
+  `password_missing | password_length | password_charset | role_mismatch | owner_target`, затем
+  выполняет exact owner/direct-target production preflight только внутри `BEGIN READ ONLY` и
+  завершает его explicit `ROLLBACK`;
+- successful validation output фиксирует только run ID, exact head SHA, run attempt и
+  `stage=complete reason=ok rollback=verified`; password value/length/hash/verifier, URL и raw
+  exception message не логируются;
+- invalid secret можно заменить и выполнить новый validation dispatch: validation workflow не
+  использует one-shot run counter и не расходует recovery-v2 identity;
+- отдельный `.github/workflows/production-web-credential-recovery-v2.yml` имеет собственный
+  one-shot run counter. До protected Environment его guard принимает validation run ID, читает
+  exact run через GitHub Actions REST API с read-only `GITHUB_TOKEN` и fail closed проверяет
+  expected validation workflow path, `workflow_dispatch`, completed/success, exact same current
+  `main` SHA и attempt 1;
+- после accepted validation secret до immediate recovery-v2 dispatch не должен изменяться;
+  pre-Environment guard требует отдельное operator confirmation
+  `recovery-v2-secret-unchanged-confirmed`; recovery-v2 всё равно повторяет
+  password/role/owner-target assertions до DB connection и только затем использует ранее
+  reviewed recovery core;
+- lease/login/compensation semantics не меняются: 30-minute server-owned `VALID UNTIL`,
+  post-commit exact web login/default proof, caught-failure `PASSWORD NULL` compensation и
+  bounded reconciliation остаются теми же.
+
+Merge recovery v2 preparation не создаёт secret и не запускает validation/recovery. До отдельного
+explicit authorization запрещены новый v2 secret, validation dispatch, recovery-v2 dispatch,
+credential mutation, Hyperdrive, finalization, binding/routing и deploy.
+
+Official GitHub references checked for this gate:
+
+```text
+https://docs.github.com/en/rest/actions/workflow-runs
+https://docs.github.com/en/actions/tutorials/authenticate-with-github_token
+https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+```
+
+## Accepted web credential and unbound Hyperdrive — 2026-09-28
+
+Recovery-v2 был externally выполнен ровно один раз и завершился на transaction `COMMIT` с
+bounded `sqlstate_XX000`; compensation была independently подтверждена и вернула
+`vico_forum_web` в `PASSWORD NULL`. Recovery-v2 consumed и не rerun-ится.
+
+После этого Stage 6 вернулся к уже успешному migrator precedent. Owner в Neon SQL Editor выполнил
+standalone `ALTER ROLE vico_forum_web PASSWORD ...`; независимый catalog check подтвердил
+обычную non-privileged LOGIN role с usable credential и прежними safe attributes/defaults.
+Тем же credential Cloudflare успешно создал один direct-origin public Hyperdrive
+`vico-forum-web` для production database `vico_forum`, user `vico_forum_web`, с query caching
+disabled. Configuration создана и connection validation прошла, но Worker binding/routing/deploy
+не выполнялись.
+
+Neon SQL Editor history для plaintext statement не имеет доступного delete action в текущем UI.
+Этот принятый owner-authorized operational risk не требует новой rotation сам по себе.
+
+Repository wiring разделяет capabilities fail closed:
+
+```text
+HYPERDRIVE
+  → localization registry + UI translation reads only
+
+WEB_HYPERDRIVE
+  → Better Auth + forum read/write + dynamic authorization
+  → persisted forum-content translation presentation only
+```
+
+Content-generation action/status/provider/background capabilities остаются disabled и не получают
+web DB capability в этом wiring step.
+
+## Development path
+
+Cloudflare официально поддерживает local Hyperdrive development через
+`localConnectionString` или environment variable
+`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_<BINDING_NAME>`. В этом режиме Worker code
+работает локально и подключается прямо к указанной DB; Hyperdrive pooling/query caching не
+участвуют.
+
+Для Vico split-capability wiring использует два независимых local overrides:
+
+```text
+local/disposable PostgreSQL 17
+├─ CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
+│  → localization-read
+└─ CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE
+   → web
+→ Workers-compatible local runtime
+→ app/db integration tests
+```
+
+Этот path является default для Stage 4 forum development.
+
+Пример локальной integration среды:
 
 ```sh
 docker run --rm --detach --name vico-forum-postgres \
@@ -81,6 +408,8 @@ DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test' \
 
 export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=\
 'postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test'
+export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE=\
+'postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test'
 pnpm build
 pnpm exec vite preview --host 127.0.0.1 --port 4173 \
   > /tmp/vico-preview.log 2>&1 &
@@ -89,13 +418,214 @@ trap 'kill "$preview_pid" 2>/dev/null || true; docker stop vico-forum-postgres' 
 ./scripts/smoke-workers.sh http://127.0.0.1:4173
 ```
 
-Local mode connects directly and does not reproduce Hyperdrive pooling or query caching.
-Consequently, acceptance still requires a deployed smoke against the real binding.
+`pnpm db:test` нельзя запускать против Neon: test suite намеренно destructive и принимает
+только local DB с именем `_test`.
+
+Official reference:
+
+```text
+https://developers.cloudflare.com/hyperdrive/configuration/local-development/
+```
+
+## External deployment policy
+
+Ранее native Cloudflare Workers Builds был подключён к GitHub `main`. Для forum-first workflow
+ordinary merge в active development `main` не должен автоматически означать production
+promotion.
+
+Fresh Stage 6 Gate 0 в Cloudflare UI подтвердил текущее состояние: native Git Builds integration
+отключён; live Production Worker намеренно отстаёт от repository `main`; Production содержит
+только `HYPERDRIVE -> vico-forum-registry`; `Previews Base` не имеет bindings или runtime
+variables/secrets. Production и preview `workers.dev` URLs включены, custom domains/routes
+отсутствуют.
+
+Это mutable external state и оно не хранится в Git как authoritative configuration, поэтому перед
+будущим deploy topology перепроверяется ещё раз.
+
+Official reference:
+
+```text
+https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/
+```
+
+## Protected production Worker rollout preparation
+
+Repository содержит отдельный manual workflow `.github/workflows/production-worker-rollout.yml`
+для Stage 6 runtime rollout без возврата к постоянному Git Builds auto-deploy.
+
+Preparation contract:
+
+- только `workflow_dispatch` на exact `main` SHA с explicit upload confirmation;
+- protected Environment `production-worker` передаёт Cloudflare account/token и четыре auth
+  values; secret values не логируются и не сохраняются как artifacts;
+- до Cloudflare access выполняются accepted live migration→runtime evidence check для `0020`,
+  disposable PostgreSQL contract, build и local split-Hyperdrive Workers smoke;
+- pinned repository Wrangler `4.130.0` выполняет `versions upload`, то есть создаёт version
+  без production traffic promotion;
+- versioned workers.dev URL используется для bounded GET-only public/auth/database-read smoke;
+- production promotion требует отдельного confirmation input и допускается только для version,
+  созданной тем же authorized run;
+- baseline production version prefix `78f87645` разрешается в полный version ID перед upload и
+  обязан обслуживать 100% traffic; automated promotion/smoke failure возвращает 100% traffic на
+  этот exact baseline и проверяет rollback;
+- interactive Google sign-in/session/logout остаётся отдельным owner post-deploy smoke.
+
+Сам preparation PR не создаёт GitHub Environment/secrets, Google OAuth client, Cloudflare API token,
+Worker version/deployment и не меняет traffic/bindings. Dispatch и external provisioning требуют
+отдельного explicit authorization после merge и review.
+
+Official references:
+
+```text
+https://developers.cloudflare.com/workers/versions-and-deployments/
+https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/
+https://developers.cloudflare.com/workers/wrangler/commands/workers/
+https://developers.cloudflare.com/workers/configuration/secrets/
+```
+
+## External schema/runtime ordering
+
+Когда runtime **реально выкатывается** во внешний pre-release/production environment и
+начинает зависеть от новой schema, применяется порядок из `MIGRATIONS.md`:
+
+```text
+reviewed migration
+→ target DB migration + verification
+→ runtime rollout
+```
+
+Для ordinary local/CI development Stage 4 этот deployed ordering не требуется.
+
+## Pre-release lifecycle
+
+Существующий deployed environment уже использовался как pre-release production candidate
+для infrastructure acceptance до появления реальных пользователей/private data.
+
+Новый roadmap не требует поддерживать его синхронным с каждым forum development commit.
+Он снова становится обязательной target environment на Stage 6, когда локально готовый
+forum/auth/translation product собирается в единый external candidate.
+
+До Stage 6:
+
+- forum migrations могут существовать только в repository/local CI history;
+- production-like Neon schema может отставать от `main`;
+- real Hyperdrive smoke не выполняется для каждого feature PR;
+- production runtime capability не расширяется только ради future code.
+
+## Preview/private-data boundary
+
+Если preview/non-production build имеет production bindings, это допустимо только пока его
+capability фактически read-only и доступные данные публичны.
+
+До любой preview capability с auth/forum writes или private production data preview path
+должен быть изолирован отдельными resources/secrets либо отключён.
+
+Stage 6 Gate 0 уже подтвердил zero bindings и zero runtime variables/secrets у
+`Previews Base`. Перед real auth/forum write deployment эта mutable topology перепроверяется, и
+preview по-прежнему не должен получать production private/write capability без отдельной
+изоляции.
+
+## PostgreSQL deadlines
+
+Существующий localization read path использует:
+
+```text
+connectionTimeoutMillis = 1000ms
+query_timeout            = 2000ms
+lock_timeout             = 500ms   (origin role default)
+statement_timeout        = 1500ms  (origin role default)
+```
+
+Инвариант текущей конфигурации:
+
+```text
+lock_timeout < statement_timeout < query_timeout
+```
+
+Эти значения относятся к маленьким indexed localization reads и не являются универсальными
+forum/auth SLO. Новые forum/auth queries не должны автоматически наследовать их как
+архитектурную константу; deadlines выбираются по фактическому path и проверяются ближе к
+external rollout.
+
+Первый reviewed web runtime profile использует отдельные initial values:
+
+```text
+connectionTimeoutMillis = 3000ms   (node-postgres caller)
+query_timeout            = 7000ms   (node-postgres caller)
+lock_timeout             = 2s       (database+role default; applied)
+statement_timeout        = 5s       (database+role default; applied)
+```
+
+Server-side `lock_timeout` / `statement_timeout` уже применены и отдельно проверены для
+`vico_forum_web`. Usable credential и отдельный cache-disabled `vico-forum-web` Hyperdrive уже
+существуют, но deployed Worker routing и real-path calibration ещё не выполнялись. Эти значения
+остаются initial rollout profile, а не принятым production SLO; фактическая runtime acceptance
+требует отдельного deploy/smoke gate.
+
+Инвариант web profile:
+
+```text
+lock_timeout < statement_timeout < query_timeout
+```
+
+Role defaults применяются новым PostgreSQL origin sessions. Administrative catalog check
+подтверждает configuration, но не доказывает state уже существующей pooled origin session.
+
+Cloudflare Hyperdrive использует transaction pooling и reset поддерживаемого session state
+между borrowers. PostgreSQL advisory locks Hyperdrive не поддерживает; их нельзя использовать
+для Hyperdrive acceptance, coordination или runtime locking.
+
+## Real Hyperdrive deadline acceptance — 2026-09-13
+
+Acceptance существующего localization infrastructure выполнен против реального deployed
+Hyperdrive path в pre-release production candidate.
+
+Наблюдения:
+
+1. Новые origin sessions показали `lock_timeout = 500ms` и
+   `statement_timeout = 1500ms`.
+2. Повторные requests подтвердили pooled connection reuse. После controlled transaction-local
+   setting changes через `COMMIT` и `ROLLBACK` последующие borrowers снова видели configured
+   `500ms` / `1500ms`, без leaked transaction state.
+3. Statement сверх server deadline завершился SQLSTATE `57014` примерно за `1571ms`, раньше
+   `2000ms` client deadline.
+4. Controlled lock contention завершился SQLSTATE `55P03` примерно за `569ms`.
+5. Когда server statement deadline намеренно сделали длиннее client deadline, client получил
+   `Query read timeout` примерно за `2000ms`. Уникально идентифицируемый backend после этого
+   не был найден в `pg_stat_activity`. Из этого **не делается вывод**, какой компонент именно
+   прекратил/cancelled backend statement.
+
+Diagnostic harness проверял `pg → Hyperdrive → PostgreSQL` infrastructure semantics, но не
+исполнял deployed application request-local circuit breaker. Application circuit-breaker
+behavior остаётся покрыт repository tests.
+
+Этого acceptance достаточно как evidence существующего localization foundation. Повторять
+его для обычных Stage 4 forum PR не нужно. Повторная real Hyperdrive calibration требуется,
+если Stage 6 меняет relevant driver/Hyperdrive/deadline behavior или вводит новый runtime path,
+для которого эти semantics критичны.
+
+## Controlled locale writer
+
+Existing controlled locale writer использует короткую `SERIALIZABLE` transaction и
+transaction-local:
+
+```text
+lock_timeout = 2s
+statement_timeout = 10s
+```
+
+Serialization/deadlock retries ограничены `40001`/`40P01`; ambiguous commit не blind-retry-ится,
+а reconciles semantic state. Exact PostgreSQL `57014 / canceling statement due to statement
+timeout` во время `COMMIT` проходит existing ambiguous-outcome reconciliation boundary.
+
+Эта логика относится к locale lifecycle и не должна автоматически копироваться в forum
+write services без отдельного анализа.
 
 ## Recovery
 
-If registry loading reports degraded state, keep the English read fallback available, do not
-promote the release, and distinguish connection/service failure from schema mismatch or data
-integrity failure. Roll back compatible application code if needed; retain the migrated schema
-and use the forward-repair/restore process in `MIGRATIONS.md`. Never grant migration credentials
-to the Worker to repair production in-band.
+Если существующий localization registry load деградирует, bootstrap English остаётся
+availability fallback, но external deployment acceptance считается failed.
+
+Application rollback сохраняет уже применённую compatible schema; DB recovery выполняется
+reviewed forward repair/restore по `MIGRATIONS.md`. Migration/admin credentials никогда не
+выдаются Worker runtime для in-band repair.

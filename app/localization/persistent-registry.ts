@@ -1,4 +1,4 @@
-import { parseLocaleCandidate, type LocaleDefinition } from "./locale";
+import { canonicalizeTranslationLocale, parseLocaleCandidate, type LocaleDefinition } from "./locale";
 import {
   BOOTSTRAP_ENGLISH,
   InMemoryLocaleRegistry,
@@ -59,18 +59,29 @@ const transportUnavailableCodes = new Set([
   "EPIPE",
 ]);
 const postgresUnavailableCodes = new Set(["57P01", "57P02", "57P03", "53300"]);
+const codeLessTransportMessages = new Set(["Connection terminated unexpectedly"]);
 
 export function isTransportUnavailableCode(code: unknown): boolean {
   return typeof code === "string" && transportUnavailableCodes.has(code);
 }
 
+export function isPostgresAvailabilityFailure(error: unknown): boolean {
+  if (!error || (typeof error !== "object" && typeof error !== "function")) return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  const code = typeof candidate.code === "string" ? candidate.code : undefined;
+  if (code) {
+    return code.startsWith("08") || postgresUnavailableCodes.has(code) || isTransportUnavailableCode(code);
+  }
+  return error instanceof Error && codeLessTransportMessages.has(error.message);
+}
+
 export function parsePersistentLocaleRow(row: PersistentLocaleRow): LocaleDefinition {
   const tag = requiredString(row.tag, "tag");
-  const parsedTag = parseLocaleCandidate(tag);
-  if (!parsedTag || parsedTag.canonicalInput !== parsedTag.translationTag) {
-    throw new RegistryIntegrityError(`tag must be a canonical translation locale: ${tag}`);
+  const canonicalTag = canonicalizeTranslationLocale(tag);
+  if (!canonicalTag || tag !== canonicalTag) {
+    throw new RegistryIntegrityError(`tag must be stored as a canonical translation locale: ${tag}`);
   }
-  if (parsedTag.translationTag === "en") throw new RegistryIntegrityError("persistent dataset contains bootstrap en");
+  if (canonicalTag === "en") throw new RegistryIntegrityError("persistent dataset contains bootstrap en");
 
   const translationStatus = member(row.translationStatus, translationStatuses, "translationStatus");
   const publicationStatus = member(row.publicationStatus, publicationStatuses, "publicationStatus");
@@ -79,7 +90,7 @@ export function parsePersistentLocaleRow(row: PersistentLocaleRow): LocaleDefini
   if (!nativeName.trim()) throw new RegistryIntegrityError("nativeName must not be blank");
 
   return {
-    tag: parsedTag.translationTag,
+    tag: canonicalTag,
     translationStatus: translationStatus as LocaleDefinition["translationStatus"],
     publicationStatus: publicationStatus as LocaleDefinition["publicationStatus"],
     direction: direction as LocaleDefinition["direction"],
@@ -132,9 +143,7 @@ function classifyLoadFailure(error: unknown): RegistryDegradedReason | undefined
     const candidate = current as { cause?: unknown; code?: unknown };
     const code = typeof candidate.code === "string" ? candidate.code : undefined;
     if (code === "42P01" || code === "42703" || code === "42804") return "schema-mismatch";
-    if (code?.startsWith("08") || postgresUnavailableCodes.has(code ?? "") || isTransportUnavailableCode(code)) {
-      return "unavailable";
-    }
+    if (isPostgresAvailabilityFailure(current)) return "unavailable";
     current = candidate.cause;
   }
   return undefined;

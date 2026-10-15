@@ -1,0 +1,427 @@
+import { canonicalizeTranslationLocale } from "../app/localization/locale";
+import {
+  ConcurrentRevisionError,
+  ForumAuthorizationError,
+  ForumEntityNotFoundError,
+  ForumStateConflictError,
+  type CreatePostInput,
+  type CreateTopicInput,
+  type CreateTopicWithInitialPostInput,
+  type DrizzleForumRepository,
+  type ForumRevisionContent,
+  type ForumTag,
+  type HelpDuplicateAppealResolution,
+  type HelpSignalKind,
+  type HelpSignalResolution,
+  type HelpSolutionModerationStatus,
+  type SolutionManagementScope,
+} from "./forum-repository";
+
+export class InvalidForumContentError extends Error {}
+
+export type SourceLocaleCorrectionScope = "own" | "any";
+export const HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH = 1000;
+export const HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH = 1000;
+export const HELP_SIGNAL_EXPLANATION_MAX_LENGTH = 1000;
+
+export class ForumService {
+  constructor(private readonly repository: DrizzleForumRepository) {}
+
+  createCategory(input: { id: string; name: string }) {
+    requireText(input.id, "category id");
+    requireText(input.name, "category name");
+    return this.repository.createCategory(input);
+  }
+
+  createSection(input: { id: string; categoryId: string; name: string }) {
+    requireText(input.id, "section id");
+    requireText(input.categoryId, "category id");
+    requireText(input.name, "section name");
+    return this.repository.createSection(input);
+  }
+
+  createTopic(input: CreateTopicInput) {
+    validateEntity(input.id, input.authorId);
+    requireText(input.sectionId, "section id");
+    const titleRevision = normalizeRevision(input.titleRevision);
+    return this.repository.createTopic({ ...input, titleRevision, tags: normalizeTags(input.tags ?? []) });
+  }
+
+  createPost(input: CreatePostInput) {
+    validateEntity(input.id, input.authorId);
+    requireText(input.topicId, "topic id");
+    if (input.parentPostId) {
+      requireText(input.parentPostId, "parent post id");
+      if (input.parentPostId === input.id) {
+        throw new InvalidForumContentError("post cannot reply to itself");
+      }
+    }
+    const bodyRevision = normalizeRevision(input.bodyRevision);
+    return this.repository.createPost({ ...input, parentPostId: input.parentPostId ?? null, bodyRevision });
+  }
+
+  createTopicWithInitialPost(input: CreateTopicWithInitialPostInput) {
+    validateEntity(input.id, input.authorId);
+    requireText(input.sectionId, "section id");
+    validateEntity(input.initialPost.id, input.initialPost.authorId);
+    if (input.initialPost.topicId !== input.id || input.initialPost.authorId !== input.authorId) {
+      throw new InvalidForumContentError("initial post must belong to the new topic and author");
+    }
+    if (input.initialPost.parentPostId) {
+      throw new InvalidForumContentError("initial post cannot reply to another post");
+    }
+    return this.repository.createTopicWithInitialPost({
+      ...input,
+      titleRevision: normalizeRevision(input.titleRevision),
+      tags: normalizeTags(input.tags ?? []),
+      initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision) },
+    });
+  }
+
+  reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
+    validateEntity(topicId, authorId);
+    requireText(expectedRevisionId, "expected revision id");
+    return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
+  }
+
+  revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
+    validateEntity(postId, authorId);
+    requireText(expectedRevisionId, "expected revision id");
+    return this.repository.revisePostBody(postId, expectedRevisionId, normalizeRevision(revision), authorId);
+  }
+
+  async correctTopicTitleSourceLocale(input: {
+    topicId: string;
+    expectedRevisionId: string;
+    sourceLocale: string;
+    actorId: string;
+    scope: SourceLocaleCorrectionScope;
+  }) {
+    validateEntity(input.topicId, input.actorId);
+    requireText(input.expectedRevisionId, "expected revision id");
+    validateSourceLocaleCorrectionScope(input.scope);
+    const sourceLocale = normalizeCorrectedSourceLocale(input.sourceLocale);
+    const topic = await this.repository.readTopic(input.topicId);
+    if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+    if (topic.title.id !== input.expectedRevisionId) {
+      throw new ForumStateConflictError("topic title current revision changed");
+    }
+    assertSourceLocaleCorrectionAuthorized(topic.authorId, input.actorId, input.scope);
+    if (topic.title.sourceLocale === sourceLocale) return;
+    try {
+      return await this.repository.reviseTopicTitle(
+        input.topicId,
+        input.expectedRevisionId,
+        { id: crypto.randomUUID(), originalContent: topic.title.originalContent, sourceLocale },
+        input.actorId,
+      );
+    } catch (error) {
+      if (error instanceof ConcurrentRevisionError) {
+        throw new ForumStateConflictError("topic title current revision changed");
+      }
+      throw error;
+    }
+  }
+
+  async correctPostBodySourceLocale(input: {
+    topicId: string;
+    postId: string;
+    expectedRevisionId: string;
+    sourceLocale: string;
+    actorId: string;
+    scope: SourceLocaleCorrectionScope;
+  }) {
+    validateEntity(input.postId, input.actorId);
+    requireText(input.topicId, "topic id");
+    requireText(input.expectedRevisionId, "expected revision id");
+    validateSourceLocaleCorrectionScope(input.scope);
+    const sourceLocale = normalizeCorrectedSourceLocale(input.sourceLocale);
+    const post = await this.repository.readPost(input.postId);
+    if (!post || post.topicId !== input.topicId) {
+      throw new ForumEntityNotFoundError("post does not exist in topic");
+    }
+    if (post.body.id !== input.expectedRevisionId) {
+      throw new ForumStateConflictError("post body current revision changed");
+    }
+    assertSourceLocaleCorrectionAuthorized(post.authorId, input.actorId, input.scope);
+    if (post.body.sourceLocale === sourceLocale) return;
+    try {
+      return await this.repository.revisePostBody(
+        input.postId,
+        input.expectedRevisionId,
+        { id: crypto.randomUUID(), originalContent: post.body.originalContent, sourceLocale },
+        input.actorId,
+      );
+    } catch (error) {
+      if (error instanceof ConcurrentRevisionError) {
+        throw new ForumStateConflictError("post body current revision changed");
+      }
+      throw error;
+    }
+  }
+
+  readUnreadForUser(userId: string) {
+    requireText(userId, "user id");
+    return this.repository.readUnreadForUser(userId);
+  }
+
+  readTopicReadState(userId: string, topicId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    return this.repository.readTopicReadState(userId, topicId);
+  }
+
+  advanceTopicReadState(userId: string, topicId: string, postId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    requireText(postId, "post id");
+    return this.repository.advanceTopicReadState(userId, topicId, postId);
+  }
+
+  readReplyNotifications(userId: string, limit?: number) {
+    requireText(userId, "user id");
+    return this.repository.readReplyNotifications(userId, limit);
+  }
+
+  countUnreadReplyNotifications(userId: string) {
+    requireText(userId, "user id");
+    return this.repository.countUnreadReplyNotifications(userId);
+  }
+
+  markReplyNotificationRead(userId: string, notificationId: string) {
+    requireText(userId, "user id");
+    requireText(notificationId, "notification id");
+    return this.repository.markReplyNotificationRead(userId, notificationId);
+  }
+
+  readTopicPinState(topicId: string) {
+    requireText(topicId, "topic id");
+    return this.repository.readTopicPinState(topicId);
+  }
+
+  pinTopic(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.pinTopic(topicId, actorId);
+  }
+
+  unpinTopic(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.unpinTopic(topicId);
+  }
+
+  readTopic(id: string) { return this.repository.readTopic(id); }
+  readPost(id: string) { return this.repository.readPost(id); }
+  readHierarchy(categoryId: string) { return this.repository.readHierarchy(categoryId); }
+  markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own") {
+    validateEntity(topicId, actorId);
+    validateSolutionScope(scope);
+    return this.repository.markTopicSolved(topicId, actorId, scope);
+  }
+  selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own") {
+    validateEntity(topicId, actorId);
+    requireText(postId, "post id");
+    validateSolutionScope(scope);
+    return this.repository.selectBestAnswer(topicId, postId, actorId, scope);
+  }
+
+  confirmHelpDuplicate(topicId: string, originalTopicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    requireText(originalTopicId, "original topic id");
+    return this.repository.confirmHelpDuplicate(topicId, originalTopicId, actorId);
+  }
+
+  removeHelpDuplicate(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.removeHelpDuplicate(topicId, actorId);
+  }
+
+  appealHelpDuplicate(topicId: string, actorId: string, explanation: string) {
+    validateEntity(topicId, actorId);
+    const normalizedExplanation = explanation.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (
+      !normalizedExplanation
+      || normalizedExplanation.length > HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH
+    ) {
+      throw new InvalidForumContentError(
+        `duplicate appeal explanation must be between 1 and ${HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH} characters`,
+      );
+    }
+    return this.repository.appealHelpDuplicate(topicId, actorId, normalizedExplanation);
+  }
+
+  resolveHelpDuplicateAppeal(
+    topicId: string,
+    actorId: string,
+    resolution: HelpDuplicateAppealResolution,
+    expectedAppealId?: string,
+  ) {
+    validateEntity(topicId, actorId);
+    if (expectedAppealId !== undefined) requireText(expectedAppealId, "expected appeal id");
+    if (resolution !== "accepted" && resolution !== "rejected") {
+      throw new InvalidForumContentError("duplicate appeal resolution is invalid");
+    }
+    return this.repository.resolveHelpDuplicateAppeal(topicId, actorId, resolution, expectedAppealId);
+  }
+
+  createHelpSignal(input: {
+    kind: HelpSignalKind;
+    topicId: string;
+    actorId: string;
+    explanation?: string | null;
+    proposedOriginalTopicId?: string | null;
+  }) {
+    validateEntity(input.topicId, input.actorId);
+    if (
+      input.kind !== "needs-details"
+      && input.kind !== "needs-review"
+      && input.kind !== "solution-outdated"
+      && input.kind !== "duplicate"
+    ) {
+      throw new InvalidForumContentError("Help signal kind is invalid");
+    }
+
+    const explanation = normalizeOptionalHelpSignalExplanation(input.explanation ?? null);
+    const explanationRequired = input.kind !== "duplicate";
+    if (explanationRequired && explanation === null) {
+      throw new InvalidForumContentError("Help signal explanation is required");
+    }
+
+    const proposedOriginalTopicId = input.proposedOriginalTopicId ?? null;
+    if (input.kind === "duplicate") {
+      if (!proposedOriginalTopicId) {
+        throw new InvalidForumContentError("duplicate signal requires a proposed original question");
+      }
+      requireText(proposedOriginalTopicId, "proposed original topic id");
+      if (proposedOriginalTopicId === input.topicId) {
+        throw new InvalidForumContentError("duplicate signal proposed original must differ from the question");
+      }
+    } else if (proposedOriginalTopicId !== null) {
+      throw new InvalidForumContentError("proposed original question is only valid for duplicate signals");
+    }
+
+    return this.repository.createHelpSignal({
+      kind: input.kind,
+      topicId: input.topicId,
+      actorId: input.actorId,
+      explanation,
+      proposedOriginalTopicId,
+    });
+  }
+
+  withdrawHelpSignal(signalId: string, topicId: string, actorId: string) {
+    validateEntity(signalId, actorId);
+    requireText(topicId, "topic id");
+    return this.repository.withdrawHelpSignal(signalId, topicId, actorId);
+  }
+
+  resolveHelpSignal(signalId: string, actorId: string, resolution: HelpSignalResolution) {
+    validateEntity(signalId, actorId);
+    if (resolution !== "accepted" && resolution !== "rejected") {
+      throw new InvalidForumContentError("Help signal resolution is invalid");
+    }
+    return this.repository.resolveHelpSignal(signalId, actorId, resolution);
+  }
+
+  setHelpSolutionModeration(
+    topicId: string,
+    status: HelpSolutionModerationStatus | null,
+    outdatedReason: string | null = null,
+    actorId: string,
+  ) {
+    requireText(topicId, "topic id");
+    requireText(actorId, "actor id");
+    if (status !== null && status !== "needs-review" && status !== "outdated") {
+      throw new InvalidForumContentError("help solution moderation status is invalid");
+    }
+    let normalizedReason: string | null = null;
+    if (status === "outdated") {
+      if (typeof outdatedReason !== "string") {
+        throw new InvalidForumContentError("outdated solution reason is required");
+      }
+      normalizedReason = outdatedReason.normalize("NFKC").trim().replace(/\s+/gu, " ");
+      if (!normalizedReason || normalizedReason.length > HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH) {
+        throw new InvalidForumContentError(
+          `outdated solution reason must be between 1 and ${HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH} characters`,
+        );
+      }
+    }
+    return this.repository.setHelpSolutionModeration(topicId, status, normalizedReason, actorId);
+  }
+}
+
+export function normalizeForumTags(values: readonly string[]): ForumTag[] {
+  const byKey = new Map<string, ForumTag>();
+  for (const value of values) {
+    const name = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (!name) continue;
+    if (name.length > 64 || name.includes("/")) {
+      throw new InvalidForumContentError("tag must be at most 64 characters and must not contain '/'");
+    }
+    const key = name.toLocaleLowerCase("en-US");
+    if (!byKey.has(key)) byKey.set(key, { key, name });
+  }
+  return [...byKey.values()];
+}
+
+function normalizeTags(tags: readonly ForumTag[]): ForumTag[] {
+  return normalizeForumTags(tags.map((tag) => tag.name));
+}
+
+function validateSolutionScope(scope: SolutionManagementScope) {
+  if (scope !== "own" && scope !== "any") throw new InvalidForumContentError("solution scope is invalid");
+}
+
+function validateSourceLocaleCorrectionScope(scope: SourceLocaleCorrectionScope) {
+  if (scope !== "own" && scope !== "any") {
+    throw new InvalidForumContentError("source locale correction scope is invalid");
+  }
+}
+
+function normalizeOptionalHelpSignalExplanation(value: string | null): string | null {
+  if (value === null) return null;
+  const normalized = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
+  if (!normalized || normalized.length > HELP_SIGNAL_EXPLANATION_MAX_LENGTH) {
+    throw new InvalidForumContentError(
+      `Help signal explanation must be between 1 and ${HELP_SIGNAL_EXPLANATION_MAX_LENGTH} characters when provided`,
+    );
+  }
+  return normalized;
+}
+
+function normalizeCorrectedSourceLocale(value: string): string {
+  requireText(value, "source locale");
+  const sourceLocale = canonicalizeTranslationLocale(value);
+  if (!sourceLocale || sourceLocale === "und") {
+    throw new InvalidForumContentError(
+      "corrected source locale must be a canonicalizable non-und BCP-47 translation locale without formatting extensions",
+    );
+  }
+  return sourceLocale;
+}
+
+function assertSourceLocaleCorrectionAuthorized(authorId: string, actorId: string, scope: SourceLocaleCorrectionScope) {
+  if (scope === "own" && authorId !== actorId) {
+    throw new ForumAuthorizationError("actor cannot correct another author's source locale");
+  }
+}
+
+function validateEntity(id: string, authorId: string) {
+  requireText(id, "entity id");
+  requireText(authorId, "author id");
+}
+
+function normalizeRevision(revision: ForumRevisionContent): ForumRevisionContent {
+  requireText(revision.id, "revision id");
+  requireText(revision.originalContent, "original content");
+  const sourceLocale = canonicalizeTranslationLocale(revision.sourceLocale);
+  if (!sourceLocale) {
+    throw new InvalidForumContentError(
+      "source locale must be 'und' or one canonicalizable translation locale without formatting extensions",
+    );
+  }
+  return { ...revision, sourceLocale };
+}
+
+function requireText(value: string, field: string) {
+  if (value.trim().length === 0) throw new InvalidForumContentError(`${field} must not be blank`);
+}
