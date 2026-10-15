@@ -69,7 +69,7 @@ function applyParagraphDirections(node: DirectionNode): void {
   if (node.type !== "paragraph" && node.type !== "heading") return;
   const last = node.children?.at(-1);
   if (last?.type !== "text" || !last.value) return;
-  const marker = /[ \\t]+\\{:vico-dir=(ltr|rtl)\\}$/u.exec(last.value);
+  const marker = /[ \t]+\{:vico-dir=(ltr|rtl)\}$/u.exec(last.value);
   if (!marker) return;
   last.value = last.value.slice(0, -marker[0].length);
   if (last.position?.end.offset !== undefined) {
