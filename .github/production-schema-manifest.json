@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0041_published_mentions",
+  "targetMigration": "0042_attachment_edit_snapshots",
   "tables": {
     "account": {
       "columns": [
@@ -1072,6 +1072,89 @@
           ]
         }
       ]
+    },
+    "forum_attachment_edit_snapshots": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_edit_snapshots_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_edit_snapshots_owner_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_attachment_edit_snapshots_post_fk",
+          "columns": [
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": []
     },
     "forum_attachment_security_events": {
       "columns": [

@@ -10,7 +10,6 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown, ForumInlineAttachmentProvider } from "./markdown";
-import { ForumAttachmentDisplay } from "./attachment-presentation";
 import {
   applyTextareaEdit,
   clearInlineMarkdownFormatting,
@@ -135,9 +134,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [replaceText, setReplaceText] = useState("");
     const [mentionToken, setMentionToken] = useState<MentionToken | null>(null);
     const [mentionCandidates, setMentionCandidates] = useState<Array<{ id: string; name: string }>>([]);
-    const [retainedAttachmentIds, setRetainedAttachmentIds] = useState<string[] | null>(null);
-    const retainedAttachments = existingInlineAttachments.filter((item) => retainedAttachmentIds === null
-      || retainedAttachmentIds.includes(item.id));
+    const [draftPublishedRevisionId, setDraftPublishedRevisionId] = useState(initialPublishedRevisionId);
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
@@ -213,20 +210,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(defaultValue);
       setPasteWarning(false);
       setFindOpen(false);
-      setRetainedAttachmentIds(null);
+      setDraftPublishedRevisionId(initialPublishedRevisionId);
       publicationReplayRef.current = false;
       publicationPreparingRef.current = false;
       publicationPreparedRef.current = false;
       publicationPendingSeenRef.current = false;
-    }, [editorScope, defaultValue]);
+    }, [editorScope, defaultValue, initialPublishedRevisionId]);
 
     const draft = useEditorDraft({
       ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
       initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null,
-        ...(initialPublishedRevisionId ? { retainedAttachmentIds: existingInlineAttachments.map((item) => item.id) } : {}),
         ...(initialPublishedRevisionId ? { publishedRevisionId: initialPublishedRevisionId } : {}) },
       restore: (payload) => {
-        setRetainedAttachmentIds(payload.retainedAttachmentIds ?? null);
+        setDraftPublishedRevisionId(payload.publishedRevisionId);
         onDraftRestorePublishedRevisionId?.(payload.publishedRevisionId ?? null);
         historyRef.current = createEditorHistory(payload.body);
         onDraftRestoreParent?.(payload.parentPostId ?? null);
@@ -286,6 +282,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       ownerId: accountId,
       contextKey: accountId ? draftContextKey : undefined,
       draftId: draft.draftId,
+      publishedRevisionId: draftPublishedRevisionId,
+      hasPublishedAttachments: existingInlineAttachments.length > 0,
       draftReady: draft.attachmentReady,
       draftRevision: draft.attachmentRevision,
       selectionEpoch: draft.attachmentSelectionEpoch,
@@ -300,8 +298,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       removeImage,
     });
 
-    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0
-      || retainedAttachments.length > 0;
+    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0;
     const publicationReady = !disabled && !draftPublicationPending && !attachments.blocking && hasPublishContent;
     useEffect(() => { onPublicationReadyChange?.(publicationReady); }, [onPublicationReadyChange, publicationReady]);
 
@@ -912,6 +909,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         draft.noteFields({ parentPostId }, true);
       },
       setDraftPublishedRevisionId(revisionId: string) {
+        setDraftPublishedRevisionId(revisionId);
         draft.noteFields({ publishedRevisionId: revisionId }, true);
       },
       acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
@@ -951,7 +949,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       </div>
     </>);
     return (
-      <ForumInlineAttachmentProvider attachments={[...retainedAttachments, ...attachments.previewAttachments]}>
+      <ForumInlineAttachmentProvider attachments={[
+        ...(!initialPublishedRevisionId ? existingInlineAttachments : []), ...attachments.previewAttachments,
+      ]}>
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
         role={fullScreen ? "dialog" : undefined}
@@ -1008,7 +1008,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
             <input type="hidden" name="editorAttachmentIds" value={JSON.stringify(attachments.selectedAttachmentIds)} readOnly />
             {initialPublishedRevisionId ? <input type="hidden" name="editorRetainedAttachmentIds"
-              value={JSON.stringify(retainedAttachments.map((item) => item.id))} readOnly /> : null}
+              value="[]" readOnly /> : null}
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
@@ -1251,21 +1251,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               </button>
             ))}
           </div>
-        ) : null}
-        {retainedAttachments.length > 0 ? (
-          <section className="markdown-editor-attachments" aria-label={t("editorAttachments")}>
-            {retainedAttachments.map((item) => (
-              <div key={item.id} className="markdown-editor-attachment">
-                <ForumAttachmentDisplay attachment={item} url={item.url} deferImage />
-                <button type="button" disabled={disabled} onClick={() => {
-                  const ids = retainedAttachments.filter((file) => file.id !== item.id).map((file) => file.id);
-                  setRetainedAttachmentIds(ids);
-                  removeImage(item.id);
-                  draft.noteFields({ retainedAttachmentIds: ids }, true);
-                }}>{t("editorAttachmentRemove")}</button>
-              </div>
-            ))}
-          </section>
         ) : null}
         {attachments.details}
         {draft.conflictElement}

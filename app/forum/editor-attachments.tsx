@@ -38,13 +38,15 @@ interface Props {
   ownerId: string | null;
   contextKey?: string;
   draftId: string;
+  publishedRevisionId?: string;
+  hasPublishedAttachments?: boolean;
   draftReady: boolean;
   draftRevision: number;
   selectionEpoch: number;
   rebindFrom: string | null;
   rebindVersion: number | null;
   disabled: boolean;
-  reserveGeneration(): string | null;
+  reserveGeneration(unchanged?: boolean): string | null;
   completeRebind(fromDraftId: string, toDraftId: string, retired?: boolean): boolean;
   retryDraftReconciliation(): void;
   noteAttachmentChange(draftId: string): void;
@@ -149,6 +151,8 @@ export function useEditorAttachments({
   ownerId,
   contextKey,
   draftId,
+  publishedRevisionId,
+  hasPublishedAttachments = false,
   draftReady,
   draftRevision,
   selectionEpoch,
@@ -222,6 +226,7 @@ export function useEditorAttachments({
 
   // Successful metadata checks must refresh refs even if React batches ready=false→true.
   useEffect(() => { setRestoredScope(null); }, [draftRevision]);
+  useEffect(() => { setRestoredScope(null); }, [publishedRevisionId]);
 
   useEffect(() => {
     const retaining = identity === previousIdentityRef.current
@@ -289,13 +294,20 @@ export function useEditorAttachments({
     if (!contextKey || !draftReady || rebindFrom || restoredScope === scope) return;
     const scopeAtStart = scope;
     const entriesAtStart = new Map(entriesRef.current.map((entry) => [entry.id, entry]));
+    // Pin published files using the same generation/provenance as uploads, before
+    // another device can remove their last public reference. Text sync stays 60s.
+    // With no published files there is nothing to pin: unavailable localStorage
+    // must not prevent an otherwise valid text-only edit from being submitted.
+    if (publishedRevisionId && callbacksRef.current.reserveGeneration(true) !== draftId
+      && hasPublishedAttachments) return;
     let ignore = false;
     setRestoreState("loading");
     void fetch("/api/attachments", {
-      method: "GET",
+      method: publishedRevisionId ? "PUT" : "GET",
       headers: {
         "X-Vico-Draft-Context": encoded(contextKey),
         "X-Vico-Draft-Id": draftId,
+        ...(publishedRevisionId ? { "X-Vico-Post-Revision": encoded(publishedRevisionId) } : {}),
       },
       credentials: "same-origin",
     }).then(async (response) => {
@@ -322,7 +334,7 @@ export function useEditorAttachments({
       if (!ignore && scopeRef.current === scopeAtStart) setRestoreState("error");
     });
     return () => { ignore = true; };
-  }, [contextKey, draftId, draftReady, draftRevision, rebindFrom, restoreAttempt, restoredScope, scope]);
+  }, [contextKey, draftId, draftReady, draftRevision, publishedRevisionId, hasPublishedAttachments, rebindFrom, restoreAttempt, restoredScope, scope]);
 
   const restoreReady = !!scope && restoredScope === scope && restoreState === "ready";
   const canAdd = !!contextKey && draftReady && !rebindFrom && rebindState !== "loading"

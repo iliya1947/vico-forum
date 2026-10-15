@@ -43,6 +43,7 @@ const migrations = [
   "0036_forum_attachment_security_events",
   "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts", "0040_post_edit_history_permissions",
   "0041_published_mentions",
+  "0042_attachment_edit_snapshots",
 ];
 
 const ownerId = "attachment-owner";
@@ -479,7 +480,7 @@ describe("forum attachment lifecycle foundation", () => {
     await client.query(`create schema ${migrationSchema}`);
     await connection.connect();
     try {
-      for (const tag of migrations.slice(0, -5)) {
+      for (const tag of migrations.filter((tag) => Number(tag.slice(0, 4)) < 37)) {
         await connection.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       }
       await connection.query('insert into "user" (id, name, email) values ($1, $1, $2)', [ownerId, `${ownerId}@test.invalid`]);
@@ -514,9 +515,11 @@ describe("forum attachment lifecycle foundation", () => {
     const runtime = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
     try {
       await client.query(`grant usage on schema ${schema} to ${role}`);
-      await client.query(`grant select, insert on forum_attachments, forum_attachment_draft_generations to ${role}`);
+      await client.query(`grant select, insert on forum_attachments, forum_attachment_draft_generations, forum_attachment_edit_snapshots to ${role}`);
       await client.query(`grant select, insert, delete on forum_attachment_draft_refs to ${role}`);
       await client.query(`grant select, update on forum_editor_drafts to ${role}`);
+      await client.query(`grant select, update on forum_posts to ${role}`);
+      await client.query(`grant select on forum_post_attachments to ${role}`);
       await runtime.connect();
       await runtime.query(`set role ${role}`);
       const restricted = new DrizzleForumAttachments(drizzle(runtime));
@@ -525,6 +528,14 @@ describe("forum attachment lifecycle foundation", () => {
       expect(await restricted.rebindDraftAttachments(ownerId, context, source, target, 1)).toBe(1);
       expect(await restricted.createDraftAttachment({ ...input, objectKey: `private/${crypto.randomUUID()}` })).toEqual(original);
       expect(await restricted.removeDraftAttachment(ownerId, context, source, input.id)).toBe(true);
+      const editPostId = crypto.randomUUID(), editRevisionId = crypto.randomUUID();
+      await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() })
+        .createPost({ id: editPostId, topicId: "attachment-topic", authorId: ownerId,
+          bodyRevision: { id: editRevisionId, originalContent: "Snapshot runtime", sourceLocale: "en" } });
+      await client.query("insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1, $2, now())", [editPostId, input.id]);
+      const editGeneration = crypto.randomUUID();
+      await restricted.initializePostEditAttachments(ownerId, `post:${editPostId}:edit`, editGeneration, editRevisionId);
+      expect((await restricted.listDraftAttachments(ownerId, `post:${editPostId}:edit`, editGeneration)).map((file) => file.id)).toEqual([input.id]);
     } finally {
       await runtime.end();
       await client.query(`drop owned by ${role}`);

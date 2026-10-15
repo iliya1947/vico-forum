@@ -95,6 +95,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
   function capture(ctx: Runtime, final = false) {
     if (final ? ctx.disposed : !current(ctx)) return;
+    // Mount/StrictMode cleanup must not turn the published source into a local
+    // edit before metadata establishes its CAS base. Only capture actual input.
+    if (!ctx.hasInput) return;
     const payload = ctx.payload;
     const previous = ctx.local;
     if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()
@@ -379,11 +382,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const ctx = runtimeRef.current;
     if (ctx) capture(ctx);
   }
-  function reserveAttachmentGeneration(): string | null {
+  function reserveAttachmentGeneration(unchanged = false): string | null {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx) || !ctx.attachmentVerified || ctx.conflict
       || ctx.reading || ctx.syncing || ctx.publishing) return null;
     if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return null;
+    if (unchanged && ctx.local?.attachmentDraftId === ctx.draftId) return ctx.draftId;
     if (ctx.hasInput) {
       capture(ctx);
       if (ctx.hasInput && (ctx.payload.body.trim() || ctx.payload.title.trim() || ctx.payload.tags.trim())) {

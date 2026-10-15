@@ -998,6 +998,25 @@ export const forumAttachmentDraftGenerations = pgTable(
   ],
 );
 
+// Records initialization even after the last file is removed. Reopening an edit
+// must not copy the published files back into an already initialized generation.
+export const forumAttachmentEditSnapshots = pgTable(
+  "forum_attachment_edit_snapshots",
+  {
+    ownerId: text("owner_id").notNull(),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ name: "forum_attachment_edit_snapshots_pk", columns: [table.ownerId, table.contextKey, table.draftId] }),
+    foreignKey({ name: "forum_attachment_edit_snapshots_owner_fk", columns: [table.ownerId], foreignColumns: [user.id] }).onDelete("cascade"),
+    foreignKey({ name: "forum_attachment_edit_snapshots_post_fk", columns: [table.postId], foreignColumns: [forumPosts.id] }).onDelete("cascade"),
+  ],
+);
+
 export const forumPostAttachments = pgTable(
   "forum_post_attachments",
   {

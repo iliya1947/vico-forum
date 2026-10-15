@@ -2249,7 +2249,7 @@ describe("published edit revision fence", () => {
     }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
-      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
     }));
     render(
@@ -2305,7 +2305,7 @@ describe("published edit revision fence", () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [remoteDraft] });
       if (url.startsWith("/en/drafts/data?mode=content&key=")) return json({ draft: remoteDraft });
-      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
     }));
     const router = createMemoryRouter([{
@@ -2349,7 +2349,7 @@ describe("published edit revision fence", () => {
     }));
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
-      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
     }));
     try {
@@ -2433,7 +2433,7 @@ describe("published edit submission lifecycle", () => {
     });
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
-      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
     }));
 
@@ -2529,7 +2529,7 @@ describe("published edit submission lifecycle", () => {
     });
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
-      if (url === "/api/attachments" && options?.method === "GET") return json({ attachments: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
     }));
 

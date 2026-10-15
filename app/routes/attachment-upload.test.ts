@@ -68,6 +68,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
   const removeDraftAttachment = vi.fn(async () => true);
   const rebindDraftAttachments = vi.fn(async () => 0);
+  const initializePostEditAttachments = vi.fn(async () => {});
   ctx.set(forumAttachmentStoreContext, {
     createDraftAttachment,
     recordSecurityEvent,
@@ -75,12 +76,13 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
     listDraftAttachments,
     removeDraftAttachment,
     rebindDraftAttachments,
+    initializePostEditAttachments,
   } as never);
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
     ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent,
-    listDraftAttachments, removeDraftAttachment, rebindDraftAttachments,
+    listDraftAttachments, removeDraftAttachment, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
 
@@ -142,6 +144,21 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
+  it("initializes a post-edit snapshot with same-origin ownership checks without requiring R2", async () => {
+    const env = setup({ withBucket: false });
+    env.ctx.set(forumReaderContext, { readPostLocation: async () => ({ topicId: "topic", authorId: "real-user" }) } as never);
+    const request = (origin: string) => new Request("https://forum.test/api/attachments", {
+      method: "PUT", headers: { Origin: origin, "X-Vico-Draft-Context": "post:existing:edit",
+        "X-Vico-Draft-Id": draftId, "X-Vico-Post-Revision": "revision-1" },
+    });
+    expect((await action({ request: request("https://other.test"), context: env.ctx })).status).toBe(403);
+    expect(env.initializePostEditAttachments).not.toHaveBeenCalled();
+    const response = await action({ request: request("https://forum.test"), context: env.ctx });
+    expect(response.status).toBe(200);
+    expect(env.initializePostEditAttachments).toHaveBeenCalledWith("real-user", "post:existing:edit", draftId, "revision-1");
+    expect(env.r2.put).not.toHaveBeenCalled();
+  });
+
   it.each([["real-user", 201], ["other", 403], [null, 404]] as const)(
     "uses edit permission plus authoritative post ownership for post-edit files (%s)", async (authorId, status) => {
       const env = setup();

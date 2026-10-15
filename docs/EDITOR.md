@@ -403,10 +403,17 @@
 - Публикация ждёт уже начатый штатный 60-second save, затем повторяет native submit
   в следующей задаче event loop с актуальным fence и исходным submitter. Нельзя повторять
   `requestSubmit()` внутри ещё выполняющегося native submit algorithm.
-- Правка опубликованного сообщения хранит `publishedRevisionId` и выбранные ранее
-  опубликованные `retainedAttachmentIds` в существующем JSONB draft payload.
-  Снятие published refs и promotion новых файлов происходят только в транзакции Save;
-  Cancel/черновик не меняют публичные ссылки. Legacy omission retains all existing files.
+- Правка опубликованного сообщения хранит `publishedRevisionId` в draft payload.
+  Явная attachment-операция `PUT /api/attachments` при открытии правки закрепляет
+  опубликованные файлы обычными private draft refs, под owner/context и post revision
+  locks, без немедленного сохранения текста. `forum_attachment_edit_snapshots` фиксирует
+  однократную инициализацию поколения, включая пустую выборку, и переносится при rebind.
+  Прежние и новые файлы после этого используют один список, Remove и exact publication
+  manifest. Восстановление не зависит от текущего публичного списка файлов.
+  Снятие published refs и promotion выбранных draft refs происходят только в Save;
+  Cancel/черновик не меняют публичные ссылки. Старые API callers без явного retained
+  manifest сохраняют прежнее поведение. Legacy retained JSON учитывается при первой
+  инициализации только из server-saved payload; отсутствующие файлы вызывают конфликт.
 - Вложения хранятся приватно за `PrivateAttachmentBucket`; optional R2 binding без
   настройки возвращает unavailable. Workers adapter использует `FixedLengthStream`
   для известной длины R2 body и отменяет upstream при отказе записи. Проверочный

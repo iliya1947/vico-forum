@@ -164,10 +164,23 @@ export async function loader({ request, context }: { request: Request; context: 
 }
 
 export async function action({ request, context }: { request: Request; context: RouterContextProvider }) {
-  if (!["POST", "DELETE", "PATCH"].includes(request.method)) return json({ error: "method" }, 405);
+  if (!["POST", "DELETE", "PATCH", "PUT"].includes(request.method)) return json({ error: "method" }, 405);
   const scope = await requestScope(request, context, true);
   if ("response" in scope) return scope.response;
   const store = attachmentStoreForRequest(context);
+
+  if (request.method === "PUT") {
+    const revisionId = decodedHeader(request, "X-Vico-Post-Revision", 128);
+    if (!revisionId) return json({ error: "invalid" }, 400);
+    try {
+      await store.initializePostEditAttachments(scope.userId, scope.contextKey, scope.draftId, revisionId);
+      return json({ attachments: (await store.listDraftAttachments(scope.userId, scope.contextKey, scope.draftId)).map(safeAttachment) });
+    } catch (error) {
+      const response = attachmentStoreFailure(error);
+      if (response) return response;
+      throw error;
+    }
+  }
 
   if (request.method === "DELETE") {
     const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";

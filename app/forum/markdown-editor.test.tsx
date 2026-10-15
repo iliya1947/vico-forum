@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { createRef, useState, type ReactNode } from "react";
+import { createRef, StrictMode, useState, type ReactNode } from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
@@ -83,6 +83,22 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
+  it("does not capture untouched published source as a local edit during StrictMode cleanup before metadata", async () => {
+    const owner = "strict-edit-owner", key = "post:strict-edit:edit";
+    vi.stubGlobal("fetch", vi.fn(async (uri: string) => uri === "/api/attachments"
+      ? Response.json({ attachments: [] })
+      : Response.json({ drafts: [{ contextKey: key, draftId: crypto.randomUUID(), version: 3,
+        status: "published", editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), title: "", snippet: "" }] })));
+    renderEditor(<StrictMode><HeaderAuthProvider initialUser={{ id: owner, name: "Author" }}>
+      <form><MarkdownEditor id="strict-edit" name="body" defaultValue="Published source"
+        draftContextKey={key} draftLocale="en" /></form>
+    </HeaderAuthProvider></StrictMode>);
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    expect(readLocalEditorDraft(owner, key)).toBeNull();
+    expect(document.querySelector('input[name="editorDraftVersion"]')).toHaveValue("3");
+    expect(screen.queryByText("Draft changed on another device. Choose which version to keep.")).not.toBeInTheDocument();
+  });
+
   it.each([
     ["b", "**alpha** beta"], ["i", "_alpha_ beta"], ["k", "[alpha](https://) beta"],
   ])("supports the %s formatting shortcut in Advanced without changing the rest of the source", (key, expected) => {
@@ -97,11 +113,20 @@ describe("MarkdownEditor", () => {
     expect(new FormData(field.form!).get("body")).toBe("alpha beta");
   });
 
-  it("persists removal of published attachments in the edit draft, including an empty-body edit", async () => {
-    stubEmptyDraftMetadata();
+  it("uses durable draft references for published files and does not re-adopt a removed file on reopen", async () => {
     const owner = "published-file-edit-owner";
     const id = "23b93562-0550-4eef-88af-f951d6ea6138";
     const contextKey = "post:attachment-only:edit";
+    let files = [{ id, fileName: "published.txt", byteSize: 4, detectedType: "text",
+      responseMime: "text/plain", verificationStatus: "type-checked" }];
+    const fetchMock = vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri === "/api/attachments") {
+        if (options?.method === "DELETE") files = [];
+        return Response.json({ attachments: files });
+      }
+      return Response.json({ drafts: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
     const editor = () => <HeaderAuthProvider initialUser={{ id: owner, name: "Author" }}>
       <form><MarkdownEditor id="file-edit" name="body" draftContextKey={contextKey} draftLocale="en"
         initialPublishedRevisionId="r1" existingInlineAttachments={[{
@@ -110,13 +135,16 @@ describe("MarkdownEditor", () => {
     </HeaderAuthProvider>;
     const view = renderEditor(editor());
     await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    expect(new FormData(document.querySelector("form")!).get("editorAttachmentIds")).toBe(JSON.stringify([id]));
+    expect(fetchMock).toHaveBeenCalledWith("/api/attachments", expect.objectContaining({ method: "PUT" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(new FormData(document.querySelector("form")!).get("editorRetainedAttachmentIds")).toBe("[]");
-    expect(readLocalEditorDraft(owner, contextKey)?.payload).toMatchObject({ body: "", retainedAttachmentIds: [] });
-    expect(screen.queryByText("published.txt")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("published.txt")).not.toBeInTheDocument());
+    expect(readLocalEditorDraft(owner, contextKey)?.attachmentDraftId).toBeTruthy();
     view.unmount();
     renderEditor(editor());
-    await waitFor(() => expect(new FormData(document.querySelector("form")!).get("editorRetainedAttachmentIds")).toBe("[]"));
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    expect(new FormData(document.querySelector("form")!).get("editorAttachmentIds")).toBe("[]");
     expect(screen.queryByText("published.txt")).not.toBeInTheDocument();
     clearLocalEditorDraft(owner, contextKey);
   });

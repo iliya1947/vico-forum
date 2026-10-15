@@ -37,11 +37,16 @@ event-loop task: браузер больше не игнорирует повт�
 выполняющемся исходном submit. Новый task сохраняет native validation и submitter.
 
 Post-edit server draft/upload authorization теперь использует актуальную
-`forum.post.editOwn` и authoritative author identity. Правки сохраняют manifest
-retained published attachments в существующем draft JSONB; Remove/Cancel не меняют
-публичные ссылки. Save атомарно удаляет deselected refs и продвигает новые, сохраняет
-shared assets, CAS/rollback и idempotent receipt identity. Runtime web contract
-добавляет только необходимый DELETE на forum_post_attachments; внешние grants
+`forum.post.editOwn` и authoritative author identity. При открытии правки явная
+attachment-операция закрепляет published files обычными private draft refs до первого
+60-second text save. Миграция `0042_attachment_edit_snapshots` хранит однократную
+инициализацию поколения, включая пустую выборку; marker переносится при rebind.
+Прежние и новые файлы используют один lifecycle, Remove и exact publication manifest;
+восстановление не пересекает выбранные IDs с изменившимися post attachments.
+Remove/Cancel не меняют публичные ссылки. Save атомарно заменяет post refs выбранными
+draft refs, сохраняет shared assets, CAS/rollback и idempotent receipt identity.
+Runtime web contract добавляет INSERT/SELECT на snapshot markers и необходимый
+DELETE на forum_post_attachments; внешние grants
 не применялись. Снятие inline images использует Markdown AST ranges и сохраняет
 буквальные примеры внутри кода/escaped syntax.
 
@@ -60,6 +65,20 @@ removal через Cancel/reload/Save. EN/RU/HE geometry прошла при 136
 explicit divergent conflict choice и remote publication retirement без resurrection.
 Для этого теста Playwright clock продвигал существующие 60000-ms browser intervals;
 HTTP, R2 и PostgreSQL не подменялись. Это проверка локального runtime, не внешний rollout.
+
+Последующий causal regression проверяет независимый unsynced A, публикацию B со
+снятием последней public ref, явный выбор A, regular CAS нового поколения, rebind,
+revision rebase и cleanup. Реальные PostgreSQL tests проверяют обе очередности
+snapshot/publication locks и отсутствие повторного добавления последнего удалённого
+файла при reopen/rebind. Полный DB run: 304 tests PASS, schema manifest parity и
+positive/negative runtime privilege probes PASS. Неизменённый опубликованный source
+больше не захватывается как input при StrictMode cleanup до metadata/CAS discovery.
+Сценарий Help Ctrl+Enter после similar-question check остаётся следующим открытым
+вопросом; финальные application/CI/browser checks ещё не завершены.
+Дополнительный Chromium flow воспроизвёл обе независимые edit generations: B сняло
+последнюю public ref, A выбрало свою версию, прошло штатный 60-second interval
+(Playwright fastForward), CAS/rebind и reload; файл читался через private draft ref
+и вновь публиковался после явного revision rebase. Ни HTTP, ни DB/R2 не подменялись.
 
 Финальные exact-head CI, дополнительные whole-Editor checks, независимые reviews
 Sol/GPT-6 и owner visual acceptance пока ожидаются. PR открыт и не объявлен готовым к merge.

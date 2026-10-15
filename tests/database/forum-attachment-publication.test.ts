@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
 import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
+import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 import { DrizzleForumRepository, ForumAuthorizationError, ForumStateConflictError } from "../../db/forum-repository";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -331,6 +332,129 @@ describe("text-only publication attachment fence", () => {
 });
 
 describe("published post editing and revision history", () => {
+  async function publishedFilePost() {
+    const localTopicId = crypto.randomUUID(), localContext = `topic:${localTopicId}:reply`;
+    await forum.createTopicWithInitialPost({ id: localTopicId, sectionId, authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Snapshot topic", sourceLocale: "en" },
+      initialPost: { id: crypto.randomUUID(), topicId: localTopicId, authorId: ownerId,
+        bodyRevision: { id: crypto.randomUUID(), originalContent: "Initial", sourceLocale: "en" } } });
+    const postId = crypto.randomUUID(), revisionId = crypto.randomUUID(), generation = crypto.randomUUID();
+    const draft = await savedDraft(generation, localContext);
+    const file = attachment(generation, localContext);
+    await attachments.createDraftAttachment(file);
+    await forum.createPost({ ...reply(postId, generation, draft.version), topicId: localTopicId,
+      publishedDraft: { contextKey: localContext, draftId: generation, expectedVersion: draft.version, attachmentIds: [file.id] },
+      bodyRevision: { id: revisionId, originalContent: "Original", sourceLocale: "en" },
+    });
+    return { postId, revisionId, file, topicId: localTopicId, key: `post:${postId}:edit` };
+  }
+
+  it("preserves an unsynced device's files through another publication, local conflict choice, rebase and cleanup", async () => {
+    const { postId, revisionId, file, topicId: localTopicId, key } = await publishedFilePost();
+    const a = crypto.randomUUID(), b = crypto.randomUUID(), c = crypto.randomUUID();
+    await attachments.initializePostEditAttachments(ownerId, key, a, revisionId);
+    // Opening the attachment snapshot does not accelerate the 60-second text save.
+    expect(await draftStore.get(ownerId, key)).toBeNull();
+    await attachments.initializePostEditAttachments(ownerId, key, b, revisionId);
+    await attachments.removeDraftAttachment(ownerId, key, b, file.id);
+    const added = attachment(b, key);
+    await attachments.createDraftAttachment(added);
+    await forum.editPublishedPost({ postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: revisionId,
+      body: "Device B", draftId: b, expectedVersion: 0, attachmentIds: [added.id], retainedAttachmentIds: [] });
+    expect(await attachments.readPublishedAttachment(postId, file.id)).toBeNull();
+    const removedObjects: string[] = [];
+    const cleanup = new ForumAttachmentCleanup(drizzle(client), {
+      delete: async (key) => { removedObjects.push(key); },
+    }, () => new Date(Date.now() + 2 * 60 * 60_000));
+    await cleanup.runOnce();
+    expect(removedObjects).not.toContain(file.objectKey);
+    expect(await attachments.readDraftAttachment(ownerId, key, a, file.id)).toMatchObject({ id: file.id });
+    // Explicitly choosing local against B's terminal marker starts C. Its text
+    // reaches the regular CAS before the existing A→C attachment rebind.
+    const terminal = await draftStore.get(ownerId, key);
+    const saved = await draftStore.save(ownerId, key, c,
+      { title: "", tags: "", body: "Device A", publishedRevisionId: revisionId }, terminal!.version);
+    if (saved.outcome !== "saved") throw new Error("local choice must save");
+    await attachments.rebindDraftAttachments(ownerId, key, a, c, saved.draft.version);
+    const currentRevision = (await forum.readPost(postId))!.body.id;
+    await attachments.initializePostEditAttachments(ownerId, key, c, currentRevision);
+    expect((await attachments.listDraftAttachments(ownerId, key, c)).map((file) => file.id)).toEqual([file.id]);
+    await forum.editPublishedPost({ postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: currentRevision,
+      body: "Device A", draftId: c, expectedVersion: saved.draft.version,
+      attachmentIds: [file.id], retainedAttachmentIds: [] });
+    expect(await attachments.readPublishedAttachment(postId, file.id)).toMatchObject({ id: file.id });
+    expect(await attachments.readPublishedAttachment(postId, added.id)).toBeNull();
+    await expect(attachments.initializePostEditAttachments(ownerId, key, a, revisionId))
+      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+  });
+
+  it("does not re-adopt the last removed file on retry, reopen or a generation move", async () => {
+    const { postId, revisionId, file, key } = await publishedFilePost();
+    const a = crypto.randomUUID(), b = crypto.randomUUID();
+    await attachments.initializePostEditAttachments(ownerId, key, a, revisionId);
+    await attachments.removeDraftAttachment(ownerId, key, a, file.id);
+    await attachments.initializePostEditAttachments(ownerId, key, a, revisionId);
+    expect(await attachments.listDraftAttachments(ownerId, key, a)).toEqual([]);
+    expect(await attachments.readPublishedAttachment(postId, file.id)).not.toBeNull();
+    const saved = await savedDraft(b, key);
+    await attachments.rebindDraftAttachments(ownerId, key, a, b, saved.version);
+    await attachments.initializePostEditAttachments(ownerId, key, b, revisionId);
+    expect(await attachments.listDraftAttachments(ownerId, key, b)).toEqual([]);
+  });
+
+  it("rejects snapshot acquisition for another owner, a stale revision, and retired generations without references", async () => {
+    const { revisionId, file, key } = await publishedFilePost();
+    const generation = crypto.randomUUID();
+    await expect(attachments.initializePostEditAttachments("publication-other", key, generation, revisionId)).rejects.toThrow();
+    await expect(attachments.initializePostEditAttachments(ownerId, key, generation, "stale")).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    expect(await attachments.listDraftAttachments(ownerId, key, generation)).toEqual([]);
+    expect((await client.query("select 1 from forum_attachment_edit_snapshots where draft_id=$1", [generation])).rows).toEqual([]);
+    const saved = await savedDraft(generation, key);
+    await draftStore.delete(ownerId, key, generation, saved.version);
+    await expect(attachments.initializePostEditAttachments(ownerId, key, generation, revisionId)).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    expect(await attachments.readPublishedAttachment(key.slice(5, -5), file.id)).not.toBeNull();
+  });
+
+  it.each([true, false])("serializes snapshot acquisition and publication in both lock orders (snapshot first: %s)", async (snapshotFirst) => {
+    const { postId, revisionId, file, topicId: localTopicId, key } = await publishedFilePost();
+    const a = crypto.randomUUID(), b = crypto.randomUUID();
+    const blocker = connection(), first = connection(), second = connection();
+    await Promise.all([blocker.connect(), first.connect(), second.connect()]);
+    let initializing: Promise<void> | undefined, publishing: Promise<void> | undefined;
+    try {
+      const firstPid = await backendId(first), secondPid = await backendId(second);
+      await blocker.query("begin");
+      await lockAttachmentDraftScope(drizzle(blocker), ownerId, key);
+      const startSnapshot = (conn: Client) => new DrizzleForumAttachments(drizzle(conn))
+        .initializePostEditAttachments(ownerId, key, a, revisionId);
+      const startSave = (conn: Client) => new DrizzleForumRepository(drizzle(conn), policy)
+        .editPublishedPost({ postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: revisionId,
+          body: "Device B", draftId: b, expectedVersion: 0, attachmentIds: [], retainedAttachmentIds: [] });
+      if (snapshotFirst) initializing = startSnapshot(first);
+      else publishing = startSave(first);
+      void (initializing ?? publishing)!.catch(() => {});
+      await waitForScopeLock(firstPid);
+      if (snapshotFirst) publishing = startSave(second);
+      else initializing = startSnapshot(second);
+      void (snapshotFirst ? publishing : initializing)!.catch(() => {});
+      await waitForScopeLock(secondPid);
+      await blocker.query("commit");
+      await publishing;
+      if (snapshotFirst) {
+        await initializing;
+        expect(await attachments.readDraftAttachment(ownerId, key, a, file.id)).not.toBeNull();
+      } else {
+        await expect(initializing).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+        expect(await attachments.listDraftAttachments(ownerId, key, a)).toEqual([]);
+      }
+      expect(await attachments.readPublishedAttachment(postId, file.id)).toBeNull();
+    } finally {
+      await blocker.query("rollback");
+      await Promise.allSettled([initializing, publishing]);
+      await Promise.all([blocker.end(), first.end(), second.end()]);
+    }
+  });
+
   it("removes only deselected published refs atomically with Save and includes the selection in retry identity", async () => {
     const localTopicId = crypto.randomUUID();
     const contextKey = `topic:${localTopicId}:reply`;

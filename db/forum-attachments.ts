@@ -3,13 +3,14 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
   forumAttachmentDraftGenerations,
+  forumAttachmentEditSnapshots,
   forumAttachments,
   forumAttachmentSecurityEvents,
   forumEditorDrafts,
   forumPostAttachments,
   forumPosts,
 } from "./schema";
-import { isEditorDraftContextKey } from "./editor-draft-context";
+import { isEditorDraftContextKey, parseEditorDraftContextKey } from "./editor-draft-context";
 import { EDITOR_DRAFT_EXPIRY_MS } from "./forum-editor-drafts";
 import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration } from "./attachment-draft-generation";
 
@@ -126,6 +127,48 @@ function toMetadata(row: typeof forumAttachments.$inferSelect): ForumAttachmentM
 
 export class DrizzleForumAttachments {
   constructor(private readonly db: NodePgDatabase) {}
+
+  async initializePostEditAttachments(ownerId: string, contextKey: string, draftId: string, revisionId: string): Promise<void> {
+    const context = parseEditorDraftContextKey(contextKey);
+    if (!ownerId || context?.kind !== "post" || !isForumAttachmentUuid(draftId)
+      || !revisionId || revisionId.length > 128) throw new InvalidForumAttachmentError();
+    await this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      if (generation !== draftId) throw new ForumAttachmentDraftConflictError();
+      const [initialized] = await tx.select({ draftId: forumAttachmentEditSnapshots.draftId })
+        .from(forumAttachmentEditSnapshots).where(and(
+          eq(forumAttachmentEditSnapshots.ownerId, ownerId),
+          eq(forumAttachmentEditSnapshots.contextKey, contextKey),
+          eq(forumAttachmentEditSnapshots.draftId, draftId),
+        )).limit(1);
+      if (initialized) return;
+      // Same lock order as publication: scope, then post. Either the snapshot
+      // pins the old files before Save, or it rejects a changed revision.
+      const [post] = await tx.select({ authorId: forumPosts.authorId, revisionId: forumPosts.currentRevisionId })
+        .from(forumPosts).where(eq(forumPosts.id, context.id)).for("share").limit(1);
+      if (!post || post.authorId !== ownerId) throw new InvalidForumAttachmentError();
+      if (post.revisionId !== revisionId) throw new ForumAttachmentDraftConflictError();
+      const [draft] = await tx.select().from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey),
+        eq(forumEditorDrafts.draftId, draftId),
+      )).limit(1);
+      if (draft && draft.status !== "active") throw new ForumAttachmentDraftConflictError("gone");
+      const published = await tx.select({ id: forumPostAttachments.attachmentId })
+        .from(forumPostAttachments).where(eq(forumPostAttachments.postId, context.id));
+      // Honor selections saved by the previous implementation, including [].
+      const legacySelection = draft?.payload.retainedAttachmentIds;
+      if (legacySelection?.some((id) => !published.some((file) => file.id === id))) {
+        throw new ForumAttachmentDraftConflictError();
+      }
+      const selected = legacySelection === undefined ? published
+        : published.filter((file) => legacySelection.includes(file.id));
+      if (selected.length) await tx.insert(forumAttachmentDraftRefs).values(selected.map((file) => ({
+        attachmentId: file.id, ownerId, contextKey, draftId, createdAt: new Date(),
+      }))).onConflictDoNothing();
+      await tx.insert(forumAttachmentEditSnapshots).values({ ownerId, contextKey, draftId, postId: context.id, revisionId });
+    });
+  }
 
   async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
@@ -373,6 +416,14 @@ export class DrizzleForumAttachments {
         draftId: generation,
         targetDraftId: target,
       });
+      const [snapshot] = await tx.select().from(forumAttachmentEditSnapshots).where(and(
+        eq(forumAttachmentEditSnapshots.ownerId, ownerId),
+        eq(forumAttachmentEditSnapshots.contextKey, contextKey),
+        eq(forumAttachmentEditSnapshots.draftId, generation),
+      )).limit(1);
+      if (snapshot) await tx.insert(forumAttachmentEditSnapshots).values({
+        ...snapshot, draftId: target,
+      }).onConflictDoNothing();
       if (source.length === 0) return 0;
 
       await tx.insert(forumAttachmentDraftRefs).values(source.map((reference) => ({

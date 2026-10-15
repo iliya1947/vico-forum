@@ -16,6 +16,7 @@ import {
 } from "./forum-attachments";
 
 export interface ForumAttachmentStore {
+  initializePostEditAttachments(ownerId: string, contextKey: string, draftId: string, revisionId: string): Promise<void>;
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
   readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
   readDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
@@ -74,6 +75,8 @@ export function createHyperdriveForumAttachmentStore(
   }
 
   return {
+    initializePostEditAttachments: (ownerId, contextKey, draftId, revisionId) =>
+      apply((store) => store.initializePostEditAttachments(ownerId, contextKey, draftId, revisionId)),
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
     readPublishedAttachment: (postId, attachmentId) => apply((store) => store.readPublishedAttachment(postId, attachmentId)),
     readDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
