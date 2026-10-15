@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ForumMarkdown, ForumInlineAttachmentProvider, highlightCode } from "./markdown";
+import { attributedQuoteMarkdown } from "./quote-markdown";
+import { publishedMentionRecipients } from "./mentions";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -53,6 +55,68 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+describe("attributed public message quotes", () => {
+  it("preserves author permalink and full Markdown in a normal protected blockquote", () => {
+    const permalink = "/he/topics/sample#post-message-15";
+    const code = String.fromCharCode(96).repeat(3);
+    const source = "A **strong** line  \n\n" + code + "ts\nconst x = 1;\n" + code;
+    const quote = attributedQuoteMarkdown({
+      author: "Alice [developer]",
+      messageNumber: 15,
+      permalink,
+      content: source,
+    });
+    expect(quote).toContain("Alice \\[developer\\]");
+    expect(quote).toContain("> A **strong** line  ");
+    expect(quote).toContain("> " + code + "ts\n> const x = 1;\n> " + code);
+    const { container } = renderMarkdown(quote, "rtl");
+    const attribution = container.querySelector(".forum-quote-attribution");
+    expect(attribution).toHaveTextContent("Alice [developer] · #15");
+    expect(attribution?.querySelector("a")).toHaveAttribute("href", permalink);
+    expect(container.querySelector(".forum-quote-content strong")).toHaveTextContent("strong");
+    expect(container.querySelector(".forum-quote-content pre")).toHaveTextContent("const x = 1;");
+    expect(container.querySelectorAll(".forum-quoted-block")).toHaveLength(1);
+    expect(container.querySelector(".forum-quote-toggle")).toBeNull();
+    expect(publishedMentionRecipients(quote)).toEqual([]);
+  });
+
+  it("collapses only measured long quotes, restores content and retains source metadata", async () => {
+    const original = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
+    Object.defineProperty(Range.prototype, "getClientRects", {
+      configurable: true,
+      value: function(this: Range) {
+        return Array.from({ length: this.toString().length > 80 ? 7 : 1 }, (_, index) => ({
+          top: index * 20, bottom: index * 20 + 16, height: 16,
+          left: 0, right: 100, width: 100,
+        }));
+      },
+    });
+    try {
+      const quote = attributedQuoteMarkdown({
+        author: "Anna",
+        messageNumber: 2,
+        permalink: "/en/topics/t#post-abc",
+        content: "long ".repeat(50),
+      });
+      const { container } = renderMarkdown(quote);
+      const content = container.querySelector<HTMLElement>(".forum-quote-content")!;
+      const button = screen.getByRole("button", { name: "Show full quote" });
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      expect(content.style.maxHeight).not.toBe("");
+      expect(container.querySelector(".forum-quote-attribution")).toHaveTextContent("Anna · #2");
+      await userEvent.click(button);
+      expect(screen.getByRole("button", { name: "Collapse quote" })).toHaveAttribute("aria-expanded", "true");
+      expect(content.style.maxHeight).toBe("");
+      expect(content.textContent).toContain("long long");
+      await userEvent.click(screen.getByRole("button", { name: "Collapse quote" }));
+      expect(screen.getByRole("button", { name: "Show full quote" })).toHaveAttribute("aria-expanded", "false");
+    } finally {
+      if (original) Object.defineProperty(Range.prototype, "getClientRects", original);
+      else Reflect.deleteProperty(Range.prototype, "getClientRects");
+    }
+  });
 });
 
 describe("authorized inline attachment image Markdown", () => {
