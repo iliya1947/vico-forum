@@ -52,8 +52,8 @@ export function remarkForumStrikethrough(this: unknown): undefined {
  */
 type ForumMdastNode = Nodes;
 
-function applyParagraphDirections(node: ForumMdastNode): void {
-  if ("children" in node) node.children.forEach(applyParagraphDirections);
+function applyParagraphDirections(node: ForumMdastNode, source: string): void {
+  if ("children" in node) node.children.forEach((child) => applyParagraphDirections(child, source));
   if (node.type === "listItem" && node.children.length === 1) {
     const direction = node.children[0]?.data?.hProperties?.dir;
     if (direction === "ltr" || direction === "rtl") {
@@ -64,8 +64,13 @@ function applyParagraphDirections(node: ForumMdastNode): void {
   if (node.type !== "paragraph" && node.type !== "heading") return;
   const last = node.children.at(-1);
   if (last?.type !== "text" || !last.value) return;
-  const marker = /[ \t]+\{:vico-dir=(ltr|rtl)\}$/u.exec(last.value);
-  if (!marker) return;
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  if (start === undefined || end === undefined) return;
+  // Inspect original source as well as decoded AST text: an escaped marker
+  // remains literal Markdown and must never become formatting metadata.
+  const marker = /[ \t]+\{:vico-dir=(ltr|rtl)\}$/u.exec(source.slice(start, end));
+  if (!marker || !last.value.endsWith(marker[0])) return;
   last.value = last.value.slice(0, -marker[0].length);
   if (last.position?.end.offset !== undefined) {
     last.position.end.offset -= marker[0].length;
@@ -77,12 +82,13 @@ function applyParagraphDirections(node: ForumMdastNode): void {
 
 /** Render only the two recognized direction values; never pass user HTML through. */
 export function remarkForumParagraphDirection() {
-  return (tree: ReturnType<typeof fromMarkdown>): void => applyParagraphDirections(tree);
+  return (tree: ReturnType<typeof fromMarkdown>, file: { value: string }): void =>
+    applyParagraphDirections(tree, String(file.value));
 }
 
 export function parseForumMarkdown(value: string): ReturnType<typeof fromMarkdown> {
   const tree = fromMarkdown(value, forumMarkdownFromOptions);
-  applyParagraphDirections(tree);
+  applyParagraphDirections(tree, value);
   return tree;
 }
 
