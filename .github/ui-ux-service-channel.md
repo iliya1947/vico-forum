@@ -7220,3 +7220,16 @@ Ready criteria:
 
 Do not start device-local settings clearing, general responsive polish, final whole-Editor acceptance, formal Codex Code Review, Stage 6 infrastructure work or merge in this subtask.
 
+---
+
+## GPT-6 STOP — quote attribution / responsive collapse needs Sol independent diagnosis — 2026-10-15
+
+**Task and exact state:** Sol-assigned whole/selected quote, permanent source-author link and real-visual-line collapse in PR #215. Current implementation head fdf81607536758f308305fceaa1c98ca8650ee3b. Incomplete, not ready for acceptance, formal Codex review or merge.
+
+**Changes attempted:** ordinary attributed Markdown quote source helper, original/selected content insertion in desktop/mobile TopicView actions, blockquote rendering with persistent attribution area, Range/ResizeObserver visual-line measurements, EN/RU/HE strings and CSS, source/component regressions. Existing Quote-selected parent-reply relationship was retained. No backend or DB changes.
+
+**Verified failures and uncertainty:** Several successive CI heads failed in this same new mechanism. Early source syntax/lint errors and incompatible parsed-node typings were fixed locally. Rendering tests revealed a real mismatch: ReactMarkdown passes rendered HTML AST (HAST), but attribution detection initially assumed Markdown AST. Head bd95c39c CI #38725025337: database SUCCESS, checks FAILURE; two new attributed-render tests failed to find the metadata header; existing public-read test failed because expected un-attributed source changed. Last head fdf8160 changes detection to HAST and updates the old test plus whole-message assertion, but [CI #38725094807](https://github.com/iliya1947/vico-forum/actions/runs/38725094807) had database SUCCESS and checks still RUNNING at this record. Do not assume the outstanding tests pass.
+
+**Isolated Chromium observation (not deployed/integrated):** At 1040/390/320 CSS viewport widths a sample quote after reflow measured 4/10/13 visible text lines with the Range algorithm; source-header link stayed visible, narrow cases computed the first-three-line clipping height. A previous initial measurement differed before later layout; ResizeObserver is used in the React implementation but integrated lifecycle/toggle behavior and owner acceptance have not been verified.
+
+**STOP trigger:** repeated patches and failing checks in one quote source/render mechanism trigger the mandatory GPT-6 halt. Sol should independently diagnose actual cause and test adequacy on current PR head, choose a bounded correction or escalate a contested/more complex design to Codex. This is not a request for formal Codex Code Review. No further code changes by GPT-6; no unrelated work, deployment or merge.
