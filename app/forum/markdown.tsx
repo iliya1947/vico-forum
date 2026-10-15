@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import { remarkForumParagraphDirection, remarkForumStrikethrough } from "../markdown-syntax";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
+import { isAttributedQuoteHeader } from "./quote-markdown";
+import { ForumQuotedBlock } from "./quote-presentation";
 
 export interface ForumInlineAttachment {
   id: string;
@@ -310,6 +312,7 @@ function ForumCodeBlock({
 }
 
 const markdownComponents: Components = {
+  blockquote: ({ node, children }) => <ForumQuotedBlock attributed={isAttributedQuoteHeader(node?.children?.[0])}>{children}</ForumQuotedBlock>,
   // Each prose block follows its own first strong character, not the UI locale.
   p: ({ children, dir }) => <p dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</p>,
   li: ({ children, dir }) => <li dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</li>,
