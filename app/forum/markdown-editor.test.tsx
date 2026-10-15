@@ -1069,7 +1069,7 @@ describe("MarkdownEditor", () => {
     const point = source.indexOf("abc") + 1;
     textarea.setSelectionRange(point, point);
     await userEvent.click(screen.getByRole("button", { name: "Indent code" }));
-    expect(textarea.value).toContain("\\n  abc\\n");
+    expect(textarea.value).toContain("\n  abc\n");
     const indent = textarea.value.indexOf("abc") + 1;
     textarea.setSelectionRange(indent, indent);
     await userEvent.click(screen.getByRole("button", { name: "Outdent code" }));

@@ -918,13 +918,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }), [mode, value, authoringMode, draft]);
 
     const basicTools = (<>
-<button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
+      <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
           onClick={() => replaceSelection("**", "**", 2)}><strong>B</strong></button>
         <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")}
           onClick={() => replaceSelection("_", "_", 1)}><em>I</em></button>
     </>);
     const secondaryTools = (<>
-<button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
+      <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
           onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
         <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")}
           onClick={insertLink}>↗</button>
@@ -941,6 +941,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               <button type="button" key={emoji} disabled={disabled} onClick={() => replaceSelection(emoji, "", emoji.length)}
                 aria-label={emoji}>{emoji}</button>,
             )}
+          </div>
+        </details>
     </>);
     // Touch code controls reuse the same fenced-code Tab/Shift+Tab implementation.
     const compactCodeTools = (<>
