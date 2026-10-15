@@ -69,11 +69,11 @@ function applyParagraphDirections(node: ForumMdastNode, source: string): void {
   if (node.type !== "paragraph" && node.type !== "heading") return;
   const last = node.children?.at(-1);
   if (last?.type !== "text" || !last.value) return;
-  const start = node.position?.start.offset;
-  const end = node.position?.end.offset;
+  const start = last.position?.start.offset;
+  const end = last.position?.end.offset;
   if (start === undefined || end === undefined) return;
-  // Inspect original source as well as decoded AST text: an escaped marker
-  // remains literal Markdown and must never become formatting metadata.
+  // The final text child's source ends before Setext underline / ATX closing hashes.
+  // Use its exact raw span so escaped markers remain literal.
   const marker = /[ \t]+\{:vico-dir=(ltr|rtl)\}$/u.exec(source.slice(start, end));
   if (!marker || !last.value.endsWith(marker[0])) return;
   last.value = last.value.slice(0, -marker[0].length);
