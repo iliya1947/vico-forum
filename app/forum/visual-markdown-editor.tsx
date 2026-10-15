@@ -16,6 +16,7 @@ interface VisualNode {
   url?: string;
   alt?: string;
   children?: VisualNode[];
+  data?: { hProperties?: { dir?: "ltr" | "rtl" } };
   position?: { start: { offset?: number }; end: { offset?: number } };
 }
 
@@ -418,15 +419,15 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
   );
   switch (node.type) {
     case "root": return <>{children}</>;
-    case "paragraph": return <p dir="auto">{children}</p>;
+    case "paragraph": return <p dir={node.data?.hProperties?.dir ?? "auto"}>{children}</p>;
     case "heading": {
       const level = node.depth === 1 ? "h1" : node.depth === 3 ? "h3" : node.depth === 4 ? "h4" : node.depth === 5 ? "h5" : node.depth === 6 ? "h6" : "h2";
-      if (level === "h1") return <h1 dir="auto">{children}</h1>;
-      if (level === "h3") return <h3 dir="auto">{children}</h3>;
-      if (level === "h4") return <h4 dir="auto">{children}</h4>;
-      if (level === "h5") return <h5 dir="auto">{children}</h5>;
-      if (level === "h6") return <h6 dir="auto">{children}</h6>;
-      return <h2 dir="auto">{children}</h2>;
+      if (level === "h1") return <h1 dir={node.data?.hProperties?.dir ?? "auto"}>{children}</h1>;
+      if (level === "h3") return <h3 dir={node.data?.hProperties?.dir ?? "auto"}>{children}</h3>;
+      if (level === "h4") return <h4 dir={node.data?.hProperties?.dir ?? "auto"}>{children}</h4>;
+      if (level === "h5") return <h5 dir={node.data?.hProperties?.dir ?? "auto"}>{children}</h5>;
+      if (level === "h6") return <h6 dir={node.data?.hProperties?.dir ?? "auto"}>{children}</h6>;
+      return <h2 dir={node.data?.hProperties?.dir ?? "auto"}>{children}</h2>;
     }
     case "strong": {
       const range = sourceRange(node);
@@ -454,7 +455,7 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
     }
     case "blockquote": return <blockquote>{children}</blockquote>;
     case "list": return node.ordered ? <ol>{children}</ol> : <ul>{children}</ul>;
-    case "listItem": return <li dir="auto">{children}</li>;
+    case "listItem": return <li dir={node.data?.hProperties?.dir ?? "auto"}>{children}</li>;
     case "thematicBreak": return <hr />;
     case "break": return <br />;
     case "link": {
