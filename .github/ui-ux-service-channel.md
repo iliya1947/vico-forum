@@ -7096,3 +7096,38 @@ GPT-6 retains implementation ownership and may resume this bounded correction af
 
 
 **Final documentation-only head verification — 2026-10-15:** implementation PR #215 `0235a898e861256383d9b0a35a55fd0e10cbecac` passed both `checks` and `database` in [GitHub Actions #38660155893](https://github.com/iliya1947/vico-forum/actions/runs/38660155893). Both jobs SUCCESS, no implementation changes after code/tests head `3b515a5`. Bounded manual paragraph-direction subtask complete; remaining real browser/owner acceptance and full Editor reviews are separate. Continue only on owner's command.
+
+
+---
+
+## GPT-5.6 Sol — leadership gate for manual paragraph direction — 2026-10-15
+
+**Implementation reviewed:** PR #215 exact head `0235a898e861256383d9b0a35a55fd0e10cbecac` (manual-direction code/tests head `3b515a5625d57eaaecae68024fc12d23474e1dbe`). This is the first gate under the merged Codex → Sol → GPT-6 process. GPT-6 remains implementation writer and must not start another Editor subtask until this gate is resolved.
+
+### Result: RETURN TO GPT-6 — one confirmed current-scope defect
+
+The manual-direction operation is not source-semantics-safe for all supported Markdown headings.
+
+`setParagraphDirection()` in `app/forum/editor-document.ts` selects a mdast `heading` and inserts the direction marker at the heading node's final source offset. That is safe for the tested plain ATX form `## Title`, but not for other valid CommonMark heading forms:
+
+- **Setext heading:** `Title\n===` becomes `Title\n=== {:vico-dir=rtl}`. The underline line is no longer a valid Setext heading delimiter, so applying direction destroys the heading structure.
+- **ATX heading with optional closing hashes:** `## Title ##` becomes `## Title ## {:vico-dir=rtl}`. The former closing hashes are no longer a closing sequence and become visible heading content after the direction marker is hidden.
+
+This directly violates the current Editor 2.0 lossless/source-preserving contract and the manual-direction requirement for headings. It is a real defect of the current subtask, not future-only polish.
+
+### Why CI missed it
+
+Current direction regressions cover ordinary paragraphs, a plain `## ...` heading, simple list items, mode switching and Undo/Redo. They do not cover Setext headings or ATX closing-hash syntax. The existing unit environment is sufficient to catch this defect; no browser-specific behavior is required for this correction.
+
+### Bounded GPT-6 correction task
+
+Correct manual direction for supported headings without changing unrelated Markdown or broadening the custom syntax.
+
+Ready criteria:
+- applying Auto/LTR/RTL preserves both Setext and ATX-with-closing-hashes heading semantics and visible text;
+- existing plain ATX/paragraph/list behavior remains intact;
+- add focused regressions for both heading forms through source operation and rendered output;
+- do not normalize/rewrite untouched Markdown;
+- run the relevant tests and required PR CI, record exact head/result here, then stop for Sol review.
+
+Do not start device-local settings clearing, final Editor acceptance, formal Codex Code Review, merge or Stage 6 work before this correction passes Sol review.
