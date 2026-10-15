@@ -213,20 +213,16 @@ describe("content post-body durable planning", () => {
     expect(tasks.rows[0]?.count).toBe(0);
   });
 
-  it("does not mistake corrupted quote attribution for a current translation under PostgreSQL locks", async () => {
+  it("does not mistake forged quote attribution for a current translation under PostgreSQL locks", async () => {
     const originalContent = attributedQuoteMarkdown({
       author: "Alice", messageNumber: 9,
       permalink: "/en/topics/t#post-9", content: "Переводимый текст",
     });
-    await client.query(
-      "update forum_post_revisions set original_content = $1 where post_id = $2 and id = $3",
-      [originalContent, "post-a", "post-a-r1"],
-    );
     const translations = new DrizzleContentTranslationStore(drizzle(client));
     await translations.write({
       contentType: "post-body", contentId: "post-a", revisionId: "post-a-r1",
       sourceLocale: "ru", targetLocale: "he",
-      translatedContent: originalContent.replace("Alice", "Changed"),
+      translatedContent: "Existing translated prose\n\n" + originalContent,
       provenance: { origin: "machine", provider: "provider", model: "model" },
     });
     const revision = await new DrizzleContentPostBodyPlanningStore(drizzle(client))

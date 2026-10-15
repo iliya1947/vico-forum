@@ -26,6 +26,7 @@
     "app/routes/attachment-download.ts",
     "app/forum/mutations.server.ts",
     "app/forum/paths.ts",
+    "app/forum/quote-markdown.ts",
     "app/forum/profile.ts",
     "app/forum/mentions.ts",
     "app/forum/under-development.ts",
