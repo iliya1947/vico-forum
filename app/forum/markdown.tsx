@@ -336,7 +336,7 @@ const markdownComponents: Components = {
     const block = Boolean(language) || source.includes("\n");
 
     if (!block) {
-      return <code className={className}>{codeChildren}</code>;
+      return <code className={className} dir="ltr">{codeChildren}</code>;
     }
 
     return (
