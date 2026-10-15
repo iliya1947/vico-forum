@@ -7819,3 +7819,22 @@ Ready criteria:
 - run relevant focused tests plus exact-head CI and record exact head/evidence here, then STOP for Sol review.
 
 Do not redesign the attention center, add security-event actions, broaden moderation scope, start browser acceptance, external infrastructure, deployment, merge or formal Codex Code Review.
+
+
+---
+
+## GPT-6 — isolated Security Attachments permission correction — 2026-10-16
+
+**Source:** Sol whole-PR Editor 2.0 review on #147, finding "Security → Attachments has no independent application permission". **Implementation PR #215 code/test head:** `f356e31097ef851f23707b2728bdfdb1d8aeb8ae`. **Documentation-only follow-up head:** `72ab42d1c10108d412cb9147121104ea33b83afe`.
+
+**Bounded result:** corrected the confirmed current-scope authorization defect without changing Help-signal actions, attachment moderation UI actions, external infrastructure, or broader Editor capabilities.
+
+- `forum.attachmentSecurity.read` is a code-backed permission, included in the canonical catalog/Drizzle CHECK, seeded for built-in moderator and admin (not user), and offered automatically by the existing dynamic role-grant/per-user-override UI. Forward migration `0043_attachment_security_read_permission.sql` adds the key and initial grants; its journal, snapshot and actual PostgreSQL 17 CHECK hash in the repository-owned production schema manifest were synchronized.
+- `app/routes/attention.tsx` resolves this permission independently of `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.helpNeedsDetails.manage`. Every Security mode query (including `attachments`) is forbidden before calling the attachment event store unless security access is effectively allowed. Existing Help queue permissions, visibility lists and mutations remain unchanged. A user holding only Help permissions cannot read the security event stream; a security-only user can read it without seeing Help queues. `locale-boundary` and `AttentionCenterView` reflect the independent capability in navigation.
+- New `public-read.test.tsx` regressions assert Help-only 403 with **zero attachment reader calls**, independent security-only success, denial of Help queue, and security-only navigation. Existing Help queue/action tests remain.
+- `tests/database/migrations.test.ts` verifies real `forum.attachmentSecurity.read` allow/deny override resolution and exact catalog/built-in grants; new migration added to the selective Stage 4 E2E fixture. No unrelated production behavior changes.
+- Prior intermediate CI iterations exposed only missing new migration in a selective test setup, the increased migration count, an async-render test assertion, and the required production manifest hash update. These were corrected; failures are not outstanding on the final code/test head.
+
+**Evidence:** [GitHub Actions #38814080748](https://github.com/iliya1947/vico-forum/actions/runs/38814080748) on exact code/test commit `f356e31`: **checks SUCCESS** (1026 application tests / 96 files, including lint/typecheck/build), **database SUCCESS** (304 real PostgreSQL tests / 27 files, schema parity and production schema manifest verification). Later head `72ab42d` changes only factual `PROJECT_STATE.md`; CI of this documentation-only head is not represented as completed here.
+
+**Review boundary:** no independently executed real-browser acceptance by GPT-6, no final owner visual acceptance, and no final formal Codex Code Review or merge. **STOP for independent GPT-5.6 Sol correction gate.** Sol should review the exact implementation/security boundary, regressions and SQL migration/manifest, then accept or return only a confirmed current-stage defect. No parallel implementation or next stage has started.
