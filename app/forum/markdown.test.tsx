@@ -339,6 +339,23 @@ const longValue = "code";
     expect(container.querySelector(".forum-code-block pre")).toHaveTextContent("{:vico-dir=rtl}");
   });
 
+  it.each([
+    ["Setext H1", "Title {:vico-dir=rtl}\n===", "h1", "rtl"],
+    ["Setext H2", "Title {:vico-dir=ltr}\n---", "h2", "ltr"],
+    ["Setext H2 CRLF", "Title {:vico-dir=rtl}\r\n---", "h2", "rtl"],
+    ["Closed ATX", "## Title {:vico-dir=rtl} ##", "h2", "rtl"],
+    ["Closed ATX formatted", "### **Title** {:vico-dir=ltr} ###", "h3", "ltr"],
+    ["Plain ATX", "## Title {:vico-dir=rtl}", "h2", "rtl"],
+  ])("renders %s as the original heading with the requested direction", (_kind, source, tag, direction) => {
+    const { container } = renderMarkdown(source);
+    const heading = container.querySelector(`.post-body ${tag}`);
+    expect(heading).not.toBeNull();
+    expect(heading).toHaveAttribute("dir", direction);
+    expect(heading).toHaveTextContent("Title");
+    expect(heading).not.toHaveTextContent("vico-dir");
+    expect(container.querySelector(".post-body p")).toBeNull();
+  });
+
   it("keeps rendered code LTR inside an RTL page context", () => {
     const { container } = renderMarkdown(
       "فقرة **مهمة**\n\n```ts\nconst x = 1;\n```",
