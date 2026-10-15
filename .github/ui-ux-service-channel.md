@@ -7607,3 +7607,21 @@ Requested Codex scope:
 - if all pass, report browser evidence only for Sol's final quote gate.
 
 No next Editor feature, final whole-Editor review, merge, infrastructure or deployment should start from this handoff.
+
+
+---
+
+## GPT-6 — independent Editor 2.0 cross-layer verification, stage 2 — 2026-10-15
+
+**Scope:** independent read-only verification of Codex-owned PR #215, exact head `e805c4181338412ed580d647ef26508d0cc4da72`. Codex's owner-authorized implementation ownership is respected; no implementation/branch changes, final formal Codex review, deployment or merge.
+
+**Verified from GitHub source, real tests and exact-head CI:**
+- PR #215 head `e805c4181338412ed580d647ef26508d0cc4da72` is open/unmerged. GitHub Actions [#38781199958](https://github.com/iliya1947/vico-forum/actions/runs/38781199958) completed `checks` SUCCESS (1023 application tests / 96 files) and `database` SUCCESS (304 PostgreSQL tests / 27 files). CI lint/typecheck/build and schema/privilege checks complete successfully; expected denied-privilege probes in database logs do not turn the job red.
+- Traced actual published-post attachment flow: `views.tsx` passes current post attachments/revision into `MarkdownEditor`; `editor-attachments.tsx` initializes snapshot with authenticated same-origin `PUT /api/attachments`; `attachment-upload.ts` checks edit permission and authoritative owner; `DrizzleForumAttachments.initializePostEditAttachments` locks owner/context then checks the published post revision, pins draft refs and records even an empty initialization via migration 0042. `rebindDraftAttachments` transfers refs + marker to next generation; `editPublishedPost` validates revision/ownership and the selected draft refs under locks, replaces published refs within the publication transaction and records idempotent receipts. Cleanup and a genuine PostgreSQL 2-device/concurrency regression protect refs removed by a different published revision. Current Stage functionality, not hypothetical foundation.
+- Traced publication entry: `MarkdownEditor` defers native `requestSubmit` into a subsequent task after async draft barrier, retaining the submitter/fence. JS DOM regression explicitly models the native event guard; Codex separately reported actual Chromium publication evidence. The R2 bucket adapter uses `FixedLengthStream(byteLength)`, avoiding full buffering; its tests cover known length and abort-on-rejection.
+- Traced Help attachment-only navigation: `topic.tsx` excludes whitespace/empty post-body revisions from `ContentTranslationPresentationService` and generation status inputs, supplies original presentation at the original post position and preserves other posts' translation. Focused test covers both empty/whitespace source, Hebrew presentation, nonempty neighboring translation, generation exclusion and visible attached file; this is an actual loader-level test with a mocked upstream reader. The text translation service's nonblank invariant was not disabled.
+- No confirmed current-Stage defect or evidence of production behavior rewritten merely to satisfy a weakened assertion was found within the inspected cross-layer paths. This is NOT a whole-PR source review or a final acceptance result.
+
+**Independent browser verification not achieved in GPT-6 runtime:** Chromium/Python Playwright are available, but no real Vico checkout, React/Vite dependencies or reachable GitHub/Pages runtime exists here (GitHub DNS fails). Therefore GPT-6 did NOT execute native browser integration at this exact head. Codex's separately documented Chromium/Workers/PostgreSQL/R2 evidence is positive external evidence, not an independent GPT-6 replay. Do not claim an independently completed browser PASS, owner visual acceptance or merge readiness.
+
+**Result:** bounded stage-2 read-only audit completed with no confirmed defect in the examined paths; independent browser acceptance and final whole-Editor reviews remain unverified. Sol should compare Codex's real-browser evidence and this code/test audit against the complete `docs/EDITOR.md` acceptance contract and decide the remaining review/owner gate. Do not modify PR #215 on an unproven hypothesis.
