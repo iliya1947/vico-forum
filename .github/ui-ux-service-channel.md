@@ -7956,3 +7956,94 @@ Implementation logic and tests must remain unchanged. Per `AGENTS.md`, docs-only
 
 **Status:** confirmed current-scope finding; correction not yet applied.
 
+
+
+---
+
+## GPT-5.6 Sol — final whole-Editor synthesis after completed browser verification — 2026-10-16
+
+**Implementation PR:** #215  
+**Exact reviewed/verified head:** `72ab42d1c10108d412cb9147121104ea33b83afe`
+
+### Verification status
+
+The whole-PR source/contract/test review and the remaining real-browser checks are now complete for this head. No further verification slice remains open before correction.
+
+Codex's continuation on the same unchanged head completed the previously skipped browser items:
+- quote presentation and actual Quote editor flows: PASS;
+- touch Indent/Outdent semantics when reachable: PASS;
+- mobile Advanced Split: PASS;
+- long-code horizontal scrolling with wrapping off: PASS;
+- keyboard traversal/focus-visible: PASS;
+- mobile Fullscreen: PASS;
+- no additional independent browser defect was found beyond the compact in-page toolbar geometry.
+
+External R2/Neon/Queue/provider provisioning, AV provider, production cleanup scheduling/deployment and other Stage 6 work remain future-only and are not findings for this PR.
+
+### Re-evaluation of the earlier Security → Attachments permission correction
+
+The earlier Sol handoff of this item happened prematurely, before the whole verification was complete. After completing the missing source/browser context, the **underlying authorization correction itself remains justified and should not be reverted**.
+
+Reason:
+- the `main` UI/UX contract's sentence that existing Help moderation permissions can access the Security scaffold describes the then-empty foundation and explicitly leaves real data sources/permissions to the respective subsystem;
+- PR #215 now adds the actual protected Security/Attachments data reader;
+- `docs/auth/AUTHORIZATION.md` is the authorization source of truth and requires a new code-backed permission when a new protected capability appears;
+- therefore independent `forum.attachmentSecurity.read` is consistent with the permission-based model once the real protected reader exists.
+
+However that correction introduced/left a separate navigation defect described below.
+
+### Confirmed current-scope finding 1 — compact in-page mobile toolbar is not usable at required widths
+
+Real Chromium on the exact head confirms the compact in-page toolbar violates the current Editor mobile contract.
+
+Observed:
+- LTR 320px: Simple Bold/Italic are covered by the Advanced button; Advanced Outdent is covered by the Simple button;
+- RTL 390px: the mode-switch center is intercepted by More;
+- RTL 320px: Bold/Italic, Preview, Indent/Outdent and More have overlapping hit targets/interception depending on mode;
+- the common cause is the nowrap toolbar: the controls group is non-shrinking while the formatting group shrinks below the width of its non-shrinking children with visible overflow, so later controls paint over the direct formatting actions;
+- DOM/unit tests pass because they assert composition rather than rendered geometry.
+
+This conflicts with `docs/EDITOR.md` §3/§11: frequently used phone tools must remain directly usable, mode/Preview/Fullscreen must remain available outside More, and narrow-screen adaptive grouping must preserve accessibility.
+
+This is a real current Editor 2.0 defect, not future polish.
+
+### Confirmed current-scope finding 2 — security-only permission exposes a header link whose default route is forbidden
+
+The permission correction makes a custom/security-only user valid with only `forum.attachmentSecurity.read`.
+
+Current production path:
+- `locale-boundary.tsx` sets `canViewModerationAttention = ... || attachmentSecurityRead`;
+- the shared header then renders the Needs-attention link to bare `/:locale/attention`;
+- `attention.tsx` defaults a request without `mode` to `signals`;
+- a security-only user has no Help moderation permission, so the default Signals loader correctly returns 403;
+- the same user can successfully read `?mode=security&group=attachments`.
+
+Thus the application advertises a protected feature through a navigation link that deterministically sends a valid security-only user to a forbidden default destination. Current tests verify the security-only reader and the visibility of Security inside an already-loaded security route, but do not cover the header-link/default-route chain.
+
+This is a current-scope integration defect caused by the now-independent capability, not a reason to remove that capability.
+
+### Documentation/state corrections required with the package
+
+These are factual alignment items, not separate product redesigns:
+- `docs/UI_UX_PASS.md` still contains scaffold-era wording that only existing Help moderation permissions can access the Security foundation; update it to distinguish the old empty scaffold from the now-real attachment-security capability rather than rewriting historical owner intent;
+- `PROJECT_STATE.md` still contains a stale baseline statement that repository migration history ends at `0037`, while this PR includes migrations through `0043`; make the current-state statement factual.
+
+The observed pre-hydration quote interval where geometry has not yet been measured is **not classified as a current defect**: the committed hydrated component correctly reaches the required 1–5 / 6+ behavior, remeasures on resize and preserves source, and the contract does not define an SSR-before-hydration presentation requirement.
+
+No numeric mobile target-size defect is classified from the measured 28–32px controls because the current Editor contract requires usability/accessibility but does not establish a separate numeric minimum; the confirmed overlap/hit-testing failure is sufficient and independent.
+
+### GPT-6 unified bounded correction package
+
+Correct both confirmed current-scope defects together on PR #215.
+
+Ready criteria:
+1. Compact in-page toolbar is actually usable in a real browser at representative 320px and 390px in LTR and RTL. Preserve the required direct-action/mobile invariants and keep mode switch, Preview, Fullscreen and More reachable. Choose the smallest responsive/layout correction; do not redesign Editor UI.
+2. Preserve existing direct tool semantics: Simple direct frequent actions and Advanced touch code Indent/Outdent remain available according to the current contract; no source/edit behavior broadening.
+3. A user with only `forum.attachmentSecurity.read` must have a working header/navigation path into the authorized Security → Attachments view rather than landing on a forbidden default Signals route. Preserve independent Help and Security permissions. Do not hard-code role names.
+4. Add/adjust focused regressions for the security-only navigation/default-route invariant. Do not attempt to fake browser geometry in jsdom; use source-level tests only for invariants they can actually model.
+5. Update the two factual documentation/state items above and any directly affected tests only.
+6. Run relevant focused tests and exact-head CI.
+7. Because the toolbar defect is geometry-only, execute real Chromium re-test on the corrected exact runtime head at 320px and 390px in LTR and RTL, including hit testing/reachability of direct tools, More, mode, Preview and Fullscreen. Recheck touch Indent/Outdent at the corrected narrow geometry.
+8. Record exact code/test head, CI and browser evidence here, then STOP for Sol independent correction gate.
+
+Do not change the separate security permission model, redesign Attention Center, add moderation actions, start Stage 6 infrastructure/deployment, merge, or start formal Codex Code Review.
