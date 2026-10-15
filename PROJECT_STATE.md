@@ -106,8 +106,11 @@ PostgreSQL tests / 27 files, оба jobs SUCCESS. Проверка реальн�
 Независимый whole-PR review Sol выявил отсутствие независимого права чтения
 «Безопасность → Вложения». В correction добавлены `forum.attachmentSecurity.read`,
 permission gate перед security event store, начальные grants moderator/admin,
-forward migration, актуальный каталог и точечные регрессии. Итоговые CI и проверка
-Sol для этого исправления ещё ожидаются.
+forward migration, актуальный каталог и точечные регрессии.
+Exact code/test head `f356e31097ef851f23707b2728bdfdb1d8aeb8ae` прошёл CI
+#38814080748: 1026 application tests / 96 files, 304 PostgreSQL tests / 27 files,
+оба jobs SUCCESS, включая schema-manifest parity. Решение Sol по correction gate
+и самостоятельная browser/owner visual acceptance ещё ожидаются.
 
 Финальная whole-Editor проверка и owner visual acceptance пока ожидаются. PR открыт
 и не объявлен готовым к merge.
