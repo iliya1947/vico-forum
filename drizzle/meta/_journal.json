@@ -302,6 +302,13 @@
       "when": 1792085668135,
       "tag": "0042_attachment_edit_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792110000000,
+      "tag": "0043_attachment_security_read_permission",
+      "breakpoints": true
     }
   ]
 }

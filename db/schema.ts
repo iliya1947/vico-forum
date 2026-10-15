@@ -621,7 +621,7 @@ export const authzPermissions = pgTable("authz_permissions", {
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
   'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
-  'forum.helpDuplicate.manage', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
+  'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
   'access.authorization.manage'
 )`)]);

@@ -103,6 +103,12 @@ PostgreSQL tests / 27 files, оба jobs SUCCESS. Проверка реальн�
 на этом head GPT-6 не выполнена; независимый gate Sol и owner visual acceptance
 остаются открытыми.
 
+Независимый whole-PR review Sol выявил отсутствие независимого права чтения
+«Безопасность → Вложения». В correction добавлены `forum.attachmentSecurity.read`,
+permission gate перед security event store, начальные grants moderator/admin,
+forward migration, актуальный каталог и точечные регрессии. Итоговые CI и проверка
+Sol для этого исправления ещё ожидаются.
+
 Финальная whole-Editor проверка и owner visual acceptance пока ожидаются. PR открыт
 и не объявлен готовым к merge.
 

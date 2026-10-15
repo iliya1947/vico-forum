@@ -42,6 +42,7 @@ Permission key означает существующую capability прилож
 - `forum.helpSignal.create`;
 - `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
+- `forum.attachmentSecurity.read`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
@@ -53,6 +54,10 @@ Permission key означает существующую capability прилож
 catalog, после чего он становится доступен role/user configuration UI.
 
 `forum.helpSignal.create` разрешает authenticated пользователю только создать persisted moderation signal; сам signal не меняет authoritative Help state. `forum.helpNeedsDetails.manage` разрешает принять/отклонить запрос `Needs details` и при принятии изменить authoritative label. Solution-signals рассматриваются через существующий `forum.solution.manageAny`, duplicate-signals — через `forum.helpDuplicate.manage`.
+
+`forum.attachmentSecurity.read` позволяет независимо читать события подозрительных вложений
+в «Требуют внимания → Безопасность → Вложения». Право не наследуется от Help-модерации,
+управляется через обычные role grants и per-user overrides и проверяется до чтения событий.
 
 `forum.helpDuplicate.manage` разрешает authoritative управление подтверждёнными duplicate-связями
 и рассмотрение апелляций только для Help & solutions. Обычная подача апелляции автором уже
@@ -96,6 +101,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.helpSignal.create`;
 - `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
+- `forum.attachmentSecurity.read`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`.
@@ -112,6 +118,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.helpSignal.create`;
 - `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
+- `forum.attachmentSecurity.read`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;

@@ -37,13 +37,14 @@ export async function loader({ request, params, context }: {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
-  let permissions: [boolean, boolean, boolean];
+  let permissions: [boolean, boolean, boolean, boolean];
   try {
     const authorization = authorizationForRequest(context).forUser(session.user.id);
     permissions = await Promise.all([
       authorization.has("forum.solution.manageAny"),
       authorization.has("forum.helpDuplicate.manage"),
       authorization.has("forum.helpNeedsDetails.manage"),
+      authorization.has("forum.attachmentSecurity.read"),
     ]);
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
@@ -51,10 +52,8 @@ export async function loader({ request, params, context }: {
     }
     throw error;
   }
-  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails] = permissions;
-  if (!canViewSolutionModeration && !canViewDuplicateDispute && !canManageNeedsDetails) {
-    throw new Response("Forbidden", { status: 403 });
-  }
+  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments] = permissions;
+  const canViewHelpAttention = canViewSolutionModeration || canViewDuplicateDispute || canManageNeedsDetails;
 
   const query = new URL(request.url).searchParams;
   const requestedMode = query.get("mode");
@@ -65,6 +64,10 @@ export async function loader({ request, params, context }: {
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
     : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : "group1";
+  // Independent security access: deny before reading any protected queue.
+  if (mode === "security" ? !canReadSecurityAttachments : !canViewHelpAttention) {
+    throw new Response("Forbidden", { status: 403 });
+  }
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
   const pageIndex = Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000
@@ -132,7 +135,8 @@ export async function loader({ request, params, context }: {
     }
   }
 
-  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, referenceTime: new Date().toISOString() };
+  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts,
+    canViewHelpAttention, canReadSecurityAttachments, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {

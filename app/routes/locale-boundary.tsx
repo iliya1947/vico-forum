@@ -92,14 +92,15 @@ export async function loader(args: LocaleBoundaryArgs) {
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage] = await Promise.all([
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead] = await Promise.all([
         resolver.has("access.authorization.manage"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
         resolver.has("forum.helpNeedsDetails.manage"),
+        resolver.has("forum.attachmentSecurity.read"),
       ]);
       canManageAuthorization = authorizationManage;
-      canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage;
+      canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead;
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // The header link is presentation-only; the protected admin route checks permission independently.

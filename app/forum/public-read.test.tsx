@@ -1077,6 +1077,7 @@ describe("Help & solutions modes and authoring", () => {
         resolve: vi.fn(),
         has: vi.fn(async (permission) => [
           "forum.solution.manageAny", "forum.helpDuplicate.manage", "forum.helpNeedsDetails.manage",
+          "forum.attachmentSecurity.read",
         ].includes(permission)),
       }),
     } as never);
@@ -1173,6 +1174,41 @@ describe("Help & solutions modes and authoring", () => {
       params: { locale: "en" }, context: managerContext,
     });
     expect(complaintsInvalidGroup.group).toBe("group1");
+  });
+
+  it("separates attachment-security reader authorization from Help moderation", async () => {
+    const ctx = context("en", "ltr");
+    ctx.set(authSessionContext, { user: { id: "security-reader", name: "Reader" },
+      session: { id: "security-session", userId: "security-reader" } } as never);
+    const readSecurity = vi.fn(async (page: number) => ({ events: [], hasMore: false, page }));
+    const readHelp = vi.fn(async (_group: string, _visibility: unknown, page = 0) => ({ cases: [], hasMore: false, page }));
+    const readCounts = vi.fn(async () => ({ "needs-details": 0, "needs-review": 0,
+      "solution-outdated": 0, duplicate: 0, appeals: 0, mixed: 0 }));
+    ctx.set(forumAttachmentStoreContext, { readSecurityAttachmentEvents: readSecurity } as never);
+    ctx.set(forumReaderContext, { ...reader, readHelpAttentionCases: readHelp, readHelpAttentionCounts: readCounts });
+    const allowed = new Set<string>(["forum.helpNeedsDetails.manage"]);
+    ctx.set(authorizationContext, { forUser: () => ({ has: async (key: string) => allowed.has(key) }) } as never);
+    const load = (url: string) => attentionLoader({ request: new Request(url), params: { locale: "en" }, context: ctx });
+    const security = "https://forum.example/en/attention?mode=security&group=attachments";
+    await expect(load(security)).rejects.toMatchObject({ status: 403 });
+    expect(readSecurity).not.toHaveBeenCalled();
+    expect((await load("https://forum.example/en/attention?mode=signals&group=needs-details")).queue).not.toBeNull();
+    expect(readHelp).toHaveBeenCalledTimes(1);
+    allowed.clear();
+    allowed.add("forum.attachmentSecurity.read");
+    const sec = await load(security);
+    expect(sec.securityQueue).toMatchObject({ events: [], page: 0 });
+    expect(readSecurity).toHaveBeenCalledTimes(1);
+    await expect(load("https://forum.example/en/attention?mode=signals")).rejects.toMatchObject({ status: 403 });
+    expect(readHelp).toHaveBeenCalledTimes(1);
+    const rendered = renderRoute(AttentionRoute, sec, "/en/attention?mode=security&group=attachments", "en", "ltr");
+    expect(screen.getByRole("link", { name: "Security" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Signals" })).not.toBeInTheDocument();
+    rendered.unmount();
+    allowed.clear();
+    allowed.add("forum.helpDuplicate.manage");
+    await expect(load(security)).rejects.toMatchObject({ status: 403 });
+    expect(readSecurity).toHaveBeenCalledTimes(1);
   });
 
   it("requires origin and effective per-kind permission before processing a signal", async () => {

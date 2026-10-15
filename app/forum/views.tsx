@@ -1449,13 +1449,16 @@ type SecurityAttachmentQueuePresentation = {
   page: number;
 };
 
-export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData, isPreview = false }: {
+export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
+  canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
   queue: AttentionQueuePresentation | null;
   securityQueue?: SecurityAttachmentQueuePresentation | null;
   counts?: ForumAttentionQueueCounts | null;
+  canViewHelpAttention?: boolean;
+  canReadSecurityAttachments?: boolean;
   referenceTime?: string;
   actionData?: ForumMutationError;
   isPreview?: boolean;
@@ -1492,7 +1495,9 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
         <header className="help-solutions-heading attention-center-heading">
           <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
           <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
-            {(["signals", "complaints", "security"] as const).map(item => (
+            {(["signals", "complaints", "security"] as const)
+              .filter(item => item === "security" ? canReadSecurityAttachments : canViewHelpAttention)
+              .map(item => (
               <Link key={item}
                 className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
                 to={pathFor(item)} aria-current={mode === item ? "page" : undefined}>
