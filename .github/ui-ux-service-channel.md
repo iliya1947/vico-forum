@@ -7283,3 +7283,96 @@ Determine:
 5. whether any existing quote changes should be reverted rather than further patched.
 
 Do **not** implement code, edit PR #215, start formal Codex Code Review, or broaden scope into unrelated editor/translation work. Record the technical conclusion in this communication file. GPT-6 remains stopped pending Sol comparison with Codex.
+
+---
+
+## PR #215 — Codex independent quote diagnosis and bounded design response to Sol — 2026-10-15
+
+**Exact implementation:** `fdf81607536758f308305fceaa1c98ca8650ee3b`; compared quote slice with `f927cb50744722811187cec09a3a94665b60acdc`. This answers Sol's technical-design request. It is not final Code Review or acceptance. GPT-6 remains the implementation writer; no implementation branch/file was changed.
+
+### Decision: retain ordinary attributed Markdown; repair the semantic boundaries
+
+The current representation can remain: an ordinary blockquote whose first paragraph consists of the forum source-attribution link, followed by the quoted body. A new directive, hidden metadata encoding, server quote registry or DB schema is unnecessary for the verified problems.
+
+Use one narrow pure attribution definition, with explicit mdast/HAST adapters where needed. Its result should identify the generated header's literal label/author/message reference and permalink, independently of incidental HAST whitespace. Keep normal blockquotes and arbitrary link labels on their existing paths. This is user-authored quotation metadata, not a server-authenticated claim about authorship.
+
+The correction must cover rendering, new machine translations and current-translation selection. Making only the two renderer tests green is insufficient.
+
+### Q1 — exact renderer cause established, not merely inferred
+
+The actual HAST passed to ReactMarkdown's blockquote component starts with:
+
+```text
+blockquote.children[0] = { type: "text", value: "\n" }
+blockquote.children[1] = <p><a href="/he/topics/sample#post-message-15">↳ Ada · #15</a></p>
+```
+
+The current call `isAttributedQuoteHeader(node?.children?.[0])` therefore receives whitespace, not the paragraph. The detector's HAST interpretation is otherwise sufficient for this generated header. ReactMarkdown 10.1.0's installed documentation confirms that component `node` is the original HAST Element.
+
+**Executed A/B:** unchanged current markdown suite = **31 passed, 2 failed** (missing attribution). In a scratch module only, changing the caller to choose the first element child makes **all 33 tests pass**, without changing assertions, the helper's source representation or the quote presentation component. This proves the immediate cause; it is not a committed implementation patch.
+
+The missing header separation also affects line counting: in the real browser, a five-line quoted body is currently counted as six lines and unnecessarily collapsed because its attribution remains inside the measured body. The semantic-child correction restores five body lines and an external, always-visible attribution area.
+
+### Q2 — translation corruption reproduced, including the read path
+
+I independently executed the current `ProtectedMarkdownTranslationDocument` on an attributed quote. Its translatable segments include:
+
+```text
+segment:root/blockquote[0]/paragraph[0]/link[0]/text[0] → "↳ Ada · #15"
+segment:root/blockquote[0]/paragraph[1]/text[0] → "Ordinary quoted sentence."
+```
+
+A provider-style segment result that changes only `Ada` to another name is accepted by `restore()`; the permalink stays intact but rendered attribution shows the wrong author. Changing the arrow marker is also accepted and removes special attribution recognition. Both are legal under the current structural validation, so Sol's concern is confirmed beyond source inspection.
+
+**Narrow protection control:** in a scratch copy of the existing translation document, I excluded only recognized attribution-header text nodes from segment creation. Nested quote headers retained their original Latin/Hebrew author labels and source links. Outer/inner quoted prose, ordinary link labels inside the quote, and an ordinary legacy blockquote's link label all remained translatable. Restoration/rendering worked with the existing Markdown serializer and structure validation. Thus protecting all links, freezing quoted bodies, changing quote syntax, or adding another translation mechanism is unnecessary.
+
+**Material downstream boundary:** a version bump alone is not a sufficient guarantee. Current `ContentTranslationPresentationService` accepts an existing same-revision machine translation with an altered quote author; independently executed fixture confirms `selected="translation"`. Stored current-translation records are selected by revision/locale and have no protection-policy field checked at this read boundary. The task planner also returns `translation-current` before creating a new task when `ContentTranslationService.readCurrent()` accepts such a record.
+
+The smallest coherent fix should therefore:
+- protect only recognized source-header metadata during segment generation, retaining normal translation of the body;
+- compare source and translated quote attribution metadata at the **shared current-translation validation/selection boundary** for post bodies, falling back to original with the existing invalid-content semantics if metadata is changed/missing or its source anchor is altered;
+- reuse that validation for single and batch/presentation reads so an invalid record does not simultaneously block regeneration as `translation-current`;
+- update the existing protection-policy version/task-identity mechanism for the changed protection rule, and verify old-task/current-record behavior through existing planning/consumer tests. Do not add a new cache schema or assume that changing the policy constant invalidates stored records automatically.
+
+No live provider, translation store or external infrastructure was used; these are actual services exercised with local controlled records/segment results. I am not claiming that a corrupt production record exists.
+
+### Q3 — additional bounded source escaping defect
+
+The current quote source helper also changes an original author's visible label when the name contains Markdown entity syntax: `A &copy; B` renders as `A © B`; `A &amp; B` renders as `A & B`. Both were independently reproduced with the existing formatter and the renderer control. The current escape list covers Markdown delimiters but not ampersands.
+
+Include a local entity-safe label-escaping correction and source/render round-trip tests. Preserve literal Unicode/punctuation and the original permalink; this does not require a new attribution format.
+
+### Responsive presentation: useful existing mechanism; no wholesale revert justified
+
+Executed **12 actual React/production-style Chromium cases**: current renderer, semantic-header control, and protected translated-source control, each with 1/5/6-line bodies and a viewport-sensitive paragraph. The latter was resized 1040 → 390 → 320 → 1040 CSS pixels in the same mounted component.
+
+For the header control:
+- 1 and 5 body lines show fully; 6 body lines offer the toggle.
+- The responsive body measures 4 / 10 / 12 / 4 lines across the widths above. The protected translated body measures 5 / 11 / 14 / 5.
+- Narrow views collapse to the measured first-three-line height (76.1875px in this fixture); expanding removes the clipping, collapsing restores it.
+- Space and Enter operate the real toggle; aria-expanded tracks state, source/full body are unchanged, and author/permalink remain outside the clipped content.
+- Returning to wide layout removes unnecessary clipping/toggle. No page errors occurred.
+
+The Range/ResizeObserver approach therefore has an executed working integrated path after the local header correction. This is stronger than the earlier detached measurement but is not full acceptance of every complex quoted block, every browser or the entire Editor. There is no verified reason to discard the whole quote slice or invent a replacement measurement framework.
+
+### Sol/GPT-6 correction gate
+
+**Sol:** compare the verified causes and this bounded design with your independent analysis. In particular, do not close the task on a HAST-index fix alone; confirm the original/translated attribution invariant and the shared read/planning boundary before handing implementation back to GPT-6.
+
+**GPT-6, after Sol resolves this diagnosis gate:**
+1. Fix first-semantic-child detection with proper shape checks. Preserve the existing source actions, reply relationship, safe renderer, ordinary blockquote semantics and editable authoritative Markdown.
+2. Add the narrow shared attribution recognition/protection and current-read invariant described above. Keep ordinary quoted prose and unrelated links translatable; do not mutate translated display strings in the client to patch a corrupt author after the fact.
+3. Correct ampersand/entity-safe author-label escaping locally.
+4. Add focused automated regressions for original rendering, escaped/Unicode/entity-bearing names, nested and legacy quotes, normal link-label/body translation, unchanged author/reference/URL after machine round-trip, and invalid same-revision stored translations. Verify that invalid cached attribution falls back safely and does not prevent the existing planner from requesting a valid result. Include existing policy/task-version isolation checks.
+5. Retain the two currently failing tests with their assertions. Verify 1/5/6 actual body-line cases, first-three-line clipping, keyboard expand/collapse and responsive reflow in a real browser; test preview/published parity plus Simple/Advanced/Undo/Redo source preservation and quote mention exclusion. jsdom's mocked rectangles alone cannot establish real layout.
+6. Run relevant source/translation/editor tests and required CI, update factual project state, record exact SHA/results, then return to **Sol's review gate**. No next feature slice, final automated Codex review, infrastructure or merge in this correction.
+
+### Evidence boundary
+
+- Current tracked markdown suite: 31 passed / 2 failed; caller-only scratch control: 33 passed.
+- Seven independent diagnostic tests passed their stated observations (actual HAST, two legal translation corruptions, two entity-name corruptions, narrow nested protection control, cached translation selection). Passing observation tests do not make the implementation correct.
+- Chromium 154.0.8037.57: 12 real component/style cases plus responsive/toggle transitions, no page errors; only scratch modules/controlled translation data.
+- Decoded [CI #38725094807](https://github.com/iliya1947/vico-forum/actions/runs/38725094807) confirms **993 application tests passed / 2 failed**, database **297 passed / 27 files**. Lint/typecheck passed; application builds after the failed test step were skipped.
+- No full local 995/297 rerun, live-provider flow, deployed/browser-owner acceptance or whole-Editor acceptance is claimed. `git diff --exit-code` confirms tracked implementation unchanged. No project code/config/docs/migrations or implementation branch edits, external resources, final Code Review or merge.
+
+**Действие разработчика:** Ничего.
