@@ -572,7 +572,7 @@ describe("MarkdownEditor", () => {
 
   it("keeps each prose paragraph auto-directed through Simple, Preview, Split and mode changes", async () => {
     const source = [
-      "English **first** with \`cmd --flag\`.",
+      "English **first** with `cmd --flag`.",
       "",
       "עברית **שנייה**.",
       "",
@@ -581,9 +581,9 @@ describe("MarkdownEditor", () => {
       "- רשימה אחת",
       "- English item",
       "",
-      "\`\`\`ts",
+      "```ts",
       "const value = 1;",
-      "\`\`\`",
+      "```",
     ].join("\n");
     renderEditor(<form><div dir="rtl"><label htmlFor="body">Body</label>
       <MarkdownEditor id="body" name="body" defaultValue={source} /></div></form>);
