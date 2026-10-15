@@ -21,6 +21,8 @@ import {
   redoEditorEdit,
   rememberEditorSelection,
   sourceOffsetToTextareaOffset,
+  setParagraphDirection,
+  type ParagraphDirection,
   textareaMarkdown,
   textareaOffsetToSourceOffset,
   undoEditorEdit,
@@ -422,6 +424,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       // commitSource is used only by discrete editor actions (Enter, toolbar,
       // imperative Reply/Quote), all of which are explicit local-save triggers.
       draft.noteEdit(nextValue, true);
+    }
+
+    function changeParagraphDirection(direction: ParagraphDirection) {
+      const selection = sourceSelection();
+      if (!selection) return;
+      const changed = setParagraphDirection(value, selection, direction);
+      if (changed && changed.markdown !== value) {
+        commitSource(changed.markdown, selection, changed.selection);
+      }
     }
 
     function commitTextareaValue(nextDisplayedValue: string, selectionStart: number, selectionEnd: number) {
@@ -965,6 +976,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     onClick={() => insertBlockAfterSelection("|  |  |\n| --- | --- |\n|  |  |")}>{t("editorTable")}</button>
                   <button type="button" disabled={disabled} aria-label={t("editorClearFormatting")}
                     onClick={clearInlineFormatting}>{t("editorClearFormatting")}</button>
+                  <div role="group" aria-label={t("editorTextDirection")} className="markdown-editor-direction">
+                    <span>{t("editorTextDirection")}</span>
+                    {(["auto", "ltr", "rtl"] as const).map((direction) => (
+                      <button type="button" key={direction} disabled={disabled}
+                        aria-label={t(direction === "auto" ? "editorDirectionAuto" : direction === "ltr" ? "editorDirectionLTR" : "editorDirectionRTL")}
+                        onClick={() => changeParagraphDirection(direction)}>
+                        {t(direction === "auto" ? "editorDirectionAuto" : direction === "ltr" ? "editorDirectionLTR" : "editorDirectionRTL")}
+                      </button>
+                    ))}
+                  </div>
                   <label className="markdown-editor-spellcheck"><input type="checkbox" checked={spellCheck} disabled={disabled}
                     onChange={(event) => {
                       const enabled = event.target.checked;
