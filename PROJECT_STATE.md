@@ -90,17 +90,21 @@ service не ослаблена. Две регрессии проверяют em
 сообщения, отсутствие generation unit для пустого body и отображение attachment.
 Целевой public-read run: 63 tests PASS. В Chromium Help прошёл Drop, clipboard PNG,
 preview/Remove, similar-question check, attachment-only Ctrl+Enter, загрузку темы и
-отказ обычному автору в чтении history. Полный application/CI нового пакета и финальные
-независимые reviews ещё ожидаются.
+отказ обычному автору в чтении history. CI Codex head `e805c41` прошёл
+(1023 application / 304 database); независимая полная приёмка пока не завершена.
 
 По независимой проверке Sol исправлен compact/mobile контракт: основные команды
 доступны непосредственно на панели, кодовые Indent/Outdent в Advanced используют
 существующую fenced-code Tab/Shift+Tab семантику. Добавлены compact-mode регрессии,
 а accessible name оригинального файла проверяется через реальную English локализацию,
-включая имя файла. Новый exact-head CI и решение Sol по этому пакету ещё ожидаются.
+включая имя файла. Code/test exact head `7a862a365209c0d531eda2aed1e37bb97e658c14`
+прошёл GitHub Actions #38805981677: 1025 application tests / 96 files и 304
+PostgreSQL tests / 27 files, оба jobs SUCCESS. Проверка реальной мобильной геометрии
+на этом head GPT-6 не выполнена; независимый gate Sol и owner visual acceptance
+остаются открытыми.
 
-Финальные exact-head CI, дополнительные whole-Editor checks, независимые reviews
-Sol/GPT-6 и owner visual acceptance пока ожидаются. PR открыт и не объявлен готовым к merge.
+Финальная whole-Editor проверка и owner visual acceptance пока ожидаются. PR открыт
+и не объявлен готовым к merge.
 
 ## Текущая фаза
 
