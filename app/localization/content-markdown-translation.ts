@@ -1,6 +1,7 @@
 import { parseForumMarkdown, serializeForumMarkdown } from "../markdown-syntax";
+import { collectAttributedMarkdownQuoteHeaders } from "../forum/quote-markdown";
 
-export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt05-strikethrough-v1";
+export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-quote-attribution-v1";
 export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
@@ -95,11 +96,12 @@ export class ProtectedMarkdownTranslationDocument {
     const segmentMarkerNamespace = `VICOSEGMENT${namespaceSalt}X`;
     const tokenMarkerNamespace = `⟦VICOPROTECTED${namespaceSalt}X`;
     const tree = parseMarkdown(sourceMarkdown);
+    const attributedTextNodes = new Set(collectAttributedMarkdownQuoteHeaders(tree).map((header) => header.labelTextNode));
     const recordsWithoutPaths: Array<Omit<SegmentRecord, "canonicalPath">> = [];
     const segments: MarkdownTranslationSegment[] = [];
 
     walk(tree, "root", (node, path) => {
-      if (node.type !== "text" || typeof node.value !== "string") return;
+      if (node.type !== "text" || typeof node.value !== "string" || attributedTextNodes.has(node)) return;
 
       const protectedResult = protectTechnicalFragments(
         node.value,

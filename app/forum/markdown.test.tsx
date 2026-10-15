@@ -82,6 +82,35 @@ describe("attributed public message quotes", () => {
     expect(publishedMentionRecipients(quote)).toEqual([]);
   });
 
+  it.each(["A &copy; B", "A &amp; B", "שלום 😀 &copy;"])(
+    "keeps literal author entities and Unicode: %s", (author) => {
+      const permalink = "/ru/topics/example#post-7";
+      const quote = attributedQuoteMarkdown({ author, messageNumber: 7, permalink, content: "Hello" });
+      expect(quote).toContain("&amp;");
+      const { container } = renderMarkdown(quote);
+      expect(container.querySelector(".forum-quote-attribution")).toHaveTextContent(author + " · #7");
+      expect(container.querySelector(".forum-quote-attribution a")).toHaveAttribute("href", permalink);
+    },
+  );
+
+  it("distinguishes attributed nested quotes from ordinary Markdown blockquotes and links", () => {
+    const inner = attributedQuoteMarkdown({
+      author: "Inner", messageNumber: 3,
+      permalink: "/en/topics/sample#post-inner", content: "Inside",
+    }).trim();
+    const nested = attributedQuoteMarkdown({
+      author: "Outer", messageNumber: 2,
+      permalink: "/en/topics/sample#post-outer", content: "Outer prose\n\n" + inner,
+    });
+    const { container } = renderMarkdown(nested + "\n> [Read original](https://example.com)");
+    expect([...container.querySelectorAll(".forum-quote-attribution")].map((node) => node.textContent?.trim()))
+      .toEqual(["↳ Outer · #2", "↳ Inner · #3"]);
+    const legacy = container.querySelectorAll(".forum-quoted-block");
+    expect(legacy).toHaveLength(3);
+    expect(legacy[2]?.querySelector(".forum-quote-attribution")).toBeNull();
+    expect(legacy[2]?.querySelector("a")).toHaveAttribute("href", "https://example.com/");
+  });
+
   it("collapses only measured long quotes, restores content and retains source metadata", async () => {
     const original = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
     Object.defineProperty(Range.prototype, "getClientRects", {

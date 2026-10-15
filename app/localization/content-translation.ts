@@ -1,4 +1,6 @@
 import { canonicalizeTranslationLocale } from "./locale";
+import { parseForumMarkdown } from "../markdown-syntax";
+import { collectAttributedMarkdownQuoteHeaders } from "../forum/quote-markdown";
 
 export type ContentTranslationType = "topic-title" | "post-body";
 export type ContentTranslationOrigin = "persistent_manual" | "machine";
@@ -239,6 +241,9 @@ function validateStoredTranslation(
     if (normalizeTargetLocale(stored.targetLocale) !== targetLocale) return "invalid";
     requireNonBlank(stored.translatedContent, "translated content");
     normalizeProvenance(stored.provenance);
+    if (revision.contentType === "post-body" && !quoteAttributionMatches(revision.originalContent, stored.translatedContent)) {
+      return "invalid";
+    }
   } catch (error) {
     if (error instanceof InvalidContentTranslationInputError) return "invalid";
     throw error;
@@ -273,4 +278,12 @@ function normalizeOptionalText(value: unknown, field: string): string | undefine
     throw new InvalidContentTranslationInputError(`${field} must be a non-blank string when present`);
   }
   return value;
+}
+
+/** Source identity must survive any post-body translation, including old stored rows. */
+function quoteAttributionMatches(source: string, translated: string): boolean {
+  if (!source.includes("↳ ") && !translated.includes("↳ ")) return true;
+  const metadata = (markdown: string) => collectAttributedMarkdownQuoteHeaders(parseForumMarkdown(markdown))
+    .map(({ label, permalink }) => [label, permalink]);
+  return JSON.stringify(metadata(source)) === JSON.stringify(metadata(translated));
 }

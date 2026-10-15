@@ -312,7 +312,7 @@ function ForumCodeBlock({
 }
 
 const markdownComponents: Components = {
-  blockquote: ({ node, children }) => <ForumQuotedBlock attributed={isAttributedQuoteHeader(node?.children?.[0])}>{children}</ForumQuotedBlock>,
+  blockquote: ({ node, children }) => <ForumQuotedBlock attributed={isAttributedQuoteHeader(node)}>{children}</ForumQuotedBlock>,
   // Each prose block follows its own first strong character, not the UI locale.
   p: ({ children, dir }) => <p dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</p>,
   li: ({ children, dir }) => <li dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</li>,
