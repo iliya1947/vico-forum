@@ -86,12 +86,21 @@ export function setParagraphDirection(
   if (!target?.position) return null;
   const start = target.position.start.offset!;
   const end = target.position.end.offset!;
-  const raw = markdown.slice(start, end);
-  const existing = /[ \t]+\{:vico-dir=(?:ltr|rtl)\}$/u.exec(raw);
-  const beforeMarker = existing ? end - existing[0].length : end;
+  // A heading's source end can include Setext underline or closing ATX hashes.
+  // Insert at the end of its final visible child, before either delimiter.
+  const headingContentEnd = target.type === "heading"
+    ? target.children?.at(-1)?.position?.end.offset
+    : undefined;
+  if (target.type === "heading" && headingContentEnd === undefined) return null;
+  const insertion = headingContentEnd ?? end;
+  const existing = target.type === "heading"
+    ? /^[ \t]+\{:vico-dir=(?:ltr|rtl)\}/u.exec(markdown.slice(insertion, end))
+    : /[ \t]+\{:vico-dir=(?:ltr|rtl)\}$/u.exec(markdown.slice(start, end));
+  const beforeMarker = target.type === "heading" ? insertion : existing ? end - existing[0].length : end;
+  const afterMarker = beforeMarker + (existing?.[0].length ?? 0);
   const replacement = direction === "auto" ? "" : " {:vico-dir=" + direction + "}";
   if (!existing && !replacement) return { markdown, selection: bounded };
-  const next = markdown.slice(0, beforeMarker) + replacement + markdown.slice(end);
+  const next = markdown.slice(0, beforeMarker) + replacement + markdown.slice(afterMarker);
   const unchangedEnd = Math.min(bounded.end, beforeMarker);
   const unchangedStart = Math.min(bounded.start, beforeMarker);
   return { markdown: next, selection: { start: unchangedStart, end: unchangedEnd } };
