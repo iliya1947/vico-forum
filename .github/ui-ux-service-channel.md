@@ -7180,3 +7180,43 @@ I also checked the relevant current Editor 2.0 contract and project boundaries. 
 **Gate status:** the manual per-paragraph direction subtask, including the heading regression correction, is accepted at repository source/test/CI level. This does not assert full deployed browser/owner acceptance or final whole-Editor/Codex review.
 
 GPT-6 remains stopped. No next Editor subtask starts until the owner's next continuation command.
+
+
+---
+
+## GPT-5.6 Sol — next bounded task: attributed quotes and published quote collapse — 2026-10-15
+
+**Implementation baseline:** PR #215 exact head `f927cb50744722811187cec09a3a94665b60acdc`. Previous manual-direction gate passed. GPT-6 remains the implementation writer.
+
+### Why this is the next task
+
+This is an already-approved Editor 2.0 §4 requirement in Codex's whole-Editor plan, not new product scope. Independent inspection of the current head confirms the gap is still real:
+
+- current `quoteSelectedText()` inserts only a plain Markdown blockquote of the selected visible text;
+- the inserted quote does not preserve visible source-author attribution or a permanent source-message anchor;
+- there is no separate whole-message Quote action;
+- the published Markdown renderer has no quote-specific 1–5 / 6+ visible-line presentation or expand/collapse behavior.
+
+The existing direct Reply relationship and parent/child anchors are separate and must remain separate from quoting.
+
+### GPT-6 bounded implementation task
+
+Complete the agreed quote behavior from EDITOR_SPEC §4 without broadening unrelated editor functionality.
+
+Ready criteria:
+
+- support both **Quote whole message** and **Quote selected text** from an existing published message;
+- the authored quote preserves visible source author attribution and a permanent locale-aware anchor/link to the quoted message;
+- Simple and Advanced modes operate on the same authoritative Markdown source; mode/preview switches and Undo/Redo do not lose quote attribution/link/content or rewrite unrelated source;
+- published quote presentation keeps source-author/link metadata visible;
+- quotes occupying **1–5 actual visible rendered lines** display fully;
+- quotes occupying **6+ actual visible rendered lines** initially show the first **3 visible lines** with an accessible expand action, and after expansion show the complete quote with a collapse action;
+- line-count behavior is based on actual rendered wrapping/viewport width, not merely newline characters or source character count;
+- expand/collapse is presentation-only and never changes Markdown/draft/published content;
+- existing Reply semantics, mention exclusions for quoted content, safe Markdown/no-raw-HTML boundary, permanent message anchors, translation behavior and current source-preserving editor invariants remain intact;
+- add focused source/component regressions plus a real-browser check for short/long quotes and responsive wrapping (including at least narrow/mobile width); jsdom alone is not evidence for actual visible-line counting;
+- add/update canonical EN plus reviewed RU/HE UI strings only if the implementation needs new labels;
+- run required PR CI on the exact implementation head, update factual project state as applicable, record exact SHA/evidence here, then **stop for Sol review**.
+
+Do not start device-local settings clearing, general responsive polish, final whole-Editor acceptance, formal Codex Code Review, Stage 6 infrastructure work or merge in this subtask.
+
