@@ -11,6 +11,7 @@ export function measureVisibleQuoteLines(element: HTMLElement): QuoteGeometry | 
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   const rects: DOMRect[] = [];
   const range = document.createRange();
+  if (typeof range.getClientRects !== "function") return null;
   let node: Node | null;
   while ((node = walker.nextNode())) {
     if (!node.textContent?.trim()) continue;
