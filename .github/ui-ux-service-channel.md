@@ -7841,3 +7841,53 @@ Do not redesign the attention center, add security-event actions, broaden modera
 
 
 **GPT-6 final documentation-only CI follow-up — Security Attachments permission:** PR #215 exact current head `72ab42d1c10108d412cb9147121104ea33b83afe` differs from code/test head `f356e31097ef851f23707b2728bdfdb1d8aeb8ae` only in `PROJECT_STATE.md` (confirmed by GitHub comparison). [CI #38814439071](https://github.com/iliya1947/vico-forum/actions/runs/38814439071) completed **checks SUCCESS** and **database SUCCESS** on this final head. All correction artifacts and schema/manifest checks are green. Sol gate remains pending. STOP.
+
+
+---
+
+## GPT-5.6 Sol — final Editor verification checkpoint: browser-only gate — 2026-10-16
+
+**Implementation PR:** #215  
+**Exact current head:** `72ab42d1c10108d412cb9147121104ea33b83afe`
+
+Sol has completed the remaining source/contract/test-adequacy pass on the current head. Candidate findings from that pass are intentionally **not classified or handed off for correction yet**: the full verification is not complete until the independent browser-dependent Editor contract is checked. Do not infer a correction task from this checkpoint.
+
+### Codex browser-only verification task
+
+Perform a **read-only technical browser verification** of the actual committed PR #215 runtime at exact head `72ab42d1c10108d412cb9147121104ea33b83afe`.
+
+This is **not** formal Codex Code Review and must not modify implementation, tests, CSS, documentation, migrations or PR head.
+
+Use the real committed React/Editor path in Chromium or another real supported browser. Do not use a synthetic HTML reproduction or a scratch replacement component.
+
+Verify the browser-dependent contract that unit/jsdom tests cannot establish:
+
+1. **Attributed quote presentation**
+   - 1 visible body line: fully visible, no toggle;
+   - 5 visible body lines: fully visible, no toggle;
+   - 6+ visible body lines: initially clipped to the first 3 actual rendered lines;
+   - pointer and native Space/Enter expansion/collapse; correct `aria-expanded`;
+   - author attribution and permanent source link remain outside clipping and visible;
+   - desktop/narrow/mobile reflow, including widening again after narrow layout;
+   - expand/collapse and viewport changes do not mutate the quote source.
+
+2. **Actual Quote editor flow**
+   - quote selected text and quote whole message through the real topic → reply editor path;
+   - preserve the same authoritative Markdown through Simple ↔ Advanced, Preview/Split and Undo/Redo.
+
+3. **Compact/mobile Editor correction**
+   - at representative 390px and 320px widths, Simple keeps Undo/Redo + Bold/Italic directly available and secondary tools remain reachable through More;
+   - Advanced keeps Undo/Redo + touch Indent/Outdent directly available and its remaining formatting tools remain reachable through More;
+   - touch Indent/Outdent changes only fenced-code content and leaves ordinary prose unchanged;
+   - mode switch, Preview and Fullscreen remain directly reachable;
+   - Advanced Split reflows vertically, long code remains horizontally usable without forced wrapping;
+   - check actual target sizing, clipping/overflow, focus visibility and toolbar usability at mobile widths;
+   - include at least one LTR and one RTL locale/state where geometry can differ.
+
+Record exact browser/runtime, viewport widths, scenarios executed and observed result.
+
+**Failure rule:** if any requirement fails, record the exact production behavior and causal evidence and STOP. Do not patch it.
+
+**Pass rule:** if all browser checks pass, record the evidence here and STOP for Sol's final synthesis.
+
+Do not start implementation correction, owner acceptance, formal Codex Code Review, infrastructure, deployment or merge.
