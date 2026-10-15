@@ -7376,3 +7376,44 @@ The Range/ResizeObserver approach therefore has an executed working integrated p
 - No full local 995/297 rerun, live-provider flow, deployed/browser-owner acceptance or whole-Editor acceptance is claimed. `git diff --exit-code` confirms tracked implementation unchanged. No project code/config/docs/migrations or implementation branch edits, external resources, final Code Review or merge.
 
 **Действие разработчика:** Ничего.
+
+
+---
+
+## GPT-5.6 Sol — quote diagnosis consensus and bounded correction handoff — 2026-10-15
+
+**Compared against:** Codex independent diagnosis on PR #215 exact head `fdf81607536758f308305fceaa1c98ca8650ee3b`.
+
+### Sol comparison
+
+Codex's technical conclusion matches Sol's independent diagnosis on the two material boundaries:
+
+1. **Renderer cause:** the attribution detector is reading a raw fixed HAST child index. ReactMarkdown's blockquote HAST contains incidental whitespace text before the first semantic paragraph, so the detector sees whitespace and returns false. This explains the two exact-head quote-render failures.
+2. **Translation contract:** the current attribution label is ordinary blockquote/link-label text. CNT-04 currently exposes those text nodes to machine translation, so author/marker metadata can legally change while the URL/Markdown structure remains valid. A renderer-only fix would therefore leave a real current-scope defect.
+
+Codex additionally verified an **entity-escaping defect** in the current helper. Sol independently checked the source helper: `escapeLinkLabel()` escapes Markdown delimiters but not `&`, so author names containing Markdown entity spellings such as `&copy;` / `&amp;` are not source-preserving. This belongs to the same bounded quote-attribution correction.
+
+### Decision
+
+**RETURN TO GPT-6 — one coherent quote correction package.**
+
+Keep the ordinary attributed Markdown representation; do not invent a directive, DB registry or second quote document model. Correct the semantic boundaries instead.
+
+### GPT-6 bounded correction
+
+Ready criteria:
+
+- fix attribution recognition using the first **semantic element child** with strict shape validation, not a raw HAST index;
+- keep ordinary blockquotes and unrelated links on their existing behavior;
+- make quote attribution metadata non-translatable while leaving quoted prose and ordinary quote links translatable;
+- enforce the same author/message/permalink attribution invariant when selecting existing current machine translations, so an altered/missing attribution falls back through the existing invalid-content path and does not block regeneration as already-current;
+- update the existing translation protection-policy/task identity only as required by that changed protection rule; do not add a new cache/schema mechanism;
+- make author-label escaping entity-safe while preserving literal Unicode/punctuation and the permanent anchor;
+- retain and pass the two currently failing renderer tests;
+- add focused regressions for Unicode/entity-bearing authors, nested attributed quotes, legacy ordinary blockquotes, normal link/body translation, machine round-trip preserving author/message/permalink, and altered stored-current translation rejection/planning;
+- preserve whole-message/selected-text Quote behavior, Reply parent relation, mention exclusion, Simple/Advanced source identity, Preview, Undo/Redo and safe Markdown boundaries;
+- perform a real-browser check for 1/5/6 body lines, first-three-line collapse at 6+, keyboard expand/collapse, and responsive reflow at narrow/mobile width; attribution must remain outside clipped content;
+- run relevant source/translation/editor tests and required exact-head CI; update factual project state and record exact SHA/evidence here;
+- then **STOP for Sol review**.
+
+Do not start device-local settings clearing, other Editor features, final whole-Editor acceptance, formal Codex Code Review, Stage 6 infrastructure or merge.
