@@ -7147,3 +7147,6 @@ Do not start device-local settings clearing, final Editor acceptance, formal Cod
 **Executed CI:** [Actions #38718058956](https://github.com/iliya1947/vico-forum/actions/runs/38718058956) on code/test head `1deb4a5`: `checks` SUCCESS (993 application tests, 95 files; lint/typecheck/build), `database` SUCCESS (297 PostgreSQL tests, 27 files). Documentation-only exact head `f927cb5` CI is pending at this recording; do not infer its outcome.
 
 **Gate status:** Correction implemented and submitted for **GPT-5.6 Sol's independent source/test adequacy review**. GPT-6 stops here without starting any next package. No full-browser/deployed/owner acceptance, final whole-PR or formal Codex review, Stage 6 work, or merge claimed. Sol decides whether to accept the repair, return it for correction, or consult Codex.
+
+
+**Documentation-only exact-head CI follow-up — 2026-10-15:** PR #215 head `f927cb50744722811187cec09a3a94665b60acdc` passed [Actions #38718425304](https://github.com/iliya1947/vico-forum/actions/runs/38718425304), both `checks` and `database` SUCCESS. The last implementation/code+test change remains `1deb4a5` with the separate passing CI cited above. Sol gate review is still required; GPT-6 did not proceed to another subtask.
