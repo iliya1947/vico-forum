@@ -607,7 +607,7 @@ describe("MarkdownEditor", () => {
   });
 
   it("applies and removes a paragraph direction override through Advanced tools and preview", async () => {
-    const source = "English first.\n\nעברית second.\n\n\`\`\`ts\nconst x = 1;\n\`\`\`";
+    const source = "English first.\n\nעברית second.\n\n```ts\nconst x = 1;\n```";
     renderEditor(<form><div dir="rtl"><label htmlFor="body">Body</label>
       <MarkdownEditor id="body" name="body" defaultAuthoringMode="advanced" defaultValue={source} />
     </div></form>);
