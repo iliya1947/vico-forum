@@ -60,6 +60,7 @@ const migrationFiles = [
   "0040_post_edit_history_permissions.sql",
   "0041_published_mentions.sql",
   "0042_attachment_edit_snapshots.sql",
+  "0043_attachment_security_read_permission.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
