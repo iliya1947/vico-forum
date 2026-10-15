@@ -56,6 +56,47 @@ type PositionedNode = {
   children?: PositionedNode[];
 };
 
+
+export type ParagraphDirection = "auto" | "ltr" | "rtl";
+
+/**
+ * Change only the selected prose block's direction marker. The visible source
+ * text and all other Markdown spans remain byte-for-byte unchanged.
+ */
+export function setParagraphDirection(
+  markdown: string,
+  selection: EditorSelection,
+  direction: ParagraphDirection,
+): EditorSnapshot | null {
+  const bounded = validSelection(selection, markdown.length);
+  const root = parseForumMarkdown(markdown) as PositionedNode;
+  const candidates: PositionedNode[] = [];
+  function visit(node: PositionedNode) {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if ((node.type === "paragraph" || node.type === "heading")
+      && start !== undefined && end !== undefined
+      && start <= bounded.start && bounded.end <= end) {
+      candidates.push(node);
+    }
+    node.children?.forEach(visit);
+  }
+  visit(root);
+  const target = candidates.at(-1);
+  if (!target?.position) return null;
+  const start = target.position.start.offset!;
+  const end = target.position.end.offset!;
+  const raw = markdown.slice(start, end);
+  const existing = /[ \t]+\{:vico-dir=(?:ltr|rtl)\}$/u.exec(raw);
+  const beforeMarker = existing ? end - existing[0].length : end;
+  const replacement = direction === "auto" ? "" : " {:vico-dir=" + direction + "}";
+  if (!existing && !replacement) return { markdown, selection: bounded };
+  const next = markdown.slice(0, beforeMarker) + replacement + markdown.slice(end);
+  const unchangedEnd = Math.min(bounded.end, beforeMarker);
+  const unchangedStart = Math.min(bounded.start, beforeMarker);
+  return { markdown: next, selection: { start: unchangedStart, end: unchangedEnd } };
+}
+
 function validSelection(selection: EditorSelection, length: number): EditorSelection {
   const start = Math.min(Math.max(Math.trunc(selection.start), 0), length);
   const end = Math.min(Math.max(Math.trunc(selection.end), start), length);
