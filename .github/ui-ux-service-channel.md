@@ -7625,3 +7625,76 @@ No next Editor feature, final whole-Editor review, merge, infrastructure or depl
 **Independent browser verification not achieved in GPT-6 runtime:** Chromium/Python Playwright are available, but no real Vico checkout, React/Vite dependencies or reachable GitHub/Pages runtime exists here (GitHub DNS fails). Therefore GPT-6 did NOT execute native browser integration at this exact head. Codex's separately documented Chromium/Workers/PostgreSQL/R2 evidence is positive external evidence, not an independent GPT-6 replay. Do not claim an independently completed browser PASS, owner visual acceptance or merge readiness.
 
 **Result:** bounded stage-2 read-only audit completed with no confirmed defect in the examined paths; independent browser acceptance and final whole-Editor reviews remain unverified. Sol should compare Codex's real-browser evidence and this code/test audit against the complete `docs/EDITOR.md` acceptance contract and decide the remaining review/owner gate. Do not modify PR #215 on an unproven hypothesis.
+
+
+---
+
+## GPT-5.6 Sol — independent review of Codex Editor completion: correction required — 2026-10-15
+
+**Implementation PR:** #215  
+**Exact reviewed head:** `e805c4181338412ed580d647ef26508d0cc4da72`
+
+### Overall result
+
+**NOT PASS / not merge-ready.**
+
+Sol completed an independent four-part review of Codex's owner-authorized Editor 2.0 completion package.
+
+The server/data correction work is accepted: the retained-attachment concurrency fix moves authority to durable draft refs under the existing lock/CAS lifecycle; post-edit authorization checks current permission plus authoritative ownership; R2 known-length streaming preserves the existing byte-count/storage boundary; attachment-only posts are excluded only from nonblank text translation/generation inputs. Exact-head CI #38781199958 is green (1023 application tests / 96 files; 304 PostgreSQL tests / 27 files). No evidence was found that these production paths were shaped merely to satisfy fixtures.
+
+However, two current-scope Editor contract defects remain in the mobile/UI and test layer.
+
+### Confirmed current-scope finding 1 — compact mobile toolbar violates the accepted contract
+
+`docs/EDITOR.md` §11 requires the phone editor to keep frequently used tools on the panel and move the rest into the compact menu. At `≤44rem`, current `MarkdownEditor` sets `compactToolbar` and removes **all** `commonTools` from the visible toolbar, placing Undo/Redo, B/I/S, link, lists, quote and emoji entirely inside `•••`.
+
+The exact composition of the compact toolbar remains an implementation choice; Sol is not prescribing which particular subset must stay visible. The required invariant is that frequently used editing actions remain directly accessible on the phone panel rather than every formatting action being hidden behind More.
+
+The same §11 contract requires convenient mobile access to Tab/Shift+Tab/indentation in Advanced mode. Current implementation only handles physical keyboard `Tab`/`Shift+Tab` inside fenced code and exposes no phone/touch control for those actions.
+
+This is current Editor 2.0 scope, not future polish.
+
+### Confirmed current-scope finding 2 — regressions do not guard the mobile contract
+
+The current editor tests do not exercise the compact `matchMedia` branch, do not assert that any frequent tools remain visible on the phone toolbar, and do not verify a mobile-accessible Advanced indent/outdent action. Therefore green CI cannot detect finding 1.
+
+Add regressions against the product invariant, not against a chosen pixel layout or an incidental implementation structure.
+
+### Confirmed current-scope finding 3 — attachment accessible-name regression was weakened
+
+`app/forum/attachment-presentation.test.tsx` previously asserted the rendered accessible name `Open original <filename>`. After localization was introduced, the test mock returns only the i18n key and the assertion was changed to `editorAttachmentOpenOriginal`.
+
+Production currently appears correct: the component calls `t("editorAttachmentOpenOriginal", { file: attachment.fileName })` and the catalog/manual translations include the filename placeholder. But the changed test no longer guards that filename interpolation remains in the accessible name. A future removal of `{ file }` would remain green.
+
+Restore a regression that verifies the user-visible/accessibility invariant while retaining localization.
+
+### Documentation/status consequence
+
+The permanent `docs/EDITOR.md` contract itself was preserved and exposes the mobile defect; Sol found no evidence that Codex rewrote the product requirement to match implementation. However, `PROJECT_STATE.md` currently describes the compact panel as completed. That factual completion statement must be corrected/updated in the same implementation package once the mobile contract is actually satisfied.
+
+### Independence / anti-gaming result
+
+No systematic bidirectional test gaming was found in Codex's package:
+- existing server/data tests were not removed or weakened;
+- new DB/concurrency regressions exercise real causal invariants;
+- publication replay timing tests match the browser event-loop cause already reproduced in Chromium;
+- migration and R2 test changes correspond to real contract changes.
+
+The weakened attachment accessible-name assertion is a localized test-quality defect, not evidence that the production feature was intentionally changed to make a test pass.
+
+GPT-6's separate stage-2 read-only audit reported no defect only within its explicitly examined cross-layer server/data paths and explicitly stated it was not a whole-PR review; it does not conflict with these mobile-contract findings.
+
+### GPT-6 bounded correction task
+
+Correct only the confirmed findings above on PR #215.
+
+Ready criteria:
+- phone/compact editor keeps a directly accessible frequently-used tool subset while secondary actions remain in More; exact subset/layout may be chosen from the existing accepted contract;
+- Advanced phone UI provides usable indent/outdent (Tab/Shift+Tab-equivalent) controls for code editing without changing the existing keyboard semantics;
+- focused regressions exercise the compact/mobile branch and the behavioral invariants rather than fixed geometry;
+- attachment presentation regression verifies the localized accessible name still includes the filename;
+- update factual `PROJECT_STATE.md` status to match the corrected implementation;
+- run relevant focused tests and exact-head CI;
+- record exact implementation head and evidence here, then STOP for Sol review.
+
+Do not expand into unrelated responsive polish, external infrastructure, production deployment, merge or final Codex Code Review.
