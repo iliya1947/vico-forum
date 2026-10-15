@@ -309,7 +309,7 @@ const longValue = "code";
     const source = [
       "English **first** {:vico-dir=rtl}",
       "",
-      "עברית \`build\` {:vico-dir=ltr}",
+      "עברית `build` {:vico-dir=ltr}",
       "",
       "## عنوان {:vico-dir=ltr}",
       "",
@@ -318,9 +318,9 @@ const longValue = "code";
       "",
       "Literal {:vico-dir=auto} and \\{:vico-dir=rtl}",
       "",
-      "\`\`\`txt",
+      "```txt",
       "{:vico-dir=rtl}",
-      "\`\`\`",
+      "```",
     ].join("\n");
     const { container } = renderMarkdown(source, "ltr");
     const prose = [...container.querySelectorAll(".post-body p")];
