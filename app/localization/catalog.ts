@@ -546,6 +546,8 @@ export const canonicalEnglishCatalog = {
     editorHeading: message("editorHeading", "Heading", "Markdown editor action that turns the current line or selection into a level-two heading."),
     editorBold: message("editorBold", "Bold", "Markdown editor action that wraps the current selection in bold markers."),
     editorItalic: message("editorItalic", "Italic", "Markdown editor action that wraps the current selection in italic markers."),
+    editorCodeIndent: message("editorCodeIndent", "Indent code", "Mobile Advanced editor control that indents the selected fenced-code lines like Tab."),
+    editorCodeOutdent: message("editorCodeOutdent", "Outdent code", "Mobile Advanced editor control that outdents the selected fenced-code lines like Shift+Tab."),
     editorInlineCode: message("editorInlineCode", "Inline code", "Markdown editor action that wraps the current selection in inline-code markers."),
     editorCodeBlock: message("editorCodeBlock", "Code block", "Markdown editor action that inserts a fenced code block."),
     editorQuote: message("editorQuote", "Quote", "Markdown editor action that prefixes the current line or selection as a blockquote."),

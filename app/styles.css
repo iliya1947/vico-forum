@@ -9248,6 +9248,10 @@ a.topic-tag:focus-visible {
   .home-shell .markdown-editor-toolbar { gap: .25rem; padding: .35rem; }
   .home-shell .markdown-editor-controls > button:first-child { padding-inline: .3rem; }
   .home-shell .markdown-editor-preview-menu summary { padding-inline: .2rem; }
+  .home-shell .markdown-editor-formatting { gap: .12rem; }
+  .home-shell .markdown-editor-tool-group { gap: .08rem; padding-inline-end: .2rem; }
+  .home-shell .markdown-editor-toolbar button { min-width: 1.8rem; padding-inline: .16rem; }
+  .home-shell .markdown-editor-extra-menu summary { min-inline-size: 1.8rem; }
 }
 
 .home-shell .markdown-editor-extra-menu { position: relative; }

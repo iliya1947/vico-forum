@@ -917,17 +917,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
     }), [mode, value, authoringMode, draft]);
 
-    const commonTools = (<>
-      <div className="markdown-editor-tool-group">
-        <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
-        <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
-      </div>
-      <div className="markdown-editor-tool-group">
-        <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
+    const basicTools = (<>
+<button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
           onClick={() => replaceSelection("**", "**", 2)}><strong>B</strong></button>
         <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")}
           onClick={() => replaceSelection("_", "_", 1)}><em>I</em></button>
-        <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
+    </>);
+    const secondaryTools = (<>
+<button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
           onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
         <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")}
           onClick={insertLink}>↗</button>
@@ -944,8 +941,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               <button type="button" key={emoji} disabled={disabled} onClick={() => replaceSelection(emoji, "", emoji.length)}
                 aria-label={emoji}>{emoji}</button>,
             )}
-          </div>
-        </details>
+    </>);
+    // Touch code controls reuse the same fenced-code Tab/Shift+Tab implementation.
+    const compactCodeTools = (<>
+      <button type="button" disabled={disabled} title={t("editorCodeIndent")} aria-label={t("editorCodeIndent")}
+        onClick={() => { if (codeKey("Tab", false)) textareaRef.current?.focus(); }}>⇥</button>
+      <button type="button" disabled={disabled} title={t("editorCodeOutdent")} aria-label={t("editorCodeOutdent")}
+        onClick={() => { if (codeKey("Tab", true)) textareaRef.current?.focus(); }}>⇤</button>
+    </>);
+    const commonTools = (<>
+      <div className="markdown-editor-tool-group">
+        <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
+        <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
+      </div>
+      <div className="markdown-editor-tool-group">
+        {compactToolbar && authoringMode === "advanced" ? compactCodeTools : basicTools}
+        {!compactToolbar ? secondaryTools : null}
       </div>
     </>);
     return (
@@ -1013,11 +1024,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
           <div className="markdown-editor-formatting">
-            {!compactToolbar ? commonTools : null}
+            {commonTools}
               <details className="markdown-editor-extra-menu">
                 <summary aria-label={t("editorMoreTools")}>•••</summary>
                 <div className="markdown-editor-extra-options">
-                  {compactToolbar ? commonTools : null}
+                  {compactToolbar ? <div className="markdown-editor-tool-group">
+                    {authoringMode === "advanced" ? basicTools : null}
+                    {secondaryTools}
+                  </div> : null}
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "## ")}>H2</button>
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "### ")}>H3</button>
                   <button type="button" disabled={disabled} onClick={() => insertBlockAfterSelection("---")}>—</button>

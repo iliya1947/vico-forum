@@ -30,7 +30,8 @@
 перечень незавершённых функций.
 
 Завершены общий footer Attach/status/Cancel/Publish во всех четырёх authoring flows
-и fullscreen, доступное More-меню без clipping, компактная панель, Advanced B/I/K
+и fullscreen, доступное More-меню без clipping, компактная панель с основными
+инструментами на виду и сенсорными Indent/Outdent для Advanced, Advanced B/I/K
 shortcuts и полная очистка account-scoped spellcheck preference. Формы сохраняют
 publication lock через loading. Native publication replay вынесен в следующую
 event-loop task: браузер больше не игнорирует повторный requestSubmit при ещё
@@ -91,6 +92,12 @@ service не ослаблена. Две регрессии проверяют em
 preview/Remove, similar-question check, attachment-only Ctrl+Enter, загрузку темы и
 отказ обычному автору в чтении history. Полный application/CI нового пакета и финальные
 независимые reviews ещё ожидаются.
+
+По независимой проверке Sol исправлен compact/mobile контракт: основные команды
+доступны непосредственно на панели, кодовые Indent/Outdent в Advanced используют
+существующую fenced-code Tab/Shift+Tab семантику. Добавлены compact-mode регрессии,
+а accessible name оригинального файла проверяется через реальную English локализацию,
+включая имя файла. Новый exact-head CI и решение Sol по этому пакету ещё ожидаются.
 
 Финальные exact-head CI, дополнительные whole-Editor checks, независимые reviews
 Sol/GPT-6 и owner visual acceptance пока ожидаются. PR открыт и не объявлен готовым к merge.

@@ -467,6 +467,8 @@ export const reviewedCommonFingerprints = {
   editorHeading: "3a101a62970391dc8c2aa10ff2f9cbce34532eeb6dd58e8ad409a1db646d6e3d",
   editorBold: "091dda78298de89eabcc1efb194de9ec7826862696df240c9d74f5a456f470c0",
   editorItalic: "ff6c1fc7abf0917a719cbad57055f015200e76edacecd4e7aad53353a260913d",
+  editorCodeIndent: "92b90276a5b0163112cf16a2434bfa2247fc1cc412a543755c8f4a41623d8dcc",
+  editorCodeOutdent: "15d6b3a36f51c6e1a101ae50a0dae9539a43f44c7e69c970fbd81a28d7792c6c",
   editorInlineCode: "e04cdb85762c82bd3c554913439f1bcd711d7a3f9138ee8b2868f5c77a7eafc2",
   editorCodeBlock: "f855d85037985bab4b97f1edfdf938396b69809897aeff3dd22a3644a1de52e3",
   editorQuote: "2b4186d32db03ff6e1cf4c5674241a2d01a15800a67fe5cfd784350940506274",

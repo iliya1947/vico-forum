@@ -1039,6 +1039,46 @@ describe("MarkdownEditor", () => {
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toBe(source);
   });
 
+  it("keeps common formatting accessible directly on a compact Simple toolbar", async () => {
+    vi.stubGlobal("matchMedia", (media: string) => ({ matches: media === "(max-width: 44rem)", media,
+      addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Hello" /></>);
+    const bar = screen.getByRole("toolbar", { name: "Markdown formatting" });
+    const groups = bar.querySelectorAll(".markdown-editor-formatting > .markdown-editor-tool-group");
+    expect([...groups].flatMap((group) => [...group.querySelectorAll("button")]
+      .map((button) => button.getAttribute("aria-label")))).toEqual(["Undo", "Redo", "Bold", "Italic"]);
+    expect(bar.querySelector('.markdown-editor-extra-options [aria-label="Strikethrough"]')).not.toBeNull();
+    expect(bar.querySelector('.markdown-editor-extra-options [aria-label="Link"]')).not.toBeNull();
+    await userEvent.click(groups[1]!.querySelector('[aria-label="Bold"]') as HTMLElement);
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("**");
+  });
+
+  it("offers compact Advanced touch code indentation without changing prose", async () => {
+    vi.stubGlobal("matchMedia", (media: string) => ({ matches: media === "(max-width: 44rem)", media,
+      addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const source = "prose\n\n```ts\nabc\n```";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const bar = screen.getByRole("toolbar", { name: "Markdown formatting" });
+    const groups = bar.querySelectorAll(".markdown-editor-formatting > .markdown-editor-tool-group");
+    expect([...groups].flatMap((group) => [...group.querySelectorAll("button")]
+      .map((button) => button.getAttribute("aria-label")))).toEqual(["Undo", "Redo", "Indent code", "Outdent code"]);
+    expect(bar.querySelector('.markdown-editor-extra-options [aria-label="Bold"]')).not.toBeNull();
+    textarea.focus();
+    const point = source.indexOf("abc") + 1;
+    textarea.setSelectionRange(point, point);
+    await userEvent.click(screen.getByRole("button", { name: "Indent code" }));
+    expect(textarea.value).toContain("\\n  abc\\n");
+    const indent = textarea.value.indexOf("abc") + 1;
+    textarea.setSelectionRange(indent, indent);
+    await userEvent.click(screen.getByRole("button", { name: "Outdent code" }));
+    expect(textarea.value).toBe(source);
+    textarea.setSelectionRange(2, 2);
+    await userEvent.click(screen.getByRole("button", { name: "Indent code" }));
+    expect(textarea.value).toBe(source);
+  });
+
   it("indents and outdents only inside code fences in Advanced mode", () => {
     const fence = String.fromCharCode(96).repeat(3);
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
