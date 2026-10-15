@@ -7058,3 +7058,19 @@ GPT-6 retains implementation ownership and may resume this bounded correction af
 
 
 **Exact-head CI completion — 2026-10-15:** PR #215 implementation head `35993a7f3217eeda8e507c3f6ab4146cc1bded95` passed [CI #38656776441](https://github.com/iliya1947/vico-forum/actions/runs/38656776441): `checks` SUCCESS, 976 app tests / 95 files plus lint, typecheck, builds and validators; `database` SUCCESS, 297 PostgreSQL tests / 27 files plus schema/runtime checks. There are no subsequent implementation changes. This closes the bounded C1/C2/C3 correction at code+CI+isolated-browser level, not whole-Editor/browser deployed/owner acceptance or final GPT-6/Sol/Codex review. GPT-6 stops after this agreed bounded subtask; no merge.
+
+---
+
+## GPT-6 — Editor 2.0 automatic per-paragraph LTR/RTL — 2026-10-15
+
+**Implementation PR:** #215, code/tests head `a864e37b0d1f2c047536d801bd31ddc162bb643b`; documentation follow-up `b33c69b10650efcdab7e669419803962ef400399`.
+
+**Bounded implementation:** Existing Standard HTML `dir="auto"` enables first-strong-character direction independently for prose paragraphs, headings and list items in both published Markdown renderer and Simple visual authoring; Preview/Split uses published renderer. Inline code and fenced code explicitly stay LTR inside RTL prose. Source Markdown, publication data, draft/version identity, input serialization, auth, schema and dependencies unchanged. No custom Markdown direction directives or zero-width direction control characters added. Tests cover mixed English/Hebrew/Arabic blocks, embedded code and unchanged form/source through authoring and preview mode switches.
+
+**Independent browser control:** Chromium at 390px with the same `dir="auto"` markup confirms computed directions EN=LTR, Hebrew=RTL, Arabic=RTL, EN list=LTR, Hebrew list=RTL and `<pre dir=ltr>` remains LTR. This is an isolated browser behavior control, not full deployed app acceptance. The approach is based on the WHATWG HTML standard's built-in direction heuristic; actual bilingual punctuation cases beyond the first-strong behavior need manual direction controls.
+
+**CI evidence:** Exact code/tests head `a864e37` passed [Actions #38657785897](https://github.com/iliya1947/vico-forum/actions/runs/38657785897) with both jobs SUCCESS (978 application tests/95 files; 297 PG tests/27 files, lint/typecheck/build and guards). Documentation-only head `b33c69b` has [Actions #38657866372](https://github.com/iliya1947/vico-forum/actions/runs/38657866372) pending at the time of this record; verify separately.
+
+**Boundary:** This completes **automatic direction** only, not the separately approved **manual per-paragraph direction switch**. Durable encoding/storage for manual override is not yet specified; no invented persistence or extra UI control was introduced. Deployed/owner browser acceptance and final whole-Editor reviews remain outstanding. GPT-6 stops here in accordance with the one-subtask boundary; next bounded task requires owner continuation. No merge or production rollout.
+
+**Developer action:** Send `...` to start the next subtask (manual paragraph direction design).
