@@ -7504,3 +7504,59 @@ For Editor 2.0, GPT-5.6 Sol must explicitly guard against bidirectional test gam
 - regressions should fail for the causal defect they are intended to guard and should remain valid across technically correct implementation choices.
 
 This is an owner process requirement for the remaining Editor 2.0 work and Sol review gates.
+
+
+---
+
+## GPT-5.6 Sol — attributed quote correction gate: code/tests PASS, browser evidence required — 2026-10-15
+
+**Reviewed runtime/code-test head:** `4122e089bcb387ac4b3bcf976801e9e37ba32359`. Current PR #215 documentation-only head: `765f4690d321b85d2ffcd74d0a0d35c1e2fe8707`.
+
+### Independent Sol result
+
+**Repository code/test gate: PASS. Full quote subtask: NOT YET ACCEPTED.**
+
+Independent source review confirms the correction addresses the diagnosed causes through shared production boundaries rather than test-specific branches:
+
+- ReactMarkdown attribution detection now inspects the semantic blockquote structure and ignores incidental HAST whitespace instead of keying behavior to a test fixture index.
+- CNT-04 protection excludes only recognized quote-attribution label nodes; quoted prose and ordinary links remain in the normal translation path.
+- Existing current-translation selection is the common invariant boundary for rejecting altered/missing post-body quote attribution; the same selection path is reused by single reads, presentation/batch reads, preflight, serialized planning and publication.
+- The protection-policy version was advanced through the existing task identity/policy mechanism rather than adding quote-specific cache/schema infrastructure.
+- Entity-safe author escaping is local to generated quote labels and preserves the ordinary Markdown representation.
+- No unrelated editor/domain architecture was introduced.
+
+### Test/implementation-independence check
+
+No evidence of bidirectional test gaming was confirmed on this package.
+
+- The two previously failing attribution renderer assertions were retained and now pass.
+- New regressions exercise externally meaningful invariants: author/permalink preservation, nested vs ordinary blockquotes, translation of body/unrelated links, corruption rejection, regeneration planning and PostgreSQL locking paths.
+- The final test-only change from expected ordinary-link `https://example.com/` to `https://example.com` is a fixture correction, not production accommodation: the ordinary link renderer was unchanged by this correction and React receives the source href in that form.
+- Adding the missing jest-dom matcher setup changes the test harness only and does not weaken an assertion.
+
+Green CI is independently confirmed:
+- code/test head `4122e089bcb387ac4b3bcf976801e9e37ba32359`: Actions #38741751698 SUCCESS;
+- documentation-only head `765f4690d321b85d2ffcd74d0a0d35c1e2fe8707`: Actions #38742211502 SUCCESS.
+
+### Remaining required gate
+
+The implementation still depends on real browser geometry for visible-line counting/collapse. GPT-6 explicitly did **not** execute a browser check on this exact implementation. Prior Codex scratch Chromium evidence is useful diagnosis evidence but cannot certify this committed runtime.
+
+### GPT-6 browser-only verification task
+
+Use the existing implementation unchanged unless the browser exposes a real defect.
+
+Verify the actual production quote component/render path on the current runtime code for:
+
+1. attributed quote body at **1 visible line** — fully visible, no toggle;
+2. **5 visible lines** — fully visible, no toggle;
+3. **6+ visible lines** — initially clipped to the first 3 actual rendered lines and offers the accessible expand control;
+4. expand and collapse via pointer plus native keyboard activation (Space/Enter), with correct `aria-expanded`;
+5. responsive reflow at desktop and narrow/mobile widths, including widening again after collapse/expansion;
+6. author attribution + permanent source link remain visible outside the clipped/measured body at every width/state;
+7. whole-message and selected-text insertion through the actual editor path preserve the same authoritative Markdown through Simple/Advanced/Preview and Undo/Redo;
+8. no quote-source mutation occurs solely from expand/collapse or viewport changes.
+
+**Anti-gaming boundary:** do not change production code, assertions or CSS merely to satisfy a chosen measurement fixture. If the current browser behavior fails a requirement, record the observed production behavior and causal evidence and STOP for Sol diagnosis before changing implementation. If the behavior passes, record browser/runtime used, exact SHA, widths/cases and evidence here, then STOP for Sol final quote gate.
+
+Do not start another Editor feature, final whole-Editor review, formal Codex review, infrastructure or merge.
