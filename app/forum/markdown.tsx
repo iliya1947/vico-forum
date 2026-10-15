@@ -310,6 +310,15 @@ function ForumCodeBlock({
 }
 
 const markdownComponents: Components = {
+  // Each prose block follows its own first strong character, not the UI locale.
+  p: ({ children }) => <p dir="auto">{children}</p>,
+  li: ({ children }) => <li dir="auto">{children}</li>,
+  h1: ({ children }) => <h1 dir="auto">{children}</h1>,
+  h2: ({ children }) => <h2 dir="auto">{children}</h2>,
+  h3: ({ children }) => <h3 dir="auto">{children}</h3>,
+  h4: ({ children }) => <h4 dir="auto">{children}</h4>,
+  h5: ({ children }) => <h5 dir="auto">{children}</h5>,
+  h6: ({ children }) => <h6 dir="auto">{children}</h6>,
   img: ({ src }) => <ForumInlineImage src={src} />,
   a: ({ children: linkChildren, href, title }) => (
     <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
