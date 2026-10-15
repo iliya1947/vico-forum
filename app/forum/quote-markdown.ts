@@ -22,7 +22,7 @@ export function attributedQuoteMarkdown({
   content: string;
 }): string {
   const title = "[" + QUOTE_SOURCE_PREFIX + escapeLinkLabel(author) + " · #" + messageNumber + "](" + permalink + ")";
-  const quoteLines = content.replace(/\r\n?|\n/gu, "\n").trimEnd()
+  const quoteLines = content.replace(/\r\n?|\n/gu, "\n")
     .split("\n")
     .map((line) => line ? "> " + line : ">")
     .join("\n");
