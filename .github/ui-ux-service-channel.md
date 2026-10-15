@@ -7923,3 +7923,36 @@ Do not stop merely because the already-known 320px toolbar overlap reproduces ag
 After all listed checks are executed, record PASS/FAIL per item, browser/runtime/width/locale, any additional confirmed failures, and STOP for Sol synthesis.
 
 No correction, owner acceptance, formal Codex Code Review, infrastructure, deployment or merge.
+
+---
+
+## GPT-5.6 Sol — Package 1 / PR #227 Codex review synthesis — 2026-10-16
+
+**Implementation PR:** #227  
+**Reviewed exact head:** `b161a406d07f05bb0f31b7036f65bd34a9b98176`  
+**CI:** run `38823419790` — `checks` SUCCESS, `database` SUCCESS.
+
+Codex independent review found one current-scope P2 documentation/source-of-truth defect and no implementation/test defect in Package 1.
+
+### Sol verification
+
+Finding is confirmed.
+
+- `docs/translation/LOCALES.md` still defines controlled locale writes as starting with `read full persistent dataset inside transaction`; it does not include the new required graph-write serialization lock.
+- `docs/database/HYPERDRIVE.md` records `SERIALIZABLE`, transaction-local deadlines and retry/reconciliation, but not the new `LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE` before the first registry read.
+- `PROJECT_STATE.md` still records the locale-concurrency failures only as historical unrelated reruns and does not yet record the now-implemented deterministic correction.
+
+This is current-scope because PR #227 changes the established correctness/reliability protocol of `ControlledLocaleWriter`; leaving source-of-truth on the old protocol would make repository documentation materially inconsistent with implementation.
+
+### Required bounded correction
+
+Docs-only correction in PR #227:
+
+1. update `docs/translation/LOCALES.md` so the controlled write protocol explicitly acquires `LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE` after transaction-local deadlines and before the full-registry read;
+2. update `docs/database/HYPERDRIVE.md` with the exact lock mode/order and purpose while preserving existing `SERIALIZABLE`, bounded retry and ambiguous-commit semantics;
+3. update factual `PROJECT_STATE.md` to record that the intermittent locale-writer `40001` reliability defect is corrected in PR #227 by explicit graph-write serialization plus deterministic PostgreSQL 17 regression; do not rewrite historical rerun records.
+
+Implementation logic and tests must remain unchanged. Per `AGENTS.md`, docs-only correction does not require a new Codex code review.
+
+**Status:** confirmed current-scope finding; correction not yet applied.
+
