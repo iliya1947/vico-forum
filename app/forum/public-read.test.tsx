@@ -2663,7 +2663,9 @@ describe("forum read states", () => {
     fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
     expect(replyEditor).toHaveAttribute("data-mode", "write");
     expect(replyEditor).toHaveAttribute("data-authoring", "simple");
-    expect(replyBody).toHaveValue("> Selected words\n\n");
+    expect(replyBody).toHaveValue("> [↳ Ada · #1](/en/topics/typed%2Fapi#post-question)\n>\n> Selected words\n\n");
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote entire message" }));
+    expect((replyBody as HTMLTextAreaElement).value).toContain("> Selected words from the question.");
     expect(document.activeElement).toHaveAttribute("data-visual-text", "true");
 
     vi.spyOn(window, "getSelection").mockReturnValue({
