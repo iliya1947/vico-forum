@@ -61,6 +61,9 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
     && !!data.payload && typeof data.payload.body === "string"
     && typeof data.payload.title === "string" && typeof data.payload.tags === "string"
+    && (data.payload.retainedAttachmentIds === undefined || (Array.isArray(data.payload.retainedAttachmentIds)
+      && data.payload.retainedAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))
+      && new Set(data.payload.retainedAttachmentIds.map((id) => id.toLowerCase())).size === data.payload.retainedAttachmentIds.length))
     && (data.payload.publishedRevisionId === undefined
       || (typeof data.payload.publishedRevisionId === "string"
         && data.payload.publishedRevisionId.length > 0 && data.payload.publishedRevisionId.length <= 128));
@@ -96,7 +99,7 @@ export function clearDeviceEditorData(ownerId: string) {
   clearDeviceEditorDrafts(ownerId);
   // These are the actual existing per-account editor preferences, not unrelated site data.
   try {
-    for (const preference of ["mode", "code-wrap", "code-lines"]) {
+    for (const preference of ["mode", "spellcheck", "code-wrap", "code-lines"]) {
       localStorage.removeItem("vico:editor:" + preference + ":" + ownerId);
     }
   } catch { /* Local storage may be unavailable. */ }

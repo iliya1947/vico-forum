@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: "en" } }) }));
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 
 afterEach(() => cleanup());
@@ -13,8 +13,8 @@ describe("attachment presentation shared between the editor and posts", () => {
   it("renders a verified raster in a published post without changing Markdown", () => {
     render(<ForumAttachmentDisplay attachment={file} url={path} />);
     expect(screen.getByAltText(file.fileName)).toHaveAttribute("src", path + "&view=inline");
-    expect(screen.getByRole("link", { name: `Open original ${file.fileName}` })).toHaveAttribute("href", path + "&view=inline");
-    expect(screen.getByRole("link", { name: `Open original ${file.fileName}` })).not.toHaveAttribute("download");
+    expect(screen.getByRole("link", { name: "editorAttachmentOpenOriginal" })).toHaveAttribute("href", path + "&view=inline");
+    expect(screen.getByRole("link", { name: "editorAttachmentOpenOriginal" })).not.toHaveAttribute("download");
     expect(screen.getByRole("link", { name: file.fileName })).toHaveAttribute("download", file.fileName);
     expect(screen.getByText(/1,234 B/u)).toBeInTheDocument();
   });

@@ -21,7 +21,7 @@ export interface PrivateAttachmentBucket {
   put(
     key: string,
     content: ReadableStream<Uint8Array>,
-    options: { httpMetadata: { contentType: string } },
+    options: { byteLength: number; httpMetadata: { contentType: string } },
   ): Promise<{ size: number } | null>;
   get(
     key: string,
@@ -260,6 +260,7 @@ export async function storePrivateAttachmentStream(
     let stored: { size: number } | null;
     try {
       stored = await bucket.put(objectKey, content, {
+        byteLength: upload.size,
         httpMetadata: { contentType: "application/octet-stream" },
       });
     } catch (error) {

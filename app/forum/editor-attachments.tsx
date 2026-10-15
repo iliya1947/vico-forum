@@ -567,8 +567,7 @@ export function useEditorAttachments({
           ? "editorAttachmentListUnavailable"
           : null;
 
-  const element = contextKey ? (
-    <section className="markdown-editor-attachments" aria-label={t("editorAttachments")}>
+  const controls = contextKey ? (
       <div className="markdown-editor-attachment-controls">
         <label className={"markdown-editor-attach-button" + (!canAdd ? " is-disabled" : "")}>
           <input
@@ -586,6 +585,10 @@ export function useEditorAttachments({
         </label>
         <span className="markdown-editor-attachment-hint">{t("editorAttachmentDropHint")}</span>
       </div>
+  ) : null;
+
+  const details = contextKey && (lifecycleMessage || entries.length > 0 || publicationWarning) ? (
+    <section className="markdown-editor-attachments" aria-label={t("editorAttachments")}>
 
       {lifecycleMessage ? (
         <div className="markdown-editor-attachment-status" role="status">
@@ -682,7 +685,9 @@ export function useEditorAttachments({
         detectedType: entry.attachment!.detectedType,
         url: `/api/attachments/file/${encoded(entry.id)}?draft=${encoded(entry.draftId)}&context=${encoded(contextKey!)}`,
       })),
-    element,
+    controls,
+    details,
+    element: <>{controls}{details}</>,
     handleDrop,
     handleDragOver,
     handlePaste,

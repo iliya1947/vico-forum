@@ -1068,7 +1068,7 @@ export function HelpSolutionsView({
     return () => { live = false; };
   }, [canAskQuestion, draftUser?.id, location.search, locale]);
 
-  const submittingHelpQuestion = navigation.state === "submitting";
+  const submittingHelpQuestion = navigation.state !== "idle";
   const submittingIntent = navigation.formData?.get("intent");
   const isSimilarChecking =
     submittingHelpQuestion
@@ -1311,6 +1311,12 @@ export function HelpSolutionsView({
                   draftPublicationIntent="createHelpQuestion"
                   draftPublicationPending={isQuestionSubmitting}
                   onPublicationReadyChange={setQuestionReady}
+                  actions={<>
+                    <button type="button" disabled={isQuestionFormBusy} onClick={() => setQuestionComposerOpen(false)}>{t("postEditCancel")}</button>
+                    <button type="submit" name="intent" value="createHelpQuestion" disabled={isQuestionFormBusy || !questionReady}>
+                      {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
+                    </button>
+                  </>}
                   name="body"
                   rows={8}
                   defaultValue={similarAction?.draft.body}
@@ -1391,14 +1397,6 @@ export function HelpSolutionsView({
                 disabled={isQuestionFormBusy}
               >
                 {t(isSimilarChecking ? "helpSolutionsSimilarChecking" : "helpSolutionsSimilarCheck")}
-              </button>
-              <button
-                type="submit"
-                name="intent"
-                value="createHelpQuestion"
-                disabled={isQuestionFormBusy || !questionReady}
-              >
-                {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
               </button>
             </footer>
           </Form>
@@ -1841,8 +1839,9 @@ export function SectionView({
   const { t } = useTranslation("common");
   const navigation = useNavigation();
   const [topicReady, setTopicReady] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(true);
   const isCreateTopicSubmitting =
-    navigation.state === "submitting"
+    navigation.state !== "idle"
     && navigation.formData?.get("intent") === "createTopic";
   const messageTotal = section.topics.reduce((sum, topic) => sum + topic.postCount, 0);
 
@@ -1866,7 +1865,7 @@ export function SectionView({
             <span>{t("messageCount", { count: messageTotal })}</span>
           </div>
           {canCreateTopic ? (
-            <a className="section-create-topic-link" href="#create-topic">
+            <a className="section-create-topic-link" href="#create-topic" onClick={() => setComposerOpen(true)}>
               {t("createTopicHeading")}
             </a>
           ) : null}
@@ -1936,6 +1935,7 @@ export function SectionView({
 
       {canCreateTopic && (
         <Form
+          hidden={!composerOpen}
           key={section.id}
           id="create-topic"
           method="post"
@@ -1991,6 +1991,12 @@ export function SectionView({
                 draftPublicationIntent="createTopic"
                 draftPublicationPending={isCreateTopicSubmitting}
                 onPublicationReadyChange={setTopicReady}
+                actions={<>
+                  <button type="button" disabled={isCreateTopicSubmitting} onClick={() => setComposerOpen(false)}>{t("postEditCancel")}</button>
+                  <button type="submit" disabled={isCreateTopicSubmitting || !topicReady}>
+                    {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
+                  </button>
+                </>}
                 name="body"
                 rows={8}
                 disabled={isCreateTopicSubmitting}
@@ -1999,13 +2005,6 @@ export function SectionView({
               <small id="create-topic-body-help">{t("messageBodyHelp")}</small>
             </div>
           </div>
-
-          <footer className="forum-write-actions">
-            <p>{t("authoringRequiredHint")}</p>
-            <button type="submit" disabled={isCreateTopicSubmitting || !topicReady}>
-              {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
-            </button>
-          </footer>
         </Form>
       )}
     </ForumShell>
@@ -2167,6 +2166,8 @@ export function TopicView({
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [replyReady, setReplyReady] = useState(false);
+  const [replyComposerOpen, setReplyComposerOpen] = useState(true);
+  const replyNeedsFocusRef = useRef(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBaseRevisionId, setEditBaseRevisionId] = useState<string | null>(null);
   const [editReady, setEditReady] = useState(false);
@@ -2329,9 +2330,9 @@ export function TopicView({
   const isEditSubmitting = navigation.state !== "idle"
     && (navigation.formData?.get("intent") === "editPost"
       || (navigation.state === "loading" && editPublicationRef.current !== null));
-  const isReplySubmitting =
-    navigation.state === "submitting"
-    && navigation.formData?.get("intent") === "reply";
+  const isReplySubmitting = navigation.state !== "idle"
+    && (navigation.formData?.get("intent") === "reply"
+      || (navigation.state === "loading" && replyPublicationRef.current !== null));
 
   function openPostHistory(postId: string) {
     if (!canReadPostHistory) return;
@@ -2363,7 +2364,20 @@ export function TopicView({
   }
 
 
+  useEffect(() => {
+    if (!replyComposerOpen) document.querySelector<HTMLButtonElement>(".forum-composer-resume")?.focus();
+    if (replyComposerOpen && replyNeedsFocusRef.current) {
+      replyNeedsFocusRef.current = false;
+      focusReplyForm();
+    }
+  }, [replyComposerOpen]);
+
   function focusReplyForm() {
+    if (!replyComposerOpen) {
+      replyNeedsFocusRef.current = true;
+      setReplyComposerOpen(true);
+      return;
+    }
     replyEditorRef.current?.focus();
     const heading = document.getElementById("reply-heading");
     if (typeof heading?.scrollIntoView === "function") {
@@ -2393,6 +2407,7 @@ export function TopicView({
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     editor.insertText(quote);
+    if (!replyComposerOpen) { replyNeedsFocusRef.current = true; setReplyComposerOpen(true); }
     const heading = document.getElementById("reply-heading");
     if (typeof heading?.scrollIntoView === "function") {
       heading.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -2855,6 +2870,11 @@ export function TopicView({
                           draftPublicationIntent="editPost"
                           draftPublicationPending={isEditSubmitting}
                           onPublicationReadyChange={setEditReady}
+                          actions={<>
+                            <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>{t("postEditCancel")}</button>
+                            <button type="submit" name="intent" value="editPost"
+                              disabled={!editReady || isEditSubmitting || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
+                          </>}
                           disabled={isEditSubmitting}
                           existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
                             ...attachment,
@@ -2871,15 +2891,6 @@ export function TopicView({
                             }}>{t("postEditAcceptCurrentRevision")}</button>
                           </div>
                         ) : null}
-                        <div className="forum-write-actions">
-                          <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>
-                            {t("postEditCancel")}
-                          </button>
-                          <button type="submit" name="intent" value="editPost"
-                            disabled={!editReady || isEditSubmitting || editBaseRevisionId !== post.body.id}>
-                            {t("postEditSave")}
-                          </button>
-                        </div>
                       </Form>
                     ) : null}
 
@@ -3037,8 +3048,12 @@ export function TopicView({
           </ol>
         )}
 
+        {canParticipate && !replyComposerOpen ? (
+          <button type="button" className="forum-composer-resume" onClick={focusReplyForm}>{t("replyHeading")}</button>
+        ) : null}
         {canParticipate && (
           <Form
+            hidden={!replyComposerOpen}
             method="post"
             className="forum-write-form topic-reply-form"
             aria-labelledby="reply-heading"
@@ -3082,6 +3097,12 @@ export function TopicView({
                   draftPublicationIntent="reply"
                   draftPublicationPending={isReplySubmitting}
                   onPublicationReadyChange={setReplyReady}
+                  actions={<>
+                    <button type="button" disabled={isReplySubmitting} onClick={() => setReplyComposerOpen(false)}>{t("postEditCancel")}</button>
+                    <button type="submit" disabled={isReplySubmitting || !replyReady}>
+                      {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
+                    </button>
+                  </>}
                   onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
                   rows={8}
@@ -3092,12 +3113,6 @@ export function TopicView({
               </div>
             </div>
 
-            <footer className="forum-write-actions">
-              <p>{t("authoringRequiredHint")}</p>
-              <button type="submit" disabled={isReplySubmitting || !replyReady}>
-                {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
-              </button>
-            </footer>
           </Form>
         )}
       </ForumShell>

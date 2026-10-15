@@ -2384,6 +2384,49 @@ describe("published edit revision fence", () => {
 });
 
 describe("published edit submission lifecycle", () => {
+  it("keeps a reply locked through loading and Cancel preserves the draft for resuming", async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("mode=metadata")) return json({ drafts: [] });
+      if (url === "/api/attachments") return json({ attachments: [] });
+      throw new Error("Unexpected request: " + url);
+    }));
+    let resolveAction!: () => void, resolveLoader!: (value: ReturnType<typeof topicRenderData>) => void;
+    const pendingAction = new Promise<void>((resolve) => { resolveAction = resolve; });
+    const pendingLoader = new Promise<ReturnType<typeof topicRenderData>>((resolve) => { resolveLoader = resolve; });
+    let hold = false;
+    const current = topicRenderData(topic, { canReply: true });
+    const router = createMemoryRouter([{ path: "*", Component: TopicRoute,
+      loader: () => hold ? pendingLoader : current,
+      action: async () => { await pendingAction; return { error: "unavailable" }; },
+    }], { initialEntries: ["/en/topics/typed-api"] });
+    render(<I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={{ id: "reply-loading-owner", name: "Author" }}>
+        <RouterProvider router={router} />
+      </HeaderAuthProvider>
+    </I18nextProvider>);
+    const form = await screen.findByRole("form", { name: "Add a reply" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const field = form.querySelector("textarea")!;
+    fireEvent.change(field, { target: { value: "Recoverable reply " } });
+    fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("form", { name: "Add a reply" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add a reply" }));
+    expect(field).toHaveValue("Recoverable reply ");
+    const publish = within(form).getByRole("button", { name: "Post reply" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    fireEvent.click(publish);
+    await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+    hold = true; resolveAction();
+    await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+    expect(field).toBeDisabled();
+    expect(within(form).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    resolveLoader(current);
+    await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    expect(field).toBeEnabled();
+    expect(field).toHaveValue("Recoverable reply ");
+  });
+
   it("keeps the editor and its publication barrier locked through loader revalidation", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), {
       status: 200, headers: { "Content-Type": "application/json" },

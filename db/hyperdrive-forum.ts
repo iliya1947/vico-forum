@@ -28,7 +28,7 @@ export interface ForumWriter {
   editPublishedPost(input: {
     topicId: string; postId: string; actorId: string;
     expectedRevisionId: string; body: string;
-    draftId: string; draftVersion: number; attachmentIds: string[];
+    draftId: string; draftVersion: number; attachmentIds: string[]; retainedAttachmentIds?: string[];
   }): Promise<void>;
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
@@ -185,10 +185,10 @@ export function createHyperdriveForumWriter(
       });
       return { topicId: created.topic.id };
     }),
-    editPublishedPost: ({ topicId, postId, actorId, expectedRevisionId, body, draftId, draftVersion, attachmentIds }) =>
+    editPublishedPost: ({ topicId, postId, actorId, expectedRevisionId, body, draftId, draftVersion, attachmentIds, retainedAttachmentIds }) =>
       writeCorrection((forum) => forum.editPublishedPost({
         topicId, postId, actorId, expectedRevisionId, body,
-        draftId, expectedVersion: draftVersion, attachmentIds,
+        draftId, expectedVersion: draftVersion, attachmentIds, retainedAttachmentIds,
       })),
     createReply: ({ topicId, authorId, body, parentPostId = null, draftId, draftVersion, attachmentIds }) => write(async (forum) => {
       const postId = crypto.randomUUID();

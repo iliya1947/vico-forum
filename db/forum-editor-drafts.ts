@@ -57,6 +57,9 @@ export function validEditorDraftPayload(input: unknown): input is ForumEditorDra
   return typeof item.body === "string"
     && typeof item.title === "string"
     && typeof item.tags === "string"
+    && (item.retainedAttachmentIds === undefined || (Array.isArray(item.retainedAttachmentIds)
+      && item.retainedAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))
+      && new Set(item.retainedAttachmentIds.map((id: string) => id.toLowerCase())).size === item.retainedAttachmentIds.length))
     && (item.parentPostId === undefined || item.parentPostId === null
       || typeof item.parentPostId === "string")
     && (item.publishedRevisionId === undefined

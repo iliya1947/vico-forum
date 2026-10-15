@@ -331,6 +331,53 @@ describe("text-only publication attachment fence", () => {
 });
 
 describe("published post editing and revision history", () => {
+  it("removes only deselected published refs atomically with Save and includes the selection in retry identity", async () => {
+    const localTopicId = crypto.randomUUID();
+    const contextKey = `topic:${localTopicId}:reply`;
+    await forum.createTopicWithInitialPost({
+      id: localTopicId, sectionId, authorId: "publication-topic-author",
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Attachment removal", sourceLocale: "en" },
+      initialPost: { id: crypto.randomUUID(), topicId: localTopicId, authorId: "publication-topic-author",
+        bodyRevision: { id: crypto.randomUUID(), originalContent: "Question", sourceLocale: "en" } },
+    });
+    const postId = crypto.randomUUID(), revisionId = crypto.randomUUID(), generation = crypto.randomUUID();
+    const original = await savedDraft(generation, contextKey);
+    const removed = attachment(generation, contextKey), kept = attachment(generation, contextKey);
+    await attachments.createDraftAttachment(removed);
+    await attachments.createDraftAttachment(kept);
+    await forum.createPost({ ...reply(postId, generation, original.version),
+      topicId: localTopicId,
+      publishedDraft: { contextKey, draftId: generation, expectedVersion: original.version, attachmentIds: [removed.id, kept.id] },
+      bodyRevision: { id: revisionId, originalContent: "Before", sourceLocale: "en" },
+    });
+    const sharedPostId = crypto.randomUUID();
+    await forum.createPost({ id: sharedPostId, topicId: localTopicId, authorId: ownerId,
+      bodyRevision: { id: crypto.randomUUID(), originalContent: "Shared reference", sourceLocale: "en" } });
+    await client.query("insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1, $2, now())", [sharedPostId, removed.id]);
+    const editGeneration = crypto.randomUUID(), editContext = `post:${postId}:edit`;
+    const saved = await savedDraft(editGeneration, editContext);
+    const added = attachment(editGeneration, editContext);
+    await attachments.createDraftAttachment(added);
+    const edit = { postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: revisionId,
+      body: "After", draftId: editGeneration, expectedVersion: saved.version,
+      attachmentIds: [added.id], retainedAttachmentIds: [kept.id] };
+    await expect(forum.editPublishedPost({ ...edit, retainedAttachmentIds: [crypto.randomUUID()] }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    await expect(forum.editPublishedPost({ ...edit, expectedVersion: saved.version + 1 }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await attachments.readPublishedAttachment(postId, removed.id)).toMatchObject({ id: removed.id });
+    expect((await forum.readPost(postId))?.body.id).toBe(revisionId);
+    await forum.editPublishedPost(edit);
+    expect(await attachments.readPublishedAttachment(postId, removed.id)).toBeNull();
+    expect(await attachments.readPublishedAttachment(sharedPostId, removed.id)).toMatchObject({ id: removed.id });
+    expect(await attachments.readPublishedAttachment(postId, kept.id)).toMatchObject({ id: kept.id });
+    expect(await attachments.readPublishedAttachment(postId, added.id)).toMatchObject({ id: added.id });
+    await forum.editPublishedPost(edit);
+    await expect(forum.editPublishedPost({ ...edit, retainedAttachmentIds: [] }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await forum.readPostHistory(postId, localTopicId)).toHaveLength(2);
+  });
+
   it("keeps edits as separate drafts until Save, then preserves history and replays lost ACK once", async () => {
     const postId = crypto.randomUUID();
     const originalRevisionId = crypto.randomUUID();

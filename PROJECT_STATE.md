@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-13
+Последнее обновление: 2026-10-15
 
 ## Назначение
 
@@ -19,6 +19,50 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## Editor 2.0 — завершение реализации в PR #215 (2026-10-15)
+
+По прямому назначению владельца Codex принимает implementation ownership;
+обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex
+с независимой проверкой Sol/GPT-6. Merge выполняет только владелец.
+Постоянные требования перенесены в `docs/EDITOR.md`; временный `EDITOR_SPEC.md` удалён.
+Исторические записи ниже описывают предшествующие ограниченные срезы, а не текущий
+перечень незавершённых функций.
+
+Завершены общий footer Attach/status/Cancel/Publish во всех четырёх authoring flows
+и fullscreen, доступное More-меню без clipping, компактная панель, Advanced B/I/K
+shortcuts и полная очистка account-scoped spellcheck preference. Формы сохраняют
+publication lock через loading. Native publication replay вынесен в следующую
+event-loop task: браузер больше не игнорирует повторный requestSubmit при ещё
+выполняющемся исходном submit. Новый task сохраняет native validation и submitter.
+
+Post-edit server draft/upload authorization теперь использует актуальную
+`forum.post.editOwn` и authoritative author identity. Правки сохраняют manifest
+retained published attachments в существующем draft JSONB; Remove/Cancel не меняют
+публичные ссылки. Save атомарно удаляет deselected refs и продвигает новые, сохраняет
+shared assets, CAS/rollback и idempotent receipt identity. Runtime web contract
+добавляет только необходимый DELETE на forum_post_attachments; внешние grants
+не применялись. Снятие inline images использует Markdown AST ranges и сохраняет
+буквальные примеры внутри кода/escaped syntax.
+
+Настоящий local Worker/R2 emulator выявил несовместимость arbitrary inspected
+ReadableStream с native R2 put: требуется известная длина. Исправлено Workers
+адаптером с FixedLengthStream, потоковой передачей и отменой upstream при отказе.
+Private interface передаёт byteLength отдельно от R2 HTTP metadata. Внешний R2
+bucket/binding, миграции production и infrastructure Stage 6 не подключались.
+
+Фактически выполнены Chromium 154.0.8037.57 на реальном React Router/Workers app
+и disposable PostgreSQL 17: concurrent text/image upload; lost response после
+реального commit + same-ID retry; local reload/recovery; guest draft denial;
+fullscreen create-topic + durable replay; public download; published attachment
+removal через Cancel/reload/Save. EN/RU/HE geometry прошла при 1365/768/390/320 px.
+Отдельные два browser contexts прошли 60-second sync, automatic remote recovery,
+explicit divergent conflict choice и remote publication retirement без resurrection.
+Для этого теста Playwright clock продвигал существующие 60000-ms browser intervals;
+HTTP, R2 и PostgreSQL не подменялись. Это проверка локального runtime, не внешний rollout.
+
+Финальные exact-head CI, дополнительные whole-Editor checks, независимые reviews
+Sol/GPT-6 и owner visual acceptance пока ожидаются. PR открыт и не объявлен готовым к merge.
 
 ## Текущая фаза
 

@@ -9154,8 +9154,7 @@ a.topic-tag:focus-visible {
 .home-shell .markdown-editor-formatting {
   flex-wrap: nowrap;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow: visible;
 }
 .home-shell .markdown-editor-tool-group { flex: 0 0 auto; }
 .home-shell .markdown-editor-controls {
@@ -9283,6 +9282,18 @@ a.topic-tag:focus-visible {
   box-shadow: 0 .35rem .75rem #0002;
 }
 .home-shell .markdown-editor-extra-options button { justify-content: start; white-space: nowrap; }
+.home-shell .markdown-editor-extra-options {
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  max-block-size: 65dvh;
+  inline-size: min(18rem, 75vw);
+  min-inline-size: 0;
+  overflow: auto;
+}
+.home-shell .markdown-editor-extra-options button { white-space: normal; }
+.home-shell .markdown-editor-extra-options .markdown-editor-tool-group { flex-wrap: wrap; }
+.home-shell .markdown-editor-extra-options .markdown-editor-language { flex-wrap: wrap; }
+.home-shell .markdown-editor-extra-options .markdown-editor-language input { max-inline-size: 100%; }
 
 .home-shell .markdown-editor-direction {
   display: grid;
@@ -9481,6 +9492,66 @@ a.topic-tag:focus-visible {
   border-block-start: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: .75rem;
+}
+
+/* One shared action row, including in fullscreen. Details and conflicts sit
+   above it so a long upload list never separates draft status from Publish. */
+.home-shell .markdown-editor-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .55rem;
+  border-block-start: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+.home-shell .markdown-editor-footer .markdown-editor-attachment-controls { margin-inline-end: auto; }
+.home-shell .markdown-editor-footer .markdown-editor-attachment-hint { display: none; }
+.home-shell .markdown-editor-footer .markdown-editor-draft-state {
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  margin-inline-start: auto;
+  margin-inline-end: .65rem;
+}
+.home-shell .markdown-editor-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.home-shell .markdown-editor-actions button,
+.home-shell .forum-composer-resume {
+  min-block-size: 2.5rem;
+  padding: .45rem .8rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: .4rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.home-shell .markdown-editor-actions button[type="submit"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.home-shell .markdown-editor-actions button:disabled { opacity: .55; cursor: wait; }
+.home-shell .markdown-editor.is-fullscreen {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-workspace {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-block-size: 0;
+}
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-visual,
+.home-shell .markdown-editor.is-fullscreen .markdown-editor-write-pane > textarea { min-height: 100%; }
+.home-shell .markdown-editor.is-fullscreen > .markdown-editor-attachments,
+.home-shell .markdown-editor.is-fullscreen > .markdown-editor-draft-conflict { max-block-size: 25dvh; overflow: auto; }
+.home-shell .markdown-editor-footer { flex: 0 0 auto; }
+.home-shell .forum-write-form[hidden] { display: none; }
+.home-shell .markdown-editor-visual { resize: vertical; overflow: auto; }
+.home-shell .markdown-editor-toolbar { position: sticky; inset-block-start: 0; z-index: 5; }
+@media (max-width: 30rem) {
+  .home-shell .markdown-editor-footer .markdown-editor-draft-state { font-size: .7rem; margin-inline-end: .2rem; }
+  .home-shell .markdown-editor-actions { gap: .25rem; }
+  .home-shell .markdown-editor-actions button { padding-inline: .5rem; }
 }
 .home-shell .markdown-editor-draft-conflict {
   margin-block-start: .6rem;

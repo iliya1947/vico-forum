@@ -2,7 +2,7 @@ import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
 import { forumDraftStoreContext } from "../app/forum/draft-request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../app/forum/attachment-request-context";
-import type { PrivateAttachmentBucket } from "../app/forum/attachment-r2";
+import { privateAttachmentBucket } from "./attachment-storage";
 import { createHyperdriveForumDraftStore } from "../db/hyperdrive-editor-drafts";
 import { createHyperdriveForumAttachmentStore } from "../db/hyperdrive-forum-attachments";
 import {
@@ -38,8 +38,8 @@ export default {
     context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString));
     context.set(forumDraftStoreContext, createHyperdriveForumDraftStore(webConnectionString));
     context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString));
-    const attachmentBucket = (env as Env & { ATTACHMENT_R2?: PrivateAttachmentBucket }).ATTACHMENT_R2 ?? null;
-    context.set(privateAttachmentBucketContext, attachmentBucket);
+    const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
+    context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket) : null);
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(

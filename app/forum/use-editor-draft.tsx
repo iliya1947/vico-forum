@@ -97,7 +97,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     if (final ? ctx.disposed : !current(ctx)) return;
     const payload = ctx.payload;
     const previous = ctx.local;
-    if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()) return;
+    if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()
+      && !(ctx.hasInput && payload.retainedAttachmentIds !== undefined)) return;
     if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) { ctx.hasInput = false; return; }
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey,
@@ -608,37 +609,45 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       {payload.parentPostId || other.parentPostId
         ? <p><strong>{t("replyToMessage")}:</strong> {payload.parentPostId || "—"}</p>
         : null}
+      {payload.retainedAttachmentIds !== undefined || other.retainedAttachmentIds !== undefined
+        ? <p><strong>{t("editorAttachments")}:</strong> {(payload.retainedAttachmentIds ?? []).join(", ") || "—"}</p>
+        : null}
       <pre>{payload.body}</pre>
     </>
   );
+  const conflictElement = ownerId && contextKey && conflict ? (
+    <div className="markdown-editor-draft-conflict" role="group" aria-label={t("editorDraftConflict")}>
+      <p>{t("editorDraftConflict")}</p>
+      <div className="markdown-editor-draft-versions">
+        <section>
+          <strong>{t("editorDraftThisDevice")}</strong>
+          {conflictRemotePayload
+            ? renderConflictPayload(conflict.local.payload, conflictRemotePayload)
+            : <pre>{conflict.local.payload.body}</pre>}
+        </section>
+        <section>
+          <strong>{t("editorDraftOtherDevice")}</strong>
+          {conflictRemotePayload
+            ? renderConflictPayload(conflictRemotePayload, conflict.local.payload)
+            : <pre>{t("editorDraftNoRemoteVersion")}</pre>}
+        </section>
+      </div>
+      <button type="button" onClick={() => chooseVersion("local")}>{t("editorDraftKeepLocal")}</button>
+      <button type="button" onClick={() => chooseVersion("server")}>{t("editorDraftKeepServer")}</button>
+    </div>
+  ) : null;
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
     preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
     attachmentSelectionEpoch,
     noteAttachmentChange,
     reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
+    statusLabel: ownerId && contextKey ? labels[status] : "",
+    conflictElement,
     element: ownerId && contextKey ? (
       <div className="markdown-editor-draft-state" aria-live="polite">
         <span>{labels[status]}</span>
-        {conflict ? <div className="markdown-editor-draft-conflict" role="group" aria-label={t("editorDraftConflict")}>
-          <p>{t("editorDraftConflict")}</p>
-          <div className="markdown-editor-draft-versions">
-            <section>
-              <strong>{t("editorDraftThisDevice")}</strong>
-              {conflictRemotePayload
-                ? renderConflictPayload(conflict.local.payload, conflictRemotePayload)
-                : <pre>{conflict.local.payload.body}</pre>}
-            </section>
-            <section>
-              <strong>{t("editorDraftOtherDevice")}</strong>
-              {conflictRemotePayload
-                ? renderConflictPayload(conflictRemotePayload, conflict.local.payload)
-                : <pre>{t("editorDraftNoRemoteVersion")}</pre>}
-            </section>
-          </div>
-          <button type="button" onClick={() => chooseVersion("local")}>{t("editorDraftKeepLocal")}</button>
-          <button type="button" onClick={() => chooseVersion("server")}>{t("editorDraftKeepServer")}</button>
-        </div> : null}
+        {conflictElement}
       </div>
     ) : null,
   };

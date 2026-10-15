@@ -52,9 +52,34 @@ const MAX_UNDO_STEPS = 100;
 
 type PositionedNode = {
   type: string;
+  url?: string;
+  identifier?: string;
   position?: { start: { offset?: number }; end: { offset?: number } };
   children?: PositionedNode[];
 };
+
+/** Remove only parsed image references, preserving code and escaped literals. */
+export function removeAttachmentImages(markdown: string, attachmentId: string): string {
+  const root = parseForumMarkdown(markdown) as PositionedNode;
+  const url = "vico-attachment:" + attachmentId;
+  const definitions = new Map((root.children ?? [])
+    .filter((node) => node.type === "definition" && node.identifier)
+    .map((node) => [node.identifier, node.url]));
+  const ranges: EditorSelection[] = [];
+  function visit(node: PositionedNode) {
+    if ((node.type === "image" && node.url === url)
+      || (node.type === "imageReference" && definitions.get(node.identifier) === url)) {
+      const start = node.position?.start.offset, end = node.position?.end.offset;
+      if (start !== undefined && end !== undefined) ranges.push({ start, end });
+    }
+    node.children?.forEach(visit);
+  }
+  visit(root);
+  for (const { start, end } of ranges.sort((a, b) => b.start - a.start)) {
+    markdown = markdown.slice(0, start) + markdown.slice(end);
+  }
+  return markdown;
+}
 
 
 export type ParagraphDirection = "auto" | "ltr" | "rtl";

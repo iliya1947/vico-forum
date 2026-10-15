@@ -24,17 +24,19 @@ describe("isolated browser draft cache", () => {
   it("clears drafts and preferences for one account only", () => {
     writeLocalEditorDraft(first);
     writeLocalEditorDraft(second);
-    for (const preference of ["mode", "code-wrap", "code-lines"]) {
+    for (const preference of ["mode", "spellcheck", "code-wrap", "code-lines"]) {
       localStorage.setItem("vico:editor:" + preference + ":alice", "true");
     }
     localStorage.setItem("vico:editor:mode:bob", "simple");
+    localStorage.setItem("vico:editor:spellcheck:bob", "false");
     clearDeviceEditorData("alice");
     expect(readLocalEditorDraft("alice", first.contextKey)).toBeNull();
     expect(readLocalEditorDraft("bob", first.contextKey)?.payload.body).toBe("Bob");
-    for (const preference of ["mode", "code-wrap", "code-lines"]) {
+    for (const preference of ["mode", "spellcheck", "code-wrap", "code-lines"]) {
       expect(localStorage.getItem("vico:editor:" + preference + ":alice")).toBeNull();
     }
     expect(localStorage.getItem("vico:editor:mode:bob")).toBe("simple");
+    expect(localStorage.getItem("vico:editor:spellcheck:bob")).toBe("false");
   });
 
   it("keeps opaque forum ids routable in draft destinations", () => {

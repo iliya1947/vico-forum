@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { forumDraftStoreContext } from "../forum/draft-request-context";
+import { forumReaderContext } from "../forum/request-context";
 import {
   ForumDraftStorageUnavailableError,
   type ForumDraftStore,
@@ -52,6 +53,23 @@ function request(body: Record<string, unknown>, origin = "https://forum.test") {
 }
 
 describe("account-scoped draft API", () => {
+  it.each([["real-user", 200], ["another-user", 403], [null, 404]] as const)(
+    "authorizes post-edit server drafts against the current post owner (%s)", async (authorId, status) => {
+      const env = setup();
+      env.ctx.set(forumReaderContext, { readPostLocation: async () => authorId ? { topicId: "topic", authorId } : undefined } as never);
+      const permission = vi.fn(async (name: string) => name === "forum.post.editOwn");
+      env.ctx.set(authorizationContext, { forUser: () => ({ has: permission }) } as never);
+      const editPayload = { ...payload, publishedRevisionId: "r1", retainedAttachmentIds: [] };
+      const result = await action({ context: env.ctx, request: request({
+        intent: "save", contextKey: "post:existing:edit", draftId, expectedVersion: 0, payload: editPayload,
+      }) });
+      expect(result.status).toBe(status);
+      if (status === 200) expect(env.save).toHaveBeenCalledWith("real-user", "post:existing:edit", draftId, editPayload, 0);
+      else expect(env.save).not.toHaveBeenCalled();
+      expect(permission).toHaveBeenCalledWith("forum.post.editOwn");
+    },
+  );
+
   it("does not expose metadata or allow writes for guests", async () => {
     const env = setup(null);
     const response = await loader({

@@ -34,7 +34,7 @@ function chunked(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
 function bucket() {
   const objects = new Map<string, Uint8Array>();
   const put = vi.fn(async (key: string, body: ReadableStream<Uint8Array>,
-    options: { httpMetadata: { contentType: string } }) => {
+    options: { byteLength: number; httpMetadata: { contentType: string } }) => {
     if (!key.startsWith("private/") || options.httpMetadata.contentType !== "application/octet-stream") {
       throw new Error("unprotected object write");
     }
@@ -84,6 +84,7 @@ describe("private R2 attachment write contract", () => {
     expect(result.objectKey).toMatch(/^private\/[0-9a-f-]{36}$/u);
     expect(store.put).toHaveBeenCalledOnce();
     expect(store.put.mock.calls[0]?.[2]).toEqual({
+      byteLength: content.length,
       httpMetadata: { contentType: "application/octet-stream" },
     });
     expect(store.get).not.toHaveBeenCalled();

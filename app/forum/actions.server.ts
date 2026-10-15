@@ -48,8 +48,8 @@ function validatedDraftPublicationFence(form: FormData): DraftPublicationFence |
 }
 
 // Omission retains legacy text-only calls; an explicit [] is a verified empty selection.
-function selectedAttachmentIds(form: FormData): string[] | null | undefined {
-  const raw = form.get("editorAttachmentIds");
+function selectedAttachmentIds(form: FormData, field = "editorAttachmentIds"): string[] | null | undefined {
+  const raw = form.get(field);
   if (raw === null) return undefined;
   if (typeof raw !== "string") return null;
   try {
@@ -493,12 +493,14 @@ export async function topicAction({ request, params, context }: {
     const body = formData.get("body");
     const draftFence = validatedDraftPublicationFence(formData);
     const attachmentIds = selectedAttachmentIds(formData);
+    const retainedAttachmentIds = selectedAttachmentIds(formData, "editorRetainedAttachmentIds");
     if (!postId || !expectedRevisionId || typeof body !== "string"
-      || !draftFence || !attachmentIds) return mutationFailure("invalid", 400);
+      || !draftFence || !attachmentIds || retainedAttachmentIds === null) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.editPublishedPost({
         topicId, postId, actorId, expectedRevisionId, body,
         draftId: draftFence.draftId, draftVersion: draftFence.draftVersion, attachmentIds,
+        ...(retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds }),
       });
       return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });

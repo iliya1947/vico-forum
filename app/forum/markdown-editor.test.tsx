@@ -83,6 +83,100 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
+  it.each([
+    ["b", "**alpha** beta"], ["i", "_alpha_ beta"], ["k", "[alpha](https://) beta"],
+  ])("supports the %s formatting shortcut in Advanced without changing the rest of the source", (key, expected) => {
+    renderEditor(<form><label htmlFor="shortcut-body">Body</label>
+      <MarkdownEditor id="shortcut-body" name="body" defaultAuthoringMode="advanced" defaultValue="alpha beta" />
+    </form>);
+    const field = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    field.focus(); field.setSelectionRange(0, 5);
+    fireEvent.keyDown(field, { key, ctrlKey: true });
+    expect(new FormData(field.form!).get("body")).toBe(expected);
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true });
+    expect(new FormData(field.form!).get("body")).toBe("alpha beta");
+  });
+
+  it("persists removal of published attachments in the edit draft, including an empty-body edit", async () => {
+    stubEmptyDraftMetadata();
+    const owner = "published-file-edit-owner";
+    const id = "23b93562-0550-4eef-88af-f951d6ea6138";
+    const contextKey = "post:attachment-only:edit";
+    const editor = () => <HeaderAuthProvider initialUser={{ id: owner, name: "Author" }}>
+      <form><MarkdownEditor id="file-edit" name="body" draftContextKey={contextKey} draftLocale="en"
+        initialPublishedRevisionId="r1" existingInlineAttachments={[{
+          id, fileName: "published.txt", byteSize: 4, detectedType: "text", url: "/file?post=attachment-only",
+        }]} /></form>
+    </HeaderAuthProvider>;
+    const view = renderEditor(editor());
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    await userEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(new FormData(document.querySelector("form")!).get("editorRetainedAttachmentIds")).toBe("[]");
+    expect(readLocalEditorDraft(owner, contextKey)?.payload).toMatchObject({ body: "", retainedAttachmentIds: [] });
+    expect(screen.queryByText("published.txt")).not.toBeInTheDocument();
+    view.unmount();
+    renderEditor(editor());
+    await waitFor(() => expect(new FormData(document.querySelector("form")!).get("editorRetainedAttachmentIds")).toBe("[]"));
+    expect(screen.queryByText("published.txt")).not.toBeInTheDocument();
+    clearLocalEditorDraft(owner, contextKey);
+  });
+
+  it("replays publication after the native submission task, retaining validation and the submitter", async () => {
+    stubEmptyDraftMetadata();
+    const submitted = vi.fn();
+    let firingSubmissionEvents = false;
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: "native-submit-owner", name: "Author" }}>
+        <form onSubmitCapture={() => {
+          // Model HTML's reentrancy guard, absent from jsdom's event loop:
+          // a microtask replay during native submit is ignored by browsers.
+          firingSubmissionEvents = true;
+          window.setTimeout(() => { firingSubmissionEvents = false; }, 0);
+        }} onSubmit={(event) => {
+          if (event.defaultPrevented) return;
+          event.preventDefault();
+          submitted(new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter));
+        }}>
+          <input name="title" required defaultValue="Title" />
+          <MarkdownEditor id="native-submit" name="body" draftContextKey="help:new" draftLocale="en"
+            draftPublicationIntent="createHelpQuestion" defaultValue="Body" />
+          <button type="submit" name="intent" value="createHelpQuestion">Publish</button>
+        </form>
+      </HeaderAuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+    const requestSubmit = HTMLFormElement.prototype.requestSubmit;
+    vi.spyOn(HTMLFormElement.prototype, "requestSubmit").mockImplementation(function (this: HTMLFormElement, submitter) {
+      if (!firingSubmissionEvents) requestSubmit.call(this, submitter);
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => expect(submitted).toHaveBeenCalledTimes(1));
+    expect(submitted.mock.calls[0]![0].get("intent")).toBe("createHelpQuestion");
+    expect(submitted.mock.calls[0]![0].get("body")).toBe("Body");
+    expect(submitted.mock.calls[0]![0].get("editorDraftVersion")).toBe("0");
+  });
+
+  it("applies account preference removal in an already open editor without changing its source", async () => {
+    const owner = "clear-preferences-owner";
+    localStorage.setItem("vico:editor:mode:" + owner, "advanced");
+    localStorage.setItem("vico:editor:spellcheck:" + owner, "true");
+    renderEditor(<HeaderAuthProvider initialUser={{ id: owner, name: "Author" }}>
+      <form><MarkdownEditor id="clear-prefs" name="body" defaultValue="Exact **source**" /></form>
+    </HeaderAuthProvider>);
+    expect(document.querySelector(".markdown-editor")).toHaveAttribute("data-authoring", "advanced");
+    act(() => {
+      localStorage.removeItem("vico:editor:spellcheck:" + owner);
+      window.dispatchEvent(new StorageEvent("storage", { key: "vico:editor:spellcheck:" + owner }));
+    });
+    expect(document.querySelector("textarea")).toHaveAttribute("spellcheck", "false");
+    act(() => {
+      localStorage.removeItem("vico:editor:mode:" + owner);
+      window.dispatchEvent(new StorageEvent("storage", { key: "vico:editor:mode:" + owner }));
+    });
+    expect(document.querySelector(".markdown-editor")).toHaveAttribute("data-authoring", "simple");
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe("Exact **source**");
+  });
+
   it.each(["advanced", "simple"] as const)("suggests and inserts a stable profile link in %s mode", async (mode) => {
     const lookup = vi.fn(async (url: string) => {
       if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
@@ -1478,6 +1572,8 @@ describe("MarkdownEditor", () => {
       await Promise.resolve();
     });
 
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+
     expect(submitted).toHaveBeenCalledTimes(1);
     expect(submitted).toHaveBeenCalledWith({
       draftId: sent.draftId,
@@ -1540,8 +1636,7 @@ describe("MarkdownEditor", () => {
 
     expect(await screen.findByText("kept.txt")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    expect(submitted).toHaveBeenCalledWith(JSON.stringify([storedId]));
+    await waitFor(() => expect(submitted).toHaveBeenCalledWith(JSON.stringify([storedId])));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

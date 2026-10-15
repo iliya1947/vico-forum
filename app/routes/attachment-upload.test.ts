@@ -7,6 +7,7 @@ import {
   privateAttachmentBucketContext,
 } from "../forum/attachment-request-context";
 import { forumDraftStoreContext } from "../forum/draft-request-context";
+import { forumReaderContext } from "../forum/request-context";
 import type { PrivateAttachmentBucket } from "../forum/attachment-r2";
 import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-drafts";
 import type {
@@ -141,6 +142,22 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
+  it.each([["real-user", 201], ["other", 403], [null, 404]] as const)(
+    "uses edit permission plus authoritative post ownership for post-edit files (%s)", async (authorId, status) => {
+      const env = setup();
+      const permission = vi.fn(async (name: string) => name === "forum.post.editOwn");
+      env.ctx.set(authorizationContext, { forUser: () => ({ has: permission }) } as never);
+      env.ctx.set(forumReaderContext, { readPostLocation: async () => authorId ? { topicId: "topic", authorId } : undefined } as never);
+      const response = await action({ context: env.ctx,
+        request: request(new TextEncoder().encode("Editor source"), { key: "post:existing:edit" }),
+      });
+      expect(response.status).toBe(status);
+      expect(permission).toHaveBeenCalledWith("forum.post.editOwn");
+      if (status !== 201) expect(env.r2.put).not.toHaveBeenCalled();
+      else expect(env.createDraftAttachment).toHaveBeenCalledWith(expect.objectContaining({ contextKey: "post:existing:edit" }));
+    },
+  );
+
   it("is registered before the generic API catch-all", () => {
     const paths = routes.map((route) => route.path);
     expect(paths.indexOf("api/attachments")).toBeGreaterThanOrEqual(0);

@@ -491,6 +491,8 @@ export const canonicalEnglishCatalog = {
     editorDraftClearDevice: message("editorDraftClearDevice", "Delete my data from this device", "Delete only local draft cache for signed-in user."),
     editorDraftAvailable: message("editorDraftAvailable", "Continue a saved draft", "Offer to resume a draft from another device without searching."),
     editorAttachments: message("editorAttachments", "Attachments", "Accessible label for the editor attachment area."),
+    editorAttachmentOpenOriginal: message("editorAttachmentOpenOriginal", "Open original {{file}}", "Accessible action to open an attachment's original image.", ["file"]),
+    editorAttachmentDownload: message("editorAttachmentDownload", "Download {{file}}", "Accessible action to download an attachment.", ["file"]),
     editorAttach: message("editorAttach", "Attach", "Action for selecting one or more files to upload immediately."),
     editorAttachmentDropHint: message("editorAttachmentDropHint", "Drop files here or paste an image.", "Short editor attachment input hint."),
     editorAttachmentDraftWaiting: message("editorAttachmentDraftWaiting", "Attachments are waiting for draft reconciliation.", "Attachment UI state while the current draft generation is not yet authoritative."),

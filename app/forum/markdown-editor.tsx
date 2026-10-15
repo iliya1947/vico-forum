@@ -5,10 +5,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown, ForumInlineAttachmentProvider } from "./markdown";
+import { ForumAttachmentDisplay } from "./attachment-presentation";
 import {
   applyTextareaEdit,
   clearInlineMarkdownFormatting,
@@ -18,6 +20,7 @@ import {
   inlineCodeAffixes,
   longestBacktickRun,
   recordEditorEdit,
+  removeAttachmentImages,
   redoEditorEdit,
   rememberEditorSelection,
   sourceOffsetToTextareaOffset,
@@ -67,6 +70,7 @@ export interface MarkdownEditorProps {
   draftPublicationIntent?: string;
   draftPublicationPending?: boolean;
   onPublicationReadyChange?: (ready: boolean) => void;
+  actions?: ReactNode;
   existingInlineAttachments?: Array<{
     id: string; fileName: string; byteSize: number; detectedType: string; url: string;
   }>;
@@ -103,6 +107,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       draftPublicationIntent,
       draftPublicationPending = false,
       onPublicationReadyChange,
+      actions,
       existingInlineAttachments = [],
     },
     forwardedRef,
@@ -115,29 +120,50 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [spellCheckPreference, setSpellCheckPreference] = useState<boolean | null>(null);
     const spellCheck = spellCheckPreference ?? authoringMode === "simple";
     const [fullScreen, setFullScreen] = useState(false);
+    const [compactToolbar, setCompactToolbar] = useState(false);
+    useEffect(() => {
+      if (typeof window.matchMedia !== "function") return;
+      const query = window.matchMedia("(max-width: 44rem)");
+      const update = () => setCompactToolbar(query.matches);
+      update();
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }, []);
     const [pasteWarning, setPasteWarning] = useState(false);
     const [findOpen, setFindOpen] = useState(false);
     const [findText, setFindText] = useState("");
     const [replaceText, setReplaceText] = useState("");
     const [mentionToken, setMentionToken] = useState<MentionToken | null>(null);
     const [mentionCandidates, setMentionCandidates] = useState<Array<{ id: string; name: string }>>([]);
+    const [retainedAttachmentIds, setRetainedAttachmentIds] = useState<string[] | null>(null);
+    const retainedAttachments = existingInlineAttachments.filter((item) => retainedAttachmentIds === null
+      || retainedAttachmentIds.includes(item.id));
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
-      if (!accountId) {
-        setAuthoringMode(defaultAuthoringMode);
-        setSpellCheckPreference(null);
-        return;
+      function readPreferences() {
+        if (!accountId) {
+          setAuthoringMode(defaultAuthoringMode);
+          setSpellCheckPreference(null);
+          return;
+        }
+        try {
+          const stored = window.localStorage.getItem("vico:editor:mode:" + accountId);
+          const storedSpellCheck = window.localStorage.getItem("vico:editor:spellcheck:" + accountId);
+          setAuthoringMode(stored === "advanced" || stored === "simple" ? stored : defaultAuthoringMode);
+          setSpellCheckPreference(storedSpellCheck === "true" ? true : storedSpellCheck === "false" ? false : null);
+        } catch {
+          setAuthoringMode(defaultAuthoringMode);
+          setSpellCheckPreference(null);
+        }
       }
-      try {
-        const stored = window.localStorage.getItem("vico:editor:mode:" + accountId);
-        const storedSpellCheck = window.localStorage.getItem("vico:editor:spellcheck:" + accountId);
-        setAuthoringMode(stored === "advanced" || stored === "simple" ? stored : defaultAuthoringMode);
-        setSpellCheckPreference(storedSpellCheck === "true" ? true : storedSpellCheck === "false" ? false : null);
-      } catch {
-        setAuthoringMode(defaultAuthoringMode);
-        setSpellCheckPreference(null);
-      }
+      readPreferences();
+      const onStorage = (event: StorageEvent) => {
+        if (event.key === null || event.key === "vico:editor:mode:" + accountId
+          || event.key === "vico:editor:spellcheck:" + accountId) readPreferences();
+      };
+      window.addEventListener("storage", onStorage);
+      return () => window.removeEventListener("storage", onStorage);
     }, [accountId, defaultAuthoringMode]);
 
     function switchAuthoring(
@@ -187,6 +213,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(defaultValue);
       setPasteWarning(false);
       setFindOpen(false);
+      setRetainedAttachmentIds(null);
       publicationReplayRef.current = false;
       publicationPreparingRef.current = false;
       publicationPreparedRef.current = false;
@@ -196,8 +223,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const draft = useEditorDraft({
       ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
       initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null,
+        ...(initialPublishedRevisionId ? { retainedAttachmentIds: existingInlineAttachments.map((item) => item.id) } : {}),
         ...(initialPublishedRevisionId ? { publishedRevisionId: initialPublishedRevisionId } : {}) },
       restore: (payload) => {
+        setRetainedAttachmentIds(payload.retainedAttachmentIds ?? null);
         onDraftRestorePublishedRevisionId?.(payload.publishedRevisionId ?? null);
         historyRef.current = createEditorHistory(payload.body);
         onDraftRestoreParent?.(payload.parentPostId ?? null);
@@ -235,15 +264,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     function removeImage(id: string) {
       const source = historyRef.current.current.markdown;
-      const suffix = `](vico-attachment:${id})`;
-      let next = source;
-      let end = next.indexOf(suffix);
-      while (end !== -1) {
-        const start = next.lastIndexOf("![", end);
-        if (start < 0 || next.slice(start + 2, end).includes("\n")) break;
-        next = next.slice(0, start) + next.slice(end + suffix.length);
-        end = next.indexOf(suffix);
-      }
+      const next = removeAttachmentImages(source, id);
 
       if (next === source) return;
       const oldSelection = historyRef.current.current.selection;
@@ -280,7 +301,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     });
 
     const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0
-      || existingInlineAttachments.length > 0;
+      || retainedAttachments.length > 0;
     const publicationReady = !disabled && !draftPublicationPending && !attachments.blocking && hasPublishContent;
     useEffect(() => { onPublicationReadyChange?.(publicationReady); }, [onPublicationReadyChange, publicationReady]);
 
@@ -350,7 +371,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             ? submitter
             : undefined;
 
-        void draft.preparePublication().then((fence) => {
+        void draft.preparePublication().then(async (fence) => {
+          // A fulfilled promise can resume while the browser is still firing
+          // the original submit event. Native requestSubmit then does nothing
+          // (HTML's firing-submission-events guard). Replay in the next task,
+          // after that algorithm has finished, retaining native validation.
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+          if (previousScopeRef.current !== editorScope || !form.isConnected) return;
           publicationPreparingRef.current = false;
           if (!fence) return;
           if (draftIdInputRef.current) draftIdInputRef.current.value = fence.draftId;
@@ -892,15 +919,62 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
     }), [mode, value, authoringMode, draft]);
 
+    const commonTools = (<>
+      <div className="markdown-editor-tool-group">
+        <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
+        <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
+      </div>
+      <div className="markdown-editor-tool-group">
+        <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
+          onClick={() => replaceSelection("**", "**", 2)}><strong>B</strong></button>
+        <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")}
+          onClick={() => replaceSelection("_", "_", 1)}><em>I</em></button>
+        <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
+          onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
+        <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")}
+          onClick={insertLink}>↗</button>
+        <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")}
+          onClick={() => prefixSelectedLines(() => "- ")}>•</button>
+        <button type="button" disabled={disabled} aria-label={t("editorNumberedList")} title={t("editorNumberedList")}
+          onClick={() => prefixSelectedLines((index) => String(index + 1) + ". ")}>1.</button>
+        <button type="button" disabled={disabled} aria-label={t("editorQuote")} title={t("editorQuote")}
+          onClick={() => prefixSelectedLines(() => "> ")}>❞</button>
+        <details className="markdown-editor-extra-menu">
+          <summary aria-label={t("editorEmoji")}>☺</summary>
+          <div className="markdown-editor-extra-options">
+            {["😀", "🙂", "👍", "❤️"].map((emoji) =>
+              <button type="button" key={emoji} disabled={disabled} onClick={() => replaceSelection(emoji, "", emoji.length)}
+                aria-label={emoji}>{emoji}</button>,
+            )}
+          </div>
+        </details>
+      </div>
+    </>);
     return (
-      <ForumInlineAttachmentProvider attachments={[...existingInlineAttachments, ...attachments.previewAttachments]}>
+      <ForumInlineAttachmentProvider attachments={[...retainedAttachments, ...attachments.previewAttachments]}>
       <div ref={editorRef} className={"markdown-editor" + (fullScreen ? " is-fullscreen" : "")}
         data-mode={mode} data-authoring={authoringMode}
+        role={fullScreen ? "dialog" : undefined}
+        aria-modal={fullScreen || undefined}
+        aria-label={fullScreen ? t("editorFullScreen") : undefined}
         onDragOver={attachments.handleDragOver}
         onDrop={attachments.handleDrop}
         onPasteCapture={attachments.handlePaste}
         onKeyDownCapture={(event) => {
           if (event.key === "Escape" && fullScreen) setFullScreen(false);
+          if (fullScreen && event.key === "Tab") {
+            const controls = [...event.currentTarget.querySelectorAll<HTMLElement>(
+              'button, input, textarea, select, summary, a[href], [contenteditable="true"]',
+            )].filter((node) => node.tabIndex >= 0 && !node.matches(":disabled") && node.getClientRects().length > 0);
+            const next = event.shiftKey ? controls.at(-1) : controls[0];
+            const edge = event.shiftKey ? controls[0] : controls.at(-1);
+            if (next && document.activeElement === edge) {
+              event.preventDefault();
+              next.focus();
+              return;
+            }
+          }
+          if (disabled || draftPublicationPending) return;
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             const form = editorRef.current?.closest("form");
@@ -909,10 +983,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               ? [...form.querySelectorAll<HTMLButtonElement>('button[type="submit"]')]
                 .find((button) => button.name === "intent" && button.value === draftPublicationIntent)
               : undefined;
+            if (explicit?.disabled) return;
             form.requestSubmit(explicit);
             return;
           }
-          if (authoringMode !== "simple" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+          if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
           const key = event.key.toLowerCase();
           if (key === "b" || key === "i" || key === "k") {
             event.preventDefault();
@@ -921,7 +996,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             if (key === "k") insertLink();
             return;
           }
-          if (key === "z" || key === "y") {
+          if (authoringMode === "simple" && (key === "z" || key === "y")) {
             event.preventDefault();
             travelHistory(key === "y" || event.shiftKey ? "redo" : "undo");
           }
@@ -932,41 +1007,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
             <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
             <input type="hidden" name="editorAttachmentIds" value={JSON.stringify(attachments.selectedAttachmentIds)} readOnly />
+            {initialPublishedRevisionId ? <input type="hidden" name="editorRetainedAttachmentIds"
+              value={JSON.stringify(retainedAttachments.map((item) => item.id))} readOnly /> : null}
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
           <div className="markdown-editor-formatting">
-            <div className="markdown-editor-tool-group">
-              <button type="button" disabled={disabled} title={t("editorUndo")} aria-label={t("editorUndo")} onClick={() => travelHistory("undo")}>↶</button>
-              <button type="button" disabled={disabled} title={t("editorRedo")} aria-label={t("editorRedo")} onClick={() => travelHistory("redo")}>↷</button>
-            </div>
-            <div className="markdown-editor-tool-group">
-              <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
-                onClick={() => replaceSelection("**", "**", 2)}><strong>B</strong></button>
-              <button type="button" disabled={disabled} aria-label={t("editorItalic")} title={t("editorItalic")}
-                onClick={() => replaceSelection("_", "_", 1)}><em>I</em></button>
-              <button type="button" disabled={disabled} aria-label={t("editorStrike")} title={t("editorStrike")}
-                onClick={() => replaceSelection("~~", "~~", 2)}><s>S</s></button>
-              <button type="button" disabled={disabled} aria-label={t("editorLink")} title={t("editorLink")}
-                onClick={insertLink}>↗</button>
-              <button type="button" disabled={disabled} aria-label={t("editorBulletedList")} title={t("editorBulletedList")}
-                onClick={() => prefixSelectedLines(() => "- ")}>•</button>
-              <button type="button" disabled={disabled} aria-label={t("editorNumberedList")} title={t("editorNumberedList")}
-                onClick={() => prefixSelectedLines((index) => String(index + 1) + ". ")}>1.</button>
-              <button type="button" disabled={disabled} aria-label={t("editorQuote")} title={t("editorQuote")}
-                onClick={() => prefixSelectedLines(() => "> ")}>❞</button>
-              <details className="markdown-editor-extra-menu">
-                <summary aria-label={t("editorEmoji")}>☺</summary>
-                <div className="markdown-editor-extra-options">
-                  {["😀", "🙂", "👍", "❤️"].map((emoji) =>
-                    <button type="button" key={emoji} disabled={disabled} onClick={() => replaceSelection(emoji, "", emoji.length)}
-                      aria-label={emoji}>{emoji}</button>,
-                  )}
-                </div>
-              </details>
+            {!compactToolbar ? commonTools : null}
               <details className="markdown-editor-extra-menu">
                 <summary aria-label={t("editorMoreTools")}>•••</summary>
                 <div className="markdown-editor-extra-options">
+                  {compactToolbar ? commonTools : null}
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "## ")}>H2</button>
                   <button type="button" disabled={disabled} onClick={() => prefixSelectedLines(() => "### ")}>H3</button>
                   <button type="button" disabled={disabled} onClick={() => insertBlockAfterSelection("---")}>—</button>
@@ -999,6 +1050,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     onClick={() => void pasteFromClipboard("plain")}>{t("editorPastePlain")}</button>
                   {authoringMode === "advanced" ? (
                     <>
+            <label className="markdown-editor-language">
+              <span>{t("editorCodeLanguage")}</span>
+              <input
+                type="text"
+                dir="ltr"
+                value={codeLanguage}
+                maxLength={32}
+                disabled={disabled}
+                inputMode="text"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={t("editorCodeLanguagePlaceholder")}
+                onChange={(event) => setCodeLanguage(event.target.value)}
+              />
+            </label>
+
                       <button type="button" disabled={disabled} aria-label={t("editorInlineCode")} onClick={() => {
                         const selection = sourceSelection();
                         if (!selection) return;
@@ -1015,24 +1082,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                   ) : null}
                 </div>
               </details>
-            </div>
           </div>
 
-            <label className="markdown-editor-language">
-              <span>{t("editorCodeLanguage")}</span>
-              <input
-                type="text"
-                dir="ltr"
-                value={codeLanguage}
-                maxLength={32}
-                disabled={disabled}
-                inputMode="text"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={t("editorCodeLanguagePlaceholder")}
-                onChange={(event) => setCodeLanguage(event.target.value)}
-              />
-            </label>
           <div className="markdown-editor-controls">
             <button type="button" disabled={disabled} onClick={() => switchAuthoring(authoringMode === "simple" ? "advanced" : "simple")}>
               {t(authoringMode === "simple" ? "editorAdvanced" : "editorSimple")}
@@ -1201,8 +1252,28 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             ))}
           </div>
         ) : null}
-        {attachments.element}
-        {draft.element}
+        {retainedAttachments.length > 0 ? (
+          <section className="markdown-editor-attachments" aria-label={t("editorAttachments")}>
+            {retainedAttachments.map((item) => (
+              <div key={item.id} className="markdown-editor-attachment">
+                <ForumAttachmentDisplay attachment={item} url={item.url} deferImage />
+                <button type="button" disabled={disabled} onClick={() => {
+                  const ids = retainedAttachments.filter((file) => file.id !== item.id).map((file) => file.id);
+                  setRetainedAttachmentIds(ids);
+                  removeImage(item.id);
+                  draft.noteFields({ retainedAttachmentIds: ids }, true);
+                }}>{t("editorAttachmentRemove")}</button>
+              </div>
+            ))}
+          </section>
+        ) : null}
+        {attachments.details}
+        {draft.conflictElement}
+        <div className="markdown-editor-footer">
+          {attachments.controls}
+          <div className="markdown-editor-draft-state" aria-live="polite">{draft.statusLabel}</div>
+          {actions ? <div className="markdown-editor-actions">{actions}</div> : null}
+        </div>
       </div>
       </ForumInlineAttachmentProvider>
     );
