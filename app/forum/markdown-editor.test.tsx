@@ -570,6 +570,42 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveValue(source);
   });
 
+  it("keeps each prose paragraph auto-directed through Simple, Preview, Split and mode changes", async () => {
+    const source = [
+      "English **first** with \`cmd --flag\`.",
+      "",
+      "עברית **שנייה**.",
+      "",
+      "## العربية عنوان",
+      "",
+      "- רשימה אחת",
+      "- English item",
+      "",
+      "\`\`\`ts",
+      "const value = 1;",
+      "\`\`\`",
+    ].join("\n");
+    renderEditor(<form><div dir="rtl"><label htmlFor="body">Body</label>
+      <MarkdownEditor id="body" name="body" defaultValue={source} /></div></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const visual = () => document.querySelector(".markdown-editor-visual")!;
+    expect([...visual().querySelectorAll("p")].slice(0, 2)
+      .map((p) => p.getAttribute("dir"))).toEqual(["auto", "auto"]);
+    expect(visual().querySelector("h2")).toHaveAttribute("dir", "auto");
+    expect([...visual().querySelectorAll("li")].map((li) => li.getAttribute("dir")))
+      .toEqual(["auto", "auto"]);
+    expect(visual().querySelector("code")).toHaveAttribute("dir", "ltr");
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(document.querySelector(".markdown-editor-preview .post-body p")).toHaveAttribute("dir", "auto");
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    await chooseView("split");
+    expect(document.querySelector(".markdown-editor-preview .post-body p")).toHaveAttribute("dir", "auto");
+    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
+    expect(visual().querySelector("p")).toHaveAttribute("dir", "auto");
+    expect(textarea).toHaveValue(source);
+    expect(new FormData(textarea.form!).get("body")).toBe(source);
+  });
+
   it("fails closed when an Advanced selection restored into Simple crosses protected content", async () => {
     const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
     renderEditor(
