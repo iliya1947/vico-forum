@@ -52,6 +52,7 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { fetchDraftMetadata, readLocalEditorDraft } from "./draft-client";
+import { attributedQuoteMarkdown } from "./quote-markdown";
 
 export function HomeView({
   locale,
@@ -2377,6 +2378,32 @@ export function TopicView({
     focusReplyForm();
   }
 
+  function insertAttributedQuote(postId: string, content: string) {
+    const source = topic.posts.find((post) => post.id === postId);
+    const editor = replyEditorRef.current;
+    if (!source || !editor) return;
+    const permalink = forumTopicPath(locale, topic.id) + "#post-" + encodeURIComponent(postId);
+    const quote = attributedQuoteMarkdown({
+      author: source.authorName,
+      messageNumber: messageNumberById.get(postId)!,
+      permalink,
+      content,
+    });
+    editor.setDraftParentPostId(postId);
+    setReplyTargetPostId(postId);
+    setQuoteSelectionErrorPostId(null);
+    editor.insertText(quote);
+    const heading = document.getElementById("reply-heading");
+    if (typeof heading?.scrollIntoView === "function") {
+      heading.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }
+
+  function quoteWholeMessage(postId: string) {
+    const source = topic.posts.find((post) => post.id === postId);
+    if (source) insertAttributedQuote(postId, source.body.originalContent);
+  }
+
   function quoteSelectedText(postId: string) {
     const postElement = document.getElementById(`post-${postId}`);
     const bodyElement = postElement?.querySelector<HTMLElement>("[data-message-body]");
@@ -2396,21 +2423,7 @@ export function TopicView({
       return;
     }
 
-    replyEditorRef.current?.setDraftParentPostId(postId);
-    setReplyTargetPostId(postId);
-    setQuoteSelectionErrorPostId(null);
-    const quote = selectedText
-      .split(/\r?\n/u)
-      .map((line) => `> ${line}`)
-      .join("\n") + "\n\n";
-
-    const editor = replyEditorRef.current;
-    if (!editor) return;
-    editor.insertText(quote);
-    const heading = document.getElementById("reply-heading");
-    if (typeof heading?.scrollIntoView === "function") {
-      heading.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
+    insertAttributedQuote(postId, selectedText);
   }
   return (
     <ContentGenerationNavigationBoundary
@@ -2733,6 +2746,11 @@ export function TopicView({
                               </button>
                             )}
                             {canParticipate && (
+                              <button type="button" onClick={() => quoteWholeMessage(post.id)}>
+                                {t("quoteWholeMessage")}
+                              </button>
+                            )}
+                            {canParticipate && (
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
@@ -2954,6 +2972,9 @@ export function TopicView({
                         {canParticipate && (
                           <div className="topic-message-participation">
                             <div className="topic-message-participation-actions">
+                              <button type="button" onClick={() => quoteWholeMessage(post.id)}>
+                                {t("quoteWholeMessage")}
+                              </button>
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
