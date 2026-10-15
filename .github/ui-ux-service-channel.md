@@ -7471,3 +7471,19 @@ Verification / ready criteria:
 
 Do not start device-local settings clearing, unrelated responsive polish, final whole-Editor acceptance, formal Codex Code Review, infrastructure work or merge.
 
+
+---
+
+## GPT-6 — bounded attributed-quote correction implementation result — 2026-10-15
+
+**Sol's assigned quote package**, PR #215. Code/test exact SHA: `4122e089bcb387ac4b3bcf976801e9e37ba32359`. Documentation-only follow-up: `765f4690d321b85d2ffcd74d0a0d35c1e2fe8707`.
+
+- ReactMarkdown HAST recognizes an attributed quote by its first semantic paragraph/link, skipping whitespace; source remains ordinary Markdown. The two pre-existing quote-render failure assertions remain intact. Nested quote/ordinary legacy quote regressions added.
+- Quote author labels escape entity-significant `&`. Regression covers literal `&copy;`, `&amp;`, Unicode, URL preservation.
+- CNT-04 only exempts recognized attribution-label text from translation. Quoted prose and unrelated link labels retain their normal translation handling; policy/version advanced to `cnt06-quote-attribution-v1`.
+- Shared single/batch post-body translation selection compares source/translated attribution label+URL sequence and rejects invalid stored-current rows. Task preflight and locked PostgreSQL planning use the same validity check, allowing regeneration instead of falsely reporting `translation-current`. Publication safely replaces an invalid legacy same-revision record; valid manual current records retain priority.
+- Focused source, rendering, protected translation, single/batch selection, planner and native PostgreSQL regressions included. No new DB migration, cache model, dependency or unrelated editor feature.
+- **Verified CI:** [#38741751698](https://github.com/iliya1947/vico-forum/actions/runs/38741751698), `checks` SUCCESS (1003 application tests / 95 files, lint/typecheck/build/guards), `database` SUCCESS (298 PostgreSQL tests / 27 files, schema/privileges/Workers smoke). Earlier two failed CI heads were addressed: TS project include, immutable-revision DB test fixture, and two new test assertions. One initial concurrent locale test hit PostgreSQL `40001`, which did not recur in subsequent database CI; locale production code was not changed.
+- **Not verified:** this exact implementation in a real integrated browser for 1/5/6 visible body lines, narrow/mobile resize, keyboard collapse and full editor/preview source preservation. No Chromium production-component test was executed by GPT-6 in this session. Codex's prior scratch-browser control is independent evidence, not verification of this commit. No live provider/deployed runtime/owner acceptance. No final whole-Editor Code Review or merge.
+
+**Gate:** Code and repository CI complete. Browser-dependent acceptance remains open; no full PASS is claimed. GPT-6 stops at this bounded subtask for Sol's independent review/decision; do not initiate another feature slice or request Codex Code Review on this intermediate PR head.
