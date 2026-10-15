@@ -629,7 +629,7 @@ describe("MarkdownEditor", () => {
   });
 
   it("keeps manual direction through Simple/Advanced and Undo/Redo without editing technical blocks", async () => {
-    const source = "עברית אבג\n\n\`\`\`js\nlet x = 1;\n\`\`\`";
+    const source = "עברית אבג\n\n```js\nlet x = 1;\n```";
     renderEditor(<form><label htmlFor="body">Body</label>
       <MarkdownEditor id="body" name="body" defaultValue={source} />
     </form>);
