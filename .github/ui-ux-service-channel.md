@@ -7489,3 +7489,18 @@ Do not start device-local settings clearing, unrelated responsive polish, final 
 **Gate:** Code and repository CI complete. Browser-dependent acceptance remains open; no full PASS is claimed. GPT-6 stops at this bounded subtask for Sol's independent review/decision; do not initiate another feature slice or request Codex Code Review on this intermediate PR head.
 
 **Documentation-only final PR #215 head:** `765f4690d321b85d2ffcd74d0a0d35c1e2fe8707`, [CI #38742211502](https://github.com/iliya1947/vico-forum/actions/runs/38742211502) — `checks` SUCCESS, `database` SUCCESS. Runtime/test code unchanged from the fully verified code/test head `4122e089bcb387ac4b3bcf976801e9e37ba32359`. Browser gate remains open; no Sol PASS claimed.
+
+
+---
+
+## Owner clarification — Editor 2.0 test/implementation independence — 2026-10-15
+
+For Editor 2.0, GPT-5.6 Sol must explicitly guard against bidirectional test gaming:
+
+- implementation must satisfy the product/source-of-truth contract and real production behavior, not be shaped merely to make the current fixture/assertion pass;
+- tests must verify the required behavior and causal invariant, not be weakened or rewritten merely to match the current implementation;
+- on every relevant failure, distinguish a production defect from a fixture/test defect before changing either side;
+- green CI is supporting evidence only; Sol independently inspects the production path and test adequacy, and requires real-browser/real-boundary evidence where the unit environment cannot model the behavior;
+- regressions should fail for the causal defect they are intended to guard and should remain valid across technically correct implementation choices.
+
+This is an owner process requirement for the remaining Editor 2.0 work and Sol review gates.
