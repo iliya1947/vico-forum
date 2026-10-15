@@ -23,6 +23,23 @@ describe("Editor 2.0 lossless document foundation", () => {
     expect(setParagraphDirection(source, { start: 3, end: source.indexOf("second") }, "rtl")).toBeNull();
   });
 
+  it.each([
+    ["Setext H1", "Before\n\nTitle\n===\n\nAfter", "Before\n\nTitle {:vico-dir=rtl}\n===\n\nAfter"],
+    ["Setext H2 CRLF", "Before\r\n\r\nTitle\r\n---\r\n\r\nAfter", "Before\r\n\r\nTitle {:vico-dir=rtl}\r\n---\r\n\r\nAfter"],
+    ["ATX closing hashes", "Before\n\n## Title ##\n\nAfter", "Before\n\n## Title {:vico-dir=rtl} ##\n\nAfter"],
+    ["ATX closing hashes and inline formatting", "## **Title** ###", "## **Title** {:vico-dir=rtl} ###"],
+    ["Plain ATX heading", "## Title", "## Title {:vico-dir=rtl}"],
+  ])("preserves %s when applying, changing and resetting direction", (_case, source, expected) => {
+    const selected = source.indexOf("Title") + 2;
+    const originalSelection = { start: selected, end: selected };
+    const forced = setParagraphDirection(source, originalSelection, "rtl");
+    expect(forced?.markdown).toBe(expected);
+    const changed = setParagraphDirection(forced!.markdown, originalSelection, "ltr");
+    expect(changed?.markdown).toBe(expected.replace("{:vico-dir=rtl}", "{:vico-dir=ltr}"));
+    const reset = setParagraphDirection(changed!.markdown, originalSelection, "auto");
+    expect(reset?.markdown).toBe(source);
+  });
+
   it("does not change source during view/mode switches or reparse", () => {
     const source = "  alpha  \r\n\r\n```ts\nconst x = 1;\n```\r\n\r\nunknown ** markup";
     const document = createEditorHistory(source);
