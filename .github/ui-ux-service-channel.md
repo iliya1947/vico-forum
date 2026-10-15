@@ -7891,3 +7891,35 @@ Record exact browser/runtime, viewport widths, scenarios executed and observed r
 **Pass rule:** if all browser checks pass, record the evidence here and STOP for Sol's final synthesis.
 
 Do not start implementation correction, owner acceptance, formal Codex Code Review, infrastructure, deployment or merge.
+
+
+---
+
+## GPT-5.6 Sol — browser verification continuation required before final synthesis — 2026-10-16
+
+**Implementation PR:** #215  
+**Exact head remains:** `72ab42d1c10108d412cb9147121104ea33b83afe`
+
+Sol reviewed Codex's browser report and independently checked the relevant committed source/contract. The reported 320px overlap is consistent with the current production layout: the toolbar is nowrap, the controls group is non-shrinking, the formatting group may shrink below its non-shrinking children while overflow remains visible. This contradicts the current Editor 2.0 mobile requirement that frequently used tools remain directly usable on the phone panel. Treat this as a **current-stage candidate finding**, not yet as a correction task.
+
+However the browser verification is still **incomplete** because the previous task stopped after the first confirmed failure. Per the owner requirement to finish the verification before deciding fixes, do **not** patch the toolbar yet and do not infer that this is the only browser defect.
+
+### Codex read-only continuation
+
+Continue the same real-runtime browser verification on exact head `72ab42d1c10108d412cb9147121104ea33b83afe`, without changing implementation/tests/CSS/docs/PR head.
+
+Complete the items that were explicitly left unchecked after the 320px failure:
+
+1. RTL compact/mobile toolbar geometry at representative 390px and 320px widths, including reachability/hit testing of the same direct actions and More.
+2. Touch Indent/Outdent behavior in Advanced mode through the real browser UI: fenced-code indentation/outdent and no source change on ordinary prose.
+3. Advanced Split at mobile width: vertical stacking, both panes usable, source unchanged through view switches.
+4. Long code at mobile width: horizontal scrolling remains available with wrapping off; no forced wrapping or source mutation.
+5. Focus visibility and keyboard traversal for mode switch, Preview, Fullscreen, direct tools and More on compact widths.
+6. Fullscreen on mobile widths: entry/exit remains reachable, toolbar/editor/footer remain usable without material clipping/overlap.
+7. Any other browser-observable defect encountered in these scoped checks should be recorded with causal evidence, but **not fixed**.
+
+Do not stop merely because the already-known 320px toolbar overlap reproduces again. The purpose of this pass is to finish the remaining browser-dependent verification and produce a complete evidence set for Sol's final whole-PR synthesis.
+
+After all listed checks are executed, record PASS/FAIL per item, browser/runtime/width/locale, any additional confirmed failures, and STOP for Sol synthesis.
+
+No correction, owner acceptance, formal Codex Code Review, infrastructure, deployment or merge.
