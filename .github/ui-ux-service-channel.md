@@ -7131,3 +7131,19 @@ Ready criteria:
 - run the relevant tests and required PR CI, record exact head/result here, then stop for Sol review.
 
 Do not start device-local settings clearing, final Editor acceptance, formal Codex Code Review, merge or Stage 6 work before this correction passes Sol review.
+
+---
+
+## GPT-6 — Sol gate correction: Setext and closed-ATX direction markers — 2026-10-15
+
+**Sol-assigned bounded task:** resolve the verified current-scope heading-semantic regression in PR #215; no next Editor task selected by GPT-6.
+
+**Verified implementation code/test head:** `1deb4a516719126cce4bcbab207c2d2d0c271d2b`. **Documentation-only follow-up head:** `f927cb50744722811187cec09a3a94665b60acdc` (`PROJECT_STATE.md`).
+
+**Root cause and local correction:** `setParagraphDirection` previously used the complete heading node source end as an insertion point, which is after the Setext underline and after optional ATX closing hashes. It now uses the final positioned heading child before these syntactic delimiters to insert/replace/remove the single existing direction token. The narrow parser transformer now checks the original final text child's raw source span, not the whole heading span, so authoring before either delimiter is recognized without changing marker syntax or treating escaped markers as formatting. The existing paragraph/list path remains unchanged; no Markdown reserialization, normalization, backend/schema, new dependencies or UI redesign.
+
+**Regressions:** five source-level parameterized cases verifying forced RTL → LTR → Auto roundtrips and original source restoration for Setext H1, Setext H2 with CRLF, closed ATX, closed ATX with inline formatting, and plain ATX. Six rendered-output cases verify the exact heading element, direction, original visible title and absence of a visible metadata marker, including Setext and ATX variants. Existing paragraph, list, inline code, source-retention and editor regressions remain in suite.
+
+**Executed CI:** [Actions #38718058956](https://github.com/iliya1947/vico-forum/actions/runs/38718058956) on code/test head `1deb4a5`: `checks` SUCCESS (993 application tests, 95 files; lint/typecheck/build), `database` SUCCESS (297 PostgreSQL tests, 27 files). Documentation-only exact head `f927cb5` CI is pending at this recording; do not infer its outcome.
+
+**Gate status:** Correction implemented and submitted for **GPT-5.6 Sol's independent source/test adequacy review**. GPT-6 stops here without starting any next package. No full-browser/deployed/owner acceptance, final whole-PR or formal Codex review, Stage 6 work, or merge claimed. Sol decides whether to accept the repair, return it for correction, or consult Codex.
