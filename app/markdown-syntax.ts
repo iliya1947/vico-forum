@@ -1,4 +1,3 @@
-import type { Nodes } from "mdast";
 import { fromMarkdown, type Options as FromMarkdownOptions } from "mdast-util-from-markdown";
 import {
   gfmStrikethroughFromMarkdown,
@@ -50,11 +49,17 @@ export function remarkForumStrikethrough(this: unknown): undefined {
  * trailing, unescaped token on a paragraph/heading is interpreted. Parsed
  * source positions retain their original offsets for precise visual editing.
  */
-type ForumMdastNode = Nodes;
+interface ForumMdastNode {
+  type: string;
+  value?: string;
+  children?: ForumMdastNode[];
+  position?: { start: { offset?: number }; end: { offset?: number } };
+  data?: { hProperties?: { dir?: string } };
+}
 
 function applyParagraphDirections(node: ForumMdastNode, source: string): void {
-  if ("children" in node) node.children.forEach((child) => applyParagraphDirections(child, source));
-  if (node.type === "listItem" && node.children.length === 1) {
+  node.children?.forEach((child) => applyParagraphDirections(child, source));
+  if (node.type === "listItem" && node.children?.length === 1) {
     const direction = node.children[0]?.data?.hProperties?.dir;
     if (direction === "ltr" || direction === "rtl") {
       node.data ??= {};
@@ -62,7 +67,7 @@ function applyParagraphDirections(node: ForumMdastNode, source: string): void {
     }
   }
   if (node.type !== "paragraph" && node.type !== "heading") return;
-  const last = node.children.at(-1);
+  const last = node.children?.at(-1);
   if (last?.type !== "text" || !last.value) return;
   const start = node.position?.start.offset;
   const end = node.position?.end.offset;
@@ -75,7 +80,7 @@ function applyParagraphDirections(node: ForumMdastNode, source: string): void {
   if (last.position?.end.offset !== undefined) {
     last.position.end.offset -= marker[0].length;
   }
-  if (!last.value) node.children.pop();
+  if (!last.value) node.children!.pop();
   node.data ??= {};
   node.data.hProperties = { ...node.data.hProperties, dir: marker[1] as "ltr" | "rtl" };
 }
