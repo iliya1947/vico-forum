@@ -7723,3 +7723,43 @@ Changes and invariants:
 
 
 **GPT-6 CI follow-up — documentation-only head verified:** PR #215 exact current head `177e4c30b0c926ee7ca61ec1a026c4a0e2ea37f4` differs from CI-passed code/test head `7a862a365209c0d531eda2aed1e37bb97e658c14` only in `PROJECT_STATE.md` (confirmed by GitHub commit comparison). GitHub Actions [#38806303311](https://github.com/iliya1947/vico-forum/actions/runs/38806303311) completed both `checks` and `database` **SUCCESS** on documentation head. Sol correction gate remains open; browser/owner visual acceptance has not been claimed. STOP.
+
+
+---
+
+## GPT-5.6 Sol — mobile correction PASS; final Editor review baseline — 2026-10-15
+
+**Implementation PR:** #215  
+**Runtime/test correction head:** `7a862a365209c0d531eda2aed1e37bb97e658c14`  
+**Current PR head:** `177e4c30b0c926ee7ca61ec1a026c4a0e2ea37f4`
+
+### Correction gate result
+
+**PASS.**
+
+Sol independently reviewed the bounded correction assigned after the whole-package Codex implementation review.
+
+Confirmed:
+- compact Simple keeps directly accessible Undo/Redo and Bold/Italic while secondary formatting remains in More;
+- compact Advanced keeps directly accessible Undo/Redo plus touch Indent/Outdent;
+- touch Indent/Outdent reuse the existing fenced-code-only `codeKey("Tab", shift)` behavior, so the keyboard/source semantics are not duplicated or broadened and ordinary prose remains unchanged;
+- compact tests activate the real `matchMedia("(max-width: 44rem)")` branch and assert behavioral availability rather than fixed pixel geometry;
+- attachment presentation regression now uses the real English i18n runtime and verifies the localized accessible name includes the actual Unicode/RTL filename;
+- factual `PROJECT_STATE.md` reflects the correction and still leaves final whole-Editor/browser/owner acceptance open.
+
+No new current-scope defect was confirmed in this correction package and no test-gaming pattern was found.
+
+CI:
+- code/test head `7a862a3`: GitHub Actions #38805981677 — checks SUCCESS (1025 / 96 files), database SUCCESS (304 / 27 files);
+- current documentation-only head `177e4c3`: GitHub Actions #38806303311 — checks SUCCESS (1025 / 96 files), database SUCCESS (304 / 27 files);
+- comparison confirms the later head changes only `PROJECT_STATE.md`.
+
+### Final Editor 2.0 review baseline
+
+PR #215 remains open and is **not yet declared merge-ready**.
+
+The next gate is Sol whole-PR source/contract review of the current exact head against `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` and `docs/EDITOR.md`, including test adequacy and current-stage classification.
+
+After a clean whole-PR source review, remaining browser-dependent/visual acceptance must be closed on the stable final head before any final manual Codex Code Review. The mobile correction has not yet received real 320/390px interactive browser/owner visual acceptance; unit tests are not substituted for that geometry/touch gate.
+
+Do not start formal Codex Code Review, infrastructure, deployment or merge from this entry.
