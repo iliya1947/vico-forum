@@ -277,7 +277,7 @@ const longValue = "code";
 
   it("sets independent automatic direction on mixed-language prose blocks without changing source", () => {
     const source = [
-      "English **first** with \`const x = 1\`.",
+      "English **first** with `const x = 1`.",
       "",
       "עברית **שנייה**.",
       "",
@@ -288,9 +288,9 @@ const longValue = "code";
       "",
       "> العربية اقتباس",
       "",
-      "\`\`\`ts",
+      "```ts",
       "const answer = 42;",
-      "\`\`\`",
+      "```",
     ].join("\n");
     const { container } = renderMarkdown(source, "rtl");
     const body = container.querySelector(".post-body")!;
