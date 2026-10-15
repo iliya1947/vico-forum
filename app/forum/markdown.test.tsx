@@ -108,7 +108,7 @@ describe("attributed public message quotes", () => {
     const legacy = container.querySelectorAll(".forum-quoted-block");
     expect(legacy).toHaveLength(3);
     expect(legacy[2]?.querySelector(".forum-quote-attribution")).toBeNull();
-    expect(legacy[2]?.querySelector("a")).toHaveAttribute("href", "https://example.com/");
+    expect(legacy[2]?.querySelector("a")).toHaveAttribute("href", "https://example.com");
   });
 
   it("collapses only measured long quotes, restores content and retains source metadata", async () => {
