@@ -87,7 +87,7 @@ function applyParagraphDirections(node: ForumMdastNode, source: string): void {
 
 /** Render only the two recognized direction values; never pass user HTML through. */
 export function remarkForumParagraphDirection() {
-  return (tree: ReturnType<typeof fromMarkdown>, file: { value: string }): void =>
+  return (tree: ReturnType<typeof fromMarkdown>, file: { value: string | Uint8Array }): void =>
     applyParagraphDirections(tree, String(file.value));
 }
 
