@@ -1202,7 +1202,7 @@ describe("Help & solutions modes and authoring", () => {
     await expect(load("https://forum.example/en/attention?mode=signals")).rejects.toMatchObject({ status: 403 });
     expect(readHelp).toHaveBeenCalledTimes(1);
     const rendered = renderRoute(AttentionRoute, sec, "/en/attention?mode=security&group=attachments", "en", "ltr");
-    expect(screen.getByRole("link", { name: "Security" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Security" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Signals" })).not.toBeInTheDocument();
     rendered.unmount();
     allowed.clear();
