@@ -42,8 +42,53 @@ export function remarkForumStrikethrough(this: unknown): undefined {
   return undefined;
 }
 
+
+/**
+ * Explicit per-block direction marker for authored Markdown:
+ * "Example {:vico-dir=rtl}". The marker is ordinary source text, but only a
+ * trailing, unescaped token on a paragraph/heading is interpreted. Parsed
+ * source positions retain their original offsets for precise visual editing.
+ */
+interface DirectionNode {
+  type: string;
+  value?: string;
+  children?: DirectionNode[];
+  position?: { start: { offset?: number }; end: { offset?: number } };
+  data?: { hProperties?: { dir?: "ltr" | "rtl" } };
+}
+
+function applyParagraphDirections(node: DirectionNode): void {
+  node.children?.forEach(applyParagraphDirections);
+  if (node.type === "listItem" && node.children?.length === 1) {
+    const direction = node.children[0]?.data?.hProperties?.dir;
+    if (direction) {
+      node.data ??= {};
+      node.data.hProperties = { ...node.data.hProperties, dir: direction };
+    }
+  }
+  if (node.type !== "paragraph" && node.type !== "heading") return;
+  const last = node.children?.at(-1);
+  if (last?.type !== "text" || !last.value) return;
+  const marker = /[ \\t]+\\{:vico-dir=(ltr|rtl)\\}$/u.exec(last.value);
+  if (!marker) return;
+  last.value = last.value.slice(0, -marker[0].length);
+  if (last.position?.end.offset !== undefined) {
+    last.position.end.offset -= marker[0].length;
+  }
+  if (!last.value) node.children!.pop();
+  node.data ??= {};
+  node.data.hProperties = { ...node.data.hProperties, dir: marker[1] as "ltr" | "rtl" };
+}
+
+/** Render only the two recognized direction values; never pass user HTML through. */
+export function remarkForumParagraphDirection() {
+  return (tree: DirectionNode): void => applyParagraphDirections(tree);
+}
+
 export function parseForumMarkdown(value: string): ReturnType<typeof fromMarkdown> {
-  return fromMarkdown(value, forumMarkdownFromOptions);
+  const tree = fromMarkdown(value, forumMarkdownFromOptions);
+  applyParagraphDirections(tree);
+  return tree;
 }
 
 export function serializeForumMarkdown(tree: Parameters<typeof toMarkdown>[0]): string {
