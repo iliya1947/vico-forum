@@ -7077,3 +7077,19 @@ GPT-6 retains implementation ownership and may resume this bounded correction af
 
 
 **Documentation-only head final CI follow-up — 2026-10-15:** PR #215 `b33c69b10650efcdab7e669419803962ef400399` passed [Actions #38657866372](https://github.com/iliya1947/vico-forum/actions/runs/38657866372): `checks` and `database` SUCCESS. No implementation code changes after green code/tests head `a864e37`. GPT-6 has stopped at the automatic-direction subtask boundary.
+
+---
+
+## GPT-6 — Editor 2.0 manual paragraph-direction switch — 2026-10-15
+
+**Implementation PR #215:** exact code/tests head `3b515a5625d57eaaecae68024fc12d23474e1dbe`; subsequent documentation-only head `0235a898e861256383d9b0a35a55fd0e10cbecac`. GPT-6 was sole implementation writer; no final Codex Code Review, merge or external deployment.
+
+**Technical outcome:** The agreed explicit Auto/LTR/RTL control appears in the existing editor extra-tools menu, in Simple and Advanced, with EN/RU/HE localization/fingerprints. On a selected prose paragraph, heading or list item, changing direction inserts/replaces/removes only the trailing visible authored-source marker `{:vico-dir=rtl}` or `{:vico-dir=ltr}`. An explicit attribute is part of Markdown content (not a per-device preference); default Auto adds no marker. A shared narrow mdast transform makes precisely recognized unescaped source markers safe `dir` attributes and hides them in Simple/Preview/published views; nonrecognized/escaped markers stay literal. Inline/fenced code remains LTR. The visual editor retains source spans without serializing/reformatting other content; Undo/Redo and mode/preview switching preserve the same source, including edit/revision storage as already implemented. No schema, API, storage service, dependency or translation/provider implementation change.
+
+**Implemented/regression checked:** Source-preserving per-paragraph formatting operation; markdown rendering across English/Hebrew/Arabic, headings, lists, escaped/literal marker and code; real mounted MarkdownEditor in Simple/Advanced with toolbar, preview and history; EN/RU/HE i18n fingerprints. Changes confined to `app/markdown-syntax.ts`, `app/forum/{editor-document,markdown,markdown-editor,visual-markdown-editor}.ts(x)`, relevant tests, extra-options CSS and catalog/manual packs plus the factual `EDITOR_SPEC.md` and `PROJECT_STATE.md` updates.
+
+**Verified code head:** [GitHub Actions CI #38659882047](https://github.com/iliya1947/vico-forum/actions/runs/38659882047) on `3b515a5` passed both `checks` (982 application tests / 95 files; lint, typecheck, builds, guards) and `database` (297 native PostgreSQL tests / 27 files). Documentation-only head `0235a898` must have its own CI checked; do not infer its result from the code head.
+
+**Limits/next:** This closes the bounded manual-direction implementation at source/tests/CI level. Not asserted: actual deployed browser/owner acceptance of the full Editor 2.0, whole-PR GPT-6/Sol/Codex reviews, mobile/screen-reader manual-matrix coverage. Following work may review device-local editor-settings clearing (§9.1), then full Editor acceptance, but stop here until the owner's next continuation command. Do not launch formal Codex review for this intermediate head.
+
+**Developer action:** Owner sends `...` to begin the next bounded Editor 2.0 subtask.
