@@ -8,7 +8,7 @@ import {
 
 describe("Editor 2.0 lossless document foundation", () => {
   it("persists a single paragraph's direction without touching other source spans", () => {
-    const source = "English *first*.\r\n\r\nעברית **second**.\r\n\r\n\`\`\`ts\nconst code = true;\n\`\`\`";
+    const source = "English *first*.\r\n\r\nעברית **second**.\r\n\r\n```ts\nconst code = true;\n```";
     const first = setParagraphDirection(source, { start: 3, end: 3 }, "rtl");
     expect(first?.markdown).toBe(source.replace("English *first*.", "English *first*. {:vico-dir=rtl}"));
     const second = setParagraphDirection(first!.markdown, {
@@ -16,7 +16,7 @@ describe("Editor 2.0 lossless document foundation", () => {
     }, "ltr");
     expect(second?.markdown).toContain("עברית **second**. {:vico-dir=ltr}");
     expect(second?.markdown).toContain("\r\n\r\n");
-    expect(second?.markdown).toContain("\`\`\`ts\nconst code = true;\n\`\`\`");
+    expect(second?.markdown).toContain("```ts\nconst code = true;\n```");
     const reset = setParagraphDirection(second!.markdown, { start: 4, end: 4 }, "auto");
     expect(reset?.markdown).toBe(source.replace("עברית **second**.", "עברית **second**. {:vico-dir=ltr}"));
     expect(setParagraphDirection(source, { start: source.indexOf("const"), end: source.indexOf("const") }, "rtl")).toBeNull();
