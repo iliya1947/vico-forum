@@ -606,6 +606,59 @@ describe("MarkdownEditor", () => {
     expect(new FormData(textarea.form!).get("body")).toBe(source);
   });
 
+  it("applies and removes a paragraph direction override through Advanced tools and preview", async () => {
+    const source = "English first.\n\nעברית second.\n\n\`\`\`ts\nconst x = 1;\n\`\`\`";
+    renderEditor(<form><div dir="rtl"><label htmlFor="body">Body</label>
+      <MarkdownEditor id="body" name="body" defaultAuthoringMode="advanced" defaultValue={source} />
+    </div></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(3, 3);
+    await userEvent.click(screen.getByText("•••"));
+    await userEvent.click(screen.getByRole("button", { name: "Right to left" }));
+    expect(new FormData(textarea.form!).get("body")).toBe(
+      source.replace("English first.", "English first. {:vico-dir=rtl}"));
+    await chooseView("preview");
+    const preview = document.querySelector(".markdown-editor-preview")!;
+    expect(preview.querySelector(".post-body p")).toHaveAttribute("dir", "rtl");
+    expect(preview.querySelector(".post-body p")).not.toHaveTextContent("vico-dir");
+    await chooseView("write");
+    textarea.setSelectionRange(3, 3);
+    await userEvent.click(screen.getByRole("button", { name: "Automatic" }));
+    expect(new FormData(textarea.form!).get("body")).toBe(source);
+  });
+
+  it("keeps manual direction through Simple/Advanced and Undo/Redo without editing technical blocks", async () => {
+    const source = "עברית אבג\n\n\`\`\`js\nlet x = 1;\n\`\`\`";
+    renderEditor(<form><label htmlFor="body">Body</label>
+      <MarkdownEditor id="body" name="body" defaultValue={source} />
+    </form>);
+    await userEvent.click(screen.getByText("•••"));
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const domSelection = window.getSelection()!;
+    const range = document.createRange();
+    range.selectNodeContents(leaf);
+    range.collapse(true);
+    domSelection.removeAllRanges();
+    domSelection.addRange(range);
+    fireEvent.mouseUp(leaf);
+    await userEvent.click(screen.getByRole("button", { name: "Left to right" }));
+    const withDirection = source.replace("עברית אבג", "עברית אבג {:vico-dir=ltr}");
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(new FormData(textarea.form!).get("body")).toBe(withDirection);
+    expect(document.querySelector(".markdown-editor-visual p")).toHaveAttribute("dir", "ltr");
+    expect(document.querySelector(".markdown-editor-visual p")).not.toHaveTextContent("vico-dir");
+    await userEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    expect(textarea.value).toBe(withDirection);
+    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
+    expect(new FormData(textarea.form!).get("body")).toBe(withDirection);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(textarea.form!).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(textarea.form!).get("body")).toBe(withDirection);
+  });
+
   it("fails closed when an Advanced selection restored into Simple crosses protected content", async () => {
     const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
     renderEditor(
