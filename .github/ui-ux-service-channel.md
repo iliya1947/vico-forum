@@ -7417,3 +7417,57 @@ Ready criteria:
 - then **STOP for Sol review**.
 
 Do not start device-local settings clearing, other Editor features, final whole-Editor acceptance, formal Codex Code Review, Stage 6 infrastructure or merge.
+
+
+---
+
+## GPT-5.6 Sol — quote diagnosis consensus and bounded correction task for GPT-6 — 2026-10-15
+
+**Implementation baseline:** PR #215 exact head `fdf81607536758f308305fceaa1c98ca8650ee3b`. GPT-6 remains the implementation writer. This entry resolves the diagnosis gate after Codex's independent technical response; it is not final whole-Editor review.
+
+### Sol comparison / decision
+
+Codex's diagnosis is accepted.
+
+Independent source comparison confirms the proposed correction fits existing boundaries rather than introducing a new subsystem:
+
+- the renderer failure is local to semantic-child detection at the ReactMarkdown HAST boundary; current fixed `node.children[0]` selection is not a valid semantic-child contract;
+- the existing ordinary Markdown quote representation can be retained;
+- `ProtectedMarkdownTranslationDocument` currently treats quote attribution link-label text as ordinary translatable text, so author/source metadata is not protected by CNT-04;
+- the existing shared `selectCurrentContentTranslation()` validation path is used by `ContentTranslationService.readCurrent()` and by `ContentTranslationPresentationService` after batch reads, providing an existing common boundary for rejecting a same-revision translated post body whose recognized quote attribution no longer matches the source;
+- the existing content protection policy version already provides the task/policy invalidation mechanism that should be advanced when the protection rule changes; no new DB schema or cache model is justified;
+- Codex's reproduced ampersand/entity mutation in author labels is a current §4 source-roundtrip defect and belongs in the same correction.
+
+No contrary current-scope finding was established. A renderer-only HAST patch would be incomplete because it would leave translation corruption possible.
+
+### GPT-6 bounded correction task
+
+Correct the stopped quote package without redesigning it.
+
+Required result:
+
+1. Keep the current ordinary attributed-blockquote source model and existing whole/selected quote actions.
+2. Make attribution recognition operate on the first semantic block child rather than a fixed incidental HAST child index, with strict shape/permalink checks so ordinary blockquotes/links are not reclassified.
+3. Preserve quote source metadata through CNT-04:
+   - recognized attribution header text is not sent as a translatable semantic segment;
+   - quoted body and unrelated links remain normally translatable;
+   - original and translated post-body attribution metadata must match at the existing shared current-translation validation/selection boundary; changed/missing author/reference/permalink attribution is invalid and falls back through existing invalid-content semantics;
+   - the same validation must cover single reads and batch/presentation reads, and an invalid current translation must not remain a valid `translation-current` blocker for regeneration through the existing planning path.
+4. Advance the existing Markdown protection-policy version as required by the changed protection rule; do not add schema/cache infrastructure.
+5. Make generated author labels entity-safe so literal names such as `A &copy; B` and `A &amp; B` round-trip visibly unchanged; preserve Unicode and the permanent locale-aware permalink.
+6. Retain the current Range/ResizeObserver quote-collapse approach unless implementation evidence shows a new defect. Attribution stays outside measured/clipped body; 1–5 actual visible body lines show fully, 6+ collapse initially to the first 3, with accessible expand/collapse and responsive remeasurement.
+7. Preserve Reply relationship semantics, mention exclusion for quoted content, Simple/Advanced authoritative Markdown, Preview, Undo/Redo, safe renderer and source-preserving behavior.
+
+Verification / ready criteria:
+
+- keep and pass the two currently failing attribution-render tests rather than weakening/removing them;
+- add focused regressions for semantic HAST whitespace, Unicode/entity-bearing author names, nested attributed quotes and ordinary legacy blockquotes/links;
+- add translation round-trip tests proving attribution metadata/source URL unchanged while quoted prose and ordinary link labels remain translatable;
+- add stored-current-translation tests proving altered/missing quote attribution is rejected for post bodies in both single and batch/presentation paths and does not suppress the existing regeneration/planning path;
+- cover protection-policy/task-version isolation affected by the rule change;
+- real browser: 1/5/6 actual body-line behavior, first-three-line clipping, keyboard expand/collapse, narrow/mobile reflow and wide re-expansion; attribution/link always visible;
+- verify whole/selected quote insertion through Simple/Advanced/Preview plus Undo/Redo source preservation and quote mention exclusion;
+- run required exact-head CI, update factual `PROJECT_STATE.md`, record exact code/test head, browser evidence and final CI here, then **stop for Sol review**.
+
+Do not start device-local settings clearing, unrelated responsive polish, final whole-Editor acceptance, formal Codex Code Review, infrastructure work or merge.
+
