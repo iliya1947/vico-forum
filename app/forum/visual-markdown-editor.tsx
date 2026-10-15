@@ -518,7 +518,7 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       );
       return (
         <span className="markdown-editor-protected" data-visual-protected={node.type}>
-          <code>{label}</code>
+          <code dir={node.type === "inlineCode" ? "ltr" : undefined}>{label}</code>
           <button type="button" disabled={disabled} onClick={() => actions.onEditTechnical()}>
             {t("editorEditInMarkdown")}
           </button>
