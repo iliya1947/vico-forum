@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type CSSProperties, typ
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
-import { remarkForumStrikethrough } from "../markdown-syntax";
+import { remarkForumParagraphDirection, remarkForumStrikethrough } from "../markdown-syntax";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
 
 export interface ForumInlineAttachment {
@@ -311,14 +311,14 @@ function ForumCodeBlock({
 
 const markdownComponents: Components = {
   // Each prose block follows its own first strong character, not the UI locale.
-  p: ({ children }) => <p dir="auto">{children}</p>,
-  li: ({ children }) => <li dir="auto">{children}</li>,
-  h1: ({ children }) => <h1 dir="auto">{children}</h1>,
-  h2: ({ children }) => <h2 dir="auto">{children}</h2>,
-  h3: ({ children }) => <h3 dir="auto">{children}</h3>,
-  h4: ({ children }) => <h4 dir="auto">{children}</h4>,
-  h5: ({ children }) => <h5 dir="auto">{children}</h5>,
-  h6: ({ children }) => <h6 dir="auto">{children}</h6>,
+  p: ({ children, dir }) => <p dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</p>,
+  li: ({ children, dir }) => <li dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</li>,
+  h1: ({ children, dir }) => <h1 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h1>,
+  h2: ({ children, dir }) => <h2 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h2>,
+  h3: ({ children, dir }) => <h3 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h3>,
+  h4: ({ children, dir }) => <h4 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h4>,
+  h5: ({ children, dir }) => <h5 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h5>,
+  h6: ({ children, dir }) => <h6 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h6>,
   img: ({ src }) => <ForumInlineImage src={src} />,
   a: ({ children: linkChildren, href, title }) => (
     <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
@@ -355,13 +355,13 @@ function ForumTable({ table }: { table: MarkdownTable }) {
       <table className="forum-markdown-table">
         <thead><tr>{table.headers.map((cell, index) => (
           <th key={index} scope="col" style={{ textAlign: table.align[index] ?? undefined }}>
-            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
           </th>
         ))}</tr></thead>
         <tbody>{table.rows.map((row, index) => <tr key={index}>
           {row.map((cell, column) => (
             <td key={column} style={{ textAlign: table.align[column] ?? undefined }}>
-              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
             </td>
           ))}
         </tr>)}</tbody>
@@ -387,7 +387,7 @@ function ForumMarkdownBody({ children }: { children: string }) {
           <ReactMarkdown
             components={markdownComponents}
             key={index}
-            remarkPlugins={[remarkForumStrikethrough]} urlTransform={forumUrlTransform}
+            remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}
           >
             {segment.source}
           </ReactMarkdown>
