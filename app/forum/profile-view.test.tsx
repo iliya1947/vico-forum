@@ -1,11 +1,13 @@
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { createInstance } from "i18next";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { ProfileView } from "./profile-view";
+
+afterEach(cleanup);
 
 const profile = { id: "owner", name: "Owner", image: "javascript:alert(1)", joinedAt: "2026-09-01T00:00:00.000Z", bio: "<script>alert(1)</script>", githubUrl: "https://github.com/octocat", websiteUrl: "javascript:alert(1)", role: { slug: "user", displayName: "User", isSystem: true }, messageCount: 12, bestAnswerCount: 3 };
 function show(props: Partial<Parameters<typeof ProfileView>[0]> = {}) {

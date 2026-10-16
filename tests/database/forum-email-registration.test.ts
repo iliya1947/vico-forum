@@ -77,14 +77,25 @@ describe("Better Auth email/password registration and login on PostgreSQL 17", (
     expect(resolved.session?.user.email).toBe("new-forum-member@example.org");
   });
 
-  it("rejects an incorrect password and accepts the registered email/password", async () => {
+  it("rejects an incorrect password and accepts its own registered email/password fixture", async () => {
+    const email = "email-login-fixture@example.org";
+    const password = "independent secret 456";
+
+    const signUp = await runtime.handle(request("sign-up/email", {
+      name: "Email Login Fixture",
+      email,
+      password,
+    }, "203.0.113.75"));
+    expect(signUp.status).toBe(200);
+
     const invalid = await runtime.handle(request("sign-in/email", {
-      email: "new-forum-member@example.org", password: "incorrect password",
-    }));
+      email, password: "incorrect password",
+    }, "203.0.113.76"));
     expect(invalid.ok).toBe(false);
+
     const valid = await runtime.handle(request("sign-in/email", {
-      email: "new-forum-member@example.org", password: "strong secret 123",
-    }));
+      email, password,
+    }, "203.0.113.77"));
     expect(valid.status).toBe(200);
     expect(valid.headers.getSetCookie().join("; ")).toContain("session_token");
   });
