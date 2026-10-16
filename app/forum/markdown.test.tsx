@@ -499,15 +499,19 @@ const longValue = "code";
     localStorage.setItem(firstLines, "true");
 
     try {
-      const first = renderMarkdownForUser("~~~ts\nconst first = 1;\n~~~", firstUser);
-      expect(first.container.querySelector(".forum-code-block")).toHaveAttribute("data-wrap", "true");
-      expect(first.container.querySelector(".forum-code-block pre")).toHaveAttribute("data-line-numbers", "true");
-      first.unmount();
+      const view = renderMarkdownForUser("~~~ts\nconst first = 1;\n~~~", firstUser);
+      expect(view.container.querySelector(".forum-code-block")).toHaveAttribute("data-wrap", "true");
+      expect(view.container.querySelector(".forum-code-block pre")).toHaveAttribute("data-line-numbers", "true");
 
-      const second = renderMarkdownForUser("~~~ts\nconst second = 2;\n~~~", secondUser);
-      expect(second.container.querySelector(".forum-code-block")).toHaveAttribute("data-wrap", "false");
-      expect(second.container.querySelector(".forum-code-block pre")).toHaveAttribute("data-line-numbers", "false");
-      second.unmount();
+      view.rerender(
+        <I18nextProvider i18n={runtime()}>
+          <HeaderAuthProvider initialUser={{ id: secondUser, name: "Member" }}>
+            <ForumMarkdown>{"~~~ts\nconst second = 2;\n~~~"}</ForumMarkdown>
+          </HeaderAuthProvider>
+        </I18nextProvider>,
+      );
+      expect(view.container.querySelector(".forum-code-block")).toHaveAttribute("data-wrap", "false");
+      expect(view.container.querySelector(".forum-code-block pre")).toHaveAttribute("data-line-numbers", "false");
     } finally {
       [firstWrap, firstLines, secondWrap, secondLines].forEach((key) => localStorage.removeItem(key));
     }
