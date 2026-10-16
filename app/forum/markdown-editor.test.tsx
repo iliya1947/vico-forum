@@ -1843,11 +1843,14 @@ describe("MarkdownEditor", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(fullScreenButton).toHaveAttribute("aria-pressed", "true");
 
-    vi.spyOn(Element.prototype, "getClientRects")
-      .mockReturnValue([{}] as unknown as DOMRectList);
+    const textarea = screen.getByLabelText("Body");
+    const visibleControls = new Set<Element>([fullScreenButton, textarea]);
+    vi.spyOn(Element.prototype, "getClientRects").mockImplementation(function (this: Element) {
+      return (visibleControls.has(this) ? [{}] : []) as unknown as DOMRectList;
+    });
     const controls = [...dialog.querySelectorAll<HTMLElement>(
       'button, input, textarea, select, summary, a[href], [contenteditable="true"]',
-    )].filter((node) => node.tabIndex >= 0 && !node.matches(":disabled"));
+    )].filter((node) => node.tabIndex >= 0 && !node.matches(":disabled") && node.getClientRects().length > 0);
     expect(controls.length).toBeGreaterThan(1);
 
     const first = controls[0]!;
