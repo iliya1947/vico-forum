@@ -8158,3 +8158,31 @@ Owner merged PR #228. Package 2 is complete.
 (Fullscreen, Split synchronized scroll, account-scoped code preferences) in PR #215, before its final
 review. Do not start it without the next explicit developer command.
 
+
+
+---
+
+## GPT-5.6 Sol — Package 3 assigned to GPT-6 — 2026-10-16
+
+**Implementation PR:** #215  
+**Starting head:** `e47436e7506c4c42f91a16aed2005bd07bb39ab5`
+
+Package 3 from the Codex plan in PR #226 is now authorized: close the confirmed Editor current-contract regression gaps **RC-01…RC-03** on PR #215.
+
+Current-head recheck by Sol confirms the gaps are still present:
+
+- **RC-01 Fullscreen:** implementation has fullscreen state, dialog/aria semantics, Escape and fullscreen Tab handling, but `markdown-editor.test.tsx` has no dedicated fullscreen regression.
+- **RC-02 Split synchronized scroll:** implementation has bidirectional ratio-based `syncSplitScroll()`, including zero-scrollable-extent behavior and a >1px write guard, while current tests only exercise view switching/content preservation, not scroll synchronization.
+- **RC-03 account-scoped code preferences:** `ForumCodeBlock` restores `vico:editor:code-wrap:<accountId>` and `vico:editor:code-lines:<accountId>`, propagates same-document changes through `vico:code-preferences`, and listens for browser `storage`; current renderer tests do not cover restore, account isolation, same-document propagation, or the storage-event path.
+
+### Required result
+
+Add focused behavioral regressions for the existing contracts:
+
+1. Fullscreen enter/exit, dialog/ARIA state, Escape, and the bounded keyboard/focus behavior implemented for fullscreen.
+2. Split scroll synchronization in both directions, ratio mapping, zero-scrollable extent, and the loop/write guard behavior.
+3. Code preference restore for wrap and line numbers, account isolation, propagation between simultaneously mounted blocks in the same document, and browser `storage` event propagation.
+
+Keep this package bounded to regression coverage of existing Editor behavior. If a new production behavior defect is exposed by these tests, do not silently broaden the package to redesign/fix it: record the reproducible defect here and STOP for Sol synthesis.
+
+Run the focused affected tests and the applicable repository checks/CI on one stable final head. Record the exact head and evidence here, then STOP for Sol independent review. jsdom coverage does not replace the already-pending real-browser/narrow/mobile/RTL acceptance gate for PR #215; do not claim that gate complete from this package.
