@@ -21,12 +21,14 @@
 
 Source: PR #226, comment #6204020042.
 
-1. Package 1 — locale writer reliability.
-2. Package 2 — test isolation / independence.
-3. Package 3 — Editor current-contract regression coverage. Изначальная привязка плана к PR #215 отменена прямым решением владельца; audit implementation выполняется только в отдельном PR #229.
-4. Package 4 — RC-04…RC-09, отдельный bounded test-only пакет.
-5. Package 5 — governance / evidence отдельно от code packages.
-6. AC-01 — отдельный финальный real-runtime browser acceptance gate UI/UX pass.
+Исходная нумерация пакетов сохраняется для traceability, но владелец изменил порядок выполнения:
+
+1. Package 1 — locale writer reliability — завершён.
+2. Package 2 — test isolation / independence — завершён.
+3. Package 4 — RC-04…RC-09, отдельный bounded test-only пакет — следующий.
+4. Package 5 — governance / evidence отдельно от code packages.
+5. Package 3 — Editor current-contract regression coverage — перенесён владельцем в самый конец очереди correction packages. Audit implementation находится только в отдельном PR #229; PR #215 не используется.
+6. AC-01 — отдельный финальный real-runtime browser acceptance gate UI/UX pass после correction packages.
 
 ## Текущий статус
 
@@ -56,7 +58,7 @@ Implementation PR #228: `Fix test isolation and independence`.
   - email sign-in case получил собственный независимый account fixture;
 - Codex independent review не оставил confirmed current-scope findings.
 
-### Package 3 — перенесён в отдельный audit implementation PR #229
+### Package 3 — перенесён в отдельный audit implementation PR #229 и отложен в конец очереди
 
 Audit implementation PR: #229 — `Test audit Package 3 — Editor regression coverage`.
 
@@ -83,7 +85,8 @@ GitHub Actions CI #38918024909 завершён успешно для PR #229 ex
 `database` — success; `checks` — success; application suite — 96 files / 1031 tests passed,
 lint/typecheck/build/UI preview/metadata/schema-parity checks — success.
 
-Package 3 перенесён корректно и автоматическая проверка нового PR зелёная. Независимый Codex review
+Package 3 перенесён корректно и автоматическая проверка нового PR зелёная. По прямому решению владельца
+дальнейшая работа над ним остановлена до завершения Package 4 и Package 5. Независимый Codex review
 для PR #229 не запускался; случайный review служебного PR #226 не является review Package 3.
 
 Важно: название `Package 3` здесь означает только **test-audit Package 3 / RC-01…RC-03**.
@@ -91,7 +94,7 @@ Package 3 перенесён корректно и автоматическая 
 
 ### Package 4 — не начат
 
-RC-04…RC-09 остаются отдельным bounded test-only пакетом после Package 3.
+RC-04…RC-09 составляют следующий bounded test-only пакет. По решению владельца он выполняется до отложенного Package 3.
 
 ### Package 5 — не начат
 
@@ -106,4 +109,4 @@ Governance/evidence work остаётся отдельным от code packages.
 
 ## Следующая рабочая точка
 
-Завершить проверку **test-audit Package 3 в PR #229**. Package 4 не начинать до отдельной команды разработчика.
+Следующий пакет — **Package 4 / RC-04…RC-09**. Package 3 / PR #229 остаётся припаркованным до самого конца очереди correction packages.
