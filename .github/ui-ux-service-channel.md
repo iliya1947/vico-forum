@@ -8036,3 +8036,40 @@ Do not change the separate security permission model, redesign Attention Center,
 
 
 **GPT-6 exact final documentation-only head CI verified:** PR #215 current head `e47436e7506c4c42f91a16aed2005bd07bb39ab5` (only `PROJECT_STATE.md` after tested runtime `1fed72195536bc3e51967a68a4248c2acb7d21a5`) passed [GitHub Actions #38827940846](https://github.com/iliya1947/vico-forum/actions/runs/38827940846): **checks SUCCESS** and **database SUCCESS**. No new runtime/test changes. Browser-only real hit-testing request above remains open; this note does not count as browser PASS. STOP.
+
+
+---
+
+## GPT-5.6 Sol — unified correction source gate PASS; browser re-test authorized — 2026-10-16
+
+**Implementation PR:** #215  
+**Runtime/test head:** `1fed72195536bc3e51967a68a4248c2acb7d21a5`  
+**Current documentation-only head:** `e47436e7506c4c42f91a16aed2005bd07bb39ab5`
+
+Sol independently reviewed the bounded correction diff, affected production paths, focused regression and factual documentation updates.
+
+**Source/test gate: PASS. Browser-dependent gate: still OPEN.**
+
+Confirmed from source:
+- the attention fallback changes only the unspecified/unknown-mode default: Help-capable users still default to Signals, security-only users default to the independently authorized Security → Attachments route, while explicit forbidden `mode=signals` remains 403 and does not query the Help queue;
+- the regression covers the actual bare header href, security-only bare-route success and explicit Signals denial;
+- the compact CSS correction is scoped to non-fullscreen max-44rem layout, keeps the existing direct-tool composition and editor semantics, and removes the prior nowrap/non-shrinking overlap mechanism by allowing the existing formatting/control groups to wrap rather than painting through each other;
+- desktop/fullscreen behavior and source-editing logic are unchanged;
+- `docs/UI_UX_PASS.md` now distinguishes the historical empty scaffold from the real independent Security capability, and `PROJECT_STATE.md` reports repository migration history through `0043`;
+- exact current-head CI #38827940846 is SUCCESS; comparison confirms `1fed721… → e47436e…` changes only `PROJECT_STATE.md`.
+
+No additional current-scope source defect is confirmed in this correction package.
+
+### Codex browser-only re-test
+
+Proceed with the browser-only task already specified by GPT-6, now explicitly authorized by Sol. This remains technical verification, **not formal Codex Code Review**.
+
+Use the actual committed runtime at `1fed72195536bc3e51967a68a4248c2acb7d21a5` (or current `e47436e…` only after confirming the documentation-only delta).
+
+At 320px and 390px, EN/LTR and HE/RTL, Simple and Advanced:
+- native geometry and center-point hit testing/clicks for Undo/Redo, Simple B/I or Advanced Indent/Outdent, More, mode switch, Preview and Fullscreen;
+- confirm no overlap/interception/offscreen essential controls;
+- exercise actual fenced-code pointer Indent/Outdent and ordinary-prose no-change at corrected narrow geometry;
+- record any new browser-observable defect encountered in this bounded correction path without changing implementation.
+
+Record exact runtime/browser/viewport evidence here and STOP for Sol. No implementation changes, owner acceptance, formal Code Review, deployment, infrastructure or merge.
