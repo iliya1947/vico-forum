@@ -101,17 +101,19 @@ Package 3 перенесён корректно и автоматическая 
 - RC-04 — добавить negative coverage для cardinality и identity integrity в `buildContentGenerationView()`;
 - RC-05 — проверить persisted exact-current presentation по всем шести task states, а не только `completed`;
 - RC-06 — heartbeat 401 test должен явно проверять session revalidation, а не только остановку следующих heartbeat requests;
+- RC-07 — добавить PostgreSQL regression для глобального `DrizzleForumRepository.search()` с единым конкурирующим result set: одновременно title/tag/body candidates, source priority и deterministic tie-breaks `matchRank → activityAt → topicId`;
 - RC-08 — profile invalid-400 branch должен явно проверять возврат сохранённого draft;
 - RC-09 — notifications action route должен иметь dedicated negative cases для guest, cross-origin и missing/invalid notification ID.
 
-RC-07 исключён из correction scope как уже закрытый на актуальном `main`: PostgreSQL regression одним
-multi-candidate result set проверяет source-aware ranking `title → tags → body`.
+Важно: существующий multi-candidate regression `searchHelpSolutionsSimilar()` не закрывает RC-07,
+потому что это другой механизм поиска. Текущее PostgreSQL coverage глобального `search()` выполняет
+title/tag/body как отдельные запросы и не проверяет их совместное ранжирование.
 
 Package 4 остаётся test-only. Production logic, schema/migrations, dependencies, workflows и public contracts
 в его scope не входят.
 
 По актуальному `AGENTS.md` основную реализацию выполняет **Codex-5.6 Sol**. Для Package 4 ему нужно
-создать отдельный implementation PR от актуального `main`, закрыть только RC-04/05/06/08/09,
+создать отдельный implementation PR от актуального `main`, закрыть RC-04…RC-09,
 выполнить относящиеся tests/checks и зафиксировать в PR #226 implementation PR, exact head и результаты.
 PR #215 и PR #147 не использовать.
 
@@ -128,5 +130,5 @@ Governance/evidence work остаётся отдельным от code packages.
 
 ## Следующая рабочая точка
 
-**Codex-5.6 Sol** реализует Package 4 по актуальному scope RC-04/05/06/08/09 в отдельном implementation PR.
+**Codex-5.6 Sol** реализует Package 4 по актуальному scope RC-04…RC-09 в отдельном implementation PR.
 Package 3 / PR #229 остаётся припаркованным до самого конца очереди correction packages.
