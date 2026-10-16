@@ -1843,7 +1843,7 @@ describe("MarkdownEditor", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(fullScreenButton).toHaveAttribute("aria-pressed", "true");
 
-    vi.spyOn(HTMLElement.prototype, "getClientRects")
+    vi.spyOn(Element.prototype, "getClientRects")
       .mockReturnValue([{}] as unknown as DOMRectList);
     const controls = [...dialog.querySelectorAll<HTMLElement>(
       'button, input, textarea, select, summary, a[href], [contenteditable="true"]',
@@ -1923,6 +1923,13 @@ describe("MarkdownEditor", () => {
 
     source.set({ scrollHeight: 200, clientHeight: 200, scrollTop: 50 });
     target.set({ scrollTop: 90 });
+    target.writes.mockClear();
+    fireEvent.scroll(textarea);
+    expect(target.writes).toHaveBeenLastCalledWith(0);
+    expect(target.top()).toBe(0);
+
+    source.set({ scrollHeight: 1000, clientHeight: 200, scrollTop: 400 });
+    target.set({ scrollHeight: 300, clientHeight: 300, scrollTop: 40 });
     target.writes.mockClear();
     fireEvent.scroll(textarea);
     expect(target.writes).toHaveBeenLastCalledWith(0);
