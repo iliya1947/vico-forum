@@ -8079,3 +8079,24 @@ Comparison `b161a406… → b9c5d535…` contains only these three documentation
 
 **Status:** Package 1 complete and ready for owner merge of PR #227.
 
+
+
+---
+
+## GPT-6 — unified mobile toolbar and security-only navigation correction; browser gate pending — 2026-10-16
+
+**Source:** Sol final whole-Editor synthesis on PR #147, two confirmed current-scope defects at implementation PR #215 head `72ab42d1c10108d412cb9147121104ea33b83afe`. **Final code/test head:** `1fed72195536bc3e51967a68a4248c2acb7d21a5`. **Documentation-only current PR #215 head:** `e47436e7506c4c42f91a16aed2005bd07bb39ab5` (GitHub comparison: only `PROJECT_STATE.md` differs).
+
+**Corrections applied within the bounded package:**
+1. `app/styles.css`: compact inline editor at max 44rem now wraps the existing formatting group and control group into independently sized flex lines if necessary; direct Simple Undo/Redo/B/I and Advanced Undo/Redo/Indent/Outdent remain in the actual toolbar, More remains outside those actions, while mode/Preview/Fullscreen remain visible outside More. No components, source-editing logic or full-screen editor code was changed. This addresses the identified non-shrinking/visible-overflow overlap cause at narrow widths without building a separate toolbar.
+2. `app/routes/attention.tsx`: a request without recognized `mode` defaults to Security only for users without Help attention permissions (and authorized with independent `forum.attachmentSecurity.read`). Explicit `mode=signals`, `complaints`, and `security` are preserved; explicit forbidden Signals remains 403 for security-only. Existing header link to bare `/:locale/attention` now lands on the authorized Security → Attachments reader, preserving Help and Security permission isolation. No new permission, role-name branch, or Help mutation change.
+3. `app/forum/public-read.test.tsx`: regression exercises the actual header href for security-only auth presentation, loads that same bare path with only the Security capability and asserts a permitted Security/Attachments reader, while explicit forbidden Signals still 403 with no Help reader queries.
+4. `docs/UI_UX_PASS.md`: distinguishes historical empty Security scaffold authorization from the current independently protected suspicious-upload events. `PROJECT_STATE.md`: corrects repository migration history from `0037` to `0043` and records the actual correction and outstanding acceptance.
+
+**Exact-code CI:** [#38827692880](https://github.com/iliya1947/vico-forum/actions/runs/38827692880), head `1fed721`: **checks SUCCESS** (1026 app / 96 files, lint/typecheck/build), **database SUCCESS** (304 PostgreSQL / 27 files, schema/manifest/evidence gates). Earlier intermediate `dac3bfd` failed one regression because the fallback incorrectly treated *explicit* `mode=signals` like an unspecified mode; this was corrected without weakening the regression on `1fed721`. Documentation-only head `e47436e` has a separate CI run #38827940846; status may still be pending at this message.
+
+**Unresolved, NOT PASS:** GPT-6 has not performed actual Chromium hit-testing on this exact runtime head. The chat execution environment has Chromium but no Vico checkout/dependencies or reachable GitHub/local Workers+PostgreSQL runtime; no synthetic HTML or jsdom can establish narrow-screen geometry. This is a verification capability boundary, not proof that the CSS is correct. Do not mark the correction/browser gate or Editor 2.0 ready for merge on CI alone.
+
+**Codex — request only a read-only real-browser verification, NOT formal Codex Code Review:** on exact code head `1fed721` (or documentation-only `e47436e` after confirming no runtime delta), launch the actual committed React Router/Workers editor with disposable DB and Chromium. At 320px and 390px, EN/LTR and HE/RTL, both Simple and Advanced, measure native element geometry and use native center-point hit tests/clicks for direct Undo/Redo, B/I or code Indent/Outdent, More, mode switch, Preview and Fullscreen. Verify no overlapping/intercepted targets or offscreen essential controls; exercise actual Advanced fenced-code touch Indent/Outdent and out-of-code no-change. Document actual route, viewport, results and any failures here without editing PR #215 implementation. After this evidence, **Sol** determines accept/return. No production deployment, provider setup or formal review.
+
+**GPT-6 STOP** at browser-dependent gate pending real evidence; no claim of interactive mobile PASS or owner visual acceptance.
