@@ -1827,4 +1827,116 @@ describe("MarkdownEditor", () => {
     expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveValue("**preview me**");
   });
+
+  it("exposes fullscreen dialog semantics, traps edge focus, and exits with Escape", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="fullscreen-body">Body</label>
+        <MarkdownEditor id="fullscreen-body" name="body" defaultAuthoringMode="advanced" defaultValue="Body" />
+      </>,
+    );
+
+    const fullScreenButton = screen.getByRole("button", { name: "Full screen" });
+    await userEvent.click(fullScreenButton);
+
+    const dialog = screen.getByRole("dialog", { name: "Full screen" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(fullScreenButton).toHaveAttribute("aria-pressed", "true");
+
+    const textarea = screen.getByLabelText("Body");
+    const visibleControls = new Set<Element>([fullScreenButton, textarea]);
+    vi.spyOn(Element.prototype, "getClientRects").mockImplementation(function (this: Element) {
+      return (visibleControls.has(this) ? [{}] : []) as unknown as DOMRectList;
+    });
+    const controls = [...dialog.querySelectorAll<HTMLElement>(
+      'button, input, textarea, select, summary, a[href], [contenteditable="true"]',
+    )].filter((node) => node.tabIndex >= 0 && !node.matches(":disabled") && node.getClientRects().length > 0);
+    expect(controls.length).toBeGreaterThan(1);
+
+    const first = controls[0]!;
+    const last = controls.at(-1)!;
+    last.focus();
+    fireEvent.keyDown(last, { key: "Tab" });
+    expect(first).toHaveFocus();
+
+    first.focus();
+    fireEvent.keyDown(first, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
+
+    fireEvent.keyDown(last, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Full screen" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Full screen" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("synchronizes Split scrolling both ways with ratio, zero-extent, and write guards", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="split-scroll-body">Body</label>
+        <MarkdownEditor id="split-scroll-body" name="body" defaultAuthoringMode="advanced"
+          defaultValue={"Line 1\n\nLine 2"} />
+      </>,
+    );
+    await chooseView("split");
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const preview = screen.getByRole("region", { name: "Markdown preview" }) as HTMLElement;
+
+    function scrollBox(element: HTMLElement, initial: {
+      scrollHeight: number;
+      clientHeight: number;
+      scrollTop: number;
+    }) {
+      let state = { ...initial };
+      const writes = vi.fn((value: number) => { state.scrollTop = value; });
+      Object.defineProperties(element, {
+        scrollHeight: { configurable: true, get: () => state.scrollHeight },
+        clientHeight: { configurable: true, get: () => state.clientHeight },
+        scrollTop: {
+          configurable: true,
+          get: () => state.scrollTop,
+          set: (value: number) => { writes(value); },
+        },
+      });
+      return {
+        writes,
+        set(next: Partial<typeof state>) { state = { ...state, ...next }; },
+        top() { return state.scrollTop; },
+      };
+    }
+
+    const source = scrollBox(textarea, { scrollHeight: 1000, clientHeight: 200, scrollTop: 400 });
+    const target = scrollBox(preview, { scrollHeight: 900, clientHeight: 300, scrollTop: 0 });
+
+    fireEvent.scroll(textarea);
+    expect(target.writes).toHaveBeenLastCalledWith(300);
+    expect(target.top()).toBe(300);
+
+    target.set({ scrollTop: 150 });
+    source.writes.mockClear();
+    fireEvent.scroll(preview);
+    expect(source.writes).toHaveBeenLastCalledWith(200);
+    expect(source.top()).toBe(200);
+
+    source.set({ scrollHeight: 1000, clientHeight: 200, scrollTop: 400 });
+    target.set({ scrollTop: 300.5 });
+    target.writes.mockClear();
+    fireEvent.scroll(textarea);
+    expect(target.writes).not.toHaveBeenCalled();
+    expect(target.top()).toBe(300.5);
+
+    source.set({ scrollHeight: 200, clientHeight: 200, scrollTop: 50 });
+    target.set({ scrollTop: 90 });
+    target.writes.mockClear();
+    fireEvent.scroll(textarea);
+    expect(target.writes).toHaveBeenLastCalledWith(0);
+    expect(target.top()).toBe(0);
+
+    source.set({ scrollHeight: 1000, clientHeight: 200, scrollTop: 400 });
+    target.set({ scrollHeight: 300, clientHeight: 300, scrollTop: 40 });
+    target.writes.mockClear();
+    fireEvent.scroll(textarea);
+    expect(target.writes).toHaveBeenLastCalledWith(0);
+    expect(target.top()).toBe(0);
+  });
+
 });
