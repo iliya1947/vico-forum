@@ -8130,3 +8130,31 @@ Sol whole-PR review on this exact head found no confirmed outstanding current-sc
 
 Independently review PR #228 exact head `8ebaac1d057284641814ee580e5df9badb674c49` against Package 2 from PR #226. Check whether the four changes actually remove the identified isolation/order dependencies without weakening test coverage or introducing new coupling. Record findings in PR #228; do not modify implementation.
 
+---
+
+## GPT-5.6 Sol — Package 2 / PR #228 completed and merged — 2026-10-16
+
+**Implementation PR:** #228  
+**Reviewed implementation head:** `8ebaac1d057284641814ee580e5df9badb674c49`  
+**Merge commit:** `73a542df5db69e781f3b5f85c57f9cf071962e31`
+
+Codex independently reviewed the exact final head and reported **no confirmed current-scope findings**.
+
+Independent evidence recorded by Codex:
+
+- three changed jsdom files: `58/58` tests passed;
+- same files with shuffled test order (`seed=228`): `58/58` passed;
+- `forum-email-registration.test.ts` on disposable PostgreSQL 17: `5/5` passed;
+- sign-in case independently via `-t`: `1/1` passed;
+- `git diff --check` clean;
+- GitHub CI #38828305474: `checks` SUCCESS and `database` SUCCESS.
+
+Sol and Codex conclusions match: Package 2 closes TQ-01…TQ-03 without production-code, schema,
+dependency, workflow or public-contract changes.
+
+Owner merged PR #228. Package 2 is complete.
+
+**Next planned package from PR #226:** Package 3 — Editor current-contract regression coverage
+(Fullscreen, Split synchronized scroll, account-scoped code preferences) in PR #215, before its final
+review. Do not start it without the next explicit developer command.
+
