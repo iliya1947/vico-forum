@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-11
+Последнее обновление: 2026-10-16
 
 ## Назначение
 
@@ -23,6 +23,19 @@
 ## Текущая фаза
 
 Vico Forum находится в ранней pre-release разработке.
+
+- PR #227 (in progress) исправляет подтверждённый test-suite audit reliability defect
+  controlled locale writer без schema/migration/public-contract изменений. Graph-wide
+  desired-state mutations теперь в существующей короткой `SERIALIZABLE` transaction берут
+  `LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE` после transaction-local deadlines и до
+  первого registry read/DML, поэтому concurrent writers сериализуются до построения proposed
+  graph. Прежний probabilistic locale-concurrency test заменён deterministic two-client
+  PostgreSQL 17 regression: второй writer с retry budget `0` блокируется на lock до commit
+  первого writer, не выполняет ранний `SELECT`, затем видит committed dependency и сохраняет
+  валидный graph. Code/test head `b161a406` прошёл PR CI #38823419790 (`checks` +
+  `database` success). Independent Codex review не нашёл implementation/test defects и
+  подтвердил только docs/source-of-truth correction, выполняемую в том же PR. Исторические
+  упоминания прежних CI rerun сохраняются как история наблюдавшегося flake.
 
 - Registration/email login merged by owner in PR #214 (2026-10-10): existing Better Auth 1.7.4
   enables sign-up and sign-in with email/password, default auto-session and 8–128 character
