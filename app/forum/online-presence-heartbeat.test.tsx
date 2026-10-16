@@ -11,9 +11,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function show(user: HeaderAuthUser | null, locale = "en") {
+function show(user: HeaderAuthUser | null, locale = "en", loader?: () => Promise<null>) {
   const router = createMemoryRouter([{
     path: ":locale",
+    ...(loader ? { loader } : {}),
     element: <HeaderAuthProvider initialUser={user}><OnlinePresenceHeartbeat /></HeaderAuthProvider>,
   }], { initialEntries: [`/${locale}`] });
   return render(<RouterProvider router={router} />);
@@ -41,11 +42,12 @@ describe("browser presence heartbeat", () => {
   });
 
   it("stops heartbeat requests and revalidates session after a 401", async () => {
+    const loader = vi.fn(async () => null);
     const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status: 401 }));
     vi.stubGlobal("fetch", fetchMock);
-    show({ id: "member", name: "Member" });
+    show({ id: "member", name: "Member" }, "en", loader);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
     fireEvent(document, new Event("visibilitychange"));
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

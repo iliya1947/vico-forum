@@ -359,4 +359,97 @@ describe("Stage 4 connected forum authorization flow", () => {
       await managementPool.end();
     }
   });
+
+  it("searches one global result set ordered by source priority, activity, and topic ID", async () => {
+    await insertUser("search-rank-author", "Search Rank Author");
+
+    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
+    await forum.createCategory({ id: "search-rank-category", name: "Search Rank Category" });
+    await forum.createSection({
+      id: "search-rank-section",
+      categoryId: "search-rank-category",
+      name: "Search Rank Section",
+    });
+
+    const createCandidate = async ({
+      id,
+      title,
+      body,
+      tags = [],
+    }: {
+      id: string;
+      title: string;
+      body: string;
+      tags?: Array<{ key: string; name: string }>;
+    }) => forum.createTopicWithInitialPost({
+      id,
+      sectionId: "search-rank-section",
+      authorId: "search-rank-author",
+      titleRevision: {
+        id: `${id}-title-revision`,
+        originalContent: title,
+        sourceLocale: "en",
+      },
+      tags,
+      initialPost: {
+        id: `${id}-post`,
+        topicId: id,
+        authorId: "search-rank-author",
+        bodyRevision: {
+          id: `${id}-body-revision`,
+          originalContent: body,
+          sourceLocale: "en",
+        },
+      },
+    });
+
+    await createCandidate({
+      id: "search-rank-title",
+      title: "Rankneedle in the title",
+      body: "No matching body text",
+    });
+    await createCandidate({
+      id: "search-rank-tag",
+      title: "Matching tag candidate",
+      body: "No matching body text",
+      tags: [{ key: "rankneedle", name: "Rankneedle" }],
+    });
+    await createCandidate({
+      id: "search-rank-body-newer",
+      title: "Newest body candidate",
+      body: "Rankneedle in the body",
+    });
+    await createCandidate({
+      id: "search-rank-body-z",
+      title: "Body tie candidate Z",
+      body: "Rankneedle in the body",
+    });
+    await createCandidate({
+      id: "search-rank-body-a",
+      title: "Body tie candidate A",
+      body: "Rankneedle in the body",
+    });
+
+    const activityByTopic = [
+      ["search-rank-title", "2026-01-01T00:00:00Z"],
+      ["search-rank-tag", "2026-02-01T00:00:00Z"],
+      ["search-rank-body-newer", "2026-03-03T00:00:00Z"],
+      ["search-rank-body-z", "2026-03-02T00:00:00Z"],
+      ["search-rank-body-a", "2026-03-02T00:00:00Z"],
+    ] as const;
+    for (const [topicId, activityAt] of activityByTopic) {
+      await client.query("update forum_topics set created_at = $2 where id = $1", [topicId, activityAt]);
+      await client.query("update forum_posts set created_at = $2 where topic_id = $1", [topicId, activityAt]);
+    }
+
+    const results = await forum.search("rankneedle");
+
+    expect(results.map(({ id }) => id)).toEqual([
+      "search-rank-title",
+      "search-rank-tag",
+      "search-rank-body-newer",
+      "search-rank-body-z",
+      "search-rank-body-a",
+    ]);
+  });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumReaderContext, forumWriterContext } from "../forum/request-context";
+import { ForumEntityNotFoundError } from "../../db/forum-repository";
 import { action, loader } from "./notifications";
 
 const session = {
@@ -14,6 +15,29 @@ function context(authenticated = true) {
   const value = new RouterContextProvider();
   value.set(authSessionContext, authenticated ? session : null);
   return value;
+}
+
+function openRequest({
+  origin = "https://forum.example",
+  notificationId = "notification-1",
+}: {
+  origin?: string | null;
+  notificationId?: string | null;
+} = {}) {
+  const body = new URLSearchParams({ intent: "open" });
+  if (notificationId !== null) body.set("notificationId", notificationId);
+  return new Request("https://forum.example/en/notifications", {
+    method: "POST",
+    headers: {
+      ...(origin ? { Origin: origin } : {}),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+}
+
+function responseStatus(value: unknown) {
+  return (value as { init: { status: number } }).init.status;
 }
 
 describe("notifications route", () => {
@@ -49,6 +73,71 @@ describe("notifications route", () => {
         createdAt: "2026-10-03T10:00:00.000Z",
         readAt: null,
       }],
+    });
+  });
+
+  it("rejects a guest action before reading notification storage", async () => {
+    const value = context(false);
+    const markReplyNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+
+    const result = await action({
+      request: openRequest(),
+      params: { locale: "en" },
+      context: value,
+    });
+
+    expect(responseStatus(result)).toBe(401);
+    expect(markReplyNotificationRead).not.toHaveBeenCalled();
+  });
+
+  it("rejects a cross-origin action before reading notification storage", async () => {
+    const value = context();
+    const markReplyNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+
+    const result = await action({
+      request: openRequest({ origin: "https://evil.example" }),
+      params: { locale: "en" },
+      context: value,
+    });
+
+    expect(responseStatus(result)).toBe(403);
+    expect(markReplyNotificationRead).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing notification ID before reading notification storage", async () => {
+    const value = context();
+    const markReplyNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+
+    const result = await action({
+      request: openRequest({ notificationId: null }),
+      params: { locale: "en" },
+      context: value,
+    });
+
+    expect(responseStatus(result)).toBe(400);
+    expect(markReplyNotificationRead).not.toHaveBeenCalled();
+  });
+
+  it("returns not found for an invalid notification ID", async () => {
+    const value = context();
+    const markReplyNotificationRead = vi.fn(async () => {
+      throw new ForumEntityNotFoundError("notification does not exist");
+    });
+    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+
+    const result = await action({
+      request: openRequest({ notificationId: "missing-notification" }),
+      params: { locale: "en" },
+      context: value,
+    });
+
+    expect(responseStatus(result)).toBe(404);
+    expect(markReplyNotificationRead).toHaveBeenCalledExactlyOnceWith({
+      userId: "user-1",
+      notificationId: "missing-notification",
     });
   });
 

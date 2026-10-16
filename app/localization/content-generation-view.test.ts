@@ -5,7 +5,11 @@ import {
   contentGenerationUnitKey,
   unavailableContentGenerationView,
 } from "./content-generation-view";
-import type { ContentGenerationTaskStatus } from "./content-generation-status";
+import {
+  ContentGenerationStatusIntegrityError,
+  type ContentGenerationTaskState,
+  type ContentGenerationTaskStatus,
+} from "./content-generation-status";
 import type { ContentTranslationPresentation } from "./content-translation-presentation";
 import type { ContentTranslationRevision } from "./content-translation";
 
@@ -114,15 +118,59 @@ describe("content generation loader view", () => {
     expect(view[1]).toMatchObject({ automatic: true, explicitRequired: false, state: "idle" });
   });
 
-  it("treats persisted exact-current presentation as current regardless of task state", () => {
-    const view = buildContentGenerationView(
-      [title],
-      [translated(title)],
-      [status(title, "completed")],
-      "he",
-    );
+  it.each([
+    "idle",
+    "pending",
+    "processing",
+    "deferred",
+    "failed",
+    "completed",
+  ] satisfies readonly ContentGenerationTaskState[])(
+    "treats persisted exact-current presentation as current for %s task state",
+    (state) => {
+      const view = buildContentGenerationView(
+        [title],
+        [translated(title)],
+        [status(title, state)],
+        "he",
+      );
 
-    expect(view[0]).toMatchObject({ state: "current", automatic: false });
+      expect(view[0]).toMatchObject({
+        state: "current",
+        automatic: false,
+        explicitRequired: false,
+      });
+    },
+  );
+
+  it.each([
+    ["missing presentation", [title], [], [status(title, "idle")]],
+    ["extra presentation", [title], [original(title), original(title)], [status(title, "idle")]],
+    ["missing status", [title], [original(title)], []],
+    ["extra status", [title], [original(title)], [status(title, "idle"), status(title, "idle")]],
+  ] as const)("rejects inconsistent cardinality: %s", (_case, revisions, presentations, statuses) => {
+    const build = () => buildContentGenerationView(revisions, presentations, statuses, "he");
+
+    expect(build).toThrowError(ContentGenerationStatusIntegrityError);
+    expect(build).toThrowError("content generation loader inputs have inconsistent cardinality");
+  });
+
+  it.each([
+    ["presentation content type", { ...original(title), contentType: "post-body" }, status(title, "idle")],
+    ["presentation content id", { ...original(title), contentId: "topic-other" }, status(title, "idle")],
+    ["presentation revision id", { ...original(title), revisionId: "title-other" }, status(title, "idle")],
+    ["status content type", original(title), { ...status(title, "idle"), contentType: "post-body" }],
+    ["status content id", original(title), { ...status(title, "idle"), contentId: "topic-other" }],
+    ["status revision id", original(title), { ...status(title, "idle"), revisionId: "title-other" }],
+  ] satisfies ReadonlyArray<[
+    string,
+    ContentTranslationPresentation,
+    ContentGenerationTaskStatus,
+  ]>)("rejects mismatched %s", (_case, presentation, taskStatus) => {
+    const build = () => buildContentGenerationView([title], [presentation], [taskStatus], "he");
+
+    expect(build).toThrowError(ContentGenerationStatusIntegrityError);
+    expect(build).toThrowError("content generation loader identity mismatch");
   });
 
   it("treats completed plus independently read original presentation as bounded convergence", () => {
