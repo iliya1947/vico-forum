@@ -47,6 +47,13 @@
 - Stage 6 external infrastructure/deployment не возобновляется без отдельного указания владельца.
 - Во время review-цикла проверка и исправление разделены: изменения implementation допускаются только после завершения проверки и подтверждения current-Stage defect.
 
+## Review cycle
+
+- ChatGPT-5.6 Sol completed its independent whole-PR review of PR #215 on exact implementation head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
+- Findings are intentionally not published in this service PR while the sequential review cycle is still in progress.
+- Implementation was not changed during the review.
+- Next reviewer: ChatGPT-6 must independently review the same exact head against the current task, Stage and source-of-truth documentation without receiving Sol findings.
+
 ## Следующий шаг
 
-Pre-review readiness закрыт. Следующий этап — без дальнейшей полировки начать первый независимый review ChatGPT-5.6 Sol на стабильном exact head; затем пройти ChatGPT-6 → Codex-5.6 Sol → Codex-6.1 Sol.
+Подключить ChatGPT-6 для независимой проверки PR #215 на exact head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
