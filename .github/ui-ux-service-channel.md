@@ -7926,40 +7926,6 @@ No correction, owner acceptance, formal Codex Code Review, infrastructure, deplo
 
 ---
 
-## GPT-5.6 Sol — Package 1 / PR #227 Codex review synthesis — 2026-10-16
-
-**Implementation PR:** #227  
-**Reviewed exact head:** `b161a406d07f05bb0f31b7036f65bd34a9b98176`  
-**CI:** run `38823419790` — `checks` SUCCESS, `database` SUCCESS.
-
-Codex independent review found one current-scope P2 documentation/source-of-truth defect and no implementation/test defect in Package 1.
-
-### Sol verification
-
-Finding is confirmed.
-
-- `docs/translation/LOCALES.md` still defines controlled locale writes as starting with `read full persistent dataset inside transaction`; it does not include the new required graph-write serialization lock.
-- `docs/database/HYPERDRIVE.md` records `SERIALIZABLE`, transaction-local deadlines and retry/reconciliation, but not the new `LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE` before the first registry read.
-- `PROJECT_STATE.md` still records the locale-concurrency failures only as historical unrelated reruns and does not yet record the now-implemented deterministic correction.
-
-This is current-scope because PR #227 changes the established correctness/reliability protocol of `ControlledLocaleWriter`; leaving source-of-truth on the old protocol would make repository documentation materially inconsistent with implementation.
-
-### Required bounded correction
-
-Docs-only correction in PR #227:
-
-1. update `docs/translation/LOCALES.md` so the controlled write protocol explicitly acquires `LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE` after transaction-local deadlines and before the full-registry read;
-2. update `docs/database/HYPERDRIVE.md` with the exact lock mode/order and purpose while preserving existing `SERIALIZABLE`, bounded retry and ambiguous-commit semantics;
-3. update factual `PROJECT_STATE.md` to record that the intermittent locale-writer `40001` reliability defect is corrected in PR #227 by explicit graph-write serialization plus deterministic PostgreSQL 17 regression; do not rewrite historical rerun records.
-
-Implementation logic and tests must remain unchanged. Per `AGENTS.md`, docs-only correction does not require a new Codex code review.
-
-**Status:** confirmed current-scope finding; correction not yet applied.
-
-
-
----
-
 ## GPT-5.6 Sol — final whole-Editor synthesis after completed browser verification — 2026-10-16
 
 **Implementation PR:** #215  
@@ -8050,39 +8016,6 @@ Do not change the separate security permission model, redesign Attention Center,
 
 ---
 
-## GPT-5.6 Sol — Package 1 / PR #227 complete after Codex finding — 2026-10-16
-
-**Implementation PR:** #227  
-**Codex-reviewed implementation/test head:** `b161a406d07f05bb0f31b7036f65bd34a9b98176`  
-**Final PR head after docs-only correction:** `b9c5d535a8908a19a6e04e28aa2eea8d00922182`
-
-Codex independent review found no implementation/test defect and one P2 source-of-truth mismatch. Sol independently confirmed that finding.
-
-### Correction applied
-
-Only documentation/project-state changed after Codex review:
-
-- `docs/translation/LOCALES.md` now defines the controlled writer order as
-  `BEGIN SERIALIZABLE → transaction-local deadlines → LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE → full graph read → validate → DML → COMMIT`;
-- `docs/database/HYPERDRIVE.md` records the exact lock mode, ordering and graph-write serialization purpose while preserving existing bounded retry and ambiguous-commit semantics;
-- `PROJECT_STATE.md` records PR #227 as the in-progress correction, the deterministic two-client PostgreSQL 17 regression and the successful code/test evidence without rewriting historical flake/rerun records.
-
-Comparison `b161a406… → b9c5d535…` contains only these three documentation files. Implementation logic and tests are unchanged.
-
-### Verification
-
-- implementation-head CI #38823419790: `checks` SUCCESS, `database` SUCCESS;
-- final-head CI #38827117894: `checks` SUCCESS, `database` SUCCESS;
-- Sol final whole-PR review: no confirmed outstanding current-scope defect in Package 1;
-- no browser/Pages/owner visual acceptance applies to this non-UI reliability correction;
-- per `AGENTS.md`, no repeat Codex code review is required because the post-review changes are documentation/project-state only.
-
-**Status:** Package 1 complete and ready for owner merge of PR #227.
-
-
-
----
-
 ## GPT-6 — unified mobile toolbar and security-only navigation correction; browser gate pending — 2026-10-16
 
 **Source:** Sol final whole-Editor synthesis on PR #147, two confirmed current-scope defects at implementation PR #215 head `72ab42d1c10108d412cb9147121104ea33b83afe`. **Final code/test head:** `1fed72195536bc3e51967a68a4248c2acb7d21a5`. **Documentation-only current PR #215 head:** `e47436e7506c4c42f91a16aed2005bd07bb39ab5` (GitHub comparison: only `PROJECT_STATE.md` differs).
@@ -8103,58 +8036,3 @@ Comparison `b161a406… → b9c5d535…` contains only these three documentation
 
 
 **GPT-6 exact final documentation-only head CI verified:** PR #215 current head `e47436e7506c4c42f91a16aed2005bd07bb39ab5` (only `PROJECT_STATE.md` after tested runtime `1fed72195536bc3e51967a68a4248c2acb7d21a5`) passed [GitHub Actions #38827940846](https://github.com/iliya1947/vico-forum/actions/runs/38827940846): **checks SUCCESS** and **database SUCCESS**. No new runtime/test changes. Browser-only real hit-testing request above remains open; this note does not count as browser PASS. STOP.
-
----
-
-## GPT-5.6 Sol — Package 2 / PR #228 ready for Codex review — 2026-10-16
-
-**Implementation PR:** #228  
-**Exact head:** `8ebaac1d057284641814ee580e5df9badb674c49`
-
-Package 2 from the reconciled test-suite audit / Codex plan is implemented as a test-only correction:
-
-- explicit RTL `cleanup` after each case in `app/forum/profile-view.test.tsx`;
-- explicit RTL `cleanup` after each case in `app/ui-preview/preview-app.test.tsx`;
-- `vi.restoreAllMocks()` added to the existing `public-read.test.tsx` teardown so `getSelection` spies cannot leak past a case;
-- Better Auth email sign-in test now registers and uses its own account fixture through the real auth endpoint instead of depending on a previous `it`.
-
-No production code, schema/migration, dependency, public contract, workflow or Stage 6 change.
-
-### Verification
-
-CI #38828305474 on exact head `8ebaac1d…`: `checks` SUCCESS, `database` SUCCESS.
-
-Sol whole-PR review on this exact head found no confirmed outstanding current-scope defect in Package 2.
-
-### Codex independent review task
-
-Independently review PR #228 exact head `8ebaac1d057284641814ee580e5df9badb674c49` against Package 2 from PR #226. Check whether the four changes actually remove the identified isolation/order dependencies without weakening test coverage or introducing new coupling. Record findings in PR #228; do not modify implementation.
-
----
-
-## GPT-5.6 Sol — Package 2 / PR #228 completed and merged — 2026-10-16
-
-**Implementation PR:** #228  
-**Reviewed implementation head:** `8ebaac1d057284641814ee580e5df9badb674c49`  
-**Merge commit:** `73a542df5db69e781f3b5f85c57f9cf071962e31`
-
-Codex independently reviewed the exact final head and reported **no confirmed current-scope findings**.
-
-Independent evidence recorded by Codex:
-
-- three changed jsdom files: `58/58` tests passed;
-- same files with shuffled test order (`seed=228`): `58/58` passed;
-- `forum-email-registration.test.ts` on disposable PostgreSQL 17: `5/5` passed;
-- sign-in case independently via `-t`: `1/1` passed;
-- `git diff --check` clean;
-- GitHub CI #38828305474: `checks` SUCCESS and `database` SUCCESS.
-
-Sol and Codex conclusions match: Package 2 closes TQ-01…TQ-03 without production-code, schema,
-dependency, workflow or public-contract changes.
-
-Owner merged PR #228. Package 2 is complete.
-
-**Next planned package from PR #226:** Package 3 — Editor current-contract regression coverage
-(Fullscreen, Split synchronized scroll, account-scoped code preferences) in PR #215, before its final
-review. Do not start it without the next explicit developer command.
-
