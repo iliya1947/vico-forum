@@ -118,8 +118,12 @@ Exact code/test head `f356e31097ef851f23707b2728bdfdb1d8aeb8ae` прошёл CI
 пользователю 403 при видимой ссылке в header. Текущий bounded correction-пакет
 разрешает адаптивный перенос существующих групп toolbar и использует security
 как default mode при независимом security-only разрешении. Правки source,
-регрессионные тесты и документация подготовлены; real-browser 320/390px
-LTR/RTL и exact-head CI ещё не выполнены. Результат Sol/owner acceptance не объявлен.
+регрессионные тесты и документация подготовлены. Code/test head
+`1fed72195536bc3e51967a68a4248c2acb7d21a5` прошёл GitHub Actions
+#38827692880: checks SUCCESS (1026 application tests / 96 files, typecheck/lint/build)
+и database SUCCESS (304 PostgreSQL tests / 27 files, schema/evidence gates).
+Исправленная mobile toolbar geometry ещё НЕ перепроверена на реальном React/Chromium
+runtime при 320/390px LTR/RTL; gate Sol и owner visual acceptance открыты.
 
 Финальная whole-Editor проверка и owner visual acceptance пока ожидаются. PR открыт
 и не объявлен готовым к merge.
