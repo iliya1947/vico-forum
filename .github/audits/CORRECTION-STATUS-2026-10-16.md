@@ -12,10 +12,10 @@
 ведётся в PR #226.
 
 - PR #226 — служебный архив/координация аудита тестов;
-- PR #227, #228 и последующие implementation PR — только соответствующие изменения и их проверки;
-- PR #215 используется для Package 3 только потому, что RC-01…RC-03 относятся к уже существующему
-  Editor 2.0 implementation;
-- PR #147 не является каналом этого аудита.
+- PR #227, #228, #229 и последующие audit implementation PR — только соответствующие изменения и их проверки;
+- PR #215 и PR #147 не используются как рабочие PR этого аудита и не изменяются им без отдельной прямой команды владельца;
+- если audit finding относится к функциональности незамерженного implementation PR, исправление/тесты всё равно выносятся
+  в отдельный audit implementation PR; зависимость оформляется через stacked base, а не через commits в чужой PR.
 
 ## Независимый план Codex
 
@@ -23,7 +23,7 @@ Source: PR #226, comment #6204020042.
 
 1. Package 1 — locale writer reliability.
 2. Package 2 — test isolation / independence.
-3. Package 3 — Editor current-contract regression coverage в PR #215.
+3. Package 3 — Editor current-contract regression coverage. Изначальная привязка плана к PR #215 отменена прямым решением владельца; audit implementation выполняется только в отдельном PR #229.
 4. Package 4 — RC-04…RC-09, отдельный bounded test-only пакет.
 5. Package 5 — governance / evidence отдельно от code packages.
 6. AC-01 — отдельный финальный real-runtime browser acceptance gate UI/UX pass.
@@ -56,22 +56,18 @@ Implementation PR #228: `Fix test isolation and independence`.
   - email sign-in case получил собственный независимый account fixture;
 - Codex independent review не оставил confirmed current-scope findings.
 
-### Package 3 — реализация тестового покрытия завершена, проверка не завершена
+### Package 3 — перенесён в отдельный audit implementation PR #229
 
-Target implementation PR: #215.
+Audit implementation PR: #229 — `Test audit Package 3 — Editor regression coverage`.
 
-Starting head:
-`e47436e7506c4c42f91a16aed2005bd07bb39ab5`.
-
-Current Package 3 head:
-`a4c16111492c348e7641db440521c7d2e9f5bb80`.
-
-Delta Package 3 ограничен двумя test-файлами:
-
-- `app/forum/markdown-editor.test.tsx`;
-- `app/forum/markdown.test.tsx`.
-
-Production code, schema/migrations, dependencies, workflows и public contracts не изменялись.
+- head: `a4c16111492c348e7641db440521c7d2e9f5bb80`;
+- base: `chatgpt/editor-v2-implementation-20261010` at `e47436e7506c4c42f91a16aed2005bd07bb39ab5`;
+- PR #229 — draft stacked PR, потому что RC-01…RC-03 существуют только в незамерженном Editor 2.0 и ещё отсутствуют на `main`;
+- после merge Editor 2.0 PR #229 должен быть retarget/rebase на `main` и повторно проверен до merge;
+- PR #215 восстановлен на исходный head `e47436e7506c4c42f91a16aed2005bd07bb39ab5`; audit Package 3 больше не находится в его ветке;
+- перенос включает только пять audit commits, которые линейно шли поверх `e47436e…` и меняли только два test-файла:
+  - `app/forum/markdown-editor.test.tsx`;
+  - `app/forum/markdown.test.tsx`.
 
 Добавлено regression coverage:
 
@@ -81,15 +77,14 @@ Production code, schema/migrations, dependencies, workflows и public contracts 
 - RC-03 code preferences: restore, смена аккаунта без leakage, propagation между одновременно
   mounted blocks через same-document event и browser `storage` event path.
 
-Sol выполнил source/diff review against исходный head; подтверждённого production defect при
-добавлении покрытия не выявлено.
+Production code, schema/migrations, dependencies, workflows и public contracts не изменялись.
 
-**Verification boundary:** для exact head `a4c1611…` GitHub Actions run не создан. Connector-created
-branch commits, а также выполненные reversible PR/ref event attempts не породили новый `pull_request`
-CI run. Предыдущий green CI на `e47436e…` не является evidence для новых tests. Поэтому Package 3
-пока **не считается complete/PASS** до независимого выполнения focused tests и проверки результата.
+GitHub Actions CI #38918024909 запущен автоматически для PR #229 exact head `a4c1611…`;
+на момент этой записи jobs `checks` и `database` выполняются. Package 3 не считается complete/PASS
+до получения фактического результата CI и последующей проверки.
 
-Следующая проверка: независимая read-only проверка Codex exact Package 3 delta и focused test execution.
+Важно: название `Package 3` здесь означает только **test-audit Package 3 / RC-01…RC-03**.
+Оно не относится к возможным одноимённым пакетам или подзадачам внутри Editor 2.0.
 
 ### Package 4 — не начат
 
@@ -108,5 +103,4 @@ Governance/evidence work остаётся отдельным от code packages.
 
 ## Следующая рабочая точка
 
-Следующий пакет по согласованному плану — **Package 3 в PR #215**. Он начинается только
-по явной команде разработчика.
+Завершить проверку **test-audit Package 3 в PR #229**. Package 4 не начинать до отдельной команды разработчика.
