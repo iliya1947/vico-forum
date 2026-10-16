@@ -57,7 +57,7 @@ export async function loader({ request, params, context }: {
 
   const query = new URL(request.url).searchParams;
   const requestedMode = query.get("mode");
-  const mode: AttentionMode = requestedMode === "complaints" || requestedMode === "security"
+  const mode: AttentionMode = requestedMode === "signals" || requestedMode === "complaints" || requestedMode === "security"
     ? requestedMode : canViewHelpAttention ? "signals" : "security";
   const requestedGroup = query.get("group") as AttentionGroup | null;
   const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : PLACEHOLDER_GROUPS;
