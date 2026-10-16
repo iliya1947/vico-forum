@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-15
+Последнее обновление: 2026-10-16
 
 ## Назначение
 
@@ -122,11 +122,20 @@ Exact code/test head `f356e31097ef851f23707b2728bdfdb1d8aeb8ae` прошёл CI
 `1fed72195536bc3e51967a68a4248c2acb7d21a5` прошёл GitHub Actions
 #38827692880: checks SUCCESS (1026 application tests / 96 files, typecheck/lint/build)
 и database SUCCESS (304 PostgreSQL tests / 27 files, schema/evidence gates).
-Исправленная mobile toolbar geometry ещё НЕ перепроверена на реальном React/Chromium
-runtime при 320/390px LTR/RTL; gate Sol и owner visual acceptance открыты.
+Исправленная mobile toolbar geometry перепроверена на реальном React/Chromium runtime:
+EN/LTR и HE/RTL, 320/390px, Simple/Advanced прошли native geometry и hit-testing без
+overlap/interception; обязательные direct controls, More, mode switch, Preview и Fullscreen
+доступны, fenced-code pointer Indent/Outdent работает, обычный prose не изменяется.
+Новых browser-observable дефектов в этом bounded correction path не выявлено.
 
-Финальная whole-Editor проверка и owner visual acceptance пока ожидаются. PR открыт
-и не объявлен готовым к merge.
+Owner visual acceptance финального Editor 2.0 состояния подтверждён 2026-10-16 на уровне
+рабочего pre-release MVP: дальнейшая визуальная полировка Editor 2.0 сознательно отложена
+и не блокирует завершение текущей реализации. Это не разрешение на новые функциональные
+расширения или косметические переделки Editor до merge; runtime остаётся замороженным,
+кроме подтверждённых дефектов текущего Stage.
+
+PR #215 остаётся открыт. Перед merge требуется последовательный четырёхагентный review-цикл
+по актуальному `AGENTS.md`; отдельный GitHub Codex Code Review для #215 владельцем запрещён.
 
 ## Текущая фаза
 
