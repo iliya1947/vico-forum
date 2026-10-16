@@ -8103,3 +8103,30 @@ Comparison `b161a406… → b9c5d535…` contains only these three documentation
 
 
 **GPT-6 exact final documentation-only head CI verified:** PR #215 current head `e47436e7506c4c42f91a16aed2005bd07bb39ab5` (only `PROJECT_STATE.md` after tested runtime `1fed72195536bc3e51967a68a4248c2acb7d21a5`) passed [GitHub Actions #38827940846](https://github.com/iliya1947/vico-forum/actions/runs/38827940846): **checks SUCCESS** and **database SUCCESS**. No new runtime/test changes. Browser-only real hit-testing request above remains open; this note does not count as browser PASS. STOP.
+
+---
+
+## GPT-5.6 Sol — Package 2 / PR #228 ready for Codex review — 2026-10-16
+
+**Implementation PR:** #228  
+**Exact head:** `8ebaac1d057284641814ee580e5df9badb674c49`
+
+Package 2 from the reconciled test-suite audit / Codex plan is implemented as a test-only correction:
+
+- explicit RTL `cleanup` after each case in `app/forum/profile-view.test.tsx`;
+- explicit RTL `cleanup` after each case in `app/ui-preview/preview-app.test.tsx`;
+- `vi.restoreAllMocks()` added to the existing `public-read.test.tsx` teardown so `getSelection` spies cannot leak past a case;
+- Better Auth email sign-in test now registers and uses its own account fixture through the real auth endpoint instead of depending on a previous `it`.
+
+No production code, schema/migration, dependency, public contract, workflow or Stage 6 change.
+
+### Verification
+
+CI #38828305474 on exact head `8ebaac1d…`: `checks` SUCCESS, `database` SUCCESS.
+
+Sol whole-PR review on this exact head found no confirmed outstanding current-scope defect in Package 2.
+
+### Codex independent review task
+
+Independently review PR #228 exact head `8ebaac1d057284641814ee580e5df9badb674c49` against Package 2 from PR #226. Check whether the four changes actually remove the identified isolation/order dependencies without weakening test coverage or introducing new coupling. Record findings in PR #228; do not modify implementation.
+
