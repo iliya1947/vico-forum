@@ -56,22 +56,40 @@ Implementation PR #228: `Fix test isolation and independence`.
   - email sign-in case получил собственный независимый account fixture;
 - Codex independent review не оставил confirmed current-scope findings.
 
-### Package 3 — ещё не начат
+### Package 3 — реализация тестового покрытия завершена, проверка не завершена
 
 Target implementation PR: #215.
 
-Current PR #215 head на момент этой записи:
+Starting head:
 `e47436e7506c4c42f91a16aed2005bd07bb39ab5`.
 
-По плану Codex Package 3 должен добавить regression coverage уже существующих Editor contracts:
+Current Package 3 head:
+`a4c16111492c348e7641db440521c7d2e9f5bb80`.
 
-- RC-01 Fullscreen: enter/exit, dialog/ARIA, Escape, bounded keyboard/focus behavior;
-- RC-02 Split: обе стороны synchronized scroll, ratio mapping, zero-scrollable extent, loop/write guard;
-- RC-03 code preferences: restore, account isolation, same-document propagation и browser
-  `storage` event.
+Delta Package 3 ограничен двумя test-файлами:
 
-Package 3 не считается начатым: после Package 2 никаких audit-driven изменений в PR #215
-для RC-01…RC-03 не зафиксировано.
+- `app/forum/markdown-editor.test.tsx`;
+- `app/forum/markdown.test.tsx`.
+
+Production code, schema/migrations, dependencies, workflows и public contracts не изменялись.
+
+Добавлено regression coverage:
+
+- RC-01 Fullscreen: enter/dialog+ARIA, Escape, edge Tab/Shift+Tab focus wrap;
+- RC-02 Split synchronized scroll: обе стороны, ratio mapping, source/destination zero-scrollable
+  extent и >1px write guard;
+- RC-03 code preferences: restore, смена аккаунта без leakage, propagation между одновременно
+  mounted blocks через same-document event и browser `storage` event path.
+
+Sol выполнил source/diff review against исходный head; подтверждённого production defect при
+добавлении покрытия не выявлено.
+
+**Verification boundary:** для exact head `a4c1611…` GitHub Actions run не создан. Connector-created
+branch commits, а также выполненные reversible PR/ref event attempts не породили новый `pull_request`
+CI run. Предыдущий green CI на `e47436e…` не является evidence для новых tests. Поэтому Package 3
+пока **не считается complete/PASS** до независимого выполнения focused tests и проверки результата.
+
+Следующая проверка: независимая read-only проверка Codex exact Package 3 delta и focused test execution.
 
 ### Package 4 — не начат
 
