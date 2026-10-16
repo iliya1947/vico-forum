@@ -288,16 +288,26 @@ Stage 2 production Worker имеет read-only registry DB capability. Runtime D
 только вместе с реальным protected server-side write flow. Controlled test/admin writer
 может существовать за отдельной narrowly-scoped DML boundary.
 
-Writer принимает desired-state mutation и использует короткую `SERIALIZABLE` transaction:
+Writer принимает desired-state mutation и использует короткую `SERIALIZABLE` transaction.
+До первого чтения persistent graph writer обязан сериализовать graph-wide mutations через
+`LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE`. Lock берётся после transaction-local
+deadlines и до любого `SELECT`/DML этой transaction, чтобы каждый writer строил proposed graph
+из последнего committed состояния после предыдущего controlled writer:
 
 ```text
-read full persistent dataset inside transaction
+BEGIN ISOLATION LEVEL SERIALIZABLE
+→ SET LOCAL lock_timeout / statement_timeout
+→ LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE
+→ read full persistent dataset inside transaction
 → parse/assemble proposed effective graph
 → apply desired mutation in memory
 → whole-graph validate
 → persist exact delta + updated_at
 → commit
 ```
+
+`SHARE ROW EXCLUSIVE` выбран как self-exclusive writer lock: concurrent controlled writers
+сериализуются, тогда как обычные registry reads не блокируются этим lock mode.
 
 External HTTP/provider calls и другие side effects внутри transaction запрещены. Whole-unit
 retry допустим для безопасно классифицированных serialization/deadlock failures. Unknown

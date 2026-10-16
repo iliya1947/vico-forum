@@ -614,6 +614,18 @@ lock_timeout = 2s
 statement_timeout = 10s
 ```
 
+После этих deadlines и **до первого registry `SELECT` или DML** writer выполняет:
+
+```sql
+LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE
+```
+
+Этот transaction-scoped lock является graph-write serialization boundary: `SHARE ROW EXCLUSIVE`
+self-exclusive и конфликтует с обычным table DML lock, поэтому concurrent controlled mutations
+не строят proposed graph из параллельных stale snapshots. Обычные `SELECT` registry reads lock
+не блокирует. Порядок `BEGIN → deadlines → LOCK → full graph read → validate → DML → COMMIT`
+является частью controlled-writer contract.
+
 Serialization/deadlock retries ограничены `40001`/`40P01`; ambiguous commit не blind-retry-ится,
 а reconciles semantic state. Exact PostgreSQL `57014 / canceling statement due to statement
 timeout` во время `COMMIT` проходит existing ambiguous-outcome reconciliation boundary.

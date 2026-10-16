@@ -2813,26 +2813,69 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(loaded.registry.find("ka")?.locale.publicationStatus).toBe("inactive");
   });
 
-  it("serializes concurrent desired-state writes and preserves a valid graph", async () => {
+  it("serializes graph-wide desired-state writes before the second writer reads", async () => {
+    await client.query("delete from locales where tag in ('de', 'fr')");
+
+    const first = new Client({ connectionString: databaseUrl });
     const second = new Client({ connectionString: databaseUrl });
-    await second.connect();
+    await Promise.all([first.connect(), second.connect()]);
+
+    let firstCommitted = false;
+    let secondApply: Promise<void> | undefined;
     try {
-      const locale = (tag: string) => ({
-        tag, translationStatus: "draft" as const, publicationStatus: "inactive" as const,
-        direction: "ltr" as const, fallbackChain: ["en"], nativeName: tag,
+      await first.query("begin isolation level serializable");
+      await first.query("lock table locales in share row exclusive mode");
+      await first.query(`
+        insert into locales (
+          tag, translation_status, publication_status, direction, fallback_chain, native_name
+        ) values ('de', 'draft', 'inactive', 'ltr', array['en']::text[], 'de')
+      `);
+
+      const observedQueries: string[] = [];
+      let resolveFourthQuery!: (text: string) => void;
+      const fourthQuery = new Promise<string>((resolve) => { resolveFourthQuery = resolve; });
+      const blockingClient = new Proxy(second, {
+        get(target, property) {
+          if (property !== "query") return Reflect.get(target, property, target);
+          return async (text: string, values?: unknown[]) => {
+            observedQueries.push(text);
+            if (observedQueries.length === 4) resolveFourthQuery(text);
+            return target.query(text, values);
+          };
+        },
+      }) as ClientBase;
+
+      secondApply = new ControlledLocaleWriter(
+        blockingClient,
+        new DrizzleLocaleRepository(drizzle(second)),
+        0,
+      ).apply({
+        type: "put",
+        locale: {
+          tag: "fr",
+          translationStatus: "draft",
+          publicationStatus: "inactive",
+          direction: "ltr",
+          fallbackChain: ["de"],
+          nativeName: "fr",
+        },
       });
-      await Promise.all([
-        new ControlledLocaleWriter(client, new DrizzleLocaleRepository(drizzle(client)), 4)
-          .apply({ type: "put", locale: locale("de") }),
-        new ControlledLocaleWriter(second, new DrizzleLocaleRepository(drizzle(second)), 4)
-          .apply({ type: "put", locale: locale("fr") }),
-      ]);
+
+      expect(await fourthQuery).toBe("lock table locales in share row exclusive mode");
+      expect(observedQueries.some((text) => text.startsWith("select tag"))).toBe(false);
+
+      await first.query("commit");
+      firstCommitted = true;
+      await secondApply;
+
       const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
       expect(loaded.health).toEqual({ status: "healthy" });
       expect(loaded.registry.find("de")?.locale.tag).toBe("de");
-      expect(loaded.registry.find("fr")?.locale.tag).toBe("fr");
+      expect(loaded.registry.find("fr")?.locale.fallbackChain).toEqual(["de"]);
     } finally {
-      await second.end();
+      if (!firstCommitted) await first.query("rollback").catch(() => undefined);
+      await secondApply?.catch(() => undefined);
+      await Promise.all([first.end(), second.end()]);
     }
   });
 
