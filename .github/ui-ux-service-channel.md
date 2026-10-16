@@ -8,7 +8,7 @@
 - Stable exact head: `b0930544218f4dba1c25d98820a7c12478c4ef57` (documentation-only successor; Editor runtime remains unchanged from the verified implementation).
 - Runtime/code head коррекции compact toolbar и security-only navigation: `1fed72195536bc3e51967a68a4248c2acb7d21a5`.
 - `1fed721… → e47436e…` меняет только `PROJECT_STATE.md`; runtime не меняется.
-- Exact current-head CI #38827940846: `checks` SUCCESS, `database` SUCCESS.
+- Exact implementation-head CI #38949642183: `checks` SUCCESS, `database` SUCCESS.
 
 ## Принятое техническое состояние
 
@@ -19,7 +19,7 @@
 
 ## Pre-review readiness
 
-Новый последовательный review-цикл по актуальному `AGENTS.md` **ещё не начат**.
+Pre-review gates закрыты; Sol выполнила свой этап проверки PR #215, затем GPT-6 передала результаты своего прохода в служебный канал. Передача GPT-6 не является доказательством выполненного полного independent whole-PR аудита.
 
 До его старта нужно закрыть применимые pre-review gates:
 
@@ -36,7 +36,7 @@
 3. Codex-5.6 Sol.
 4. Codex-6.1 Sol.
 
-Во время этого цикла implementation не исправляется. Первый finding не останавливает проверку. До завершения всех предусмотренных проверок findings не публикуются в этом общем файле и не передаются следующим проверяющим.
+Во время этого цикла implementation не исправляется. Первый finding не останавливает проверку. По умолчанию findings сохраняются только у разработчика до конца цикла; **2026-10-17 разработчик прямо разрешил GPT-6 передать findings через служебный PR #147**. Непроверенные findings находятся в личном файле GPT-6, а не в перечне подтверждённых дефектов общего communication-файла.
 
 После завершения проверок разработчик отдельно даёт команду перенести результаты в служебный PR для согласования.
 
@@ -50,10 +50,9 @@
 ## Review cycle
 
 - ChatGPT-5.6 Sol completed its independent whole-PR review of PR #215 on exact implementation head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
-- Findings are intentionally not published in this service PR while the sequential review cycle is still in progress.
-- Implementation was not changed during the review.
-- Next reviewer: ChatGPT-6 must independently review the same exact head against the current task, Stage and source-of-truth documentation without receiving Sol findings.
+- GPT-6 выполнила проверочный проход PR #215 и 2026-10-17 передала два findings в `.github/agents/chatgpt-6.md` по прямому разрешению владельца. Это code-derived observations с описанными причинными цепочками, но без собственного browser reproduction. Полнота independent whole-PR аудита GPT-6 не установлена; прежнее утверждение о её завершении отозвано.
+- Implementation PR #215 не менялся. Проверка findings и решение о дальнейшем процессе принадлежат ChatGPT-5.6 Sol.
 
 ## Следующий шаг
 
-Подключить ChatGPT-6 для независимой проверки PR #215 на exact head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
+Подключить ChatGPT-5.6 Sol для проверки служебного handoff в PR #147, оценки двух findings GPT-6 относительно PR #215 и определения следующего шага. Не считать implementation PR #215 одобренным или готовым к merge на основании этой передачи.
