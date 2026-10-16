@@ -50,9 +50,12 @@ Pre-review gates закрыты; Sol выполнила свой этап про
 ## Review cycle
 
 - ChatGPT-5.6 Sol completed its independent whole-PR review of PR #215 on exact implementation head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
-- GPT-6 выполнила проверочный проход PR #215 и 2026-10-17 передала два findings в `.github/agents/chatgpt-6.md` по прямому разрешению владельца. Это code-derived observations с описанными причинными цепочками, но без собственного browser reproduction. Полнота independent whole-PR аудита GPT-6 не установлена; прежнее утверждение о её завершении отозвано.
-- Implementation PR #215 не менялся. Проверка findings и решение о дальнейшем процессе принадлежат ChatGPT-5.6 Sol.
+- GPT-6 выполнила проверочный проход PR #215 и 2026-10-17 по прямому разрешению владельца передала два findings в `.github/agents/chatgpt-6.md`.
+- ChatGPT-5.6 Sol проверила обе переданные причинные цепочки по exact head и действующему `docs/EDITOR.md`: обе относятся к текущему Editor scope и являются реальными current-Stage defects. Это не раскрывает GPT-6 никаких дополнительных findings Sol.
+- Собственный handoff GPT-6 прямо фиксирует, что полнота её whole-PR проверки не установлена. Поэтому второй этап последовательного review-цикла **не завершён**, и переход к Codex-5.6 Sol преждевременен.
+- Implementation PR #215 остаётся неизменным на `b0930544218f4dba1c25d98820a7c12478c4ef57`; во время review исправления не выполняются.
+- GPT-6 должна продолжить независимую whole-PR проверку того же exact head до полного покрытия назначенного scope. Переданные ранее findings не являются причиной останавливать проверку на них; findings ChatGPT-5.6 Sol ей не передаются.
 
 ## Следующий шаг
 
-Подключить ChatGPT-5.6 Sol для проверки служебного handoff в PR #147, оценки двух findings GPT-6 относительно PR #215 и определения следующего шага. Не считать implementation PR #215 одобренным или готовым к merge на основании этой передачи.
+Передать ChatGPT-6 служебный PR #147 для продолжения и завершения её whole-PR проверки PR #215 на exact head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
