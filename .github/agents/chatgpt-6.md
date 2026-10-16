@@ -33,6 +33,16 @@
 - `app/forum/visual-markdown-editor.tsx`, `VisualTextLeaf.onPaste`: `event.preventDefault()` выполняется до любых проверок, а дальше вставка прекращается, если `event.currentTarget.contains(active.commonAncestorContainer)` ложно.
 - При Range, начинающемся в одном editable leaf и заканчивающемся в соседнем, `commonAncestorContainer` обычно является вышестоящим абзацем, а не дочерним узлом первого leaf. Условие возвращает управление без вызова `onReplaceRange`/`onTextEdit`; штатная вставка уже отменена. Пример для проверки: `Alpha **Beta** Gamma`, выделить от `Alpha` до `Beta`, вставить `replacement`.
 - Это базовый сценарий редактирования обычного форматированного текста, а не косметическая полировка. Причинная цепочка установлена на уровне source/DOM Range semantics, но реальный браузер GPT-6 не запускала; сохраняется как проверяемый finding, а не browser-confirmed conclusion.
+### Продолжение проверки — черновики, публикация, вложения (2026-10-17)
+
+- Проверенный exact implementation head: `b0930544218f4dba1c25d98820a7c12478c4ef57`. Этот bounded проход не является завершением whole-PR проверки.
+- Сверены клиентские и серверные пути: `use-editor-draft.tsx`, `draft-client.ts`, `editor-attachments.tsx`, `markdown-editor.tsx`, `draft-data.ts`, `attachment-upload.ts`, `attachment-download.ts`, `editor-draft-permission.server.ts`, `db/forum-editor-drafts.ts`, `db/forum-attachments.ts`, `db/forum-repository.ts`, `actions.server.ts`.
+- Сверены с `docs/EDITOR.md` сценарии локального сохранения, штатной 60-секундной серверной синхронизации, generation/CAS-fence, явного разрешения конфликта, attachment-only publication, безопасного восстановления/удаления файлов, post-edit snapshot, idempotent retry и post history permissions.
+- Изучены именованные regression-сценарии в `use-editor-draft.test.tsx`, `editor-attachments.test.tsx`, `draft-data.test.ts`, `attachment-upload.test.ts`, `attachment-download.test.ts`, `tests/database/forum-editor-drafts.test.ts`, `tests/database/forum-attachments.test.ts`, `tests/database/forum-attachment-publication.test.ts` и связанной source-тестовой части редактора.
+- Ключевые проверенные цепочки: локальный capture → server CAS sync → conflict/Keep local/Keep server; upload → private draft ref → rebind → explicit selected manifest → transactional publish; published edit → snapshot retained refs → explicit Save/history; отказ/cross-owner/retired generation → запрет публикации или выдачи файла.
+- **Новых достаточно подтверждённых current-Stage defects в этом ограниченном проходе не найдено.** Это не подтверждает полного отсутствия дефектов. Тесты и реальный Chromium GPT-6 в этом проходе не запускала; использованы исходники и существующие репозиторные тесты/свидетельства CI.
+- Далее остаётся проверить другие участки всего Editor scope (в том числе упоминания/уведомления и интеграционное взаимодействие с рендерингом) и определить полноту whole-PR coverage. GPT6-01/02 подтверждены Sol, GPT6-03 остаётся source-derived candidate до независимой проверки.
+
 ### Статус и границы
 
 - Три findings переданы по прямому разрешению разработчика для независимой технической оценки; не объявлять их browser-confirmed. Отсутствие других дефектов и полнота аудита не установлены.
