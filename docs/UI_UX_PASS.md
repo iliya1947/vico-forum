@@ -360,8 +360,11 @@ composition without changing the forum hierarchy or schema:
   files produced by Editor 2.0 attachment checks in PR #215; it is not a user
   quality signal or complaint. No synthetic notices or security backend are added
   by the group change. Future data access and moderation actions belong to
-  that actual attachment subsystem, not the existing Help signal queue. Only users with existing Help moderation permissions can
-  currently access this foundation. Group navigation displays real global
+  that actual attachment subsystem, not the existing Help signal queue. At this empty-scaffold stage,
+  access was limited to existing Help moderation permissions. Once Editor 2.0 PR #215 introduced
+  real protected suspicious-upload events, the Attachment Security reader acquired the independent
+  code-backed `forum.attachmentSecurity.read` permission, with dynamic grants/overrides and
+  initial moderator/admin grants; it no longer inherits Help moderation access. Group navigation displays real global
   permission-scoped pending totals: each signal group counts individual tasks,
   and Mixed counts topics with 2+ pending visible signals. Totals are queried
   independently of the current 50-case page and prior 100-topic feed bound.

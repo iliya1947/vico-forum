@@ -9246,6 +9246,20 @@ a.topic-tag:focus-visible {
 }
 @media (max-width: 44rem) {
   .home-shell .markdown-editor-toolbar { gap: .25rem; padding: .35rem; }
+  /* The inline compact toolbar cannot fit both non-shrinking groups at 320px.
+     Keep direct formatting and mode/preview/fullscreen controls hit-testable. */
+  .home-shell .markdown-editor:not(.is-fullscreen) .markdown-editor-toolbar { flex-wrap: wrap; }
+  .home-shell .markdown-editor:not(.is-fullscreen) .markdown-editor-formatting {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+  .home-shell .markdown-editor:not(.is-fullscreen) .markdown-editor-controls {
+    flex: 1 1 100%;
+    min-inline-size: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-inline-start: 0;
+  }
   .home-shell .markdown-editor-controls > button:first-child { padding-inline: .3rem; }
   .home-shell .markdown-editor-preview-menu summary { padding-inline: .2rem; }
   .home-shell .markdown-editor-formatting { gap: .12rem; }

@@ -112,6 +112,15 @@ Exact code/test head `f356e31097ef851f23707b2728bdfdb1d8aeb8ae` прошёл CI
 оба jobs SUCCESS, включая schema-manifest parity. Решение Sol по correction gate
 и самостоятельная browser/owner visual acceptance ещё ожидаются.
 
+После финальной source/browser сверки Sol и Codex выявлены две current-scope проблемы:
+перекрытие интерактивных инструментов compact in-page toolbar при узкой LTR/RTL
+ширине и пустой default URL `/:locale/attention`, дававший security-only
+пользователю 403 при видимой ссылке в header. Текущий bounded correction-пакет
+разрешает адаптивный перенос существующих групп toolbar и использует security
+как default mode при независимом security-only разрешении. Правки source,
+регрессионные тесты и документация подготовлены; real-browser 320/390px
+LTR/RTL и exact-head CI ещё не выполнены. Результат Sol/owner acceptance не объявлен.
+
 Финальная whole-Editor проверка и owner visual acceptance пока ожидаются. PR открыт
 и не объявлен готовым к merge.
 
@@ -1439,7 +1448,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0037`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0043`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

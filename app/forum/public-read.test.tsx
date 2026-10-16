@@ -1199,16 +1199,23 @@ describe("Help & solutions modes and authoring", () => {
     const sec = await load(security);
     expect(sec.securityQueue).toMatchObject({ events: [], page: 0 });
     expect(readSecurity).toHaveBeenCalledTimes(1);
+    // Shared header links to the bare route; security-only access must resolve there too.
+    const defaultSecurity = await load("https://forum.example/en/attention");
+    expect(defaultSecurity).toMatchObject({ mode: "security", group: "attachments" });
+    expect(defaultSecurity.securityQueue).toMatchObject({ events: [], page: 0 });
+    expect(readSecurity).toHaveBeenCalledTimes(2);
     await expect(load("https://forum.example/en/attention?mode=signals")).rejects.toMatchObject({ status: 403 });
     expect(readHelp).toHaveBeenCalledTimes(1);
-    const rendered = renderRoute(AttentionRoute, sec, "/en/attention?mode=security&group=attachments", "en", "ltr");
+    const rendered = renderRoute(AttentionRoute, defaultSecurity, "/en/attention", "en", "ltr",
+      { id: "security-reader", name: "Reader", canViewModerationAttention: true });
     expect(await screen.findByRole("link", { name: "Security" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Needs attention" })).toHaveAttribute("href", "/en/attention");
     expect(screen.queryByRole("link", { name: "Signals" })).not.toBeInTheDocument();
     rendered.unmount();
     allowed.clear();
     allowed.add("forum.helpDuplicate.manage");
     await expect(load(security)).rejects.toMatchObject({ status: 403 });
-    expect(readSecurity).toHaveBeenCalledTimes(1);
+    expect(readSecurity).toHaveBeenCalledTimes(2);
   });
 
   it("requires origin and effective per-kind permission before processing a signal", async () => {
