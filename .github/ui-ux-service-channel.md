@@ -5,7 +5,7 @@
 ## Активная реализация
 
 - Implementation PR: #215 — Editor 2.0.
-- Stable exact head: `e47436e7506c4c42f91a16aed2005bd07bb39ab5`.
+- Stable exact head: `34d93f1e14c93da82edd24e14e266f24fd27f4d7` (documentation-only successor of runtime-equivalent `e47436e…`).
 - Runtime/code head коррекции compact toolbar и security-only navigation: `1fed72195536bc3e51967a68a4248c2acb7d21a5`.
 - `1fed721… → e47436e…` меняет только `PROJECT_STATE.md`; runtime не меняется.
 - Exact current-head CI #38827940846: `checks` SUCCESS, `database` SUCCESS.
@@ -23,9 +23,9 @@
 
 До его старта нужно закрыть применимые pre-review gates:
 
-1. Owner visual acceptance финального Editor 2.0 состояния. Финальный GitHub Pages preview подготовлен: workflow #38939826034 SUCCESS. Preview branch head `f7e4e9104e3bb092a8adcb2cff1d690ad5269cc1` имеет нулевой file diff относительно implementation head `e47436e7506c4c42f91a16aed2005bd07bb39ab5`; два дополнительных preview-only commits добавили и удалили служебный trigger-файл, поэтому итоговый tree идентичен implementation tree. URL: `https://iliya1947.github.io/vico-forum/`.
-2. Синхронизировать фактический `PROJECT_STATE.md`/acceptance evidence с уже выполненным browser re-test и итогом owner acceptance, не меняя runtime без отдельной причины.
-3. Убедиться, что exact implementation head после этих действий остаётся стабильным и применимые CI/checks валидны.
+1. Owner visual acceptance финального Editor 2.0 состояния подтверждён 2026-10-16 как достаточный для pre-release MVP; дальнейшая визуальная полировка явно отложена владельцем и не блокирует завершение Editor 2.0.
+2. `PROJECT_STATE.md` синхронизирован documentation-only commit `34d93f1e…`: зафиксированы положительный Chromium re-test и owner visual acceptance; runtime не изменён.
+3. Runtime Editor заморожен: никаких новых функциональных или косметических изменений до merge, кроме подтверждённых current-Stage дефектов.
 
 ## Последовательность проверки после readiness
 
@@ -49,4 +49,4 @@
 
 ## Следующий шаг
 
-Закрыть pre-review readiness PR #215, начиная с owner visual acceptance финального Editor 2.0 состояния.
+Pre-review readiness по owner visual acceptance и project-state synchronization закрыт. Следующий этап — первый независимый review ChatGPT-5.6 Sol на стабильном exact head после подтверждения применимых CI/checks для documentation-only head.
