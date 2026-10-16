@@ -273,6 +273,7 @@ const reader: ForumReader = {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
