@@ -5,7 +5,7 @@
 ## Активная реализация
 
 - Implementation PR: #215 — Editor 2.0.
-- Stable exact head: `34d93f1e14c93da82edd24e14e266f24fd27f4d7` (documentation-only successor of runtime-equivalent `e47436e…`).
+- Stable exact head: `b0930544218f4dba1c25d98820a7c12478c4ef57` (documentation-only successor; Editor runtime remains unchanged from the verified implementation).
 - Runtime/code head коррекции compact toolbar и security-only navigation: `1fed72195536bc3e51967a68a4248c2acb7d21a5`.
 - `1fed721… → e47436e…` меняет только `PROJECT_STATE.md`; runtime не меняется.
 - Exact current-head CI #38827940846: `checks` SUCCESS, `database` SUCCESS.
@@ -49,4 +49,4 @@
 
 ## Следующий шаг
 
-Pre-review readiness по owner visual acceptance и project-state synchronization закрыт. Следующий этап — первый независимый review ChatGPT-5.6 Sol на стабильном exact head после подтверждения применимых CI/checks для documentation-only head.
+Pre-review readiness закрыт. Следующий этап — без дальнейшей полировки начать первый независимый review ChatGPT-5.6 Sol на стабильном exact head; затем пройти ChatGPT-6 → Codex-5.6 Sol → Codex-6.1 Sol.
