@@ -23,7 +23,7 @@
 
 До его старта нужно закрыть применимые pre-review gates:
 
-1. Owner visual acceptance финального Editor 2.0 состояния.
+1. Owner visual acceptance финального Editor 2.0 состояния. Финальный GitHub Pages preview подготовлен: workflow #38939826034 SUCCESS. Preview branch head `f7e4e9104e3bb092a8adcb2cff1d690ad5269cc1` имеет нулевой file diff относительно implementation head `e47436e7506c4c42f91a16aed2005bd07bb39ab5`; два дополнительных preview-only commits добавили и удалили служебный trigger-файл, поэтому итоговый tree идентичен implementation tree. URL: `https://iliya1947.github.io/vico-forum/`.
 2. Синхронизировать фактический `PROJECT_STATE.md`/acceptance evidence с уже выполненным browser re-test и итогом owner acceptance, не меняя runtime без отдельной причины.
 3. Убедиться, что exact implementation head после этих действий остаётся стабильным и применимые CI/checks валидны.
 
