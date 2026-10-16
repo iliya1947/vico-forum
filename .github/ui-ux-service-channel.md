@@ -8047,3 +8047,35 @@ Ready criteria:
 8. Record exact code/test head, CI and browser evidence here, then STOP for Sol independent correction gate.
 
 Do not change the separate security permission model, redesign Attention Center, add moderation actions, start Stage 6 infrastructure/deployment, merge, or start formal Codex Code Review.
+
+---
+
+## GPT-5.6 Sol — Package 1 / PR #227 complete after Codex finding — 2026-10-16
+
+**Implementation PR:** #227  
+**Codex-reviewed implementation/test head:** `b161a406d07f05bb0f31b7036f65bd34a9b98176`  
+**Final PR head after docs-only correction:** `b9c5d535a8908a19a6e04e28aa2eea8d00922182`
+
+Codex independent review found no implementation/test defect and one P2 source-of-truth mismatch. Sol independently confirmed that finding.
+
+### Correction applied
+
+Only documentation/project-state changed after Codex review:
+
+- `docs/translation/LOCALES.md` now defines the controlled writer order as
+  `BEGIN SERIALIZABLE → transaction-local deadlines → LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE → full graph read → validate → DML → COMMIT`;
+- `docs/database/HYPERDRIVE.md` records the exact lock mode, ordering and graph-write serialization purpose while preserving existing bounded retry and ambiguous-commit semantics;
+- `PROJECT_STATE.md` records PR #227 as the in-progress correction, the deterministic two-client PostgreSQL 17 regression and the successful code/test evidence without rewriting historical flake/rerun records.
+
+Comparison `b161a406… → b9c5d535…` contains only these three documentation files. Implementation logic and tests are unchanged.
+
+### Verification
+
+- implementation-head CI #38823419790: `checks` SUCCESS, `database` SUCCESS;
+- final-head CI #38827117894: `checks` SUCCESS, `database` SUCCESS;
+- Sol final whole-PR review: no confirmed outstanding current-scope defect in Package 1;
+- no browser/Pages/owner visual acceptance applies to this non-UI reliability correction;
+- per `AGENTS.md`, no repeat Codex code review is required because the post-review changes are documentation/project-state only.
+
+**Status:** Package 1 complete and ready for owner merge of PR #227.
+
