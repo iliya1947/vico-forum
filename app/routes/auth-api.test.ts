@@ -18,6 +18,8 @@ describe("Better Auth resource route", () => {
   });
 
   it("is registered before the existing API catch-all", () => {
-    expect(routes.map((route) => route.path).slice(0, 3)).toEqual([undefined, "api/auth/*", "api/*"]);
+    const paths = routes.map((route) => route.path);
+    expect(paths.indexOf("api/auth/*")).toBeGreaterThanOrEqual(0);
+    expect(paths.indexOf("api/auth/*")).toBeLessThan(paths.indexOf("api/*"));
   });
 });

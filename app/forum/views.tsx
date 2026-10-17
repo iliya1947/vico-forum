@@ -1,5 +1,7 @@
+import { ForumAttachmentDisplay } from "./attachment-presentation";
+import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router";
+import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
@@ -48,6 +50,9 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { fetchDraftMetadata, readLocalEditorDraft } from "./draft-client";
+import { attributedQuoteMarkdown } from "./quote-markdown";
 
 export function HomeView({
   locale,
@@ -397,7 +402,7 @@ export function NotificationsView({
                       </span>
                       <span className="notification-copy">
                         <span className="notification-summary">
-                          <span>{t("notificationReplyBy", { actor: notification.actorName })}</span>
+                          <span>{t(notification.kind === "mention" ? "notificationMentionBy" : "notificationReplyBy", { actor: notification.actorName })}</span>
                           <strong dir="auto">{notification.topicTitle}</strong>
                         </span>
                         <time dateTime={notification.createdAt}>
@@ -1047,7 +1052,23 @@ export function HelpSolutionsView({
       : undefined;
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
-  const submittingHelpQuestion = navigation.state === "submitting";
+  const [questionReady, setQuestionReady] = useState(false);
+  const draftUser = useHeaderAuthUser();
+  const location = useLocation();
+  useEffect(() => {
+    if (!canAskQuestion || !draftUser) return;
+    if (new URLSearchParams(location.search).has("compose")
+      || readLocalEditorDraft(draftUser.id, "help:new")) setQuestionComposerOpen(true);
+    let live = true;
+    void fetchDraftMetadata(locale).then((drafts) => {
+      if (live && drafts.some((draft) => draft.contextKey === "help:new" && draft.status === "active")) {
+        setQuestionComposerOpen(true);
+      }
+    }).catch(() => { /* Local cache remains available. */ });
+    return () => { live = false; };
+  }, [canAskQuestion, draftUser?.id, location.search, locale]);
+
+  const submittingHelpQuestion = navigation.state !== "idle";
   const submittingIntent = navigation.formData?.get("intent");
   const isSimilarChecking =
     submittingHelpQuestion
@@ -1286,8 +1307,17 @@ export function HelpSolutionsView({
                 <label htmlFor="help-question-body">{t("helpSolutionsQuestionBodyLabel")}</label>
                 <MarkdownEditor
                   id="help-question-body"
+                  draftContextKey="help:new" draftLocale={locale}
+                  draftPublicationIntent="createHelpQuestion"
+                  draftPublicationPending={isQuestionSubmitting}
+                  onPublicationReadyChange={setQuestionReady}
+                  actions={<>
+                    <button type="button" disabled={isQuestionFormBusy} onClick={() => setQuestionComposerOpen(false)}>{t("postEditCancel")}</button>
+                    <button type="submit" name="intent" value="createHelpQuestion" disabled={isQuestionFormBusy || !questionReady}>
+                      {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
+                    </button>
+                  </>}
                   name="body"
-                  required
                   rows={8}
                   defaultValue={similarAction?.draft.body}
                   disabled={isQuestionFormBusy}
@@ -1368,14 +1398,6 @@ export function HelpSolutionsView({
               >
                 {t(isSimilarChecking ? "helpSolutionsSimilarChecking" : "helpSolutionsSimilarCheck")}
               </button>
-              <button
-                type="submit"
-                name="intent"
-                value="createHelpQuestion"
-                disabled={isQuestionFormBusy}
-              >
-                {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
-              </button>
             </footer>
           </Form>
         ) : null}
@@ -1400,7 +1422,7 @@ export function HelpSolutionsView({
 }
 
 export type AttentionMode = "signals" | "complaints" | "security";
-export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "group1" | "group2" | "group3";
+export type AttentionGroup = "needs-details" | "needs-review" | "solution-outdated" | "duplicate" | "appeals" | "mixed" | "attachments" | "group1" | "group2" | "group3";
 
 type AttentionCasePresentation = Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string };
 type AttentionQueuePresentation = {
@@ -1408,13 +1430,35 @@ type AttentionQueuePresentation = {
   hasMore: boolean;
   page: number;
 };
+type SecurityAttachmentEventPresentation = {
+  id: string;
+  uploadId: string;
+  uploadedByUserId: string;
+  contextKey: string;
+  draftId: string;
+  fileName: string;
+  declaredMime: string;
+  detectedType: string;
+  reason: string;
+  declaredByteSize: number;
+  createdAt: string;
+};
+type SecurityAttachmentQueuePresentation = {
+  events: SecurityAttachmentEventPresentation[];
+  hasMore: boolean;
+  page: number;
+};
 
-export function AttentionCenterView({ locale, mode, group, queue, counts, actionData, isPreview = false }: {
+export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
+  canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
   queue: AttentionQueuePresentation | null;
+  securityQueue?: SecurityAttachmentQueuePresentation | null;
   counts?: ForumAttentionQueueCounts | null;
+  canViewHelpAttention?: boolean;
+  canReadSecurityAttachments?: boolean;
   referenceTime?: string;
   actionData?: ForumMutationError;
   isPreview?: boolean;
@@ -1433,6 +1477,10 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
     { id: "duplicate", label: t("helpDuplicateBadge") },
     { id: "appeals", label: t("helpAttentionAppeals") },
     { id: "mixed", label: t("helpAttentionMixed") },
+  ] : mode === "security" ? [
+    { id: "attachments", label: t("attentionSecurityAttachments") },
+    { id: "group2", label: t("attentionPlaceholderGroup2") },
+    { id: "group3", label: t("attentionPlaceholderGroup3") },
   ] : [
     { id: "group1", label: t("attentionPlaceholderGroup1") },
     { id: "group2", label: t("attentionPlaceholderGroup2") },
@@ -1447,7 +1495,9 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
         <header className="help-solutions-heading attention-center-heading">
           <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
           <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
-            {(["signals", "complaints", "security"] as const).map(item => (
+            {(["signals", "complaints", "security"] as const)
+              .filter(item => item === "security" ? canReadSecurityAttachments : canViewHelpAttention)
+              .map(item => (
               <Link key={item}
                 className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
                 to={pathFor(item)} aria-current={mode === item ? "page" : undefined}>
@@ -1477,7 +1527,17 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
                 ? "attentionCaseNoLongerPending" : "attentionCaseActionFailed")}
             </p>
           ) : null}
-          {mode !== "signals" ? (
+          {mode === "security" && group === "attachments" ? (
+            !securityQueue || securityQueue.events.length === 0 ? (
+              <EmptyState>{t("attentionSecurityAttachmentsEmpty")}</EmptyState>
+            ) : (
+              <ul className="attention-case-list">
+                {securityQueue.events.map(event => <li key={event.id}>
+                  <SecurityAttachmentEventCard event={event} locale={locale} />
+                </li>)}
+              </ul>
+            )
+          ) : mode !== "signals" ? (
             <EmptyState>{t("attentionPlaceholderEmpty")}</EmptyState>
           ) : cases.length === 0 ? (
             <EmptyState>{t("helpSolutionsNeedsAttentionEmpty")}</EmptyState>
@@ -1494,10 +1554,63 @@ export function AttentionCenterView({ locale, mode, group, queue, counts, action
               <span>{queue.page + 1}</span>
               {queue.hasMore ? <Link to={pathFor(mode, group, queue.page + 1)}>{t("attentionCaseNext")}</Link> : null}
             </nav>
+          ) : mode === "security" && group === "attachments" && securityQueue
+            && (securityQueue.page > 0 || securityQueue.hasMore) ? (
+            <nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>
+              {securityQueue.page > 0
+                ? <Link to={pathFor(mode, group, securityQueue.page - 1)}>{t("attentionCasePrevious")}</Link>
+                : null}
+              <span>{securityQueue.page + 1}</span>
+              {securityQueue.hasMore
+                ? <Link to={pathFor(mode, group, securityQueue.page + 1)}>{t("attentionCaseNext")}</Link>
+                : null}
+            </nav>
           ) : null}
         </section>
       </div>
     </ForumShell>
+  );
+}
+
+function safeSecurityText(value: string): string {
+  return [...value].map((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint < 32 || codePoint === 127 || /\p{Cf}/u.test(character)
+      ? `\\u{${codePoint.toString(16).toUpperCase()}}`
+      : character;
+  }).join("");
+}
+
+function SecurityAttachmentEventCard({ event, locale }: {
+  event: SecurityAttachmentEventPresentation;
+  locale: string;
+}) {
+  const { t } = useTranslation("common");
+  const dateLabel = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+  }).format(new Date(event.createdAt));
+  return (
+    <article className="attention-case attention-security-attachment-event">
+      <div className="attention-case-heading">
+        <span className="attention-case-kind">{t("attentionSecurityAttachmentEvent")}</span>
+        <span className="attention-case-id">#{event.id}</span>
+        <time dateTime={event.createdAt}>{dateLabel} UTC</time>
+      </div>
+      <div className="attention-case-explanation">
+        <strong>{t("attentionSecurityAttachmentFile")}</strong>
+        <p><bdi dir="auto">{safeSecurityText(event.fileName)}</bdi></p>
+      </div>
+      <div className="attention-case-metadata">
+        <span>{t("attentionSecurityAttachmentReason")}: <code>{event.reason}</code></span>
+        <span>{t("attentionSecurityAttachmentDeclaredType")}: <code>{event.declaredMime || "—"}</code></span>
+        <span>{t("attentionSecurityAttachmentDetectedType")}: <code>{event.detectedType}</code></span>
+        <span>{t("attentionSecurityAttachmentSize")}: {event.declaredByteSize} B</span>
+        <span>{t("attentionSecurityAttachmentUploadId")}: <code>{event.uploadId}</code></span>
+        <span>{t("attentionSecurityAttachmentUploaderId")}: <code>{event.uploadedByUserId}</code></span>
+        <span>{t("attentionSecurityAttachmentContext")}: <code>{safeSecurityText(event.contextKey)}</code></span>
+        <span>{t("attentionSecurityAttachmentDraft")}: <code>{event.draftId}</code></span>
+      </div>
+    </article>
   );
 }
 
@@ -1730,8 +1843,10 @@ export function SectionView({
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
+  const [topicReady, setTopicReady] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(true);
   const isCreateTopicSubmitting =
-    navigation.state === "submitting"
+    navigation.state !== "idle"
     && navigation.formData?.get("intent") === "createTopic";
   const messageTotal = section.topics.reduce((sum, topic) => sum + topic.postCount, 0);
 
@@ -1755,7 +1870,7 @@ export function SectionView({
             <span>{t("messageCount", { count: messageTotal })}</span>
           </div>
           {canCreateTopic ? (
-            <a className="section-create-topic-link" href="#create-topic">
+            <a className="section-create-topic-link" href="#create-topic" onClick={() => setComposerOpen(true)}>
               {t("createTopicHeading")}
             </a>
           ) : null}
@@ -1825,6 +1940,8 @@ export function SectionView({
 
       {canCreateTopic && (
         <Form
+          hidden={!composerOpen}
+          key={section.id}
           id="create-topic"
           method="post"
           className="forum-write-form section-create-form"
@@ -1875,8 +1992,17 @@ export function SectionView({
               <label htmlFor="create-topic-body">{t("initialPostLabel")}</label>
               <MarkdownEditor
                 id="create-topic-body"
+                draftContextKey={`section:${section.id}:new`} draftLocale={locale}
+                draftPublicationIntent="createTopic"
+                draftPublicationPending={isCreateTopicSubmitting}
+                onPublicationReadyChange={setTopicReady}
+                actions={<>
+                  <button type="button" disabled={isCreateTopicSubmitting} onClick={() => setComposerOpen(false)}>{t("postEditCancel")}</button>
+                  <button type="submit" disabled={isCreateTopicSubmitting || !topicReady}>
+                    {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
+                  </button>
+                </>}
                 name="body"
-                required
                 rows={8}
                 disabled={isCreateTopicSubmitting}
                 describedBy="create-topic-body-help"
@@ -1884,18 +2010,18 @@ export function SectionView({
               <small id="create-topic-body-help">{t("messageBodyHelp")}</small>
             </div>
           </div>
-
-          <footer className="forum-write-actions">
-            <p>{t("authoringRequiredHint")}</p>
-            <button type="submit" disabled={isCreateTopicSubmitting}>
-              {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
-            </button>
-          </footer>
         </Form>
       )}
     </ForumShell>
   );
 }
+
+type PostHistoryActionData =
+  | { operation: "postHistory"; postId: string; revisions: Array<{
+      id: string; authorId: string; authorName: string; originalContent: string;
+      sourceLocale: string; createdAt: string;
+    }> }
+  | ForumMutationError;
 
 export type TopicViewActionData =
   | ForumMutationError
@@ -1950,6 +2076,8 @@ export function TopicView({
   postPresentations,
   generationUnits,
   canReply,
+  editablePostIds = [],
+  canReadPostHistory = false,
   canManageSolution,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
@@ -1969,6 +2097,8 @@ export function TopicView({
   postPresentations: readonly ContentTranslationPresentation[];
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
+  editablePostIds?: readonly string[];
+  canReadPostHistory?: boolean;
   canManageSolution: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
@@ -2028,6 +2158,7 @@ export function TopicView({
   }
   const { t } = useTranslation("common");
   const location = useLocation();
+  const navigate = useNavigate();
   const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
   const promptedBestAnswerPostId =
     isTopicAuthor
@@ -2039,13 +2170,155 @@ export function TopicView({
       : null;
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
+  const [replyReady, setReplyReady] = useState(false);
+  const [replyComposerOpen, setReplyComposerOpen] = useState(true);
+  const replyNeedsFocusRef = useRef(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editBaseRevisionId, setEditBaseRevisionId] = useState<string | null>(null);
+  const [editReady, setEditReady] = useState(false);
+  const [historyPostId, setHistoryPostId] = useState<string | null>(null);
+  const editEditorRef = useRef<MarkdownEditorHandle>(null);
+  const historyFetcher = useFetcher<PostHistoryActionData>();
+  const editPublicationRef = useRef<{
+    postId: string; expectedRevisionId: string; draftId: string; expectedVersion: number;
+  } | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
+  const activeReplyTargetPostId =
+    replyTargetPostId && messageNumberById.has(replyTargetPostId) ? replyTargetPostId : null;
   const messageLinkRequestId = useRef(0);
   const replyEditorRef = useRef<MarkdownEditorHandle>(null);
+  const replyPublicationRef = useRef<{
+    topicId: string;
+    draftId: string;
+    expectedVersion: number;
+    existingPostIds: Set<string>;
+  } | null>(null);
   const navigation = useNavigation();
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
+  const mountedTopicIdRef = useRef(topic.id);
+
+  useEffect(() => {
+    if (mountedTopicIdRef.current === topic.id) return;
+    mountedTopicIdRef.current = topic.id;
+    setReplyTargetPostId(null);
+    setQuoteSelectionErrorPostId(null);
+    setOpenMessageActionsPostId(null);
+    replyPublicationRef.current = null;
+    editPublicationRef.current = null;
+    setEditingPostId(null);
+    setEditBaseRevisionId(null);
+    setHistoryPostId(null);
+  }, [topic.id]);
+
+  useEffect(() => {
+    const requested = new URLSearchParams(location.search).get("editPost");
+    if (requested && editablePostIds.includes(requested) && editingPostId !== requested) {
+      setEditBaseRevisionId(topic.posts.find((post) => post.id === requested)?.body.id ?? null);
+      setEditReady(false);
+      setEditingPostId(requested);
+    }
+  }, [location.search, topic.id, editablePostIds]);
+
+  function openPostEditor(postId: string, revisionId: string) {
+    setEditBaseRevisionId(revisionId);
+    setEditReady(false);
+    setEditingPostId(postId);
+  }
+
+  function closePostEditor() {
+    setEditingPostId(null);
+    setEditBaseRevisionId(null);
+    setEditReady(false);
+    const params = new URLSearchParams(location.search);
+    if (!params.has("editPost")) return;
+    params.delete("editPost");
+    const search = params.toString();
+    void navigate({
+      pathname: location.pathname,
+      search: search ? `?${search}` : "",
+      hash: location.hash,
+    }, { replace: true, preventScrollReset: true });
+  }
+
+  useEffect(() => {
+    if (navigation.state !== "submitting" || navigation.formData?.get("intent") !== "editPost") return;
+    const postId = navigation.formData.get("postId");
+    const expectedRevisionId = navigation.formData.get("expectedRevisionId");
+    const draftId = navigation.formData.get("editorDraftId");
+    const version = Number(navigation.formData.get("editorDraftVersion"));
+    if (typeof postId !== "string" || typeof expectedRevisionId !== "string"
+      || typeof draftId !== "string" || !Number.isSafeInteger(version)) return;
+    editPublicationRef.current = { postId, expectedRevisionId, draftId, expectedVersion: version };
+  }, [navigation.state, navigation.formData]);
+
+  useEffect(() => {
+    const submitted = editPublicationRef.current;
+    if (!submitted || navigation.state !== "idle") return;
+    if (forumWriteError) {
+      editPublicationRef.current = null;
+      return;
+    }
+    const updated = topic.posts.find((post) => post.id === submitted.postId);
+    if (!updated || updated.body.id === submitted.expectedRevisionId) return;
+    editEditorRef.current?.acknowledgePublished(submitted.draftId, submitted.expectedVersion + 1);
+    editPublicationRef.current = null;
+    closePostEditor();
+  }, [navigation.state, forumWriteError, topic.posts]);
+
+  useEffect(() => {
+    if (
+      navigation.state !== "submitting"
+      || navigation.formData?.get("intent") !== "reply"
+    ) return;
+    const draftId = navigation.formData.get("editorDraftId");
+    const rawVersion = navigation.formData.get("editorDraftVersion");
+    if (
+      typeof draftId !== "string"
+      || !/^[0-9a-f-]{36}$/iu.test(draftId)
+      || typeof rawVersion !== "string"
+      || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
+    ) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    const expectedVersion = Number(rawVersion);
+    if (!Number.isSafeInteger(expectedVersion)) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    replyPublicationRef.current = {
+      topicId: topic.id,
+      draftId,
+      expectedVersion,
+      existingPostIds: new Set(topic.posts.map((post) => post.id)),
+    };
+  }, [navigation.state, navigation.formData, topic.id, topic.posts]);
+
+  useEffect(() => {
+    const pending = replyPublicationRef.current;
+    if (!pending || navigation.state !== "idle") return;
+    if (forumWriteError) {
+      replyPublicationRef.current = null;
+      return;
+    }
+    if (pending.topicId !== topic.id || !location.hash.startsWith("#post-")) return;
+    let postId: string;
+    try {
+      postId = decodeURIComponent(location.hash.slice("#post-".length));
+    } catch {
+      return;
+    }
+    if (!postId || pending.existingPostIds.has(postId) || !topic.posts.some((post) => post.id === postId)) return;
+    replyEditorRef.current?.acknowledgePublished(
+      pending.draftId,
+      pending.expectedVersion + 1,
+    );
+    setReplyTargetPostId(null);
+    setQuoteSelectionErrorPostId(null);
+    replyPublicationRef.current = null;
+  }, [forumWriteError, location.hash, navigation.state, topic.id, topic.posts]);
 
   useEffect(() => {
     const latestPostId = topicReadState?.latestPostId;
@@ -2059,9 +2332,22 @@ export function TopicView({
     );
   }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
 
-  const isReplySubmitting =
-    navigation.state === "submitting"
-    && navigation.formData?.get("intent") === "reply";
+  const isEditSubmitting = navigation.state !== "idle"
+    && (navigation.formData?.get("intent") === "editPost"
+      || (navigation.state === "loading" && editPublicationRef.current !== null));
+  const isReplySubmitting = navigation.state !== "idle"
+    && (navigation.formData?.get("intent") === "reply"
+      || (navigation.state === "loading" && replyPublicationRef.current !== null));
+
+  function openPostHistory(postId: string) {
+    if (!canReadPostHistory) return;
+    if (historyPostId === postId) {
+      setHistoryPostId(null);
+      return;
+    }
+    setHistoryPostId(postId);
+    void historyFetcher.submit({ intent: "readPostHistory", postId }, { method: "post" });
+  }
 
   async function copyMessageLink(postId: string) {
     const requestId = ++messageLinkRequestId.current;
@@ -2083,7 +2369,20 @@ export function TopicView({
   }
 
 
+  useEffect(() => {
+    if (!replyComposerOpen) document.querySelector<HTMLButtonElement>(".forum-composer-resume")?.focus();
+    if (replyComposerOpen && replyNeedsFocusRef.current) {
+      replyNeedsFocusRef.current = false;
+      focusReplyForm();
+    }
+  }, [replyComposerOpen]);
+
   function focusReplyForm() {
+    if (!replyComposerOpen) {
+      replyNeedsFocusRef.current = true;
+      setReplyComposerOpen(true);
+      return;
+    }
     replyEditorRef.current?.focus();
     const heading = document.getElementById("reply-heading");
     if (typeof heading?.scrollIntoView === "function") {
@@ -2092,9 +2391,37 @@ export function TopicView({
   }
 
   function targetReply(postId: string) {
+    replyEditorRef.current?.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     focusReplyForm();
+  }
+
+  function insertAttributedQuote(postId: string, content: string) {
+    const source = topic.posts.find((post) => post.id === postId);
+    const editor = replyEditorRef.current;
+    if (!source || !editor) return;
+    const permalink = forumTopicPath(locale, topic.id) + "#post-" + encodeURIComponent(postId);
+    const quote = attributedQuoteMarkdown({
+      author: source.authorName,
+      messageNumber: messageNumberById.get(postId)!,
+      permalink,
+      content,
+    });
+    editor.setDraftParentPostId(postId);
+    setReplyTargetPostId(postId);
+    setQuoteSelectionErrorPostId(null);
+    editor.insertText(quote);
+    if (!replyComposerOpen) { replyNeedsFocusRef.current = true; setReplyComposerOpen(true); }
+    const heading = document.getElementById("reply-heading");
+    if (typeof heading?.scrollIntoView === "function") {
+      heading.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }
+
+  function quoteWholeMessage(postId: string) {
+    const source = topic.posts.find((post) => post.id === postId);
+    if (source) insertAttributedQuote(postId, source.body.originalContent);
   }
 
   function quoteSelectedText(postId: string) {
@@ -2116,20 +2443,7 @@ export function TopicView({
       return;
     }
 
-    setReplyTargetPostId(postId);
-    setQuoteSelectionErrorPostId(null);
-    const quote = selectedText
-      .split(/\r?\n/u)
-      .map((line) => `> ${line}`)
-      .join("\n") + "\n\n";
-
-    const editor = replyEditorRef.current;
-    if (!editor) return;
-    editor.insertText(quote);
-    const heading = document.getElementById("reply-heading");
-    if (typeof heading?.scrollIntoView === "function") {
-      heading.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
+    insertAttributedQuote(postId, selectedText);
   }
   return (
     <ContentGenerationNavigationBoundary
@@ -2452,6 +2766,11 @@ export function TopicView({
                               </button>
                             )}
                             {canParticipate && (
+                              <button type="button" onClick={() => quoteWholeMessage(post.id)}>
+                                {t("quoteWholeMessage")}
+                              </button>
+                            )}
+                            {canParticipate && (
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
@@ -2459,6 +2778,16 @@ export function TopicView({
                             <button type="button" onClick={() => void copyMessageLink(post.id)}>
                               {t("copyMessageLink")}
                             </button>
+                            {editablePostIds.includes(post.id) && (
+                              <button type="button" onClick={() => openPostEditor(post.id, post.body.id)}>
+                                {t("postEdit")}
+                              </button>
+                            )}
+                            {canReadPostHistory && (
+                              <button type="button" onClick={() => openPostHistory(post.id)}>
+                                {t("postHistory")}
+                              </button>
+                            )}
                             {quoteSelectionErrorPostId === post.id && (
                               <span className="topic-message-mobile-action-feedback" role="status" aria-live="polite">
                                 {t("quoteSelectionRequired")}
@@ -2512,8 +2841,95 @@ export function TopicView({
                         ? "topic-message-body has-translation"
                         : "topic-message-body"}
                     >
-                      <PostBodyContent presentation={postPresentation} />
+                      <ForumInlineAttachmentProvider attachments={(post.attachments ?? []).map((attachment) => ({
+                        ...attachment,
+                        url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                      }))}>
+                        <PostBodyContent presentation={postPresentation} />
+                      </ForumInlineAttachmentProvider>
                     </div>
+
+                    {post.editedAt ? (
+                      <small className="topic-message-edited">
+                        {t("postEditedAt", { date: new Date(post.editedAt).toLocaleString(locale) })}
+                      </small>
+                    ) : null}
+
+                    {editingPostId === post.id && editablePostIds.includes(post.id) ? (
+                      <Form method="post" className="forum-write-form topic-post-edit-form"
+                        aria-label={t("postEditHeading")} aria-busy={isEditSubmitting}>
+                        <input type="hidden" name="postId" value={post.id} />
+                        <input type="hidden" name="expectedRevisionId" value={editBaseRevisionId ?? ""} />
+                        <h3>{t("postEditHeading")}</h3>
+                        <MarkdownEditor
+                          key={post.id}
+                          ref={editEditorRef}
+                          id={"edit-post-" + post.id}
+                          name="body"
+                          rows={8}
+                          defaultValue={post.body.originalContent}
+                          initialPublishedRevisionId={post.body.id}
+                          onDraftRestorePublishedRevisionId={setEditBaseRevisionId}
+                          draftContextKey={`post:${post.id}:edit`}
+                          draftLocale={locale}
+                          draftPublicationIntent="editPost"
+                          draftPublicationPending={isEditSubmitting}
+                          onPublicationReadyChange={setEditReady}
+                          actions={<>
+                            <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>{t("postEditCancel")}</button>
+                            <button type="submit" name="intent" value="editPost"
+                              disabled={!editReady || isEditSubmitting || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
+                          </>}
+                          disabled={isEditSubmitting}
+                          existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
+                            ...attachment,
+                            url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                          }))}
+                        />
+                        <p>{t("postEditDraftHint")}</p>
+                        {editBaseRevisionId !== post.body.id ? (
+                          <div className="topic-page-alert" role="alert">
+                            <p>{t(editBaseRevisionId ? "postEditRevisionChanged" : "postEditRevisionUnknown")}</p>
+                            <button type="button" disabled={isEditSubmitting} onClick={() => {
+                              editEditorRef.current?.setDraftPublishedRevisionId(post.body.id);
+                              setEditBaseRevisionId(post.body.id);
+                            }}>{t("postEditAcceptCurrentRevision")}</button>
+                          </div>
+                        ) : null}
+                      </Form>
+                    ) : null}
+
+                    {canReadPostHistory && historyPostId === post.id ? (
+                      <section className="topic-post-history" aria-label={t("postHistoryHeading")}>
+                        <h3>{t("postHistoryHeading")}</h3>
+                        {historyFetcher.state !== "idle" ? (
+                          <p role="status">{t("editorAttachmentRestoring")}</p>
+                        ) : historyFetcher.data && "operation" in historyFetcher.data
+                          && historyFetcher.data.operation === "postHistory"
+                          && historyFetcher.data.postId === post.id ? (
+                          <ol>
+                            {historyFetcher.data.revisions.map((revision) => (
+                              <li key={revision.id}>
+                                <strong>{t("postRevisionBy", {
+                                  author: revision.authorName,
+                                  date: new Date(revision.createdAt).toLocaleString(locale),
+                                })}</strong>
+                                <pre dir="auto">{revision.originalContent}</pre>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : <p role="alert">{t("postHistoryUnavailable")}</p>}
+                      </section>
+                    ) : null}
+
+                    {post.attachments && post.attachments.length > 0 ? (
+                      <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
+                        {post.attachments.map((attachment) => (
+                          <ForumAttachmentDisplay key={attachment.id} attachment={attachment}
+                            url={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`} />
+                        ))}
+                      </div>
+                    ) : null}
 
                     {generationUnit && (
                       <div className="message-generation-status">
@@ -2559,9 +2975,22 @@ export function TopicView({
                           feedback={messageLinkFeedback}
                           onCopy={copyMessageLink}
                         />
+                        {editablePostIds.includes(post.id) && (
+                          <button type="button" onClick={() => openPostEditor(post.id, post.body.id)}>
+                            {t("postEdit")}
+                          </button>
+                        )}
+                        {canReadPostHistory && (
+                          <button type="button" onClick={() => openPostHistory(post.id)}>
+                            {t("postHistory")}
+                          </button>
+                        )}
                         {canParticipate && (
                           <div className="topic-message-participation">
                             <div className="topic-message-participation-actions">
+                              <button type="button" onClick={() => quoteWholeMessage(post.id)}>
+                                {t("quoteWholeMessage")}
+                              </button>
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
@@ -2624,15 +3053,19 @@ export function TopicView({
           </ol>
         )}
 
+        {canParticipate && !replyComposerOpen ? (
+          <button type="button" className="forum-composer-resume" onClick={focusReplyForm}>{t("replyHeading")}</button>
+        ) : null}
         {canParticipate && (
           <Form
+            hidden={!replyComposerOpen}
             method="post"
             className="forum-write-form topic-reply-form"
             aria-labelledby="reply-heading"
             aria-busy={isReplySubmitting}
           >
             <input type="hidden" name="intent" value="reply" />
-            {replyTargetPostId && <input type="hidden" name="parentPostId" value={replyTargetPostId} />}
+            {activeReplyTargetPostId && <input type="hidden" name="parentPostId" value={activeReplyTargetPostId} />}
 
             <header className="forum-write-header">
               <div>
@@ -2642,12 +3075,13 @@ export function TopicView({
               <p>{t("replyHelp")}</p>
             </header>
 
-            {replyTargetPostId && messageNumberById.has(replyTargetPostId) && (
+            {activeReplyTargetPostId && (
               <div className="reply-target-banner">
-                <span>{t("replyingToMessage", { number: messageNumberById.get(replyTargetPostId)! })}</span>
+                <span>{t("replyingToMessage", { number: messageNumberById.get(activeReplyTargetPostId)! })}</span>
                 <button
                   type="button"
                   onClick={() => {
+                    replyEditorRef.current?.setDraftParentPostId(null);
                     setReplyTargetPostId(null);
                     setQuoteSelectionErrorPostId(null);
                     replyEditorRef.current?.focus();
@@ -2664,8 +3098,18 @@ export function TopicView({
                 <MarkdownEditor
                   ref={replyEditorRef}
                   id="reply-body"
+                  draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
+                  draftPublicationIntent="reply"
+                  draftPublicationPending={isReplySubmitting}
+                  onPublicationReadyChange={setReplyReady}
+                  actions={<>
+                    <button type="button" disabled={isReplySubmitting} onClick={() => setReplyComposerOpen(false)}>{t("postEditCancel")}</button>
+                    <button type="submit" disabled={isReplySubmitting || !replyReady}>
+                      {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
+                    </button>
+                  </>}
+                  onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
-                  required
                   rows={8}
                   disabled={isReplySubmitting}
                   describedBy="reply-body-help"
@@ -2674,12 +3118,6 @@ export function TopicView({
               </div>
             </div>
 
-            <footer className="forum-write-actions">
-              <p>{t("authoringRequiredHint")}</p>
-              <button type="submit" disabled={isReplySubmitting}>
-                {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
-              </button>
-            </footer>
           </Form>
         )}
       </ForumShell>

@@ -68,7 +68,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("34");
+    expect(applied.rows[0]?.count).toBe("45");
   });
 
   it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
@@ -1510,6 +1510,11 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect((await service.resolveUser("authz-user")).effectivePermissions).not.toContain("forum.solution.manageAny");
       await service.setUserOverride("authz-admin", "authz-user", "forum.solution.manageAny", null);
       expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.solution.manageAny");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.attachmentSecurity.read", "allow");
+      expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.attachmentSecurity.read");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.attachmentSecurity.read", "deny");
+      expect((await service.resolveUser("authz-user")).effectivePermissions).not.toContain("forum.attachmentSecurity.read");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.attachmentSecurity.read", null);
       await service.setUserOverride("authz-admin", "authz-user", "forum.topic.pin", "allow");
       expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.topic.pin");
       await service.setUserOverride("authz-admin", "authz-user", "forum.topic.pin", "deny");

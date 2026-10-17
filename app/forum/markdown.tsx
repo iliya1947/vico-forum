@@ -1,6 +1,49 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
+import { remarkForumParagraphDirection, remarkForumStrikethrough } from "../markdown-syntax";
+import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
+import { isAttributedQuoteHeader } from "./quote-markdown";
+import { ForumQuotedBlock } from "./quote-presentation";
+
+export interface ForumInlineAttachment {
+  id: string;
+  fileName: string;
+  byteSize: number;
+  detectedType: string;
+  url: string;
+}
+
+const InlineAttachmentsContext = createContext<readonly ForumInlineAttachment[]>([]);
+// The only nonstandard Markdown URL is an opaque attachment reference, not a
+// network URL. Actual bytes resolve solely through an authorized attachment ref.
+const inlineImageId = /^vico-attachment:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/iu;
+const rasterTypes = new Set(["png", "jpeg", "gif", "webp"]);
+
+export function ForumInlineAttachmentProvider({ attachments, children }: {
+  attachments: readonly ForumInlineAttachment[];
+  children: ReactNode;
+}) {
+  return <InlineAttachmentsContext.Provider value={attachments}>{children}</InlineAttachmentsContext.Provider>;
+}
+
+function forumUrlTransform(url: string, key: string): string {
+  return key === "src" && inlineImageId.test(url) ? url : defaultUrlTransform(url);
+}
+
+export function ForumInlineImage({ src }: { src?: string }) {
+  const attachments = useContext(InlineAttachmentsContext);
+  const match = src ? inlineImageId.exec(src) : null;
+  if (!match) return null;
+  const attachment = attachments.find((item) => item.id === match[1]);
+  if (!attachment || !rasterTypes.has(attachment.detectedType)) return null;
+  const inlineUrl = attachment.url + "&view=inline";
+  return <a href={inlineUrl} target="_blank" rel="noopener noreferrer"
+    aria-label={attachment.fileName}>
+    <img src={inlineUrl} alt={attachment.fileName} loading="lazy" decoding="async" />
+  </a>;
+}
 
 const HIGHLIGHTED_POST_LENGTH_LIMIT = 12_000;
 const HighlightBudgetContext = createContext(true);
@@ -146,16 +189,58 @@ export function highlightCode(code: string, language: string | undefined): Synta
 function ForumCodeBlock({
   code,
   language,
+  filename,
 }: {
   code: string;
   language?: string;
+  filename?: string;
 }) {
   const { t } = useTranslation("common");
   const [copyState, setCopyState] = useState<"copied" | "error" | null>(null);
+  const accountId = useHeaderAuthUser()?.id ?? null;
   const [wrap, setWrap] = useState(false);
+  const [lineNumbers, setLineNumbers] = useState(false);
+  useEffect(() => {
+    function readPreferences() {
+      try {
+        setWrap(accountId ? localStorage.getItem("vico:editor:code-wrap:" + accountId) === "true" : false);
+        setLineNumbers(accountId ? localStorage.getItem("vico:editor:code-lines:" + accountId) === "true" : false);
+      } catch { setWrap(false); setLineNumbers(false); }
+    }
+    readPreferences();
+    window.addEventListener("vico:code-preferences", readPreferences);
+    window.addEventListener("storage", readPreferences);
+    return () => {
+      window.removeEventListener("vico:code-preferences", readPreferences);
+      window.removeEventListener("storage", readPreferences);
+    };
+  }, [accountId]);
+
+  function setPreference(key: "code-wrap" | "code-lines", enabled: boolean) {
+    if (!accountId) return;
+    try {
+      localStorage.setItem("vico:editor:" + key + ":" + accountId, String(enabled));
+      window.dispatchEvent(new Event("vico:code-preferences"));
+    } catch { /* Storage denied; the current block still updates locally. */ }
+  }
   const displayLanguage = language?.trim() || null;
   const allowHighlight = useContext(HighlightBudgetContext);
   const tokens = allowHighlight ? highlightCode(code, displayLanguage ?? undefined) : [{ text: code }];
+  // Split presentation at source newlines, not at syntax-token boundaries. This
+  // keeps gutter rows aligned even when highlighting spans multiple lines.
+  const sourceLines = code.split("\n");
+  const highlightDiff = allowHighlight && code.length <= 20_000 && displayLanguage?.toLowerCase() === "diff";
+  const codeRows: ReactNode[][] = [[]];
+  let fragmentKey = 0;
+  for (const token of tokens) {
+    const fragments = token.text.split("\n");
+    fragments.forEach((fragment, index) => {
+      if (index > 0) codeRows.push([]);
+      if (fragment) codeRows[codeRows.length - 1].push(
+        token.kind ? <span key={fragmentKey++} className={`syntax-${token.kind}`}>{fragment}</span> : fragment,
+      );
+    });
+  }
 
   async function copyCode() {
     setCopyState(null);
@@ -174,14 +259,24 @@ function ForumCodeBlock({
         <span className="forum-code-language" dir={displayLanguage ? "ltr" : undefined}>
           {displayLanguage || t("codeLanguagePlainText")}
         </span>
+        {filename ? <span className="forum-code-filename" dir="ltr">{filename}</span> : null}
         <span className="forum-code-actions">
           <button
             type="button"
             aria-pressed={wrap}
-            onClick={() => setWrap((current) => !current)}
+            onClick={() => {
+              const enabled = !wrap;
+              setWrap(enabled);
+              setPreference("code-wrap", enabled);
+            }}
           >
             {t(wrap ? "codeNoWrap" : "codeWrap")}
           </button>
+          <button type="button" aria-pressed={lineNumbers} onClick={() => {
+            const enabled = !lineNumbers;
+            setLineNumbers(enabled);
+            setPreference("code-lines", enabled);
+          }}>{t("editorLineNumbers")}</button>
           <button type="button" onClick={() => void copyCode()}>
             {t("codeCopy")}
           </button>
@@ -196,13 +291,20 @@ function ForumCodeBlock({
           </span>
         )}
       </figcaption>
-      <pre tabIndex={0} dir="ltr">
-        <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
-          {tokens.map((token, index) =>
-            token.kind ? (
-              <span className={`syntax-${token.kind}`} key={index}>{token.text}</span>
-            ) : token.text
-          )}
+      <pre tabIndex={0} dir="ltr" data-line-numbers={lineNumbers ? "true" : "false"}>
+        <code className={displayLanguage ? `language-${displayLanguage}` : undefined}
+          style={{ "--forum-code-gutter-width": `${String(codeRows.length).length}ch` } as CSSProperties}>
+          {codeRows.map((parts, index) => (
+            <span className={highlightDiff
+              ? sourceLines[index]?.startsWith("+") ? "forum-code-line syntax-diff-add"
+                : sourceLines[index]?.startsWith("-") ? "forum-code-line syntax-diff-remove"
+                  : "forum-code-line"
+              : "forum-code-line"} key={index}>
+              {lineNumbers ? <span className="forum-code-line-number" aria-hidden="true">{index + 1}</span> : null}
+              <span className="forum-code-line-text">{parts}{index < codeRows.length - 1
+                ? "\n" : null}</span>
+            </span>
+          ))}
         </code>
       </pre>
     </figure>
@@ -210,37 +312,98 @@ function ForumCodeBlock({
 }
 
 const markdownComponents: Components = {
-  img: () => null,
+  blockquote: ({ node, children }) => <ForumQuotedBlock attributed={isAttributedQuoteHeader(node)}>{children}</ForumQuotedBlock>,
+  // Each prose block follows its own first strong character, not the UI locale.
+  p: ({ children, dir }) => <p dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</p>,
+  li: ({ children, dir }) => <li dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</li>,
+  h1: ({ children, dir }) => <h1 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h1>,
+  h2: ({ children, dir }) => <h2 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h2>,
+  h3: ({ children, dir }) => <h3 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h3>,
+  h4: ({ children, dir }) => <h4 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h4>,
+  h5: ({ children, dir }) => <h5 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h5>,
+  h6: ({ children, dir }) => <h6 dir={dir === "ltr" || dir === "rtl" ? dir : "auto"}>{children}</h6>,
+  img: ({ src }) => <ForumInlineImage src={src} />,
   a: ({ children: linkChildren, href, title }) => (
     <a href={href} title={title} rel="nofollow noopener noreferrer ugc" target="_blank">{linkChildren}</a>
   ),
   pre: ({ children: preChildren }) => <>{preChildren}</>,
-  code: ({ children: codeChildren, className }) => {
+  code: ({ children: codeChildren, className, node }) => {
     const source = String(codeChildren);
     const language = className?.match(/(?:^|\s)language-([^\s]+)/u)?.[1];
+    const metadata = node?.data?.meta;
+    const fileMatch = typeof metadata === "string"
+      ? /(?:^|\s)(?:file|filename)=(?:"([^"]+)"|'([^']+)'|([^\s]+))/u.exec(metadata)
+      : null;
+    const name = fileMatch?.[1] ?? fileMatch?.[2] ?? fileMatch?.[3];
+    const filename = name && name.length <= 256 && ![...name].some((character) => character.charCodeAt(0) < 32) ? name : undefined;
     const block = Boolean(language) || source.includes("\n");
 
     if (!block) {
-      return <code className={className}>{codeChildren}</code>;
+      return <code className={className} dir="ltr">{codeChildren}</code>;
     }
 
     return (
       <ForumCodeBlock
         code={source.replace(/\n$/u, "")}
         language={language}
+        filename={filename}
       />
     );
   },
 };
 
-export function ForumMarkdown({ children }: { children: string }) {
+function ForumTable({ table }: { table: MarkdownTable }) {
+  return (
+    <div className="forum-markdown-table-scroll" tabIndex={0}>
+      <table className="forum-markdown-table">
+        <thead><tr>{table.headers.map((cell, index) => (
+          <th key={index} scope="col" style={{ textAlign: table.align[index] ?? undefined }}>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
+          </th>
+        ))}</tr></thead>
+        <tbody>{table.rows.map((row, index) => <tr key={index}>
+          {row.map((cell, column) => (
+            <td key={column} style={{ textAlign: table.align[column] ?? undefined }}>
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
+            </td>
+          ))}
+        </tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function ForumMarkdownBody({ children }: { children: string }) {
+  const { t } = useTranslation("common");
+  const segments = segmentTechnicalMarkdown(children);
   return (
     <div className="post-body">
-      <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
-        <ReactMarkdown components={markdownComponents}>
-          {children}
-        </ReactMarkdown>
-      </HighlightBudgetContext.Provider>
+      {segments.map((segment, index) => {
+        if (segment.kind === "table") return <ForumTable table={segment} key={index} />;
+        if (segment.kind === "spoiler") return (
+          <details className="forum-markdown-spoiler" key={index}>
+            <summary>{segment.title || t("editorSpoiler")}</summary>
+            <ForumMarkdownBody>{segment.body}</ForumMarkdownBody>
+          </details>
+        );
+        return (
+          <ReactMarkdown
+            components={markdownComponents}
+            key={index}
+            remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}
+          >
+            {segment.source}
+          </ReactMarkdown>
+        );
+      })}
     </div>
+  );
+}
+
+export function ForumMarkdown({ children }: { children: string }) {
+  return (
+    <HighlightBudgetContext.Provider value={children.length <= HIGHLIGHTED_POST_LENGTH_LIMIT}>
+      <ForumMarkdownBody>{children}</ForumMarkdownBody>
+    </HighlightBudgetContext.Provider>
   );
 }

@@ -64,6 +64,7 @@ const topic = {
 };
 
 const reader: ForumReader = {
+  searchMentionableUsers: async () => [],
   readOnlinePresence: async () => ({ count: 0, members: [] }),
   readProfile: async () => undefined,
   listCategories: async () => [{ id: "category-1", name: "Category", sectionCount: 1 }],
@@ -105,6 +106,8 @@ const reader: ForumReader = {
   readHelpSignal: async () => undefined,
   readCategory: async () => undefined,
   readSection: async (id) => id === section.id ? section : undefined,
+  readPostHistory: async () => [],
+  readPostLocation: async () => undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
 };
 

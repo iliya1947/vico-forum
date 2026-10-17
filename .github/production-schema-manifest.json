@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0033_forum_online_presence",
+  "targetMigration": "0044_attachment_draft_conflict_boundaries",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "836922af18e2f8bb844f8a71db49667e23a8ce1af8b4873fc6de94611704d56e"
+          "definitionSha256": "f4b4178955c518cb7cb759004f1423780e797b1b434c3ed81743cba11ad0d88a"
         }
       ],
       "indexes": []
@@ -913,6 +913,549 @@
         }
       ]
     },
+    "forum_attachment_draft_generations": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_draft_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_draft_generations_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_draft_generations_owner_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_attachment_draft_generations_target_check",
+          "columns": [
+            "draft_id",
+            "target_draft_id"
+          ],
+          "definitionSha256": "225cc95d2b733ca4c49088e89017e7e06cc2606f5c58335fc10cd55713adaa46"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_attachment_draft_refs": {
+      "columns": [
+        {
+          "name": "attachment_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_draft_refs_pk",
+          "columns": [
+            "attachment_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_draft_refs_attachment_owner_fk",
+          "columns": [
+            "attachment_id",
+            "owner_id"
+          ],
+          "referencedTable": "forum_attachments",
+          "referencedColumns": [
+            "id",
+            "owner_id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_attachment_draft_refs_owner_context_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "owner_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "context_key",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "draft_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_attachment_edit_snapshots": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_edit_snapshots_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_edit_snapshots_owner_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_attachment_edit_snapshots_post_fk",
+          "columns": [
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    "forum_attachment_security_events": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "upload_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "uploaded_by_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "file_name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "declared_mime",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "detected_type",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "declared_byte_size",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_security_events_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_attachment_security_events_upload_id_unique",
+          "columns": [
+            "upload_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_security_events_uploaded_by_user_id_user_id_fk",
+          "columns": [
+            "uploaded_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_attachment_security_events_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_attachments": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "object_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "file_name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "declared_mime",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "detected_type",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "response_mime",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "byte_size",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "verification_status",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "cleanup_status",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "bc587d16fe04f2dc435392330ab3f1d862259110e3f739541615410e35793930"
+        },
+        {
+          "name": "cleanup_claim_token",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "cleanup_claimed_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachments_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_attachments_id_owner_unique",
+          "columns": [
+            "id",
+            "owner_id"
+          ],
+          "nullsNotDistinct": false
+        },
+        {
+          "name": "forum_attachments_object_key_unique",
+          "columns": [
+            "object_key"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_attachments_owner_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_attachments_cleanup_claim_check",
+          "columns": [
+            "cleanup_claim_token",
+            "cleanup_claimed_at",
+            "cleanup_status"
+          ],
+          "definitionSha256": "2d707425ce7c92478cbc8a4b32507f9c3c461bf09a8ec8f99f7e2c247e29c743"
+        },
+        {
+          "name": "forum_attachments_cleanup_status_check",
+          "columns": [
+            "cleanup_status"
+          ],
+          "definitionSha256": "28de94765b2acdd77a1bea0eb308020baa4bf555346582dc01d50f5871f0fd84"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_attachments_cleanup_queue_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "cleanup_status",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_attachments_owner_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "owner_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
     "forum_categories": {
       "columns": [
         {
@@ -955,532 +1498,72 @@
       ],
       "indexes": []
     },
-    "forum_post_body_translations": {
+    "forum_editor_drafts": {
       "columns": [
         {
-          "name": "post_id",
+          "name": "owner_id",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "revision_id",
+          "name": "context_key",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "target_locale",
+          "name": "draft_id",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "source_locale",
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "status",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "translated_content",
-          "type": "text",
+          "name": "payload",
+          "type": "jsonb",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "origin",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "provider",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "provider_model",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "attribution",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "created_at",
+          "name": "edited_at",
           "type": "timestamp with time zone",
           "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_post_body_translations_pk",
-          "columns": [
-            "post_id",
-            "revision_id",
-            "target_locale"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [
-        {
-          "name": "forum_post_body_translations_revision_fk",
-          "columns": [
-            "post_id",
-            "revision_id",
-            "source_locale"
-          ],
-          "referencedTable": "forum_post_revisions",
-          "referencedColumns": [
-            "post_id",
-            "id",
-            "source_locale"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [
-        {
-          "name": "forum_post_body_translations_attribution_check",
-          "columns": [
-            "attribution"
-          ],
-          "definitionSha256": "e96c57f67a71123070833c3d02b89161641543af298f76e4a444ef754dbd2814"
-        },
-        {
-          "name": "forum_post_body_translations_content_check",
-          "columns": [
-            "translated_content"
-          ],
-          "definitionSha256": "00f78880225fe1cd2ea3608f27c0a035b329cae4e2b2ef0b4de7a0b0641856e5"
-        },
-        {
-          "name": "forum_post_body_translations_distinct_locale_check",
-          "columns": [
-            "source_locale",
-            "target_locale"
-          ],
-          "definitionSha256": "a8065e7ad680159ff86ee38366fb918c8763a3be9242d7bd4c0f1917a128845d"
-        },
-        {
-          "name": "forum_post_body_translations_metadata_check",
-          "columns": [
-            "origin",
-            "provider",
-            "provider_model"
-          ],
-          "definitionSha256": "d1228fb66001863fc8fe6de4327ec4c62336eceb3f76ef11e6eb6e46cbe45f52"
-        },
-        {
-          "name": "forum_post_body_translations_origin_check",
-          "columns": [
-            "origin"
-          ],
-          "definitionSha256": "b4a20fb1ecd6ba099e6d3cf37e042aec7ee9f26ed16418b9cf881318c01d4fa1"
-        },
-        {
-          "name": "forum_post_body_translations_source_locale_check",
-          "columns": [
-            "source_locale"
-          ],
-          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
-        },
-        {
-          "name": "forum_post_body_translations_target_locale_check",
-          "columns": [
-            "target_locale"
-          ],
-          "definitionSha256": "404caa9bb982b3d5dbc5ee2ee34d851ed74d7a0b6466b6bfa0067fbb7d006415"
-        }
-      ],
-      "indexes": []
-    },
-    "forum_post_revisions": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "post_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "author_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "original_content",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "source_locale",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_post_revisions_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [
-        {
-          "name": "forum_post_revisions_owner_source_unique",
-          "columns": [
-            "post_id",
-            "id",
-            "source_locale"
-          ],
-          "nullsNotDistinct": false
-        },
-        {
-          "name": "forum_post_revisions_post_id_id_unique",
-          "columns": [
-            "post_id",
-            "id"
-          ],
-          "nullsNotDistinct": false
-        }
-      ],
-      "foreignKeys": [
-        {
-          "name": "forum_post_revisions_author_id_user_id_fk",
-          "columns": [
-            "author_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_post_revisions_post_id_fk",
-          "columns": [
-            "post_id"
-          ],
-          "referencedTable": "forum_posts",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [
-        {
-          "name": "forum_post_revisions_content_check",
-          "columns": [
-            "original_content"
-          ],
-          "definitionSha256": "29b0a16ef15010ea71fca0c2205d354df09c7e225fbf4444a7616f6f7066275d"
-        },
-        {
-          "name": "forum_post_revisions_source_locale_check",
-          "columns": [
-            "source_locale"
-          ],
-          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
-        }
-      ],
-      "indexes": []
-    },
-    "forum_posts": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "topic_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "author_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "current_revision_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "parent_post_id",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        },
-        {
-          "name": "solution_moderation_status",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "solution_outdated_reason",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "solution_outdated_reason_kind",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_posts_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [
-        {
-          "name": "forum_posts_topic_id_id_unique",
-          "columns": [
-            "topic_id",
-            "id"
-          ],
-          "nullsNotDistinct": false
-        }
-      ],
-      "foreignKeys": [
-        {
-          "name": "forum_posts_author_id_user_id_fk",
-          "columns": [
-            "author_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_posts_current_revision_fk",
-          "columns": [
-            "id",
-            "current_revision_id"
-          ],
-          "referencedTable": "forum_post_revisions",
-          "referencedColumns": [
-            "post_id",
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": true,
-          "initiallyDeferred": true
-        },
-        {
-          "name": "forum_posts_parent_topic_fk",
-          "columns": [
-            "topic_id",
-            "parent_post_id"
-          ],
-          "referencedTable": "forum_posts",
-          "referencedColumns": [
-            "topic_id",
-            "id"
-          ],
-          "onDelete": "NO ACTION",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_posts_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [
-        {
-          "name": "forum_posts_parent_not_self_check",
-          "columns": [
-            "id",
-            "parent_post_id"
-          ],
-          "definitionSha256": "1ea94bed08bf646f8c5101aaa5a9edf9fc8b86ce49bc2e07e18173c24ff39164"
-        },
-        {
-          "name": "forum_posts_solution_moderation_status_check",
-          "columns": [
-            "solution_moderation_status"
-          ],
-          "definitionSha256": "0d9f55ce386be4d047dd62e4d9f49fbe5211dcc0472a6a97514a06caea87da1e"
-        },
-        {
-          "name": "forum_posts_solution_outdated_reason_check",
-          "columns": [
-            "solution_moderation_status",
-            "solution_outdated_reason",
-            "solution_outdated_reason_kind"
-          ],
-          "definitionSha256": "db0e66ffbaa4a5c82be18ba1e8ab2f822bd3e221079f21e8d82415b482dd5a9d"
-        },
-        {
-          "name": "forum_posts_solution_outdated_reason_kind_check",
-          "columns": [
-            "solution_outdated_reason_kind"
-          ],
-          "definitionSha256": "c757a8f693d55337ceec18ab6d3f94aabe605c48c9e505709316c6da1d41810c"
-        }
-      ],
-      "indexes": [
-        {
-          "name": "forum_posts_author_id_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "author_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_posts_parent_post_id_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "parent_post_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_posts_topic_id_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "topic_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
-    },
-    "forum_profiles": {
-      "columns": [
-        {
-          "name": "user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "bio",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": "676219f025870b893c0df8670464cfdae5f5cc073c6c44841e35f1805c6b81ce"
-        },
-        {
-          "name": "github_url",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "website_url",
-          "type": "text",
-          "nullable": true,
           "defaultSha256": null
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
           "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
         {
-          "name": "forum_profiles_pkey",
+          "name": "forum_editor_drafts_pk",
           "columns": [
-            "user_id"
+            "owner_id",
+            "context_key"
           ]
         }
       ],
       "uniqueConstraints": [],
       "foreignKeys": [
         {
-          "name": "forum_profiles_user_id_user_id_fk",
+          "name": "forum_editor_drafts_owner_id_user_id_fk",
           "columns": [
-            "user_id"
+            "owner_id"
           ],
           "referencedTable": "user",
           "referencedColumns": [
@@ -1492,100 +1575,20 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [
-        {
-          "name": "forum_profiles_bio_length",
-          "columns": [
-            "bio"
-          ],
-          "definitionSha256": "b34fbe4fb944e3ac603b9f6a940b7beecb5c19f3652018e058047fdd11dd0891"
-        },
-        {
-          "name": "forum_profiles_github_url",
-          "columns": [
-            "github_url"
-          ],
-          "definitionSha256": "657e95f13cb8573c696525c3d51b229da7475b5e734ff2c2bc32b3095304da69"
-        },
-        {
-          "name": "forum_profiles_website_url",
-          "columns": [
-            "website_url"
-          ],
-          "definitionSha256": "c7c905293793d4be32bec9f8615c58efdcfd0e2b422fb5177436446e84adffce"
-        }
-      ],
-      "indexes": []
-    },
-    "forum_sections": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "category_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_sections_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [
-        {
-          "name": "forum_sections_category_id_forum_categories_id_fk",
-          "columns": [
-            "category_id"
-          ],
-          "referencedTable": "forum_categories",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [
-        {
-          "name": "forum_sections_name_check",
-          "columns": [
-            "name"
-          ],
-          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
-        }
-      ],
+      "checks": [],
       "indexes": [
         {
-          "name": "forum_sections_category_id_idx",
+          "name": "forum_editor_drafts_owner_edited_idx",
           "unique": false,
           "method": "btree",
           "columns": [
             {
-              "name": "category_id",
+              "name": "owner_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "edited_at",
               "order": "asc",
               "nulls": "last"
             }
@@ -1916,6 +1919,1632 @@
             },
             {
               "name": "removed_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_help_signals": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_post_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "proposed_original_topic_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "submitted_by_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "explanation",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "a89df8d14a00b7bd2ead7e86414dcd5232bff306786856171b38584e153bb73f"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "resolved_by_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_help_signals_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_help_signals_proposed_original_topic_id_forum_topics_id_f",
+          "columns": [
+            "proposed_original_topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_help_signals_resolved_by_user_id_user_id_fk",
+          "columns": [
+            "resolved_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_help_signals_submitted_by_user_id_user_id_fk",
+          "columns": [
+            "submitted_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_help_signals_target_post_topic_fk",
+          "columns": [
+            "topic_id",
+            "target_post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_help_signals_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_help_signals_explanation_check",
+          "columns": [
+            "explanation"
+          ],
+          "definitionSha256": "41fa9f4ddb9049d7eb28a61b36e0f0e51358733454418a1ceb6fd91e1d4cf414"
+        },
+        {
+          "name": "forum_help_signals_kind_check",
+          "columns": [
+            "kind"
+          ],
+          "definitionSha256": "367dc501cde12f5f5e2d39181f965c145212c24d8873b03cf7e82cf6dec54ba2"
+        },
+        {
+          "name": "forum_help_signals_lifecycle_check",
+          "columns": [
+            "created_at",
+            "resolved_at",
+            "resolved_by_user_id",
+            "status"
+          ],
+          "definitionSha256": "824b8fc3cbca4bcede3dd40c182163d0bc59278050083fa123007cca994b34f8"
+        },
+        {
+          "name": "forum_help_signals_shape_check",
+          "columns": [
+            "explanation",
+            "kind",
+            "proposed_original_topic_id",
+            "target_post_id",
+            "topic_id"
+          ],
+          "definitionSha256": "dfa7b546fb4db29f3d0e6ea3402ff20bd332b9563072b8ef5bd26c45bce8a802"
+        },
+        {
+          "name": "forum_help_signals_status_check",
+          "columns": [
+            "status"
+          ],
+          "definitionSha256": "63974d7def9e85ba932ea1abc38c2bd3f7ae56a6aa2dad5f3ed8e30c8f0e9813"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_help_signals_pending_duplicate_submitter_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "proposed_original_topic_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "submitted_by_user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_help_signals_pending_needs_details_submitter_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "submitted_by_user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_help_signals_pending_review_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "status",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "kind",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_help_signals_pending_solution_submitter_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "target_post_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "submitted_by_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "kind",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_help_signals_submitter_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "submitted_by_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_online_presence": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_online_presence_pkey",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_online_presence_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_online_presence_seen_at_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "last_seen_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_post_attachments": {
+      "columns": [
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "attachment_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_post_attachments_pk",
+          "columns": [
+            "post_id",
+            "attachment_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_post_attachments_attachment_fk",
+          "columns": [
+            "attachment_id"
+          ],
+          "referencedTable": "forum_attachments",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_post_attachments_post_fk",
+          "columns": [
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_post_attachments_attachment_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "attachment_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_post_body_translations": {
+      "columns": [
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_locale",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "source_locale",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "translated_content",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "provider_model",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "attribution",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_post_body_translations_pk",
+          "columns": [
+            "post_id",
+            "revision_id",
+            "target_locale"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_post_body_translations_revision_fk",
+          "columns": [
+            "post_id",
+            "revision_id",
+            "source_locale"
+          ],
+          "referencedTable": "forum_post_revisions",
+          "referencedColumns": [
+            "post_id",
+            "id",
+            "source_locale"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_post_body_translations_attribution_check",
+          "columns": [
+            "attribution"
+          ],
+          "definitionSha256": "e96c57f67a71123070833c3d02b89161641543af298f76e4a444ef754dbd2814"
+        },
+        {
+          "name": "forum_post_body_translations_content_check",
+          "columns": [
+            "translated_content"
+          ],
+          "definitionSha256": "00f78880225fe1cd2ea3608f27c0a035b329cae4e2b2ef0b4de7a0b0641856e5"
+        },
+        {
+          "name": "forum_post_body_translations_distinct_locale_check",
+          "columns": [
+            "source_locale",
+            "target_locale"
+          ],
+          "definitionSha256": "a8065e7ad680159ff86ee38366fb918c8763a3be9242d7bd4c0f1917a128845d"
+        },
+        {
+          "name": "forum_post_body_translations_metadata_check",
+          "columns": [
+            "origin",
+            "provider",
+            "provider_model"
+          ],
+          "definitionSha256": "d1228fb66001863fc8fe6de4327ec4c62336eceb3f76ef11e6eb6e46cbe45f52"
+        },
+        {
+          "name": "forum_post_body_translations_origin_check",
+          "columns": [
+            "origin"
+          ],
+          "definitionSha256": "b4a20fb1ecd6ba099e6d3cf37e042aec7ee9f26ed16418b9cf881318c01d4fa1"
+        },
+        {
+          "name": "forum_post_body_translations_source_locale_check",
+          "columns": [
+            "source_locale"
+          ],
+          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
+        },
+        {
+          "name": "forum_post_body_translations_target_locale_check",
+          "columns": [
+            "target_locale"
+          ],
+          "definitionSha256": "404caa9bb982b3d5dbc5ee2ee34d851ed74d7a0b6466b6bfa0067fbb7d006415"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_post_revisions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "author_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "original_content",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "source_locale",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_post_revisions_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_post_revisions_owner_source_unique",
+          "columns": [
+            "post_id",
+            "id",
+            "source_locale"
+          ],
+          "nullsNotDistinct": false
+        },
+        {
+          "name": "forum_post_revisions_post_id_id_unique",
+          "columns": [
+            "post_id",
+            "id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_post_revisions_author_id_user_id_fk",
+          "columns": [
+            "author_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_post_revisions_post_id_fk",
+          "columns": [
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_post_revisions_source_locale_check",
+          "columns": [
+            "source_locale"
+          ],
+          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_posts": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "author_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "current_revision_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "parent_post_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "solution_moderation_status",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "solution_outdated_reason",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "solution_outdated_reason_kind",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "edited_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_posts_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_posts_topic_id_id_unique",
+          "columns": [
+            "topic_id",
+            "id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_posts_author_id_user_id_fk",
+          "columns": [
+            "author_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_posts_current_revision_fk",
+          "columns": [
+            "id",
+            "current_revision_id"
+          ],
+          "referencedTable": "forum_post_revisions",
+          "referencedColumns": [
+            "post_id",
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": true,
+          "initiallyDeferred": true
+        },
+        {
+          "name": "forum_posts_parent_topic_fk",
+          "columns": [
+            "topic_id",
+            "parent_post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_posts_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_posts_parent_not_self_check",
+          "columns": [
+            "id",
+            "parent_post_id"
+          ],
+          "definitionSha256": "1ea94bed08bf646f8c5101aaa5a9edf9fc8b86ce49bc2e07e18173c24ff39164"
+        },
+        {
+          "name": "forum_posts_solution_moderation_status_check",
+          "columns": [
+            "solution_moderation_status"
+          ],
+          "definitionSha256": "0d9f55ce386be4d047dd62e4d9f49fbe5211dcc0472a6a97514a06caea87da1e"
+        },
+        {
+          "name": "forum_posts_solution_outdated_reason_check",
+          "columns": [
+            "solution_moderation_status",
+            "solution_outdated_reason",
+            "solution_outdated_reason_kind"
+          ],
+          "definitionSha256": "db0e66ffbaa4a5c82be18ba1e8ab2f822bd3e221079f21e8d82415b482dd5a9d"
+        },
+        {
+          "name": "forum_posts_solution_outdated_reason_kind_check",
+          "columns": [
+            "solution_outdated_reason_kind"
+          ],
+          "definitionSha256": "c757a8f693d55337ceec18ab6d3f94aabe605c48c9e505709316c6da1d41810c"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_posts_author_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "author_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_posts_parent_post_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "parent_post_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_posts_topic_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_profiles": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "bio",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "676219f025870b893c0df8670464cfdae5f5cc073c6c44841e35f1805c6b81ce"
+        },
+        {
+          "name": "github_url",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "website_url",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_profiles_pkey",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_profiles_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_profiles_bio_length",
+          "columns": [
+            "bio"
+          ],
+          "definitionSha256": "b34fbe4fb944e3ac603b9f6a940b7beecb5c19f3652018e058047fdd11dd0891"
+        },
+        {
+          "name": "forum_profiles_github_url",
+          "columns": [
+            "github_url"
+          ],
+          "definitionSha256": "657e95f13cb8573c696525c3d51b229da7475b5e734ff2c2bc32b3095304da69"
+        },
+        {
+          "name": "forum_profiles_website_url",
+          "columns": [
+            "website_url"
+          ],
+          "definitionSha256": "c7c905293793d4be32bec9f8615c58efdcfd0e2b422fb5177436446e84adffce"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_publication_receipts": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "fingerprint",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_publication_receipts_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_publication_receipts_owner_id_user_id_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    "forum_reply_notifications": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "recipient_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "actor_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "a73d4e692033988ebd366311dcda276227e550c45aaf5ca0f1f45df41d1abba0"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_reply_notifications_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_reply_notifications_recipient_post_unique",
+          "columns": [
+            "recipient_user_id",
+            "post_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_reply_notifications_actor_user_id_user_id_fk",
+          "columns": [
+            "actor_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_post_topic_fk",
+          "columns": [
+            "topic_id",
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_recipient_user_id_user_id_fk",
+          "columns": [
+            "recipient_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_reply_notifications_kind_check",
+          "columns": [
+            "kind"
+          ],
+          "definitionSha256": "39a07de9c42344eb2d5e429022d873ec13392d386f6d12a767e0df1de5ba57c1"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_reply_notifications_recipient_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recipient_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_reply_notifications_recipient_read_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recipient_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "read_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_sections": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "category_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_sections_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_sections_category_id_forum_categories_id_fk",
+          "columns": [
+            "category_id"
+          ],
+          "referencedTable": "forum_categories",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_sections_name_check",
+          "columns": [
+            "name"
+          ],
+          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_sections_category_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "category_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_tags": {
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_tags_pkey",
+          "columns": [
+            "key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_tags_key_check",
+          "columns": [
+            "key"
+          ],
+          "definitionSha256": "9e16a783cd7601c149674bcccca3352f4db545796b4b28748208cc948c56014b"
+        },
+        {
+          "name": "forum_tags_name_check",
+          "columns": [
+            "name"
+          ],
+          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_topic_pins": {
+      "columns": [
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "pinned_by_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "pinned_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_pins_pkey",
+          "columns": [
+            "topic_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_pins_pinned_by_user_id_user_id_fk",
+          "columns": [
+            "pinned_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_pins_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_pins_order_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "pinned_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_topic_read_states": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_read_post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_read_states_pk",
+          "columns": [
+            "user_id",
+            "topic_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_read_states_post_topic_fk",
+          "columns": [
+            "topic_id",
+            "last_read_post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_read_states_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_read_states_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    "forum_topic_tags": {
+      "columns": [
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "tag_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_tags_pk",
+          "columns": [
+            "topic_id",
+            "tag_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_tags_tag_key_forum_tags_key_fk",
+          "columns": [
+            "tag_key"
+          ],
+          "referencedTable": "forum_tags",
+          "referencedColumns": [
+            "key"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_tags_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_tags_tag_key_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "tag_key",
               "order": "asc",
               "nulls": "last"
             }
@@ -3631,16 +5260,22 @@
         }
       ]
     },
-    "forum_tags": {
+    "forum_attachment_draft_contexts": {
       "columns": [
         {
-          "name": "key",
+          "name": "attachment_id",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "name",
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
@@ -3654,80 +5289,26 @@
       ],
       "primaryKeys": [
         {
-          "name": "forum_tags_pkey",
+          "name": "forum_attachment_draft_contexts_pk",
           "columns": [
-            "key"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [],
-      "checks": [
-        {
-          "name": "forum_tags_key_check",
-          "columns": [
-            "key"
-          ],
-          "definitionSha256": "9e16a783cd7601c149674bcccca3352f4db545796b4b28748208cc948c56014b"
-        },
-        {
-          "name": "forum_tags_name_check",
-          "columns": [
-            "name"
-          ],
-          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
-        }
-      ],
-      "indexes": []
-    },
-    "forum_topic_tags": {
-      "columns": [
-        {
-          "name": "topic_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "tag_key",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_topic_tags_pk",
-          "columns": [
-            "topic_id",
-            "tag_key"
+            "attachment_id",
+            "owner_id",
+            "context_key"
           ]
         }
       ],
       "uniqueConstraints": [],
       "foreignKeys": [
         {
-          "name": "forum_topic_tags_tag_key_forum_tags_key_fk",
+          "name": "forum_attachment_draft_contexts_attachment_owner_fk",
           "columns": [
-            "tag_key"
+            "attachment_id",
+            "owner_id"
           ],
-          "referencedTable": "forum_tags",
+          "referencedTable": "forum_attachments",
           "referencedColumns": [
-            "key"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_topic_tags_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
+            "id",
+            "owner_id"
           ],
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
@@ -3738,41 +5319,58 @@
       "checks": [],
       "indexes": [
         {
-          "name": "forum_topic_tags_tag_key_idx",
+          "name": "forum_attachment_draft_contexts_owner_context_idx",
           "unique": false,
           "method": "btree",
           "columns": [
             {
-              "name": "tag_key",
-              "order": "asc",
-              "nulls": "last"
+              "name": "owner_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "context_key",
+              "nulls": "last",
+              "order": "asc"
             }
           ]
         }
       ]
     },
-    "forum_topic_read_states": {
+    "forum_attachment_draft_boundaries": {
       "columns": [
         {
-          "name": "user_id",
+          "name": "owner_id",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "topic_id",
+          "name": "context_key",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "last_read_post_id",
+          "name": "draft_id",
           "type": "text",
           "nullable": false,
           "defaultSha256": null
         },
         {
-          "name": "updated_at",
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "attachment_ids",
+          "type": "jsonb",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
@@ -3780,49 +5378,21 @@
       ],
       "primaryKeys": [
         {
-          "name": "forum_topic_read_states_pk",
+          "name": "forum_attachment_draft_boundaries_pk",
           "columns": [
-            "user_id",
-            "topic_id"
+            "owner_id",
+            "context_key",
+            "draft_id",
+            "version"
           ]
         }
       ],
       "uniqueConstraints": [],
       "foreignKeys": [
         {
-          "name": "forum_topic_read_states_post_topic_fk",
+          "name": "forum_attachment_draft_boundaries_owner_id_user_id_fk",
           "columns": [
-            "topic_id",
-            "last_read_post_id"
-          ],
-          "referencedTable": "forum_posts",
-          "referencedColumns": [
-            "topic_id",
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_topic_read_states_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_topic_read_states_user_id_user_id_fk",
-          "columns": [
-            "user_id"
+            "owner_id"
           ],
           "referencedTable": "user",
           "referencedColumns": [
@@ -3836,623 +5406,6 @@
       ],
       "checks": [],
       "indexes": []
-    },
-    "forum_reply_notifications": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "recipient_user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "actor_user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "topic_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "post_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        },
-        {
-          "name": "read_at",
-          "type": "timestamp with time zone",
-          "nullable": true,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_reply_notifications_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [
-        {
-          "name": "forum_reply_notifications_recipient_post_unique",
-          "columns": [
-            "recipient_user_id",
-            "post_id"
-          ],
-          "nullsNotDistinct": false
-        }
-      ],
-      "foreignKeys": [
-        {
-          "name": "forum_reply_notifications_actor_user_id_user_id_fk",
-          "columns": [
-            "actor_user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_reply_notifications_post_topic_fk",
-          "columns": [
-            "topic_id",
-            "post_id"
-          ],
-          "referencedTable": "forum_posts",
-          "referencedColumns": [
-            "topic_id",
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_reply_notifications_recipient_user_id_user_id_fk",
-          "columns": [
-            "recipient_user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_reply_notifications_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [],
-      "indexes": [
-        {
-          "name": "forum_reply_notifications_recipient_created_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "recipient_user_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "created_at",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_reply_notifications_recipient_read_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "recipient_user_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "read_at",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
-    },
-    "forum_topic_pins": {
-      "columns": [
-        {
-          "name": "topic_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "pinned_by_user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "pinned_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_topic_pins_pkey",
-          "columns": [
-            "topic_id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [
-        {
-          "name": "forum_topic_pins_pinned_by_user_id_user_id_fk",
-          "columns": [
-            "pinned_by_user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_topic_pins_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [],
-      "indexes": [
-        {
-          "name": "forum_topic_pins_order_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "pinned_at",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "topic_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
-    },
-    "forum_help_signals": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "kind",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "topic_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "target_post_id",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "proposed_original_topic_id",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "submitted_by_user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "explanation",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": "a89df8d14a00b7bd2ead7e86414dcd5232bff306786856171b38584e153bb73f"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        },
-        {
-          "name": "resolved_by_user_id",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "resolved_at",
-          "type": "timestamp with time zone",
-          "nullable": true,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_help_signals_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [
-        {
-          "name": "forum_help_signals_proposed_original_topic_id_forum_topics_id_f",
-          "columns": [
-            "proposed_original_topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_help_signals_resolved_by_user_id_user_id_fk",
-          "columns": [
-            "resolved_by_user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_help_signals_submitted_by_user_id_user_id_fk",
-          "columns": [
-            "submitted_by_user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_help_signals_target_post_topic_fk",
-          "columns": [
-            "topic_id",
-            "target_post_id"
-          ],
-          "referencedTable": "forum_posts",
-          "referencedColumns": [
-            "topic_id",
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_help_signals_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [
-        {
-          "name": "forum_help_signals_explanation_check",
-          "columns": [
-            "explanation"
-          ],
-          "definitionSha256": "41fa9f4ddb9049d7eb28a61b36e0f0e51358733454418a1ceb6fd91e1d4cf414"
-        },
-        {
-          "name": "forum_help_signals_kind_check",
-          "columns": [
-            "kind"
-          ],
-          "definitionSha256": "367dc501cde12f5f5e2d39181f965c145212c24d8873b03cf7e82cf6dec54ba2"
-        },
-        {
-          "name": "forum_help_signals_lifecycle_check",
-          "columns": [
-            "created_at",
-            "resolved_at",
-            "resolved_by_user_id",
-            "status"
-          ],
-          "definitionSha256": "824b8fc3cbca4bcede3dd40c182163d0bc59278050083fa123007cca994b34f8"
-        },
-        {
-          "name": "forum_help_signals_shape_check",
-          "columns": [
-            "explanation",
-            "kind",
-            "proposed_original_topic_id",
-            "target_post_id",
-            "topic_id"
-          ],
-          "definitionSha256": "dfa7b546fb4db29f3d0e6ea3402ff20bd332b9563072b8ef5bd26c45bce8a802"
-        },
-        {
-          "name": "forum_help_signals_status_check",
-          "columns": [
-            "status"
-          ],
-          "definitionSha256": "63974d7def9e85ba932ea1abc38c2bd3f7ae56a6aa2dad5f3ed8e30c8f0e9813"
-        }
-      ],
-      "indexes": [
-        {
-          "name": "forum_help_signals_pending_duplicate_submitter_idx",
-          "unique": true,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "topic_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "proposed_original_topic_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "submitted_by_user_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_help_signals_pending_needs_details_submitter_idx",
-          "unique": true,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "topic_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "submitted_by_user_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_help_signals_pending_review_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "status",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "kind",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "created_at",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_help_signals_pending_solution_submitter_idx",
-          "unique": true,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "topic_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "target_post_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "submitted_by_user_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "kind",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        },
-        {
-          "name": "forum_help_signals_submitter_created_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "submitted_by_user_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "created_at",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
-    },
-    "forum_online_presence": {
-      "columns": [
-        {
-          "name": "user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "last_seen_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_online_presence_pkey",
-          "columns": [
-            "user_id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [
-        {
-          "name": "forum_online_presence_user_id_user_id_fk",
-          "columns": [
-            "user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [],
-      "indexes": [
-        {
-          "name": "forum_online_presence_seen_at_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "last_seen_at",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
     }
   },
   "triggerFunctions": [
@@ -4467,6 +5420,10 @@
     {
       "name": "delete_content_topic_title_task_with_metadata",
       "definitionSha256": "5860c2404fe0c5527ab3dcebdc2217a05ef9e4c95929d25c7f0a9236142fba12"
+    },
+    {
+      "name": "forum_attachment_require_active_ref",
+      "definitionSha256": "5c6019693d9325b1702a70756082f2504709eca0458304dad22987891f3a0565"
     },
     {
       "name": "reject_forum_revision_update",
@@ -4498,6 +5455,20 @@
       "function": "delete_content_topic_title_task_with_metadata",
       "enabled": "O",
       "definitionSha256": "63b7d9ef7019295cb75a502533bf444e45b6267f92bb1f884c797a02069f7498"
+    },
+    {
+      "table": "forum_attachment_draft_refs",
+      "name": "forum_attachment_draft_refs_active_gate",
+      "function": "forum_attachment_require_active_ref",
+      "enabled": "O",
+      "definitionSha256": "6c09152cadee210d3fc1f6339a2ef1478897deb33edd4a3a404249e53ebdad52"
+    },
+    {
+      "table": "forum_post_attachments",
+      "name": "forum_post_attachments_active_gate",
+      "function": "forum_attachment_require_active_ref",
+      "enabled": "O",
+      "definitionSha256": "80a47f2bf0f2271b5031605406d53a2264104c3d15c234f6b02de3b208381170"
     },
     {
       "table": "forum_post_revisions",

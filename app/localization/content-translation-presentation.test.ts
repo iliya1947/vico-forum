@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { attributedQuoteMarkdown } from "../forum/quote-markdown";
 
 import {
   ContentTranslationStorageUnavailableError,
@@ -86,6 +87,27 @@ describe("content translation presentation", () => {
       contentDirection: "auto",
       fallbackReason: "missing",
     });
+  });
+
+  it("falls back to the original for quote metadata corrupted in a batch current translation", async () => {
+    const originalContent = attributedQuoteMarkdown({
+      author: "Original", messageNumber: 2,
+      permalink: "/en/topics/t#post-2", content: "Quote body",
+    });
+    const source = { ...post, originalContent };
+    const service = new ContentTranslationPresentationService({
+      readBatch: async () => ({
+        translations: [
+          machine(source, "he", originalContent.replace("Original", "Altered")),
+          machine(title, "he", "כותרת"),
+        ],
+      }),
+    });
+    const selected = await service.readCurrent([source, title], "he", "rtl", () => "ltr");
+    expect(selected[0]).toMatchObject({
+      selected: "original", fallbackReason: "invalid", content: originalContent,
+    });
+    expect(selected[1]).toMatchObject({ selected: "translation", content: "כותרת" });
   });
 
   it("keeps same-source content original without consulting storage", async () => {
