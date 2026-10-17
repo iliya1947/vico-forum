@@ -54,8 +54,25 @@
 - **Новых подтверждённых current-Stage defects в этом участке не установлено.** Возможные спекулятивные отклонения не повышены до findings. Фактических запусков браузера/тестов GPT-6 здесь не было; вывод ограничен исходниками и существующей тестовой доказательной базой.
 - Для общего whole-PR gate остаётся итоговая сквозная сверка непокрытых поверхностей и корректная классификация/проверка ранее собранных findings; GPT6-01/02 ранее подтверждены Sol, GPT6-03 остаётся неподтверждённым кандидатом.
 
+**GPT6-04 — Paste при пустых `text/plain` и `text/html` может стереть выделенный текст (Простой режим; требуется runtime-проверка).**
+
+- `app/forum/markdown-editor.tsx`: захват `onPasteCapture={attachments.handlePaste}` относится только к image clipboard files; non-image file/другие бинарные clipboard formats не обрабатываются.
+- `app/forum/visual-markdown-editor.tsx`, `VisualTextLeaf.onPaste`: отменяет стандартное paste; когда оба `clipboardData.getData("text/plain")` и `getData("text/html")` пусты, не срабатывают TSV/HTML/multiline ветви, код вызывает `active.deleteContents()` и вставляет пустой Text node, затем сохраняет `onTextEdit`.
+- При выделении текста и ClipboardData без plain/html (например, non-image file из clipboard) это приводит к удалению выбранного фрагмента вместо неизменности или безопасного feedback. В `markdown-editor.test.tsx` есть тест на unsupported HTML-only clipboard, но не случай вообще без plain/html, когда возникает другая ветвь. `docs/EDITOR.md` §10 запрещает незаметную потерю данных.
+- Это **current editor functionality**, не будущий Stage. Code-derived causal candidate; браузерного воспроизведения и реального clipboard fixture GPT-6 не проводила. Проверить на нативном событии без текстовых flavors перед решением исправлять.
+
+### Итоговая сквозная сверка на stable head (2026-10-17)
+
+- Exact implementation head `b0930544218f4dba1c25d98820a7c12478c4ef57`; GitHub Actions run `38949642183`: `checks` SUCCESS, `database` SUCCESS (проверено непосредственно). Весь этап GPT-6 проведён read-only относительно PR #215.
+- Functional Editor 2.0 scope пройден по компонентным и серверным связкам/тестовой матрице: Simple/Advanced, visual/source Markdown editing, inline formatting, технические блоки, Ctrl/Cmd hotkeys, mode/source stability, history/selection, translation/quotes/mentions; черновики с CAS, terminal generations, autosave/conflict/retirement; publication replay, create topic/reply/Help, post-edit retained refs/history; attachments upload/validation/security/cleanup/download; account-scoped preferences; responsive controls, permissions и translation fallback.
+- Для этого выполнены source-trace по основным runtime paths и проверка относящихся тестовых сценариев. Собственные test execution, Chromium user journeys, physical/mobile geometry или внешнее R2/Neon у GPT-6 **не проводились**. Ранее зафиксированные в `PROJECT_STATE.md` реальные runtime проверки Codex/Sol и owner visual acceptance 2026-10-16 считаются чужими свидетельствами, не собственным воспроизведением GPT-6. Green CI не закрывает обнаруженные defects.
+- Current-Stage confirmed (техническую причинную цепочку после GPT-6 перепроверила ChatGPT-5.6 Sol): GPT6-01 — Enter внутри leaf вставляется не на позиции caret; GPT6-02 — при не-TVS `\t` paste может теряться содержимое.
+- Needs verification: GPT6-03 — cross-leaf selected range paste silently no-ops; GPT6-04 — paste with no plain/html может стереть выделение. Они представлены как кандидаты current-Stage и требуют независимой проверки Sol/доступного browser reproduction, **не** зафиксированы общим каналом как confirmed defects.
+- Никаких дополнительных подтверждённых current-Stage defects при остальных scope-проходах не выявлено; это не доказательство отсутствия других проблем и **не** одобрение реализации/merge. Браузерное покрытие именно этих edge cases остаётся неизвестным.
+- Этап source-level проверки GPT-6 завершён **с findings и указанными пределами свидетельств**. Следующее действие — передача ChatGPT-5.6 Sol для проверки status/handoff #147 и technical candidates относительно #215, затем Sol управляет последующими шагами по AGENTS.md.
+
 ### Статус и границы
 
-- Три findings переданы по прямому разрешению разработчика для независимой технической оценки; не объявлять их browser-confirmed. Отсутствие других дефектов и полнота аудита не установлены.
+- Четыре findings (два подтверждённых Sol, два кандидата) переданы по прямому разрешению разработчика для независимой технической оценки; не объявлять их browser-confirmed. Отсутствие других дефектов и полнота аудита не установлены.
 - Изменений реализации и тестов в PR #215 GPT-6 не выполняла. PR #147 используется исключительно для этого служебного handoff.
-- Следующий шаг: ChatGPT-5.6 Sol проверяет этот handoff и PR #215, оценивает обоснованность findings и определяет действующее состояние процесса и необходимость последующих проверок/исправлений в пределах текущего Stage.
+- Следующий шаг: ChatGPT-5.6 Sol проверяет обновлённый handoff #147 и PR #215, решает статус GPT6-03/04 и дальнейший review/defect triage. Реализация #215 не менялась.
