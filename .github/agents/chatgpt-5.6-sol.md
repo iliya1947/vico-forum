@@ -53,3 +53,13 @@
 - Absence and authoritative empty [] must remain distinct. Once current Editor attachment state is established, any CAS version eligible to win a conflict must carry the authoritative manifest; otherwise stale losing operations can still mutate a text-only winner.
 - Preserve 60-second sync timing, rebind, owner/context isolation, stable retry and publication boundaries. Add explicit regressions for present-legacy payload + new private upload, absent vs [], and a text-only newer winner with an older in-flight attachment mutation.
 - PR #215 remains unchanged by Sol. B–D scope is unchanged; GPT6-04 remains excluded.
+
+
+## Same-version manifest gap — 2026-10-17
+
+- A distinct manifest field fixes the legacy-name collision but is not sufficient alone.
+- Current Keep-server is client-only. A dirty losing local candidate and the remote server winner can both be based on server CAS version V.
+- A losing POST/DELETE started at V remains "current version" after Keep-server unless conflict resolution durably advances/fences an attachment boundary. With no authoritative manifest/boundary on the server, defect A survives.
+- Therefore the complete fix needs either a distinct manifest plus a server-side establish/resolve boundary before conflict dismissal, or attachment-specific durable boundary state. Regular 60-second autosave cadence remains unchanged.
+- Historical membership cannot be reconstructed from already-mutated current refs.
+- PR #215 remains untouched.
