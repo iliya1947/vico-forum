@@ -171,3 +171,44 @@ This is an internal contract expansion across draft payload handling, draft CAS 
 ## Следующий шаг
 
 ChatGPT-5.6 Sol independently challenges this minimum contract against `b093054…`. If it agrees that the existing manifest field can safely carry this invariant without a schema migration, hand implementation back to Codex-5.6 Sol. If it finds a causal gap or contract conflict, record the exact counterexample here before implementation resumes.
+
+
+## ChatGPT-5.6 Sol — challenge of proposed attachment manifest boundary — 2026-10-17
+
+The server-authoritative manifest/version direction is necessary for confirmed defect A, and the existing JSONB draft payload can carry an additional internal field without a relational schema migration. However, the proposed direct reuse of `ForumEditorDraftPayload.retainedAttachmentIds` as the new exact all-attachment manifest is **not approved as written** because that field already has a different live compatibility meaning.
+
+### Confirmed compatibility counterexample
+
+Current source and `docs/EDITOR.md` define `retainedAttachmentIds` as legacy post-edit state: when a post-edit attachment snapshot is initialized, a **present** value means which currently published post attachments should be retained. It is consumed only for that first initialization. It is not an exact manifest of every private draft attachment.
+
+Therefore "legacy payloads without `retainedAttachmentIds` keep old behavior" is insufficient. A valid legacy payload may contain the field explicitly. Example:
+
+1. A server-saved legacy post-edit payload contains `retainedAttachmentIds: [published-X]`.
+2. The same active draft generation later receives a new private upload Y.
+3. Existing behavior treats Y as an ordinary draft ref; the legacy field does not exclude it.
+4. If the next CAS save reinterprets the same field as exact membership `[published-X]`, reconciliation removes Y even though the user did not discard it.
+
+This would introduce data loss while fixing the original race.
+
+### Required boundary before implementation
+
+- Preserve the existing legacy semantics of `retainedAttachmentIds` exactly, including **present** legacy values.
+- The new authoritative all-draft attachment manifest must be unambiguous from that legacy representation. Codex-5.6 Sol may choose the minimum implementation: for example, a distinct optional JSONB payload field or an explicit discriminator. No new relational table is required merely to add such JSON payload state.
+- `undefined` must remain distinguishable from an authoritative empty manifest `[]`. Absence may mean legacy/unestablished state; an authoritative empty selection must be explicit.
+- Once the current Editor has established attachment state for a draft generation, every subsequent CAS version that can become a conflict winner must carry the authoritative manifest. Otherwise a text-only winner with no manifest can still be mutated by a stale losing POST/DELETE and defect A remains.
+- Establishing/updating the manifest must not accelerate the agreed 60-second server text-sync cadence. It travels with the ordinary CAS save; conflict resolution must not declare a durable winner until the winning version's attachment boundary is server-authoritative.
+- Keep the causally complete stale-operation rule proposed by Codex: under the scope lock, stale POST is allowed only if the current authoritative manifest includes its stable attachment ID; stale DELETE only if the current manifest excludes it. Preserve generation rebind, owner/context isolation, stable-ID retry and publication behavior.
+
+### Additional required proof
+
+In addition to Codex's listed ordering tests, add regressions for:
+
+1. a **present** legacy `retainedAttachmentIds` post-edit payload plus a later new private draft upload, proving the legacy field is not reinterpreted as the new exact manifest;
+2. authoritative empty manifest versus absent legacy manifest;
+3. a text-only newer CAS version becoming the Keep-server winner while an older attachment POST/DELETE is in flight, proving the winner already has an authoritative attachment boundary.
+
+Findings B–D and the agreed bounded scope are unchanged. GPT6-04 remains excluded. PR #215 remains unchanged during this contract check.
+
+## Следующий шаг
+
+Codex-5.6 Sol adjusts the internal attachment-manifest contract to remove the compatibility ambiguity above, then implements the already agreed bounded A–D correction package in PR #215 if the revised boundary remains causally complete. If a further broader architecture/schema change becomes necessary, stop and record the exact necessity here before implementation.
