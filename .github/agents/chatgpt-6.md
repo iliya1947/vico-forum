@@ -76,3 +76,30 @@
 - Четыре findings (два подтверждённых Sol, два кандидата) переданы по прямому разрешению разработчика для независимой технической оценки; не объявлять их browser-confirmed. Отсутствие других дефектов и полнота аудита не установлены.
 - Изменений реализации и тестов в PR #215 GPT-6 не выполняла. PR #147 используется исключительно для этого служебного handoff.
 - Следующий шаг: ChatGPT-5.6 Sol проверяет обновлённый handoff #147 и PR #215, решает статус GPT6-03/04 и дальнейший review/defect triage. Реализация #215 не менялась.
+
+
+## Повторная проверка исправленного head `aa9dad2` — 2026-10-17
+
+- PR #215: `aa9dad2206fa189dd71ee35f083338f990a16b61`, exactly 4 commits ahead of previously reviewed `b0930544218f4dba1c25d98820a7c12478c4ef57`; 29 changed paths including new migration 0044 and schema manifest.
+- Review was independent of Sol's detailed review results. Verified CI [39062423117](https://github.com/iliya1947/vico-forum/actions/runs/39062423117): `checks` and `database` SUCCESS. Codex reports 1033 application and 311 PostgreSQL tests. GPT-6 did not run native Chromium or a separate test suite on this head.
+- Reviewed the four confirmed correction areas B/C/D and attachment A across `visual-markdown-editor.tsx`, `markdown-editor.tsx`, `use-editor-draft.tsx`, `editor-attachments.tsx`, `draft-client.ts`, `draft-data.ts`, `attachment-upload.ts`, `db/forum-editor-drafts.ts`, `db/forum-attachments.ts`, `db/attachment-draft-generation.ts`, relevant route interfaces, migration and regression suites, compared against earlier head and `docs/EDITOR.md`.
+- B within-leaf Enter now uses real DOM Range offsets; C cross-leaf paste now uses editor-wide visualDomSelection; D explicit plain paste precedes TSV conversion and invalid TSV falls back to escaped plain source. A uses distinct `draftAttachmentIds` vs legacy `retainedAttachmentIds`, durable per-text-version pre-mutation boundary, explicit CAS resolve, original-version upload/delete checks and exact ref reconciliation. The related source tests and native PostgreSQL race cases cover both POST/DELETE orderings; independently reproducing these in a real browser was outside GPT-6 tool environment.
+ 
+### GPT6-R1 — new source-confirmed current-scope regression: paste into Simple table cell input
+
+- Previous head `b093054…` handled paste on individual `VisualTextLeaf` spans. Corrected head `aa9dad2…`, `app/forum/visual-markdown-editor.tsx`, moved `onPaste` onto the entire `<section className="markdown-editor-visual">` (near lines 553–580). The same section contains `VisualTable` with editable native `<input>` cells (around lines 500–516).
+- A normal textual paste into a table cell bubbles to the section's React `onPaste`. The handler calls `preventDefault()` and `stopPropagation()` **before** validating selection. `visualDomSelection` maps DOM Ranges inside `[data-visual-text]` leaves, not the native selection inside an `input`. The fallback therefore displays a warning and does not paste into the cell. If an earlier editor-wide selection remains, it can instead direct the clipboard content to an unrelated body range.
+- Current Stage: `docs/EDITOR.md` §3 explicitly requires visual table-cell editing in Simple mode; paste is a basic part of that workflow. The existing test `edits ordinary table cells and adds rows while preserving the body source` tests `change`, **not paste**.
+- This is a direct source/event-bubbling causal regression introduced by moving paste handling to the parent section. **Native Chromium input-paste reproduction not performed**, so label as source-confirmed / browser reproduction pending, not as independently browser-confirmed. Proposed diagnostic: paste plain text into an existing editable Simple table cell and compare with `b093054…`; ensure the body source changes only at that cell.
+
+### GPT6-R2 — candidate: cross-leaf Enter still falls back to leaf-end instead of replacing selected range
+
+- `VisualTextLeaf.onKeyDown` now computes `visualSelectionOffsets(event.currentTarget, activeRange, …)`, but that helper returns `null` when either range endpoint is outside this leaf. For an actual selection spanning sibling formatted leaves, Enter is prevented and falls back to `{start: range.end, end: range.end}`, not the selected source range.
+- Such a cross-leaf selection is already representable (toolbar selection and cross-leaf paste tests). Under an Enter keydown delivered to the start/active leaf, this produces insertion at the leaf end rather than replacing the selection; the precise native Chromium event routing for Enter was not tested by GPT-6, so **keep as candidate**. This is within the agreed current-stage B/caret-selection correction scope, not future polish.
+- Focused browser check: `Alpha **Beta** Gamma`, select across `Alpha` and `Beta`, press Enter, compare resulting Markdown to replacement semantics; preserve untouched suffix.
+
+### Review result / handoff
+
+- Aside from R1 and R2, the source-level trace of corrected A–D and affected integration boundaries found no further sufficiently supported current-stage defect. Green CI does not rule out the regression above.
+- Findings logged under the owner's explicit permission to transfer GPT-6 findings through PR #147. No implementation/test/schema changes were made by GPT-6; exact implementation head not altered.
+- GPT-6's repeat source-level reviewer stage is complete with this evidence boundary. Next prescribed independent reviewer is Codex-5.6 Sol on the same head. Sol's detailed current-head findings were not used as review input. No final Code Review or merge is authorized.
