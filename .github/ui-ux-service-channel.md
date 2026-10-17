@@ -258,3 +258,16 @@ PR #215 remains unchanged.
 ## Следующий шаг
 
 When Codex-5.6 Sol is available again, it should resume from this causality boundary, choose the minimum complete mechanism, and only then implement the agreed A–D package in PR #215.
+
+
+## Corrected implementation head review cycle — 2026-10-17
+
+- PR #215 implementation advanced from reviewed head `b0930544218f4dba1c25d98820a7c12478c4ef57` to exact head `aa9dad2206fa189dd71ee35f083338f990a16b61` in four implementation commits containing the agreed A–D correction package.
+- Exact-head GitHub Actions CI #39062423117 completed successfully: `checks` SUCCESS and `database` SUCCESS.
+- ChatGPT-5.6 Sol completed the first independent repeat review of this corrected exact head, using the previously whole-reviewed `b093054…` as the stable ancestor and reviewing the complete four-commit delta plus affected Editor/draft/attachment/publication/cleanup boundaries.
+- Per the independent-review rule, Sol's detailed findings remain with the developer until the remaining prescribed reviewers have independently examined the same exact head.
+- PR #215 is not approved for merge by this status record.
+
+## Следующий шаг
+
+ChatGPT-6 independently performs the next whole-PR/source-level review of PR #215 exact head `aa9dad2206fa189dd71ee35f083338f990a16b61` via service PR #147. Do not use Sol's withheld findings as review input.
