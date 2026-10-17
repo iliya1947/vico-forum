@@ -83,6 +83,13 @@ function attachmentSize(request: Request): number | null {
   return Number.isSafeInteger(size) ? size : null;
 }
 
+function attachmentDraftVersion(request: Request): number | null {
+  const raw = request.headers.get("X-Vico-Draft-Version") ?? "";
+  if (!/^(0|[1-9][0-9]*)$/u.test(raw)) return null;
+  const version = Number(raw);
+  return Number.isSafeInteger(version) ? version : null;
+}
+
 function safeAttachment(attachment: ForumAttachmentMetadata) {
   return {
     id: attachment.id,
@@ -184,10 +191,13 @@ export async function action({ request, context }: { request: Request; context: 
 
   if (request.method === "DELETE") {
     const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
-    if (!isForumAttachmentUuid(attachmentId)) return json({ error: "invalid" }, 400);
+    const expectedVersion = attachmentDraftVersion(request);
+    if (!isForumAttachmentUuid(attachmentId) || expectedVersion === null) {
+      return json({ error: "invalid" }, 400);
+    }
     try {
       const removed = await store.removeDraftAttachment(
-        scope.userId, scope.contextKey, scope.draftId, attachmentId,
+        scope.userId, scope.contextKey, scope.draftId, attachmentId, expectedVersion,
       );
       return removed ? json({ outcome: "removed" }) : json({ error: "notFound" }, 404);
     } catch (error) {
@@ -218,11 +228,13 @@ export async function action({ request, context }: { request: Request; context: 
   const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
   const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);
   const size = attachmentSize(request);
+  const expectedVersion = attachmentDraftVersion(request);
   const declaredMime = request.headers.get("Content-Type")?.trim() ?? "";
   if (
     !isForumAttachmentUuid(attachmentId)
     || fileName === null
     || size === null
+    || expectedVersion === null
     || declaredMime.length > 512
     || !request.body
   ) {
@@ -295,6 +307,7 @@ export async function action({ request, context }: { request: Request; context: 
       responseMime: result.inspection.responseMime,
       byteSize: result.bytes,
       verificationStatus: result.inspection.scanStatus,
+      expectedVersion,
     });
     if (attachment.objectKey !== result.objectKey) {
       await bucket.delete(result.objectKey).catch(() => {});

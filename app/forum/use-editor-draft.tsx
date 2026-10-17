@@ -101,7 +101,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     const payload = ctx.payload;
     const previous = ctx.local;
     if (!previous && !payload.body.trim() && !payload.title.trim() && !payload.tags.trim()
-      && !(ctx.hasInput && payload.retainedAttachmentIds !== undefined)) return;
+      && !(ctx.hasInput && (payload.retainedAttachmentIds !== undefined
+        || payload.draftAttachmentIds !== undefined))) return;
     if (previous && JSON.stringify(previous.payload) === JSON.stringify(payload)) { ctx.hasInput = false; return; }
     const next: LocalEditorDraft = {
       ownerId: ctx.ownerId, contextKey: ctx.contextKey,
@@ -416,6 +417,21 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     if (ctx.conflict) updateConflict(ctx, { ...ctx.conflict, local: next });
     else setStatus("pending");
   }
+  function noteAttachmentManifest(generation: string, attachmentIds: readonly string[]) {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || ctx.draftId !== generation) return;
+    if (ctx.hasInput) capture(ctx);
+    const selected = [...new Set(attachmentIds.map((id) => id.toLowerCase()))].sort();
+    const existing = ctx.payload.draftAttachmentIds;
+    if (existing && existing.length === selected.length
+      && existing.every((id, index) => id === selected[index])) return;
+    ctx.payload = { ...ctx.payload, draftAttachmentIds: selected };
+    // Establishing an empty manifest must not turn untouched published source
+    // into a local edit. The next real text/attachment edit will carry it.
+    if (!ctx.local && selected.length === 0) return;
+    ctx.hasInput = true;
+    capture(ctx);
+  }
   function retryAttachmentReconciliation() {
     const ctx = runtimeRef.current;
     if (ctx && current(ctx)) void checkRemote(ctx);
@@ -644,7 +660,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
     preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
     attachmentSelectionEpoch,
-    noteAttachmentChange,
+    noteAttachmentChange, noteAttachmentManifest,
     reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
     statusLabel: ownerId && contextKey ? labels[status] : "",
     conflictElement,

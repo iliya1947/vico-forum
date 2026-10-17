@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
@@ -40,6 +40,7 @@ export interface CreateDraftAttachmentInput {
   responseMime: string;
   byteSize: number;
   verificationStatus: "type-checked";
+  expectedVersion?: number;
 }
 
 export interface RecordAttachmentSecurityEventInput {
@@ -91,7 +92,36 @@ function validInput(input: CreateDraftAttachmentInput): boolean {
     && input.responseMime.length > 0
     && Number.isSafeInteger(input.byteSize)
     && input.byteSize > 0
-    && input.verificationStatus === "type-checked";
+    && input.verificationStatus === "type-checked"
+    && (input.expectedVersion === undefined
+      || (Number.isSafeInteger(input.expectedVersion) && input.expectedVersion >= 0));
+}
+
+function assertAttachmentMutationVersion(
+  draft: Pick<typeof forumEditorDrafts.$inferSelect, "draftId" | "payload" | "status" | "version"> | undefined,
+  generation: string,
+  expectedVersion: number,
+  attachmentId: string,
+  desiredPresent: boolean,
+): void {
+  if (!draft) {
+    if (expectedVersion !== 0) throw new ForumAttachmentDraftConflictError();
+    return;
+  }
+  if (draft.draftId !== generation) {
+    // A fresh generation may reserve files against the terminal head's CAS base
+    // before its first ordinary 60-second text save.
+    if (draft.status !== "active" && draft.version === expectedVersion) return;
+    throw new ForumAttachmentDraftConflictError();
+  }
+  if (draft.status !== "active") throw new ForumAttachmentDraftConflictError("gone");
+  if (draft.version === expectedVersion) return;
+  if (expectedVersion > draft.version) throw new ForumAttachmentDraftConflictError();
+  const manifest = draft.payload.draftAttachmentIds;
+  if (manifest === undefined
+    || manifest.some((id) => id.toLowerCase() === attachmentId.toLowerCase()) !== desiredPresent) {
+    throw new ForumAttachmentDraftConflictError();
+  }
 }
 
 function validSecurityEvent(input: RecordAttachmentSecurityEventInput): boolean {
@@ -179,11 +209,16 @@ export class DrizzleForumAttachments {
       const [draft] = await tx.select({
         draftId: forumEditorDrafts.draftId,
         status: forumEditorDrafts.status,
+        version: forumEditorDrafts.version,
+        payload: forumEditorDrafts.payload,
       }).from(forumEditorDrafts).where(and(
         eq(forumEditorDrafts.ownerId, input.ownerId),
         eq(forumEditorDrafts.contextKey, input.contextKey),
       )).for("update").limit(1);
-      if (draft?.draftId === draftId && draft.status !== "active") {
+      if (input.expectedVersion !== undefined) {
+        assertAttachmentMutationVersion(draft, draftId, input.expectedVersion, input.id, true);
+      } else if (draft?.draftId === draftId && draft.status !== "active") {
+        // Preserve the pre-fence internal-store contract for legacy callers.
         throw new ForumAttachmentDraftConflictError("gone");
       }
       const [created] = await tx.insert(forumAttachments).values({
@@ -344,13 +379,29 @@ export class DrizzleForumAttachments {
     contextKey: string,
     draftId: string,
     attachmentId: string,
+    expectedVersion?: number,
   ): Promise<boolean> {
-    if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) {
+    if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)
+      || !isForumAttachmentUuid(attachmentId)
+      || (expectedVersion !== undefined
+        && (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0))) {
       throw new InvalidForumAttachmentError();
     }
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
       const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      const [draft] = await tx.select({
+        draftId: forumEditorDrafts.draftId,
+        status: forumEditorDrafts.status,
+        version: forumEditorDrafts.version,
+        payload: forumEditorDrafts.payload,
+      }).from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, contextKey),
+      )).for("update").limit(1);
+      if (expectedVersion !== undefined) {
+        assertAttachmentMutationVersion(draft, generation, expectedVersion, attachmentId, false);
+      }
       const deleted = await tx.delete(forumAttachmentDraftRefs)
         .where(and(
           eq(forumAttachmentDraftRefs.ownerId, ownerId),
@@ -385,6 +436,7 @@ export class DrizzleForumAttachments {
         draftId: forumEditorDrafts.draftId,
         status: forumEditorDrafts.status,
         version: forumEditorDrafts.version,
+        payload: forumEditorDrafts.payload,
       }).from(forumEditorDrafts).where(and(
         eq(forumEditorDrafts.ownerId, ownerId),
         eq(forumEditorDrafts.contextKey, contextKey),
@@ -397,7 +449,7 @@ export class DrizzleForumAttachments {
       const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, fromDraftId);
       if (generation === target) return 0;
 
-      const source = await tx.select({
+      const sourceReferences = await tx.select({
         attachmentId: forumAttachmentDraftRefs.attachmentId,
         createdAt: forumAttachmentDraftRefs.createdAt,
       })
@@ -408,6 +460,11 @@ export class DrizzleForumAttachments {
           eq(forumAttachmentDraftRefs.draftId, generation),
         ))
         .orderBy(asc(forumAttachmentDraftRefs.createdAt), asc(forumAttachmentDraftRefs.attachmentId));
+      let selectedReferences = sourceReferences;
+      if (draft.payload.draftAttachmentIds !== undefined) {
+        const selected = new Set(draft.payload.draftAttachmentIds);
+        selectedReferences = sourceReferences.filter((reference) => selected.has(reference.attachmentId));
+      }
 
       // This fence also covers a first upload that is still streaming outside this transaction.
       await tx.insert(forumAttachmentDraftGenerations).values({
@@ -424,29 +481,26 @@ export class DrizzleForumAttachments {
       if (snapshot) await tx.insert(forumAttachmentEditSnapshots).values({
         ...snapshot, draftId: target,
       }).onConflictDoNothing();
-      if (source.length === 0) return 0;
-
-      await tx.insert(forumAttachmentDraftRefs).values(source.map((reference) => ({
-        attachmentId: reference.attachmentId,
-        ownerId,
-        contextKey,
-        draftId: target,
-        createdAt: reference.createdAt,
-      }))).onConflictDoNothing();
+      if (selectedReferences.length > 0) {
+        await tx.insert(forumAttachmentDraftRefs).values(selectedReferences.map((reference) => ({
+          attachmentId: reference.attachmentId,
+          ownerId,
+          contextKey,
+          draftId: target,
+          createdAt: reference.createdAt,
+        }))).onConflictDoNothing();
+      }
 
       const deleted = await tx.delete(forumAttachmentDraftRefs)
         .where(and(
           eq(forumAttachmentDraftRefs.ownerId, ownerId),
           eq(forumAttachmentDraftRefs.contextKey, contextKey),
           eq(forumAttachmentDraftRefs.draftId, generation),
-          inArray(
-            forumAttachmentDraftRefs.attachmentId,
-            source.map((reference) => reference.attachmentId),
-          ),
         ))
         .returning({ attachmentId: forumAttachmentDraftRefs.attachmentId });
 
-      return deleted.length;
+      const selectedIds = new Set(selectedReferences.map((reference) => reference.attachmentId));
+      return deleted.filter((reference) => selectedIds.has(reference.attachmentId)).length;
     });
   }
 

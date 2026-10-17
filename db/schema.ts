@@ -501,6 +501,8 @@ export interface ForumEditorDraftPayload {
   publishedRevisionId?: string;
   /** Published references retained by a post-edit draft; omitted legacy drafts keep all. */
   retainedAttachmentIds?: string[];
+  /** Exact private draft attachment membership bound to this text-draft version. */
+  draftAttachmentIds?: string[];
 }
 
 export const forumEditorDrafts = pgTable("forum_editor_drafts", {

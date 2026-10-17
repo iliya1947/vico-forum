@@ -30,7 +30,7 @@ interface VisualEditorProps {
     saveLocal?: boolean,
   ): void;
   onSelection(selection: EditorSelection | null): void;
-  onInsertParagraph(offset: number): void;
+  onInsertParagraph(selection: EditorSelection): void;
   onEditTechnical(range?: EditorSelection): void;
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
@@ -277,7 +277,7 @@ function sourceRange(node: VisualNode): EditorSelection | null {
 }
 
 function VisualTextLeaf({
-  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph, onPasteTable, onReplaceRange, onPasteFallback,
+  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph,
 }: {
   text: string;
   range: EditorSelection;
@@ -286,13 +286,9 @@ function VisualTextLeaf({
   onTextEdit: VisualEditorProps["onTextEdit"];
   onSelection: VisualEditorProps["onSelection"];
   onInsertParagraph: VisualEditorProps["onInsertParagraph"];
-  onPasteTable: VisualEditorProps["onPasteTable"];
-  onReplaceRange: VisualEditorProps["onReplaceRange"];
-  onPasteFallback: VisualEditorProps["onPasteFallback"];
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const spellCheck = useContext(visualSpellcheckContext);
-  const forcePlainPasteRef = useRef(false);
   useLayoutEffect(() => {
     const element = ref.current;
     // The browser owns the active editable text node. React never rewrites its
@@ -353,56 +349,17 @@ function VisualTextLeaf({
       onMouseUp={reportSelection}
       onFocus={reportSelection}
       onKeyDown={(event) => {
-        if (event.key.toLowerCase() === "v" && (event.ctrlKey || event.metaKey) && event.shiftKey) {
-          forcePlainPasteRef.current = true;
-        }
         if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey) return;
-        event.preventDefault();
-        onInsertParagraph(range.end);
-      }}
-      onPaste={(event) => {
-        event.preventDefault();
-        const plain = event.clipboardData.getData("text/plain");
-        const forcePlain = forcePlainPasteRef.current;
-        forcePlainPasteRef.current = false;
-        const pastedText = plain.replace(/[\r\n]+/gu, " ");
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
-        const active = selection.getRangeAt(0);
-        if (!event.currentTarget.contains(active.commonAncestorContainer)) return;
+        const active = selection?.rangeCount ? selection.getRangeAt(0) : null;
         const currentText = event.currentTarget.textContent ?? "";
-        const offsets = visualSelectionOffsets(event.currentTarget, active, currentText);
+        const offsets = active ? visualSelectionOffsets(event.currentTarget, active, currentText) : null;
         const sourceStart = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.start) : null;
         const sourceEnd = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.end) : null;
-        if (sourceStart === null || sourceEnd === null) {
-          onPasteFallback();
-          return;
-        }
-        const selected = {
-          start: range.start + sourceStart,
-          end: range.start + sourceEnd,
-        };
-        if (plain.includes("\t")) {
-          onPasteTable(selected, plain);
-          return;
-        }
-        const html = forcePlain ? "" : event.clipboardData.getData("text/html");
-        if (html || plain.includes("\n") || plain.includes("\r")) {
-          const converted = html ? clipboardHtmlToMarkdown(html) : null;
-          if (converted !== null) onReplaceRange(selected, converted);
-          else if (plain) onReplaceRange(selected, clipboardPlainToMarkdown(plain));
-          // HTML-only unsupported clipboard entries must never erase a selection.
-          if (html && converted === null) onPasteFallback();
-          return;
-        }
-        active.deleteContents();
-        const leaf = document.createTextNode(pastedText);
-        active.insertNode(leaf);
-        active.setStartAfter(leaf);
-        active.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(active);
-        onTextEdit(range, event.currentTarget.textContent ?? "", undefined, true);
+        event.preventDefault();
+        onInsertParagraph(sourceStart === null || sourceEnd === null
+          ? { start: range.end, end: range.end }
+          : { start: range.start + sourceStart, end: range.start + sourceEnd });
       }}
     />
   );
@@ -577,6 +534,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
   const { markdown, disabled = false, sourceBase = 0, spellCheck, ...actions } = props;
   const { t } = useTranslation("common");
   const inheritedSpellCheck = useContext(visualSpellcheckContext);
+  const forcePlainPasteRef = useRef(false);
   const segments = segmentTechnicalMarkdown(markdown);
   const reportSurfaceSelection = (root: HTMLElement) => {
     actions.onSelection(visualDomSelection(root, markdown, sourceBase));
@@ -584,6 +542,41 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
   return (
     <visualSpellcheckContext.Provider value={spellCheck ?? inheritedSpellCheck}>
     <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
+      onKeyDownCapture={(event) => {
+        if (event.key.toLowerCase() === "v" && (event.ctrlKey || event.metaKey) && event.shiftKey) {
+          forcePlainPasteRef.current = true;
+        }
+      }}
+      onPaste={(event) => {
+        const plain = event.clipboardData.getData("text/plain");
+        const html = event.clipboardData.getData("text/html");
+        if (!plain && !html) return;
+        const selected = visualDomSelection(event.currentTarget, markdown, sourceBase);
+        event.preventDefault();
+        event.stopPropagation();
+        const forcePlain = forcePlainPasteRef.current;
+        forcePlainPasteRef.current = false;
+        if (!selected) {
+          actions.onPasteFallback();
+          return;
+        }
+        if (forcePlain) {
+          actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          return;
+        }
+        if (plain.includes("\t")) {
+          actions.onPasteTable(selected, plain);
+          return;
+        }
+        if (html || plain.includes("\n") || plain.includes("\r")) {
+          const converted = html ? clipboardHtmlToMarkdown(html) : null;
+          if (converted !== null) actions.onReplaceRange(selected, converted);
+          else if (plain) actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          if (html && converted === null) actions.onPasteFallback();
+          return;
+        }
+        actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+      }}
       onSelect={(event) => reportSurfaceSelection(event.currentTarget)}
       onMouseUp={(event) => reportSurfaceSelection(event.currentTarget)}
       onKeyUp={(event) => reportSurfaceSelection(event.currentTarget)}
@@ -617,9 +610,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         <p dir="auto"><VisualTextLeaf text="" raw=""
           range={{ start: sourceBase + markdown.length, end: sourceBase + markdown.length }}
           disabled={disabled} onTextEdit={actions.onTextEdit}
-          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph}
-          onPasteTable={actions.onPasteTable}
-          onReplaceRange={actions.onReplaceRange} onPasteFallback={actions.onPasteFallback} /></p>
+          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph} /></p>
       ) : null}
     </section>
     </visualSpellcheckContext.Provider>

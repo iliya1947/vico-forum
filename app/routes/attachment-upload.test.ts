@@ -96,6 +96,7 @@ function request(
     key = contextKey,
     id = draftId,
     attachmentId = uploadId,
+    version = "0",
   } = {},
 ) {
   return new Request("https://forum.test/api/attachments", {
@@ -108,6 +109,7 @@ function request(
       "X-Vico-Attachment-Size": String(size),
       "X-Vico-Draft-Context": encodeURIComponent(key),
       "X-Vico-Draft-Id": id,
+      "X-Vico-Draft-Version": version,
     },
     body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
   });
@@ -139,7 +141,7 @@ function scopedRequest(
   if (method !== "GET") headers.set("Origin", origin);
   if (attachmentId) headers.set("X-Vico-Attachment-Id", attachmentId);
   if (fromDraftId) headers.set("X-Vico-Attachment-From-Draft-Id", fromDraftId);
-  if (method === "PATCH") headers.set("X-Vico-Draft-Version", version);
+  if (method === "PATCH" || method === "DELETE") headers.set("X-Vico-Draft-Version", version);
   return new Request("https://forum.test/api/attachments", { method, headers });
 }
 
@@ -211,7 +213,7 @@ describe("private attachment upload API", () => {
     });
     expect(response.status).toBe(200);
     expect(env.removeDraftAttachment).toHaveBeenCalledWith(
-      "real-user", contextKey, draftId, attachmentId,
+      "real-user", contextKey, draftId, attachmentId, 4,
     );
   });
 
@@ -242,6 +244,34 @@ describe("private attachment upload API", () => {
     const result = await action({ request: scopedRequest("PATCH", { fromDraftId }), context: env.ctx });
     expect(result.status).toBe(409);
     expect(await result.json()).toEqual({ error: "conflict" });
+  });
+
+  it("requires a valid draft version for upload/delete and reports stale mutations as conflict", async () => {
+    const bytes = new TextEncoder().encode("hello");
+    for (const version of ["", "-1", "1.5", "9007199254740992"]) {
+      const uploadEnv = setup();
+      expect((await action({ request: request(bytes, { version }), context: uploadEnv.ctx })).status).toBe(400);
+      expect(uploadEnv.r2.put).not.toHaveBeenCalled();
+      expect(uploadEnv.createDraftAttachment).not.toHaveBeenCalled();
+
+      const deleteEnv = setup();
+      expect((await action({
+        request: scopedRequest("DELETE", { attachmentId: uploadId, version }),
+        context: deleteEnv.ctx,
+      })).status).toBe(400);
+      expect(deleteEnv.removeDraftAttachment).not.toHaveBeenCalled();
+    }
+
+    const uploadEnv = setup();
+    uploadEnv.createDraftAttachment.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
+    expect((await action({ request: request(bytes), context: uploadEnv.ctx })).status).toBe(409);
+    expect(uploadEnv.r2.delete).toHaveBeenCalledOnce();
+
+    const deleteEnv = setup();
+    deleteEnv.removeDraftAttachment.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
+    expect((await action({
+      request: scopedRequest("DELETE", { attachmentId: uploadId }), context: deleteEnv.ctx,
+    })).status).toBe(409);
   });
 
   it("discards the private upload when final persistence sees a terminal draft generation", async () => {

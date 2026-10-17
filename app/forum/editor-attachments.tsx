@@ -38,6 +38,7 @@ interface Props {
   ownerId: string | null;
   contextKey?: string;
   draftId: string;
+  expectedVersion: number;
   publishedRevisionId?: string;
   hasPublishedAttachments?: boolean;
   draftReady: boolean;
@@ -50,6 +51,7 @@ interface Props {
   completeRebind(fromDraftId: string, toDraftId: string, retired?: boolean): boolean;
   retryDraftReconciliation(): void;
   noteAttachmentChange(draftId: string): void;
+  noteAttachmentManifest(draftId: string, attachmentIds: readonly string[]): void;
   insertImage(id: string, fileName: string): void;
   removeImage(id: string): void;
 }
@@ -151,6 +153,7 @@ export function useEditorAttachments({
   ownerId,
   contextKey,
   draftId,
+  expectedVersion,
   publishedRevisionId,
   hasPublishedAttachments = false,
   draftReady,
@@ -163,6 +166,7 @@ export function useEditorAttachments({
   completeRebind,
   retryDraftReconciliation,
   noteAttachmentChange,
+  noteAttachmentManifest,
   insertImage,
   removeImage,
 }: Props) {
@@ -182,6 +186,7 @@ export function useEditorAttachments({
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
+    noteAttachmentManifest,
     insertImage,
     removeImage,
   });
@@ -190,6 +195,7 @@ export function useEditorAttachments({
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
+    noteAttachmentManifest,
     insertImage,
     removeImage,
   };
@@ -198,6 +204,8 @@ export function useEditorAttachments({
   identityRef.current = identity;
   const draftIdRef = useRef(draftId);
   draftIdRef.current = draftId;
+  const expectedVersionRef = useRef(expectedVersion);
+  expectedVersionRef.current = expectedVersion;
   const previousIdentityRef = useRef(identity);
   const previousSelectionEpochRef = useRef(selectionEpoch);
   const removedIdsRef = useRef(new Set<string>());
@@ -349,6 +357,13 @@ export function useEditorAttachments({
   );
   const selectedAttachmentIds = entries.filter((entry) => entry.status === "stored")
     .map((entry) => entry.id).sort();
+  const intendedAttachmentIds = entries.filter((entry) => entry.status !== "removing"
+    && entry.error !== "gone").map((entry) => entry.id).sort();
+
+  useEffect(() => {
+    if (!restoreReady || rebindFrom) return;
+    callbacksRef.current.noteAttachmentManifest(draftId, intendedAttachmentIds);
+  }, [draftId, intendedAttachmentIds.join("\u0000"), rebindFrom, restoreReady]);
 
   useEffect(() => {
     if (!blocking) setPublicationWarning(false);
@@ -378,6 +393,7 @@ export function useEditorAttachments({
     if (!generation || (!originalDraftId && generation !== draftId)) return;
     const identityAtStart = identity;
     const selectionAtStart = selectionEpoch;
+    const versionAtStart = expectedVersionRef.current;
     const next: UploadEntry = {
       id: stableId,
       draftId: generation,
@@ -470,6 +486,7 @@ export function useEditorAttachments({
     request.setRequestHeader("X-Vico-Attachment-Size", String(namedFile.size));
     request.setRequestHeader("X-Vico-Draft-Context", encoded(contextKey));
     request.setRequestHeader("X-Vico-Draft-Id", generation);
+    request.setRequestHeader("X-Vico-Draft-Version", String(versionAtStart));
     request.send(namedFile);
   }
 
@@ -493,6 +510,7 @@ export function useEditorAttachments({
     ) return;
     const identityAtStart = identity;
     const selectionAtStart = selectionEpoch;
+    const versionAtStart = expectedVersionRef.current;
     if (entry.error === "gone") {
       callbacksRef.current.removeImage(entry.id);
       setEntries((current) => current.filter((item) => item.id !== entry.id));
@@ -511,6 +529,7 @@ export function useEditorAttachments({
           "X-Vico-Draft-Context": encoded(contextKey),
           "X-Vico-Draft-Id": entry.draftId,
           "X-Vico-Attachment-Id": entry.id,
+          "X-Vico-Draft-Version": String(versionAtStart),
         },
         credentials: "same-origin",
       });

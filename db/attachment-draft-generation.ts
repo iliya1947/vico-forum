@@ -1,8 +1,11 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { forumAttachmentDraftGenerations } from "./schema";
+import {
+  forumAttachmentDraftGenerations,
+  forumAttachmentDraftRefs,
+} from "./schema";
 
-type AttachmentDraftConnection = Pick<NodePgDatabase, "execute" | "select">;
+type AttachmentDraftConnection = Pick<NodePgDatabase, "delete" | "execute" | "insert" | "select">;
 
 export class ForumAttachmentDraftConflictError extends Error {
   constructor(readonly reason: "conflict" | "gone" = "conflict") {
@@ -68,4 +71,44 @@ export async function retireAttachmentDraftGeneration(
     draftId: generation,
     targetDraftId: null,
   }).onConflictDoNothing();
+}
+
+/** Apply the exact attachment set carried by one successful text-draft CAS. */
+export async function reconcileAttachmentDraftManifest(
+  connection: AttachmentDraftConnection,
+  ownerId: string,
+  contextKey: string,
+  draftId: string,
+  attachmentIds: readonly string[],
+): Promise<void> {
+  const selected = [...new Set(attachmentIds.map((id) => id.toLowerCase()))];
+  const scope = and(
+    eq(forumAttachmentDraftRefs.ownerId, ownerId),
+    eq(forumAttachmentDraftRefs.contextKey, contextKey),
+    eq(forumAttachmentDraftRefs.draftId, draftId),
+  );
+  await connection.delete(forumAttachmentDraftRefs).where(selected.length
+    ? and(scope, notInArray(forumAttachmentDraftRefs.attachmentId, selected))
+    : scope);
+  if (selected.length === 0) return;
+  const existingReferences = await connection.select({
+    attachmentId: forumAttachmentDraftRefs.attachmentId,
+    createdAt: forumAttachmentDraftRefs.createdAt,
+  }).from(forumAttachmentDraftRefs).where(and(
+    eq(forumAttachmentDraftRefs.ownerId, ownerId),
+    eq(forumAttachmentDraftRefs.contextKey, contextKey),
+    inArray(forumAttachmentDraftRefs.attachmentId, selected),
+  ));
+  const references = [...new Map(existingReferences.map((reference) => [
+    reference.attachmentId,
+    reference,
+  ])).values()];
+  if (references.length === 0) return;
+  await connection.insert(forumAttachmentDraftRefs).values(references.map((reference) => ({
+    attachmentId: reference.attachmentId,
+    ownerId,
+    contextKey,
+    draftId,
+    createdAt: reference.createdAt,
+  }))).onConflictDoNothing();
 }

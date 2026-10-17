@@ -940,6 +940,22 @@ describe("MarkdownEditor", () => {
     expect(new FormData(textarea.form!).get("body")).toBe("First\n\nSecond");
   });
 
+  it("inserts a visual paragraph at the native caret inside a prose leaf", () => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="AlphaBeta" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 5);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    fireEvent.keyDown(leaf, { key: "Enter" });
+
+    expect(screen.getByLabelText("Body")).toHaveValue("Alpha\n\nBeta");
+  });
+
   it("opens the selected protected code block at its exact source span in Advanced mode", async () => {
     const first = "```js\nfirst();\n```";
     const second = "```ts\nsecond();\n```";
@@ -1232,6 +1248,23 @@ describe("MarkdownEditor", () => {
     expect(screen.getByLabelText("Body")).toHaveValue("[Alpha **Beta**](https://) Gamma");
   });
 
+  it("replaces a Simple selection spanning multiple Markdown leaves on paste", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor
+      id="body" name="body" defaultValue="Alpha **Beta** Gamma" /></>);
+    const leaves = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]');
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaves[0]!.firstChild!, 0);
+    range.setEnd(leaves[1]!.firstChild!, 4);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    fireEvent.paste(leaves[0]!, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? "replacement" : "" } });
+
+    expect(screen.getByLabelText("Body")).toHaveValue("replacement Gamma");
+  });
+
   it("does not mutate the end of the message when a Simple selection crosses protected content", async () => {
     const source = "Before\n\n```ts\nconst x = 1;\n```\n\nAfter";
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></>);
@@ -1297,6 +1330,40 @@ describe("MarkdownEditor", () => {
     fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
       format === "text/plain" ? "\n# Header" : format === "text/html" ? "<h1>Header</h1>" : "" } });
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\# Header");
+  });
+
+  it("keeps tabbed Ctrl+Shift+V content as literal plain text", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 6);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? "\n\tconst value = 1" : format === "text/html" ? "<table><tr><td>wrong</td></tr></table>" : "" } });
+
+    expect(screen.getByLabelText("Body")).toHaveValue("Before\n\tconst value = 1");
+    expect(document.querySelector(".markdown-editor-visual-table")).toBeNull();
+  });
+
+  it("preserves invalid tabular text when spreadsheet conversion declines it", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 6);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? "\nleft\tright\nonly-one" : "" } });
+
+    expect(screen.getByLabelText("Body")).toHaveValue("Before\nleft\tright\nonly-one");
   });
 
   it("captures a Simple-mode space in the middle of the document immediately", () => {

@@ -64,6 +64,9 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && (data.payload.retainedAttachmentIds === undefined || (Array.isArray(data.payload.retainedAttachmentIds)
       && data.payload.retainedAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))
       && new Set(data.payload.retainedAttachmentIds.map((id) => id.toLowerCase())).size === data.payload.retainedAttachmentIds.length))
+    && (data.payload.draftAttachmentIds === undefined || (Array.isArray(data.payload.draftAttachmentIds)
+      && data.payload.draftAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))
+      && new Set(data.payload.draftAttachmentIds.map((id) => id.toLowerCase())).size === data.payload.draftAttachmentIds.length))
     && (data.payload.publishedRevisionId === undefined
       || (typeof data.payload.publishedRevisionId === "string"
         && data.payload.publishedRevisionId.length > 0 && data.payload.publishedRevisionId.length <= 128));

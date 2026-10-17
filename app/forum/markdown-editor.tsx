@@ -282,6 +282,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       ownerId: accountId,
       contextKey: accountId ? draftContextKey : undefined,
       draftId: draft.draftId,
+      expectedVersion: draft.expectedVersion,
       publishedRevisionId: draftPublishedRevisionId,
       hasPublishedAttachments: existingInlineAttachments.length > 0,
       draftReady: draft.attachmentReady,
@@ -294,6 +295,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       completeRebind: draft.completeAttachmentRebind,
       retryDraftReconciliation: draft.retryAttachmentReconciliation,
       noteAttachmentChange: draft.noteAttachmentChange,
+      noteAttachmentManifest: draft.noteAttachmentManifest,
       insertImage,
       removeImage,
     });
@@ -596,7 +598,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function pasteSpreadsheet(range: EditorSelection, text: string) {
       const converted = spreadsheetToMarkdown(text);
       if (!converted) {
-        setPasteWarning(true);
+        replaceSourceRange(range, clipboardPlainToMarkdown(text));
         return;
       }
       replaceSourceRange(range, "\n\n" + converted + "\n\n");
@@ -718,12 +720,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       replaceSourceRange({ start: 0, end: value.length }, value.split(findText).join(replaceText));
     }
 
-    function insertVisualParagraph(offset: number) {
-      if (offset < 0 || offset > value.length) return;
-      const next = value.slice(0, offset) + "\n\n" + value.slice(offset);
-      const at = offset + 2;
-      pendingSelectionRef.current = { start: at, end: at };
-      commitSource(next);
+    function insertVisualParagraph(selection: EditorSelection) {
+      replaceSourceRange(selection, "\n\n");
     }
 
     useLayoutEffect(() => {

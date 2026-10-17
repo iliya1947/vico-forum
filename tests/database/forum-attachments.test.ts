@@ -452,6 +452,103 @@ describe("forum attachment lifecycle foundation", () => {
     expect(assets.rows).toEqual([]);
   });
 
+  it("binds stale upload and delete mutations to the winning draft manifest", async () => {
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+
+    const uploadContext = "topic:manifest-stale-upload:reply";
+    const uploadDraft = crypto.randomUUID();
+    const pending = upload(uploadContext, uploadDraft);
+    await setDraft(ownerId, uploadContext, uploadDraft, "active", 1);
+    expect((await drafts.save(ownerId, uploadContext, uploadDraft, {
+      title: "", body: "winner", tags: "", draftAttachmentIds: [],
+    }, 1)).outcome).toBe("saved");
+    await expect(store.createDraftAttachment({ ...pending, expectedVersion: 1 }))
+      .rejects.toMatchObject({ reason: "conflict" });
+
+    const deleteContext = "topic:manifest-stale-delete:reply";
+    const deleteDraft = crypto.randomUUID();
+    await setDraft(ownerId, deleteContext, deleteDraft, "active", 1);
+    const retained = await store.createDraftAttachment({
+      ...upload(deleteContext, deleteDraft), expectedVersion: 1,
+    });
+    expect((await drafts.save(ownerId, deleteContext, deleteDraft, {
+      title: "", body: "winner", tags: "", draftAttachmentIds: [retained.id],
+    }, 1)).outcome).toBe("saved");
+    await expect(store.removeDraftAttachment(ownerId, deleteContext, deleteDraft, retained.id, 1))
+      .rejects.toMatchObject({ reason: "conflict" });
+    expect(await store.readDraftAttachment(ownerId, deleteContext, deleteDraft, retained.id))
+      .toMatchObject({ id: retained.id });
+  });
+
+  it("allows an older in-flight mutation only when the winning manifest requests it", async () => {
+    const context = "topic:manifest-in-flight:reply";
+    const generation = crypto.randomUUID();
+    const pending = upload(context, generation);
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+    await setDraft(ownerId, context, generation, "active", 1);
+
+    expect((await drafts.save(ownerId, context, generation, {
+      title: "", body: "winner", tags: "", draftAttachmentIds: [pending.id],
+    }, 1)).outcome).toBe("saved");
+    await expect(store.createDraftAttachment({ ...pending, expectedVersion: 1 }))
+      .resolves.toMatchObject({ id: pending.id });
+    expect(await store.readDraftAttachment(ownerId, context, generation, pending.id))
+      .toMatchObject({ id: pending.id });
+  });
+
+  it("keeps legacy retainedAttachmentIds separate from the exact private manifest", async () => {
+    const context = "topic:legacy-retained-manifest:reply";
+    const generation = crypto.randomUUID();
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+    await setDraft(ownerId, context, generation, "active", 1);
+    const privateFile = await store.createDraftAttachment({
+      ...upload(context, generation), expectedVersion: 1,
+    });
+
+    expect((await drafts.save(ownerId, context, generation, {
+      title: "", body: "legacy edit", tags: "", retainedAttachmentIds: [],
+    }, 1)).outcome).toBe("saved");
+    expect(await store.readDraftAttachment(ownerId, context, generation, privateFile.id))
+      .toMatchObject({ id: privateFile.id });
+
+    expect((await drafts.save(ownerId, context, generation, {
+      title: "", body: "authoritative empty", tags: "",
+      retainedAttachmentIds: [], draftAttachmentIds: [],
+    }, 2)).outcome).toBe("saved");
+    expect(await store.readDraftAttachment(ownerId, context, generation, privateFile.id)).toBeNull();
+  });
+
+  it("rebinds only the winning manifest and never imports an attachment from another context", async () => {
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+    const sourceContext = "topic:manifest-source-context:reply";
+    const sourceGeneration = crypto.randomUUID();
+    const sourceFile = await store.createDraftAttachment(upload(sourceContext, sourceGeneration));
+
+    const targetGeneration = crypto.randomUUID();
+    await setDraft(ownerId, sourceContext, targetGeneration, "active", 1);
+    expect((await drafts.save(ownerId, sourceContext, targetGeneration, {
+      title: "", body: "server winner", tags: "", draftAttachmentIds: [],
+    }, 1)).outcome).toBe("saved");
+    expect(await store.rebindDraftAttachments(
+      ownerId, sourceContext, sourceGeneration, targetGeneration, 2,
+    )).toBe(0);
+    expect(await store.listDraftAttachments(ownerId, sourceContext, targetGeneration)).toEqual([]);
+    expect((await client.query(
+      "select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
+      [sourceFile.id],
+    )).rows).toEqual([]);
+
+    const foreignContext = "topic:manifest-foreign-context:reply";
+    const foreignFile = await store.createDraftAttachment(upload(foreignContext, crypto.randomUUID()));
+    const otherContext = "topic:manifest-other-context:reply";
+    const otherGeneration = crypto.randomUUID();
+    await setDraft(ownerId, otherContext, otherGeneration, "active", 1);
+    expect((await drafts.save(ownerId, otherContext, otherGeneration, {
+      title: "", body: "other", tags: "", draftAttachmentIds: [foreignFile.id],
+    }, 1)).outcome).toBe("saved");
+    expect(await store.readDraftAttachment(ownerId, otherContext, otherGeneration, foreignFile.id)).toBeNull();
+  });
+
   it.each(["published", "deleted", "expired"] as const)("keeps a %s generation closed after the text draft advances", async (terminal) => {
     const context = "section:attachment-section:new";
     const completed = crypto.randomUUID();
@@ -591,6 +688,7 @@ async function withSecurityUploadRoute(run: (fixture: {
               "X-Vico-Attachment-Size": "4",
               "X-Vico-Draft-Context": encodeURIComponent(options.context ?? contextKey),
               "X-Vico-Draft-Id": options.generation ?? draftId,
+              "X-Vico-Draft-Version": "0",
             },
             body: new Uint8Array([0x4d, 0x5a, 0x90, 0x00]).buffer,
           }),

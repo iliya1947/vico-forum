@@ -277,6 +277,21 @@ Vico Forum находится в ранней pre-release разработке.
   remain deferred. CI evidence must be recorded against the final exact head
   rather than inferred from preceding commits.
 
+- Editor 2.0 final bounded Stage 5 correction (2026-10-17, PR #215): attachment
+  membership now travels with each current draft payload in a distinct optional
+  `draftAttachmentIds` JSONB field. Absent and authoritative empty remain distinct;
+  existing `retainedAttachmentIds` post-edit snapshot semantics are unchanged.
+  Successful draft CAS reconciles refs under the existing owner/context lock, while
+  version-fenced POST/DELETE accepts an older in-flight operation only when its result
+  matches the winning manifest. Rebind moves only selected refs, removes losing source
+  refs and cannot import an attachment from another context. The normal 60-second sync,
+  stable upload retry, terminal generations and publication boundary remain unchanged.
+  Simple-mode Enter now uses the actual caret/selection; paste across Markdown leaves
+  is resolved at the visual surface; explicit plain tabbed paste bypasses table conversion;
+  failed TSV conversion inserts the original plain text. Focused UI/route tests and
+  PostgreSQL races cover these cases. External infrastructure and later-stage features
+  remain outside this correction.
+
 - Editor 2.0 publication package (2026-10-14, PR #215): new topic, Help question
   and reply actions now accept a blank body **only** with a selected, verified
   and transactionally promoted attachment set; title, permissions, generation

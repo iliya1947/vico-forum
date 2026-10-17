@@ -23,7 +23,7 @@ export interface ForumAttachmentStore {
   recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void>;
   readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage>;
   listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
-  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<boolean>;
+  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string, expectedVersion?: number): Promise<boolean>;
   rebindDraftAttachments(ownerId: string, contextKey: string, fromDraftId: string, toDraftId: string, expectedVersion: number): Promise<number>;
 }
 
@@ -85,8 +85,8 @@ export function createHyperdriveForumAttachmentStore(
     readSecurityAttachmentEvents: (page) => apply((store) => store.readSecurityAttachmentEvents(page)),
     listDraftAttachments: (ownerId, contextKey, draftId) =>
       apply((store) => store.listDraftAttachments(ownerId, contextKey, draftId)),
-    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
-      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)),
+    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId, expectedVersion) =>
+      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId, expectedVersion)),
     rebindDraftAttachments: (ownerId, contextKey, fromDraftId, toDraftId, expectedVersion) =>
       apply((store) => store.rebindDraftAttachments(ownerId, contextKey, fromDraftId, toDraftId, expectedVersion)),
   };

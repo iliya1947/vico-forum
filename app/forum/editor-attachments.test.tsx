@@ -107,6 +107,7 @@ const attachmentId = "23b93562-0550-4eef-88af-f951d6ea6138";
 interface HarnessProps {
   context?: string;
   id?: string;
+  expectedVersion?: number;
   ready?: boolean;
   revision?: number;
   selectionEpoch?: number;
@@ -114,6 +115,7 @@ interface HarnessProps {
   rebindVersion?: number | null;
   ownerId?: string;
   noteChange?: (draftId: string) => void;
+  noteManifest?: (draftId: string, attachmentIds: readonly string[]) => void;
   reserve?: () => string | null;
   completeRebind?: (fromDraftId: string, toDraftId: string) => boolean;
   retryDraft?: () => void;
@@ -123,6 +125,7 @@ interface HarnessProps {
 function Harness({
   context = contextKey,
   id = draftId,
+  expectedVersion = 0,
   ready = true,
   revision = 0,
   selectionEpoch = 0,
@@ -130,6 +133,7 @@ function Harness({
   rebindVersion = 4,
   ownerId = "alice",
   noteChange = () => {},
+  noteManifest = () => {},
   reserve = () => id,
   completeRebind = () => true,
   retryDraft = () => {},
@@ -139,6 +143,7 @@ function Harness({
     ownerId,
     contextKey: context,
     draftId: id,
+    expectedVersion,
     draftReady: ready,
     draftRevision: revision,
     selectionEpoch,
@@ -149,6 +154,7 @@ function Harness({
     completeRebind,
     retryDraftReconciliation: retryDraft,
     noteAttachmentChange: noteChange,
+    noteAttachmentManifest: noteManifest,
     insertImage: () => {},
     removeImage: () => {},
   });
@@ -306,22 +312,24 @@ describe("editor attachment UI", () => {
 
   it("invalidates losing uploads on explicit server selection in the same text generation", async () => {
     const noteChange = vi.fn();
+    const noteManifest = vi.fn();
     const winner = { id: attachmentId, fileName: "winner.txt", detectedType: "text",
       responseMime: "text/plain", byteSize: 4, verificationStatus: "type-checked" };
     let selected = false;
     vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) =>
       init?.method === "GET" ? Response.json({ attachments: selected ? [winner] : [] })
         : Response.json({ error: "unexpected" }, { status: 500 })));
-    const view = renderHarness({ noteChange });
+    const view = renderHarness({ noteChange, noteManifest, expectedVersion: 7 });
     await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
     fireEvent.change(screen.getByLabelText("Attach"), {
       target: { files: [new File(["hello"], "loser.txt")] },
     });
     const staleUpload = FakeXMLHttpRequest.instances[0]!;
+    expect(staleUpload.headers.get("X-Vico-Draft-Version")).toBe("7");
     expect(screen.getByText("loser.txt")).toBeInTheDocument();
     selected = true;
     view.rerender(<I18nextProvider i18n={runtime()}>
-      <Harness id={draftId} selectionEpoch={1} noteChange={noteChange} />
+      <Harness id={draftId} selectionEpoch={1} noteChange={noteChange} noteManifest={noteManifest} expectedVersion={8} />
     </I18nextProvider>);
     await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
     expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
@@ -333,6 +341,7 @@ describe("editor attachment UI", () => {
     await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
     expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
     expect(noteChange).not.toHaveBeenCalled();
+    expect(noteManifest).toHaveBeenLastCalledWith(draftId, [attachmentId]);
   });
 
   it("discards failed ambiguous retries when the server version wins without changing draft ID", async () => {
@@ -403,16 +412,19 @@ describe("editor attachment UI", () => {
     const loser = { id: attachmentId, fileName: "loser-delete.txt", detectedType: "text",
       responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" };
     const winner = { ...loser, id: "96b93562-0550-4eef-88af-f951d6ea6138", fileName: "winner-delete.txt" };
-    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
       if (init?.method === "DELETE") {
         return new Promise<Response>((resolve) => { resolveDelete = resolve; });
       }
       return Promise.resolve(Response.json({ attachments: [selected ? winner : loser] }));
-    }));
-    const view = renderHarness({ noteChange });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const view = renderHarness({ noteChange, expectedVersion: 5 });
     await screen.findByText("loser-delete.txt");
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     await waitFor(() => expect(resolveDelete).toBeDefined());
+    const deletion = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE");
+    expect(new Headers(deletion?.[1]?.headers).get("X-Vico-Draft-Version")).toBe("5");
     selected = true;
     view.rerender(<I18nextProvider i18n={runtime()}>
       <Harness selectionEpoch={1} noteChange={noteChange} />

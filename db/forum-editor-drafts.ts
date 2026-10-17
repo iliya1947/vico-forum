@@ -12,7 +12,13 @@ import {
   parseEditorDraftContextKey,
 } from "./editor-draft-context";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
-import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
+import {
+  ForumAttachmentDraftConflictError,
+  lockAttachmentDraftScope,
+  reconcileAttachmentDraftManifest,
+  resolveAttachmentDraftGeneration,
+  retireAttachmentDraftGeneration,
+} from "./attachment-draft-generation";
 
 export { isEditorDraftContextKey };
 
@@ -60,6 +66,9 @@ export function validEditorDraftPayload(input: unknown): input is ForumEditorDra
     && (item.retainedAttachmentIds === undefined || (Array.isArray(item.retainedAttachmentIds)
       && item.retainedAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))
       && new Set(item.retainedAttachmentIds.map((id: string) => id.toLowerCase())).size === item.retainedAttachmentIds.length))
+    && (item.draftAttachmentIds === undefined || (Array.isArray(item.draftAttachmentIds)
+      && item.draftAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))
+      && new Set(item.draftAttachmentIds.map((id: string) => id.toLowerCase())).size === item.draftAttachmentIds.length))
     && (item.parentPostId === undefined || item.parentPostId === null
       || typeof item.parentPostId === "string")
     && (item.publishedRevisionId === undefined
@@ -274,6 +283,15 @@ export class DrizzleForumEditorDrafts {
             eq(forumEditorDrafts.status, "active"),
           ))
           .returning();
+      if (rows[0] && payload.draftAttachmentIds !== undefined) {
+        await reconcileAttachmentDraftManifest(
+          tx,
+          ownerId,
+          contextKey,
+          draftId,
+          payload.draftAttachmentIds,
+        );
+      }
       return { outcome: "changed" as const, rows };
     });
 
