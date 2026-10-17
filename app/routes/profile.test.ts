@@ -61,7 +61,14 @@ describe("profile route", () => {
   it("preserves draft on invalid input and transient storage failures; rethrows bugs", async () => {
     const env = setup();
     const invalid = await action({ request: request({ websiteUrl: "javascript:alert(1)" }), params, context: env.context });
-    expect(status(invalid)).toBe(400); expect(env.updateProfile).not.toHaveBeenCalled();
+    expect(status(invalid)).toBe(400);
+    expect((invalid as { data: { draft: { bio: string; githubUrl: string; websiteUrl: string } } }).data.draft)
+      .toEqual({
+        bio: "About me",
+        githubUrl: "https://github.com/octocat",
+        websiteUrl: "javascript:alert(1)",
+      });
+    expect(env.updateProfile).not.toHaveBeenCalled();
     env.updateProfile.mockRejectedValue(new ForumStorageUnavailableError());
     const unavailable = await action({ request: request(), params, context: env.context });
     expect(status(unavailable)).toBe(503);
