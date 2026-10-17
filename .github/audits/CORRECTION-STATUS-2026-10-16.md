@@ -153,22 +153,74 @@ Governance/evidence findings перепроверены отдельно от co
 
 Package 5 не требует implementation PR, изменений product code, CI workflow или repository settings.
 
-### AC-01 — подготовить отдельно как финальный gate
+### AC-01 — подготовлен как финальный real-runtime acceptance gate
 
-Финальная real-runtime browser acceptance matrix остаётся обязательным gate UI/UX pass:
+AC-01 не является implementation package и сейчас **не выполняется**. Он запускается только после
+стабилизации product head.
 
-- actual Worker/runtime для functional/final acceptance;
-- Desktop + narrow mobile + intermediate/tablet;
-- LTR + RTL + mixed-direction content;
-- Guest + authenticated User + authorization Manager;
-- discovery/topic/participation/translation/admin/system states;
-- keyboard/focus/target sizing/overflow/zoom/reflow/reduced motion.
+#### Preconditions
 
-GitHub Pages остаётся progress preview и не заменяет real-runtime acceptance.
-Конкретный browser automation framework не требуется.
+Перед стартом AC-01 должны одновременно выполняться:
 
-AC-01 не выполняется до стабилизации финального product head. Текущая последовательность после
-завершения Editor 2.0: **merge Editor 2.0 → актуализировать/перепроверить/merge Package 3 → AC-01**.
+- Editor 2.0 PR #215 merged в `main`;
+- Package 3 / PR #229 актуализирован против смерженного Editor, повторно проверен и merged;
+- выбран один стабильный final candidate revision `main`, который больше не меняется во время
+  acceptance;
+- применимые repository checks для входящих implementation PR завершены успешно;
+- доступен actual Worker/runtime именно для выбранной candidate revision. GitHub Pages может
+  использоваться только для дополнительного visual progress viewing и не засчитывается как
+  functional/final acceptance;
+- любое внешнее deployment/runtime действие, требующее production/pre-release ресурсов,
+  выполняется только после отдельного явного разрешения владельца.
+
+#### Обязательная browser matrix
+
+На actual Worker/runtime проверить минимум:
+
+- viewports: Desktop, narrow mobile и intermediate/tablet;
+- direction: полный LTR, полный RTL и mixed-direction topic content;
+- identity: Guest, authenticated regular User и authorization Manager;
+- discovery: populated Home/Category/Section, empty Category и empty Section;
+- topics: unsolved/solved, selected best answer, multiple messages, Markdown/code, long title/body;
+- participation: create-topic/reply, validation, pending, success, forbidden и rate-limited
+  feedback там, где состояние воспроизводимо;
+- translation: original, translated, provenance, original disclosure, generation status и explicit
+  long-message control;
+- administration: roles, grants, user assignment, overrides, success/error feedback и narrow-screen
+  behavior;
+- system states: route 404, controlled unavailable/error, auth failure и safe recovery;
+- interaction: keyboard traversal, focus visibility, target sizing, overflow, zoom/reflow и
+  reduced motion.
+
+Конкретный Playwright/Cypress/WebDriver/Vitest Browser Mode не требуется: contract требует
+реальную browser acceptance, а не отдельный automation framework.
+
+#### Evidence для каждого acceptance run
+
+Зафиксировать:
+
+- exact candidate revision;
+- actual runtime/environment;
+- browser и viewport;
+- locale/direction;
+- identity/data fixture;
+- проверенные routes/states;
+- screenshots для проверяемых visual states;
+- найденные defects;
+- результат повторной проверки после каждого confirmed fix.
+
+Green CI без этой browser evidence AC-01 не закрывает.
+
+#### Критерий закрытия
+
+AC-01 закрывается только когда полная матрица пройдена на стабильной candidate revision,
+не осталось подтверждённых current-scope defects из этой acceptance, а фактически полученный
+результат отражён в `PROJECT_STATE.md`. Если acceptance выявляет defect, исправление выполняется
+отдельно; после изменения implementation повторно проверяются затронутые части матрицы и, если
+изменение способно повлиять шире, вся применимая матрица.
+
+Текущая последовательность:
+**merge Editor 2.0 → актуализировать/перепроверить/merge Package 3 → AC-01**.
 
 ## Следующая рабочая точка
 
