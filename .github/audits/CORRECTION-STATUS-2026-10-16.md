@@ -27,8 +27,8 @@ Source: PR #226, comment #6204020042.
 2. Package 2 — test isolation / independence — завершён.
 3. Package 4 — RC-04…RC-09, bounded test-only package — завершён.
 4. Package 5 — governance / evidence — завершён без изменений product code/CI/repository settings.
-5. AC-01 — real-runtime browser acceptance gate UI/UX pass — следующая рабочая точка.
-6. Package 3 — Editor current-contract regression coverage — по прямому решению владельца перенесён в самый конец всей очереди аудита. Audit implementation находится только в отдельном PR #229; PR #215 не используется.
+5. Package 3 — Editor current-contract regression coverage — подготовлен в отдельном PR #229 и остаётся последним correction package. Его нельзя retarget/rebase/merge до merge Editor 2.0 PR #215.
+6. AC-01 — финальный real-runtime browser acceptance gate UI/UX pass после стабилизации product head, включая Editor 2.0 и Package 3.
 
 ## Текущий статус
 
@@ -86,8 +86,19 @@ GitHub Actions PR run #38918024909 связан с implementation head `a4c1611�
 `database` и `checks` завершились успешно; application suite — 96 files / 1031 tests passed,
 lint/typecheck/build/UI preview/metadata/schema-parity checks — success.
 
-По прямому решению владельца дальнейшая работа над Package 3 остановлена до завершения **всей**
-остальной очереди аудита, включая AC-01. Независимый Codex review для PR #229 не запускался;
+Package 3 сейчас только подготовлен и не должен меняться до merge Editor 2.0 PR #215.
+Текущий #229 был создан поверх Editor base `e47436e…`, тогда как Editor продолжил развиваться
+и текущий PR #215 уже находится на более позднем head. Поэтому после merge Editor 2.0 необходимо:
+
+- retarget/rebase #229 на актуальный `main`, содержащий смерженный Editor;
+- заново сверить RC-01…RC-03 с фактически смерженными fullscreen/split/code-preference contracts,
+  а не считать прежний test-only head автоматически актуальным;
+- разрешить конфликты/адаптировать tests только если этого требует финальная Editor implementation;
+- выполнить применимые targeted/full checks на новом стабильном head;
+- провести свежий review Package 3 перед merge. Для этой test-audit work сохраняется прямое решение
+  владельца не подключать Codex-6.1 Sol.
+
+Независимый Codex review для текущего pre-merge Editor варианта PR #229 не запускался;
 случайный review служебного PR #226 не является review Package 3.
 
 Важно: название `Package 3` здесь означает только **test-audit Package 3 / RC-01…RC-03**.
@@ -142,7 +153,7 @@ Governance/evidence findings перепроверены отдельно от co
 
 Package 5 не требует implementation PR, изменений product code, CI workflow или repository settings.
 
-### AC-01 — следующая рабочая точка
+### AC-01 — подготовить отдельно как финальный gate
 
 Финальная real-runtime browser acceptance matrix остаётся обязательным gate UI/UX pass:
 
@@ -156,10 +167,10 @@ Package 5 не требует implementation PR, изменений product code
 GitHub Pages остаётся progress preview и не заменяет real-runtime acceptance.
 Конкретный browser automation framework не требуется.
 
-После AC-01 Package 3 / PR #229 остаётся **последней** задачей test-audit очереди по прямому
-решению владельца.
+AC-01 не выполняется до стабилизации финального product head. Текущая последовательность после
+завершения Editor 2.0: **merge Editor 2.0 → актуализировать/перепроверить/merge Package 3 → AC-01**.
 
 ## Следующая рабочая точка
 
-**AC-01 — final real-runtime browser acceptance matrix UI/UX pass.**
-Package 3 / PR #229 не трогать до завершения AC-01.
+Package 3 подготовлен и ждёт merge Editor 2.0 PR #215. До этого #229 не retarget/rebase/merge.
+AC-01 пока только готовится как финальный gate и выполняется после Package 3 на стабильном product head.
