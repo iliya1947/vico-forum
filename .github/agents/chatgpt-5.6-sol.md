@@ -63,3 +63,8 @@
 - Therefore the complete fix needs either a distinct manifest plus a server-side establish/resolve boundary before conflict dismissal, or attachment-specific durable boundary state. Regular 60-second autosave cadence remains unchanged.
 - Historical membership cannot be reconstructed from already-mutated current refs.
 - PR #215 remains untouched.
+
+
+## Reconciliation aa9dad2 — 2026-10-18
+
+Confirmed current-stage: cleanup can physically delete an asset still named by an unresolved attachment boundary; editor-wide paste intercepts native Simple table-cell input paste; storage-event localCandidate conflicts incorrectly use active-server resolve for version-0/terminal-based generations. Cross-leaf Enter remains candidate pending native Chromium keydown reproduction. No implementation change; next step is focused Codex diagnostic only.
