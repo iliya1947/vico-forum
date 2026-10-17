@@ -43,6 +43,17 @@
 - **Новых достаточно подтверждённых current-Stage defects в этом ограниченном проходе не найдено.** Это не подтверждает полного отсутствия дефектов. Тесты и реальный Chromium GPT-6 в этом проходе не запускала; использованы исходники и существующие репозиторные тесты/свидетельства CI.
 - Далее остаётся проверить другие участки всего Editor scope (в том числе упоминания/уведомления и интеграционное взаимодействие с рендерингом) и определить полноту whole-PR coverage. GPT6-01/02 подтверждены Sol, GPT6-03 остаётся source-derived candidate до независимой проверки.
 
+### Продолжение проверки — упоминания, уведомления, отображение (2026-10-17)
+
+- Stable PR #215 head: `b0930544218f4dba1c25d98820a7c12478c4ef57`. Это ограниченный следующий участок, не завершение whole-PR review.
+- Прослежена сквозная цепочка: `mentionTokenAtCaret` → authoring autocomplete `MarkdownEditor` (Simple/Advanced) → аутентифицированный `/:locale/mentions` → SQL-поиск name/ID → `mentionProfileLink` → опубликованный Markdown → `publishedMentionRecipients` → транзакционный `recordPublishedMentions` → таблица уведомлений → reader и отображение.
+- Проверено по source: упоминания при создании темы/ответа и сохранении опубликованной правки создаются в одной транзакции с публикацией; повторные профили объединяются; self отсутствует; уведомление о reply на тот же post/recipient не дублируется; повторное добавление прежнего упоминания после удаления не шлёт второе уведомление (уникальность по recipient/post); Markdown blockquote, inline/fenced code исключены из recipient extraction.
+- Проверены `app/forum/mentions.ts`, `app/routes/mentions.ts`, `app/forum/markdown-editor.tsx`, `db/forum-repository.ts`, `app/forum/views.tsx`, `app/routes/topic.tsx`, `app/forum/quote-markdown.ts`, `app/forum/quote-presentation.tsx`, `app/forum/markdown.tsx`, `app/forum/content-translation-view.tsx`, `app/localization/content-markdown-translation.ts` и применимые положения `docs/EDITOR.md` §§5/7/9.
+- Сверены существующие регрессии: `app/forum/mentions.test.ts`, `app/routes/mentions.test.ts`, `app/forum/markdown-editor.test.tsx` (оба режима), `tests/database/forum-attachment-publication.test.ts` (publish/edit/дубли), `app/forum/markdown.test.tsx` (source attribution, nested blockquotes, media safety, code/RTL), `app/localization/content-markdown-translation.test.tsx` (protected quote attribution and structure).
+- Source-цепочка цитирования: whole-message использует authoritative original Markdown; selected-text quote берёт DOM selection только внутри body данного post; attribution содержит автора, номер и permalink; recognizer исключает quote metadata из перевода, quote-body остаётся переводимым. Renderer не разрешает внешние активные изображения и опасные URL; inline images используют только разрешённые verified attachment refs.
+- **Новых подтверждённых current-Stage defects в этом участке не установлено.** Возможные спекулятивные отклонения не повышены до findings. Фактических запусков браузера/тестов GPT-6 здесь не было; вывод ограничен исходниками и существующей тестовой доказательной базой.
+- Для общего whole-PR gate остаётся итоговая сквозная сверка непокрытых поверхностей и корректная классификация/проверка ранее собранных findings; GPT6-01/02 ранее подтверждены Sol, GPT6-03 остаётся неподтверждённым кандидатом.
+
 ### Статус и границы
 
 - Три findings переданы по прямому разрешению разработчика для независимой технической оценки; не объявлять их browser-confirmed. Отсутствие других дефектов и полнота аудита не установлены.
