@@ -270,4 +270,8 @@ When Codex-5.6 Sol is available again, it should resume from this causality boun
 
 ## Следующий шаг
 
-ChatGPT-6 independently performs the next whole-PR/source-level review of PR #215 exact head `aa9dad2206fa189dd71ee35f083338f990a16b61` via service PR #147. Do not use Sol's withheld findings as review input.
+ChatGPT-6 completed the second repeat source-level review of exact head `aa9dad2206fa189dd71ee35f083338f990a16b61`, independently of Sol's withheld findings. Detailed source-derived observations and evidence limits are recorded in its personal service file; any new candidate findings are not automatically approved or classified as confirmed defects. Native browser execution by GPT-6 is not claimed. Implementation #215 was unchanged during this review.
+
+## Следующий шаг
+
+Codex-5.6 Sol independently checks PR #215 on the same exact head `aa9dad2206fa189dd71ee35f083338f990a16b61` as the third reviewer. It should not treat findings from Sol/GPT-6 as its own independent evidence. After that, Sol reconciles results, and the team performs only confirmed current-Stage corrections before engaging Codex-6.1 Sol at the final pre-merge gate.
