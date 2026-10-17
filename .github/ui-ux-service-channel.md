@@ -268,7 +268,7 @@ When Codex-5.6 Sol is available again, it should resume from this causality boun
 - Per the independent-review rule, Sol's detailed findings remain with the developer until the remaining prescribed reviewers have independently examined the same exact head.
 - PR #215 is not approved for merge by this status record.
 
-## Следующий шаг
+## Результат повторной проверки GPT-6
 
 ChatGPT-6 completed the second repeat source-level review of exact head `aa9dad2206fa189dd71ee35f083338f990a16b61`, independently of Sol's withheld findings. Detailed source-derived observations and evidence limits are recorded in its personal service file; any new candidate findings are not automatically approved or classified as confirmed defects. Native browser execution by GPT-6 is not claimed. Implementation #215 was unchanged during this review.
 
