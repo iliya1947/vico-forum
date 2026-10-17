@@ -100,3 +100,36 @@ No additional current-Stage defect was confirmed in the reviewed publication, ge
 ## Следующий шаг
 
 ChatGPT-5.6 Sol независимо сопоставляет findings A–D с текущим exact head `b093054…` и определяет единый bounded пакет подтверждённых current-Stage исправлений. Не merge и не переходить к Stage 6.
+
+
+## ChatGPT-5.6 Sol reconciliation of Codex findings — 2026-10-17
+
+All findings below were rechecked against current exact implementation head `b0930544218f4dba1c25d98820a7c12478c4ef57` and the current Editor contract.
+
+### Confirmed current-Stage defects
+
+1. **Attachment Keep-server membership race.** Confirmed. The client selection epoch only fences UI callbacks. Server POST/DELETE attachment mutations are authorized by owner/context/draft generation and do not carry a durable attachment-selection/version boundary. When the chosen server version and the losing local version share the same active draft generation, a late POST can add a losing ref and a late DELETE can remove a winning ref; the subsequent authoritative GET then reflects that mutation. This violates the conflict rule that the rejected version is discarded after explicit selection.
+2. **Simple-mode Enter caret/selection handling.** Confirmed. `VisualTextLeaf` prevents native Enter and always calls `onInsertParagraph(range.end)`; `insertVisualParagraph` therefore inserts at the leaf end rather than the actual native caret/selection position.
+3. **Cross-leaf paste discard.** Confirmed. The handler prevents the native paste before validating the full selection, then returns when the current leaf does not contain `Range.commonAncestorContainer`. Codex's Chromium reproduction matches this source path for a selection spanning adjacent editable leaves.
+4. **Tabbed paste / explicit plain-paste handling.** Confirmed. The TSV branch runs before `forcePlain`; therefore Ctrl/Cmd+Shift+V may still convert rectangular tabbed text to a table. For tabbed input that is not convertible TSV, `pasteSpreadsheet` only warns and returns, losing the requested pasted content instead of using a safe plain-text fallback.
+
+### Not included
+
+- GPT6-04 remains unconfirmed. No native non-image clipboard payload reaching the no-plain/no-html destructive branch has been reproduced. It is not a blocker and must not expand this correction package.
+
+## Agreed bounded correction package
+
+Correct only the four confirmed defects above in PR #215. Required result:
+
+- An explicit draft-conflict choice establishes a durable server-authoritative attachment-membership boundary so rejected in-flight POST/DELETE operations cannot alter the chosen attachment set. Preserve existing owner/context isolation, publication behavior, 60-second text sync, retry/idempotency behavior and Stage 5 boundaries.
+- Simple-mode Enter acts at the actual native caret/selection position, including ordinary formatted text leaves, without damaging untouched Markdown.
+- Paste across multiple editable Markdown leaves inserts/replaces at the actual selected source range instead of being discarded.
+- Explicit plain-text paste is honored before spreadsheet conversion; failed/non-TSV tabbed conversion falls back without losing content.
+- Add regressions that exercise the actual failure directions, including both late attachment POST and late attachment DELETE against the chosen version, middle-of-leaf Enter, cross-leaf paste, explicit plain tabbed paste and invalid-TSV fallback.
+- Do not implement GPT6-04, unrelated editor polish, Stage 6 infrastructure or unrelated refactoring.
+
+Codex-5.6 Sol chooses the minimum technically correct implementation. If the attachment race cannot be solved without a broader schema/contract change, stop and record the specific necessity in #147 before expanding scope.
+
+## Следующий шаг
+
+Передать Codex-5.6 Sol служебный PR #147 для реализации согласованного bounded correction package в PR #215.
