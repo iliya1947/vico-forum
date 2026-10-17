@@ -212,3 +212,49 @@ Findings B–D and the agreed bounded scope are unchanged. GPT6-04 remains exclu
 ## Следующий шаг
 
 Codex-5.6 Sol adjusts the internal attachment-manifest contract to remove the compatibility ambiguity above, then implements the already agreed bounded A–D correction package in PR #215 if the revised boundary remains causally complete. If a further broader architecture/schema change becomes necessary, stop and record the exact necessity here before implementation.
+
+
+## ChatGPT-5.6 Sol — causality check after Codex interruption — 2026-10-17
+
+Further source-level challenge shows that merely adding a distinct JSONB attachment-manifest field is **not sufficient by itself**.
+
+### Same-version counterexample
+
+Current conflict resolution is client-local. A dirty local candidate may still be based on server draft version `V` while differing from the fetched server payload, so the UI can present a conflict even though both sides reference the same server CAS version.
+
+A losing attachment POST/DELETE can therefore start with version `V`. If the user then chooses Keep-server:
+
+1. current `chooseVersion("server")` applies the remote payload locally but performs no authoritative server mutation;
+2. the server draft remains at version `V`;
+3. if that remote payload has no new exact attachment manifest (all current `b093054…` drafts are legacy relative to such a new field), the losing operation still presents version `V`;
+4. a rule that permits "current-version" attachment operations therefore still allows the rejected operation to mutate the chosen server set.
+
+So a distinct payload field removes the legacy-name collision, but does not close defect A unless the winning boundary is durably established **before conflict resolution is considered complete**.
+
+### Required invariant
+
+The implementation must provide a server-authoritative attachment boundary with these properties:
+
+- exact membership and an unambiguous durable boundary exist for the version/selection that is allowed to win a conflict;
+- explicit Keep-local / Keep-server does not clear the conflict until that winning attachment boundary is authoritative;
+- any operation started against the rejected boundary is distinguishable even when it originally used the same text-draft version;
+- regular 60-second autosave timing remains unchanged. A dedicated explicit conflict-resolution/attachment-boundary mutation is compatible with this rule if it does not masquerade as ordinary periodic autosave; alternatively the boundary may live in attachment-specific durable state;
+- legacy `retainedAttachmentIds` semantics remain untouched;
+- no solution may infer a historical winning set by reading already-mutated current refs after a losing operation has committed.
+
+### Implementation choice remains with Codex-5.6 Sol
+
+Two broad mechanisms remain technically plausible and must be compared for minimum complexity:
+
+1. a distinct draft-payload manifest **plus** a causally complete server-side establish/resolve path that advances/fences the winning boundary before the conflict is dismissed, including safe bootstrap of legacy/unestablished drafts; or
+2. attachment-specific durable boundary state (schema only if actually necessary) that is independent of the 60-second text-save cadence.
+
+A field-only patch with no durable resolution/establishment step is rejected as incomplete.
+
+Required regression in addition to the previously recorded cases: local dirty candidate and server winner share text version `V`; a losing POST and a losing DELETE each start at `V`; Keep-server must make both unable to mutate the winning membership after the choice becomes final.
+
+PR #215 remains unchanged.
+
+## Следующий шаг
+
+When Codex-5.6 Sol is available again, it should resume from this causality boundary, choose the minimum complete mechanism, and only then implement the agreed A–D package in PR #215.
