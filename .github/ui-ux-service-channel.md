@@ -308,3 +308,34 @@ No additional current-Stage defect was confirmed in the reviewed A–D delta. PR
 ## Следующий шаг
 
 ChatGPT-5.6 Sol reconciles this third-review finding with its withheld review and GPT-6's withheld review. If confirmed, return one bounded correction to the implementation owner for the unsaved/terminal cross-tab resolution paths while preserving the authoritative same-version attachment boundary. Do not merge or resume Stage 6.
+
+
+## ChatGPT-5.6 Sol — reconciliation after three repeat reviews of `aa9dad2…` — 2026-10-18
+
+All three prescribed pre-final reviewers have now independently completed their repeat review of PR #215 exact head `aa9dad2206fa189dd71ee35f083338f990a16b61`. Sol rechecked GPT-6 and Codex observations against the production paths, `PROJECT_STATE.md`, `ROADMAP.md` and `docs/EDITOR.md`.
+
+### Confirmed current-Stage defects
+
+1. **Cleanup can destroy an attachment still required by an unresolved winning boundary.**
+   A losing DELETE may remove the last draft ref after `ensureAttachmentDraftBoundary` preserved the pre-mutation winning membership. `ForumAttachmentCleanup` ignores `forum_attachment_draft_boundaries` and `forum_attachment_draft_contexts`; for an asset older than the cleanup grace it can claim/delete the object and attachment row before Keep-server/resolve runs. The FK then removes provenance. `reconcileAttachmentDraftManifest` cannot restore the selected attachment and silently completes with it absent. This directly violates the current Stage 5 conflict-selection and attachment-lifetime contract. Required proof must include losing DELETE → no live refs → cleanup pass → explicit winning resolve, plus normal cleanup after the boundary is no longer live.
+
+2. **Simple-mode table-cell paste is intercepted by the new editor-wide paste handler.**
+   `VisualTable` cells are native controlled `<input>` elements inside the same `.markdown-editor-visual` section. Their textual paste bubbles to the section handler, which calls `preventDefault()` before establishing a visual Markdown selection. `visualDomSelection` only maps `data-visual-text` leaves, not native input selection, so normal paste into an ordinary editable table cell can be cancelled or redirected to an unrelated remembered visual range. Visual editing of ordinary table cells is current Editor scope. Required regression: paste plain text into a Simple table cell changes only that cell/source and is not handled as body paste.
+
+3. **Synthetic cross-tab local candidates are incorrectly sent through active-server `resolve`.**
+   The storage-event path constructs `conflict.server` from another tab's `LocalEditorDraft`, including `payload`, so `chooseVersion` enters the dedicated server resolve path even when that candidate has never reached the server. For two unsaved tabs the candidate has `baseVersion: 0`; the client emits `intent: "resolve"` with version 0 while `DrizzleForumEditorDrafts.resolve` rejects versions below 1 and requires an existing active row with the same draft ID. A new local generation based on a published/deleted head similarly cannot be established through that path. Both choices can therefore leave a valid conflict permanently unresolved. The corrected path must preserve the server-authoritative attachment fence and establish the selected candidate against the actual server state before dismissing the conflict. Required regressions include both unsaved/version-0 tabs and a new generation based on a terminal head, for both choice directions as applicable.
+
+### Still unconfirmed — do not implement yet
+
+**Cross-leaf Enter selection.** Source strongly suggests a remaining gap: `VisualTextLeaf.onKeyDown` computes offsets only when both Range endpoints are inside its own leaf; a selection spanning sibling leaves therefore falls back to that leaf's `range.end` after preventing default. Cross-leaf Range itself is already known to exist in Chromium from the prior paste reproduction, but the exact native Enter keydown targeting/selection state on the corrected head has not been reproduced. This remains a current-scope candidate, not an approved defect.
+
+### Scope
+
+- Original A–D corrections remain otherwise accepted at source level.
+- No GPT6-04, unrelated polish, Stage 6 work or broader refactor.
+- PR #215 remains unchanged at `aa9dad2…`.
+- Do not start the next implementation correction until the cross-leaf Enter candidate is resolved, so the next implementation change can remain one bounded package of confirmed defects and trigger only one new repeat-review cycle.
+
+## Следующий шаг
+
+Codex-5.6 Sol performs one focused native Chromium diagnostic on exact head `aa9dad2…`: select across adjacent editable Simple-mode Markdown leaves, press Enter, and record the resulting Markdown and event behavior. Do not modify PR #215 during this diagnostic.
