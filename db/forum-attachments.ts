@@ -13,7 +13,12 @@ import {
 } from "./schema";
 import { isEditorDraftContextKey, parseEditorDraftContextKey } from "./editor-draft-context";
 import { EDITOR_DRAFT_EXPIRY_MS } from "./forum-editor-drafts";
-import { ForumAttachmentDraftConflictError, lockAttachmentDraftScope, resolveAttachmentDraftGeneration } from "./attachment-draft-generation";
+import {
+  ensureAttachmentDraftBoundary,
+  ForumAttachmentDraftConflictError,
+  lockAttachmentDraftScope,
+  resolveAttachmentDraftGeneration,
+} from "./attachment-draft-generation";
 
 export { ForumAttachmentDraftConflictError } from "./attachment-draft-generation";
 
@@ -113,6 +118,12 @@ function assertAttachmentMutationVersion(
     // A fresh generation may reserve files against the terminal head's CAS base
     // before its first ordinary 60-second text save.
     if (draft.status !== "active" && draft.version === expectedVersion) return;
+    const manifest = draft.payload.draftAttachmentIds;
+    if (draft.status === "active" && expectedVersion <= draft.version
+      && manifest !== undefined
+      && manifest.some((id) => id.toLowerCase() === attachmentId.toLowerCase()) === desiredPresent) {
+      return;
+    }
     throw new ForumAttachmentDraftConflictError();
   }
   if (draft.status !== "active") throw new ForumAttachmentDraftConflictError("gone");
@@ -220,6 +231,12 @@ export class DrizzleForumAttachments {
         eq(forumEditorDrafts.contextKey, input.contextKey),
       )).for("update").limit(1);
       if (input.expectedVersion !== undefined) {
+        if (draft?.status === "active" && draft.draftId === draftId
+          && draft.version === input.expectedVersion) {
+          await ensureAttachmentDraftBoundary(
+            tx, input.ownerId, input.contextKey, draftId, input.expectedVersion,
+          );
+        }
         assertAttachmentMutationVersion(draft, draftId, input.expectedVersion, input.id, true);
       } else if (draft?.draftId === draftId && draft.status !== "active") {
         // Preserve the pre-fence internal-store contract for legacy callers.
@@ -416,6 +433,12 @@ export class DrizzleForumAttachments {
         eq(forumEditorDrafts.contextKey, contextKey),
       )).for("update").limit(1);
       if (expectedVersion !== undefined) {
+        if (draft?.status === "active" && draft.draftId === generation
+          && draft.version === expectedVersion) {
+          await ensureAttachmentDraftBoundary(
+            tx, ownerId, contextKey, generation, expectedVersion,
+          );
+        }
         assertAttachmentMutationVersion(draft, generation, expectedVersion, attachmentId, false);
       }
       const deleted = await tx.delete(forumAttachmentDraftRefs)

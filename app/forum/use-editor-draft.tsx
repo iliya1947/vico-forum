@@ -34,6 +34,7 @@ type Runtime = {
   conflict: Conflict | null;
   rejectedSyncEditedAt: string | null;
   syncing: boolean;
+  resolving: boolean;
   reading: boolean;
   disposed: boolean;
   epoch: number;
@@ -457,21 +458,79 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     void checkRemote(ctx);
     return true;
   }
-  function chooseVersion(which: "local" | "server") {
+  async function chooseVersion(which: "local" | "server") {
     const ctx = runtimeRef.current;
-    if (!ctx || !current(ctx) || !ctx.conflict) return;
+    if (!ctx || !current(ctx) || !ctx.conflict || ctx.resolving) return;
     if (ctx.hasInput) {
       capture(ctx);
       if (ctx.hasInput) return;
     }
     const conflictNow = ctx.conflict;
+    if ("payload" in conflictNow.server) {
+      const selectedPayload = which === "server"
+        ? conflictNow.server.payload
+        : conflictNow.local.payload;
+      const selectedProvenance = which === "local"
+        ? conflictNow.local.attachmentDraftId
+        : conflictNow.localCandidate?.attachmentDraftId;
+      const provisional: LocalEditorDraft = {
+        ownerId: ctx.ownerId,
+        contextKey: ctx.contextKey,
+        draftId: conflictNow.server.draftId,
+        payload: selectedPayload,
+        editedAt: new Date().toISOString(),
+        baseVersion: conflictNow.server.version,
+        syncedEditedAt: null,
+        attachmentDraftId: selectedProvenance,
+      };
+      // Prove the selected snapshot is recoverable before advancing the
+      // authoritative server boundary.
+      if (!writeLocalEditorDraft(provisional)) { setStatus("error"); return; }
+      ctx.resolving = true;
+      try {
+        const result = await mutateDraft(ctx.locale, {
+          intent: "resolve",
+          contextKey: ctx.contextKey,
+          draftId: conflictNow.server.draftId,
+          payload: selectedPayload,
+          expectedVersion: conflictNow.server.version,
+        });
+        if (!current(ctx) || ctx.conflict !== conflictNow) return;
+        if (result.outcome !== "saved" || !result.draft) {
+          writeLocalEditorDraft(conflictNow.local);
+          const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
+          if (current(ctx) && ctx.conflict === conflictNow && remote) {
+            updateConflict(ctx, { ...conflictNow, server: remote });
+          }
+          return;
+        }
+        if (!applyRemote(ctx, result.draft, true)) return;
+        if (selectedProvenance && ctx.local) {
+          const next = { ...ctx.local, attachmentDraftId: selectedProvenance };
+          if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
+          ctx.local = next;
+        }
+        if (which === "server") setAttachmentSelectionEpoch((value) => value + 1);
+        ctx.epoch++;
+        ctx.reading = false;
+        ctx.serverCycle = null;
+        updateConflict(ctx, null);
+        setAttachmentVerified(ctx, true);
+        return;
+      } catch {
+        if (current(ctx) && ctx.conflict === conflictNow) {
+          writeLocalEditorDraft(conflictNow.local);
+          setStatus("conflict");
+        }
+        return;
+      } finally {
+        if (current(ctx)) ctx.resolving = false;
+      }
+    }
+
     let verified = false;
     if (which === "server") {
-      if ("payload" in conflictNow.server) {
-        verified = applyRemote(ctx, conflictNow.server, true, conflictNow.localCandidate);
-        // Keep the conflict when the local winner snapshot could not be persisted.
-        if (!verified) return;
-      } else reset(ctx, conflictNow.server.version);
+      reset(ctx, conflictNow.server.version);
       // Same text draft ID does not imply the same attachment selection.
       setAttachmentSelectionEpoch((value) => value + 1);
     } else {
@@ -532,7 +591,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       identity, ownerId, contextKey, locale, draftId: crypto.randomUUID(),
       local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
       rejectedSyncEditedAt: null,
-      syncing: false, reading: false, disposed: false, epoch: 0, attachmentVerified: false,
+      syncing: false, resolving: false, reading: false, disposed: false, epoch: 0, attachmentVerified: false,
       serverCycle: null, publishing: false,
     };
     runtimeRef.current = ctx;
@@ -652,8 +711,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
             : <pre>{t("editorDraftNoRemoteVersion")}</pre>}
         </section>
       </div>
-      <button type="button" onClick={() => chooseVersion("local")}>{t("editorDraftKeepLocal")}</button>
-      <button type="button" onClick={() => chooseVersion("server")}>{t("editorDraftKeepServer")}</button>
+      <button type="button" onClick={() => void chooseVersion("local")}>{t("editorDraftKeepLocal")}</button>
+      <button type="button" onClick={() => void chooseVersion("server")}>{t("editorDraftKeepServer")}</button>
     </div>
   ) : null;
   return {

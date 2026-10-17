@@ -1004,6 +1004,27 @@ export const forumAttachmentDraftContexts = pgTable(
   ],
 );
 
+// Immutable pre-mutation membership for one text-draft version. Explicit
+// conflict resolution uses this snapshot to restore the selected version even
+// when a same-version attachment request committed before the user's choice.
+export const forumAttachmentDraftBoundaries = pgTable(
+  "forum_attachment_draft_boundaries",
+  {
+    ownerId: text("owner_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    contextKey: text("context_key").notNull(),
+    draftId: text("draft_id").notNull(),
+    version: integer("version").notNull(),
+    attachmentIds: jsonb("attachment_ids").$type<string[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_attachment_draft_boundaries_pk",
+      columns: [table.ownerId, table.contextKey, table.draftId, table.version],
+    }),
+  ],
+);
+
 export const forumAttachmentDraftGenerations = pgTable(
   "forum_attachment_draft_generations",
   {

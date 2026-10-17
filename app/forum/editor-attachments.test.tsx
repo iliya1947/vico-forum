@@ -904,6 +904,11 @@ describe("MarkdownEditor attachment and draft integration", () => {
       if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
       if (uri.includes("mode=content")) return Response.json({ draft: remote });
       if (init?.method === "GET") return Response.json({ attachments: [winner] });
+      if (init?.method === "POST") {
+        const sent = JSON.parse(init.body as string);
+        remote = { ...remote, version: remote.version + 1, payload: sent.payload };
+        return Response.json({ outcome: "saved", draft: remote });
+      }
       throw new Error("Unexpected eager mutation");
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -916,12 +921,12 @@ describe("MarkdownEditor attachment and draft integration", () => {
     remote = remoteDraft(draftId, 2, "Incompatible server text");
     await reconcileDraft();
     fireEvent.click(await screen.findByRole("button", { name: "Keep other version" }));
-    expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue(remote.payload.body);
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue(remote.payload.body));
     await waitFor(() => expect(screen.queryByText("loser.txt")).not.toBeInTheDocument());
     expect(await screen.findByText("winner.txt")).toBeInTheDocument();
     expect(upload.aborted).toBe(false);
     expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
   });
 
   it("keeps the conflict retryable when storing the selected server snapshot fails", async () => {
@@ -933,6 +938,12 @@ describe("MarkdownEditor attachment and draft integration", () => {
       if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
       if (uri.includes("mode=content")) return Response.json({ draft: remote });
       if (init?.method === "GET") return Response.json({ attachments: [] });
+      if (init?.method === "POST") {
+        const sent = JSON.parse(init.body as string);
+        return Response.json({ outcome: "saved", draft: {
+          ...remote, version: remote.version + 1, payload: sent.payload,
+        } });
+      }
       throw new Error("Unexpected mutation");
     }));
     renderDraftEditor();
@@ -964,6 +975,11 @@ describe("MarkdownEditor attachment and draft integration", () => {
           ? [winner, ...(committed && redirected ? [{ ...winner, id: originId, fileName: "late-origin-A.txt" }] : [])]
           : [] });
       }
+      if (init?.method === "POST") {
+        const sent = JSON.parse(init.body as string);
+        remote = { ...remote, version: remote.version + 1, payload: sent.payload };
+        return Response.json({ outcome: "saved", draft: remote });
+      }
       throw new Error("No rebind before the regular text CAS");
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -975,8 +991,13 @@ describe("MarkdownEditor attachment and draft integration", () => {
     remote = remoteDraft(draftId, 4, "First remote B");
     await reconcileDraft();
     fireEvent.click(await screen.findByRole("button", { name: "Keep this version" }));
+    await waitFor(() => expect(document.querySelector<HTMLInputElement>('input[name="editorDraftVersion"]'))
+      .toHaveValue("5"));
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId, attachmentDraftId: oldDraftId });
-    remote = remoteDraft(draftId, 5, "Incompatible remote B");
+    fireEvent.change(screen.getByRole("textbox", { name: "Body" }), {
+      target: { value: "Dirty local B after first choice" },
+    });
+    remote = remoteDraft(draftId, 6, "Incompatible remote B");
     await reconcileDraft();
     fireEvent.click(await screen.findByRole("button", { name: "Keep other version" }));
     await screen.findByText("authoritative-winner.txt");
@@ -993,7 +1014,7 @@ describe("MarkdownEditor attachment and draft integration", () => {
       expect(screen.queryByText("late-origin-A.txt")).not.toBeInTheDocument();
     }
     expect(screen.getByText("authoritative-winner.txt")).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(2);
   });
 });
 
@@ -1003,6 +1024,12 @@ it("drops the current tab's transient uploads while retaining the selected tab's
     if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
     if (uri.includes("mode=content")) return Response.json({ draft: remote });
     if (init?.method === "GET") return Response.json({ attachments: [] });
+    if (init?.method === "POST") {
+      const sent = JSON.parse(init.body as string);
+      return Response.json({ outcome: "saved", draft: {
+        ...remote, version: remote.version + 1, payload: sent.payload,
+      } });
+    }
     throw new Error("Unexpected eager save or rebind");
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -1018,9 +1045,11 @@ it("drops the current tab's transient uploads while retaining the selected tab's
   fireEvent.click(await screen.findByRole("button", { name: "Keep other version" }));
   await waitFor(() => expect(screen.queryByText("current-tab.txt")).not.toBeInTheDocument());
   expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Chosen other tab");
-  expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ attachmentDraftId: oldDraftId, syncedEditedAt: null });
+  expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ attachmentDraftId: oldDraftId });
+  expect(readLocalEditorDraft("alice", contextKey)?.syncedEditedAt).not.toBeNull();
   upload.fail();
   expect(screen.queryByText("current-tab.txt")).not.toBeInTheDocument();
   expect(upload.aborted).toBe(false);
-  expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST" || init?.method === "PATCH")).toBe(false);
+  expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH")).toHaveLength(1);
 });

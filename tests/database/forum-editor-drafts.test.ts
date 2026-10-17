@@ -28,6 +28,7 @@ const migrations = [
   "0034_forum_editor_drafts",
   "0035_forum_attachments_foundation", "0036_forum_attachment_security_events",
   "0037_forum_attachment_draft_generations",
+  "0044_attachment_draft_conflict_boundaries",
 ];
 const id1 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d55";
 const id2 = "e7bdbd73-61d4-4b06-bc03-b24b1c217d56";

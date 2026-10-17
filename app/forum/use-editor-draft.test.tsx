@@ -119,7 +119,10 @@ describe("editor draft lifecycle", () => {
       title: "", snippet: "Server content", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server content" } };
     let contentAvailable = false;
-    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") return response({ outcome: "saved", draft: {
+        ...remote, version: 5, payload: JSON.parse(options.body as string).payload,
+      } });
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) {
         return contentAvailable ? response({ draft: remote }) : response({ error: "offline" }, 503);
@@ -196,7 +199,10 @@ describe("editor draft lifecycle", () => {
     const remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
       title: "", snippet: "Server reply", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server reply" } };
-    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") return response({ outcome: "saved", draft: {
+        ...remote, version: 5, payload: JSON.parse(options.body as string).payload,
+      } });
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) return response({ draft: remote });
       throw new Error("Unexpected fetch");
@@ -207,8 +213,9 @@ describe("editor draft lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reserve attachment" }));
     expect(screen.getByTestId("attachment-reservation")).toHaveTextContent("none");
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    await flush();
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
-      draftId: newId, attachmentDraftId: oldId, baseVersion: 4,
+      draftId: newId, attachmentDraftId: oldId, baseVersion: 5,
     });
     expect(screen.getByTestId("attachment-ready")).toHaveTextContent("blocked");
     expect(screen.getByTestId("attachment-rebind")).toHaveTextContent(oldId);
@@ -217,14 +224,14 @@ describe("editor draft lifecycle", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Complete attachment rebind" }));
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
-      draftId: newId, attachmentDraftId: newId, baseVersion: 4,
+      draftId: newId, attachmentDraftId: newId, baseVersion: 5,
     });
     await flush();
     expect(screen.getByTestId("attachment-rebind")).toHaveTextContent("none");
     expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   });
 
-  it("CAS-saves the selected text on the normal cycle before rebinding, even while attachments wait", async () => {
+  it("CAS-saves an explicit conflict winner before rebinding, without changing the normal cycle", async () => {
     vi.useFakeTimers();
     writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: oldId,
       attachmentDraftId: oldId, editedAt: new Date().toISOString(), baseVersion: 1,
@@ -254,14 +261,14 @@ describe("editor draft lifecycle", () => {
     mount();
     await flush();
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    await flush();
     expect(screen.getByTestId("attachment-rebind")).toHaveTextContent(oldId);
-    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("none");
-    expect(posts).toHaveLength(0);
+    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("5");
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ intent: "resolve", draftId: newId, expectedVersion: 4 });
 
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
     expect(posts).toHaveLength(1);
-    expect(posts[0]).toMatchObject({ draftId: newId, expectedVersion: 4 });
-    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("5");
 
     fireEvent.click(screen.getByRole("button", { name: "Complete attachment rebind" }));
     await flush();
@@ -278,7 +285,12 @@ describe("editor draft lifecycle", () => {
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server B" } };
     const posts: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
-      if (init?.method === "POST") { posts.push(init.body); throw new Error("Unexpected eager POST"); }
+      if (init?.method === "POST") {
+        const sent = JSON.parse(init.body as string);
+        posts.push(sent);
+        remote = { ...remote, version: remote.version + 1, payload: sent.payload };
+        return response({ outcome: "saved", draft: remote });
+      }
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) return response({ draft: remote });
       throw new Error("Unexpected fetch");
@@ -286,6 +298,7 @@ describe("editor draft lifecycle", () => {
     mount();
     await flush();
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    await flush();
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
       draftId: newId, attachmentDraftId: oldId,
     });
@@ -293,20 +306,21 @@ describe("editor draft lifecycle", () => {
 
     fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "Edited local B" } });
     fireEvent.click(screen.getByRole("button", { name: "Leave editor" }));
-    remote = { ...remote, version: 5, editedAt: new Date().toISOString(),
+    remote = { ...remote, version: 6, editedAt: new Date().toISOString(),
       payload: { ...empty, body: "New server B" } };
     await act(async () => { window.dispatchEvent(new Event("online")); });
     await flush();
     expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
+    await flush();
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("New server B");
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
-      draftId: newId, baseVersion: 5, payload: { ...empty, body: "New server B" },
+      draftId: newId, baseVersion: 7, payload: { ...empty, body: "New server B" },
     });
     expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
     expect(screen.getByTestId("attachment-rebind")).toHaveTextContent("none");
     expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("1");
-    expect(posts).toHaveLength(0);
+    expect(posts).toHaveLength(2);
   });
 
   it("retains attachment provenance when a clean local draft refreshes text in the same generation", async () => {
@@ -495,7 +509,10 @@ describe("editor draft lifecycle", () => {
     const other = { contextKey, draftId: oldId, version: 2, status: "active" as const,
       editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       title: "", snippet: "Remote code", payload: { ...empty, body: "Remote code" } };
-    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") return response({ outcome: "saved", draft: {
+        ...other, version: 3, payload: JSON.parse(options.body as string).payload,
+      } });
       if (uri.includes("mode=metadata")) return response({ drafts: [other] });
       if (uri.includes("mode=content")) return response({ draft: other });
       throw new Error("Unexpected fetch");
@@ -506,8 +523,9 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
     expect(screen.getByText("Remote code")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
+    await flush();
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Local code");
-    expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(2);
+    expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(3);
   });
 
   it("shows non-body payload differences before choosing a draft conflict version", async () => {
@@ -689,7 +707,48 @@ describe("editor draft lifecycle", () => {
 });
 
 describe("conflict choices from another tab", () => {
-  it.each([false, true])("saves the selected cached text and retains its provenance on the regular cycle; storage failure=%s", async (storageFailure) => {
+  it("keeps a same-version conflict open until its attachment boundary is authoritative", async () => {
+    const editedAt = new Date().toISOString();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId,
+      editedAt, baseVersion: 1, syncedEditedAt: null,
+      payload: { ...empty, body: "Current tab" } });
+    const remote = { contextKey, draftId: newId, version: 1, status: "active" as const,
+      title: "", snippet: "Server", editedAt, updatedAt: editedAt,
+      payload: { ...empty, body: "Server baseline" } };
+    let finish: ((value: Response) => void) | undefined;
+    const posts: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        posts.push(JSON.parse(options.body as string));
+        return new Promise<Response>((resolve) => { finish = resolve; });
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
+      if (uri.includes("mode=content")) return response({ draft: remote });
+      throw new Error("Unexpected fetch");
+    }));
+    mount();
+    await flush();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId,
+      editedAt: new Date().toISOString(), baseVersion: 1, syncedEditedAt: null,
+      payload: { ...empty, body: "Other tab winner" } });
+    await act(async () => { window.dispatchEvent(new StorageEvent("storage", {
+      key: draftStorageKey("alice", contextKey),
+    })); });
+    fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
+    expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ intent: "resolve", expectedVersion: 1,
+      payload: { ...empty, body: "Other tab winner" } });
+    await act(async () => { finish!(response({ outcome: "saved", draft: {
+      ...remote, version: 2,
+      payload: { ...empty, body: "Other tab winner", draftAttachmentIds: [] },
+    } })); });
+    await flush();
+    expect(screen.queryByRole("group", { name: "Draft conflict" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("draft-version")).toHaveTextContent("2");
+  });
+
+  it.each([false, true])("establishes the selected cached text before closing the conflict; storage failure=%s", async (storageFailure) => {
     vi.useFakeTimers();
     const editedAt = new Date().toISOString();
     writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId, attachmentDraftId: newId,
@@ -723,17 +782,19 @@ describe("conflict choices from another tab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
     await flush();
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
-      draftId: newId, attachmentDraftId: oldId, syncedEditedAt: null,
+      draftId: newId, attachmentDraftId: oldId,
       payload: { ...empty, body: "Other tab unsynced" },
     });
-    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("none");
+    expect(readLocalEditorDraft("alice", contextKey)?.syncedEditedAt).not.toBeNull();
+    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("2");
     expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("1");
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ intent: "resolve", draftId: newId, expectedVersion: 1,
+      payload: { ...empty, body: "Other tab unsynced" } });
     await act(async () => { await vi.advanceTimersByTimeAsync(59_999); });
-    expect(posts).toHaveLength(0);
+    expect(posts).toHaveLength(1);
     await act(async () => { await vi.advanceTimersByTimeAsync(1); });
     expect(posts).toHaveLength(1);
-    expect(posts[0]).toMatchObject({ draftId: newId, expectedVersion: 1, payload: { ...empty, body: "Other tab unsynced" } });
-    expect(screen.getByTestId("attachment-rebind-version")).toHaveTextContent("2");
   });
 
   it("does not let an old terminal save acknowledgement clear a newly selected generation", async () => {
@@ -787,8 +848,13 @@ it("keeps the local-choice conflict and original generation on storage failure",
     editedAt, baseVersion: 1, syncedEditedAt: null, payload: { ...empty, body: "Chosen local text" } });
   const remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
     title: "", snippet: "Server", editedAt, updatedAt: editedAt, payload: { ...empty, body: "Other server text" } };
-  vi.stubGlobal("fetch", vi.fn(async (uri: string) => uri.includes("mode=metadata")
-    ? response({ drafts: [remote] }) : response({ draft: remote })));
+  vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+    if (options?.method === "POST") return response({ outcome: "saved", draft: {
+      ...remote, version: 5, payload: JSON.parse(options.body as string).payload,
+    } });
+    return uri.includes("mode=metadata")
+      ? response({ drafts: [remote] }) : response({ draft: remote });
+  }));
   mount();
   await flush();
   vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new Error("Quota exceeded"); });
@@ -797,7 +863,8 @@ it("keeps the local-choice conflict and original generation on storage failure",
   expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId: oldId, baseVersion: 1 });
   expect(screen.getByTestId("draft-id")).toHaveTextContent(oldId);
   fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
-  expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId: newId, baseVersion: 4, attachmentDraftId: oldId });
+  await flush();
+  expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({ draftId: newId, baseVersion: 5, attachmentDraftId: oldId });
 });
 
 it("verifies a selected cached generation while an obsolete metadata request remains pending", async () => {
@@ -806,7 +873,14 @@ it("verifies a selected cached generation while an obsolete metadata request rem
     editedAt, baseVersion: 1, syncedEditedAt: null, payload: { ...empty, body: "Current tab" } });
   let acknowledge: ((response: Response) => void) | undefined;
   let reads = 0;
-  vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+  vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+    if (options?.method === "POST") {
+      const sent = JSON.parse(options.body as string);
+      return response({ outcome: "saved", draft: {
+        contextKey, draftId: newId, version: 3, status: "active",
+        title: "", snippet: "", editedAt, updatedAt: editedAt, payload: sent.payload,
+      } });
+    }
     if (!uri.includes("mode=metadata")) return response({ error: "gone" }, 410);
     reads++;
     if (reads === 1) return new Promise<Response>((resolve) => { acknowledge = resolve; });
@@ -820,7 +894,7 @@ it("verifies a selected cached generation while an obsolete metadata request rem
   await act(async () => { window.dispatchEvent(new StorageEvent("storage", { key: draftStorageKey("alice", contextKey) })); });
   fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
   await flush();
-  expect(reads).toBe(2);
+  expect(reads).toBe(1);
   expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   await act(async () => { acknowledge!(response({ drafts: [{ contextKey, draftId: oldId, version: 1,
     status: "active", title: "", snippet: "", editedAt, updatedAt: editedAt }] })); });

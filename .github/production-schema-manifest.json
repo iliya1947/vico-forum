@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0044_attachment_draft_contexts",
+  "targetMigration": "0044_attachment_draft_conflict_boundaries",
   "tables": {
     "account": {
       "columns": [
@@ -5336,6 +5336,76 @@
           ]
         }
       ]
+    },
+    "forum_attachment_draft_boundaries": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "draft_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "attachment_ids",
+          "type": "jsonb",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_draft_boundaries_pk",
+          "columns": [
+            "owner_id",
+            "context_key",
+            "draft_id",
+            "version"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_draft_boundaries_owner_id_user_id_fk",
+          "columns": [
+            "owner_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": []
     }
   },
   "triggerFunctions": [

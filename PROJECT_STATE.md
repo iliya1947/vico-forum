@@ -283,9 +283,11 @@ Vico Forum находится в ранней pre-release разработке.
   existing `retainedAttachmentIds` post-edit snapshot semantics are unchanged.
   Successful draft CAS reconciles refs under the existing owner/context lock, while
   version-fenced POST/DELETE accepts an older in-flight operation only when its result
-  matches the winning manifest. Migration `0044_attachment_draft_contexts` preserves
-  durable owner/context provenance so DELETE-before-CAS can be reversed by the winner
-  without permitting cross-context UUID reuse. Rebind moves only selected refs and
+  matches the winning manifest. Migration `0044_attachment_draft_conflict_boundaries`
+  preserves durable owner/context provenance and the pre-mutation membership of an
+  active text version. Explicit conflict resolution establishes that snapshot as a new
+  authoritative CAS version before dismissing the choice, so same-version POST/DELETE
+  and DELETE-before-CAS can be reversed without cross-context UUID reuse. Rebind moves only selected refs and
   removes losing source refs. The normal 60-second sync,
   stable upload retry, terminal generations and publication boundary remain unchanged.
   Simple-mode Enter now uses the actual caret/selection; paste across Markdown leaves

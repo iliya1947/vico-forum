@@ -32,16 +32,28 @@ function setup(owner: string | null = "real-user", allowed = true) {
     editedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   } }));
+  const resolve = vi.fn(async () => ({ outcome: "saved" as const, draft: {
+    contextKey,
+    draftId,
+    payload,
+    version: 1,
+    status: "active" as const,
+    title: "",
+    snippet: "one",
+    editedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } }));
   const deleteDraft = vi.fn(async () => true);
   const metadata = vi.fn(async () => []);
   const get = vi.fn(async () => null);
   ctx.set(forumDraftStoreContext, {
     save,
+    resolve,
     delete: deleteDraft,
     metadata,
     get,
   } as unknown as ForumDraftStore);
-  return { ctx, save, deleteDraft, metadata, get };
+  return { ctx, save, resolve, deleteDraft, metadata, get };
 }
 
 function request(body: Record<string, unknown>, origin = "https://forum.test") {
@@ -128,6 +140,19 @@ describe("account-scoped draft API", () => {
       context: env.ctx,
     });
     expect(response.status).toBe(403);
+    expect(env.save).not.toHaveBeenCalled();
+  });
+
+  it("routes an explicit conflict winner through the durable resolution boundary", async () => {
+    const env = setup();
+    const response = await action({
+      request: request({
+        intent: "resolve", contextKey, draftId, payload, expectedVersion: 7,
+      }),
+      context: env.ctx,
+    });
+    expect(response.status).toBe(200);
+    expect(env.resolve).toHaveBeenCalledWith("real-user", contextKey, draftId, payload, 7);
     expect(env.save).not.toHaveBeenCalled();
   });
 

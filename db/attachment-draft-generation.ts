@@ -1,6 +1,7 @@
-import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
+  forumAttachmentDraftBoundaries,
   forumAttachmentDraftGenerations,
   forumAttachmentDraftContexts,
   forumAttachmentDraftRefs,
@@ -112,4 +113,57 @@ export async function reconcileAttachmentDraftManifest(
     draftId,
     createdAt: reference.createdAt,
   }))).onConflictDoNothing();
+}
+
+/** Capture membership before the first attachment mutation at a text version. */
+export async function ensureAttachmentDraftBoundary(
+  connection: AttachmentDraftConnection,
+  ownerId: string,
+  contextKey: string,
+  draftId: string,
+  version: number,
+): Promise<string[]> {
+  const whereBoundary = and(
+    eq(forumAttachmentDraftBoundaries.ownerId, ownerId),
+    eq(forumAttachmentDraftBoundaries.contextKey, contextKey),
+    eq(forumAttachmentDraftBoundaries.draftId, draftId),
+    eq(forumAttachmentDraftBoundaries.version, version),
+  );
+  const [existing] = await connection.select({
+    attachmentIds: forumAttachmentDraftBoundaries.attachmentIds,
+  }).from(forumAttachmentDraftBoundaries).where(whereBoundary).limit(1);
+  if (existing) return existing.attachmentIds;
+
+  const references = await connection.select({
+    attachmentId: forumAttachmentDraftRefs.attachmentId,
+  }).from(forumAttachmentDraftRefs).where(and(
+    eq(forumAttachmentDraftRefs.ownerId, ownerId),
+    eq(forumAttachmentDraftRefs.contextKey, contextKey),
+    eq(forumAttachmentDraftRefs.draftId, draftId),
+  )).orderBy(
+    asc(forumAttachmentDraftRefs.createdAt),
+    asc(forumAttachmentDraftRefs.attachmentId),
+  );
+  const attachmentIds = references.map((reference) => reference.attachmentId);
+  await connection.insert(forumAttachmentDraftBoundaries).values({
+    ownerId,
+    contextKey,
+    draftId,
+    version,
+    attachmentIds,
+  });
+  return attachmentIds;
+}
+
+export async function clearAttachmentDraftBoundaries(
+  connection: AttachmentDraftConnection,
+  ownerId: string,
+  contextKey: string,
+  draftId: string,
+): Promise<void> {
+  await connection.delete(forumAttachmentDraftBoundaries).where(and(
+    eq(forumAttachmentDraftBoundaries.ownerId, ownerId),
+    eq(forumAttachmentDraftBoundaries.contextKey, contextKey),
+    eq(forumAttachmentDraftBoundaries.draftId, draftId),
+  ));
 }

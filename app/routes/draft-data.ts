@@ -122,7 +122,7 @@ export async function action({
     }
 
     if (
-      input.intent !== "save"
+      (input.intent !== "save" && input.intent !== "resolve")
       || !validEditorDraftPayload(input.payload)
       || !Number.isSafeInteger(input.expectedVersion)
       || (input.expectedVersion as number) < 0
@@ -135,7 +135,7 @@ export async function action({
       return json({ error: authorization.outcome }, authorization.status);
     }
 
-    const result = await store.save(
+    const result = await store[input.intent === "resolve" ? "resolve" : "save"](
       session.user.id,
       key,
       draftId,

@@ -13,6 +13,8 @@ import {
 } from "./editor-draft-context";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 import {
+  clearAttachmentDraftBoundaries,
+  ensureAttachmentDraftBoundary,
   ForumAttachmentDraftConflictError,
   lockAttachmentDraftScope,
   reconcileAttachmentDraftManifest,
@@ -292,6 +294,9 @@ export class DrizzleForumEditorDrafts {
           payload.draftAttachmentIds,
         );
       }
+      if (rows[0]) {
+        await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
+      }
       return { outcome: "changed" as const, rows };
     });
 
@@ -302,6 +307,65 @@ export class DrizzleForumEditorDrafts {
       return { outcome: "gone", version: current?.version ?? 0 };
     }
     return { outcome: "conflict", version: current.version };
+  }
+
+  /** Establish an explicit conflict winner before the client dismisses the conflict UI. */
+  async resolve(
+    ownerId: string,
+    contextKey: string,
+    draftId: string,
+    payload: ForumEditorDraftPayload,
+    expectedVersion: number,
+  ): Promise<SaveDraftResult> {
+    if (
+      !isEditorDraftContextKey(contextKey)
+      || !/^[0-9a-f-]{36}$/iu.test(draftId)
+      || !validEditorDraftPayload(payload)
+      || !Number.isSafeInteger(expectedVersion)
+      || expectedVersion < 1
+    ) {
+      throw new InvalidForumEditorDraftError();
+    }
+
+    const now = new Date();
+    const changed = await this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const [draft] = await tx.select().from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, contextKey),
+      )).for("update").limit(1);
+      if (!draft || draft.status !== "active" || draft.draftId !== draftId) {
+        return { outcome: "gone" as const, version: draft?.version ?? 0 };
+      }
+      if (draft.version !== expectedVersion) {
+        return { outcome: "conflict" as const, version: draft.version };
+      }
+      const boundary = await ensureAttachmentDraftBoundary(
+        tx, ownerId, contextKey, draftId, expectedVersion,
+      );
+      const selectedPayload = payload.draftAttachmentIds === undefined
+        ? { ...payload, draftAttachmentIds: boundary }
+        : payload;
+      const [row] = await tx.update(forumEditorDrafts).set({
+        version: sql`${forumEditorDrafts.version}+1`,
+        payload: selectedPayload,
+        editedAt: now,
+        updatedAt: now,
+      }).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, contextKey),
+        eq(forumEditorDrafts.draftId, draftId),
+        eq(forumEditorDrafts.version, expectedVersion),
+        eq(forumEditorDrafts.status, "active"),
+      )).returning();
+      if (!row) return { outcome: "conflict" as const, version: draft.version };
+      await reconcileAttachmentDraftManifest(
+        tx, ownerId, contextKey, draftId, selectedPayload.draftAttachmentIds!,
+      );
+      await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
+      return { outcome: "saved" as const, draft: toDraft(row) };
+    });
+    return changed;
   }
 
   async delete(
@@ -336,7 +400,10 @@ export class DrizzleForumEditorDrafts {
           eq(forumEditorDrafts.version, expectedVersion),
         ))
         .returning({ version: forumEditorDrafts.version });
-      if (result.length > 0) await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      if (result.length > 0) {
+        await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+        await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
+      }
       return result.length > 0;
     });
   }
@@ -375,7 +442,10 @@ export class DrizzleForumEditorDrafts {
           eq(forumEditorDrafts.draftId, draftId),
         ),
       }).returning();
-      if (result.length > 0) await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      if (result.length > 0) {
+        await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+        await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
+      }
       return result.length > 0;
     });
   }

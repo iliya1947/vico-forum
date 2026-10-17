@@ -26,6 +26,13 @@ export interface ForumDraftStore {
     payload: ForumEditorDraftPayload,
     expectedVersion: number,
   ): Promise<SaveDraftResult>;
+  resolve(
+    ownerId: string,
+    contextKey: string,
+    draftId: string,
+    payload: ForumEditorDraftPayload,
+    expectedVersion: number,
+  ): Promise<SaveDraftResult>;
   delete(
     ownerId: string,
     contextKey: string,
@@ -87,6 +94,8 @@ export function createHyperdriveForumDraftStore(
     get: (ownerId, key) => apply((store) => store.get(ownerId, key)),
     save: (ownerId, key, draftId, payload, version) =>
       apply((store) => store.save(ownerId, key, draftId, payload, version)),
+    resolve: (ownerId, key, draftId, payload, version) =>
+      apply((store) => store.resolve(ownerId, key, draftId, payload, version)),
     delete: (ownerId, key, draftId, version) =>
       apply((store) => store.delete(ownerId, key, draftId, version)),
   };

@@ -45,7 +45,7 @@ const migrations = [
   "0041_published_mentions",
   "0042_attachment_edit_snapshots",
   "0043_attachment_security_read_permission",
-  "0044_attachment_draft_contexts",
+  "0044_attachment_draft_conflict_boundaries",
 ];
 
 const ownerId = "attachment-owner";
@@ -64,7 +64,7 @@ async function setDraft(owner: string, context: string, generation: string, stat
   );
 }
 
-function upload(context: string, generation: string, id = crypto.randomUUID()): CreateDraftAttachmentInput {
+function upload(context: string, generation: string, id: string = crypto.randomUUID()): CreateDraftAttachmentInput {
   return {
     id, ownerId, contextKey: context, draftId: generation,
     objectKey: `private/${crypto.randomUUID()}`, fileName: "concurrent.txt",
@@ -516,6 +516,70 @@ describe("forum attachment lifecycle foundation", () => {
       .toMatchObject({ id: retained.id });
   });
 
+  it("fences same-version POST when Keep-server resolves after or before it commits", async () => {
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+
+    const committedContext = "topic:same-version-post-before-resolution:reply";
+    const committedGeneration = crypto.randomUUID();
+    await setDraft(ownerId, committedContext, committedGeneration, "active", 1);
+    const losing = await store.createDraftAttachment({
+      ...upload(committedContext, committedGeneration), expectedVersion: 1,
+    });
+    const resolved = await drafts.resolve(ownerId, committedContext, committedGeneration, {
+      title: "", body: "server winner", tags: "",
+    }, 1);
+    expect(resolved).toMatchObject({ outcome: "saved", draft: {
+      version: 2, payload: { draftAttachmentIds: [] },
+    } });
+    expect(await store.readDraftAttachment(ownerId, committedContext, committedGeneration, losing.id)).toBeNull();
+    await expect(store.createDraftAttachment({
+      ...upload(committedContext, committedGeneration, losing.id), expectedVersion: 1,
+    })).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+
+    const pendingContext = "topic:same-version-resolution-before-post:reply";
+    const pendingGeneration = crypto.randomUUID();
+    await setDraft(ownerId, pendingContext, pendingGeneration, "active", 1);
+    expect((await drafts.resolve(ownerId, pendingContext, pendingGeneration, {
+      title: "", body: "server winner", tags: "",
+    }, 1)).outcome).toBe("saved");
+    await expect(store.createDraftAttachment({
+      ...upload(pendingContext, pendingGeneration), expectedVersion: 1,
+    })).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+  });
+
+  it("restores same-version DELETE when Keep-server resolves after or before it commits", async () => {
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+
+    const committedContext = "topic:same-version-delete-before-resolution:reply";
+    const committedGeneration = crypto.randomUUID();
+    await setDraft(ownerId, committedContext, committedGeneration, "active", 1);
+    const retained = await store.createDraftAttachment(upload(committedContext, committedGeneration));
+    expect(await store.removeDraftAttachment(
+      ownerId, committedContext, committedGeneration, retained.id, 1,
+    )).toBe(true);
+    expect((await drafts.resolve(ownerId, committedContext, committedGeneration, {
+      title: "", body: "server winner", tags: "",
+    }, 1)).outcome).toBe("saved");
+    expect(await store.readDraftAttachment(ownerId, committedContext, committedGeneration, retained.id))
+      .toMatchObject({ id: retained.id });
+    await expect(store.removeDraftAttachment(
+      ownerId, committedContext, committedGeneration, retained.id, 1,
+    )).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+
+    const pendingContext = "topic:same-version-resolution-before-delete:reply";
+    const pendingGeneration = crypto.randomUUID();
+    await setDraft(ownerId, pendingContext, pendingGeneration, "active", 1);
+    const stillRetained = await store.createDraftAttachment(upload(pendingContext, pendingGeneration));
+    expect((await drafts.resolve(ownerId, pendingContext, pendingGeneration, {
+      title: "", body: "server winner", tags: "",
+    }, 1)).outcome).toBe("saved");
+    await expect(store.removeDraftAttachment(
+      ownerId, pendingContext, pendingGeneration, stillRetained.id, 1,
+    )).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+    expect(await store.readDraftAttachment(ownerId, pendingContext, pendingGeneration, stillRetained.id))
+      .toMatchObject({ id: stillRetained.id });
+  });
+
   it("keeps legacy retainedAttachmentIds separate from the exact private manifest", async () => {
     const context = "topic:legacy-retained-manifest:reply";
     const generation = crypto.randomUUID();
@@ -609,7 +673,7 @@ describe("forum attachment lifecycle foundation", () => {
       await connection.query((await readFile("drizzle/0038_forum_attachment_cleanup_claims.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0039_forum_publication_receipts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0040_post_edit_history_permissions.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      await connection.query((await readFile("drizzle/0044_attachment_draft_contexts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
+      await connection.query((await readFile("drizzle/0044_attachment_draft_conflict_boundaries.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       const drafts = new DrizzleForumEditorDrafts(drizzle(connection));
       expect((await drafts.save(ownerId, "help:new", fresh, { title: "Fresh", body: "new", tags: "" }, 1)).outcome).toBe("saved");
       const attachments = new DrizzleForumAttachments(drizzle(connection));
@@ -634,6 +698,7 @@ describe("forum attachment lifecycle foundation", () => {
     try {
       await client.query(`grant usage on schema ${schema} to ${role}`);
       await client.query(`grant select, insert on forum_attachments, forum_attachment_draft_contexts, forum_attachment_draft_generations, forum_attachment_edit_snapshots to ${role}`);
+      await client.query(`grant select, insert, delete on forum_attachment_draft_boundaries to ${role}`);
       await client.query(`grant select, insert, delete on forum_attachment_draft_refs to ${role}`);
       await client.query(`grant select, update on forum_editor_drafts to ${role}`);
       await client.query(`grant select, update on forum_posts to ${role}`);
