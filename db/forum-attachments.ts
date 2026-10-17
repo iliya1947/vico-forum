@@ -1,6 +1,7 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
+  forumAttachmentDraftContexts,
   forumAttachmentDraftRefs,
   forumAttachmentDraftGenerations,
   forumAttachmentEditSnapshots,
@@ -193,6 +194,9 @@ export class DrizzleForumAttachments {
       }
       const selected = legacySelection === undefined ? published
         : published.filter((file) => legacySelection.includes(file.id));
+      if (selected.length) await tx.insert(forumAttachmentDraftContexts).values(selected.map((file) => ({
+        attachmentId: file.id, ownerId, contextKey, createdAt: new Date(),
+      }))).onConflictDoNothing();
       if (selected.length) await tx.insert(forumAttachmentDraftRefs).values(selected.map((file) => ({
         attachmentId: file.id, ownerId, contextKey, draftId, createdAt: new Date(),
       }))).onConflictDoNothing();
@@ -237,6 +241,12 @@ export class DrizzleForumAttachments {
       }).returning();
 
       if (created) {
+        await tx.insert(forumAttachmentDraftContexts).values({
+          attachmentId: input.id,
+          ownerId: input.ownerId,
+          contextKey: input.contextKey,
+          createdAt,
+        }).onConflictDoNothing();
         await tx.insert(forumAttachmentDraftRefs).values({
           attachmentId: input.id,
           ownerId: input.ownerId,
@@ -267,6 +277,12 @@ export class DrizzleForumAttachments {
         ))
         .limit(1);
       if (!reference) throw new InvalidForumAttachmentError();
+      await tx.insert(forumAttachmentDraftContexts).values({
+        attachmentId: input.id,
+        ownerId: input.ownerId,
+        contextKey: input.contextKey,
+        createdAt: existing.createdAt,
+      }).onConflictDoNothing();
       return toMetadata(existing);
     });
   }

@@ -44,6 +44,8 @@ const migrations = [
   "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts", "0040_post_edit_history_permissions",
   "0041_published_mentions",
   "0042_attachment_edit_snapshots",
+  "0043_attachment_security_read_permission",
+  "0044_attachment_draft_contexts",
 ];
 
 const ownerId = "attachment-owner";
@@ -496,6 +498,24 @@ describe("forum attachment lifecycle foundation", () => {
       .toMatchObject({ id: pending.id });
   });
 
+  it("restores a winning attachment when a concurrent DELETE commits before its draft CAS", async () => {
+    const context = "topic:manifest-delete-before-save:reply";
+    const generation = crypto.randomUUID();
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+    await setDraft(ownerId, context, generation, "active", 1);
+    const retained = await store.createDraftAttachment({
+      ...upload(context, generation), expectedVersion: 1,
+    });
+
+    expect(await store.removeDraftAttachment(ownerId, context, generation, retained.id, 1)).toBe(true);
+    expect(await store.readDraftAttachment(ownerId, context, generation, retained.id)).toBeNull();
+    expect((await drafts.save(ownerId, context, generation, {
+      title: "", body: "winner", tags: "", draftAttachmentIds: [retained.id],
+    }, 1)).outcome).toBe("saved");
+    expect(await store.readDraftAttachment(ownerId, context, generation, retained.id))
+      .toMatchObject({ id: retained.id });
+  });
+
   it("keeps legacy retainedAttachmentIds separate from the exact private manifest", async () => {
     const context = "topic:legacy-retained-manifest:reply";
     const generation = crypto.randomUUID();
@@ -589,6 +609,7 @@ describe("forum attachment lifecycle foundation", () => {
       await connection.query((await readFile("drizzle/0038_forum_attachment_cleanup_claims.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0039_forum_publication_receipts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       await connection.query((await readFile("drizzle/0040_post_edit_history_permissions.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
+      await connection.query((await readFile("drizzle/0044_attachment_draft_contexts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
       const drafts = new DrizzleForumEditorDrafts(drizzle(connection));
       expect((await drafts.save(ownerId, "help:new", fresh, { title: "Fresh", body: "new", tags: "" }, 1)).outcome).toBe("saved");
       const attachments = new DrizzleForumAttachments(drizzle(connection));
@@ -612,7 +633,7 @@ describe("forum attachment lifecycle foundation", () => {
     const runtime = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
     try {
       await client.query(`grant usage on schema ${schema} to ${role}`);
-      await client.query(`grant select, insert on forum_attachments, forum_attachment_draft_generations, forum_attachment_edit_snapshots to ${role}`);
+      await client.query(`grant select, insert on forum_attachments, forum_attachment_draft_contexts, forum_attachment_draft_generations, forum_attachment_edit_snapshots to ${role}`);
       await client.query(`grant select, insert, delete on forum_attachment_draft_refs to ${role}`);
       await client.query(`grant select, update on forum_editor_drafts to ${role}`);
       await client.query(`grant select, update on forum_posts to ${role}`);

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0043_attachment_security_read_permission",
+  "targetMigration": "0044_attachment_draft_contexts",
   "tables": {
     "account": {
       "columns": [
@@ -5255,6 +5255,83 @@
               "name": "identifier",
               "order": "asc",
               "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_attachment_draft_contexts": {
+      "columns": [
+        {
+          "name": "attachment_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_draft_contexts_pk",
+          "columns": [
+            "attachment_id",
+            "owner_id",
+            "context_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_attachment_draft_contexts_attachment_owner_fk",
+          "columns": [
+            "attachment_id",
+            "owner_id"
+          ],
+          "referencedTable": "forum_attachments",
+          "referencedColumns": [
+            "id",
+            "owner_id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_attachment_draft_contexts_owner_context_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "owner_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "context_key",
+              "nulls": "last",
+              "order": "asc"
             }
           ]
         }

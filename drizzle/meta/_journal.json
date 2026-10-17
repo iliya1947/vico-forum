@@ -309,6 +309,13 @@
       "when": 1792110000000,
       "tag": "0043_attachment_security_read_permission",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792262196997,
+      "tag": "0044_attachment_draft_contexts",
+      "breakpoints": true
     }
   ]
 }

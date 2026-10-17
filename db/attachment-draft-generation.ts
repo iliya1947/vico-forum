@@ -2,6 +2,7 @@ import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftGenerations,
+  forumAttachmentDraftContexts,
   forumAttachmentDraftRefs,
 } from "./schema";
 
@@ -92,12 +93,12 @@ export async function reconcileAttachmentDraftManifest(
     : scope);
   if (selected.length === 0) return;
   const existingReferences = await connection.select({
-    attachmentId: forumAttachmentDraftRefs.attachmentId,
-    createdAt: forumAttachmentDraftRefs.createdAt,
-  }).from(forumAttachmentDraftRefs).where(and(
-    eq(forumAttachmentDraftRefs.ownerId, ownerId),
-    eq(forumAttachmentDraftRefs.contextKey, contextKey),
-    inArray(forumAttachmentDraftRefs.attachmentId, selected),
+    attachmentId: forumAttachmentDraftContexts.attachmentId,
+    createdAt: forumAttachmentDraftContexts.createdAt,
+  }).from(forumAttachmentDraftContexts).where(and(
+    eq(forumAttachmentDraftContexts.ownerId, ownerId),
+    eq(forumAttachmentDraftContexts.contextKey, contextKey),
+    inArray(forumAttachmentDraftContexts.attachmentId, selected),
   ));
   const references = [...new Map(existingReferences.map((reference) => [
     reference.attachmentId,

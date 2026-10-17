@@ -16,6 +16,7 @@ export const runtimeCapabilityContracts = Object.freeze({
       authz_roles: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
       authz_user_permission_overrides: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
       authz_user_roles: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
+      forum_attachment_draft_contexts: Object.freeze(["INSERT", "SELECT"]),
       forum_attachment_draft_refs: Object.freeze(["DELETE", "INSERT", "SELECT"]),
       forum_attachment_draft_generations: Object.freeze(["INSERT", "SELECT"]),
       forum_attachment_edit_snapshots: Object.freeze(["INSERT", "SELECT"]),

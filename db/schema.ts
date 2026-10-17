@@ -977,6 +977,33 @@ export const forumAttachmentDraftRefs = pgTable(
   ],
 );
 
+// Durable provenance lets a later winning draft CAS restore a reference that
+// a concurrent losing DELETE removed, without allowing cross-context reuse.
+export const forumAttachmentDraftContexts = pgTable(
+  "forum_attachment_draft_contexts",
+  {
+    attachmentId: text("attachment_id").notNull(),
+    ownerId: text("owner_id").notNull(),
+    contextKey: text("context_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_attachment_draft_contexts_pk",
+      columns: [table.attachmentId, table.ownerId, table.contextKey],
+    }),
+    foreignKey({
+      name: "forum_attachment_draft_contexts_attachment_owner_fk",
+      columns: [table.attachmentId, table.ownerId],
+      foreignColumns: [forumAttachments.id, forumAttachments.ownerId],
+    }).onDelete("cascade"),
+    index("forum_attachment_draft_contexts_owner_context_idx").on(
+      table.ownerId,
+      table.contextKey,
+    ),
+  ],
+);
+
 export const forumAttachmentDraftGenerations = pgTable(
   "forum_attachment_draft_generations",
   {
