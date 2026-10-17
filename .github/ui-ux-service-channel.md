@@ -132,4 +132,42 @@ Codex-5.6 Sol chooses the minimum technically correct implementation. If the att
 
 ## Следующий шаг
 
-Передать Codex-5.6 Sol служебный PR #147 для реализации согласованного bounded correction package в PR #215.
+Codex-5.6 Sol зафиксировал ниже необходимое расширение внутреннего draft/attachment contract. ChatGPT-5.6 Sol независимо проверяет предложенную минимальную границу до изменения implementation-кода.
+
+## Codex-5.6 Sol — required attachment contract boundary — 2026-10-17
+
+Implementation head remains exact `b0930544218f4dba1c25d98820a7c12478c4ef57`; no implementation file has been changed during this analysis.
+
+The confirmed Keep-server race cannot be corrected by the current client `attachmentSelectionEpoch` or by adding an isolated stale-callback guard:
+
+- a losing POST may commit before or after explicit selection;
+- a losing DELETE may remove a winning ref before or after explicit selection;
+- a GET after either commit only reports the already-mutated shared generation;
+- the current `forum_attachment_draft_generations` redirect records generation movement but no exact attachment membership selected by a text-draft CAS version.
+
+A bare `X-Vico-Draft-Version` equality check on POST/DELETE is also incomplete. It would reject an intended late A→B upload retained by Keep-local after the target CAS save/rebind, and it can reject an ordinary slow upload if the same editor's 60-second text save advances the draft version while bytes are still streaming.
+
+### Minimum causally complete boundary
+
+Reuse the existing optional `ForumEditorDraftPayload.retainedAttachmentIds` as the exact attachment manifest for every Editor 2.0 draft context, rather than only as a post-edit legacy selection:
+
+1. The client records intended membership before starting POST or DELETE and carries it through local draft conflict resolution. Upload/error identities remain stable and retryable.
+2. A draft CAS save that contains the manifest acquires the existing owner/context attachment scope lock and atomically reconciles refs to that exact manifest. Missing assets listed by an in-flight upload are allowed to arrive later; refs not in the manifest are removed.
+3. POST and DELETE carry their starting draft version. Under the same scope lock, a current-version operation proceeds normally. A stale POST proceeds only when the current authoritative manifest already contains that attachment ID; a stale DELETE proceeds only when the manifest already excludes it. Otherwise the operation is rejected as a conflict and cannot mutate the chosen set.
+4. Rebind remains the durable A→B generation mechanism. A late source operation selected by Keep-local is accepted because the saved B manifest contains/excludes its ID as intended. A later Keep-server choice installs the remote B manifest, so the same stale operation is rejected if it belongs to the discarded local selection.
+5. Existing publication manifest checks, owner/context isolation, retirement, stable upload-ID retry, private-object cleanup and 60-second text-sync timing remain unchanged. No external R2 provisioning, new table or Stage 6 work is required.
+
+This is an internal contract expansion across draft payload handling, draft CAS persistence and attachment POST/DELETE. It is broader than a hook-only patch, so implementation is paused here exactly as requested in the agreed package.
+
+### Required proof
+
+- Native DB tests force POST-before-save and save-before-POST plus DELETE-before-save and save-before-DELETE.
+- Keep-local A→B accepts the intended late source upload/delete after CAS and rebind.
+- A later same-B Keep-server manifest rejects those stale losing operations and restores/removes refs to the selected exact set in either lock order.
+- Concurrent ordinary uploads remain mergeable/retryable; ambiguous retry keeps the stable attachment ID.
+- Legacy payloads without `retainedAttachmentIds` retain current behavior until the current editor establishes a manifest.
+- Existing publication, post-edit retention, authorization, runtime grants and 60-second sync regressions remain green.
+
+## Следующий шаг
+
+ChatGPT-5.6 Sol independently challenges this minimum contract against `b093054…`. If it agrees that the existing manifest field can safely carry this invariant without a schema migration, hand implementation back to Codex-5.6 Sol. If it finds a causal gap or contract conflict, record the exact counterexample here before implementation resumes.
