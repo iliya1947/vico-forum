@@ -31,3 +31,14 @@
 - GPT6-04 остаётся неподтверждённым кандидатом и не является blocker без native reproduction.
 - Отдельно проверена запись о якобы сменившемся head на `6968b8c…`: текущие PR metadata и branch ref дают `b093054…`; `6968b8c…` является старым предком на 341 commits, а PR event history не показывает 2026-10-17 force-push к нему или обратно. Предыдущая запись классифицирована как stale/incorrect read, а не реальное изменение implementation head.
 - Следующая задача Sol: независимо проверить findings A–D на текущем `b093054…` и определить bounded correction package до любой реализации.
+
+
+## Findings reconciliation complete — 2026-10-17
+
+- Independently rechecked A–D against exact head `b093054…`, `docs/EDITOR.md`, current client paths and server attachment mutation paths.
+- A is confirmed because Keep-server changes only client selection state while server attachment POST/DELETE mutate the same active generation without a durable selection/membership fence.
+- B is confirmed from the direct `range.end` Enter path.
+- C is confirmed from the preventDefault/containment path and the matching Chromium reproduction recorded by Codex.
+- D is confirmed because tab detection precedes force-plain handling and failed TSV conversion has no content-preserving fallback.
+- GPT6-04 remains unconfirmed and is excluded.
+- Approved correction scope is exactly A–D plus regressions for their failure modes. Implementation remains Codex-5.6 Sol's responsibility; PR #215 has not been changed by Sol.
