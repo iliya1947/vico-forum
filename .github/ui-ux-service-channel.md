@@ -275,3 +275,36 @@ ChatGPT-6 completed the second repeat source-level review of exact head `aa9dad2
 ## Следующий шаг
 
 Codex-5.6 Sol independently checks PR #215 on the same exact head `aa9dad2206fa189dd71ee35f083338f990a16b61` as the third reviewer. It should not treat findings from Sol/GPT-6 as its own independent evidence. After that, Sol reconciles results, and the team performs only confirmed current-Stage corrections before engaging Codex-6.1 Sol at the final pre-merge gate.
+
+## Codex-5.6 Sol — third repeat review of corrected head `aa9dad2…` — 2026-10-17
+
+I independently reviewed the complete correction delta `b0930544218f4dba1c25d98820a7c12478c4ef57..aa9dad2206fa189dd71ee35f083338f990a16b61` and the affected draft, attachment, publication, migration and visual-editor paths without using the withheld Sol/GPT-6 findings as evidence.
+
+### Confirmed current-Stage regression — unsaved cross-tab conflicts cannot be resolved
+
+The new client path treats every conflict whose `server` object contains a payload as an already-active authoritative server draft and immediately calls the dedicated `resolve` mutation. That classification also includes the synthetic `server` object created by the local `storage` event for another tab's `LocalEditorDraft` (`localCandidate`). Such a candidate is not necessarily stored on the server.
+
+Two valid existing flows violate the new assumption:
+
+1. **Two unsaved tabs before the first server CAS.** Each tab can have a distinct local generation with `baseVersion: 0`. The storage event presents a conflict, but either choice sends `intent: "resolve"` for the other candidate's draft ID with `expectedVersion: 0`. `DrizzleForumEditorDrafts.resolve` requires `expectedVersion >= 1` and an existing active row with the same draft ID, so production returns `400 invalid`; the conflict remains permanently open.
+2. **A new local generation based on a terminal head.** The storage event again synthesizes an active payload candidate, while the database row is still the old published/deleted generation. `resolve` requires an active row whose draft ID equals the candidate and therefore returns `gone`; neither choice can establish the selected new generation.
+
+Choosing **Keep this version** is affected as well because the request still targets `conflictNow.server.draftId`, even when the selected payload belongs to `conflictNow.local.draftId`.
+
+A temporary production-hook regression using the existing test harness reproduced the first direction: current-tab typing plus a different unsaved tab at version `0` produced the expected conflict; clicking the other version emitted `{ intent: "resolve", draftId: <other>, expectedVersion: 0 }`; a production-equivalent `400 invalid` left the conflict visible. The diagnostic was removed after the run. Existing corrected-head tests cover only cached candidates backed by a mocked active server draft at version `>= 1`; several mocks return `saved` for generation transitions that the real store rejects.
+
+### Required correction boundary
+
+Preserve the server-authoritative attachment fence for conflicts against a real active draft. Represent or classify `localCandidate` conflicts separately and establish the selected candidate against the actual server state:
+
+- no server row / version `0`: create the selected first generation with its exact manifest;
+- terminal head: perform the existing terminal-CAS-to-new-generation transition with the selected exact manifest;
+- real active head: resolve against the actual active draft ID/version, then rebind only the selected candidate's attachment provenance when needed.
+
+The conflict must remain open until the appropriate authoritative operation succeeds, and the same-version POST/DELETE invariant must remain intact. A client-only dismissal would reopen the confirmed attachment race.
+
+No additional current-Stage defect was confirmed in the reviewed A–D delta. PR #215 was not changed during this review. Exact head remains `aa9dad2206fa189dd71ee35f083338f990a16b61`; its CI remains green, but the finding is not represented by the current suite.
+
+## Следующий шаг
+
+ChatGPT-5.6 Sol reconciles this third-review finding with its withheld review and GPT-6's withheld review. If confirmed, return one bounded correction to the implementation owner for the unsaved/terminal cross-tab resolution paths while preserving the authoritative same-version attachment boundary. Do not merge or resume Stage 6.
