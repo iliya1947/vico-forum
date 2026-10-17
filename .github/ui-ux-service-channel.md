@@ -6,7 +6,7 @@
 
 - Implementation PR: #215 — Editor 2.0.
 - Completed three-reviewer target: `b0930544218f4dba1c25d98820a7c12478c4ef57` (documentation-only successor; Editor runtime remains unchanged from the verified implementation).
-- At publication on 2026-10-17 GitHub reports PR #215 head `6968b8c0e5b25ee93e86d7ecfb5d155c0949219d`, not `b093054…`. This changed head was not part of the completed review cycle; its intent and relationship to the reviewed state must be established before implementation work resumes.
+- Current GitHub PR metadata and the implementation branch both resolve to `b0930544218f4dba1c25d98820a7c12478c4ef57`. The earlier service-channel observation of `6968b8c…` as a changed head is not supported by repository history: `6968b8c…` is an older ancestor of `b093054…` by 341 commits, and the PR event history contains no 2026-10-17 force-push to or from that commit. Treat the earlier observation as a stale/incorrect read, not as an implementation-head change.
 - Runtime/code head коррекции compact toolbar и security-only navigation: `1fed72195536bc3e51967a68a4248c2acb7d21a5`.
 - `1fed721… → e47436e…` меняет только `PROJECT_STATE.md`; runtime не меняется.
 - Exact implementation-head CI #38949642183: `checks` SUCCESS, `database` SUCCESS.
@@ -55,7 +55,7 @@ Pre-review gates закрыты. ChatGPT-5.6 Sol, ChatGPT-6 и Codex-5.6 Sol з�
 - Two GPT-6 findings are independently confirmed by ChatGPT-5.6 Sol as current-Stage defects: Simple-mode Enter ignores the actual caret inside a visual text leaf; non-TSV plain-text paste containing a Tab can discard the pasted content instead of using a safe fallback.
 - GPT6-03 (cross-leaf paste selection) and GPT6-04 (paste event with no plain/html flavor) remain unconfirmed candidates. Source shows a plausible failure path, but the decisive native browser event behavior was not reproduced in the available Sol environment. They are not part of the confirmed-defect set.
 - Codex-5.6 Sol completed its independent whole-PR review of the same exact head. It independently confirmed the Enter and tabbed-paste defects, reproduced cross-leaf paste in real Chromium and confirmed one additional attachment conflict-selection race described below. GPT6-04 remains only a candidate because no native non-image clipboard payload reaching that branch was reproduced.
-- No implementation correction was performed during this review cycle. GitHub now reports PR #215 head `6968b8c…`; findings below apply to reviewed head `b093054…` until independently reconciled against that changed head.
+- No implementation correction was performed during this review cycle. PR #215 remains on the reviewed exact head `b093054…`, so the findings below apply directly to the current implementation head.
 
 ## Codex-5.6 Sol result for reviewed head `b093054…`
 
@@ -99,4 +99,4 @@ No additional current-Stage defect was confirmed in the reviewed publication, ge
 
 ## Следующий шаг
 
-Передать ChatGPT-5.6 Sol служебный PR #147. Сначала установить причину смены head PR #215 с reviewed `b093054…` на `6968b8c…`, затем независимо сопоставить findings A–D с фактическим текущим head и определить единый bounded пакет подтверждённых current-Stage исправлений. Не merge и не переходить к Stage 6.
+ChatGPT-5.6 Sol независимо сопоставляет findings A–D с текущим exact head `b093054…` и определяет единый bounded пакет подтверждённых current-Stage исправлений. Не merge и не переходить к Stage 6.
