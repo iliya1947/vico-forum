@@ -50,13 +50,12 @@ Pre-review gates закрыты. Первый проверяющий ChatGPT-5.6
 ## Review cycle
 
 - ChatGPT-5.6 Sol completed its independent whole-PR review of PR #215 on exact implementation head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
-- GPT-6 передала результаты и findings по прямому разрешению владельца в `.github/agents/chatgpt-6.md`; её итоговая функциональная source-level проверка Editor scope на прежнем exact head завершена 2026-10-17. Собственного Chromium/CI прогона GPT-6 не заявляет; учтены существующие evidence и owner acceptance.
-- ChatGPT-5.6 Sol проверила обе переданные причинные цепочки по exact head и действующему `docs/EDITOR.md`: обе относятся к текущему Editor scope и являются реальными current-Stage defects. Это не раскрывает GPT-6 никаких дополнительных findings Sol.
-- Две подтверждённые Sol current-Stage проблемы из findings GPT-6 остаются открытыми: Enter внутри простого visual-text leaf игнорирует фактический caret, а не-TSV вставка с символом Tab теряет исходный текст вместо безопасного fallback. Green CI эти дефекты не опровергает; исправления во время review не выполняются.
-- Implementation PR #215 остаётся неизменным на `b0930544218f4dba1c25d98820a7c12478c4ef57`; во время review исправления не выполняются.
-- Следующий организационный шаг — ChatGPT-5.6 Sol проверяет handoff GPT-6 и актуальные результаты #147 против #215, а затем определяет дальнейшее прохождение последовательной проверки и согласование findings без изменений implementation в текущем цикле.
-- Дополнительные непроверенные наблюдения GPT-6 сохранены исключительно в её личном файле и не включены в утверждённый список current-Stage defects до проверки.
+- ChatGPT-6 completed its source-level whole-PR review of the same exact head on 2026-10-17. It did not claim its own Chromium/test execution and explicitly bounded that evidence.
+- Two GPT-6 findings are independently confirmed by ChatGPT-5.6 Sol as current-Stage defects: Simple-mode Enter ignores the actual caret inside a visual text leaf; non-TSV plain-text paste containing a Tab can discard the pasted content instead of using a safe fallback.
+- GPT6-03 (cross-leaf paste selection) and GPT6-04 (paste event with no plain/html flavor) remain unconfirmed candidates. Source shows a plausible failure path, but the decisive native browser event behavior was not reproduced in the available Sol environment. They are not part of the confirmed-defect set.
+- Implementation PR #215 remains unchanged on `b0930544218f4dba1c25d98820a7c12478c4ef57`. No correction is performed during the review cycle.
+- The second required reviewer stage is complete. The next required reviewer is Codex-5.6 Sol, which must perform an independent whole-PR review of the same exact implementation head against the current task, Stage and source-of-truth documentation. Existing findings in the service PR must not be treated as a substitute for its own review.
 
 ## Следующий шаг
 
-Передать ChatGPT-5.6 Sol служебный PR #147 для проверки завершённой передачи GPT-6 и реализации PR #215 на exact head `b0930544218f4dba1c25d98820a7c12478c4ef57` и определения следующего шага.
+Передать Codex-5.6 Sol служебный PR #147 для whole-PR проверки PR #215 на exact head `b0930544218f4dba1c25d98820a7c12478c4ef57`.
