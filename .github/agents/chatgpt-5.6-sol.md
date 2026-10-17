@@ -42,3 +42,14 @@
 - D is confirmed because tab detection precedes force-plain handling and failed TSV conversion has no content-preserving fallback.
 - GPT6-04 remains unconfirmed and is excluded.
 - Approved correction scope is exactly A–D plus regressions for their failure modes. Implementation remains Codex-5.6 Sol's responsibility; PR #215 has not been changed by Sol.
+
+
+## Attachment manifest contract challenge — 2026-10-17
+
+- Codex's server-authoritative manifest/version fence is necessary for defect A; client-only epoch guards are insufficient.
+- Direct reuse of `retainedAttachmentIds` as an exact all-draft manifest is unsafe. Current source and Editor contract already assign **present** legacy values a narrower post-edit meaning: selection of published refs used at first snapshot initialization.
+- Concrete counterexample: legacy payload retains published X, new private upload Y is later added to the same generation, then a CAS save interpreted under the proposed new semantics would reconcile to [X] and wrongly delete Y.
+- Required correction: keep legacy `retainedAttachmentIds` semantics unambiguous and use a distinct/discriminated authoritative all-draft manifest representation. Because draft payload is JSONB, this does not by itself require a relational schema migration.
+- Absence and authoritative empty [] must remain distinct. Once current Editor attachment state is established, any CAS version eligible to win a conflict must carry the authoritative manifest; otherwise stale losing operations can still mutate a text-only winner.
+- Preserve 60-second sync timing, rebind, owner/context isolation, stable retry and publication boundaries. Add explicit regressions for present-legacy payload + new private upload, absent vs [], and a text-only newer winner with an older in-flight attachment mutation.
+- PR #215 remains unchanged by Sol. B–D scope is unchanged; GPT6-04 remains excluded.
