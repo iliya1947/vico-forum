@@ -543,9 +543,14 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
     <visualSpellcheckContext.Provider value={spellCheck ?? inheritedSpellCheck}>
     <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
       onKeyDownCapture={(event) => {
+        if (!(event.target instanceof Element)
+          || event.target.closest(".markdown-editor-visual") !== event.currentTarget) return;
         if (event.key.toLowerCase() === "v" && (event.ctrlKey || event.metaKey) && event.shiftKey) {
           forcePlainPasteRef.current = true;
         }
+      }}
+      onKeyUpCapture={(event) => {
+        if (event.key.toLowerCase() === "v") forcePlainPasteRef.current = false;
       }}
       onPaste={(event) => {
         const plain = event.clipboardData.getData("text/plain");
