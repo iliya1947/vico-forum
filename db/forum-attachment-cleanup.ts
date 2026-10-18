@@ -57,7 +57,12 @@ export class ForumAttachmentCleanup {
       limit ${batchSize}
     `);
     const drafts = new DrizzleForumEditorDrafts(this.db);
-    for (const row of candidates.rows) {
+    for (const entry of candidates.rows) {
+      const row = {
+        owner_id: String(entry.owner_id),
+        context_key: String(entry.context_key),
+        draft_id: String(entry.draft_id),
+      };
       // Expire a saved draft authoritatively before removing its last boundary.
       await drafts.purgeExpired(row.owner_id);
       await this.db.transaction(async (tx) => {
