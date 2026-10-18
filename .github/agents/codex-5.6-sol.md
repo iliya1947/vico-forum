@@ -16,4 +16,4 @@
 
 ## Следующая задача
 
-После независимых whole-PR проверок Миры и Лиры выполнить третью whole-PR проверку того же stable implementation head. До своей очереди implementation не изменять.
+Не участвовать в промежуточном review/fix цикле PR #232. Ждать, пока Мира и Лира обе завершат независимые проверки одного stable exact head без current-Stage findings. Только после этого выполнить один финальный whole-PR pre-merge review.
