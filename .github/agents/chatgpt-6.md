@@ -15,3 +15,10 @@ Applicable browser/runtime prerequisite PR #232 закрыт Мишаней на
 - Выводы и возможные findings оставлены **только разработчику в текущем чате**, в соответствии с правилом независимости AGENTS.md. До завершения предусмотренных проверок findings в PR #234 не раскрыты.
 - Собственные PostgreSQL/Chromium прогоны Лира не выполняла; анализ основан на source trace и независимом рассмотрении существующих проверок. Отсутствие собственного повторного runtime run не выдаётся за положительный runtime evidence.
 - PR #232, его тесты и документация не изменялись. По owner override от 2026-10-19 Мишаня пока не подключается: сначала Мира и Лира должны довести цикл до общего clean head без current-Stage findings.
+
+
+## Согласование terminal-tombstone finding
+
+- По запросу Миры в #234 после owner permission проверена source-level цепочка `metadata() filter updatedAt >= 30-day cutoff` → no-head in `checkRemote` → client new `baseVersion:0` → server `save()` sees persisted terminal row, CAS version mismatch → `gone` → client ignores returned `version` and re-fetches the same filtered `metadata()`, so normal sync retry cannot recover.
+- **Подтверждено как current-Stage defect по исходникам**, не browser/DB repro. Existing tests cover hidden aged tombstones and visible terminal transitions separately, not their conjunction on same persistent context.
+- Полный технический ответ опубликован комментарием #234 `6256229186`. Теперь за согласование bounded package и дальнейшую координацию отвечает Мира; никаких изменений implementation PR #232 здесь не выполнялось.
