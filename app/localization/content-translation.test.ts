@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { attributedQuoteMarkdown } from "../forum/quote-markdown";
 import {
   ContentTranslationService,
   ContentTranslationStorageUnavailableError,
@@ -92,6 +93,30 @@ describe("ContentTranslationService", () => {
       reason: "stale",
       translation: null,
     });
+  });
+
+  it("refuses altered, missing or retargeted source quote attribution on exact post-body translations", async () => {
+    const originalContent = attributedQuoteMarkdown({
+      author: "Alice &copy;", messageNumber: 7, permalink: "/he/topics/example#post-7",
+      content: "Hello world",
+    });
+    const current = { ...revision, contentType: "post-body" as const, originalContent };
+    const valid = translated({ contentType: "post-body", translatedContent: originalContent });
+    const clean = await new ContentTranslationService(store({ read: valid })).readCurrent(current, "fr");
+    expect(clean.selected).toBe("translation");
+    for (const corruption of [
+      originalContent.replace("Alice", "Mallory"),
+      originalContent.replace("#post-7", "#post-changed"),
+      "Hello world without the source reference",
+    ]) {
+      const selected = await new ContentTranslationService(store({
+        read: { ...valid, translatedContent: corruption },
+      })).readCurrent(current, "fr");
+      expect(selected).toMatchObject({
+        selected: "original", reason: "invalid",
+        content: originalContent, translation: null,
+      });
+    }
   });
 
   it("falls back on invalid stored content/provenance", async () => {

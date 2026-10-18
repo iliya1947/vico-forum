@@ -1,7 +1,10 @@
+import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ForumMarkdown } from "../forum/markdown";
+import { attributedQuoteMarkdown, collectAttributedMarkdownQuoteHeaders } from "../forum/quote-markdown";
+import { parseForumMarkdown } from "../markdown-syntax";
 import {
   BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT,
   MarkdownTranslationValidationError,
@@ -57,6 +60,55 @@ describe("protected CommonMark translation", () => {
     expect(screen.getByRole("link", { name: "documentation" }).getAttribute("href"))
       .toBe("https://example.com/docs");
     expect(container.querySelector("blockquote")?.textContent).toContain("שלום עולם");
+  });
+
+  it("protects nested quote author/anchor metadata without freezing quoted prose or ordinary links", () => {
+    const inner = attributedQuoteMarkdown({
+      author: "שלום &copy;", messageNumber: 9,
+      permalink: "/he/topics/topic#post-inner", content: "Inner human words.",
+    }).trim();
+    const outer = attributedQuoteMarkdown({
+      author: "A &amp; B", messageNumber: 8,
+      permalink: "/he/topics/topic#post-outer",
+      content: "Translate outer prose with [ordinary label](https://example.com/docs).\n\n" + inner,
+    });
+    const source = outer + "\n> [Legacy ordinary label](https://example.com/legacy)\n";
+    const expected = collectAttributedMarkdownQuoteHeaders(parseForumMarkdown(source))
+      .map(({ label, permalink }) => [label, permalink]);
+    expect(expected).toHaveLength(2);
+    const document = protectMarkdownForTranslation(source);
+    const exposed = document.segments.map((part) => part.text).join(" ");
+    expect(exposed).not.toContain("↳");
+    expect(exposed).not.toContain("&copy;");
+    expect(exposed).not.toContain("&amp;");
+    expect(exposed).toContain("outer prose");
+    expect(exposed).toContain("ordinary label");
+    expect(exposed).toContain("Inner human words");
+    expect(exposed).toContain("Legacy ordinary label");
+    const translated = document.restore(document.segments.map((part) => ({
+      id: part.id,
+      value: part.text.replace("Translate", "Traduire")
+        .replace("ordinary label", "étiquette ordinaire")
+        .replace("human words", "mots humains"),
+    })));
+    expect(collectAttributedMarkdownQuoteHeaders(parseForumMarkdown(translated))
+      .map(({ label, permalink }) => [label, permalink])).toEqual(expected);
+    const { container } = render(<ForumMarkdown>{translated}</ForumMarkdown>);
+    expect(container.querySelectorAll(".forum-quote-attribution")).toHaveLength(2);
+    expect(container.querySelector(".forum-quote-content")).toHaveTextContent("Traduire");
+    expect(container.querySelector(".post-body")).toHaveTextContent("étiquette ordinaire");
+  });
+
+  it("preserves agreed strikethrough structure through translation protection", () => {
+    const source = "Keep ~~deprecated phrase~~ visible.";
+    const document = protectMarkdownForTranslation(source);
+    expect(document.segments.map((segment) => segment.text).join(" ")).toContain("deprecated phrase");
+
+    const restored = document.restore(translateIdentity(document.segments));
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+
+    expect(restored).toContain("~~deprecated phrase~~");
+    expect(container.querySelector("del")?.textContent).toBe("deprecated phrase");
   });
 
   it("never exposes inline/fenced/indented code, autolink URLs, raw HTML, or image data as segments", () => {

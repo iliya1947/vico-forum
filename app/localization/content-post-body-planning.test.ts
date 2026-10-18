@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { attributedQuoteMarkdown } from "../forum/quote-markdown";
 
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
@@ -222,6 +223,30 @@ describe("ContentPostBodyTranslationPlanner", () => {
     });
     expect(tasks.admissions).toEqual([budgetAdmission()]);
     expect(enqueuer.messages).toHaveLength(0);
+  });
+
+  it("plans regeneration when a stored exact-revision quote author has been altered", async () => {
+    const originalContent = attributedQuoteMarkdown({
+      author: "Original", messageNumber: 8,
+      permalink: "/ru/topics/t#post-8", content: "Переводимый текст",
+    });
+    const revision = bodyRevision({ originalContent });
+    const tasks = new FakePostBodyPlanningStore(revision);
+    const translation = new MemoryContentTranslationStore([{
+      contentType: "post-body",
+      contentId: revision.contentId,
+      revisionId: revision.revisionId,
+      sourceLocale: revision.sourceLocale,
+      targetLocale: "he",
+      translatedContent: originalContent.replace("Original", "Other"),
+      provenance: { origin: "machine", provider: "provider", model: "model" },
+    }]);
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const result = await plannerWith({ tasks, translations: translation, enqueuer })
+      .planAndDispatch(revision, "he", budgetAdmission());
+    expect(result.kind).toBe("queued");
+    expect(tasks.specifications).toHaveLength(1);
+    expect(enqueuer.messages).toHaveLength(1);
   });
 
   it("does not create work for an existing exact-revision translation", async () => {

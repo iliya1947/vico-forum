@@ -24,8 +24,13 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 export interface ForumWriter {
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
   recordOnlinePresence(userId: string): Promise<void>;
-  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[] }): Promise<{ topicId: string }>;
-  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null }): Promise<{ postId: string }>;
+  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ topicId: string }>;
+  editPublishedPost(input: {
+    topicId: string; postId: string; actorId: string;
+    expectedRevisionId: string; body: string;
+    draftId: string; draftVersion: number; attachmentIds: string[]; retainedAttachmentIds?: string[];
+  }): Promise<void>;
+  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
   setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string }): Promise<void>;
@@ -74,6 +79,7 @@ export function createHyperdriveForumReader(
   }
 
   return {
+    searchMentionableUsers: (query) => read((repository) => repository.searchMentionableUsers(query)),
     readOnlinePresence: () => read((repository) => repository.readOnlinePresence()),
     readProfile: (userId) => read((repository) => repository.readProfile(userId)),
     listCategories: () => read((repository) => repository.listCategories()),
@@ -104,6 +110,8 @@ export function createHyperdriveForumReader(
     readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
+    readPostHistory: (postId, topicId) => read((repository) => repository.readPostHistory(postId, topicId)),
+    readPostLocation: (postId) => read((repository) => repository.readPostLocation(postId)),
   };
 }
 
@@ -157,12 +165,17 @@ export function createHyperdriveForumWriter(
         throw error;
       } finally { bestEffortDiscardClient(client); }
     },
-    createTopic: ({ sectionId, authorId, title, body, tags = [] }) => write(async (forum) => {
+    createTopic: ({ sectionId, authorId, title, body, tags = [], draftId, draftVersion, attachmentIds }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
-      await forum.createTopicWithInitialPost({
+      const created = await forum.createTopicWithInitialPost({
         id: topicId,
         sectionId,
         authorId,
+        publishedDraft: {
+          contextKey: sectionId === "help-solutions-questions" ? "help:new" : `section:${sectionId}:new`,
+          ...(draftId !== undefined || draftVersion !== undefined ? { draftId, expectedVersion: draftVersion } : {}),
+          ...(attachmentIds !== undefined ? { attachmentIds } : {}),
+        },
         titleRevision: { id: crypto.randomUUID(), originalContent: title, sourceLocale: "und" },
         tags: tags.map((name) => ({ key: name, name })),
         initialPost: {
@@ -170,15 +183,25 @@ export function createHyperdriveForumWriter(
           bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
         },
       });
-      return { topicId };
+      return { topicId: created.topic.id };
     }),
-    createReply: ({ topicId, authorId, body, parentPostId = null }) => write(async (forum) => {
+    editPublishedPost: ({ topicId, postId, actorId, expectedRevisionId, body, draftId, draftVersion, attachmentIds, retainedAttachmentIds }) =>
+      writeCorrection((forum) => forum.editPublishedPost({
+        topicId, postId, actorId, expectedRevisionId, body,
+        draftId, expectedVersion: draftVersion, attachmentIds, retainedAttachmentIds,
+      })),
+    createReply: ({ topicId, authorId, body, parentPostId = null, draftId, draftVersion, attachmentIds }) => write(async (forum) => {
       const postId = crypto.randomUUID();
-      await forum.createPost({
+      const created = await forum.createPost({
         id: postId, topicId, authorId, parentPostId,
+        publishedDraft: {
+          contextKey: `topic:${topicId}:reply`,
+          ...(draftId !== undefined || draftVersion !== undefined ? { draftId, expectedVersion: draftVersion } : {}),
+          ...(attachmentIds !== undefined ? { attachmentIds } : {}),
+        },
         bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
       });
-      return { postId };
+      return { postId: created.id };
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),

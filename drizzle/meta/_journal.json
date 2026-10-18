@@ -239,6 +239,83 @@
       "when": 1791635400000,
       "tag": "0033_forum_online_presence",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791717600000,
+      "tag": "0034_forum_editor_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791835200000,
+      "tag": "0035_forum_attachments_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791840600000,
+      "tag": "0036_forum_attachment_security_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791890456622,
+      "tag": "0037_forum_attachment_draft_generations",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791973200000,
+      "tag": "0038_forum_attachment_cleanup_claims",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791990000000,
+      "tag": "0039_forum_publication_receipts",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792000000000,
+      "tag": "0040_post_edit_history_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792003600000,
+      "tag": "0041_published_mentions",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792085668135,
+      "tag": "0042_attachment_edit_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792110000000,
+      "tag": "0043_attachment_security_read_permission",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792264384394,
+      "tag": "0044_attachment_draft_conflict_boundaries",
+      "breakpoints": true
     }
   ]
 }

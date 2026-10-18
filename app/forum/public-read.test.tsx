@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
+import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -11,6 +11,7 @@ import {
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
 import { authSessionContext } from "../auth/request-context";
+import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { authorizationContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -19,6 +20,8 @@ import type { StoredContentTranslation } from "../localization/content-translati
 import { localeRegistry } from "../localization/registry";
 import {
   contentTranslationPresentationContext,
+  contentGenerationActionContext,
+  contentGenerationStatusReaderContext,
   localeContext,
   registryLoaderContext,
 } from "../localization/request-context";
@@ -35,6 +38,7 @@ import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
 import { forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext, forumWriterContext } from "./request-context";
+import { forumAttachmentStoreContext } from "./attachment-request-context";
 
 const category = {
   id: "development/core",
@@ -160,6 +164,7 @@ const forMePage = {
 };
 
 const reader: ForumReader = {
+  searchMentionableUsers: async () => [],
   readProfile: async () => undefined,
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
   readHomepage: async () => [{
@@ -268,6 +273,8 @@ const reader: ForumReader = {
   }] : [],
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
+  readPostHistory: async () => [],
+  readPostLocation: async () => undefined,
   readTopicPage: async (id) => id === topic.id ? topic : id === helpTopic.id ? helpTopic : undefined,
 };
 
@@ -284,6 +291,9 @@ function context(
 ) {
   const value = new RouterContextProvider();
   value.set(forumReaderContext, reader);
+  value.set(forumAttachmentStoreContext, {
+    readSecurityAttachmentEvents: async (page: number) => ({ events: [], hasMore: false, page }),
+  } as never);
   value.set(localeContext, {
     translationLocale: locale,
     fallbackLocales: locale === "en" ? [] : ["en"],
@@ -375,11 +385,11 @@ function runtime(locale: string, direction: "ltr" | "rtl") {
   });
 }
 
-function renderRoute(Component: ComponentType, data: unknown, path: string, locale: string, direction: "ltr" | "rtl") {
+function renderRoute(Component: ComponentType, data: unknown, path: string, locale: string, direction: "ltr" | "rtl", headerUser: HeaderAuthUser | null = null) {
   const router = createMemoryRouter([{ id: "page", path: "*", Component, loader: () => data }], {
     initialEntries: [path],
   });
-  return render(<div lang={locale} dir={direction}><I18nextProvider i18n={runtime(locale, direction)}><RouterProvider router={router} /></I18nextProvider></div>);
+  return render(<div lang={locale} dir={direction}><I18nextProvider i18n={runtime(locale, direction)}><HeaderAuthProvider initialUser={headerUser}><RouterProvider router={router} /></HeaderAuthProvider></I18nextProvider></div>);
 }
 
 describe.each([
@@ -578,9 +588,9 @@ describe("Help & solutions modes and authoring", () => {
     const form = await screen.findByRole("form", { name: "Ask a question" });
     expect(within(form).getByLabelText("Question title")).toBeRequired();
     const questionDetails = within(form).getByLabelText("Question details");
-    expect(questionDetails).toBeRequired();
+    expect(questionDetails).not.toBeRequired();
     expect(within(form).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
-    expect(within(form).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    expect(within(form).getByRole("button", { name: "Advanced" })).toBeInTheDocument();
     fireEvent.change(questionDetails, { target: { value: "Draft body with **Markdown**." } });
     expect(new FormData(form as HTMLFormElement).get("body")).toBe("Draft body with **Markdown**.");
     expect(within(form).getByLabelText("Tags")).not.toBeRequired();
@@ -589,7 +599,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(similarButton).toHaveAttribute("name", "intent");
     expect(similarButton).toHaveAttribute("value", "checkSimilarHelpQuestions");
     const askQuestionButton = within(form).getByRole("button", { name: "Ask question" });
-    expect(askQuestionButton).toBeEnabled();
+    await waitFor(() => expect(askQuestionButton).toBeEnabled());
     expect(askQuestionButton).toHaveAttribute("name", "intent");
     expect(askQuestionButton).toHaveAttribute("value", "createHelpQuestion");
     expect(within(form).queryByText("All fields are required.")).not.toBeInTheDocument();
@@ -1068,6 +1078,7 @@ describe("Help & solutions modes and authoring", () => {
         resolve: vi.fn(),
         has: vi.fn(async (permission) => [
           "forum.solution.manageAny", "forum.helpDuplicate.manage", "forum.helpNeedsDetails.manage",
+          "forum.attachmentSecurity.read",
         ].includes(permission)),
       }),
     } as never);
@@ -1111,12 +1122,101 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByText("This section is not connected yet.")).toBeVisible();
     complaintView.unmount();
 
+    const readSecurityEvents = vi.fn(async (page: number) => ({
+      events: [{
+        id: "security-event-1",
+        uploadId: "23b93562-0550-4eef-88af-f951d6ea6138",
+        uploadedByUserId: "uploader-1",
+        contextKey: "topic:help/topic:reply",
+        draftId: "76568e3b-7cf0-4f32-9847-051d5a9b8071",
+        fileName: "masked\u202Etxt.exe",
+        declaredMime: "text/plain",
+        detectedType: "executable",
+        reason: "executable-signature",
+        declaredByteSize: 4,
+        createdAt: new Date("2026-10-12T12:00:00Z"),
+      }],
+      hasMore: true,
+      page,
+    }));
+    managerContext.set(forumAttachmentStoreContext, {
+      readSecurityAttachmentEvents: readSecurityEvents,
+    } as never);
     const security = await attentionLoader({
       request: new Request("https://forum.example/en/attention?mode=security"),
       params: { locale: "en" }, context: managerContext,
     });
-    expect(security).toMatchObject({ mode: "security", group: "group1", queue: null });
+    expect(security).toMatchObject({ mode: "security", group: "attachments", queue: null });
+    expect(readSecurityEvents).toHaveBeenCalledWith(0);
     expect(readQueue).toHaveBeenCalledTimes(calls);
+    const securityView = renderRoute(AttentionRoute, security, "/en/attention?mode=security", "en", "ltr");
+    expect(await screen.findByRole("link", { name: "Attachments" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Attachments" })).toHaveAttribute("href", "/en/attention?mode=security&group=attachments");
+    expect(screen.getByRole("link", { name: "Group 2" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Group 3" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Group 1" })).not.toBeInTheDocument();
+    expect(screen.getByText("masked\\u{202E}txt.exe")).toBeVisible();
+    expect(screen.getByText("executable-signature")).toBeVisible();
+    expect(screen.getByText("uploader-1")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Accept signal" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute(
+      "href",
+      "/en/attention?mode=security&group=attachments&page=1",
+    );
+    securityView.unmount();
+    const securitySecondGroup = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=security&group=group2"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(securitySecondGroup.group).toBe("group2");
+    expect(readSecurityEvents).toHaveBeenCalledTimes(1);
+    const complaintsInvalidGroup = await attentionLoader({
+      request: new Request("https://forum.example/en/attention?mode=complaints&group=attachments"),
+      params: { locale: "en" }, context: managerContext,
+    });
+    expect(complaintsInvalidGroup.group).toBe("group1");
+  });
+
+  it("separates attachment-security reader authorization from Help moderation", async () => {
+    const ctx = context("en", "ltr");
+    ctx.set(authSessionContext, { user: { id: "security-reader", name: "Reader" },
+      session: { id: "security-session", userId: "security-reader" } } as never);
+    const readSecurity = vi.fn(async (page: number) => ({ events: [], hasMore: false, page }));
+    const readHelp = vi.fn(async (_group: string, _visibility: unknown, page = 0) => ({ cases: [], hasMore: false, page }));
+    const readCounts = vi.fn(async () => ({ "needs-details": 0, "needs-review": 0,
+      "solution-outdated": 0, duplicate: 0, appeals: 0, mixed: 0 }));
+    ctx.set(forumAttachmentStoreContext, { readSecurityAttachmentEvents: readSecurity } as never);
+    ctx.set(forumReaderContext, { ...reader, readHelpAttentionCases: readHelp, readHelpAttentionCounts: readCounts });
+    const allowed = new Set<string>(["forum.helpNeedsDetails.manage"]);
+    ctx.set(authorizationContext, { forUser: () => ({ has: async (key: string) => allowed.has(key) }) } as never);
+    const load = (url: string) => attentionLoader({ request: new Request(url), params: { locale: "en" }, context: ctx });
+    const security = "https://forum.example/en/attention?mode=security&group=attachments";
+    await expect(load(security)).rejects.toMatchObject({ status: 403 });
+    expect(readSecurity).not.toHaveBeenCalled();
+    expect((await load("https://forum.example/en/attention?mode=signals&group=needs-details")).queue).not.toBeNull();
+    expect(readHelp).toHaveBeenCalledTimes(1);
+    allowed.clear();
+    allowed.add("forum.attachmentSecurity.read");
+    const sec = await load(security);
+    expect(sec.securityQueue).toMatchObject({ events: [], page: 0 });
+    expect(readSecurity).toHaveBeenCalledTimes(1);
+    // Shared header links to the bare route; security-only access must resolve there too.
+    const defaultSecurity = await load("https://forum.example/en/attention");
+    expect(defaultSecurity).toMatchObject({ mode: "security", group: "attachments" });
+    expect(defaultSecurity.securityQueue).toMatchObject({ events: [], page: 0 });
+    expect(readSecurity).toHaveBeenCalledTimes(2);
+    await expect(load("https://forum.example/en/attention?mode=signals")).rejects.toMatchObject({ status: 403 });
+    expect(readHelp).toHaveBeenCalledTimes(1);
+    const rendered = renderRoute(AttentionRoute, defaultSecurity, "/en/attention", "en", "ltr",
+      { id: "security-reader", name: "Reader", canViewModerationAttention: true });
+    expect(await screen.findByRole("link", { name: "Security" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Needs attention" })).toHaveAttribute("href", "/en/attention");
+    expect(screen.queryByRole("link", { name: "Signals" })).not.toBeInTheDocument();
+    rendered.unmount();
+    allowed.clear();
+    allowed.add("forum.helpDuplicate.manage");
+    await expect(load(security)).rejects.toMatchObject({ status: 403 });
+    expect(readSecurity).toHaveBeenCalledTimes(2);
   });
 
   it("requires origin and effective per-kind permission before processing a signal", async () => {
@@ -2101,6 +2201,524 @@ describe("forum path encoding", () => {
   });
 });
 
+describe("published editing presentation permissions", () => {
+  it("shows no edit/history control to a non-owner, but displays public edit date", async () => {
+    const edited = {
+      ...topic,
+      posts: [{ ...topic.posts[0]!, editedAt: new Date("2026-10-10T10:00:00Z") }],
+    };
+    renderRoute(TopicRoute, topicRenderData(edited, {
+      editablePostIds: [], canReadPostHistory: false,
+    }), "/en/topics/typed-api", "en", "ltr");
+    await screen.findByText(/Edited /u);
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit history" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Private old revision")).not.toBeInTheDocument();
+  });
+
+  it("lets an authorized author open and cancel a distinct post edit draft", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      editablePostIds: ["answer"], canReadPostHistory: false,
+    }), "/en/topics/typed-api", "en", "ltr", { id: "lin", name: "Lin" });
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const editorForm = await screen.findByRole("form", { name: "Edit published message" });
+    expect(editorForm.querySelector('input[name="postId"]')).toHaveValue("answer");
+    expect(editorForm.querySelector('input[name="expectedRevisionId"]')).toHaveValue("post-r1");
+    expect(editorForm.querySelector('input[name="editorDraftId"]')).not.toBeNull();
+    expect(editorForm.querySelector('input[name="body"]')).toHaveValue("Start with an explicit response type.");
+    fireEvent.click(within(editorForm).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+    expect(screen.getByText("Start with an explicit response type.")).toBeInTheDocument();
+  });
+});
+
+describe("published edit resume navigation", () => {
+  it("consumes the resume URL on Cancel, stays closed after same-topic refresh, and permits explicit reentry", async () => {
+    const ownerId = "edit-resume-owner";
+    const args = { editablePostIds: ["answer"], canReadPostHistory: false };
+    const topicPath = "/en/topics/typed-api";
+    const resumedUrl = topicPath + "?editPost=answer&view=compact#post-answer";
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => topicRenderData(topic, { ...args, editablePostIds: [...args.editablePostIds] }),
+    }], { initialEntries: [resumedUrl] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Lin" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    const editorDraftId = form.querySelector('input[name="editorDraftId"]')?.getAttribute("value");
+    expect(editorDraftId).toBeTruthy();
+    fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+      expect(router.state.location.search).toBe("?view=compact");
+    });
+    expect(router.state.location.hash).toBe("#post-answer");
+    await router.revalidate();
+    expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+    expect(router.state.location.search).toBe("?view=compact");
+
+    await router.navigate(resumedUrl);
+    const resumed = await screen.findByRole("form", { name: "Edit published message" });
+    expect(resumed.querySelector('input[name="editorDraftId"]')).not.toBeNull();
+  });
+});
+
+describe("published edit revision fence", () => {
+  it.each(["", " \n"])("renders attachment-only posts without sending empty text to translation or generation (%j)", async (body) => {
+    const emptyPost = { ...topic.posts[0]!, id: "attachment-only-post",
+      body: { ...topic.posts[0]!.body, id: "attachment-only-revision", originalContent: body, sourceLocale: "und" },
+      attachments: [{ id: "23b93562-0550-4eef-88af-f951d6ea6138", fileName: "only-file.txt", byteSize: 12, detectedType: "text" }] };
+    const textPost = { ...topic.posts[0]!, id: "adjacent-text-post",
+      body: { ...topic.posts[0]!.body, id: "adjacent-text-revision", originalContent: "Adjacent source", sourceLocale: "en" } };
+    const page = { ...topic, posts: [emptyPost, textPost] };
+    const ctx = context("he", "rtl");
+    ctx.set(forumReaderContext, { ...reader, readTopicPage: async () => page });
+    const readBatch = vi.fn(async (identities: readonly { contentId: string }[]) => {
+      expect(identities.some((item) => item.contentId === emptyPost.id)).toBe(false);
+      return { translations: [{ contentType: "post-body" as const,
+      contentId: textPost.id, revisionId: textPost.body.id, targetLocale: "he", sourceLocale: "en",
+      translatedContent: "Adjacent translation", provenance: { origin: "persistent_manual" as const } }] };
+    });
+    ctx.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch }));
+    ctx.set(authSessionContext, { user: { id: "translation-capable-author" } } as never);
+    ctx.set(authorizationContext, { forUser: () => ({ has: async (permission: string) => permission === "forum.translation.generate" }) } as never);
+    ctx.set(contentGenerationActionContext, { enabled: true } as never);
+    const readStatuses = vi.fn(async (revisions: readonly { contentType: "topic-title" | "post-body"; contentId: string; revisionId: string }[]) =>
+      revisions.map((revision) => ({ ...revision, state: "idle" as const })));
+    ctx.set(contentGenerationStatusReaderContext, { readCurrent: readStatuses });
+    const loaded = await topicLoader({ params: { locale: "he", topicId: topic.id }, context: ctx });
+    expect(loaded.postPresentations[0]).toMatchObject({ contentId: emptyPost.id, selected: "original", content: body });
+    expect(loaded.postPresentations[1]).toMatchObject({ contentId: textPost.id, selected: "translation", content: "Adjacent translation" });
+    expect(readBatch.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
+    expect(readStatuses.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
+    expect(loaded.generationUnits.some((unit) => unit.contentId === emptyPost.id)).toBe(false);
+    renderRoute(TopicRoute, loaded, "/he/topics/typed-api", "he", "rtl");
+    expect(await screen.findByText("only-file.txt")).toBeInTheDocument();
+    expect(screen.getByText("Adjacent translation")).toBeInTheDocument();
+  });
+
+  const json = (body: unknown) => new Response(JSON.stringify(body), {
+    status: 200, headers: { "Content-Type": "application/json" },
+  });
+
+  it("keeps the original revision fence and typed text on same-topic revalidation until explicit rebase", async () => {
+    const postId = "edit-fence-post";
+    const ownerId = "edit-fence-owner";
+    const original = { ...topic, posts: [{
+      ...topic.posts[0]!, id: postId, authorId: ownerId,
+      body: { ...topic.posts[0]!.body, id: "fence-r1" },
+    }] };
+    let current = original;
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute,
+      loader: () => topicRenderData(current, {
+        editablePostIds: [postId], canReadPostHistory: false,
+      }),
+    }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const textarea = form.querySelector("textarea")!;
+    fireEvent.change(textarea, { target: { value: "My original unsaved edit " } });
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
+
+    current = { ...original, posts: [{
+      ...original.posts[0]!, body: {
+        ...original.posts[0]!.body, id: "fence-r2", originalContent: "Someone else's current edit",
+      },
+    }] };
+    await router.revalidate();
+    await waitFor(() => expect(screen.getByText("Someone else's current edit")).toBeInTheDocument());
+    expect(screen.getByRole("form", { name: "Edit published message" })).toBe(form);
+    expect(textarea).toHaveValue("My original unsaved edit ");
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
+
+    fireEvent.click(within(form).getByRole("button", { name: "Apply my draft to the current revision" }));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+    expect(textarea).toHaveValue("My original unsaved edit ");
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+  });
+
+  it("restores a server-synced edit's original revision fence on another device", async () => {
+    const postId = "edit-remote-fence-post";
+    const ownerId = "edit-remote-fence-owner";
+    const contextKey = `post:${postId}:edit`;
+    const published = { ...topic, posts: [{
+      ...topic.posts[0]!, id: postId, authorId: ownerId,
+      body: { ...topic.posts[0]!.body, id: "fence-r2", originalContent: "Updated published message" },
+    }] };
+    const now = new Date().toISOString();
+    const remoteDraft = {
+      contextKey, draftId: crypto.randomUUID(), version: 4, status: "active",
+      title: "", snippet: "Remote unsaved edit ", editedAt: now, updatedAt: now,
+      payload: { body: "Remote unsaved edit ", title: "", tags: "", parentPostId: null,
+        publishedRevisionId: "fence-r1" },
+    };
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [remoteDraft] });
+      if (url.startsWith("/en/drafts/data?mode=content&key=")) return json({ draft: remoteDraft });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute,
+      loader: () => topicRenderData(published, { editablePostIds: [postId], canReadPostHistory: false }),
+    }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Remote unsaved edit "));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
+  });
+
+  it.each([
+    ["versioned", "fence-r1"],
+    ["legacy without a baseline", undefined],
+  ])("blocks a %s restored edit from silently inheriting the current published revision", async (_label, savedRevision) => {
+    const postId = "edit-resume-fence-post";
+    const ownerId = "edit-resume-fence-owner";
+    const contextKey = `post:${postId}:edit`;
+    const storageKey = "vico:editor:draft:" + encodeURIComponent(ownerId) + ":" + encodeURIComponent(contextKey);
+    const existing = { ...topic, posts: [{
+      ...topic.posts[0]!, id: postId, authorId: ownerId,
+      body: { ...topic.posts[0]!.body, id: "fence-r2", originalContent: "Updated publication" },
+    }] };
+    const now = new Date().toISOString();
+    localStorage.setItem(storageKey, JSON.stringify({
+      ownerId, contextKey, draftId: crypto.randomUUID(), baseVersion: 1,
+      editedAt: now, syncedEditedAt: null,
+      payload: { body: "Recovered offline edit ", title: "", tags: "", parentPostId: null,
+        ...(savedRevision ? { publishedRevisionId: savedRevision } : {}) },
+    }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+    try {
+      const router = createMemoryRouter([{
+        id: "page", path: "*", Component: TopicRoute,
+        loader: () => topicRenderData(existing, {
+          editablePostIds: [postId], canReadPostHistory: false,
+        }),
+      }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
+      render(
+        <div lang="en" dir="ltr">
+          <I18nextProvider i18n={runtime("en", "ltr")}>
+            <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
+              <RouterProvider router={router} />
+            </HeaderAuthProvider>
+          </I18nextProvider>
+        </div>,
+      );
+      const form = await screen.findByRole("form", { name: "Edit published message" });
+      await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Recovered offline edit "));
+      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue(savedRevision ?? "");
+      expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+      expect(within(form).getByRole("alert")).toHaveTextContent(savedRevision
+        ? "This message changed" : "no recorded source revision");
+      fireEvent.click(within(form).getByRole("button", { name: "Apply my draft to the current revision" }));
+      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+      expect(form.querySelector('input[name="body"]')).toHaveValue("Recovered offline edit ");
+    } finally {
+      localStorage.removeItem(storageKey);
+    }
+  });
+});
+
+describe("published edit submission lifecycle", () => {
+  it("keeps a reply locked through loading and Cancel preserves the draft for resuming", async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("mode=metadata")) return json({ drafts: [] });
+      if (url === "/api/attachments") return json({ attachments: [] });
+      throw new Error("Unexpected request: " + url);
+    }));
+    let resolveAction!: () => void, resolveLoader!: (value: ReturnType<typeof topicRenderData>) => void;
+    const pendingAction = new Promise<void>((resolve) => { resolveAction = resolve; });
+    const pendingLoader = new Promise<ReturnType<typeof topicRenderData>>((resolve) => { resolveLoader = resolve; });
+    let hold = false;
+    const current = topicRenderData(topic, { canReply: true });
+    const router = createMemoryRouter([{ path: "*", Component: TopicRoute,
+      loader: () => hold ? pendingLoader : current,
+      action: async () => { await pendingAction; return { error: "unavailable" }; },
+    }], { initialEntries: ["/en/topics/typed-api"] });
+    render(<I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={{ id: "reply-loading-owner", name: "Author" }}>
+        <RouterProvider router={router} />
+      </HeaderAuthProvider>
+    </I18nextProvider>);
+    const form = await screen.findByRole("form", { name: "Add a reply" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const field = form.querySelector("textarea")!;
+    fireEvent.change(field, { target: { value: "Recoverable reply " } });
+    fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("form", { name: "Add a reply" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add a reply" }));
+    expect(field).toHaveValue("Recoverable reply ");
+    const publish = within(form).getByRole("button", { name: "Post reply" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    fireEvent.click(publish);
+    await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+    hold = true; resolveAction();
+    await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+    expect(field).toBeDisabled();
+    expect(within(form).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    resolveLoader(current);
+    await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    expect(field).toBeEnabled();
+    expect(field).toHaveValue("Recoverable reply ");
+  });
+
+  it("keeps the editor and its publication barrier locked through loader revalidation", async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+
+    const editPostId = "edit-lifecycle-answer";
+    const ownerId = "edit-lifecycle-author";
+    const original = {
+      ...topic,
+      posts: [{ ...topic.posts[0]!, id: editPostId, authorId: ownerId,
+        body: { ...topic.posts[0]!.body, id: "edit-lifecycle-r1" } }],
+    };
+    let resolveAction!: () => void;
+    let resolveRevalidation!: (value: ReturnType<typeof topicRenderData>) => void;
+    const actionPending = new Promise<void>((resolve) => { resolveAction = resolve; });
+    const revalidationPending = new Promise<ReturnType<typeof topicRenderData>>((resolve) => {
+      resolveRevalidation = resolve;
+    });
+    let holdRevalidation = false;
+    let actionBody: FormDataEntryValue | null = null;
+    const permissions = { editablePostIds: [editPostId], canReadPostHistory: false };
+    let currentData = topicRenderData(original, permissions);
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => holdRevalidation ? revalidationPending : currentData,
+      action: async ({ request }) => {
+        const submitted = await request.formData();
+        expect(submitted.get("intent")).toBe("editPost");
+        expect(submitted.get("postId")).toBe(editPostId);
+        expect(submitted.get("expectedRevisionId")).toBe("edit-lifecycle-r1");
+        actionBody = submitted.get("body");
+        await actionPending;
+        return null;
+      },
+    }], { initialEntries: ["/en/topics/typed-api?editPost=edit-lifecycle-answer&view=compact"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Lin" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const textarea = form.querySelector("textarea")!;
+    const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const cancel = within(form).getByRole("button", { name: "Cancel" });
+    fireEvent.change(textarea, { target: { value: "Submitted text " } });
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+
+    await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+    await waitFor(() => {
+      expect(textarea).toBeDisabled();
+      expect(save).toBeDisabled();
+      expect(cancel).toBeDisabled();
+      expect(form).toHaveAttribute("aria-busy", "true");
+    });
+    await waitFor(() => expect(actionBody).toBe("Submitted text "));
+
+    const updatedTopic = {
+      ...original,
+      posts: [{ ...original.posts[0]!,
+        body: { ...original.posts[0]!.body, id: "edit-lifecycle-r2", originalContent: "Submitted text " } }],
+    };
+    currentData = topicRenderData(updatedTopic, permissions);
+    holdRevalidation = true;
+    resolveAction();
+    await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+    await waitFor(() => {
+      expect(textarea).toBeDisabled();
+      expect(save).toBeDisabled();
+      expect(cancel).toBeDisabled();
+      expect(form).toHaveAttribute("aria-busy", "true");
+    });
+    expect(textarea).toHaveValue("Submitted text ");
+
+    resolveRevalidation(currentData);
+    await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    await waitFor(() => {
+      expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Submitted text")).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.search).toBe("?view=compact"));
+  });
+  it("preserves the live edit and retry body after a real 400 failure even when local storage writes fail", async () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
+      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
+      throw new Error("Unexpected editor request: " + url);
+    }));
+
+    const postId = "edit-failed-answer";
+    const ownerId = "edit-failed-author";
+    const original = {
+      ...topic,
+      posts: [{ ...topic.posts[0]!, id: postId, authorId: ownerId,
+        body: { ...topic.posts[0]!.body, id: "edit-failed-r1" } }],
+    };
+    let resolveFirstAction!: () => void;
+    const pendingAction = new Promise<void>((resolve) => { resolveFirstAction = resolve; });
+    const submittedBodies: Array<FormDataEntryValue | null> = [];
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => topicRenderData(original, {
+        editablePostIds: [postId], canReadPostHistory: false,
+      }),
+      action: async ({ request }) => {
+        const formData = await request.formData();
+        submittedBodies.push(formData.get("body"));
+        if (submittedBodies.length === 1) await pendingAction;
+        return data({ error: "invalid" as const }, { status: 400 });
+      },
+    }], { initialEntries: ["/en/topics/typed-api"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Lin" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+    const textarea = form.querySelector("textarea")!;
+    const save = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const cancel = within(form).getByRole("button", { name: "Cancel" });
+    const storageFailure = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage quota exceeded", "QuotaExceededError");
+    });
+    try {
+      fireEvent.change(textarea, { target: { value: "Failed edit stays local " } });
+      await waitFor(() => expect(save).toBeEnabled());
+      fireEvent.click(save);
+
+      await waitFor(() => expect(router.state.navigation.state).toBe("submitting"));
+      await waitFor(() => {
+        expect(textarea).toBeDisabled();
+        expect(cancel).toBeDisabled();
+      });
+      expect(submittedBodies).toEqual(["Failed edit stays local "]);
+      resolveFirstAction();
+      await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+      await waitFor(() => {
+        expect(textarea).toBeEnabled();
+        expect(save).toBeEnabled();
+        expect(cancel).toBeEnabled();
+      });
+      expect(textarea.isConnected).toBe(true);
+      expect(screen.getByRole("form", { name: "Edit published message" })).toBe(form);
+      expect(textarea).toHaveValue("Failed edit stays local ");
+      expect(form.querySelector('input[name="body"]')).toHaveValue("Failed edit stays local ");
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+
+      fireEvent.click(save);
+      await waitFor(() => expect(submittedBodies).toHaveLength(2));
+      expect(submittedBodies[1]).toBe("Failed edit stays local ");
+      await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+    } finally {
+      storageFailure.mockRestore();
+    }
+  });
+
+});
+
+describe("published attachment caller integration", () => {
+  it("resolves inline images and inert source previews from verified types, not names", async () => {
+    const imageId = "23b93562-0550-4eef-88af-f951d6ea6138";
+    const sourceId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
+    const published = { ...topic, posts: [{
+      ...topic.posts[0]!,
+      body: {
+        ...topic.posts[0]!.body,
+        originalContent: `Before ![shot](vico-attachment:${imageId}) after`,
+      },
+      attachments: [
+        { id: imageId, fileName: "verified-source-name.txt", byteSize: 7, detectedType: "png" },
+        { id: sourceId, fileName: "misleading.png", byteSize: 21, detectedType: "text" },
+      ],
+    }] };
+    renderRoute(TopicRoute, topicRenderData(published), "/en/topics/typed-api", "en", "ltr");
+    await waitFor(() => expect(document.querySelector("[data-message-body]")).not.toBeNull());
+    const body = document.querySelector("[data-message-body]");
+    expect(body).not.toBeNull();
+    const image = within(body as HTMLElement).getByAltText("verified-source-name.txt");
+    expect(image).toHaveAttribute("src", `/api/attachments/file/${imageId}?post=answer&view=inline`);
+    const safePreview = screen.getByRole("link", { name: "Preview" });
+    expect(safePreview).toHaveAttribute("href",
+      `/api/attachments/file/${sourceId}?post=answer&view=text`);
+    expect(screen.queryByAltText("misleading.png")).not.toBeInTheDocument();
+  });
+});
+
 describe("forum read states", () => {
   it("targets direct replies, exposes parent/child anchors, and quotes only selected message text", async () => {
     const seed = topic.posts[0]!;
@@ -2166,8 +2784,11 @@ describe("forum read states", () => {
 
     fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
     expect(replyEditor).toHaveAttribute("data-mode", "write");
-    expect(replyBody).toHaveValue("> Selected words\n\n");
-    expect(replyBody).toHaveFocus();
+    expect(replyEditor).toHaveAttribute("data-authoring", "simple");
+    expect(replyBody).toHaveValue("> [↳ Ada · #1](/en/topics/typed%2Fapi#post-question)\n>\n> Selected words\n\n");
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote entire message" }));
+    expect((replyBody as HTMLTextAreaElement).value).toContain("> Selected words from the question.");
+    expect(document.activeElement).toHaveAttribute("data-visual-text", "true");
 
     vi.spyOn(window, "getSelection").mockReturnValue({
       rangeCount: 0,
@@ -2569,7 +3190,7 @@ describe("forum read states", () => {
     expect(createTopicForm.querySelector('input[name="intent"]')).toHaveValue("createTopic");
     expect(screen.getByLabelText("Topic title")).toHaveAttribute("aria-describedby", "create-topic-title-help");
     expect(within(createTopicForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
-    expect(within(createTopicForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    expect(within(createTopicForm).getByRole("button", { name: "Advanced" })).toBeInTheDocument();
     expect(screen.getByText("Markdown and fenced code blocks are supported.")).toBeInTheDocument();
     authenticatedView.unmount();
 
@@ -2579,8 +3200,8 @@ describe("forum read states", () => {
     expect(replyForm.querySelector('input[name="intent"]')).toHaveValue("reply");
     expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
     expect(within(replyForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
-    expect(within(replyForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+    expect(within(replyForm).getByRole("button", { name: "Advanced" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Post reply" })).toBeDisabled();
   });
 
   it("shows a pending state while create-topic submission is in flight", async () => {
@@ -2605,6 +3226,7 @@ describe("forum read states", () => {
     );
 
     const form = await screen.findByRole("form", { name: "Create a new topic" });
+    fireEvent.change(form.querySelector("textarea")!, { target: { value: "Ready topic body" } });
     fireEvent.submit(form);
 
     expect(await screen.findByRole("button", { name: "Creating topic…" })).toBeDisabled();
@@ -2639,6 +3261,7 @@ describe("forum read states", () => {
     );
 
     const form = await screen.findByRole("form", { name: "Add a reply" });
+    fireEvent.change(form.querySelector("textarea")!, { target: { value: "Ready reply body" } });
     fireEvent.submit(form);
 
     expect(await screen.findByRole("button", { name: "Posting reply…" })).toBeDisabled();
@@ -2647,7 +3270,8 @@ describe("forum read states", () => {
 
     resolveAction();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(screen.getByRole("form", { name: "Add a reply" })).toHaveAttribute("aria-busy", "false");
     });
   });
 

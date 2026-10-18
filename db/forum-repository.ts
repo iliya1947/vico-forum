@@ -1,4 +1,5 @@
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
+import { publishedMentionRecipients } from "../app/forum/mentions";
 import { and, asc, count, desc, eq, gt, gte, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
@@ -6,12 +7,18 @@ import {
   authzRoles,
   authzUserRoles,
   forumProfiles,
+  forumAttachmentDraftGenerations,
+  forumAttachmentDraftRefs,
+  forumAttachments,
+  forumPostAttachments,
+  forumEditorDrafts,
   forumOnlinePresence,
   forumCategories,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
   forumHelpSignals,
   forumPostRevisions,
+  forumPublicationReceipts,
   forumPosts,
   forumReplyNotifications,
   forumSections,
@@ -25,6 +32,12 @@ import {
 } from "./schema";
 import { ForumWriteRateLimitError, forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
+import {
+  ForumAttachmentDraftConflictError,
+  lockAttachmentDraftScope,
+  resolveAttachmentDraftGeneration,
+  retireAttachmentDraftGeneration,
+} from "./attachment-draft-generation";
 
 export interface ForumCategorySummary {
   id: string;
@@ -130,6 +143,7 @@ export interface ForumUnreadTopicSummary {
 
 export interface ForumReplyNotificationSummary {
   id: string;
+  kind: "reply" | "mention";
   actorName: string;
   topicId: string;
   topicTitle: string;
@@ -310,9 +324,11 @@ export interface ForumSectionPage {
 }
 
 export interface ForumThreadPost extends ForumPost {
+  attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
   authorName: string;
   createdAt: Date;
+  editedAt?: Date | null;
 }
 
 export interface ForumTopicPage extends ForumTopic {
@@ -333,6 +349,7 @@ export interface ForumOnlinePresence {
 }
 
 export interface ForumReader {
+  searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>>;
   readOnlinePresence(): Promise<ForumOnlinePresence>;
   readProfile(userId: string): Promise<ForumProfile | undefined>;
   listCategories(): Promise<ForumCategorySummary[]>;
@@ -363,6 +380,11 @@ export interface ForumReader {
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
+  readPostLocation(postId: string): Promise<{ topicId: string; authorId: string } | undefined>;
+  readPostHistory(postId: string, topicId: string): Promise<Array<{
+    id: string; authorId: string; authorName: string; originalContent: string;
+    sourceLocale: string; createdAt: Date;
+  }>>;
 }
 
 export interface ForumRevisionContent {
@@ -410,6 +432,7 @@ export interface CreateTopicInput {
 }
 
 export interface CreatePostInput {
+  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] };
   id: string;
   topicId: string;
   authorId: string;
@@ -418,6 +441,7 @@ export interface CreatePostInput {
 }
 
 export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
+  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] };
   initialPost: CreatePostInput;
 }
 
@@ -427,11 +451,28 @@ export class ForumAuthorizationError extends Error {}
 export class ForumStateConflictError extends Error {}
 export type SolutionManagementScope = "own" | "any";
 
+async function publicationFingerprint(input: unknown): Promise<string> {
+  const payload = new TextEncoder().encode(JSON.stringify(input));
+  const hash = await crypto.subtle.digest("SHA-256", payload);
+  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export class DrizzleForumRepository {
   constructor(
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
   ) {}
+
+  async searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>> {
+    const term = query.trim();
+    if (!term || term.length > 64) return [];
+    // The user's term is literal, not a SQL LIKE pattern.
+    const escaped = term.replace(/[!%_]/gu, (char) => "!" + char);
+    return this.database.select({ id: user.id, name: user.name }).from(user)
+      .where(sql`${user.name} ilike ${"%" + escaped + "%"} escape '!'`)
+      .orderBy(asc(user.name), asc(user.id))
+      .limit(8);
+  }
 
   async readOnlinePresence(): Promise<ForumOnlinePresence> {
     const recent = sql`${forumOnlinePresence.lastSeenAt} >= now() - interval '5 minutes'`;
@@ -528,7 +569,35 @@ export class DrizzleForumRepository {
   }
 
   async createTopicWithInitialPost(input: CreateTopicWithInitialPostInput): Promise<{ topic: ForumTopic; post: ForumPost }> {
+    const fingerprint = input.publishedDraft?.draftId
+      ? await publicationFingerprint({
+        kind: "topic", sectionId: input.sectionId,
+        title: input.titleRevision.originalContent, titleLocale: input.titleRevision.sourceLocale,
+        body: input.initialPost.bodyRevision.originalContent,
+        bodyLocale: input.initialPost.bodyRevision.sourceLocale,
+        tags: (input.tags ?? []).map((tag) => [tag.key, tag.name]),
+        attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
+        draftVersion: input.publishedDraft.expectedVersion,
+      }) : null;
     return this.database.transaction(async (tx) => {
+      if (input.publishedDraft) {
+        await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
+        const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
+        if (existing) {
+          return {
+            topic: {
+              id: existing.topicId, sectionId: input.sectionId, authorId: input.authorId,
+              title: input.titleRevision, isSolved: false, bestAnswerPostId: null,
+            },
+            post: {
+              id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
+              parentPostId: null, solutionModerationStatus: null,
+              solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+              body: input.initialPost.bodyRevision,
+            },
+          };
+        }
+      }
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
         .where(eq(forumSections.id, input.sectionId));
@@ -557,12 +626,20 @@ export class DrizzleForumRepository {
         postId: input.initialPost.id,
         authorId: input.authorId,
       });
+      await this.recordPublishedMentions(tx, {
+        actorId: input.authorId, topicId: input.id, postId: input.initialPost.id,
+        body: input.initialPost.bodyRevision.originalContent, createdAt,
+      });
       if (input.tags?.length) {
         await tx.insert(forumTags).values([...input.tags]).onConflictDoNothing();
         await tx.insert(forumTopicTags).values(input.tags.map((tag) => ({
           topicId: input.id,
           tagKey: tag.key,
         })));
+      }
+      if (input.publishedDraft) {
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.initialPost.id);
+        await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.id, input.initialPost.id);
       }
       return {
         topic: {
@@ -588,7 +665,26 @@ export class DrizzleForumRepository {
   }
 
   async createPost(input: CreatePostInput): Promise<ForumPost> {
+    const fingerprint = input.publishedDraft?.draftId
+      ? await publicationFingerprint({
+        kind: "reply", topicId: input.topicId, parentPostId: input.parentPostId ?? null,
+        body: input.bodyRevision.originalContent, bodyLocale: input.bodyRevision.sourceLocale,
+        attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
+        draftVersion: input.publishedDraft.expectedVersion,
+      }) : null;
     return this.database.transaction(async (tx) => {
+      if (input.publishedDraft) {
+        await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
+        const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
+        if (existing) {
+          return {
+            id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
+            parentPostId: input.parentPostId ?? null,
+            solutionModerationStatus: null, solutionOutdatedReason: null,
+            solutionOutdatedReasonKind: null, body: input.bodyRevision,
+          };
+        }
+      }
       const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId))
         .for("update");
@@ -645,6 +741,15 @@ export class DrizzleForumRepository {
         });
       }
 
+      await this.recordPublishedMentions(tx, {
+        actorId: input.authorId, topicId: input.topicId, postId: input.id,
+        body: input.bodyRevision.originalContent, createdAt,
+      });
+
+      if (input.publishedDraft) {
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.id);
+        await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.topicId, input.id);
+      }
       return {
         id: input.id,
         topicId: input.topicId,
@@ -656,6 +761,252 @@ export class DrizzleForumRepository {
         body: input.bodyRevision,
       };
     });
+  }
+
+  private async recordPublishedMentions(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    input: { actorId: string; topicId: string; postId: string; body: string; createdAt: Date },
+  ): Promise<void> {
+    const identifiers = publishedMentionRecipients(input.body).filter((id) => id !== input.actorId);
+    if (!identifiers.length) return;
+    const existing = await tx.select({ id: user.id }).from(user).where(inArray(user.id, identifiers));
+    if (!existing.length) return;
+    await tx.insert(forumReplyNotifications).values(existing.map(({ id }) => ({
+      id: crypto.randomUUID(),
+      recipientUserId: id,
+      actorUserId: input.actorId,
+      topicId: input.topicId,
+      postId: input.postId,
+      kind: "mention" as const,
+      createdAt: input.createdAt,
+    }))).onConflictDoNothing({
+      target: [forumReplyNotifications.recipientUserId, forumReplyNotifications.postId],
+    });
+  }
+
+  private async publicationReceipt(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    ownerId: string,
+    draft: { contextKey: string; draftId?: string },
+    fingerprint: string | null,
+  ) {
+    if (!draft.draftId || !fingerprint) return null;
+    const [receipt] = await tx.select({
+      fingerprint: forumPublicationReceipts.fingerprint,
+      topicId: forumPublicationReceipts.topicId,
+      postId: forumPublicationReceipts.postId,
+    }).from(forumPublicationReceipts).where(and(
+      eq(forumPublicationReceipts.ownerId, ownerId),
+      eq(forumPublicationReceipts.contextKey, draft.contextKey),
+      eq(forumPublicationReceipts.draftId, draft.draftId),
+    )).limit(1);
+    if (receipt && receipt.fingerprint !== fingerprint) {
+      throw new ForumStateConflictError("published draft generation cannot be reused for a different request");
+    }
+    return receipt ?? null;
+  }
+
+  private async recordPublicationReceipt(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    ownerId: string,
+    draft: { contextKey: string; draftId?: string },
+    fingerprint: string | null,
+    topicId: string,
+    postId: string,
+  ) {
+    if (!draft.draftId || !fingerprint) return;
+    await tx.insert(forumPublicationReceipts).values({
+      ownerId, contextKey: draft.contextKey, draftId: draft.draftId, fingerprint,
+      topicId, postId, createdAt: new Date(),
+    });
+  }
+
+  private async finishPublishedDraft(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    ownerId: string,
+    draft: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] },
+    postId: string,
+  ) {
+    const hasFence = draft.draftId !== undefined || draft.expectedVersion !== undefined;
+    if (
+      hasFence
+      && (
+        typeof draft.draftId !== "string"
+        || !/^[0-9a-f-]{36}$/iu.test(draft.draftId)
+        || !Number.isSafeInteger(draft.expectedVersion)
+        || (draft.expectedVersion ?? -1) < 0
+      )
+    ) {
+      throw new ForumStateConflictError("invalid editor draft publication fence");
+    }
+
+    // The caller locks the scope before topic/user rows: uploading a ref also
+    // needs its owner's FK lock, so acquiring the scope later would deadlock.
+    // A text-only publication must not retire a generation with retained files.
+    let canonicalDraftId: string | null = null;
+    if (hasFence) {
+      try {
+        canonicalDraftId = await resolveAttachmentDraftGeneration(tx, ownerId, draft.contextKey, draft.draftId!);
+      } catch (error) {
+        if (error instanceof ForumAttachmentDraftConflictError) {
+          throw new ForumStateConflictError("editor draft generation finished before publication");
+        }
+        throw error;
+      }
+    }
+    // Selection is an explicit snapshot, not evidence of ownership or verification.
+    // The caller holds the owner/context scope lock through this publication transaction.
+    if (draft.attachmentIds !== undefined) {
+      if (!hasFence || !Array.isArray(draft.attachmentIds)
+        || draft.attachmentIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/iu.test(id))
+        || new Set(draft.attachmentIds.map((id) => id.toLowerCase())).size !== draft.attachmentIds.length) {
+        throw new ForumStateConflictError("invalid attachment publication selection");
+      }
+      const selected = new Set(draft.attachmentIds.map((id) => id.toLowerCase()));
+      const refs = await tx.select({
+        id: forumAttachmentDraftRefs.attachmentId,
+        ownerId: forumAttachments.ownerId,
+        verificationStatus: forumAttachments.verificationStatus,
+      }).from(forumAttachmentDraftRefs).innerJoin(forumAttachments, and(
+        eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
+        eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
+      )).where(and(
+        eq(forumAttachmentDraftRefs.ownerId, ownerId),
+        eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
+        eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
+      ));
+      if (refs.length !== selected.size || refs.some((ref) =>
+        !selected.has(ref.id.toLowerCase()) || ref.ownerId !== ownerId || ref.verificationStatus !== "type-checked"
+      )) throw new ForumStateConflictError("selected attachments changed before publication");
+      if (refs.length) {
+        const createdAt = new Date();
+        await tx.insert(forumPostAttachments).values(refs.map((ref) => ({
+          postId, attachmentId: ref.id, createdAt,
+        })));
+        await tx.delete(forumAttachmentDraftRefs).where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
+          eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
+          inArray(forumAttachmentDraftRefs.attachmentId, refs.map((ref) => ref.id)),
+        ));
+      }
+    }
+    const [currentDraft] = hasFence ? [] : await tx.select({
+      draftId: forumEditorDrafts.draftId,
+      status: forumEditorDrafts.status,
+    }).from(forumEditorDrafts).where(and(
+      eq(forumEditorDrafts.ownerId, ownerId),
+      eq(forumEditorDrafts.contextKey, draft.contextKey),
+    )).limit(1);
+    const [attachment] = await tx.select({ id: forumAttachmentDraftRefs.attachmentId })
+      .from(forumAttachmentDraftRefs)
+      .leftJoin(forumAttachmentDraftGenerations, and(
+        eq(forumAttachmentDraftGenerations.ownerId, forumAttachmentDraftRefs.ownerId),
+        eq(forumAttachmentDraftGenerations.contextKey, forumAttachmentDraftRefs.contextKey),
+        eq(forumAttachmentDraftGenerations.draftId, forumAttachmentDraftRefs.draftId),
+      ))
+      .where(and(
+        eq(forumAttachmentDraftRefs.ownerId, ownerId),
+        eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
+        canonicalDraftId ? eq(forumAttachmentDraftRefs.draftId, canonicalDraftId) : undefined,
+        or(isNull(forumAttachmentDraftGenerations.draftId), isNotNull(forumAttachmentDraftGenerations.targetDraftId)),
+        // Legacy callers have no generation fence. Retired references may await
+        // cleanup, but another unsynced generation must still block publication.
+        !hasFence && currentDraft && currentDraft.status !== "active"
+          ? ne(forumAttachmentDraftRefs.draftId, currentDraft.draftId) : undefined,
+      ))
+      .limit(1);
+    if (attachment) {
+      throw new ForumStateConflictError("draft attachments must be removed before text-only publication");
+    }
+
+    const now = new Date();
+    const emptyPayload = { title: "", body: "", tags: "" };
+    if (hasFence) {
+      const draftId = draft.draftId!;
+      const expectedVersion = draft.expectedVersion!;
+      const changed = await tx.update(forumEditorDrafts)
+        .set({
+          draftId,
+          status: "published",
+          payload: emptyPayload,
+          version: sql`${forumEditorDrafts.version}+1`,
+          editedAt: now,
+          updatedAt: now,
+        })
+        .where(and(
+          eq(forumEditorDrafts.ownerId, ownerId),
+          eq(forumEditorDrafts.contextKey, draft.contextKey),
+          eq(forumEditorDrafts.version, expectedVersion),
+          or(
+            and(eq(forumEditorDrafts.status, "active"), eq(forumEditorDrafts.draftId, draftId)),
+            and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId)),
+          ),
+        ))
+        .returning({ version: forumEditorDrafts.version });
+      if (changed.length > 0) {
+        await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, draftId);
+        return;
+      }
+
+      if (expectedVersion === 0) {
+        const inserted = await tx.insert(forumEditorDrafts).values({
+          ownerId,
+          contextKey: draft.contextKey,
+          draftId,
+          version: 1,
+          status: "published",
+          payload: emptyPayload,
+          editedAt: now,
+          updatedAt: now,
+        }).onConflictDoNothing().returning({ version: forumEditorDrafts.version });
+        if (inserted.length > 0) {
+          await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, draftId);
+          return;
+        }
+      }
+      throw new ForumStateConflictError("editor draft changed before publication");
+    }
+
+    // Non-editor callers do not have a client CAS token. They may publish only
+    // when there is no active editor generation to overwrite.
+    const markerDraftId = crypto.randomUUID();
+    const terminal = await tx.update(forumEditorDrafts)
+      .set({
+        draftId: markerDraftId,
+        status: "published",
+        payload: emptyPayload,
+        version: sql`${forumEditorDrafts.version}+1`,
+        editedAt: now,
+        updatedAt: now,
+      })
+      .where(and(
+        eq(forumEditorDrafts.ownerId, ownerId),
+        eq(forumEditorDrafts.contextKey, draft.contextKey),
+        ne(forumEditorDrafts.status, "active"),
+      ))
+      .returning({ version: forumEditorDrafts.version });
+    if (terminal.length > 0) {
+      await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, markerDraftId);
+      return;
+    }
+
+    const inserted = await tx.insert(forumEditorDrafts).values({
+      ownerId,
+      contextKey: draft.contextKey,
+      draftId: markerDraftId,
+      version: 1,
+      status: "published",
+      payload: emptyPayload,
+      editedAt: now,
+      updatedAt: now,
+    }).onConflictDoNothing().returning({ version: forumEditorDrafts.version });
+    if (inserted.length > 0) {
+      await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, markerDraftId);
+      return;
+    }
+
+    throw new ForumStateConflictError("active editor draft must be reconciled before publication");
   }
 
   async listCategories(): Promise<ForumCategorySummary[]> {
@@ -1180,6 +1531,7 @@ export class DrizzleForumRepository {
         topicId: forumReplyNotifications.topicId,
         topicTitle: forumTopicTitleRevisions.originalContent,
         postId: forumReplyNotifications.postId,
+        kind: forumReplyNotifications.kind,
         createdAt: forumReplyNotifications.createdAt,
         readAt: forumReplyNotifications.readAt,
       })
@@ -2408,7 +2760,7 @@ export class DrizzleForumRepository {
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
         parentPostId: forumPosts.parentPostId,
-        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
+        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, editedAt: forumPosts.editedAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
         solutionModerationStatus: forumPosts.solutionModerationStatus,
         solutionOutdatedReason: forumPosts.solutionOutdatedReason,
@@ -2422,6 +2774,22 @@ export class DrizzleForumRepository {
       ))
       .where(eq(forumPosts.topicId, id))
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
+    const attached = posts.length === 0 ? [] : await this.database.select({
+      postId: forumPostAttachments.postId,
+      id: forumAttachments.id,
+      fileName: forumAttachments.fileName,
+      byteSize: forumAttachments.byteSize,
+      detectedType: forumAttachments.detectedType,
+    }).from(forumPostAttachments).innerJoin(forumAttachments,
+      eq(forumAttachments.id, forumPostAttachments.attachmentId),
+    ).where(inArray(forumPostAttachments.postId, posts.map((post) => post.id)))
+      .orderBy(asc(forumPostAttachments.createdAt), asc(forumAttachments.id));
+    const attachmentsByPost = new Map<string, Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>>();
+    for (const attachment of attached) {
+      const list = attachmentsByPost.get(attachment.postId) ?? [];
+      list.push({ id: attachment.id, fileName: attachment.fileName, byteSize: attachment.byteSize, detectedType: attachment.detectedType });
+      attachmentsByPost.set(attachment.postId, list);
+    }
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
@@ -2435,13 +2803,35 @@ export class DrizzleForumRepository {
       tags: tags.get(id) ?? [],
       posts: posts.map((post) => ({
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
-        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt,
+        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt, editedAt: post.editedAt,
+        attachments: attachmentsByPost.get(post.id) ?? [],
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
         solutionOutdatedReasonKind: post.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
       })),
     };
+  }
+
+  async readPostLocation(postId: string) {
+    const [post] = await this.database.select({ topicId: forumPosts.topicId, authorId: forumPosts.authorId })
+      .from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);
+    return post;
+  }
+
+  async readPostHistory(postId: string, topicId: string) {
+    return this.database.select({
+      id: forumPostRevisions.id,
+      authorId: forumPostRevisions.authorId,
+      authorName: user.name,
+      originalContent: forumPostRevisions.originalContent,
+      sourceLocale: forumPostRevisions.sourceLocale,
+      createdAt: forumPostRevisions.createdAt,
+    }).from(forumPostRevisions)
+      .innerJoin(forumPosts, eq(forumPosts.id, forumPostRevisions.postId))
+      .innerJoin(user, eq(user.id, forumPostRevisions.authorId))
+      .where(and(eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId)))
+      .orderBy(desc(forumPostRevisions.createdAt), desc(forumPostRevisions.id));
   }
 
   private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {
@@ -3439,6 +3829,73 @@ export class DrizzleForumRepository {
         .returning({ id: forumPosts.id });
       if (updated.length === 0) throw new ConcurrentRevisionError("post body current revision changed");
       return revision;
+    });
+  }
+
+  async editPublishedPost(input: {
+    postId: string; topicId: string; actorId: string;
+    expectedRevisionId: string; body: string;
+    draftId: string; expectedVersion: number; attachmentIds: readonly string[]; retainedAttachmentIds?: readonly string[];
+  }) {
+    const contextKey = `post:${input.postId}:edit`;
+    const draft = {
+      contextKey, draftId: input.draftId,
+      expectedVersion: input.expectedVersion, attachmentIds: input.attachmentIds,
+    };
+    const fingerprint = await publicationFingerprint({
+      kind: "edit", postId: input.postId, topicId: input.topicId,
+      expectedRevisionId: input.expectedRevisionId, body: input.body,
+      draftVersion: input.expectedVersion, attachmentIds: [...input.attachmentIds].sort(),
+      ...(input.retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds: [...input.retainedAttachmentIds].sort() }),
+    });
+    return this.database.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, input.actorId, contextKey);
+      const replay = await this.publicationReceipt(tx, input.actorId, draft, fingerprint);
+      if (replay) {
+        if (replay.topicId !== input.topicId || replay.postId !== input.postId)
+          throw new ForumStateConflictError("edit receipt references another post");
+        return;
+      }
+      const [post] = await tx.select({
+        id: forumPosts.id, authorId: forumPosts.authorId,
+        revisionId: forumPosts.currentRevisionId,
+      }).from(forumPosts).where(and(
+        eq(forumPosts.id, input.postId), eq(forumPosts.topicId, input.topicId),
+      )).for("update");
+      if (!post) throw new ForumEntityNotFoundError("post does not exist");
+      if (post.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit post");
+      if (post.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("post revision changed before edit");
+      const existing = await tx.select({ id: forumPostAttachments.attachmentId })
+        .from(forumPostAttachments).where(eq(forumPostAttachments.postId, input.postId));
+      const retained = input.retainedAttachmentIds?.map((id) => id.toLowerCase()) ?? existing.map((item) => item.id);
+      if (new Set(retained).size !== retained.length
+        || retained.some((id) => !existing.some((item) => item.id === id))) {
+        throw new ForumStateConflictError("retained attachment is not bound to this post");
+      }
+      if (!input.body.trim() && input.attachmentIds.length === 0 && retained.length === 0)
+        throw new ForumStateConflictError("post requires body or attachments");
+      const removed = existing.filter((item) => !retained.includes(item.id)).map((item) => item.id);
+      if (removed.length) await tx.delete(forumPostAttachments).where(and(
+        eq(forumPostAttachments.postId, input.postId), inArray(forumPostAttachments.attachmentId, removed),
+      ));
+      const now = new Date();
+      const revisionId = crypto.randomUUID();
+      await tx.insert(forumPostRevisions).values({
+        id: revisionId, postId: input.postId, authorId: input.actorId,
+        originalContent: input.body, sourceLocale: "und", createdAt: now,
+      });
+      const updated = await tx.update(forumPosts)
+        .set({ currentRevisionId: revisionId, editedAt: now })
+        .where(and(eq(forumPosts.id, input.postId), eq(forumPosts.currentRevisionId, input.expectedRevisionId)))
+        .returning({ id: forumPosts.id });
+      if (!updated.length) throw new ForumStateConflictError("post revision changed before edit");
+      await this.recordPublishedMentions(tx, {
+        actorId: input.actorId, topicId: input.topicId, postId: input.postId,
+        body: input.body, createdAt: now,
+      });
+      await this.finishPublishedDraft(tx, input.actorId, draft, input.postId);
+      await this.recordPublicationReceipt(tx, input.actorId, draft, fingerprint, input.topicId, input.postId);
     });
   }
 

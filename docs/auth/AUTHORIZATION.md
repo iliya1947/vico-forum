@@ -34,21 +34,30 @@ Permission key означает существующую capability прилож
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.post.editOwn`;
+- `forum.post.history.read`;
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
 - `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
+- `forum.attachmentSecurity.read`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
 - `access.authorization.manage`.
 
+`forum.post.editOwn` применяется только к сообщениям с authoritative `author_id`, совпадающим с пользователем; `forum.post.history.read` открывает историю ревизий любому сообщению при наличии effective permission и не предоставляет права редактирования. По умолчанию editOwn получают все built-in роли, history.read — moderator/admin; изменяемые grants и overrides остаются authoritative.
+
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
 catalog, после чего он становится доступен role/user configuration UI.
 
 `forum.helpSignal.create` разрешает authenticated пользователю только создать persisted moderation signal; сам signal не меняет authoritative Help state. `forum.helpNeedsDetails.manage` разрешает принять/отклонить запрос `Needs details` и при принятии изменить authoritative label. Solution-signals рассматриваются через существующий `forum.solution.manageAny`, duplicate-signals — через `forum.helpDuplicate.manage`.
+
+`forum.attachmentSecurity.read` позволяет независимо читать события подозрительных вложений
+в «Требуют внимания → Безопасность → Вложения». Право не наследуется от Help-модерации,
+управляется через обычные role grants и per-user overrides и проверяется до чтения событий.
 
 `forum.helpDuplicate.manage` разрешает authoritative управление подтверждёнными duplicate-связями
 и рассмотрение апелляций только для Help & solutions. Обычная подача апелляции автором уже
@@ -72,6 +81,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 ### `user`
 
+- `forum.post.editOwn`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
@@ -81,6 +91,8 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 ### `moderator`
 
+- `forum.post.editOwn`;
+- `forum.post.history.read`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
@@ -89,12 +101,15 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.helpSignal.create`;
 - `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
+- `forum.attachmentSecurity.read`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`.
 
 ### `admin`
 
+- `forum.post.editOwn`;
+- `forum.post.history.read`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
@@ -103,6 +118,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.helpSignal.create`;
 - `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
+- `forum.attachmentSecurity.read`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
