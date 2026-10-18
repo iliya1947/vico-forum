@@ -359,3 +359,24 @@ The temporary browser harness and dependency link were removed after the run. Th
 ## Следующий шаг
 
 ChatGPT-5.6 Sol adds cross-leaf Enter to the three already confirmed `aa9dad2…` defects and gives GPT-6 one bounded implementation package for all four. Required regression must exercise a selection spanning adjacent visual leaves and prove Enter replaces the selected source range at the actual native endpoints. Preserve the accepted A–D corrections, do not implement GPT6-04, do not merge and do not resume Stage 6.
+
+
+## Owner decision — freeze PR #215 and continue in PR #232 — 2026-10-18
+
+This decision supersedes the previous next step that would have continued correcting PR #215.
+
+- PR #215 is frozen at exact implementation head `aa9dad2206fa189dd71ee35f083338f990a16b61`. Do not add further implementation corrections there.
+- Owner intends to merge #215 as the accepted pre-release Editor 2.0 baseline. This is an explicit owner exception to the normal clean-review gate and must not be described as a finding-free final review.
+- All currently confirmed residual current-Stage defects are transferred to draft follow-up implementation PR #232:
+  1. cleanup can physically delete an attachment still required by an unresolved attachment boundary;
+  2. Simple table-cell paste is intercepted by the visual-surface paste handler;
+  3. unsaved/version-0 and terminal-based cross-tab local candidates cannot be authoritatively resolved;
+  4. cross-leaf Enter ignores the real native selection; Codex reproduced this in Chromium on `aa9dad2…`.
+- Closed A–D findings, GPT6-04, cosmetic refinement and Stage 6 remain outside #232.
+- No work begins in #232 until #215 is merged. After merge, #232 is synchronized with current `main`, then one bounded correction package is formed from these four confirmed defects.
+- If the attachment/conflict mechanism again requires repeated architectural rework or a compensating layer, stop instead of extending the patch chain.
+- Merge remains owner-only.
+
+## Следующий шаг
+
+Owner merges PR #215. After merge, Codex-5.6 Sol checks PR #232 and starts only after the branch is synchronized with current `main`.
