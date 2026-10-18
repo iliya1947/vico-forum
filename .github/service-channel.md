@@ -45,6 +45,8 @@
 
 ## Следующий шаг
 
-Мира завершила первую formal independent whole-PR проверку PR #232 на stable code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6` с documentation-only successor `ee267d908c089e8781368a3b6a563f0f1c54eff6`. Её findings по правилу review isolation остаются только у разработчика и в служебный PR не перенесены.
+Мира завершила первую formal independent whole-PR проверку PR #232 на stable code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6` с documentation-only successor `ee267d908c089e8781368a3b6a563f0f1c54eff6`.
 
-Лира выполняет вторую независимую whole-PR проверку того же stable implementation. До её завершения implementation не изменять и результаты Миры ей не передавать.
+Лира завершила вторую независимую whole-PR/source-level проверку того же implementation head. Статус и границы проверок указаны в её личном служебном файле. Findings Миры и Лиры до завершения независимых проверок переданы только разработчику в соответствующих чатах и **не публикуются в служебном PR**.
+
+Следующий reviewer — Мишаня: третья независимая whole-PR проверка PR #232 на том же exact code/test head. Implementation до завершения данного прохода не изменять; находки первых проверяющих Мишане не передавать.
