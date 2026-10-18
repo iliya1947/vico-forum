@@ -1,11 +1,12 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import { HeaderAuthProvider } from "../auth/auth-controls";
 import { ForumMarkdown, ForumInlineAttachmentProvider, highlightCode } from "./markdown";
 import { attributedQuoteMarkdown } from "./quote-markdown";
 import { publishedMentionRecipients } from "./mentions";
@@ -47,6 +48,17 @@ function renderMarkdown(markdown: string, direction?: "ltr" | "rtl") {
       <div dir={direction}>
         <ForumMarkdown>{markdown}</ForumMarkdown>
       </div>
+    </I18nextProvider>,
+  );
+}
+
+
+function renderMarkdownForUser(markdown: string, userId: string) {
+  return render(
+    <I18nextProvider i18n={runtime()}>
+      <HeaderAuthProvider initialUser={{ id: userId, name: "Member" }}>
+        <ForumMarkdown>{markdown}</ForumMarkdown>
+      </HeaderAuthProvider>
     </I18nextProvider>,
   );
 }
@@ -473,6 +485,99 @@ const longValue = "code";
     expect(highlightCode(huge, "ts")).toEqual([{ text: huge }]);
     const dense = "1 ".repeat(3000);
     expect(highlightCode(dense, "ts")).toEqual([{ text: dense }]);
+  });
+
+
+  it("restores code preferences per account without leaking them to another user", () => {
+    const firstUser = "code-pref-restore-a";
+    const secondUser = "code-pref-restore-b";
+    const firstWrap = "vico:editor:code-wrap:" + firstUser;
+    const firstLines = "vico:editor:code-lines:" + firstUser;
+    const secondWrap = "vico:editor:code-wrap:" + secondUser;
+    const secondLines = "vico:editor:code-lines:" + secondUser;
+    [firstWrap, firstLines, secondWrap, secondLines].forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(firstWrap, "true");
+    localStorage.setItem(firstLines, "true");
+
+    try {
+      const view = renderMarkdownForUser("~~~ts\nconst first = 1;\n~~~", firstUser);
+      expect(view.container.querySelector(".forum-code-block")).toHaveAttribute("data-wrap", "true");
+      expect(view.container.querySelector(".forum-code-block pre")).toHaveAttribute("data-line-numbers", "true");
+
+      view.rerender(
+        <I18nextProvider i18n={runtime()}>
+          <HeaderAuthProvider initialUser={{ id: secondUser, name: "Member" }}>
+            <ForumMarkdown>{"~~~ts\nconst second = 2;\n~~~"}</ForumMarkdown>
+          </HeaderAuthProvider>
+        </I18nextProvider>,
+      );
+      expect(view.container.querySelector(".forum-code-block")).toHaveAttribute("data-wrap", "false");
+      expect(view.container.querySelector(".forum-code-block pre")).toHaveAttribute("data-line-numbers", "false");
+    } finally {
+      [firstWrap, firstLines, secondWrap, secondLines].forEach((key) => localStorage.removeItem(key));
+    }
+  });
+
+  it("propagates code preferences across mounted blocks in the same document", async () => {
+    const userId = "code-pref-same-document";
+    const wrapKey = "vico:editor:code-wrap:" + userId;
+    const linesKey = "vico:editor:code-lines:" + userId;
+    localStorage.removeItem(wrapKey);
+    localStorage.removeItem(linesKey);
+
+    try {
+      const { container } = renderMarkdownForUser(
+        "~~~ts\nconst first = 1;\n~~~\n\n~~~ts\nconst second = 2;\n~~~",
+        userId,
+      );
+      const blocks = [...container.querySelectorAll(".forum-code-block")];
+      expect(blocks).toHaveLength(2);
+
+      await userEvent.click(screen.getAllByRole("button", { name: "Wrap lines" })[0]!);
+      expect(blocks.map((block) => block.getAttribute("data-wrap"))).toEqual(["true", "true"]);
+
+      await userEvent.click(screen.getAllByRole("button", { name: "Line numbers" })[0]!);
+      expect(blocks.map((block) => block.querySelector("pre")?.getAttribute("data-line-numbers")))
+        .toEqual(["true", "true"]);
+    } finally {
+      localStorage.removeItem(wrapKey);
+      localStorage.removeItem(linesKey);
+    }
+  });
+
+  it("re-reads account code preferences on the browser storage event path", () => {
+    const userId = "code-pref-storage";
+    const wrapKey = "vico:editor:code-wrap:" + userId;
+    const linesKey = "vico:editor:code-lines:" + userId;
+    localStorage.removeItem(wrapKey);
+    localStorage.removeItem(linesKey);
+
+    try {
+      const { container } = renderMarkdownForUser("~~~ts\nconst value = 1;\n~~~", userId);
+      const block = container.querySelector(".forum-code-block")!;
+      const pre = block.querySelector("pre")!;
+      expect(block).toHaveAttribute("data-wrap", "false");
+      expect(pre).toHaveAttribute("data-line-numbers", "false");
+
+      act(() => {
+        localStorage.setItem(wrapKey, "true");
+        localStorage.setItem(linesKey, "true");
+        window.dispatchEvent(new StorageEvent("storage", { key: wrapKey, newValue: "true" }));
+      });
+      expect(block).toHaveAttribute("data-wrap", "true");
+      expect(pre).toHaveAttribute("data-line-numbers", "true");
+
+      act(() => {
+        localStorage.setItem(wrapKey, "false");
+        localStorage.setItem(linesKey, "false");
+        window.dispatchEvent(new StorageEvent("storage", { key: linesKey, newValue: "false" }));
+      });
+      expect(block).toHaveAttribute("data-wrap", "false");
+      expect(pre).toHaveAttribute("data-line-numbers", "false");
+    } finally {
+      localStorage.removeItem(wrapKey);
+      localStorage.removeItem(linesKey);
+    }
   });
 
   it("keeps code-block Wrap state when the Markdown source changes", async () => {
