@@ -27,8 +27,8 @@ Source: PR #226, comment #6204020042.
 2. Package 2 — test isolation / independence — завершён.
 3. Package 4 — RC-04…RC-09, bounded test-only package — завершён.
 4. Package 5 — governance / evidence — завершён без изменений product code/CI/repository settings.
-5. Package 3 — Editor current-contract regression coverage — подготовлен в отдельном PR #229 и остаётся последним correction package. Его нельзя retarget/rebase/merge до merge Editor 2.0 PR #215.
-6. AC-01 — финальный real-runtime browser acceptance gate UI/UX pass после стабилизации product head, включая Editor 2.0 и Package 3.
+5. Package 3 — Editor current-contract regression coverage — завершён и merged.
+6. AC-01 — финальный real-runtime browser acceptance gate UI/UX pass после стабилизации product head. Он не запускается, пока остаются подтверждённые current-Stage corrections вне audit queue.
 
 ## Текущий статус
 
@@ -58,45 +58,25 @@ Implementation PR #228: `Fix test isolation and independence`.
   - email sign-in case получил собственный независимый account fixture;
 - Codex independent review не оставил confirmed current-scope findings.
 
-### Package 3 — реализован в отдельном audit implementation PR #229 и оставлен на самый конец
+### Package 3 — завершён и merged
 
-Audit implementation PR: #229 — `Test audit Package 3 — Editor regression coverage`.
+Implementation PR #229: `Test audit Package 3 — Editor regression coverage`.
 
-- Editor 2.0 PR #215 merged 2026-10-18; merge commit: `c098912e596acb8342bb763612008249995311e8`;
-- текущий head #229: `0b5959657d2410ba34594ca61a79842dbf903e36`;
-- base #229: актуальный `main` `ffa999aa02886bd3bf3a662e1aff1de0f31ac0a2`;
-- после первоначальной post-Editor пересборки `main` получил только documentation-only commit `Update agent names in AGENTS.md`; Package 3 повторно перенесён без изменения test diff;
-- прежние пять audit commits поверх старого Editor snapshot сохранены только как историческое происхождение tests;
-- ветка #229 пересобрана одним commit непосредственно поверх смерженного Editor, чтобы не тащить старую Editor-историю;
-- текущий diff снова меняет только два test-файла:
+- final head: `0b5959657d2410ba34594ca61a79842dbf903e36`;
+- merged: 2026-10-18;
+- merge commit: `ac4cab4b29a2a4510df3be903389551c0b9acc1f`;
+- diff ограничен двумя test-файлами:
   - `app/forum/markdown-editor.test.tsx`;
-  - `app/forum/markdown.test.tsx`.
+  - `app/forum/markdown.test.tsx`;
+- RC-01: Fullscreen regression coverage;
+- RC-02: Split synchronized-scroll regression coverage;
+- RC-03: account-scoped code-preference regression coverage;
+- production code, schema/migrations, dependencies, workflows и public contracts не менялись;
+- GitHub Actions CI #39125576520 для final exact head завершён успешно: `checks` и `database` — success;
+- ChatGPT-5.6 Sol, ChatGPT-6 и Codex-5.6 Sol проверили final exact head без confirmed current-scope findings;
+- по прямому решению владельца эта test-audit work выполняется без Codex-6.1 Sol.
 
-Добавлено regression coverage:
-
-- RC-01 Fullscreen: enter/dialog+ARIA, Escape, edge Tab/Shift+Tab focus wrap;
-- RC-02 Split synchronized scroll: обе стороны, ratio mapping, source/destination zero-scrollable
-  extent и >1px write guard;
-- RC-03 code preferences: restore, смена аккаунта без leakage, propagation между одновременно
-  mounted blocks через same-document event и browser `storage` event path.
-
-Production code, schema/migrations, dependencies, workflows и public contracts не изменялись.
-
-Исторический PR run #38918024909 относился к старому pre-merge Editor варианту Package 3 и больше
-не является приёмочным evidence текущего #229.
-
-После пересборки:
-- #229 — draft, mergeable, 1 commit;
-- diff: `app/forum/markdown-editor.test.tsx` (+112) и `app/forum/markdown.test.tsx` (+106/-1);
-- historical post-Editor CI #39121236732 на `b3c12f2c…` был green, но этот exact head superseded после documentation-only изменения `main`;
-- текущий GitHub Actions CI #39125576520 для exact head `0b595965…` завершён успешно: `checks` и `database` — success;
-- текущий head готов к свежему независимому review RC-01…RC-03 против фактически смерженных fullscreen/split/code-preference contracts;
-- для этой test-audit work сохраняется прямое решение владельца не подключать Codex-6.1 Sol.
-
-Случайный review служебного PR #226 не является review Package 3.
-
-Важно: название `Package 3` здесь означает только **test-audit Package 3 / RC-01…RC-03**.
-Оно не относится к возможным одноимённым пакетам или подзадачам внутри Editor 2.0.
+Package 3 больше не является открытым gate audit correction queue.
 
 ### Package 4 — завершён и merged
 
@@ -158,6 +138,7 @@ AC-01 не является implementation package и сейчас **не вып
 
 - Editor 2.0 PR #215 merged в `main`;
 - Package 3 / PR #229 актуализирован против смерженного Editor, повторно проверен и merged;
+- отсутствуют открытые подтверждённые current-Stage corrections, способные изменить candidate revision. На 2026-10-18 этот precondition **не выполнен**: draft PR #232 содержит четыре подтверждённых current-Stage дефекта Editor 2.0;
 - выбран один стабильный final candidate revision `main`, который больше не меняется во время
   acceptance;
 - применимые repository checks для входящих implementation PR завершены успешно;
@@ -213,11 +194,19 @@ AC-01 закрывается только когда полная матрица
 отдельно; после изменения implementation повторно проверяются затронутые части матрицы и, если
 изменение способно повлиять шире, вся применимая матрица.
 
-Текущая последовательность:
-**merge Editor 2.0 → актуализировать/перепроверить/merge Package 3 → AC-01**.
+Текущая последовательность после закрытия audit queue:
+**завершить confirmed current-Stage corrections PR #232 → зафиксировать stable final candidate → обеспечить actual Worker/runtime для этой revision → AC-01**.
+
+Production Worker из текущего `PROJECT_STATE.md` не является evidence для current `main`: он остаётся на старом baseline deployment. Любое внешнее deployment/runtime действие выполняется только после отдельного явного разрешения владельца.
 
 ## Следующая рабочая точка
 
-Editor 2.0 merged. Package 3 / #229 пересобран на актуальном `main`; exact head `0b595965…` прошёл
-CI #39125576520 (`checks` + `database` success). Следующий gate — независимый review Package 3.
-AC-01 выполняется только после merge Package 3 на стабильном product head.
+Test-audit correction queue завершена: Package 3 / PR #229 merged в `main` как `ac4cab4b…`.
+
+AC-01 **не запускается** на этом `main`, потому что final candidate ещё не стабилен:
+draft PR #232 `Editor 2.0 follow-up: remaining current-stage corrections` содержит четыре
+подтверждённых current-Stage дефекта и должен быть завершён до final acceptance.
+
+После закрытия #232 нужно повторно определить stable candidate revision и только затем перейти
+к actual Worker/runtime acceptance. External deployment/runtime mutation без отдельного явного
+разрешения владельца не выполнять.
