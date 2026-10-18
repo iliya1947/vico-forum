@@ -33,7 +33,10 @@ conflict UI закрывается только после успешного о
 surface Range для selection между соседними leaves/blocks вместо leaf-local fallback.
 Targeted application regressions (118 tests), полный application suite (1064 tests), полный
 attachment PostgreSQL 17 suite (58 tests), TypeScript, production build и changed-files ESLint
-локально проходят. Exact-head GitHub Actions и последующий review-cycle ещё не выполнены.
+локально проходят. Exact code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6`
+прошёл GitHub Actions #39135879866: `checks` SUCCESS (1064 application tests, lint,
+typecheck, application/UI-preview builds и guards) и `database` SUCCESS (313 PostgreSQL 17
+tests, migration/schema/privilege checks и Workers smoke). Последующий review-cycle ещё не выполнен.
 
 По прямому назначению владельца Codex принимает implementation ownership;
 обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex
