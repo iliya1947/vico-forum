@@ -38,6 +38,12 @@ attachment PostgreSQL 17 suite (58 tests), TypeScript, production build и chang
 typecheck, application/UI-preview builds и guards) и `database` SUCCESS (313 PostgreSQL 17
 tests, migration/schema/privilege checks и Workers smoke). Последующий review-cycle ещё не выполнен.
 
+Bounded follow-up correction PR #232 (2026-10-19): после согласованного review добавлены
+защита от indefinite retention attachment boundary после 30-day expiry (включая отсутствие
+live refs) и server-fenced новый draft при скрытом >30d terminal tombstone и baseVersion=0.
+Добавлены отдельные PostgreSQL regression scenarios для обоих случаев. Exact-head CI и
+независимый повторный whole-PR review для этих новых изменений ещё не выполнялись.
+
 По прямому назначению владельца Codex принимает implementation ownership;
 обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex
 с независимой проверкой Sol/GPT-6. Merge выполняет только владелец.

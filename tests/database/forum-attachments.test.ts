@@ -1300,6 +1300,37 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     expect(await row(asset.id)).toBeUndefined();
   });
 
+  it("releases an expired unresolved boundary with no live refs during unattended cleanup", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    await setDraft(ownerId, context, generation, "active", 1);
+    expect(await store.removeDraftAttachment(ownerId, context, generation, asset.id, 1)).toBe(true);
+    expect((await client.query(
+      "select 1 from forum_attachment_draft_refs where attachment_id=$1", [asset.id],
+    )).rowCount).toBe(0);
+    expect((await client.query(
+      "select 1 from forum_attachment_draft_boundaries where owner_id=$1 and context_key=$2 and draft_id=$3",
+      [ownerId, context, generation],
+    )).rowCount).toBe(1);
+    await client.query(
+      "update forum_editor_drafts set edited_at=now()-interval '31 days' where owner_id=$1 and context_key=$2",
+      [ownerId, context],
+    );
+
+    const bucket = { delete: vi.fn(async () => {}) };
+    const result = await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect(result.deleted).toBeGreaterThan(0);
+    expect(bucket.delete).toHaveBeenCalledWith(asset.objectKey);
+    expect(await row(asset.id)).toBeUndefined();
+    expect((await client.query(
+      "select 1 from forum_attachment_draft_boundaries where owner_id=$1 and context_key=$2 and draft_id=$3",
+      [ownerId, context, generation],
+    )).rowCount).toBe(0);
+    expect((await new DrizzleForumEditorDrafts(drizzle(client)).get(ownerId, context))?.status)
+      .toBe("deleted");
+    await expect(store.createDraftAttachment(upload(context, generation))).rejects
+      .toMatchObject({ reason: "gone" });
+  });
+
   it("releases stale refs of deleted drafts and deletes their objects without per-user intervention", async () => {
     const { asset, context, generation } = await makeOrphan();
     await setDraft(ownerId, context, generation, "deleted", 2);

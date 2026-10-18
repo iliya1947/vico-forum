@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { EDITOR_DRAFT_EXPIRY_MS, DrizzleForumEditorDrafts } from "./forum-editor-drafts";
-import { lockAttachmentDraftScope, resolveAttachmentDraftGeneration, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
+import { clearAttachmentDraftBoundaries, lockAttachmentDraftScope, resolveAttachmentDraftGeneration, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
 import type { PrivateAttachmentBucket } from "../app/forum/attachment-r2";
 
 export const ATTACHMENT_CLEANUP_BATCH_SIZE = 20;
@@ -36,6 +36,41 @@ export class ForumAttachmentCleanup {
     private readonly storage: Pick<PrivateAttachmentBucket, "delete">,
     private readonly clock: () => Date = () => new Date(),
   ) {}
+
+  /** Release boundaries that no longer belong to a live, unexpired text draft.
+   * This must run even when DELETE already removed the last attachment ref:
+   * pruneStaleRefs cannot discover that case from the refs table.
+   */
+  private async releaseObsoleteBoundaries(batchSize: number): Promise<void> {
+    const expiry = new Date(this.clock().getTime() - EDITOR_DRAFT_EXPIRY_MS);
+    const candidates = await this.db.execute(sql<{
+      owner_id: string; context_key: string; draft_id: string;
+    }>`
+      select b.owner_id, b.context_key, b.draft_id
+      from forum_attachment_draft_boundaries b
+      left join forum_editor_drafts d
+        on d.owner_id = b.owner_id and d.context_key = b.context_key
+      where d.draft_id is distinct from b.draft_id
+         or d.status <> 'active'
+         or d.edited_at < ${expiry}
+      order by b.owner_id, b.context_key, b.draft_id
+      limit ${batchSize}
+    `);
+    const drafts = new DrizzleForumEditorDrafts(this.db);
+    for (const row of candidates.rows) {
+      // Expire a saved draft authoritatively before removing its last boundary.
+      await drafts.purgeExpired(row.owner_id);
+      await this.db.transaction(async (tx) => {
+        await lockAttachmentDraftScope(tx, row.owner_id, row.context_key);
+        const current = await tx.execute(sql<{ draft_id: string; status: string }>`
+          select draft_id, status from forum_editor_drafts
+          where owner_id = ${row.owner_id} and context_key = ${row.context_key}
+        `);
+        if (current.rows[0]?.draft_id === row.draft_id && current.rows[0].status === 'active') return;
+        await clearAttachmentDraftBoundaries(tx, row.owner_id, row.context_key, row.draft_id);
+      });
+    }
+  }
 
   private async pruneStaleRefs(batchSize: number): Promise<number> {
     const expiry = new Date(this.clock().getTime() - EDITOR_DRAFT_EXPIRY_MS);
@@ -192,6 +227,7 @@ export class ForumAttachmentCleanup {
     if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > ATTACHMENT_CLEANUP_BATCH_SIZE) {
       throw new RangeError("invalid attachment cleanup batch size");
     }
+    await this.releaseObsoleteBoundaries(batchSize);
     const prunedRefs = await this.pruneStaleRefs(batchSize);
     let claimed = 0;
     let deleted = 0;

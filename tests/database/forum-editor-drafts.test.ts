@@ -164,6 +164,27 @@ describe("account-scoped durable editor drafts", () => {
     expect(metadata.some((draft) => draft.contextKey === "terminal:expired")).toBe(false);
   });
 
+  it("saves a new generation when the prior terminal tombstone is beyond the metadata window", async () => {
+    const owner = "draft-other";
+    const key = "section:draft/opaque:✓:new";
+    expect((await store.save(owner, key, id1, text1, 0)).outcome).toBe("saved");
+    expect(await store.finish(owner, key, id1, "deleted")).toBe(true);
+    expect((await store.save(owner, key, id2, text2, 0)).outcome).toBe("gone");
+
+    await client.query(
+      "update forum_editor_drafts set edited_at=now()-interval '31 days', updated_at=now()-interval '31 days' where owner_id=$1 and context_key=$2",
+      [owner, key],
+    );
+    expect((await store.metadata(owner)).some((row) => row.contextKey === key)).toBe(false);
+    expect(await store.get(owner, key)).toMatchObject({ draftId: id1, version: 2, status: "deleted" });
+
+    // A fresh editor sees no metadata and sends the normal expectedVersion:0.
+    expect(await store.save(owner, key, id2, text2, 0)).toMatchObject({
+      outcome: "saved", draft: { draftId: id2, version: 3, status: "active", payload: text2 },
+    });
+    expect((await store.save(owner, key, id1, text1, 2)).outcome).toBe("gone");
+  });
+
   it("keeps previously retired generations closed even with the latest different terminal CAS", async () => {
     expect((await store.save("draft-other", "help:new", id1, text1, 0)).outcome).toBe("saved");
     expect(await store.finish("draft-other", "help:new", id1, "deleted")).toBe(true);

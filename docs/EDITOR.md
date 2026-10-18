@@ -399,6 +399,9 @@
   Preview и опубликованные сообщения используют `ForumMarkdown`.
 - `use-editor-draft.tsx` хранит owner/context runtime; `draft-client.ts` — локальный кеш.
   `forum-editor-drafts.ts` применяет server timestamps, 30-day expiry, CAS и terminal generations.
+  Когда terminal tombstone старше 30 дней скрыт из metadata, fresh draft с новым
+  generation ID может пройти server-fenced CAS с начальным expectedVersion=0;
+  прежняя generation остаётся retired и не может возродиться.
   Контексты: `section:<id>:new`, `help:new`, `topic:<id>:reply`, `post:<id>:edit`.
 - Публикация ждёт уже начатый штатный 60-second save, затем повторяет native submit
   в следующей задаче event loop с актуальным fence и исходным submitter. Нельзя повторять
@@ -436,6 +439,8 @@
   manifest выбранной локальной версии) и продвигает CAS до закрытия conflict UI. Пока
   boundary не разрешена, перечисленные в ней объекты не считаются физически осиротевшими
   даже при временном отсутствии live draft/post refs; после разрешения действует обычная очистка.
+  После expiry/terminalization фоновой проход снимает уже неактуальные boundaries даже
+  при нулевом числе live refs, чтобы не удерживать осиротевший объект бессрочно.
 - POST/DELETE вложения передают версию text draft, с которой началась операция. После
   продвижения CAS устаревшая операция допустима только когда уже победивший
   `draftAttachmentIds` требует тот же итог: POST для включённого ID или DELETE для

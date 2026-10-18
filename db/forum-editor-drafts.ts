@@ -267,7 +267,14 @@ export class DrizzleForumEditorDrafts {
             setWhere: and(
               ne(forumEditorDrafts.status, "active"),
               ne(forumEditorDrafts.draftId, draftId),
-              eq(forumEditorDrafts.version, expectedVersion),
+              expectedVersion === 0
+                ? or(
+                  eq(forumEditorDrafts.version, expectedVersion),
+                  // Metadata hides old terminal rows. A fresh generation must
+                  // still be creatable with its normal no-head (version 0) base.
+                  lt(forumEditorDrafts.updatedAt, new Date(now.getTime() - EDITOR_DRAFT_EXPIRY_MS)),
+                )
+                : eq(forumEditorDrafts.version, expectedVersion),
             ),
           })
           .returning()
