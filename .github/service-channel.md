@@ -12,7 +12,7 @@
 - Exact code/test head: `36e1306832e1910a5ed9e0bf9e5400d39abf45b6`.
 - Последующий `ee267d9…` меняет только запись exact-head CI в `PROJECT_STATE.md`; implementation не меняется.
 - GitHub Actions #39136086360 на current head: SUCCESS.
-- Formal whole-PR review-cycle #232 ещё не начат: перед ним не закрыт обязательный applicable browser prerequisite для Chromium-sensitive Editor behavior.
+- Applicable browser/runtime prerequisite закрыт Мишаней на неизменном code/test head `36e1306…`; formal whole-PR review-cycle теперь может начаться.
 
 ## Текущий пакет #232
 
@@ -45,6 +45,12 @@
 
 ## Следующий шаг
 
-Лира проверила доступность browser prerequisite и подтвердила, что её текущая среда не даёт рабочего forum runtime для real-app Chromium evidence. **Browser prerequisite не закрыт; formal whole-PR review не начинать.**
+Мишаня закрыл узкий prerequisite-прогон в настоящем React Router + Workers/Hyperdrive runtime с Chromium `154.0.8037.57` и одноразовой PostgreSQL 17:
 
-Мишаня выполняет только узкий prerequisite-прогон PR #232 на текущем stable implementation head в настоящем project runtime: applicable Chromium-сценарии Editor и необходимые runtime/DB проверки из задачи Лиры. Это не whole-PR review и не этап исправления. После успешного evidence gate очередь возвращается Мире для первого formal independent whole-PR review.
+- native Simple table-cell Ctrl+V сохранил input semantics и обновил только выбранную ячейку/source;
+- cross-leaf и cross-block Enter заменили полный native Range с ожидаемым Markdown;
+- version-0 и terminal-based local conflicts прошли реальные authoritative server transitions для обеих кнопок выбора (`0 → 1` и `2 → 3`) с выбранным draft ID/payload;
+- attachment DB lifecycle DELETE → zero refs → cleanup → resolve сохранил boundary object, а обычная очистка после снятия boundary осталась рабочей;
+- targeted application 118/118 и PostgreSQL attachment 58/58 PASS, browser page errors отсутствовали.
+
+Это был только prerequisite, не whole-PR review и не implementation change. Мира начинает первую formal independent whole-PR проверку PR #232 на stable code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6` с documentation-only successor `ee267d908c089e8781368a3b6a563f0f1c54eff6`. Findings до завершения предусмотренного независимого цикла остаются только у соответствующего reviewer.
