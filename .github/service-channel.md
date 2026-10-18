@@ -24,26 +24,22 @@
 3. unsaved/version-0 и terminal-based cross-tab candidates проходят authoritative server transition вместо некорректного active-draft resolve;
 4. cross-leaf / cross-block Simple Enter использует полный native selection range вместо leaf-end fallback.
 
-## Подтверждённый defect после независимых проверок
+## Подтверждённые defects после независимых проверок
 
-### Expired draft оставляет unresolved attachment boundary
+### 1. Expired draft оставляет unresolved attachment boundary
 
-Обе независимые проверки подтверждают current-Stage defect: version-fenced attachment mutation может создать `forum_attachment_draft_boundaries`, после чего 30-day expiry переводит text draft в terminal state и retire-ит generation, но boundary не очищается. Cleanup #232 теперь считает любой такой boundary live blocker, поэтому объект без live draft/post refs может удерживаться бессрочно.
+Обе независимые проверки подтверждают current-Stage defect: version-fenced attachment mutation может создать `forum_attachment_draft_boundaries`, после чего 30-day expiry переводит text draft в terminal state и retire-ит generation, но boundary не очищается. Cleanup #232 теперь считает такой boundary live blocker, поэтому объект без live draft/post refs может удерживаться бессрочно.
 
-Это нарушает текущий lifecycle/cleanup contract. Defect должен быть исправлен до clean review-cycle.
+### 2. Terminal tombstone старше metadata window блокирует новое поколение
 
-## Незакрытый вопрос согласования
+После отдельного согласования Лира подтвердила причинную цепочку Миры:
 
-### Terminal tombstone старше metadata window
+- terminal `published/deleted` row старше 30 дней остаётся в `forum_editor_drafts`, но скрывается `metadata()`;
+- новый editor instance того же persistent context получает no-head и начинает новую generation с `expectedVersion: 0`;
+- первый server `save()` сталкивается с существующей terminal row с ненулевой version и возвращает `gone`;
+- client после `gone` снова читает только metadata, опять не получает hidden authoritative version и не может установить CAS base для новой generation.
 
-Мира считает current-Stage defect подтверждённым по source trace:
-
-- terminal row `published/deleted` старше 30 дней остаётся в `forum_editor_drafts`, но `metadata()` больше её не возвращает;
-- новый editor instance в том же persistent context видит отсутствие server head и начинает новую generation с `expectedVersion: 0`;
-- `save()` видит существующий terminal row с ненулевой version, CAS не проходит и возвращает `gone`;
-- клиент после `gone` повторно читает metadata, снова не видит старый tombstone и не получает authoritative version для нового поколения.
-
-Лира этот finding в своей независимой проверке не подтвердила. До согласования он остаётся открытым вопросом, а не утверждённым defect.
+Оба defects относятся к текущему Editor draft/attachment lifecycle и должны быть исправлены до clean review-cycle.
 
 ## Границы
 
@@ -68,6 +64,14 @@
 
 ## Следующий шаг
 
-Лира проверяет незакрытый terminal-tombstone finding по причинной цепочке, опубликованной Мирой в комментарии служебного PR, и отвечает в обсуждении #234: подтверждает defect либо указывает конкретное звено, которое разрывает эту цепочку.
+Лира выполняет один bounded correction package в implementation PR #232 только для двух подтверждённых current-Stage defects выше.
 
-Implementation #232 до завершения согласования не изменять.
+Критерии готовности package:
+
+1. после 30-day expiry ненужная attachment boundary больше не удерживает orphan object от обычного cleanup;
+2. новый draft в повторно используемом persistent context сохраняется корректно даже когда прежний terminal tombstone уже вышел из metadata window;
+3. добавлены targeted regressions, воспроизводящие обе исходные причинные цепочки и подтверждающие штатный путь после correction;
+4. применимые tests/checks проходят; фактическое состояние отражено в `PROJECT_STATE.md`;
+5. unrelated Editor/refinement/Stage 6 scope не изменяется.
+
+После завершения Лира фиксирует exact implementation head и evidence в служебном PR и STOP. Затем новый stable head снова независимо проверяют Мира и Лира. Мишаню не подключать до общего clean result обеих.
