@@ -62,12 +62,12 @@ Implementation PR #228: `Fix test isolation and independence`.
 
 Audit implementation PR: #229 — `Test audit Package 3 — Editor regression coverage`.
 
-- head: `a4c16111492c348e7641db440521c7d2e9f5bb80`;
-- base: `chatgpt/editor-v2-implementation-20261010` at `e47436e7506c4c42f91a16aed2005bd07bb39ab5`;
-- PR #229 — draft stacked PR, потому что RC-01…RC-03 существуют только в незамерженном Editor 2.0 и ещё отсутствуют на `main`;
-- после merge Editor 2.0 PR #229 должен быть retarget/rebase на `main` и повторно проверен до merge;
-- PR #215 восстановлен на исходный head `e47436e…`; audit Package 3 больше не находится в его ветке;
-- перенос включает только пять audit commits, которые линейно шли поверх `e47436e…` и меняли только два test-файла:
+- Editor 2.0 PR #215 merged 2026-10-18; merge commit: `c098912e596acb8342bb763612008249995311e8`;
+- текущий head #229: `b3c12f2c1c86f861ebf21f5cd9e4e474299ce82b`;
+- base #229: актуальный `main` на Editor merge commit `c098912e…`;
+- прежние пять audit commits поверх старого Editor snapshot сохранены только как историческое происхождение tests;
+- ветка #229 пересобрана одним commit непосредственно поверх смерженного Editor, чтобы не тащить старую Editor-историю;
+- текущий diff снова меняет только два test-файла:
   - `app/forum/markdown-editor.test.tsx`;
   - `app/forum/markdown.test.tsx`.
 
@@ -81,25 +81,19 @@ Audit implementation PR: #229 — `Test audit Package 3 — Editor regression co
 
 Production code, schema/migrations, dependencies, workflows и public contracts не изменялись.
 
-GitHub Actions PR run #38918024909 связан с implementation head `a4c1611…`;
-обычный `pull_request` checkout проверял synthetic merge ref, а не standalone head.
-`database` и `checks` завершились успешно; application suite — 96 files / 1031 tests passed,
-lint/typecheck/build/UI preview/metadata/schema-parity checks — success.
+Исторический PR run #38918024909 относился к старому pre-merge Editor варианту Package 3 и больше
+не является приёмочным evidence текущего #229.
 
-Package 3 сейчас только подготовлен и не должен меняться до merge Editor 2.0 PR #215.
-Текущий #229 был создан поверх Editor base `e47436e…`, тогда как Editor продолжил развиваться
-и текущий PR #215 уже находится на более позднем head. Поэтому после merge Editor 2.0 необходимо:
+После пересборки:
+- #229 — draft, mergeable, 1 commit;
+- diff: `app/forum/markdown-editor.test.tsx` (+112) и `app/forum/markdown.test.tsx` (+106/-1);
+- новый GitHub Actions CI run #39121236732 запущен для head `b3c12f2c…` и на момент записи ещё идёт;
+- до получения результата нового CI Package 3 не считается готовым к review/merge;
+- после green CI необходимо заново сверить RC-01…RC-03 именно с фактически смерженными
+  fullscreen/split/code-preference contracts и провести свежий review Package 3 перед merge;
+- для этой test-audit work сохраняется прямое решение владельца не подключать Codex-6.1 Sol.
 
-- retarget/rebase #229 на актуальный `main`, содержащий смерженный Editor;
-- заново сверить RC-01…RC-03 с фактически смерженными fullscreen/split/code-preference contracts,
-  а не считать прежний test-only head автоматически актуальным;
-- разрешить конфликты/адаптировать tests только если этого требует финальная Editor implementation;
-- выполнить применимые targeted/full checks на новом стабильном head;
-- провести свежий review Package 3 перед merge. Для этой test-audit work сохраняется прямое решение
-  владельца не подключать Codex-6.1 Sol.
-
-Независимый Codex review для текущего pre-merge Editor варианта PR #229 не запускался;
-случайный review служебного PR #226 не является review Package 3.
+Случайный review служебного PR #226 не является review Package 3.
 
 Важно: название `Package 3` здесь означает только **test-audit Package 3 / RC-01…RC-03**.
 Оно не относится к возможным одноимённым пакетам или подзадачам внутри Editor 2.0.
@@ -224,5 +218,6 @@ AC-01 закрывается только когда полная матрица
 
 ## Следующая рабочая точка
 
-Package 3 подготовлен и ждёт merge Editor 2.0 PR #215. До этого #229 не retarget/rebase/merge.
-AC-01 пока только готовится как финальный gate и выполняется после Package 3 на стабильном product head.
+Editor 2.0 merged. Package 3 / #229 пересобран на актуальном `main`; следующий gate — результат
+нового CI #39121236732, затем свежая проверка RC-01…RC-03 и review Package 3.
+AC-01 выполняется только после merge Package 3 на стабильном product head.
