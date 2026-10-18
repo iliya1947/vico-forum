@@ -63,8 +63,9 @@ Implementation PR #228: `Fix test isolation and independence`.
 Audit implementation PR: #229 — `Test audit Package 3 — Editor regression coverage`.
 
 - Editor 2.0 PR #215 merged 2026-10-18; merge commit: `c098912e596acb8342bb763612008249995311e8`;
-- текущий head #229: `b3c12f2c1c86f861ebf21f5cd9e4e474299ce82b`;
-- base #229: актуальный `main` на Editor merge commit `c098912e…`;
+- текущий head #229: `0b5959657d2410ba34594ca61a79842dbf903e36`;
+- base #229: актуальный `main` `ffa999aa02886bd3bf3a662e1aff1de0f31ac0a2`;
+- после первоначальной post-Editor пересборки `main` получил только documentation-only commit `Update agent names in AGENTS.md`; Package 3 повторно перенесён без изменения test diff;
 - прежние пять audit commits поверх старого Editor snapshot сохранены только как историческое происхождение tests;
 - ветка #229 пересобрана одним commit непосредственно поверх смерженного Editor, чтобы не тащить старую Editor-историю;
 - текущий diff снова меняет только два test-файла:
@@ -87,10 +88,9 @@ Production code, schema/migrations, dependencies, workflows и public contracts 
 После пересборки:
 - #229 — draft, mergeable, 1 commit;
 - diff: `app/forum/markdown-editor.test.tsx` (+112) и `app/forum/markdown.test.tsx` (+106/-1);
-- новый GitHub Actions CI run #39121236732 запущен для head `b3c12f2c…` и на момент записи ещё идёт;
-- до получения результата нового CI Package 3 не считается готовым к review/merge;
-- после green CI необходимо заново сверить RC-01…RC-03 именно с фактически смерженными
-  fullscreen/split/code-preference contracts и провести свежий review Package 3 перед merge;
+- historical post-Editor CI #39121236732 на `b3c12f2c…` был green, но этот exact head superseded после documentation-only изменения `main`;
+- текущий GitHub Actions CI #39125576520 для exact head `0b595965…` завершён успешно: `checks` и `database` — success;
+- текущий head готов к свежему независимому review RC-01…RC-03 против фактически смерженных fullscreen/split/code-preference contracts;
 - для этой test-audit work сохраняется прямое решение владельца не подключать Codex-6.1 Sol.
 
 Случайный review служебного PR #226 не является review Package 3.
@@ -218,6 +218,6 @@ AC-01 закрывается только когда полная матрица
 
 ## Следующая рабочая точка
 
-Editor 2.0 merged. Package 3 / #229 пересобран на актуальном `main`; следующий gate — результат
-нового CI #39121236732, затем свежая проверка RC-01…RC-03 и review Package 3.
+Editor 2.0 merged. Package 3 / #229 пересобран на актуальном `main`; exact head `0b595965…` прошёл
+CI #39125576520 (`checks` + `database` success). Следующий gate — независимый review Package 3.
 AC-01 выполняется только после merge Package 3 на стабильном product head.
