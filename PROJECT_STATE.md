@@ -36,13 +36,20 @@ attachment PostgreSQL 17 suite (58 tests), TypeScript, production build и chang
 локально проходят. Exact code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6`
 прошёл GitHub Actions #39135879866: `checks` SUCCESS (1064 application tests, lint,
 typecheck, application/UI-preview builds и guards) и `database` SUCCESS (313 PostgreSQL 17
-tests, migration/schema/privilege checks и Workers smoke). Последующий review-cycle ещё не выполнен.
+tests, migration/schema/privilege checks и Workers smoke). После первого независимого
+review Миры и Лиры были подтверждены два дополнительных draft/attachment lifecycle defect;
+их bounded correction внесён следующим набором изменений.
 
 Bounded follow-up correction PR #232 (2026-10-19): после согласованного review добавлены
 защита от indefinite retention attachment boundary после 30-day expiry (включая отсутствие
 live refs) и server-fenced новый draft при скрытом >30d terminal tombstone и baseVersion=0.
-Добавлены отдельные PostgreSQL regression scenarios для обоих случаев. Exact-head CI и
-независимый повторный whole-PR review для этих новых изменений ещё не выполнялись.
+Добавлены отдельные PostgreSQL regression scenarios для обоих случаев.
+Exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` прошёл
+GitHub Actions #39176074057: `checks` SUCCESS (1064 application tests / 96 files,
+typecheck, lint, build/guards) и `database` SUCCESS (315 PostgreSQL 17 tests /
+27 files, schema/privilege/Workers checks). Повторный независимый whole-PR review
+нового head ещё не выполнялся; новых browser/runtime прогонов для двух follow-up
+коррекций здесь не заявлено.
 
 По прямому назначению владельца Codex принимает implementation ownership;
 обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex
