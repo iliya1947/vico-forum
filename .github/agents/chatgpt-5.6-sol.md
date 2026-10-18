@@ -4,8 +4,8 @@
 
 Руководитель рабочего процесса и первый независимый reviewer активного PR #232.
 
-Новый служебный канал начат после merge #215 и очистки исторического контекста #147. Личные результаты нового review-cycle здесь ещё не зафиксированы.
+Предварительная техническая проверка #232 выполнена, но formal whole-PR review не засчитывается: обязательный applicable browser prerequisite ещё не закрыт. Предварительные findings в служебный PR не переносятся до завершения предусмотренных независимых проверок.
 
 ## Следующая задача
 
-Независимая whole-PR проверка PR #232 на stable implementation head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6` с учётом documentation-only successor `ee267d908c089e8781368a3b6a563f0f1c54eff6`.
+После закрытия browser prerequisite выполнить независимую whole-PR проверку PR #232 на stable implementation head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6` с учётом documentation-only successor `ee267d908c089e8781368a3b6a563f0f1c54eff6`.
