@@ -138,7 +138,7 @@ AC-01 не является implementation package и сейчас **не вып
 
 - Editor 2.0 PR #215 merged в `main`;
 - Package 3 / PR #229 актуализирован против смерженного Editor, повторно проверен и merged;
-- отсутствуют открытые подтверждённые current-Stage corrections, способные изменить candidate revision. На 2026-10-18 этот precondition **не выполнен**: draft PR #232 содержит bounded correction package для четырёх подтверждённых current-Stage дефектов Editor 2.0, но его обязательная real-browser readiness verification ещё не завершена;
+- отсутствуют открытые подтверждённые current-Stage corrections, способные изменить candidate revision. На 2026-10-18 этот precondition **ещё не выполнен**: draft PR #232 содержит bounded correction package для четырёх подтверждённых current-Stage дефектов Editor 2.0; его real-browser readiness gate уже пройден, но formal review-cycle и owner merge ещё не завершены;
 - выбран один стабильный final candidate revision `main`, который больше не меняется во время
   acceptance;
 - применимые repository checks для входящих implementation PR завершены успешно;
@@ -210,21 +210,18 @@ Bounded correction package для четырёх подтверждённых cu
 head `36e13068…` прошёл CI #39135879866, а текущий docs-only successor после повторного run
 прошёл CI #39136086360 (`checks` + `database` SUCCESS).
 
-До формального review-cycle #232 требуется только bounded real-browser readiness gate.
-Codex-5.6 Sol должен проверить **только** три сценария на exact head `ee267d90…`:
+Bounded real-browser readiness gate PR #232 на exact head `ee267d908c089e8781368a3b6a563f0f1c54eff6` **завершён** Codex-5.6 Sol без confirmed findings.
 
-1. Simple table cell: обычный native plain-text paste меняет только выбранную ячейку/source и не
-   перехватывается visual-surface body paste path.
-2. Simple editor: native selection через соседние leaves/blocks + Enter заменяет точный выбранный
-   source range.
-3. Cross-tab draft resolution через реальный draft route/server storage:
-   - две unsaved/version-0 вкладки могут авторитативно завершить выбор любой версии;
-   - новая local generation поверх published/deleted terminal head может быть авторитативно выбрана.
+Проверено в Chromium 154 на локальном Cloudflare Workers runtime с disposable PostgreSQL 17 и реальным Better Auth user:
 
-Граница задачи Codex: не пересматривать весь Editor/#232, не искать unrelated defects, не начинать
-AC-01/Stage 6 и не менять implementation, если эти три сценария проходят. Если сценарий падает —
-зафиксировать только его causal chain и STOP. После трёх сценариев записать результат в PR #226 и
-STOP; следующий gate определяет ChatGPT-5.6 Sol.
+1. Simple table native paste меняет только выбранную ячейку/source и не перехватывается body paste path.
+2. Native cross-leaf и cross-block selection + Enter заменяет точный выбранный source range.
+3. Две unsaved/version-0 вкладки авторитативно завершают оба варианта выбора через реальный route/storage.
+4. Новая local generation поверх terminal deleted head авторитативно устанавливается как active next version.
+
+Implementation #232 во время browser gate не менялась; exact head остаётся `ee267d90…`.
+
+Следующий gate: ChatGPT-5.6 Sol начинает первый independent whole-PR review PR #232 на этом exact head. Review и исправление разделены; во время проверки implementation не менять. После её завершения — STOP и отдельный handoff следующему reviewer по действующему порядку.
 
 После закрытия #232 нужно повторно определить stable candidate revision и только затем перейти
 к actual Worker/runtime acceptance. External deployment/runtime mutation без отдельного явного
