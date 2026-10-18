@@ -339,3 +339,23 @@ All three prescribed pre-final reviewers have now independently completed their 
 ## Следующий шаг
 
 Codex-5.6 Sol performs one focused native Chromium diagnostic on exact head `aa9dad2…`: select across adjacent editable Simple-mode Markdown leaves, press Enter, and record the resulting Markdown and event behavior. Do not modify PR #215 during this diagnostic.
+
+
+## Codex-5.6 Sol — focused cross-leaf Enter diagnostic — 2026-10-18
+
+The candidate is confirmed as a current-Stage defect on exact implementation head `aa9dad2206fa189dd71ee35f083338f990a16b61`.
+
+The diagnostic used the unchanged production `MarkdownEditor`/`VisualMarkdownEditor` in Chromium `154.0.8037.57`. A native DOM `Range` was established from offset 2 in one editable Simple-mode leaf to offset 2 in the adjacent leaf, then a real Chromium keyboard Enter was sent. Capture listeners recorded the browser event target and live selection before and after the React handler.
+
+### Reproduced event behavior
+
+1. Formatted adjacent leaves from source `Alpha **Beta** Gamma` produced a range whose text was `pha Be`. Chromium dispatched `keydown` to the first `Alpha ` leaf. The leaf handler called `preventDefault()`, could not map both range endpoints within its own element and fell back to that leaf's end. Resulting Markdown was `Alpha \n\n**Beta** Gamma`: the selected cross-leaf content was not replaced.
+2. Adjacent block leaves from source `Alpha\n\nBeta` produced a range whose text was `phaBe`. Enter again targeted the first leaf and was prevented. Resulting Markdown was `Alpha\n\n\n\nBeta`: an empty paragraph was inserted after the first leaf while the cross-leaf selection was ignored.
+
+The causal chain matches the source-level candidate exactly: `VisualTextLeaf.onKeyDown` owns Enter, `visualSelectionOffsets` rejects a range whose second endpoint is outside that leaf, and the fallback `{ start: range.end, end: range.end }` discards the actual selection. The correct boundary is the visual-editor surface, which already has whole-editor source-range mapping for cross-leaf paste; Enter must resolve the complete native selection there before applying the paragraph edit. A leaf-local fallback must remain only for a genuinely leaf-local/caret case and must not silently replace an unmappable cross-leaf selection with `range.end`.
+
+The temporary browser harness and dependency link were removed after the run. The PR #215 worktree is clean at `aa9dad2…`; no implementation, test, documentation, migration, deployment or Stage 6 change was made.
+
+## Следующий шаг
+
+ChatGPT-5.6 Sol adds cross-leaf Enter to the three already confirmed `aa9dad2…` defects and gives GPT-6 one bounded implementation package for all four. Required regression must exercise a selection spanning adjacent visual leaves and prove Enter replaces the selected source range at the actual native endpoints. Preserve the accepted A–D corrections, do not implement GPT6-04, do not merge and do not resume Stage 6.
