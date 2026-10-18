@@ -10,10 +10,10 @@
 
 1. **Подтверждённый обеими проверками current-Stage defect:** unresolved `forum_attachment_draft_boundaries` переживает 30-day expiry text draft. `purgeExpired()` retire-ит generation, но boundary не очищает; cleanup #232 считает boundary live blocker, поэтому уже ненужный объект может удерживаться бессрочно.
 
-2. **Расходящийся finding:** terminal `published/deleted` row старше 30-дневного metadata window остаётся в DB, но скрывается `metadata()`. Новый editor instance в том же context получает no-head, начинает с `expectedVersion: 0`, серверный `save()` сталкивается с существующим terminal row и возвращает `gone`; повторный metadata-read снова скрывает authoritative version. Мира считает это current-Stage defect. Лира его не подтвердила; вопрос вынесен на согласование.
+2. **Подтверждённый после согласования current-Stage defect:** terminal `published/deleted` row старше 30-дневного metadata window остаётся в DB, но скрывается `metadata()`. Новый editor instance в том же context получает no-head, начинает с `expectedVersion: 0`, server `save()` сталкивается с существующим terminal row и возвращает `gone`; повторный metadata-read снова скрывает authoritative version. Лира отдельно перепроверила эту причинную цепочку и подтвердила defect.
 
 По native table-cell paste, cross-leaf/cross-block Enter и свежим version-0/terminal conflict paths новых current-Stage defects в проверке Миры не найдено.
 
 ## Следующая задача
 
-После ответа Лиры по спорному terminal path завершить согласование findings. Затем отдельно сформировать bounded correction package только из подтверждённых current-Stage defects.
+Дождаться bounded correction package Лиры в PR #232. После фиксации нового stable exact head провести новый независимый whole-PR review только после завершения реализации и применимых checks. Мишаню не подключать до clean result Миры и Лиры.
