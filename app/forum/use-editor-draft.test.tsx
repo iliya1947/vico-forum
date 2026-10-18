@@ -707,6 +707,92 @@ describe("editor draft lifecycle", () => {
 });
 
 describe("conflict choices from another tab", () => {
+  it.each(["local", "server"] as const)("authoritatively saves the %s choice between two unsaved version-zero tabs", async (choice) => {
+    const currentId = crypto.randomUUID();
+    const otherId = crypto.randomUUID();
+    const editedAt = new Date().toISOString();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: currentId,
+      editedAt, baseVersion: 0, syncedEditedAt: null,
+      payload: { ...empty, body: "Current unsaved tab" } });
+    const posts: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const sent = JSON.parse(options.body as string);
+        posts.push(sent);
+        return response({ outcome: "saved", draft: {
+          contextKey, draftId: sent.draftId, version: 1, status: "active",
+          title: "", snippet: "", editedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(), payload: sent.payload,
+        } });
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [] });
+      throw new Error("Unexpected content request");
+    }));
+    mount();
+    await flush();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: otherId,
+      editedAt: new Date().toISOString(), baseVersion: 0, syncedEditedAt: null,
+      payload: { ...empty, body: "Other unsaved tab" } });
+    await act(async () => { window.dispatchEvent(new StorageEvent("storage", {
+      key: draftStorageKey("alice", contextKey),
+    })); });
+
+    fireEvent.click(screen.getByRole("button", { name: choice === "local" ? "Keep local" : "Keep server" }));
+    await flush();
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ intent: "save", expectedVersion: 0,
+      draftId: choice === "local" ? currentId : otherId,
+      payload: { ...empty, body: choice === "local" ? "Current unsaved tab" : "Other unsaved tab" },
+    });
+    expect(screen.queryByRole("group", { name: "Draft conflict" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("draft-version")).toHaveTextContent("1");
+  });
+
+  it("authoritatively saves a selected local generation over a terminal server head", async () => {
+    const terminalId = crypto.randomUUID();
+    const currentId = crypto.randomUUID();
+    const otherId = crypto.randomUUID();
+    const editedAt = new Date().toISOString();
+    const terminal = { contextKey, draftId: terminalId, version: 2, status: "published" as const,
+      title: "", snippet: "", editedAt, updatedAt: editedAt };
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: currentId,
+      editedAt, baseVersion: 2, syncedEditedAt: null,
+      payload: { ...empty, body: "Current generation" } });
+    const posts: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const sent = JSON.parse(options.body as string);
+        posts.push(sent);
+        return response({ outcome: "saved", draft: {
+          contextKey, draftId: sent.draftId, version: 3, status: "active",
+          title: "", snippet: "", editedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(), payload: sent.payload,
+        } });
+      }
+      if (uri.includes("mode=metadata")) return response({ drafts: [terminal] });
+      throw new Error("Unexpected content request");
+    }));
+    mount();
+    await flush();
+    writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: otherId,
+      editedAt: new Date().toISOString(), baseVersion: 2, syncedEditedAt: null,
+      payload: { ...empty, body: "Selected generation" } });
+    await act(async () => { window.dispatchEvent(new StorageEvent("storage", {
+      key: draftStorageKey("alice", contextKey),
+    })); });
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
+    await flush();
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({ intent: "save", expectedVersion: 2, draftId: otherId,
+      payload: { ...empty, body: "Selected generation" },
+    });
+    expect(screen.queryByRole("group", { name: "Draft conflict" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("draft-version")).toHaveTextContent("3");
+  });
+
   it("keeps a same-version conflict open until its attachment boundary is authoritative", async () => {
     const editedAt = new Date().toISOString();
     writeLocalEditorDraft({ ownerId: "alice", contextKey, draftId: newId,
@@ -736,6 +822,7 @@ describe("conflict choices from another tab", () => {
     })); });
     fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
     expect(screen.getByRole("group", { name: "Draft conflict" })).toBeInTheDocument();
+    await flush();
     expect(posts).toHaveLength(1);
     expect(posts[0]).toMatchObject({ intent: "resolve", expectedVersion: 1,
       payload: { ...empty, body: "Other tab winner" } });
@@ -775,6 +862,7 @@ describe("conflict choices from another tab", () => {
     if (storageFailure) {
       vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new Error("Quota exceeded"); });
       fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
+      await flush();
       expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Current tab");
       expect(screen.getByRole("button", { name: "Keep server" })).toBeInTheDocument();
       expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("0");
@@ -894,7 +982,7 @@ it("verifies a selected cached generation while an obsolete metadata request rem
   await act(async () => { window.dispatchEvent(new StorageEvent("storage", { key: draftStorageKey("alice", contextKey) })); });
   fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
   await flush();
-  expect(reads).toBe(1);
+  expect(reads).toBe(2);
   expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   await act(async () => { acknowledge!(response({ drafts: [{ contextKey, draftId: oldId, version: 1,
     status: "active", title: "", snippet: "", editedAt, updatedAt: editedAt }] })); });

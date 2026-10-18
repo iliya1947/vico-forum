@@ -278,6 +278,7 @@ function sourceRange(node: VisualNode): EditorSelection | null {
 
 function VisualTextLeaf({
   text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph,
+  resolveSurfaceSelection,
 }: {
   text: string;
   range: EditorSelection;
@@ -286,6 +287,7 @@ function VisualTextLeaf({
   onTextEdit: VisualEditorProps["onTextEdit"];
   onSelection: VisualEditorProps["onSelection"];
   onInsertParagraph: VisualEditorProps["onInsertParagraph"];
+  resolveSurfaceSelection(): EditorSelection | null;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const spellCheck = useContext(visualSpellcheckContext);
@@ -356,10 +358,11 @@ function VisualTextLeaf({
         const offsets = active ? visualSelectionOffsets(event.currentTarget, active, currentText) : null;
         const sourceStart = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.start) : null;
         const sourceEnd = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.end) : null;
+        const surfaceSelection = resolveSurfaceSelection();
         event.preventDefault();
-        onInsertParagraph(sourceStart === null || sourceEnd === null
+        onInsertParagraph(surfaceSelection ?? (sourceStart === null || sourceEnd === null
           ? { start: range.end, end: range.end }
-          : { start: range.start + sourceStart, end: range.start + sourceEnd });
+          : { start: range.start + sourceStart, end: range.start + sourceEnd }));
       }}
     />
   );
@@ -369,7 +372,7 @@ function VisualNodeView({
   node, markdown, disabled, baseOffset, ...actions
 }: { node: VisualNode; markdown: string; disabled: boolean; baseOffset: number } & Pick<
 VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension" | "onPasteTable" | "onPasteFallback"
->): ReactNode {
+> & { resolveSurfaceSelection(): EditorSelection | null }): ReactNode {
   const { t } = useTranslation("common");
   const children = node.children?.map((child, index) =>
     <VisualNodeView key={index} node={child} markdown={markdown} disabled={disabled} baseOffset={baseOffset} {...actions} />,
@@ -535,13 +538,17 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
   const { t } = useTranslation("common");
   const inheritedSpellCheck = useContext(visualSpellcheckContext);
   const forcePlainPasteRef = useRef(false);
+  const surfaceRef = useRef<HTMLElement>(null);
   const segments = segmentTechnicalMarkdown(markdown);
+  const resolveSurfaceSelection = () => surfaceRef.current
+    ? visualDomSelection(surfaceRef.current, markdown, sourceBase)
+    : null;
   const reportSurfaceSelection = (root: HTMLElement) => {
     actions.onSelection(visualDomSelection(root, markdown, sourceBase));
   };
   return (
     <visualSpellcheckContext.Provider value={spellCheck ?? inheritedSpellCheck}>
-    <section className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
+    <section ref={surfaceRef} className="markdown-editor-visual post-body" aria-label={t("editorVisualSurface")} data-authoring="simple"
       onKeyDownCapture={(event) => {
         if (!(event.target instanceof Element)
           || event.target.closest(".markdown-editor-visual") !== event.currentTarget) return;
@@ -553,6 +560,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         if (event.key.toLowerCase() === "v") forcePlainPasteRef.current = false;
       }}
       onPaste={(event) => {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
         const plain = event.clipboardData.getData("text/plain");
         const html = event.clipboardData.getData("text/html");
         if (!plain && !html) return;
@@ -608,14 +616,16 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         const root = parseForumMarkdown(segment.source) as VisualNode;
         return root.children?.length
           ? <VisualNodeView key={index} node={root} markdown={segment.source}
-              baseOffset={sourceBase + segment.span.start} disabled={disabled} {...actions} />
+              baseOffset={sourceBase + segment.span.start} disabled={disabled}
+              resolveSurfaceSelection={resolveSurfaceSelection} {...actions} />
           : null;
       })}
       {(!markdown || markdown.endsWith("\n\n")) ? (
         <p dir="auto"><VisualTextLeaf text="" raw=""
           range={{ start: sourceBase + markdown.length, end: sourceBase + markdown.length }}
           disabled={disabled} onTextEdit={actions.onTextEdit}
-          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph} /></p>
+          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph}
+          resolveSurfaceSelection={resolveSurfaceSelection} /></p>
       ) : null}
     </section>
     </visualSpellcheckContext.Provider>

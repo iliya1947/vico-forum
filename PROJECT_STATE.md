@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-16
+Последнее обновление: 2026-10-18
 
 ## Назначение
 
@@ -21,6 +21,19 @@
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
 ## Editor 2.0 — завершение реализации в PR #215 (2026-10-15)
+
+Follow-up PR #232 исправляет четыре подтверждённых current-Stage boundary-дефекта поверх
+смёрженного Editor 2.0. Cleanup теперь учитывает unresolved attachment-version membership и
+не claim/delete-ит объект до завершения conflict resolution; после снятия boundary обычная
+очистка сохраняется. Simple table input оставляет native paste внутри выбранной ячейки, а
+surface paste продолжает обслуживать body/cross-leaf сценарии. Межвкладочный выбор cached
+candidate повторно читает authoritative server head: active draft проходит explicit resolve,
+а две version-0 вкладки либо новая generation поверх terminal head проходят обычный CAS save;
+conflict UI закрывается только после успешного ответа сервера. Simple Enter использует общий
+surface Range для selection между соседними leaves/blocks вместо leaf-local fallback.
+Targeted application regressions (118 tests), полный application suite (1064 tests), полный
+attachment PostgreSQL 17 suite (58 tests), TypeScript, production build и changed-files ESLint
+локально проходят. Exact-head GitHub Actions и последующий review-cycle ещё не выполнены.
 
 По прямому назначению владельца Codex принимает implementation ownership;
 обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex

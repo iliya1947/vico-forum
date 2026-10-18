@@ -433,7 +433,9 @@
   опередившего DELETE и не даёт использовать UUID файла из другого контекста.
   `forum_attachment_draft_boundaries` сохраняет membership до первой attachment-операции
   каждой text-version. Явный выбор версии атомарно устанавливает этот snapshot (либо
-  manifest выбранной локальной версии) и продвигает CAS до закрытия conflict UI.
+  manifest выбранной локальной версии) и продвигает CAS до закрытия conflict UI. Пока
+  boundary не разрешена, перечисленные в ней объекты не считаются физически осиротевшими
+  даже при временном отсутствии live draft/post refs; после разрешения действует обычная очистка.
 - POST/DELETE вложения передают версию text draft, с которой началась операция. После
   продвижения CAS устаревшая операция допустима только когда уже победивший
   `draftAttachmentIds` требует тот же итог: POST для включённого ID или DELETE для
@@ -442,8 +444,10 @@
   60-second text sync и не позволяет переносить refs между owner/context.
 - Simple-mode Enter заменяет фактический source range нативного caret/selection на два
   перевода строки. Текстовая вставка обрабатывается на уровне всей visual surface, поэтому
-  диапазон через несколько Markdown leaves не теряется. Ctrl/Cmd+Shift+V имеет приоритет
-  над tabular detection, а отклонённая TSV-конверсия сохраняет исходный plain text.
+  диапазон через несколько Markdown leaves не теряется. Native input визуальной таблицы
+  сохраняет собственные selection/paste semantics и не перехватывается body-level paste path.
+  Ctrl/Cmd+Shift+V имеет приоритет над tabular detection, а отклонённая TSV-конверсия сохраняет
+  исходный plain text.
 - Controlled download каждый раз проверяет актуальную draft/post reference. Raster
   может открываться inline; source preview — инертный текст по явному действию;
   остальные файлы скачиваются. Удаление ссылки прекращает выдачу через эту публикацию,

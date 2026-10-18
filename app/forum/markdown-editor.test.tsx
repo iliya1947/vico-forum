@@ -956,6 +956,38 @@ describe("MarkdownEditor", () => {
     expect(screen.getByLabelText("Body")).toHaveValue("Alpha\n\nBeta");
   });
 
+  it("replaces the exact native selection spanning adjacent visual leaves on Enter", () => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue="Alpha **Beta** Gamma" /></form>);
+    const leaves = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]');
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaves[0]!.firstChild!, 2);
+    range.setEnd(leaves[1]!.firstChild!, leaves[1]!.textContent!.length);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    fireEvent.keyDown(leaves[0]!, { key: "Enter" });
+
+    expect(screen.getByLabelText("Body")).toHaveValue("Al\n\n Gamma");
+  });
+
+  it("replaces the exact native selection spanning visual blocks on Enter", () => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue={'Alpha\n\nBeta'} /></form>);
+    const leaves = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]');
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaves[0]!.firstChild!, 2);
+    range.setEnd(leaves[1]!.firstChild!, 2);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    fireEvent.keyDown(leaves[0]!, { key: "Enter" });
+
+    expect(screen.getByLabelText("Body")).toHaveValue("Al\n\nta");
+  });
+
   it("opens the selected protected code block at its exact source span in Advanced mode", async () => {
     const first = "```js\nfirst();\n```";
     const second = "```ts\nsecond();\n```";
@@ -987,6 +1019,23 @@ describe("MarkdownEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "Add row" }));
     expect(screen.getAllByRole("textbox", { name: "Table cell" })).toHaveLength(4);
     expect(new FormData((screen.getByLabelText("Body") as HTMLTextAreaElement).form!).get("body")).toContain("| changed | two |");
+  });
+
+  it("leaves native paste in a Simple table input to the input itself", () => {
+    const source = "| A |\n| --- |\n| one |";
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue={source} /></form>);
+    const input = screen.getByRole("textbox", { name: "Table cell" }) as HTMLInputElement;
+    const paste = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(paste, "clipboardData", { value: {
+      getData: (format: string) => format === "text/plain" ? " pasted" : "",
+    } });
+
+    input.dispatchEvent(paste);
+
+    expect(paste.defaultPrevented).toBe(false);
+    fireEvent.change(input, { target: { value: "one pasted" } });
+    expect(screen.getByLabelText("Body")).toHaveValue(source.replace("one", "one pasted"));
   });
 
   it("renders toolbar strikethrough as editable Simple content", async () => {

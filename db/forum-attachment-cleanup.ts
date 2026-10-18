@@ -153,6 +153,10 @@ export class ForumAttachmentCleanup {
           a.cleanup_status = 'active' and a.created_at < ${grace}
           and not exists (select 1 from forum_attachment_draft_refs r where r.attachment_id = a.id)
           and not exists (select 1 from forum_post_attachments p where p.attachment_id = a.id)
+          and not exists (
+            select 1 from forum_attachment_draft_boundaries b
+            where b.attachment_ids ? a.id
+          )
         )
         order by a.created_at, a.id limit 1
         for update of a skip locked
@@ -167,6 +171,7 @@ export class ForumAttachmentCleanup {
       const refs = await tx.execute(sql`
         select 1 from forum_attachment_draft_refs where attachment_id = ${candidate.id}
         union all select 1 from forum_post_attachments where attachment_id = ${candidate.id}
+        union all select 1 from forum_attachment_draft_boundaries where attachment_ids ? ${candidate.id}
         limit 1
       `);
       if (refs.rows.length > 0) return null;
@@ -204,6 +209,10 @@ export class ForumAttachmentCleanup {
             and a.cleanup_claim_token = ${item.token}
             and not exists (select 1 from forum_attachment_draft_refs r where r.attachment_id = a.id)
             and not exists (select 1 from forum_post_attachments p where p.attachment_id = a.id)
+            and not exists (
+              select 1 from forum_attachment_draft_boundaries b
+              where b.attachment_ids ? a.id
+            )
           returning a.id
         `);
         deleted += result.rows.length;

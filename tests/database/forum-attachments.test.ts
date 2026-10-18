@@ -1273,6 +1273,33 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     expect(await row(asset.id)).toBeUndefined();
   });
 
+  it("keeps an object required by an unresolved attachment boundary until resolution", async () => {
+    const { asset, context, generation } = await makeOrphan();
+    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
+    await setDraft(ownerId, context, generation, "active", 1);
+    // A version-fenced DELETE records the pre-mutation membership before
+    // removing the final live ref.
+    expect(await store.removeDraftAttachment(ownerId, context, generation, asset.id, 1)).toBe(true);
+    const bucket = { delete: vi.fn(async () => {}) };
+    const cleanup = new ForumAttachmentCleanup(drizzle(client), bucket);
+
+    expect(await cleanup.runOnce()).toMatchObject({ claimed: 0, deleted: 0 });
+    expect(bucket.delete).not.toHaveBeenCalled();
+    expect(await row(asset.id)).toMatchObject({ cleanup_status: "active" });
+
+    expect((await drafts.resolve(ownerId, context, generation, {
+      title: "", body: "selected original version", tags: "",
+    }, 1)).outcome).toBe("saved");
+    expect(await store.readDraftAttachment(ownerId, context, generation, asset.id))
+      .toMatchObject({ id: asset.id });
+
+    expect((await drafts.save(ownerId, context, generation, {
+      title: "", body: "removed after resolution", tags: "", draftAttachmentIds: [],
+    }, 2)).outcome).toBe("saved");
+    expect((await cleanup.runOnce()).deleted).toBe(1);
+    expect(await row(asset.id)).toBeUndefined();
+  });
+
   it("releases stale refs of deleted drafts and deletes their objects without per-user intervention", async () => {
     const { asset, context, generation } = await makeOrphan();
     await setDraft(ownerId, context, generation, "deleted", 2);

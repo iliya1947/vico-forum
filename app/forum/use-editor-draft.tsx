@@ -467,33 +467,53 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     }
     const conflictNow = ctx.conflict;
     if ("payload" in conflictNow.server) {
-      const selectedPayload = which === "server"
+      const cachedCandidate = conflictNow.localCandidate;
+      const selectedLocal = which === "server" && cachedCandidate
+        ? cachedCandidate
+        : conflictNow.local;
+      const selectedPayload = which === "server" && !cachedCandidate
         ? conflictNow.server.payload
-        : conflictNow.local.payload;
+        : selectedLocal.payload;
       const selectedProvenance = which === "local"
         ? conflictNow.local.attachmentDraftId
-        : conflictNow.localCandidate?.attachmentDraftId;
-      const provisional: LocalEditorDraft = {
-        ownerId: ctx.ownerId,
-        contextKey: ctx.contextKey,
-        draftId: conflictNow.server.draftId,
-        payload: selectedPayload,
-        editedAt: new Date().toISOString(),
-        baseVersion: conflictNow.server.version,
-        syncedEditedAt: null,
-        attachmentDraftId: selectedProvenance,
-      };
-      // Prove the selected snapshot is recoverable before advancing the
-      // authoritative server boundary.
-      if (!writeLocalEditorDraft(provisional)) { setStatus("error"); return; }
+        : cachedCandidate?.attachmentDraftId;
       ctx.resolving = true;
       try {
-        const result = await mutateDraft(ctx.locale, {
-          intent: "resolve",
+        let intent: "save" | "resolve" = "resolve";
+        let targetDraftId = conflictNow.server.draftId;
+        let authoritativeVersion = conflictNow.server.version;
+        if (cachedCandidate) {
+          const head = (await fetchDraftMetadata(ctx.locale))
+            .find((entry) => entry.contextKey === ctx.contextKey);
+          if (!current(ctx) || ctx.conflict !== conflictNow) return;
+          authoritativeVersion = head?.version ?? 0;
+          if (head?.status === "active") {
+            targetDraftId = head.draftId;
+          } else {
+            intent = "save";
+            targetDraftId = selectedLocal.draftId;
+            if (head?.draftId === targetDraftId) targetDraftId = crypto.randomUUID();
+          }
+        }
+        const provisional: LocalEditorDraft = {
+          ownerId: ctx.ownerId,
           contextKey: ctx.contextKey,
-          draftId: conflictNow.server.draftId,
+          draftId: targetDraftId,
           payload: selectedPayload,
-          expectedVersion: conflictNow.server.version,
+          editedAt: new Date().toISOString(),
+          baseVersion: authoritativeVersion,
+          syncedEditedAt: null,
+          attachmentDraftId: selectedProvenance,
+        };
+        // Prove the selected snapshot is recoverable before advancing the
+        // authoritative server boundary.
+        if (!writeLocalEditorDraft(provisional)) { setStatus("error"); return; }
+        const result = await mutateDraft(ctx.locale, {
+          intent,
+          contextKey: ctx.contextKey,
+          draftId: targetDraftId,
+          payload: selectedPayload,
+          expectedVersion: authoritativeVersion,
         });
         if (!current(ctx) || ctx.conflict !== conflictNow) return;
         if (result.outcome !== "saved" || !result.draft) {
