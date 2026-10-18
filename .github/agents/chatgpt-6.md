@@ -2,8 +2,8 @@
 
 ## Текущий статус
 
-Новый служебный цикл открыт. Личных результатов по PR #232 в этом цикле пока нет.
+Formal whole-PR review-cycle PR #232 ещё не начат, потому что перед ним не закрыт обязательный applicable browser prerequisite.
 
 ## Следующая задача
 
-После завершения независимой проверки ChatGPT-5.6 Sol — независимо проверить тот же stable implementation PR #232.
+Проверить PR #232 на текущем stable implementation head и закрыть недостающий applicable browser prerequisite для Chromium-sensitive Editor behavior. Результат prerequisite зафиксировать в служебном PR. Независимую whole-PR проверку начинать только после выполнения этого prerequisite.
