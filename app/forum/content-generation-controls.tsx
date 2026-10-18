@@ -42,7 +42,7 @@ export function ContentGenerationNavigationBoundary({
   const lifecycleKey = contentGenerationNavigationLifecycleKey(location.key, pageIdentity);
   return (
     <ContentGenerationManager
-      key={lifecycleKey}
+      key={pageIdentity}
       lifecycleKey={lifecycleKey}
       units={units}
     >
@@ -127,8 +127,22 @@ export function ContentGenerationManager({
     }
   };
 
+  const previousLifecycleKey = useRef<string | null>(null);
   useEffect(() => {
     active.current = true;
+    if (previousLifecycleKey.current !== lifecycleKey) {
+      previousLifecycleKey.current = lifecycleKey;
+      automaticSnapshot.current = units.filter((unit) => unit.automatic);
+      initialUnitKeys.current = new Set(units.map((unit) => unit.key));
+      started.current = false;
+      pollCount.current = 0;
+      queueIndex.current = 0;
+      attemptedKeys.current.clear();
+      inFlightKey.current = null;
+      inFlightSawBusyState.current = false;
+      queueFinished.current = false;
+      setAutomaticFeedback(new Map());
+    }
     if (!started.current) {
       started.current = true;
       submitNextRef.current();
@@ -136,7 +150,7 @@ export function ContentGenerationManager({
     return () => {
       active.current = false;
     };
-  }, []);
+  }, [lifecycleKey]);
 
   useEffect(() => {
     const key = inFlightKey.current;
@@ -175,7 +189,7 @@ export function ContentGenerationManager({
     });
   }, [currentUnitKeySignature, units]);
 
-  const activePollingKey = useMemo(() => units
+  const activePollingKey = units
     .filter((unit) =>
       initialUnitKeys.current?.has(unit.key)
       && (
@@ -186,7 +200,7 @@ export function ContentGenerationManager({
       )
     )
     .map((unit) => unit.key)
-    .join("|"), [units]);
+    .join("|");
 
   useEffect(() => {
     if (

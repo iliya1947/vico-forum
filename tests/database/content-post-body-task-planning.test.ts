@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { attributedQuoteMarkdown } from "../../app/forum/quote-markdown";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, type DatabaseError } from "pg";
@@ -210,6 +211,27 @@ describe("content post-body durable planning", () => {
     );
     expect(counters.rows[0]?.count).toBe(0);
     expect(tasks.rows[0]?.count).toBe(0);
+  });
+
+  it("does not mistake forged quote attribution for a current translation under PostgreSQL locks", async () => {
+    const originalContent = attributedQuoteMarkdown({
+      author: "Alice", messageNumber: 9,
+      permalink: "/en/topics/t#post-9", content: "Переводимый текст",
+    });
+    const translations = new DrizzleContentTranslationStore(drizzle(client));
+    await translations.write({
+      contentType: "post-body", contentId: "post-a", revisionId: "post-a-r1",
+      sourceLocale: "ru", targetLocale: "he",
+      translatedContent: "Existing translated prose\n\n" + originalContent,
+      provenance: { origin: "machine", provider: "provider", model: "model" },
+    });
+    const revision = await new DrizzleContentPostBodyPlanningStore(drizzle(client))
+      .readCurrentRevision("post-a");
+    if (!revision) throw new Error("missing current revision");
+    const result = await createPlanner(client).planAndDispatch(revision, "he", budgetAdmission());
+    expect(result).toMatchObject({ kind: "queued", taskCreated: true });
+    const stored = await new ContentTranslationService(translations).readCurrent(revision, "he");
+    expect(stored).toMatchObject({ selected: "original", reason: "invalid" });
   });
 
   it("rechecks a serialized body translation before admission and rolls back planning metadata", async () => {

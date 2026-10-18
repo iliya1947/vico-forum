@@ -13,6 +13,7 @@ import {
   type HelpSimilarQuestionsActionData,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
+import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -29,6 +30,35 @@ import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
+
+type DraftPublicationFence = { draftId: string; draftVersion: number };
+
+function validatedDraftPublicationFence(form: FormData): DraftPublicationFence | null | undefined {
+  const draftId = form.get("editorDraftId");
+  const rawVersion = form.get("editorDraftVersion");
+  if (draftId === null && rawVersion === null) return null;
+  if (
+    typeof draftId !== "string"
+    || !/^[0-9a-f-]{36}$/iu.test(draftId)
+    || typeof rawVersion !== "string"
+    || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
+  ) return undefined;
+  const draftVersion = Number(rawVersion);
+  return Number.isSafeInteger(draftVersion) ? { draftId, draftVersion } : undefined;
+}
+
+// Omission retains legacy text-only calls; an explicit [] is a verified empty selection.
+function selectedAttachmentIds(form: FormData, field = "editorAttachmentIds"): string[] | null | undefined {
+  const raw = form.get(field);
+  if (raw === null) return undefined;
+  if (typeof raw !== "string") return null;
+  try {
+    const ids: unknown = JSON.parse(raw);
+    if (!Array.isArray(ids) || !ids.every((id) => typeof id === "string" && isForumAttachmentUuid(id))) return null;
+    if (new Set(ids.map((id: string) => id.toLowerCase())).size !== ids.length) return null;
+    return ids;
+  } catch { return null; }
+}
 
 export async function helpSolutionsCategoryAction({ request, params, context }: {
   request: Request;
@@ -75,8 +105,12 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
 
   if (intent !== "createHelpQuestion") return mutationFailure("invalid", 400);
   const title = requiredFormText(formData, "title");
-  const body = requiredFormText(formData, "body");
-  if (!title || !body) return mutationFailure("invalid", 400);
+  const body = requiredFormText(formData, "body") ?? "";
+  if (!title) return mutationFailure("invalid", 400);
+  const draftFence = validatedDraftPublicationFence(formData);
+  const attachmentIds = selectedAttachmentIds(formData);
+  if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
+  if (!body && (!attachmentIds?.length || !draftFence)) return mutationFailure("invalid", 400);
   const tags = draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createTopic({
@@ -85,6 +119,8 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
       title,
       body,
       tags,
+      ...(draftFence ?? {}),
+      ...(attachmentIds === undefined ? {} : { attachmentIds }),
     });
     return redirect(forumTopicPath(locale, created.topicId));
   });
@@ -130,14 +166,18 @@ export async function sectionAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const title = requiredFormText(formData, "title");
-  const body = requiredFormText(formData, "body");
-  if (!title || !body) return mutationFailure("invalid", 400);
+  const body = requiredFormText(formData, "body") ?? "";
+  if (!title) return mutationFailure("invalid", 400);
   const rawTags = formData.get("tags");
   const tags = typeof rawTags === "string"
     ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
     : [];
+  const draftFence = validatedDraftPublicationFence(formData);
+  const attachmentIds = selectedAttachmentIds(formData);
+  if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
+  if (!body && (!attachmentIds?.length || !draftFence)) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body, tags });
+    const created = await writer.createTopic({ sectionId, authorId, title, body, tags, ...(draftFence ?? {}), ...(attachmentIds === undefined ? {} : { attachmentIds }) });
     return redirect(forumTopicPath(locale, created.topicId));
   });
 }
@@ -425,17 +465,61 @@ export async function topicAction({ request, params, context }: {
       return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });
   }
+  if (intent === "readPostHistory") {
+    const forbidden = await requireForumPermission(context, "forum.post.history.read");
+    if (forbidden) return forbidden;
+    const postId = requiredFormText(formData, "postId");
+    if (!postId) return mutationFailure("invalid", 400);
+    try {
+      const revisions = await forumReaderForRequest(context).readPostHistory(postId, topicId);
+      if (!revisions.length) return mutationFailure("notFound", 404);
+      return data({
+        operation: "postHistory" as const,
+        postId,
+        revisions: revisions.map((revision) => ({
+          ...revision, createdAt: revision.createdAt.toISOString(),
+        })),
+      }, { status: 200 });
+    } catch (error) {
+      if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
+      throw error;
+    }
+  }
+  if (intent === "editPost") {
+    const forbidden = await requireForumPermission(context, "forum.post.editOwn");
+    if (forbidden) return forbidden;
+    const postId = requiredFormText(formData, "postId");
+    const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
+    const body = formData.get("body");
+    const draftFence = validatedDraftPublicationFence(formData);
+    const attachmentIds = selectedAttachmentIds(formData);
+    const retainedAttachmentIds = selectedAttachmentIds(formData, "editorRetainedAttachmentIds");
+    if (!postId || !expectedRevisionId || typeof body !== "string"
+      || !draftFence || !attachmentIds || retainedAttachmentIds === null) return mutationFailure("invalid", 400);
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.editPublishedPost({
+        topicId, postId, actorId, expectedRevisionId, body,
+        draftId: draftFence.draftId, draftVersion: draftFence.draftVersion, attachmentIds,
+        ...(retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds }),
+      });
+      return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
+    });
+  }
   if (intent !== "reply") return mutationFailure("invalid", 400);
   const forbidden = await requireForumPermission(context, "forum.reply.create");
   if (forbidden) return forbidden;
-  const body = requiredFormText(formData, "body");
-  if (!body) return mutationFailure("invalid", 400);
+  const body = requiredFormText(formData, "body") ?? "";
+
   const rawParentPostId = formData.get("parentPostId");
   const parentPostId = typeof rawParentPostId === "string" && rawParentPostId.trim()
     ? rawParentPostId.trim()
     : null;
+  const draftFence = validatedDraftPublicationFence(formData);
+  const attachmentIds = selectedAttachmentIds(formData);
+  if (draftFence === undefined || attachmentIds === null) return mutationFailure("invalid", 400);
+  if (!body && (!attachmentIds?.length || !draftFence)) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createReply({ topicId, authorId, body, parentPostId });
+    const created = await writer.createReply({ topicId, authorId, body, parentPostId, ...(draftFence ?? {}), ...(attachmentIds === undefined ? {} : { attachmentIds }) });
     return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(created.postId));
   });
 }

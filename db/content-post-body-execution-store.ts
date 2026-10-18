@@ -9,13 +9,14 @@ import type {
 } from "../app/localization/content-post-body-publication";
 import {
   ContentTranslationConflictError,
+  selectCurrentContentTranslation,
   type ContentTranslationRevision,
   type StoredContentTranslation,
 } from "../app/localization/content-translation";
 import { TranslationExecutionFailure } from "../app/localization/translation-failures";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { isPostgresQueryTimeout } from "./postgres-deadlines";
-import { writePostBodyTranslationWithTrust } from "./content-translation-store";
+import { readContentTranslationForUpdate, writePostBodyTranslationWithTrust } from "./content-translation-store";
 import {
   contentPostBodyTranslationTasks,
   forumPostBodyTranslations,
@@ -175,17 +176,29 @@ export class DrizzleContentPostBodyExecutionStore
           return markClaimStale(tx, publication, "source-changed");
         }
 
-        const [existing] = await tx
-          .select({ origin: forumPostBodyTranslations.origin })
-          .from(forumPostBodyTranslations)
-          .where(and(
-            eq(forumPostBodyTranslations.postId, publication.task.sourceIdentity.postId),
-            eq(forumPostBodyTranslations.revisionId, publication.task.sourceIdentity.revisionId),
-            eq(forumPostBodyTranslations.targetLocale, publication.task.targetLocale),
-          ))
-          .for("update");
-        if (existing) {
+        const identity = {
+          contentType: "post-body" as const,
+          contentId: publication.task.sourceIdentity.postId,
+          revisionId: publication.task.sourceIdentity.revisionId,
+          targetLocale: publication.task.targetLocale,
+        };
+        const existing = await readContentTranslationForUpdate(tx, identity);
+        if (existing && selectCurrentContentTranslation({
+          ...identity,
+          originalContent: revision.originalContent,
+          sourceLocale: revision.sourceLocale,
+        }, identity.targetLocale, existing).selected === "translation") {
           return markClaimStale(tx, publication, "translation-current");
+        }
+        // An older same-revision translation whose quote source metadata was
+        // changed is not valid current content. Replace it atomically at the
+        // same locked publication boundary; valid manual translations still win.
+        if (existing) {
+          await tx.delete(forumPostBodyTranslations).where(and(
+            eq(forumPostBodyTranslations.postId, identity.contentId),
+            eq(forumPostBodyTranslations.revisionId, identity.revisionId),
+            eq(forumPostBodyTranslations.targetLocale, identity.targetLocale),
+          ));
         }
 
         const machineTranslation: StoredContentTranslation = {

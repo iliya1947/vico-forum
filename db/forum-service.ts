@@ -56,7 +56,7 @@ export class ForumService {
         throw new InvalidForumContentError("post cannot reply to itself");
       }
     }
-    const bodyRevision = normalizeRevision(input.bodyRevision);
+    const bodyRevision = normalizeRevision(input.bodyRevision, !!input.publishedDraft?.attachmentIds?.length);
     return this.repository.createPost({ ...input, parentPostId: input.parentPostId ?? null, bodyRevision });
   }
 
@@ -74,7 +74,7 @@ export class ForumService {
       ...input,
       titleRevision: normalizeRevision(input.titleRevision),
       tags: normalizeTags(input.tags ?? []),
-      initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision) },
+      initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision, !!input.publishedDraft?.attachmentIds?.length) },
     });
   }
 
@@ -82,6 +82,18 @@ export class ForumService {
     validateEntity(topicId, authorId);
     requireText(expectedRevisionId, "expected revision id");
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
+  }
+
+  editPublishedPost(input: {
+    topicId: string; postId: string; actorId: string;
+    expectedRevisionId: string; body: string;
+    draftId: string; expectedVersion: number; attachmentIds: readonly string[]; retainedAttachmentIds?: readonly string[];
+  }) {
+    validateEntity(input.postId, input.actorId);
+    requireText(input.topicId, "topic id");
+    requireText(input.expectedRevisionId, "revision id");
+    if (typeof input.body !== "string") throw new InvalidForumContentError("body must be text");
+    return this.repository.editPublishedPost(input);
   }
 
   revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
@@ -410,9 +422,9 @@ function validateEntity(id: string, authorId: string) {
   requireText(authorId, "author id");
 }
 
-function normalizeRevision(revision: ForumRevisionContent): ForumRevisionContent {
+function normalizeRevision(revision: ForumRevisionContent, allowBlankBody = false): ForumRevisionContent {
   requireText(revision.id, "revision id");
-  requireText(revision.originalContent, "original content");
+  if (!allowBlankBody) requireText(revision.originalContent, "original content");
   const sourceLocale = canonicalizeTranslationLocale(revision.sourceLocale);
   if (!sourceLocale) {
     throw new InvalidForumContentError(

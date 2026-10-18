@@ -11,7 +11,7 @@ import type {
   ContentTranslationRevision,
   ContentTranslationStore,
 } from "./content-translation";
-import { ContentTranslationStorageUnavailableError } from "./content-translation";
+import { ContentTranslationStorageUnavailableError, selectCurrentContentTranslation } from "./content-translation";
 import { isActiveContentTranslationTarget } from "./content-translation-planning";
 import { TranslationExecutionFailure } from "./translation-failures";
 import type { LocaleRegistry } from "./registry";
@@ -215,7 +215,8 @@ export async function contentPostBodyTaskPreflight(
     revisionId: task.sourceIdentity.revisionId,
     targetLocale: task.targetLocale,
   };
-  if (await dependencies.translations.read(identity)) {
+  const existing = await dependencies.translations.read(identity);
+  if (selectCurrentContentTranslation(revision, task.targetLocale, existing).selected === "translation") {
     return { outcome: "stale", reason: "translation-current" };
   }
 

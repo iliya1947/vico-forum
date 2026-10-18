@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import type { ContentTranslationRevision } from "../app/localization/content-translation";
+import { selectCurrentContentTranslation, type ContentTranslationRevision } from "../app/localization/content-translation";
 import {
   validateContentTranslationRequestBudgetAdmission,
   type ContentTranslationRequestBudgetAdmission,
@@ -181,7 +181,16 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
               "current post-body translation source locale conflicts with immutable revision",
             );
           }
-          throw new ContentPostBodyPlanningNoWorkRollback("translation-current");
+          const selected = selectCurrentContentTranslation({
+            contentType: "post-body",
+            contentId: current.postId,
+            revisionId: current.revisionId,
+            originalContent: current.originalContent,
+            sourceLocale: current.sourceLocale,
+          }, specification.targetLocale, currentTranslation);
+          if (selected.selected === "translation") {
+            throw new ContentPostBodyPlanningNoWorkRollback("translation-current");
+          }
         }
 
         if (existingRows[0]) {

@@ -811,6 +811,7 @@ function previewNotifications(locale: PreviewLocale) {
   return [
     {
       id: "notification-1",
+      kind: "mention" as const,
       actorName: hebrew ? "מאיה כהן" : "Maya Cohen",
       topicId: "typed-api",
       topicTitle: hebrew
@@ -824,6 +825,7 @@ function previewNotifications(locale: PreviewLocale) {
     },
     {
       id: "notification-2",
+      kind: "reply" as const,
       actorName: hebrew ? "סם צ'ן" : "Sam Chen",
       topicId: "worker-auth",
       topicTitle: hebrew
@@ -837,6 +839,7 @@ function previewNotifications(locale: PreviewLocale) {
     },
     {
       id: "notification-3",
+      kind: "reply" as const,
       actorName: hebrew ? "נועה לוי" : "Noa Levi",
       topicId: "rtl-markdown",
       topicTitle: hebrew
@@ -1133,7 +1136,9 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
   const group = mode === "signals"
     ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
       ? selected : "needs-details"
-    : selected === "group2" || selected === "group3" ? selected : "group1";
+    : mode === "security"
+      ? selected === "group2" || selected === "group3" ? selected : "attachments"
+      : selected === "group2" || selected === "group3" ? selected : "group1";
   const samples = [
     {
       type: "signal" as const, id: "signal-142", kind: "needs-details" as const,

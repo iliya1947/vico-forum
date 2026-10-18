@@ -24,6 +24,12 @@ topic/post revision
 
 Оригинал никогда не заменяется translation.
 
+Сообщение только с вложениями может иметь пустой body. Оно не образует текстовую
+translation unit: topic loader сохраняет original presentation и вложения, исключая
+пустой body из translation lookup и generation status/planning. Непустые соседние
+сообщения и заголовок переводятся независимо; validation текстового translation
+service не ослабляется.
+
 Если `targetLocale` эквивалентен известному `sourceLocale`, service не создаёт бессмысленную
 translation job и показывает original content.
 

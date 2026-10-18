@@ -353,12 +353,18 @@ composition without changing the forum hierarchy or schema:
   Mixed repeats cases on topics with 2+ pending visible signals in their original
   group, without duplicating the authoritative records. Each group selects its
   own cases before paging rather than truncating a global active-topic list.
-  Complaints and Security are isolated empty **scaffolds**, each with Group 1,
-  Group 2, Group 3 switches. Those groups are temporary labels, **no synthetic
-  notifications and no invented complaint/security backend**. Their real categories,
-  data sources, permissions, and actions are to be defined in the respective
-  subsystem chats. Only users with existing Help moderation permissions can
-  currently access this foundation. Group navigation displays real global
+  Complaints retains an empty **scaffold** with Group 1, Group 2 and Group 3.
+  **Owner revision (2026-10-11):** Security has a dedicated first group
+  **Attachments** (`group=attachments`), followed by temporary Group 2 and Group 3.
+  Security/Attachments is reserved for real system notices about suspicious uploaded
+  files produced by Editor 2.0 attachment checks in PR #215; it is not a user
+  quality signal or complaint. No synthetic notices or security backend are added
+  by the group change. Future data access and moderation actions belong to
+  that actual attachment subsystem, not the existing Help signal queue. At this empty-scaffold stage,
+  access was limited to existing Help moderation permissions. Once Editor 2.0 PR #215 introduced
+  real protected suspicious-upload events, the Attachment Security reader acquired the independent
+  code-backed `forum.attachmentSecurity.read` permission, with dynamic grants/overrides and
+  initial moderator/admin grants; it no longer inherits Help moderation access. Group navigation displays real global
   permission-scoped pending totals: each signal group counts individual tasks,
   and Mixed counts topics with 2+ pending visible signals. Totals are queried
   independently of the current 50-case page and prior 100-topic feed bound.

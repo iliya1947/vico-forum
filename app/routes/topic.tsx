@@ -15,6 +15,7 @@ import {
   unavailableContentGenerationView,
 } from "../localization/content-generation-view";
 import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";
+import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type {
   ForumMutationError,
   SourceLocaleCorrectionMutationError,
@@ -45,7 +46,9 @@ export async function loader({ params, context }: {
       originalContent: topic.title.originalContent,
       sourceLocale: topic.title.sourceLocale,
     },
-    ...topic.posts.map((post) => ({
+    // Attachment-only posts have no text translation unit. Keep them out of
+    // both translation lookup and generation planning, which require text.
+    ...topic.posts.filter((post) => post.body.originalContent.trim().length > 0).map((post) => ({
       contentType: "post-body" as const,
       contentId: post.id,
       revisionId: post.body.id,
@@ -60,7 +63,20 @@ export async function loader({ params, context }: {
     (locale) => loadedRegistry.registry.find(locale)?.locale.direction,
   );
   const titlePresentation = presentations[0]!;
-  const postPresentations = presentations.slice(1);
+  const textPostPresentations = new Map(presentations.slice(1).map((item) => [item.contentId, item]));
+  const postPresentations = topic.posts.map((post): ContentTranslationPresentation => {
+    const text = textPostPresentations.get(post.id);
+    if (text) return text;
+    const originalLocale = post.body.sourceLocale === "und" ? undefined : post.body.sourceLocale;
+    const originalDirection = originalLocale
+      ? loadedRegistry.registry.find(originalLocale)?.locale.direction ?? "auto" : "auto";
+    return {
+      contentType: "post-body", contentId: post.id, revisionId: post.body.id,
+      selected: "original", content: post.body.originalContent,
+      contentLocale: originalLocale, contentDirection: originalDirection,
+      originalContent: post.body.originalContent, originalLocale, originalDirection,
+    };
+  });
 
   const session = authSessionForRequest(context);
   let canReply = false, canManageSolution = false, canModerateHelpSolution = false;
@@ -68,6 +84,8 @@ export async function loader({ params, context }: {
   let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
+  let editablePostIds: string[] = [];
+  let canReadPostHistory = false;
   let topicReadState: ForumTopicReadState | null = null;
   if (session) {
     try {
@@ -78,7 +96,7 @@ export async function loader({ params, context }: {
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, editOwn, historyRead] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -87,8 +105,12 @@ export async function loader({ params, context }: {
         resolver.has("forum.sourceLocale.correctOwn"),
         resolver.has("forum.translation.generate"),
         resolver.has("forum.topic.pin"),
+        resolver.has("forum.post.editOwn"),
+        resolver.has("forum.post.history.read"),
       ]);
       canReply = reply;
+      editablePostIds = editOwn ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
+      canReadPostHistory = historyRead;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
       canManageAnySolution = solutionAny;
       canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
@@ -174,6 +196,8 @@ export async function loader({ params, context }: {
     canManagePin,
     canUseAdminPanel,
     correctablePostIds,
+    editablePostIds,
+    canReadPostHistory,
     topicReadState,
   };
 }
