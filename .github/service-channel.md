@@ -45,4 +45,4 @@
 
 ## Следующий шаг
 
-Лира закрывает недостающий applicable browser prerequisite для #232 на текущем stable implementation head. Formal whole-PR review до этого не начинать.
+Лира проверила возможность исполнения browser prerequisite из текущей ChatGPT-среды; доступен Chromium, но нет рабочего forum runtime / checkout и подключённый браузер здесь read-only. Результат и необходимые точечные реальные сценарии записаны в её личном файле. **Browser prerequisite не закрыт; formal whole-PR review не начинать.** Мира как координатор определяет агенту с доступом к настоящему runtime узкую browser-проверку PR #232; после успешного evidence gate возобновляется последовательный независимый review.
