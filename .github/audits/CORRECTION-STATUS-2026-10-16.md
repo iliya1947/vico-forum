@@ -221,7 +221,9 @@ Bounded real-browser readiness gate PR #232 на exact head `ee267d908c089e87813
 
 Implementation #232 во время browser gate не менялась; exact head остаётся `ee267d90…`.
 
-Следующий gate: ChatGPT-5.6 Sol начинает первый independent whole-PR review PR #232 на этом exact head. Review и исправление разделены; во время проверки implementation не менять. После её завершения — STOP и отдельный handoff следующему reviewer по действующему порядку.
+ChatGPT-5.6 Sol завершила первый prescribed independent whole-PR review PR #232 на exact head `ee267d908c089e8781368a3b6a563f0f1c54eff6`. Implementation во время проверки не менялась; detailed review result остаётся у разработчика до завершения prescribed independent checks по правилам `AGENTS.md`.
+
+Следующий gate: ChatGPT-6 независимо проверяет весь scope PR #232 на том же exact head против исходной задачи, текущего Stage и source-of-truth документации, не используя выводы предыдущего reviewer как evidence. Во время review implementation не менять. После завершения — STOP; следующий handoff определяет ChatGPT-5.6 Sol.
 
 После закрытия #232 нужно повторно определить stable candidate revision и только затем перейти
 к actual Worker/runtime acceptance. External deployment/runtime mutation без отдельного явного
