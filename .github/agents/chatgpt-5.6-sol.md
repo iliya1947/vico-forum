@@ -2,18 +2,16 @@
 
 ## Текущий статус
 
-Independent whole-PR review PR #232 на code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с docs-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9` завершён.
+Owner принял технический план Лёвы для пересмотра repeated patch-chain PR #232. Старый bounded correction plan отменён. Implementation STOP.
 
-После завершения обоих независимых проходов результаты нового цикла раскрыты для согласования.
+Подтверждены четыре current-Stage defect:
+1. stale in-memory draft может обойти 30-day expiry;
+2. attachment-first после hidden aged terminal получает 409;
+3. `chooseVersion` может сочетать stale selected payload со свежим unseen CAS version;
+4. programmatic Simple paste может остаться несинхронизированным с active DOM и потеряться при следующем input.
 
-## Findings нового цикла
-
-1. **Подтверждённый current-Stage defect:** long-lived unsaved `baseVersion:0` runtime может пережить 30-day local expiry и пройти aged-terminal server exception, воскресив stale local draft. Лира независимо подтвердила causal chain в комментарии #234 `6263085921`.
-
-2. **Незакрытый current-Stage finding:** attachment-first поверх hidden aged terminal tombstone. Fresh editor получает no-head / `expectedVersion:0`; Attach разрешён до первого 60-second text save; `reserveAttachmentGeneration()` не сохраняет text draft; первый attachment POST идёт с version 0, тогда как attachment CAS для terminal predecessor требует точного совпадения persisted terminal version. В результате штатный first-upload-before-first-save path конфликтует.
-
-По остальному whole-PR scope новых current-Stage defects в этом проходе не найдено.
+Архитектурный root issue: text version и attachment composition не имеют одной однозначной version model; существующая chain compensation требует пересмотра до новых fixes.
 
 ## Следующая задача
 
-Дождаться независимой проверки Лиры по attachment-first causal chain. После этого согласовать полный correction scope. Implementation до завершения согласования не менять.
+Этап 1 плана Лёвы: без изменения implementation зафиксировать current invariants, воспроизведения и карту conflict/attachment state transitions. После завершения этапа — STOP.
