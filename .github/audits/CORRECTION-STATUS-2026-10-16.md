@@ -28,7 +28,7 @@ Source: PR #226, comment #6204020042.
 3. Package 4 — RC-04…RC-09, bounded test-only package — завершён.
 4. Package 5 — governance / evidence — завершён без изменений product code/CI/repository settings.
 5. Package 3 — Editor current-contract regression coverage — завершён и merged.
-6. AC-01 — финальный real-runtime browser acceptance gate UI/UX pass после стабилизации product head. Он не запускается, пока остаются подтверждённые current-Stage corrections вне audit queue.
+6. AC-01 — future final real-runtime acceptance для завершения UI/UX/pre-release. Он не входит в текущую audit correction queue и не является текущей задачей этого чата.
 
 ## Текущий статус
 
@@ -127,10 +127,12 @@ Governance/evidence findings перепроверены отдельно от co
 
 Package 5 не требует implementation PR, изменений product code, CI workflow или repository settings.
 
-### AC-01 — подготовлен как финальный real-runtime acceptance gate
+### AC-01 — future acceptance note, не текущая задача аудита
 
-AC-01 не является implementation package и сейчас **не выполняется**. Он запускается только после
-стабилизации product head.
+AC-01 не является implementation package и **не входит в текущую audit correction queue**.
+Во время активной разработки он не запускается как финальный gate: иначе последующие product changes
+обесценят результат. Этот раздел сохранён только как future acceptance checklist для момента,
+когда владелец отдельно переведёт проект к завершению UI/UX/pre-release.
 
 #### Preconditions
 
@@ -201,18 +203,14 @@ Production Worker из текущего `PROJECT_STATE.md` не является
 
 ## Следующая рабочая точка
 
-Test-audit correction queue завершена:
+**Audit correction queue завершена. Текущих задач у этого audit-потока нет.**
 
-- Package 1 / PR #227 — merged;
-- Package 2 / PR #228 — merged;
-- Package 4 / PR #231 — merged;
-- Package 5 — owner-accepted no-fix / evidence policy;
+- Package 1 / PR #227 — merged.
+- Package 2 / PR #228 — merged.
+- Package 4 / PR #231 — merged.
+- Package 5 — owner-accepted no-fix / evidence policy.
 - Package 3 / PR #229 — merged.
 
-Открытая задача этого audit-потока — только **AC-01 real-runtime browser acceptance** после стабилизации product candidate.
+AC-01 **не является текущей задачей разработки или этого чата**. Его матрица сохранена выше только как future final acceptance checklist и возвращается в работу лишь по отдельной команде владельца на этапе завершения UI/UX/pre-release.
 
-PR #232 относится к отдельному Editor 2.0 рабочему потоку и для PR #226 является только внешним blocker: пока #232 не завершён и final candidate не стабилен, AC-01 не запускается. PR #226 не координирует review, implementation, findings или handoff PR #232 и не изменяет его.
-
-После закрытия внешнего blocker необходимо заново определить stable final candidate revision и только затем выполнять AC-01 по матрице и evidence contract выше.
-
-External deployment/runtime mutation без отдельного явного разрешения владельца не выполнять.
+Чужие product/Editor PR этот audit-поток не координирует и не изменяет.
