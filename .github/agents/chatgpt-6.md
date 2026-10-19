@@ -45,3 +45,17 @@ PR #232 не менять. Новые confirmed current-Stage defects исход
 - Это не новые confirmed current-Stage defects текущего #232; это риски неполной реализации proposed model, проверенные на существующем source contract.
 - Полное независимое заключение — комментарий PR #234 `6271010426`.
 - PR #232 не изменялся; STOP до bounded implementation plan. Следующий шаг — Мира.
+
+
+## Проверка candidate implementation plan
+
+Мира подготовила bounded implementation plan в своём personal file и комментарии PR #234.
+
+Задача: независимо проверить весь plan до признания его готовым:
+- покрывает ли он четыре confirmed current-Stage defects и accepted target model;
+- достаточно ли compatibility proof для legacy manifest и upload ACK != selected ACK;
+- не создаёт ли proposed package sequence новую compensation chain;
+- не потеряны ли publication/read/rebind/cleanup/generation invariants;
+- не навязывает ли лишнюю schema/API complexity.
+
+Implementation #232 не менять. Новый confirmed defect исходного кода — сначала владельцу. Если plan чист — явно дать PASS для pre-implementation review Лёвы.
