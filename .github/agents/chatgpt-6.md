@@ -42,3 +42,11 @@ Applicable browser/runtime prerequisite PR #232 закрыт Мишаней на
 - Applied GitHub Actions exact-code run `39176074057`: оба `checks` и `database` SUCCESS. Текущий PR head run `39176308478`: оба jobs SUCCESS. В `PROJECT_STATE.md` записаны 1064 application / 315 PostgreSQL 17 tests и прочие guards; CI jobs проверены независимо через GitHub Actions metadata, не прогонялись локально.
 - Подтверждённого нового current-Stage дефекта при **проверке готовности этого исправляющего пакета** не выявлено; это НЕ замена независимого post-implementation whole-PR review Миры/Лиры и НЕ разрешение merge.
 - **STOP:** implementation не изменять до очередного review-cycle. Следующий этап по утверждённому процессу — Мира начинает независимую whole-PR проверку нового stable head #232, затем отдельным проходом Лира; Мишаня только после общего чистого результата, Лёва не подключается без прямой команды.
+
+## Второй independent whole-PR review после correction package — 2026-10-19
+
+- Проверен PR #232 на code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9`. Изменённые пути, контракты, соседние server/UI state transitions, tests и exact-head CI рассмотрены.
+- Независимая проверка проведена без ознакомления с findings Миры; reviewer также был исполнителем двух последних исправлений, что ограничивает независимость от авторства реализации.
+- Итог и любые findings сообщены **только разработчику в текущем чате**. До разрешённого согласования в служебный PR не публикуются.
+- Отдельный native PostgreSQL/Chromium прогон не выполнялся; сверены CI #39176074057 и #39176308478 (оба jobs success; 1064 application, 315 database tests). Предыдущее Chromium/Workers evidence относится к исходным четырём исправлениям до последней server-side коррекции.
+- Implementation PR #232 не изменялся. STOP; дальнейшие шаги определяет Мира по правилам owner override.
