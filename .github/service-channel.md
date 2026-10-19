@@ -225,6 +225,15 @@ Implementation #232 остаётся STOP до финального design gate.
 
 Это **недостаточное описание коррекции известного дефекта**, не новый confirmed current-Stage finding. Implementation #232 остаётся STOP.
 
+## Candidate implementation plan — revision Миры
+
+Design blocker Лиры исправлен без расширения scope:
+- 30-day expiry теперь проверяется по исходному `editedAt` до любого `capture` / attachment reserve / local refresh / timestamp update, способного использовать старую in-memory copy; expired payload/generation сначала инвалидируется;
+- добавлен regression для suspended >30d version-0 runtime → first Attach/capture → no resurrection;
+- owner keep/newer-set attachment rules явно ограничены случаем одинакового текста; различный текст остаётся explicit conflict/manual choice.
+
+Новых confirmed current-Stage defects не добавлено. Implementation #232 остаётся STOP.
+
 ## Следующий шаг
 
-Мира точечно уточняет candidate plan по expiry-before-refresh и owner-rule scope. После правки Лира подтверждает готовность плана. Только затем утверждённый plan фиксируется в общем service-channel и передаётся Лёве на обязательный pre-implementation review **до любого кода**. Лёву подключает владелец; пока не подключать.
+Лира повторно проверяет точечную revision candidate plan. При PASS plan становится готовым к фиксации как утверждённый и передаётся Лёве на обязательный pre-implementation review **до любого кода**.
