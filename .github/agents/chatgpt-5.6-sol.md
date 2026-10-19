@@ -236,7 +236,9 @@ Implementation не менять. Передать окончательную ta
 - context-specific mutation/head read возвращает authoritative generation/version/status независимо от display metadata cutoff;
 - fresh generation после hidden terminal использует реальную terminal base, а не выдуманный `0`;
 - aged-terminal `expectedVersion=0` exception удаляется, когда новый head path доказан;
-- local draft старше 30 дней повторно проверяется непосредственно перед любой server mutation и не может воскреснуть из long-lived runtime.
+- срок local draft проверяется по **исходному `editedAt` старой in-memory copy до любого действия, способного использовать её payload/generation или обновить timestamp**: `capture`, `reserveAttachmentGeneration`, `noteAttachmentChange`, local persistence/refresh и server mutation;
+- если исходная copy уже старше 30 дней, её старое содержимое и attachment generation сначала инвалидируются; focus/open/Attach/reserve не могут «омолодить» её запись новым `editedAt`;
+- новый осмысленный ввод после expiry может начать новый независимый draft/generation, но не должен наследовать или воскресить expired payload/attachment selection.
 
 Legacy compatibility:
 - `draftAttachmentIds === undefined` остаётся отличим от explicit `[]`;
@@ -245,6 +247,7 @@ Legacy compatibility:
 
 Readiness:
 - targeted client/server/database regressions для hidden terminal, fresh generation, long-lived local expiry и legacy undefined→authoritative transition;
+- отдельный regression: unsaved/version-0 runtime остаётся mounted/suspended >30 дней → первым действием идёт Attach/capture → expiry проверяется по прежнему `editedAt` до reserve/capture refresh, старый payload/generation не воскресает; после этого новый независимый ввод/attachment path может создать fresh draft;
 - explicit `[]` остаётся пустым.
 
 ### Package 2 — ordered snapshot mutations и conflict semantics
@@ -258,7 +261,8 @@ Readiness:
 - если server head изменился — старый choice не rebased, conflict обновляется;
 - own successful manifest-only transition может продвинуть known base dirty local text только при доказанном exact before/after результате; third-device change всегда остаётся conflict;
 - causal-incomparable offline/local copies используют owner-approved manual fallback;
-- same-file remove-vs-retain сохраняет файл; доказуемо более новый authoritative snapshot определяет просто разные attachment sets.
+- **автоматические attachment rules владельца применяются только когда competing text payloads одинаковы**: same-file remove-vs-retain сохраняет файл; при просто разных attachment sets побеждает более новый authoritative snapshot, только если его порядок доказуем; при недоказуемом порядке — manual fallback;
+- если competing text payloads различаются, остаётся explicit text conflict/manual choice; attachment keep/newer-set rules не выбирают победителя и не обходят этот конфликт.
 
 Readiness:
 - unsaved/version-0 local conflict;
@@ -370,6 +374,14 @@ Immediately STOP and report owner before correction if:
 - implementation scope expands outside Editor 2.0 current Stage.
 
 
+## Revision после review Лиры
+
+Candidate plan уточнён без изменения scope:
+- Package 1 теперь требует expiry check по исходному `editedAt` **до** любого capture/reserve/local refresh, который способен омолодить старую in-memory copy, с отдельным slept->Attach/capture regression;
+- Package 2 теперь явно ограничивает owner attachment auto-rules случаем одинакового текста; различный текст всегда остаётся explicit conflict/manual choice.
+
+Это закрывает design blocker комментария #234 `6271766656`; новых confirmed current-Stage defects этим уточнением не добавлено.
+
 ## Следующая задача
 
-Лира независимо проверяет candidate implementation plan на полноту, минимальность, соответствие accepted model и отсутствие новой compensation chain. Implementation #232 не менять. После PASS план переносится в общий service-channel и передаётся Лёве на обязательный pre-implementation gate.
+Лира независимо повторно проверяет именно эти две правки candidate implementation plan на полноту, минимальность, соответствие accepted model и отсутствие новой compensation chain. Implementation #232 не менять. После PASS план переносится в общий service-channel и передаётся Лёве на обязательный pre-implementation gate.
