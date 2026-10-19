@@ -35,3 +35,13 @@ Implementation не менять. Следующий рабочий этап —
 - подтвердить или отклонить готовность модели к implementation planning.
 
 PR #232 не менять. Новые confirmed current-Stage defects исходного кода, если будут найдены, сначала вынести владельцу; correction не начинать.
+
+
+## Последний independent design gate завершён — 2026-10-19
+
+- Проверила уточнённую target model Миры и принятое owner rule `manual fallback` для несравнимых offline/local drafts; неизменный implementation PR #232 head `ae121565…`.
+- **Концептуальный PASS для implementation planning, не implementation approval.** Multi-upload, manifest-CAS ↔ text autosave, pool selection/publication и offline ordering получили согласуемые state transitions без обязательной дополнительной DB table/version/registry. Новый runtime/DB/browser execution не проводился.
+- Дополнительные два **обязательных transition proofs**: (A) legacy absent `draftAttachmentIds` ≠ explicit `[]`: нормализовать старые active rows с pool refs при переходе на authoritative manifest без потери вложений; (B) upload bytes/pool HTTP 201 ≠ committed selected manifest: UI `stored`/Publish блокировать до CAS include ACK/доказанной lost-ACK идемпотентности.
+- Это не новые confirmed current-Stage defects текущего #232; это риски неполной реализации proposed model, проверенные на существующем source contract.
+- Полное независимое заключение — комментарий PR #234 `6271010426`.
+- PR #232 не изменялся; STOP до bounded implementation plan. Следующий шаг — Мира.
