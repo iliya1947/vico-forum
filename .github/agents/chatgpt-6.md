@@ -6,10 +6,9 @@ Applicable browser/runtime prerequisite PR #232 закрыт Мишаней на
 
 ## Следующая задача
 
-Выполнить новый independent whole-PR review PR #232 на exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9`.
+Проверить только causal chain из комментария #234 `6262978103`: может ли long-lived/offline unsaved `baseVersion:0` runtime пережить 30-day local expiry и после возврата пройти новый aged-terminal `expectedVersion:0` server exception, воскресив stale draft.
 
-Проверить весь заданный scope против исходной задачи, текущего Stage и source-of-truth. Findings Миры не использовать как evidence и не запрашивать до окончания собственного прохода. Implementation во время review не менять. После завершения сообщить результат разработчику и STOP.
-
+Не использовать совпадение с выводом Миры как доказательство. Найти конкретный предотвращающий runtime/server path либо подтвердить current-Stage defect. Implementation не менять. После результата — STOP.
 ## Вторая независимая whole-PR проверка #232 — статус
 
 - Завершена на стабильном code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6` (current documentation-only successor `ee267d908c089e8781368a3b6a563f0f1c54eff6`).
