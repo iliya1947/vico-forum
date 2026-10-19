@@ -19,3 +19,19 @@ Implementation не менять. Следующий рабочий этап —
 - Последние 4 пункта — **недоказанные переходы proposed model, не новые confirmed current-Stage defects исходного кода**. Дополнительные persistent tables/registries не предлагаются.
 - Полное техническое доказательство опубликовано комментарием PR #234 `6266330006`. Мира должна проверить контрпримеры и уточнить model transition proof до implementation.
 - PR #232 не менялся. **STOP.**
+
+
+## Новое owner decision
+
+Владелец выбрал **manual fallback** для purely-local/offline copies, которые нельзя достоверно упорядочить по authoritative server history. Client `editedAt` не считается authoritative ordering.
+
+Если порядок недоказуем — explicit conflict и ручной выбор. Если authoritative server ordering доказуем — применяется product rule для более нового snapshot. Keep-rule для same-file remove-vs-retain действует независимо.
+
+## Следующая задача
+
+Провести последний independent design gate target model после owner decision:
+- проверить ранее найденные multi-upload, autosave↔attachment CAS, publication/access и offline-ordering transitions;
+- искать скрытую необходимость нового compensation layer;
+- подтвердить или отклонить готовность модели к implementation planning.
+
+PR #232 не менять. Новые confirmed current-Stage defects исходного кода, если будут найдены, сначала вынести владельцу; correction не начинать.
