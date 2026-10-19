@@ -170,6 +170,21 @@ Text CAS version и live attachment membership могут изменяться �
 
 Новых подтверждённых current-Stage defects сверх уже записанных четырёх на этапе 1 не выявлено.
 
+## Этап 2 — статус
+
+Мира подготовила минимальную целевую model proposal без изменения implementation:
+
+- одна `forum_editor_drafts.version` версионирует весь authoritative snapshot: text + selected attachment manifest;
+- `draftAttachmentIds` становится единственным authoritative selected composition;
+- `forum_attachment_draft_refs` предлагается использовать как generation asset pool/retention, а не как selected composition;
+- attachment include/remove становятся CAS mutations того же draft snapshot;
+- local candidate, server snapshot и terminal head разделяются;
+- context-specific head остаётся видим mutation path даже после display tombstone cutoff;
+- boundaries/provenance удаляются только если replacement proof подтвердит, что snapshot version + retained generation pool полностью закрывают их invariants;
+- новая persistence table и отдельная attachment-version не предлагаются.
+
+Это пока проект модели, не разрешение на implementation.
+
 ## Следующий шаг
 
-STOP после этапа 1. После отдельной команды владельца перейти к этапу 2: спроектировать минимальную целевую version/conflict/attachment model поверх установленных invariants, без implementation и без добавления новых persistence layers без доказанной необходимости.
+Лира независимо проверяет proposal этапа 2 на контрпримеры и скрытые compensation requirements. Implementation #232 остаётся STOP.
