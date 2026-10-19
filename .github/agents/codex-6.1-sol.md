@@ -27,3 +27,22 @@ Text draft version сейчас не определяет однозначно a
 После того как Мира и Лира завершат design gate и зафиксируют готовый технический implementation plan для PR #232, до начала реализации владелец отдельно подключит Лёву к PR #234.
 
 Задача Лёвы в этом gate: проверить готовый план на полноту причинной цепочки, отсутствие новой compensation chain, соответствие current Stage/invariants и готовность к implementation. Код до этой проверки не начинать.
+
+
+## Pre-implementation plan review — назначено владельцем через Миру
+
+Готовый implementation plan PR #232 зафиксирован в общем `.github/service-channel.md` PR #234 и прошёл Mira + Lira plan review; narrow re-review Лиры — PASS, комментарий `6279272069`.
+
+Задача:
+- независимо проверить готовый план на полноту причинной цепочки;
+- проверить, что четыре confirmed current-Stage defects и compatibility A/B закрываются предложенными переходами;
+- проверить отсутствие новой compensation chain / лишней persistence complexity;
+- проверить preservation publication/read/rebind/cleanup/generation/local-expiry/Simple-DOM invariants;
+- определить, готов ли план к implementation.
+
+Граница:
+- PR #232 не менять;
+- не писать код и не начинать реализацию;
+- новый confirmed current-Stage defect исходного кода сначала вынести владельцу;
+- если проблема только в плане, указать конкретный blocker и требуемое изменение;
+- при чистом результате дать явный PASS для перехода к implementation.
