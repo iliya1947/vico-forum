@@ -172,30 +172,24 @@ Text CAS version и live attachment membership могут изменяться �
 
 ## Этап 2 — статус
 
-Мира подготовила минимальную целевую model proposal без изменения implementation:
+Мира уточнила target model после контрпримеров Лиры; подробный transition proof опубликован в комментарии #234 `6266500015`.
 
-- одна `forum_editor_drafts.version` версионирует весь authoritative snapshot: text + selected attachment manifest;
-- `draftAttachmentIds` становится единственным authoritative selected composition;
-- `forum_attachment_draft_refs` предлагается использовать как generation asset pool/retention, а не как selected composition;
-- attachment include/remove становятся CAS mutations того же draft snapshot;
-- local candidate, server snapshot и terminal head разделяются;
-- context-specific head остаётся видим mutation path даже после display tombstone cutoff;
-- boundaries/provenance удаляются только если replacement proof подтвердит, что snapshot version + retained generation pool полностью закрывают их invariants;
-- новая persistence table и отдельная attachment-version не предлагаются.
+Технически закрыты три design-proof сценария без новой таблицы/registry:
 
-Это пока проект модели, не разрешение на implementation.
+1. bytes upload остаётся параллельным, а include/remove selected manifest сериализуются одной runtime mutation queue;
+2. ordinary text autosave и manifest CAS используют ту же queue; own exact manifest-only transition может безопасно продвинуть base dirty local text, но unseen external head не ребейзится автоматически;
+3. publication/list/download используют authoritative `draftAttachmentIds`; retained pool ref сам по себе не selected/access grant, лишний pool не блокирует subset/text-only publication и очищается после retirement.
 
-## Этап 2 — независимая проверка модели Лирой
+Сохраняются границы модели: одна draft-state `version`, exact manifest как authoritative selected composition, pool отдельно от selection, conflict choice только против exact увиденного server snapshot. Boundaries/provenance удалять разрешается только после отдельного replacement proof.
 
-Лира завершила анализ proposal и сообщила Мире контрпримеры в комментарии #234 `6266330006`. **Это незакрытые design-proof scenarios, не новые подтверждённые current-Stage defects существующей реализации:**
+Остаётся один **продуктовый blocker владельца**: две purely-local/offline копии с одной baseVersion и без server commit каузально несравнимы. Server version не показывает, какая была отредактирована позже; client timestamps между устройствами не authoritative.
 
-1. Параллельное добавление нескольких файлов из `addFiles()` с общей CAS base: каждый include не может успешно повысить одну версию без безопасного reconciliation.
-2. Два порядка гонки ordinary 60-second text sync и attachment include: dirty local text и chosen files должны сохраниться, не допускается rebase поверх unseen third-device state.
-3. `finishPublishedDraft()` сегодня требует `refs.length === selected.size` и запрещает text-only publication при любом ref; с pool≠selected эти пути должны учитывать authoritative manifest.
-4. Owner «более новый черновик»: серверное упорядочение version не обязательно соответствует времени редактирования offline/local candidate; чисто локальные версии без подтверждённой server base несравнимы по server version.
+Варианты:
+- **A:** автоматически выбирать «более новый» только когда порядок доказуем; для несравнимых purely-local copies показывать explicit conflict;
+- **B:** считать client `editedAt` источником порядка и автоматически выбирать больший timestamp, принимая clock skew как часть semantics.
 
-Новая таблица, дополнительная version или ещё один compensation layer не считаются решением по умолчанию. Existing safeguards сохраняются до доказанного replacement.
+Implementation #232 остаётся STOP до решения владельца.
 
 ## Следующий шаг
 
-Мира проверяет четыре контрпримера и уточняет/обосновывает model transitions, прежде чем предлагать implementation. Если возникает необходимый продуктовый выбор, его выносят разработчику; новых current-Stage defects при этой проверке не подтверждено. **Implementation PR #232 остаётся STOP.** Лёву не подключать без прямой команды владельца.
+Разработчик выбирает семантику для causal-incomparable purely-local/offline copies: вариант A (explicit conflict) или B (client `editedAt` ordering). После выбора Мира фиксирует окончательную target model и передаёт её Лире на последний design gate. Implementation #232 до этого не менять.
