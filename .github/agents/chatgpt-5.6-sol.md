@@ -2,16 +2,24 @@
 
 ## Текущий статус
 
-Owner принял технический план Лёвы для пересмотра repeated patch-chain PR #232. Старый bounded correction plan отменён. Implementation STOP.
+Этап 1 принятого плана Лёвы завершён без изменения implementation PR #232.
 
-Подтверждены четыре current-Stage defect:
-1. stale in-memory draft может обойти 30-day expiry;
-2. attachment-first после hidden aged terminal получает 409;
-3. `chooseVersion` может сочетать stale selected payload со свежим unseen CAS version;
-4. programmatic Simple paste может остаться несинхронизированным с active DOM и потеряться при следующем input.
+Зафиксированы:
+- authoritative text/CAS model;
+- local/runtime draft state;
+- local-vs-server conflict flow;
+- attachment layers: live refs, payload manifest, provenance, boundaries, generation redirects/retirement, edit snapshots;
+- state transitions upload/delete/save/resolve/rebind/finish/expiry/cleanup;
+- invariants следующего архитектурного этапа.
 
-Архитектурный root issue: text version и attachment composition не имеют одной однозначной version model; существующая chain compensation требует пересмотра до новых fixes.
+Подтверждена исходная проблема модели: text version и live attachment membership могут изменяться независимо между text saves; существующие compensation layers закрывают реальные последствия этого разрыва и не должны удаляться без доказанной замены.
+
+Новых подтверждённых current-Stage defects сверх известных четырёх на этапе 1 не выявлено.
+
+## Owner gate
+
+По прямому решению владельца любой новый подтверждённый current-Stage defect сначала передаётся владельцу на разбор. До его решения correction/implementation по этому дефекту не начинается.
 
 ## Следующая задача
 
-Этап 1 плана Лёвы: без изменения implementation зафиксировать current invariants, воспроизведения и карту conflict/attachment state transitions. После завершения этапа — STOP.
+STOP. После команды владельца — этап 2: спроектировать минимальную целевую version/conflict/attachment model без изменения implementation.
