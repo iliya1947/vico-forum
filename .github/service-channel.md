@@ -198,9 +198,22 @@ Text CAS version и live attachment membership могут изменяться �
 
 Implementation #232 остаётся STOP до финального design gate.
 
+## Финальный independent design gate — результат Лиры
+
+Лира проверила окончательную модель, включая решение владельца о ручном выборе несравнимых offline/local копий, и опубликовала заключение в комментарии #234 `6271010426`.
+
+**PASS для подготовки implementation plan; НЕ разрешение начинать implementation.** Прежние четыре архитектурных контрпримера закрыты на уровне transition-модели, дополнительных DB tables/versions/registries не требуется как обязательных элементов. Проверка не была runtime/DB/Chromium прогоном.
+
+В будущую bounded implementation acceptance включить ещё два обязательных перехода, не являющихся новыми дефектами текущего кода:
+
+1. Существующие черновики с отсутствующим `draftAttachmentIds` (legacy/unestablished) нельзя прочитать как explicit `[]` при переходе на manifest-only selection. Проверить корректное безопасное превращение в authoritative selected set без потери сохранённых attachments и без смешения с `retainedAttachmentIds`.
+2. Upload bytes + retention pool ACK не равен CAS ACK о включении в selected manifest. UI обязан сохранять pending/error и блокировать публикацию до подтверждённой selected attachment mutation; проверить upload→immediate Publish и ambiguous/lost CAS ACK.
+
+Нельзя удалять boundaries/provenance до replacement regression proof и начинать работу в #232 до готового принятого технического плана.
+
 ## Следующий шаг
 
-Лира выполняет последний independent design gate окончательной target model: проверяет ранее найденные multi-upload, autosave↔attachment CAS, publication/access и offline-ordering transitions; ищет скрытую необходимость нового compensation layer и подтверждает либо отклоняет готовность модели к implementation planning. PR #232 не менять.
+Мира готовит и согласует минимальный bounded implementation plan по принятой target model и compatibility/acceptance A/B, с доказательством сохранения действующих инвариантов. После этого — STOP и следующий этап только по команде владельца. Implementation PR #232 неизменен. Мишаня только после общего clean result независимых whole-PR проверок; Лёва без прямой owner command не подключается.
 
 
 ## Owner gate: проверка готового плана Лёвой перед implementation
