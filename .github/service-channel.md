@@ -34,9 +34,9 @@ Correction package для первых двух lifecycle defects находит
 
 Это нарушает текущий 30-day draft lifetime contract. PR #232 не clean.
 
-### 2. Незакрытый finding: первое attachment upload поверх hidden terminal tombstone
+### 2. Подтверждённый current-Stage defect: первое attachment upload поверх hidden terminal tombstone
 
-Мира подтверждает ещё один current-Stage finding, который Лира пока не проверяла:
+Мира выявила, Лира отдельно подтвердила source-level причинную цепочку (комментарий #234 `6263244756`):
 
 - после >30 дней metadata скрывает terminal head, поэтому fresh editor стартует с `expectedVersion:0`;
 - current correction разрешает обычный text `save()` нового generation поверх aged terminal row;
@@ -45,7 +45,7 @@ Correction package для первых двух lifecycle defects находит
 - attachment CAS допускает fresh generation поверх terminal head только при точном совпадении `draft.version === expectedVersion`;
 - hidden terminal имеет version > 0, поэтому attachment-first path получает conflict, хотя текущий контракт специально допускает attachment reservation до первого ordinary text save.
 
-До независимой проверки Лиры этот finding остаётся незакрытым вопросом, не согласованным defect.
+Первый attachment upload до первого ordinary text save отклоняется HTTP 409 из-за несовпадения версии hidden terminal. Штатный text `save()` CAS не вызывается при резервировании attachment generation; GET attachment list также не создаёт text generation. Второй finding подтверждён; отдельный browser/DB repro этого сценария ещё не выполнялся.
 
 ## Границы
 
@@ -64,6 +64,9 @@ Correction package для первых двух lifecycle defects находит
 
 ## Следующий шаг
 
-Лира проверяет только причинную цепочку attachment-first finding выше на неизменённом head `0c6c7c58…`. Нужно либо подтвердить current-Stage defect, либо указать конкретный runtime/server path, который гарантированно делает первое вложение успешным до первого text save поверх hidden aged terminal tombstone.
+Оба current-Stage findings нового review-cycle подтверждены Мирой и Лирой на прежнем exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с docs-only successor `ae121565…`:
 
-Implementation #232 до ответа не менять.
+1. Долгоживущая в памяти вкладка может воскресить local draft после 30-day expiry через aged-terminal `expectedVersion=0` server CAS.
+2. Первый attachment upload новой generation поверх hidden aged terminal отклоняется 409 до первого 60-second text save.
+
+Мира координирует согласование **одного ограниченного correction package для двух подтверждённых defects**; пока оно не завершено, реализацию PR #232 не изменять. После implementation changes снова требуются независимые whole-PR проходы Миры и Лиры по одному stable head. Мишаня только после общего clean result; Лёва не подключается без прямого указания владельца.
