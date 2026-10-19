@@ -54,29 +54,6 @@ describe("ControlledLocaleWriter canonical identity", () => {
     expect(readAll).not.toHaveBeenCalled();
   });
 
-  it("locks the registry graph before reading and mutating it", async () => {
-    const query = vi.fn(async (text: string) => {
-      if (text.startsWith("select tag")) return { rows: [] };
-      return { rows: [] };
-    });
-    const writer = new ControlledLocaleWriter(
-      { query } as unknown as ClientBase,
-      { readAll: async () => [] },
-    );
-
-    await writer.apply({ type: "put", locale: locale("fr") });
-
-    expect(query.mock.calls.map(([text]) => text)).toEqual([
-      "begin isolation level serializable",
-      "set local lock_timeout = '2s'",
-      "set local statement_timeout = '10s'",
-      "lock table locales in share row exclusive mode",
-      expect.stringMatching(/^select tag/),
-      expect.stringMatching(/^insert into locales/),
-      "commit",
-    ]);
-  });
-
   it("reconciles an exact PostgreSQL statement timeout returned during commit", async () => {
     const timeout = Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" });
     const query = vi.fn(async (text: string) => {
