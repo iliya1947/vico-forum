@@ -382,6 +382,16 @@ Immediately STOP and report owner before correction if:
 3. До положительного решения Лёвы — **STOP**, implementation PR #232 не менять; новые confirmed current-Stage defects выносить разработчику до correction.
 4. Если Лёва обнаруживает недостаток модели или плана — сначала согласовать изменения, не начинать код. Мишаню к промежуточному review не подключать.
 
+## Pre-implementation gate — готов к проверке Лёвой
+
+Мира проверила завершённый PASS Лиры `6279272069` и готовый план в общем service-channel.
+
+Состояние:
+- план прошёл Mira + Lira design/plan review;
+- новых confirmed current-Stage defects не добавлено;
+- implementation PR #232 остаётся на `ae121565ccedcb7868cba01987e2cde0392b90e9` и не меняется;
+- код до решения Лёвы начинать запрещено.
+
 ## Следующий шаг
 
-**Мира проверяет завершённый PASS Лиры и готовый план в PR #234**, как руководитель процесса согласует следующий handoff и сообщает владельцу о необходимости обязательной pre-implementation проверки Лёвой. Владелец подключает Лёву только после координации Миры. Implementation PR #232 остаётся STOP до проверки Лёвы.
+Лёва независимо проверяет **готовый implementation plan в PR #234** на полноту причинной цепочки, отсутствие новой compensation chain, сохранение current-Stage invariants и готовность к реализации. Проверять именно план; implementation #232 не менять. При недостатке плана — вернуть замечание без кода. При PASS — явно разрешить переход к implementation planning handoff Мишане.
