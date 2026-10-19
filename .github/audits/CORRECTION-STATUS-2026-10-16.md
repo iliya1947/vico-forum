@@ -203,14 +203,15 @@ Production Worker из текущего `PROJECT_STATE.md` не является
 
 ## Следующая рабочая точка
 
-**Audit correction queue завершена. Текущих задач у этого audit-потока нет.**
+Owner-approved audit cleanup открыт отдельным test-only implementation PR #235.
 
-- Package 1 / PR #227 — merged.
-- Package 2 / PR #228 — merged.
-- Package 4 / PR #231 — merged.
-- Package 5 — owner-accepted no-fix / evidence policy.
-- Package 3 / PR #229 — merged.
+Удаляются два избыточных regression tests, ранее добавленных audit-потоком:
 
-AC-01 **не является текущей задачей разработки или этого чата**. Его матрица сохранена выше только как future final acceptance checklist и возвращается в работу лишь по отдельной команде владельца на этапе завершения UI/UX/pre-release.
+1. exact SQL call-order unit test `ControlledLocaleWriter`; обязательный concurrent-writer contract остаётся покрыт реальным deterministic PostgreSQL regression;
+2. code-block preferences `storage`-event regression; обязательные account-scoped persistence/isolation contracts остаются покрыты, а live cross-tab synchronization не является отдельным product contract.
+
+Scope PR #235: только `db/locale-repository.test.ts` и `app/forum/markdown.test.tsx`; product code, schema, migrations, dependencies, workflows и public contracts не меняются.
+
+После green applicable CI — проверить PR #235 как bounded test-only cleanup. AC-01 остаётся future final acceptance checklist и не является текущей задачей разработки.
 
 Чужие product/Editor PR этот audit-поток не координирует и не изменяет.
