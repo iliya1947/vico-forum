@@ -217,6 +217,14 @@ Implementation #232 остаётся STOP до финального design gate.
 
 Это **не утверждённый общий план** до независимой проверки Лиры. Implementation #232 остаётся STOP.
 
+## Проверка candidate implementation plan Лирой
+
+Независимая проверка выполнена на candidate-plan head `d71d374…`, результат в комментарии PR #234 `6271766656`. Общий scope принятой модели и четырёх известных current-Stage дефектов покрыт, но **PASS пока не дан**: Package 1 проверяет локальный 30-day expiry только перед server mutation. Текущий `reserveAttachmentGeneration()` может до этой проверки обновить `ctx.local.editedAt`, как и другие capture/local refresh paths, превратив просроченную копию в «свежую».
+
+Для закрытия уже подтверждённого expiry defect план должен гарантировать: исходный `editedAt` проверяется до любого capture/attachment reserve/local timestamp refresh, использующего старую in-memory copy; просроченное содержимое сначала инвалидируется. Нужен regression: slept >30d runtime → first Attach/capture → stale draft не восстанавливается. Уточнить также, что автоматические owner keep/newer-set rules применяются при одинаковом тексте и не отменяют explicit text conflict.
+
+Это **недостаточное описание коррекции известного дефекта**, не новый confirmed current-Stage finding. Implementation #232 остаётся STOP.
+
 ## Следующий шаг
 
-Лира проверяет candidate implementation plan. При PASS утверждённый plan фиксируется в общем service-channel и передаётся Лёве на обязательный pre-implementation gate. До проверки Лёвы код не начинать.
+Мира точечно уточняет candidate plan по expiry-before-refresh и owner-rule scope. После правки Лира подтверждает готовность плана. Только затем утверждённый plan фиксируется в общем service-channel и передаётся Лёве на обязательный pre-implementation review **до любого кода**. Лёву подключает владелец; пока не подключать.
