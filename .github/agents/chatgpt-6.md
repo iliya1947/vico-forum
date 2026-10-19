@@ -2,19 +2,15 @@
 
 ## Текущий статус
 
-Independent whole-PR review PR #232 на stable head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` завершён. Stale in-memory version-0 finding после отдельной проверки подтверждён как current-Stage defect.
+Оба findings нового review-cycle PR #232 подтверждены Мирой и Лирой на code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` (docs-only successor `ae121565…`).
 
 ## Следующая задача
 
-Передать Мире согласование двух подтверждённых findings текущего review-cycle и определение bounded correction package. До согласования implementation #232 не менять. После исправления новый stable head независимо проверяют Мира и Лира, и только после их общего clean result — финальный Мишаня.
+Выполнить в PR #232 один bounded correction package для двух подтверждённых current-Stage defects:
 
-## Новый review-cycle — подтверждённый finding
+1. Просроченный неизменённый local draft, уже находящийся в памяти открытой вкладки, не должен обходить 30-day expiry и снова сохраняться через aged-terminal path.
+2. Fresh generation после hidden aged terminal должна позволять attachment-first до первого ordinary text save без HTTP 409.
 
-Stale in-memory `baseVersion:0` runtime может пережить 30-day local expiry и пройти aged-terminal server exception, воскресив stale draft. Самостоятельная source-level проверка причинной цепочки опубликована в комментарии #234 `6263085921`. Finding считается current-Stage defect.
+Сохранить действующие защиты от stale/retired generation и реальных CAS-конфликтов. Добавить targeted regressions на оба сценария, выполнить применимые checks и обновить factual project state/docs только по факту выполненного. Не расширять scope.
 
-
-## Проверка attachment-first / hidden terminal — 2026-10-19
-
-- Независимо сверены `metadata() / checkRemote()` → UI GET `/api/attachments` → `reserveAttachmentGeneration()` → `startUpload()` → `POST /api/attachments` → `store.createDraftAttachment()` → `assertAttachmentMutationVersion()` на immutable code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70`.
-- Для скрытого `terminal.version > 0` fresh editor получает no-head/`expectedVersion=0`, GET attachments не создаёт text draft, `reserveAttachmentGeneration` создаёт только local copy, upload передаёт `draftId=new, version=0`. Server attachment CAS отвергает version mismatch и отвечает HTTP 409. `save()`-exception для old terminal не вызывается.
-- **Подтверждён current-Stage defect** по source-level trace; отдельный native Chromium/PostgreSQL repro не выполняла. Ответ для согласования в комментарии служебного PR `6263244756`. Implementation #232 не менялась; STOP.
+После фиксации нового stable exact head — STOP; следующий этап — новый независимый whole-PR review Миры и Лиры. Мишаню до общего clean result не подключать.
