@@ -64,9 +64,11 @@ Correction package для первых двух lifecycle defects находит
 
 ## Следующий шаг
 
-Оба current-Stage findings нового review-cycle подтверждены Мирой и Лирой на прежнем exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с docs-only successor `ae121565…`:
+Лира выполняет один bounded correction package в PR #232 для двух подтверждённых current-Stage defects нового review-cycle:
 
-1. Долгоживущая в памяти вкладка может воскресить local draft после 30-day expiry через aged-terminal `expectedVersion=0` server CAS.
-2. Первый attachment upload новой generation поверх hidden aged terminal отклоняется 409 до первого 60-second text save.
+1. 30-day expiry должен применяться и к уже загруженному в память local draft: просроченный неизменённый draft не должен уходить в следующий server save и не должен воскресать через aged-terminal path.
+2. Fresh generation после hidden aged terminal должна поддерживать attachment-first до первого ordinary text save без 409, сохраняя существующие защиты от stale/retired generation и реальных CAS-конфликтов.
 
-Мира координирует согласование **одного ограниченного correction package для двух подтверждённых defects**; пока оно не завершено, реализацию PR #232 не изменять. После implementation changes снова требуются независимые whole-PR проходы Миры и Лиры по одному stable head. Мишаня только после общего clean result; Лёва не подключается без прямого указания владельца.
+Критерии готовности: оба сценария покрыты targeted regressions; применимые checks зелёные; фактическое состояние документации/PROJECT_STATE обновлено только по реально выполненным проверкам; никаких несвязанных изменений.
+
+После нового stable implementation head — STOP. Затем Мира и Лира выполняют новый независимый whole-PR review одного exact head. Мишаню не подключать до общего clean result; Лёву не подключать без прямого указания владельца.
