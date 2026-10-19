@@ -97,6 +97,70 @@ Attachment composition и text version сейчас не образуют одн
 - Мишаню не подключать к промежуточному defect-discovery циклу; финальный whole-PR review только после clean result Миры и Лиры.
 - Лёву повторно подключать только по прямой команде владельца.
 
+## Owner gate для новых дефектов
+
+По прямому решению владельца от 2026-10-19 любой новый defect/finding, который после диагностики считается реальным current-Stage дефектом, **сначала выносится владельцу на разбор**. До решения владельца correction не проектируется как принятый и implementation не начинается. Это правило имеет приоритет над прежней автоматической цепочкой «finding → correction».
+
+## Этап 1 завершён — карта текущей модели
+
+### Text draft / CAS
+
+- На сервере один authoritative row на `owner + context`: `draftId` generation, монотонная `version`, `status`, payload.
+- Local/runtime copy хранит собственный `draftId`, `baseVersion`, `syncedEditedAt` и optional `attachmentDraftId`.
+- Обычный text save раз в 60 секунд делает CAS относительно `baseVersion`.
+- Terminal generation остаётся tombstone; после 30 дней terminal row скрывается из display metadata, но физически может оставаться.
+- #232 добавил aged-terminal exception, позволяющий fresh generation с `expectedVersion=0` заменить hidden terminal row.
+
+### Conflict model
+
+- Настоящий server conflict использует server metadata/content snapshot.
+- Storage-event от другой local tab сейчас может быть превращён в объект `Conflict`, где другая local copy одновременно представлена как `server` и `localCandidate`.
+- `chooseVersion` отвечает за явный выбор, server CAS/resolve и последующую attachment reconciliation.
+- Подтверждённый defect №3 возникает именно из смешения ролей: fresh server version может быть перечитан отдельно от payload, который пользователь выбирал.
+
+### Attachment state
+
+Сейчас состояние вложений распределено между несколькими слоями:
+
+1. `forum_attachments` — физический/private object metadata.
+2. `forum_attachment_draft_refs` — текущие live refs конкретной attachment generation.
+3. `draftAttachmentIds` в text payload — выбранный exact manifest, закрепляемый text CAS.
+4. `forum_attachment_draft_contexts` — durable provenance: файл когда-то был допустим в owner/context и может быть восстановлен после опередившего DELETE.
+5. `forum_attachment_draft_boundaries` — immutable pre-mutation membership для конкретной text version; нужен conflict resolve и одновременно удерживает physical object от cleanup.
+6. `forum_attachment_draft_generations` — redirects/retirement generation; поздняя операция проигравшей generation не должна её воскресить.
+7. `forum_attachment_edit_snapshots` — однократная инициализация attachment state при редактировании опубликованного сообщения.
+
+### Основные state transitions
+
+1. **Local edit → text save:** local payload меняется; через обычный cycle CAS продвигает text version. Если payload содержит `draftAttachmentIds`, server приводит live refs к этому manifest и очищает boundaries.
+2. **Upload:** client локально резервирует generation и отправляет attachment с текущей text `expectedVersion`; server при exact active version сначала фиксирует boundary, затем создаёт object/provenance/live ref. Client после успеха обновляет local manifest, который попадёт в следующий text save.
+3. **Delete:** та же version fence/boundary; live ref удаляется немедленно, local manifest затем обновляется для следующего text CAS.
+4. **Explicit conflict resolve:** при exact active server version server получает/создаёт boundary, атомарно продвигает text CAS и приводит live refs к выбранному manifest; затем boundary очищается.
+5. **Generation rebind:** только после успешного text CAS выбранные refs переносятся source → current target; source generation получает redirect и её оставшиеся refs удаляются.
+6. **Finish/delete/expiry:** text generation становится terminal и attachment generation retired. Direct finish/delete очищают boundary; expiry-path требует отдельного cleanup-release.
+7. **Cleanup:** сначала снимает obsolete boundaries, затем удаляет stale refs/закрывает attachment-only generations; physical object можно claim/delete только когда нет draft refs, published refs и boundary retention.
+
+### Установленное противоречие текущей модели
+
+Text CAS version и live attachment membership могут изменяться независимо между text saves. Поэтому одна и та же text version сама по себе не определяет текущий live set файлов. `draftAttachmentIds`, provenance и boundary snapshots компенсируют разные последствия этого разрыва.
+
+Это и есть подтверждённая точка архитектурного пересмотра. Существующие слои нельзя считать автоматически лишними: каждый пока закрывает конкретный race/recovery/retention case и может удаляться только после доказанной замены.
+
+### Зафиксированные invariants для следующего этапа
+
+- выбор пользователя относится к конкретной увиденной server base/version;
+- unseen server state нельзя затереть старым выбранным payload;
+- выбранная версия должна иметь однозначный attachment composition;
+- upload bytes может происходить независимо от 60-second text save, включая attachment-first;
+- файл удерживается, пока нужен active/selected state или незавершённому conflict resolution;
+- terminal/retired generation не воскресает поздней mutation;
+- unchanged local draft старше 30 дней не восстанавливается;
+- programmatic Markdown command синхронизирует source, active visual DOM и selection;
+- native input и programmatic editor command имеют разные ownership semantics;
+- ordinary text autosave остаётся раз в 60 секунд.
+
+Новых подтверждённых current-Stage defects сверх уже записанных четырёх на этапе 1 не выявлено.
+
 ## Следующий шаг
 
-Этап 1: зафиксировать current model/invariants и карту conflict + attachment state transitions без изменения implementation. После результата — STOP перед переходом к проектированию целевой модели.
+STOP после этапа 1. После отдельной команды владельца перейти к этапу 2: спроектировать минимальную целевую version/conflict/attachment model поверх установленных invariants, без implementation и без добавления новых persistence layers без доказанной необходимости.
