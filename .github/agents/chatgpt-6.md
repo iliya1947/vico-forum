@@ -6,10 +6,9 @@ Applicable browser/runtime prerequisite PR #232 закрыт Мишаней на
 
 ## Следующая задача
 
-Выполнить в PR #232 один bounded correction package для двух согласованных current-Stage defects: attachment boundary после 30-day expiry и hidden terminal tombstone, блокирующий новое поколение после metadata cutoff.
+Выполнить новый independent whole-PR review PR #232 на exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9`.
 
-Не расширять scope. Добавить targeted regressions для обеих причинных цепочек, выполнить применимые checks и обновить фактический project state. После завершения записать exact head/evidence в #234 и STOP.
-
+Проверить весь заданный scope против исходной задачи, текущего Stage и source-of-truth. Findings Миры не использовать как evidence и не запрашивать до окончания собственного прохода. Implementation во время review не менять. После завершения сообщить результат разработчику и STOP.
 
 ## Вторая независимая whole-PR проверка #232 — статус
 
