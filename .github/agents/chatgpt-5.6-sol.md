@@ -17,3 +17,11 @@
 ## Следующая задача
 
 Дождаться bounded correction package Лиры в PR #232. После фиксации нового stable exact head провести новый независимый whole-PR review только после завершения реализации и применимых checks. Мишаню не подключать до clean result Миры и Лиры.
+
+
+## Новый review-cycle после correction package — 2026-10-19
+
+- Independent whole-PR review нового stable code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9` завершён.
+- Implementation во время проверки не менялась.
+- Findings по review-isolation сообщены только разработчику в текущем чате и до завершения независимого прохода Лиры в служебный PR не раскрываются.
+- Следующий gate — независимый whole-PR review Лиры того же stable implementation.
