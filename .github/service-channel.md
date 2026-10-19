@@ -185,6 +185,17 @@ Text CAS version и live attachment membership могут изменяться �
 
 Это пока проект модели, не разрешение на implementation.
 
+## Этап 2 — независимая проверка модели Лирой
+
+Лира завершила анализ proposal и сообщила Мире контрпримеры в комментарии #234 `6266330006`. **Это незакрытые design-proof scenarios, не новые подтверждённые current-Stage defects существующей реализации:**
+
+1. Параллельное добавление нескольких файлов из `addFiles()` с общей CAS base: каждый include не может успешно повысить одну версию без безопасного reconciliation.
+2. Два порядка гонки ordinary 60-second text sync и attachment include: dirty local text и chosen files должны сохраниться, не допускается rebase поверх unseen third-device state.
+3. `finishPublishedDraft()` сегодня требует `refs.length === selected.size` и запрещает text-only publication при любом ref; с pool≠selected эти пути должны учитывать authoritative manifest.
+4. Owner «более новый черновик»: серверное упорядочение version не обязательно соответствует времени редактирования offline/local candidate; чисто локальные версии без подтверждённой server base несравнимы по server version.
+
+Новая таблица, дополнительная version или ещё один compensation layer не считаются решением по умолчанию. Existing safeguards сохраняются до доказанного replacement.
+
 ## Следующий шаг
 
-Лира независимо проверяет proposal этапа 2 на контрпримеры и скрытые compensation requirements. Implementation #232 остаётся STOP.
+Мира проверяет четыре контрпримера и уточняет/обосновывает model transitions, прежде чем предлагать implementation. Если возникает необходимый продуктовый выбор, его выносят разработчику; новых current-Stage defects при этой проверке не подтверждено. **Implementation PR #232 остаётся STOP.** Лёву не подключать без прямой команды владельца.
