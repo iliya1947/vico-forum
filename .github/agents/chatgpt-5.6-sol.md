@@ -208,3 +208,168 @@ Implementation не менять. Передать окончательную ta
 ## Следующая задача
 
 Подготовить минимальный bounded implementation plan по принятой model + compatibility proof A/B. После готового плана — STOP и обязательная pre-implementation проверка Лёвой через PR #234. Код не начинать.
+
+
+## Candidate bounded implementation plan PR #232
+
+Статус: **план готов со стороны Миры, implementation STOP.** Перед pre-implementation gate Лёвы план должен пройти независимую проверку Лиры.
+
+### Scope результата
+
+Исправить четыре подтверждённых current-Stage defect и заменить patch-chain draft/attachments одной согласованной snapshot model:
+
+- stale in-memory draft не обходит 30-day expiry;
+- first attachment после hidden terminal работает до ordinary text autosave;
+- conflict choice никогда не применяет stale payload к unseen fresh CAS version;
+- programmatic Simple edit не расходится с active visual DOM;
+- одна authoritative draft version однозначно определяет text + selected attachment manifest;
+- physical attachment pool отделён от selected composition;
+- существующие защитные слои снимаются только после доказанной замены.
+
+Не добавлять Stage 6 work, косметику, отдельную attachment-version или новую persistent registry/table без установленной необходимости.
+
+### Package 1 — authoritative draft snapshot и head contract
+
+Результат:
+
+- `forum_editor_drafts.version` является CAS version всего authoritative selected snapshot: generation/status + text payload + exact `draftAttachmentIds`;
+- context-specific mutation/head read возвращает authoritative generation/version/status независимо от display metadata cutoff;
+- fresh generation после hidden terminal использует реальную terminal base, а не выдуманный `0`;
+- aged-terminal `expectedVersion=0` exception удаляется, когда новый head path доказан;
+- local draft старше 30 дней повторно проверяется непосредственно перед любой server mutation и не может воскреснуть из long-lived runtime.
+
+Legacy compatibility:
+- `draftAttachmentIds === undefined` остаётся отличим от explicit `[]`;
+- первый переход legacy/unestablished state к authoritative manifest выполняется атомарно под существующей owner/context serialization и не теряет текущие valid draft refs;
+- `retainedAttachmentIds` сохраняет только post-edit legacy semantics и не становится новым general manifest.
+
+Readiness:
+- targeted client/server/database regressions для hidden terminal, fresh generation, long-lived local expiry и legacy undefined→authoritative transition;
+- explicit `[]` остаётся пустым.
+
+### Package 2 — ordered snapshot mutations и conflict semantics
+
+Результат:
+
+- в одном editor runtime все committed draft-snapshot mutations проходят через одну ordering boundary: ordinary text save, attachment include/remove и explicit conflict resolution;
+- bytes transfer в эту очередь не входит;
+- local current, local candidate, immutable seen server snapshot и terminal head представлены раздельно;
+- user choice применяется только к exact server snapshot/version, которую пользователь видел;
+- если server head изменился — старый choice не rebased, conflict обновляется;
+- own successful manifest-only transition может продвинуть known base dirty local text только при доказанном exact before/after результате; third-device change всегда остаётся conflict;
+- causal-incomparable offline/local copies используют owner-approved manual fallback;
+- same-file remove-vs-retain сохраняет файл; доказуемо более новый authoritative snapshot определяет просто разные attachment sets.
+
+Readiness:
+- unsaved/version-0 local conflict;
+- terminal/new-generation conflict;
+- third-device A/B/C scenario: unseen C не затирается выбором B;
+- dirty text ↔ own attachment mutation в обеих очередностях;
+- two local/offline candidates без ordering показывают manual conflict;
+- lost response/повторный выбор не закрывает conflict без authoritative подтверждения.
+
+### Package 3 — attachment pool vs selected manifest
+
+Результат:
+
+- physical upload создаёт verified asset + generation retention/pool state, но сам по себе не делает файл selected;
+- `draftAttachmentIds` — единственный authoritative selected composition;
+- include/remove selected composition — CAS mutation draft snapshot;
+- parallel byte uploads допустимы, selected-manifest mutations сериализуются и могут coalesce desired state;
+- upload/pool ACK и selected-manifest ACK различаются в UI: файл publishable только после authoritative include confirmation или idempotent reconciliation;
+- ambiguous/lost include ACK разрешается authoritative snapshot read, без нового registry;
+- remove исключает файл из selected manifest, но physical pool может удерживать его до terminal/retirement для conflict/recovery;
+- late mutation retired/losing generation не меняет winner.
+
+Readiness:
+- multi-upload A/B → последовательный authoritative manifest без silent loss;
+- upload→immediate Publish остаётся blocked до include ACK;
+- lost include ACK + reload/reconciliation;
+- remove/keep conflict;
+- late upload/delete losing generation;
+- attachment-only draft/publication остаётся поддержан.
+
+### Package 4 — publication, read/access, rebind и cleanup compatibility
+
+Результат:
+
+- publication продвигает только IDs из authoritative selected manifest, для которых существует допустимый verified pool asset;
+- лишние retained pool refs не считаются selected и не блокируют subset/text-only publication;
+- draft list/read/download выдают только manifest-selected assets с допустимым pool ownership;
+- rebind/retirement сохраняют selected winner и закрывают losing generation;
+- terminal/expiry cleanup освобождает retained unselected pool assets;
+- owner/context isolation, stable upload ID, post-edit initialization и publication locks сохраняются.
+
+Readiness:
+- selected {A}, pool {A,B} публикует только A;
+- selected {}, pool {B} допускает text-only publication;
+- unselected B недоступен через draft read/download;
+- post-edit snapshot/rebind не возвращает удалённый file;
+- real PostgreSQL concurrent publication/rebind/expiry/cleanup scenarios проходят.
+
+### Package 5 — replacement proof и удаление compensation chain
+
+Только после PASS Packages 1–4:
+
+Для каждого слоя `forum_attachment_draft_boundaries` и `forum_attachment_draft_contexts` отдельно доказать:
+- какую current invariant он защищает;
+- какой новый invariant/path полностью заменил эту защиту;
+- какие regressions это подтверждают.
+
+Если proof полный:
+- убрать слой из correctness path и связанный compensating cleanup/recovery code;
+- физическое schema removal выполнять только если оно не создаёт дополнительный риск/обход; иначе допускается оставить неиспользуемую pre-release schema до отдельной безопасной миграции, но код не должен зависеть от неё.
+
+Если хотя бы один invariant без слоя не доказан — **STOP**, не добавлять следующий registry/таблицу; вопрос вынести владельцу как новый defect/design blocker.
+
+`forum_attachment_draft_generations` и `forum_attachment_edit_snapshots` не удалять без отдельного доказательства ненужности: они защищают другие lifecycle invariants.
+
+### Package 6 — Simple visual DOM ownership
+
+Отдельный ограниченный correction внутри того же PR:
+
+- Markdown source остаётся authoritative;
+- native input отличается от programmatic editor mutation;
+- suppression source→DOM допускается только для собственного native-input echo, а не просто потому, что leaf focused;
+- programmatic paste/Enter/Undo/Redo/format/restore обязаны обновить active visual DOM и восстановить selection;
+- корректную native table-input paste boundary и уже исправленный cross-leaf Enter сохранить.
+
+Readiness:
+- `Alpha` → programmatic paste `Q` → следующий typing не теряет `Q`;
+- cross-format/cross-leaf selection;
+- Undo/Redo;
+- IME/composition;
+- mode switch/restore;
+- native table-cell paste не перехватывается surface handler.
+
+### Final acceptance до review-cycle
+
+На stable exact head:
+
+1. Targeted component/regression tests всех четырёх confirmed defects + compatibility A/B.
+2. Applicable full application checks: tests, typecheck, lint, build.
+3. Real PostgreSQL: CAS ordering, multi-upload selection, legacy normalization, rebind, publication, expiry/cleanup, late generation requests.
+4. Chromium + local R2/Workers path:
+   - multi-file upload;
+   - upload→immediate Publish blocking/then success;
+   - first attachment after hidden terminal;
+   - cross-tab/third-device conflict;
+   - attachment-only publication;
+   - Simple paste→typing, Undo/Redo, IME/focus;
+   - no regression native table paste/cross-leaf Enter.
+5. Update `docs/EDITOR.md` / `PROJECT_STATE.md` only to factual implemented state and actual evidence.
+6. Only after stable implementation head: Mira + Lira independent whole-PR cycles under owner defect gate. Mishanya remains final whole-PR reviewer only after both clean; Lyova's current required role is the **pre-implementation plan gate before any code**.
+
+### Stop conditions during implementation
+
+Immediately STOP and report owner before correction if:
+- new confirmed current-Stage defect is found;
+- a package requires a new compensation registry/table/version;
+- exact snapshot model cannot preserve an existing lifecycle invariant;
+- removal of boundaries/provenance reveals an uncovered retention/recovery case;
+- implementation scope expands outside Editor 2.0 current Stage.
+
+
+## Следующая задача
+
+Лира независимо проверяет candidate implementation plan на полноту, минимальность, соответствие accepted model и отсутствие новой compensation chain. Implementation #232 не менять. После PASS план переносится в общий service-channel и передаётся Лёве на обязательный pre-implementation gate.
