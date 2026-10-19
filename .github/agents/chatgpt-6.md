@@ -77,3 +77,12 @@ Implementation #232 не менять. Новый confirmed defect исходн�
 2. keep/newer-set attachment rules применяются только при одинаковом тексте; различный text остаётся explicit conflict/manual choice.
 
 Проверить только достаточность этих уточнений для закрытия комментария `6271766656` и, если иных blocker в уже проверенном плане не возникает, дать явный PASS для pre-implementation review Лёвы. Implementation #232 не менять.
+
+
+## Узкий re-review revised implementation plan — PASS (2026-10-20)
+
+- Проверила исправленные Package 1/2 Миры: срок хранения проверяется по **исходному** `ctx.local.editedAt` до `capture`, `reserveAttachmentGeneration`, `noteAttachmentChange`, local persistence/refresh и server mutation; старые payload/generation инвалидируются до обновления timestamp. Добавлен конкретный regression suspended runtime >30d → first Attach/capture → нет воскрешения.
+- Owner keep/newer-attachment-set auto rules явно ограничены **одинаковым competing text**; при отличающемся тексте всегда остаётся explicit conflict/manual choice.
+- Оба замечания комментария `6271766656` устранены без расширения scope или нового компенсационного механизма. Остальной план проверен предыдущим проходом и не менялся.
+- **PASS для обязательного pre-implementation review Лёвы**, не разрешение реализации. Заключение опубликовано в комментарии #234 `6279272069`; полный проверенный план перенесён в общий `.github/service-channel.md` (commit `71ddb46`).
+- PR #232 head `ae121565…` не менялся и остаётся STOP. Следующее действие разработчика — подключить Лёву к PR #234 для проверки плана.
