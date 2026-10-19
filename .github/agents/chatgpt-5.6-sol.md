@@ -187,3 +187,24 @@ Visual leaf различает origin update:
 ## Следующая задача
 
 Implementation не менять. Передать окончательную target model Лире на последний independent design gate.
+
+
+## Финальный design gate Лиры — результат
+
+Лира завершила последний independent design gate окончательной target model и дала **PASS для перехода к implementation planning**, но не к коду.
+
+Четыре прежних model gaps закрыты на уровне переходов:
+1. parallel bytes upload + serial manifest CAS;
+2. dirty text ↔ own attachment mutation через одну runtime mutation queue;
+3. publication/list/download используют authoritative manifest, а pool остаётся retention-only;
+4. causal-incomparable offline/local copies используют owner-approved manual fallback.
+
+Дополнительно в критерии готовности implementation plan обязательны два compatibility proof:
+- legacy/unestablished `draftAttachmentIds === undefined` не трактовать как explicit empty `[]`; переход к authoritative manifest не должен терять существующие attachments;
+- upload/pool ACK не равен selected-manifest ACK: UI считает attachment selected/publishable только после authoritative include CAS или подтверждённой idempotent reconciliation.
+
+Новых confirmed current-Stage defects существующего кода этим design gate не выявлено.
+
+## Следующая задача
+
+Подготовить минимальный bounded implementation plan по принятой model + compatibility proof A/B. После готового плана — STOP и обязательная pre-implementation проверка Лёвой через PR #234. Код не начинать.
