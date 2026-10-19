@@ -68,4 +68,12 @@ Implementation #232 не менять. Новый confirmed defect исходн�
 - В план включить explicit invariant «expiry-from-original-editedAt до любого read/refresh/capture/reserve, который может омолодить ctx.local» и regression для slept >30d runtime → first Attach/capture → old contents never resurrected. Обновлять `editedAt` допустимо только после пригодного срока/нового independent draft.
 - Уточнение без blocker: keep-vs-remove/newer-attachment-set owner rules действуют в случае одинакового текста, а конфликт различного текста остаётся явным выбором.
 - Комментарий PR #234 `6271766656` содержит проверенную причинную цепочку. **Это не новый defect текущего кода, а недостаточное закрытие одного уже подтверждённого дефекта candidate-планом.**
-- PR #232 не менялся; implementation STOP. Следующая задача: Мира правит plan, после этого Лира проверяет узкую правку до передачи Лёве.
+- PR #232 не менялся; implementation STOP.
+
+## Следующая задача — узкий re-review revision
+
+Мира внесла обе требуемые правки plan:
+1. expiry-from-original-`editedAt` проверяется до capture/reserve/noteAttachmentChange/local refresh, с slept >30d → first Attach/capture regression;
+2. keep/newer-set attachment rules применяются только при одинаковом тексте; различный text остаётся explicit conflict/manual choice.
+
+Проверить только достаточность этих уточнений для закрытия комментария `6271766656` и, если иных blocker в уже проверенном плане не возникает, дать явный PASS для pre-implementation review Лёвы. Implementation #232 не менять.
