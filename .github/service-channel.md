@@ -5,87 +5,65 @@
 ## Текущая реализация
 
 - Активный implementation PR: #232 — Editor 2.0 follow-up corrections.
-- PR #215 смержен в `main`; его дальнейшая история здесь не ведётся.
-- Package 3 тестового аудита относится к отдельному рабочему потоку и здесь не координируется.
-- #232 синхронизирован с актуальным `main`.
 - Current PR head: `ae121565ccedcb7868cba01987e2cde0392b90e9`.
-- Exact current code/test head: `0c6c7c58afbdcd65d486e1462e6eca24dc653b70`; successor `ae12156…` меняет только `PROJECT_STATE.md` (запись фактического CI).
-- GitHub Actions #39176074057 на code head: `checks` SUCCESS, `database` SUCCESS. GitHub Actions #39176308478 на current PR head: оба jobs SUCCESS.
-- Предыдущий applicable browser/runtime prerequisite по четырём первоначальным изменениям проведён Мишаней на `36e1306…`. Для двух последующих серверных lifecycle-коррекций зафиксированы targeted PostgreSQL regressions; новый real browser/runtime прогон пока не заявлен.
-- Предыдущие независимые whole-PR проверки Миры и Лиры состоялись на старом head `36e1306…`; для нового stable implementation требуется новый независимый review-cycle.
+- Exact current code/test head: `0c6c7c58afbdcd65d486e1462e6eca24dc653b70`; successor `ae12156…` меняет только `PROJECT_STATE.md`.
+- GitHub Actions #39176074057 на code head: `checks` SUCCESS, `database` SUCCESS. #39176308478 на current head: оба jobs SUCCESS.
+- Independent whole-PR reviews Миры и Лиры этого stable head завершены.
+- Implementation #232 остаётся STOP до согласования всех current-Stage findings нового цикла.
 
-## Текущий пакет #232
+## Ранее исправленные defects
 
-Реализованы коррекции четырёх ранее подтверждённых current-Stage дефектов:
+1. Expired draft оставлял unresolved attachment boundary и мог бессрочно удерживать orphan object.
+2. Hidden terminal tombstone старше metadata window блокировал fresh generation text save.
+3. Simple table-cell paste перехватывался visual surface.
+4. Cross-leaf / cross-block Simple Enter терял native selection.
+5. Version-0 / terminal cross-tab choice не всегда проходил authoritative server transition.
 
-1. cleanup учитывает unresolved attachment boundary и не удаляет нужный conflict winner объект;
-2. Simple table-cell paste остаётся native внутри выбранной ячейки;
-3. unsaved/version-0 и terminal-based cross-tab candidates проходят authoritative server transition вместо некорректного active-draft resolve;
-4. cross-leaf / cross-block Simple Enter использует полный native selection range вместо leaf-end fallback.
+Correction package для первых двух lifecycle defects находится в `0c6c7c5…`; предыдущие UI/client corrections — в составе этого же PR.
 
-## Подтверждённые defects после независимых проверок
+## Findings нового review-cycle
 
-### 1. Expired draft оставляет unresolved attachment boundary
+### 1. Подтверждённый current-Stage defect: stale in-memory version-0 draft обходит 30-day expiry
 
-Обе независимые проверки подтверждают current-Stage defect: version-fenced attachment mutation может создать `forum_attachment_draft_boundaries`, после чего 30-day expiry переводит text draft в terminal state и retire-ит generation, но boundary не очищается. Cleanup #232 теперь считает такой boundary live blocker, поэтому объект без live draft/post refs может удерживаться бессрочно.
+Мира выявила, Лира отдельно подтвердила source-level цепочку:
 
-### 2. Terminal tombstone старше metadata window блокирует новое поколение
+- уже смонтированный runtime может держать unsaved `ctx.local` старше 30 дней без повторной проверки local expiry;
+- terminal generation того же persistent context может за это время выйти за metadata cutoff;
+- возвратившийся stale runtime получает no-head и отправляет `save(... expectedVersion:0)`;
+- aged-terminal exception на server допускает этот новый draft ID и просроченное локальное содержимое снова становится active.
 
-После отдельного согласования Лира подтвердила причинную цепочку Миры:
+Это нарушает текущий 30-day draft lifetime contract. PR #232 не clean.
 
-- terminal `published/deleted` row старше 30 дней остаётся в `forum_editor_drafts`, но скрывается `metadata()`;
-- новый editor instance того же persistent context получает no-head и начинает новую generation с `expectedVersion: 0`;
-- первый server `save()` сталкивается с существующей terminal row с ненулевой version и возвращает `gone`;
-- client после `gone` снова читает только metadata, опять не получает hidden authoritative version и не может установить CAS base для новой generation.
+### 2. Незакрытый finding: первое attachment upload поверх hidden terminal tombstone
 
-Оба defects относятся к текущему Editor draft/attachment lifecycle и должны быть исправлены до clean review-cycle.
+Мира подтверждает ещё один current-Stage finding, который Лира пока не проверяла:
 
-## Незакрытый finding нового review-cycle
+- после >30 дней metadata скрывает terminal head, поэтому fresh editor стартует с `expectedVersion:0`;
+- current correction разрешает обычный text `save()` нового generation поверх aged terminal row;
+- но Attach доступен до первого 60-second text save, и `reserveAttachmentGeneration()` сам server save не выполняет;
+- первый POST attachment уходит с новым draft ID и `expectedVersion:0`;
+- attachment CAS допускает fresh generation поверх terminal head только при точном совпадении `draft.version === expectedVersion`;
+- hidden terminal имеет version > 0, поэтому attachment-first path получает conflict, хотя текущий контракт специально допускает attachment reservation до первого ordinary text save.
 
-После independent whole-PR review нового stable head Лира не сообщила новых confirmed current-Stage defects. Мира подтверждает один finding, который требует отдельного согласования:
-
-### Stale in-memory version-0 draft может обойти 30-day expiry
-
-Server correction для hidden terminal разрешает `expectedVersion: 0` с новым draft ID поверх terminal row старше 30 дней. При этом 30-day local lifetime проверяется только при чтении localStorage; уже живущий runtime `useEditorDraft` не инвалидирует `ctx.local` по возрасту.
-
-Потенциальная цепочка: unsaved/baseVersion-0 вкладка остаётся offline/suspended >30 дней → другая generation того же context становится terminal и выходит за metadata window → stale вкладка возвращается, metadata видит no-head → её старый `expectedVersion:0` save проходит через aged-terminal exception как новая generation. Тогда локальная копия, которая при новом mount была бы отброшена как expired, фактически воскресает.
-
-Finding Миры пока не считается согласованным defect. Лира должна проверить только эту причинную цепочку; implementation остаётся STOP.
+До независимой проверки Лиры этот finding остаётся незакрытым вопросом, не согласованным defect.
 
 ## Границы
 
 - Не расширять #232 до общего Editor refinement, косметики или Stage 6.
-- Не возвращать закрытые findings #215 без нового подтверждённого causal evidence.
-- Если attachment/conflict механизм снова требует повторной переделки или нового компенсирующего слоя, остановиться и заново проверить причину.
-- Owner override для PR #232 от 2026-10-19: Мишаня не участвует в промежуточном defect-discovery цикле. Сначала Мира и Лира самостоятельно доводят implementation до stable head, на котором обе не находят current-Stage defects. Только после этого Мишаня выполняет один финальный whole-PR pre-merge review. Лёва для #232 не подключается без отдельной прямой команды разработчика.
+- Implementation не менять до завершения согласования findings.
+- Мишаню не подключать до stable head без current-Stage findings у Миры и Лиры.
+- Лёву не подключать без отдельной прямой команды разработчика.
 - Merge выполняет только разработчик.
 
 ## Review sequence
 
-Для PR #232 действует прямой owner override от 2026-10-19:
-
 1. Мира и Лира независимо проверяют один stable implementation head.
-2. Их current-Stage findings согласуются; подтверждённые defects исправляются отдельно.
-3. Любое implementation change возвращает PR к новому независимому проходу Миры и Лиры.
-4. Цикл повторяется, пока обе не завершат проверку одного stable exact head без current-Stage findings.
-5. Только после этого Мишаня выполняет один финальный whole-PR pre-merge review.
-6. Если Мишаня находит current-Stage defect, после исправления снова требуется чистый проход Миры и Лиры до следующего финального review Мишани.
-7. При чистом финальном review Мишани PR готов к решению разработчика о merge.
-8. Лёва в review-cycle #232 не входит без отдельной прямой команды разработчика.
-
-## Статус согласованных correction findings
-
-Оба согласованных current-Stage defects выше исправлены в code/test head `0c6c7c5…` и покрыты PostgreSQL regressions:
-
-1. `ForumAttachmentCleanup` получает/снимает obsolete attachment boundaries по owner/context, даже когда live refs уже отсутствуют, при этом active text generations сохраняют boundary protection.
-2. Новый server CAS при `expectedVersion: 0` допускает fresh generation поверх скрытого terminal tombstone лишь когда terminal старше 30-дневного окна; ранее retired draft ID остаётся запрещён.
-
-Изменены только относящиеся к пакету server code, regression tests, `docs/EDITOR.md` и `PROJECT_STATE.md`. Source diff и CI/evidence проверены Лирой; детали в её личном файле #234. **Оба независимых whole-PR прохода на новом head завершены. Результаты ожидают раскрытия и согласования по команде разработчика; implementation STOP.**
-
-## Новый подтверждённый finding текущего Stage — 2026-10-19
-
-После второго независимого цикла Мира выявила, а Лира отдельно подтвердила source-level дефект: long-lived mounted editor сохраняет `ctx.local` дольше 30 дней без повторной проверки срока. Если чужая terminal generation этого же persistent context также вышла за metadata cutoff, следующий `save(draftId=stale, expectedVersion=0)` может пройти исключение для старого tombstone и восстановить просроченное локальное содержимое. Подробная проверка causal chain опубликована Лирой в комментарии #234 `6263085921`. Отдельный длительный browser repro не выполнялся. Считать обе последние независимые проверки **нечистыми**; PR #232 не готов к финальному review или merge.
+2. Findings согласуются; подтверждённые current-Stage defects исправляются отдельным bounded package.
+3. Любое implementation change запускает новый независимый проход Миры и Лиры.
+4. Только после общего clean result Мишаня выполняет один финальный whole-PR pre-merge review.
 
 ## Следующий шаг
 
-Мира координирует согласование подтверждённого current-Stage finding и ограниченного исправления по регламенту. До назначения implementation #232 STOP; Мишаню не подключать до чистого независимого прохода Миры и Лиры.
+Лира проверяет только причинную цепочку attachment-first finding выше на неизменённом head `0c6c7c58…`. Нужно либо подтвердить current-Stage defect, либо указать конкретный runtime/server path, который гарантированно делает первое вложение успешным до первого text save поверх hidden aged terminal tombstone.
+
+Implementation #232 до ответа не менять.
