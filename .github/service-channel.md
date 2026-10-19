@@ -72,4 +72,8 @@
 
 ## Следующий шаг
 
-Мира выполняет первый новый независимый whole-PR review PR #232 на exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9`. Затем Лира делает отдельную независимую whole-PR проверку того же stable implementation. Findings не публикуются до завершения предусмотренных проверок, согласно `AGENTS.md`. Мишаню не подключать до общего clean result обеих; Лёву — только по отдельному прямому указанию владельца.
+Мира завершила первый новый independent whole-PR review PR #232 на stable code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9`. Findings этого прохода остаются только у разработчика и не раскрываются следующему reviewer до завершения независимого цикла.
+
+Следующий reviewer — Лира: выполнить отдельную independent whole-PR проверку того же stable implementation против исходной задачи, текущего Stage и source-of-truth. Не использовать выводы Миры как evidence и не менять implementation во время review. После завершения — STOP.
+
+Мишаню не подключать до общего clean result Миры и Лиры; Лёву — только по отдельному прямому указанию владельца.
