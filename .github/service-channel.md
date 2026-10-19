@@ -40,6 +40,18 @@
 
 Оба defects относятся к текущему Editor draft/attachment lifecycle и должны быть исправлены до clean review-cycle.
 
+## Незакрытый finding нового review-cycle
+
+После independent whole-PR review нового stable head Лира не сообщила новых confirmed current-Stage defects. Мира подтверждает один finding, который требует отдельного согласования:
+
+### Stale in-memory version-0 draft может обойти 30-day expiry
+
+Server correction для hidden terminal разрешает `expectedVersion: 0` с новым draft ID поверх terminal row старше 30 дней. При этом 30-day local lifetime проверяется только при чтении localStorage; уже живущий runtime `useEditorDraft` не инвалидирует `ctx.local` по возрасту.
+
+Потенциальная цепочка: unsaved/baseVersion-0 вкладка остаётся offline/suspended >30 дней → другая generation того же context становится terminal и выходит за metadata window → stale вкладка возвращается, metadata видит no-head → её старый `expectedVersion:0` save проходит через aged-terminal exception как новая generation. Тогда локальная копия, которая при новом mount была бы отброшена как expired, фактически воскресает.
+
+Finding Миры пока не считается согласованным defect. Лира должна проверить только эту причинную цепочку; implementation остаётся STOP.
+
 ## Границы
 
 - Не расширять #232 до общего Editor refinement, косметики или Stage 6.
@@ -72,8 +84,6 @@
 
 ## Следующий шаг
 
-Мира завершила первый новый independent whole-PR review PR #232 на stable code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` с documentation-only successor `ae121565ccedcb7868cba01987e2cde0392b90e9`. Findings этого прохода остаются только у разработчика и не раскрываются следующему reviewer до завершения независимого цикла.
+Лира проверяет causal chain finding «stale in-memory version-0 draft может обойти 30-day expiry», опубликованный в комментарии #234 `6262978103`. Нужно либо подтвердить current-Stage defect, либо указать конкретное runtime/server звено, которое гарантированно предотвращает сценарий.
 
-Лира завершила второй whole-PR/source-level review того же stable implementation. Оба независимых прохода завершены; подробные результаты Миры и Лиры остаются только у разработчика до его команды на раскрытие и согласование согласно AGENTS.md. Реализация PR #232 не менялась.
-
-**Следующий шаг:** Мира координирует решение разработчика о раскрытии результатов и их согласование через служебный PR. До подтверждения общего clean result Мишаню не подключать; Лёву — только по отдельному прямому указанию владельца.
+До ответа implementation #232 не менять. Мишаню не подключать.
