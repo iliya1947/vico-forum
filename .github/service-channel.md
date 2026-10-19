@@ -182,14 +182,22 @@ Text CAS version и live attachment membership могут изменяться �
 
 Сохраняются границы модели: одна draft-state `version`, exact manifest как authoritative selected composition, pool отдельно от selection, conflict choice только против exact увиденного server snapshot. Boundaries/provenance удалять разрешается только после отдельного replacement proof.
 
-Остаётся один **продуктовый blocker владельца**: две purely-local/offline копии с одной baseVersion и без server commit каузально несравнимы. Server version не показывает, какая была отредактирована позже; client timestamps между устройствами не authoritative.
+## Решение владельца: causal-incomparable offline/local copies
 
-Варианты:
-- **A:** автоматически выбирать «более новый» только когда порядок доказуем; для несравнимых purely-local copies показывать explicit conflict;
-- **B:** считать client `editedAt` источником порядка и автоматически выбирать больший timestamp, принимая clock skew как часть semantics.
+Владелец выбрал **B = manual fallback** в формулировке текущего чата.
 
-Implementation #232 остаётся STOP до решения владельца.
+Для purely-local/offline copies без достоверного authoritative ordering:
+- client `editedAt` не используется как authoritative ordering;
+- автоматический winner не выбирается;
+- показывается explicit conflict;
+- пользователь выбирает вручную.
+
+Если authoritative server ordering доказуем, правило «более новый snapshot» применяется штатно. Same-file remove-vs-retain остаётся keep.
+
+Предыдущая буквенная маркировка вариантов в служебном файле была обратной; это решение владельца её явно исправляет.
+
+Implementation #232 остаётся STOP до финального design gate.
 
 ## Следующий шаг
 
-Разработчик выбирает семантику для causal-incomparable purely-local/offline copies: вариант A (explicit conflict) или B (client `editedAt` ordering). После выбора Мира фиксирует окончательную target model и передаёт её Лире на последний design gate. Implementation #232 до этого не менять.
+Лира выполняет последний independent design gate окончательной target model: проверяет ранее найденные multi-upload, autosave↔attachment CAS, publication/access и offline-ordering transitions; ищет скрытую необходимость нового compensation layer и подтверждает либо отклоняет готовность модели к implementation planning. PR #232 не менять.
