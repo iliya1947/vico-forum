@@ -2,73 +2,101 @@
 
 Этот PR — единственный актуальный служебный канал ChatGPT и Codex. Он не merge в `main`.
 
-## Текущая реализация
+## Текущее состояние
 
-- Активный implementation PR: #232 — Editor 2.0 follow-up corrections.
-- Current PR head: `ae121565ccedcb7868cba01987e2cde0392b90e9`.
-- Exact current code/test head: `0c6c7c58afbdcd65d486e1462e6eca24dc653b70`; successor `ae12156…` меняет только `PROJECT_STATE.md`.
-- GitHub Actions #39176074057 на code head: `checks` SUCCESS, `database` SUCCESS. #39176308478 на current head: оба jobs SUCCESS.
-- Independent whole-PR reviews Миры и Лиры этого stable head завершены.
-- Implementation #232 остаётся STOP до согласования всех current-Stage findings нового цикла.
+- Implementation PR: #232 — Editor 2.0 follow-up corrections.
+- Current head: `ae121565ccedcb7868cba01987e2cde0392b90e9`; exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70`.
+- Реализация STOP. Старый план локально исправить два lifecycle defect отменён.
+- По прямому решению владельца Лёва был отдельно подключён для архитектурного разбора repeated patch-chain. Это разовая архитектурная проверка; в обычный review-cycle #232 Лёва автоматически не возвращается.
 
-## Ранее исправленные defects
+## Подтверждённые current-Stage defects
 
-1. Expired draft оставлял unresolved attachment boundary и мог бессрочно удерживать orphan object.
-2. Hidden terminal tombstone старше metadata window блокировал fresh generation text save.
-3. Simple table-cell paste перехватывался visual surface.
-4. Cross-leaf / cross-block Simple Enter терял native selection.
-5. Version-0 / terminal cross-tab choice не всегда проходил authoritative server transition.
+1. Long-lived in-memory local draft может обойти 30-day expiry и воскреснуть через aged-terminal path.
+2. First attachment upload новой generation после hidden aged terminal может получить HTTP 409 до первого ordinary text save.
+3. `chooseVersion` может перечитать только свежий server version и отправить с ним ранее выбранный cached text, затерев невиденную пользователем более свежую server copy.
+4. В Simple mode программный paste меняет Markdown source, но active visual leaf может остаться со старым DOM; следующий native input способен затереть вставленный текст.
 
-Correction package для первых двух lifecycle defects находится в `0c6c7c5…`; предыдущие UI/client corrections — в составе этого же PR.
+## Подтверждённая проблема технического подхода
 
-## Findings нового review-cycle
+Attachment composition и text version сейчас не образуют одну однозначную версионную модель. Независимые attachment mutations потребовали последовательных компенсирующих слоёв: `draftAttachmentIds`, provenance/context evidence, version boundaries, physical retention через boundaries и отдельный boundary-release cleanup.
 
-### 1. Подтверждённый current-Stage defect: stale in-memory version-0 draft обходит 30-day expiry
+Это не означает, что существующие защиты надо удалить: часть закрывает реальные race/data-loss cases. Но repeated compensation уже прошёл порог AGENTS.md «остановиться и пересмотреть причину». Продолжать локальные patch fixes до согласования модели запрещено.
 
-Мира выявила, Лира отдельно подтвердила source-level цепочку:
+## Принятый технический план Лёвы
 
-- уже смонтированный runtime может держать unsaved `ctx.local` старше 30 дней без повторной проверки local expiry;
-- terminal generation того же persistent context может за это время выйти за metadata cutoff;
-- возвратившийся stale runtime получает no-head и отправляет `save(... expectedVersion:0)`;
-- aged-terminal exception на server допускает этот новый draft ID и просроченное локальное содержимое снова становится active.
+### 1. Зафиксировать исходное состояние и invariants
 
-Это нарушает текущий 30-day draft lifetime contract. PR #232 не clean.
+До изменений закрепить воспроизведения подтверждённых дефектов и правила корректности:
+- пользователь выбирает конкретное содержимое относительно известной server version;
+- состав вложений выбранной версии однозначен;
+- файл существует, пока нужен действующей версии или незавершённому выбору;
+- завершённая generation не восстанавливается поздними запросами;
+- программное изменение Markdown сразу согласуется с видимым editor DOM;
+- ordinary text save остаётся раз в 60 секунд;
+- unchanged local draft старше 30 дней не воскресает.
 
-### 2. Подтверждённый current-Stage defect: первое attachment upload поверх hidden terminal tombstone
+### 2. Разделить local conflict и server conflict
 
-Мира выявила, Лира отдельно подтвердила source-level причинную цепочку (комментарий #234 `6263244756`):
+Не представлять другую local copy как `conflict.server`. Явно различать local candidate, server snapshot и terminal head.
 
-- после >30 дней metadata скрывает terminal head, поэтому fresh editor стартует с `expectedVersion:0`;
-- current correction разрешает обычный text `save()` нового generation поверх aged terminal row;
-- но Attach доступен до первого 60-second text save, и `reserveAttachmentGeneration()` сам server save не выполняет;
-- первый POST attachment уходит с новым draft ID и `expectedVersion:0`;
-- attachment CAS допускает fresh generation поверх terminal head только при точном совпадении `draft.version === expectedVersion`;
-- hidden terminal имеет version > 0, поэтому attachment-first path получает conflict, хотя текущий контракт специально допускает attachment reservation до первого ordinary text save.
+Выбор пользователя должен применяться только относительно той server base, которую он видел. Если server head успел измениться, конфликт открывается заново; нельзя подставлять свежий CAS version под старый выбранный payload.
 
-Первый attachment upload до первого ordinary text save отклоняется HTTP 409 из-за несовпадения версии hidden terminal. Штатный text `save()` CAS не вызывается при резервировании attachment generation; GET attachment list также не создаёт text generation. Второй finding подтверждён; отдельный browser/DB repro этого сценария ещё не выполнялся.
+### 3. Согласовать одну модель состава вложений и retention
+
+Сначала составить карту всех writers/readers для `draftAttachmentIds`, live refs, boundaries и provenance.
+
+Целевая модель:
+- upload bytes отделён от включения файла в выбранную версию;
+- composition вложений имеет явную version ownership;
+- выбор победителя атомарно фиксирует text + attachment composition;
+- cleanup использует тот же retention contract;
+- generation transfer сохраняет выбранные файлы и блокирует поздние mutations проигравшей стороны.
+
+Сначала проверить, можно ли выразить модель существующими таблицами/транзакциями. Новая таблица допустима только при доказанной необходимости. Если решение снова требует нового registry для восстановления предыдущего registry — STOP на проектировании.
+
+### 4. Унифицировать terminal-head discovery
+
+Пустой display-list черновиков не должен означать отсутствие server version. Для конкретного context клиент должен получать достаточную authoritative информацию о terminal generation/base даже после metadata cutoff.
+
+Один и тот же base contract должен работать для text save, first upload и следующих attachment mutations. После этого заново оценить необходимость aged-terminal `expectedVersion=0` exception.
+
+### 5. Исправить DOM ownership Simple mode
+
+Различать:
+- native input, где DOM уже изменён браузером;
+- programmatic editor command: paste, Enter, Undo/Redo, formatting, restore.
+
+При programmatic command active leaf тоже обязан синхронизироваться с Markdown source и восстановить selection. Исключение «не переписывать active DOM» относится только к native input.
+
+### 6. Убирать компенсации только после доказанной замены
+
+Для каждого существующего protective layer определить: какое правило он защищал, чем заменён и какой regression это доказывает. Не удалять слой только ради упрощения.
+
+## Acceptance
+
+Перед завершением нужны:
+- component scenarios для conflict/editor behavior;
+- real PostgreSQL для concurrent operations, recovery, expiry и cleanup;
+- Chromium + local R2 для focus/paste/next-input и полного attachment path;
+- applicable full project checks на stable exact head;
+- новый независимый whole-PR review после реализации.
+
+Поведенческие критерии:
+- unseen server version не затирается;
+- выбранные attachments сохраняются;
+- first upload после old tombstone работает;
+- paste не исчезает при следующем вводе;
+- expired unchanged local draft не воскресает;
+- каждый оставшийся protective layer имеет понятную необходимость.
 
 ## Границы
 
-- Не расширять #232 до общего Editor refinement, косметики или Stage 6.
-- Implementation не менять до завершения согласования findings.
-- Мишаню не подключать до stable head без current-Stage findings у Миры и Лиры.
-- Лёву не подключать без отдельной прямой команды разработчика.
-- Merge выполняет только разработчик.
-
-## Review sequence
-
-1. Мира и Лира независимо проверяют один stable implementation head.
-2. Findings согласуются; подтверждённые current-Stage defects исправляются отдельным bounded package.
-3. Любое implementation change запускает новый независимый проход Миры и Лиры.
-4. Только после общего clean result Мишаня выполняет один финальный whole-PR pre-merge review.
+- Полностью переписывать Editor 2.0 оснований нет.
+- Не расширять #232 до unrelated refinement, косметики или Stage 6.
+- Implementation не начинать до согласования модели.
+- Мишаню не подключать к промежуточному defect-discovery циклу; финальный whole-PR review только после clean result Миры и Лиры.
+- Лёву повторно подключать только по прямой команде владельца.
 
 ## Следующий шаг
 
-Лира выполняет один bounded correction package в PR #232 для двух подтверждённых current-Stage defects нового review-cycle:
-
-1. 30-day expiry должен применяться и к уже загруженному в память local draft: просроченный неизменённый draft не должен уходить в следующий server save и не должен воскресать через aged-terminal path.
-2. Fresh generation после hidden aged terminal должна поддерживать attachment-first до первого ordinary text save без 409, сохраняя существующие защиты от stale/retired generation и реальных CAS-конфликтов.
-
-Критерии готовности: оба сценария покрыты targeted regressions; применимые checks зелёные; фактическое состояние документации/PROJECT_STATE обновлено только по реально выполненным проверкам; никаких несвязанных изменений.
-
-После нового stable implementation head — STOP. Затем Мира и Лира выполняют новый независимый whole-PR review одного exact head. Мишаню не подключать до общего clean result; Лёву не подключать без прямого указания владельца.
+Этап 1: зафиксировать current model/invariants и карту conflict + attachment state transitions без изменения implementation. После результата — STOP перед переходом к проектированию целевой модели.
