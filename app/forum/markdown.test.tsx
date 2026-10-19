@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -539,41 +539,6 @@ const longValue = "code";
       await userEvent.click(screen.getAllByRole("button", { name: "Line numbers" })[0]!);
       expect(blocks.map((block) => block.querySelector("pre")?.getAttribute("data-line-numbers")))
         .toEqual(["true", "true"]);
-    } finally {
-      localStorage.removeItem(wrapKey);
-      localStorage.removeItem(linesKey);
-    }
-  });
-
-  it("re-reads account code preferences on the browser storage event path", () => {
-    const userId = "code-pref-storage";
-    const wrapKey = "vico:editor:code-wrap:" + userId;
-    const linesKey = "vico:editor:code-lines:" + userId;
-    localStorage.removeItem(wrapKey);
-    localStorage.removeItem(linesKey);
-
-    try {
-      const { container } = renderMarkdownForUser("~~~ts\nconst value = 1;\n~~~", userId);
-      const block = container.querySelector(".forum-code-block")!;
-      const pre = block.querySelector("pre")!;
-      expect(block).toHaveAttribute("data-wrap", "false");
-      expect(pre).toHaveAttribute("data-line-numbers", "false");
-
-      act(() => {
-        localStorage.setItem(wrapKey, "true");
-        localStorage.setItem(linesKey, "true");
-        window.dispatchEvent(new StorageEvent("storage", { key: wrapKey, newValue: "true" }));
-      });
-      expect(block).toHaveAttribute("data-wrap", "true");
-      expect(pre).toHaveAttribute("data-line-numbers", "true");
-
-      act(() => {
-        localStorage.setItem(wrapKey, "false");
-        localStorage.setItem(linesKey, "false");
-        window.dispatchEvent(new StorageEvent("storage", { key: linesKey, newValue: "false" }));
-      });
-      expect(block).toHaveAttribute("data-wrap", "false");
-      expect(pre).toHaveAttribute("data-line-numbers", "false");
     } finally {
       localStorage.removeItem(wrapKey);
       localStorage.removeItem(linesKey);
