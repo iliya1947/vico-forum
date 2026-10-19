@@ -2,8 +2,21 @@
 
 ## Текущий статус
 
-Не подключён к промежуточному defect-discovery циклу PR #232 по прямому решению владельца.
+По прямой команде владельца выполнен отдельный архитектурный разбор repeated patch-chain PR #232. Вывод и технический план приняты владельцем как новый действующий план. Это не возвращает Лёву автоматически в обычный review-cycle #232.
+
+Подтверждено: проблема не требует полного rewrite Editor 2.0, но локальные fixes должны быть остановлены до согласования version/conflict/attachment model.
+
+## Действующий технический вывод
+
+Text draft version сейчас не определяет однозначно attachment composition. Накопленная compensation chain (`draftAttachmentIds`, provenance/context evidence, boundaries, retention и boundary release) показывает, что механизм прошёл порог обязательного архитектурного пересмотра.
+
+Три дополнительно подтверждённых current-Stage defects:
+1. stale selected payload может быть отправлен с fresh unseen server CAS version;
+2. Simple programmatic paste может быть потерян следующим native input из-за DOM/source ownership split;
+3. attachment-first после hidden aged terminal получает conflict до first text save.
+
+Существующий stale in-memory 30-day expiry defect также остаётся обязательным к закрытию.
 
 ## Следующая задача
 
-Для PR #232 не подключаться без отдельной прямой команды разработчика. По owner override от 2026-10-19 финальный pre-merge review после чистого прохода Миры и Лиры выполняет Мишаня.
+Не подключаться повторно без прямой команды владельца. Новый действующий план записан в общем service-channel.
