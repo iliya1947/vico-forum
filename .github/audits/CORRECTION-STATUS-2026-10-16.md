@@ -201,30 +201,18 @@ Production Worker из текущего `PROJECT_STATE.md` не является
 
 ## Следующая рабочая точка
 
-Test-audit correction queue завершена: Package 3 / PR #229 merged в `main` как `ac4cab4b…`.
+Test-audit correction queue завершена:
 
-AC-01 **не запускается** на текущем `main`, потому что final candidate ещё не стабилен.
-Внешний блокер — draft PR #232 `Editor 2.0 follow-up: remaining current-stage corrections`.
-Его current exact head: `ee267d908c089e8781368a3b6a563f0f1c54eff6`.
-Bounded correction package для четырёх подтверждённых current-Stage дефектов реализован; code/test
-head `36e13068…` прошёл CI #39135879866, а текущий docs-only successor после повторного run
-прошёл CI #39136086360 (`checks` + `database` SUCCESS).
+- Package 1 / PR #227 — merged;
+- Package 2 / PR #228 — merged;
+- Package 4 / PR #231 — merged;
+- Package 5 — owner-accepted no-fix / evidence policy;
+- Package 3 / PR #229 — merged.
 
-Bounded real-browser readiness gate PR #232 на exact head `ee267d908c089e8781368a3b6a563f0f1c54eff6` **завершён** Codex-5.6 Sol без confirmed findings.
+Открытая задача этого audit-потока — только **AC-01 real-runtime browser acceptance** после стабилизации product candidate.
 
-Проверено в Chromium 154 на локальном Cloudflare Workers runtime с disposable PostgreSQL 17 и реальным Better Auth user:
+PR #232 относится к отдельному Editor 2.0 рабочему потоку и для PR #226 является только внешним blocker: пока #232 не завершён и final candidate не стабилен, AC-01 не запускается. PR #226 не координирует review, implementation, findings или handoff PR #232 и не изменяет его.
 
-1. Simple table native paste меняет только выбранную ячейку/source и не перехватывается body paste path.
-2. Native cross-leaf и cross-block selection + Enter заменяет точный выбранный source range.
-3. Две unsaved/version-0 вкладки авторитативно завершают оба варианта выбора через реальный route/storage.
-4. Новая local generation поверх terminal deleted head авторитативно устанавливается как active next version.
+После закрытия внешнего blocker необходимо заново определить stable final candidate revision и только затем выполнять AC-01 по матрице и evidence contract выше.
 
-Implementation #232 во время browser gate не менялась; exact head остаётся `ee267d90…`.
-
-ChatGPT-5.6 Sol завершила первый prescribed independent whole-PR review PR #232 на exact head `ee267d908c089e8781368a3b6a563f0f1c54eff6`. Implementation во время проверки не менялась; detailed review result остаётся у разработчика до завершения prescribed independent checks по правилам `AGENTS.md`.
-
-Следующий gate: ChatGPT-6 независимо проверяет весь scope PR #232 на том же exact head против исходной задачи, текущего Stage и source-of-truth документации, не используя выводы предыдущего reviewer как evidence. Во время review implementation не менять. После завершения — STOP; следующий handoff определяет ChatGPT-5.6 Sol.
-
-После закрытия #232 нужно повторно определить stable candidate revision и только затем перейти
-к actual Worker/runtime acceptance. External deployment/runtime mutation без отдельного явного
-разрешения владельца не выполнять.
+External deployment/runtime mutation без отдельного явного разрешения владельца не выполнять.
