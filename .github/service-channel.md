@@ -68,7 +68,7 @@
 1. `ForumAttachmentCleanup` получает/снимает obsolete attachment boundaries по owner/context, даже когда live refs уже отсутствуют, при этом active text generations сохраняют boundary protection.
 2. Новый server CAS при `expectedVersion: 0` допускает fresh generation поверх скрытого terminal tombstone лишь когда terminal старше 30-дневного окна; ранее retired draft ID остаётся запрещён.
 
-Изменены только относящиеся к пакету server code, regression tests, `docs/EDITOR.md` и `PROJECT_STATE.md`. Source diff и CI/evidence проверены Лирой; детали в её личном файле #234. **Исправления ещё не приняты независимым whole-PR review на новом head. Implementation STOP.**
+Изменены только относящиеся к пакету server code, regression tests, `docs/EDITOR.md` и `PROJECT_STATE.md`. Source diff и CI/evidence проверены Лирой; детали в её личном файле #234. **Оба независимых whole-PR прохода на новом head завершены. Результаты ожидают раскрытия и согласования по команде разработчика; implementation STOP.**
 
 ## Следующий шаг
 
