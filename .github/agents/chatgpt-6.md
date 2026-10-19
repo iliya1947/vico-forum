@@ -59,3 +59,13 @@ PR #232 не менять. Новые confirmed current-Stage defects исход
 - не навязывает ли лишнюю schema/API complexity.
 
 Implementation #232 не менять. Новый confirmed defect исходного кода — сначала владельцу. Если plan чист — явно дать PASS для pre-implementation review Лёвы.
+
+
+## Independent candidate plan review — REQUEST REVISION (2026-10-19)
+
+- Проверила candidate bounded implementation plan Миры на service head `d71d374…` против принятой target model и current implementation #232 `ae121565…`. Scope четырёх current-Stage defects, compatibility A/B, pool/read/publication/retirement/cleanup, owner offline decision и final acceptance покрыт. Это review плана, не code execution.
+- **Один конкретный design blocker до PASS:** Package 1 требует recheck 30-day local expiry «перед server mutation», но в текущем runtime `reserveAttachmentGeneration()` меняет `ctx.local.editedAt` на `now` раньше server mutation; `capture()`/другие операции также могут обновлять timestamp. Если recheck выполнен после этих шагов, просроченный local draft выглядит свежим и подтверждённый expiry defect не устранён.
+- В план включить explicit invariant «expiry-from-original-editedAt до любого read/refresh/capture/reserve, который может омолодить ctx.local» и regression для slept >30d runtime → first Attach/capture → old contents never resurrected. Обновлять `editedAt` допустимо только после пригодного срока/нового independent draft.
+- Уточнение без blocker: keep-vs-remove/newer-attachment-set owner rules действуют в случае одинакового текста, а конфликт различного текста остаётся явным выбором.
+- Комментарий PR #234 `6271766656` содержит проверенную причинную цепочку. **Это не новый defect текущего кода, а недостаточное закрытие одного уже подтверждённого дефекта candidate-планом.**
+- PR #232 не менялся; implementation STOP. Следующая задача: Мира правит plan, после этого Лира проверяет узкую правку до передачи Лёве.
