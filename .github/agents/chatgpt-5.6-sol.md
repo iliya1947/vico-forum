@@ -25,3 +25,10 @@
 - Implementation во время проверки не менялась.
 - Findings по review-isolation сообщены только разработчику в текущем чате и до завершения независимого прохода Лиры в служебный PR не раскрываются.
 - Следующий gate — независимый whole-PR review Лиры того же stable implementation.
+
+
+## Finding нового review-cycle — 2026-10-19
+
+**Current-Stage finding:** correction hidden-terminal CAS разрешает `expectedVersion:0` поверх aged terminal row, но long-lived runtime не инвалидирует уже загруженный `ctx.local` после 30-day cutoff. Поэтому stale unsaved/offline version-0 вкладка может вернуться после >30 дней и воскресить локальный черновик, который при новом mount уже считался бы expired.
+
+Подробная причинная цепочка опубликована для согласования в комментарии #234 `6262978103`. До ответа Лиры implementation не менять.
