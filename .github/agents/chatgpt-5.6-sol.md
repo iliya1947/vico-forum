@@ -156,3 +156,15 @@ Visual leaf различает origin update:
 ## Следующая задача
 
 Независимо проверить эту целевую модель на полноту: попытаться найти сценарий, где она требует новой compensation layer, нарушает owner attachment rules или не покрывает существующий race/data-loss invariant. Implementation не менять.
+
+
+## Результат независимой проверки Лиры
+
+Новых confirmed current-Stage defects исходного кода не заявлено.
+
+Технически закрыты три transition gaps модели:
+1. parallel byte uploads остаются параллельными, manifest CAS сериализуется/coalesce в runtime mutation queue;
+2. text autosave и manifest CAS сериализуются одной queue; собственный successful manifest transition может безопасно продвинуть known base dirty local text без rebase на unseen state;
+3. publication/list/download используют только authoritative manifest, retained pool не считается selected/access-grant.
+
+Остаётся один продуктовый вопрос владельцу: что означает «более новый черновик», когда две offline/local-only копии невозможно достоверно упорядочить между устройствами — server commit order или manual fallback. Implementation STOP.
