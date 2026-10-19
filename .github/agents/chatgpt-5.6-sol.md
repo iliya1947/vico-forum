@@ -168,3 +168,22 @@ Visual leaf различает origin update:
 3. publication/list/download используют только authoritative manifest, retained pool не считается selected/access-grant.
 
 Остаётся один продуктовый вопрос владельцу: что означает «более новый черновик», когда две offline/local-only копии невозможно достоверно упорядочить между устройствами — server commit order или manual fallback. Implementation STOP.
+
+
+## Решение владельца по offline ordering
+
+Владелец выбрал **B = manual fallback** в текущем чате.
+
+Для causal-incomparable purely-local/offline copies:
+- client `editedAt` не используется как authoritative ordering;
+- автоматический winner не выбирается;
+- показывается explicit conflict;
+- пользователь выбирает вручную.
+
+Если authoritative server ordering существует, он может определять «более новый» snapshot. Правило keep для одного и того же файла (removed vs retained) действует независимо.
+
+Предыдущую обратную буквенную маркировку в service-channel считать исправленной этим owner decision.
+
+## Следующая задача
+
+Implementation не менять. Передать окончательную target model Лире на последний independent design gate.
