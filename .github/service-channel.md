@@ -639,6 +639,14 @@ Stable implementation head: `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
 
 Реализацию #232 для подготовки visual evidence не менять. Нужен доступный владельцу exact-head visual preview/evidence существующего UI после удаления draft surfaces (в частности отсутствие My Drafts/discovery/saved-state и нормальное состояние editor/footer), без создания новой ветки без отдельного разрешения владельца. Если доступный preview невозможно предоставить без новой ветки/изменения implementation, зафиксировать это как ограничение, а не обходить gate молча.
 
+## Visual evidence removal head — подготовлено Лёвой
+
+Для exact implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b` подготовлена [галерея в личном файле Лёвы](agents/codex-6.1-sol.md#visual-evidence-для-owner-acceptance--2026-10-20): 7 Chromium screenshots существующего UI-preview (desktop header/editor/footer, Simple/Advanced, reply, Help question, mobile RU, Hebrew RTL). Source head, viewport и время зафиксированы в manifest; implementation #232 не изменён, новой ветки нет.
+
+Это static fixture visual evidence, не доступный backend deployment и не повторный whole-PR review. В существующем Pages workflow есть ручной запуск на текущей ветке, но автоматическая проверка разрешений отклонила его как неавторизованную внешнюю публикацию. Deployment не состоялся; выбран безопасный путь со скриншотами в service PR. Интерактивный Pages preview при необходимости потребует отдельного явного разрешения владельца.
+
+Owner visual acceptance по-прежнему не получен. CI/runtime evidence реализации не подменяется статическими screenshots; старые review/acceptance не переносятся.
+
 ## Текущий следующий шаг
 
-Лёва проверяет PR #234 и подготавливает owner-viewable visual acceptance evidence для exact head #232 без изменения implementation; если это невозможно в текущих границах — сообщает точное ограничение.
+Владелец просматривает подготовленную галерею и подтверждает visual acceptance либо сообщает замечания. Затем Мира координирует новый independent whole-PR cycle. Пока review не запускался; Мишаню не подключать. Merge только владельцем.

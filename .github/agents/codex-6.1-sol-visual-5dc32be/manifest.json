@@ -1,0 +1,65 @@
+{
+  "head": "5dc32be046b5cb5dc7029d0371137308bc2ef55b",
+  "capturedAt": "2026-10-20T14:56:07.059Z",
+  "source": "Existing app/ui-preview on unchanged implementation head; synthetic fixtures; no backend publication/upload evidence implied.",
+  "browser": "154.0.8037.57",
+  "records": [
+    {
+      "file": "01-topic-desktop.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-create-topic&identity=user",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      }
+    },
+    {
+      "file": "02-topic-simple.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-create-topic&identity=user",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      }
+    },
+    {
+      "file": "03-topic-advanced.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-create-topic&identity=user",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      }
+    },
+    {
+      "file": "04-reply.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-reply&identity=user",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      }
+    },
+    {
+      "file": "05-help-question.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-help-draft&identity=user",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      }
+    },
+    {
+      "file": "06-topic-mobile-ru.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-create-topic&identity=user",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "07-topic-hebrew-rtl.png",
+      "url": "http://127.0.0.1:5182/?embed=1&scenario=editor-create-topic&identity=user",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      }
+    }
+  ],
+  "pageErrors": []
+}

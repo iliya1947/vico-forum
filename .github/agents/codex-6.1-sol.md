@@ -1,5 +1,47 @@
 # Лёва — Codex-6.1 Sol
 
+## Visual evidence для owner acceptance — 2026-10-20
+
+По назначению Миры [6293327413](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6293327413) подготовлены скриншоты существующего `app/ui-preview` с неизменённого exact implementation head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**. Исходники/ветка #232 не менялись; новая ветка не создавалась.
+
+Это статические представительные fixtures в настоящем Chromium, не live backend preview. Они показывают header без My Drafts, editor/footer без saved/recovery UI, Simple/Advanced и локализованные layouts. Upload/publication/permissions здесь повторно не проверялись: отдельные runtime evidence остаются в [итоге реализации](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6292445730). Идентичность source head, Chromium version, viewport/URLs и время записаны в [manifest](codex-6.1-sol-visual-5dc32be/manifest.json). Browser page errors отсутствовали.
+
+### Галерея для владельца
+
+1. Desktop: header, создание темы, editor и footer.
+
+![Desktop: создание темы](codex-6.1-sol-visual-5dc32be/01-topic-desktop.png)
+
+2. Simple после ввода с начальным пробелом; Attach/Cancel/Create topic.
+
+![Simple](codex-6.1-sol-visual-5dc32be/02-topic-simple.png)
+
+3. Advanced с тем же текстом в открытом editor.
+
+![Advanced](codex-6.1-sol-visual-5dc32be/03-topic-advanced.png)
+
+4. Ответ в теме.
+
+![Ответ](codex-6.1-sol-visual-5dc32be/04-reply.png)
+
+5. Help question с открытой формой и similar questions.
+
+![Help question](codex-6.1-sol-visual-5dc32be/05-help-question.png)
+
+6. Мобильный viewport 390px, русский интерфейс.
+
+![Мобильный вид](codex-6.1-sol-visual-5dc32be/06-topic-mobile-ru.png)
+
+7. Hebrew / RTL, desktop.
+
+![Hebrew RTL](codex-6.1-sol-visual-5dc32be/07-topic-hebrew-rtl.png)
+
+### Граница результата
+
+Owner visual acceptance **не получен**; independent whole-PR review не запущен. В существующем Pages workflow есть `workflow_dispatch`, поэтому новая ветка технически не нужна. Однако автоматическая проверка разрешений отклонила попытку запуска: публикация preview по внешнему Pages-адресу не была явно разрешена; предложена безопасная альтернатива в виде локальных скриншотов. Deployment не состоялся, отказ не обходился. Для текущего результата использованы именно скриншоты, опубликованные только как evidence служебного PR. Если владелец потребует интерактивный Pages preview, понадобится отдельное явное разрешение на этот deployment. Production/данные/секреты не затрагивались.
+
+Следующий шаг — владелец просматривает галерею и сообщает visual acceptance либо замечания. После acceptance Мира координирует новый review cycle; старые review не переносятся.
+
 ## Текущий статус
 
 Owner назначил Лёву исполнителем removal scope; реализовано и опубликовано в существующем #232: **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**. [Итог](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6292445730).
