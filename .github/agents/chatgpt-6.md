@@ -86,3 +86,16 @@ Implementation #232 не менять. Новый confirmed defect исходн�
 - Оба замечания комментария `6271766656` устранены без расширения scope или нового компенсационного механизма. Остальной план проверен предыдущим проходом и не менялся.
 - **PASS для обязательного pre-implementation review Лёвы**, не разрешение реализации. Заключение опубликовано в комментарии #234 `6279272069`; полный проверенный план перенесён в общий `.github/service-channel.md` (commit `71ddb46`).
 - PR #232 head `ae121565…` не менялся и остаётся STOP. Следующее действие разработчика — подключить Лёву к PR #234 для проверки плана.
+
+
+## Независимый whole-PR review #232 — назначение
+
+Implementation PR #232 находится на stable exact head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; applicable CI exact head green.
+
+Задача: провести **независимый whole-PR review** всей реализации #232 против исходной задачи, текущего Stage, актуального `main`, source-of-truth документации и принятого snapshot/CAS плана. Не ограничиваться тестами или отдельными изменёнными файлами; проверить существенные causal chains и current-Stage invariants, включая draft lifecycle, conflict semantics, attachment selection/pool/publication/access/cleanup, migration compatibility и Simple DOM behavior.
+
+Результаты предыдущего whole-PR review Миры намеренно не передаются и не должны использоваться как исходная гипотеза. Сформировать собственные findings с нуля.
+
+Во время review #232 не менять. Первый finding review не завершает. Возможные проблемы сначала диагностировать и классифицировать current-Stage vs future-only. Все findings сообщить только владельцу в текущем чате; **не записывать их в #234 до отдельной команды владельца после завершения независимых проверок**, согласно `AGENTS.md`.
+
+Exact implementation head при начале review должен оставаться `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; если implementation head изменился — не переносить выводы со старого head и сообщить владельцу.
