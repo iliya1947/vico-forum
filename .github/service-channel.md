@@ -407,6 +407,17 @@ Immediately STOP and report owner before correction if:
 - implementation scope expands outside Editor 2.0 current Stage.
 
 
+## Whole-PR review findings раскрыты для согласования
+
+Exact implementation head остаётся `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; PR #232 не менялся после review.
+
+Owner-authorized публикации:
+- Лира: independent finding `6287225975` — неполная реализация правила newer authoritative attachment composition;
+- Лёва: author self-review `6287237802` — F1–F7;
+- Мира: independent findings `6288410411` — M1–M3.
+
+После устранения дублирования finding Лиры совпадает по корню с F6 Лёвы. Текущее множество для согласования — **10 уникальных current-Stage findings**: семь F1–F7 Лёвы плюс три M1–M3 Миры. Это ещё не correction plan и не разрешение менять #232.
+
 ## Текущий следующий шаг
 
-Мира координирует рассмотрение owner-authorized finding Лиры в комментарии #234 `6287225975`. Исправление не назначено; PR #232 не менять до решения владельца. Независимый whole-PR review не чистый, owner visual acceptance и merge не выполнены. После согласованной correction требуется новый whole-PR cycle на новом stable exact head; Мишаню подключать только после clean checks Миры и Лиры, Лёву автоматически не подключать.
+Провести совместное техническое согласование опубликованных findings: проверить пересечения/противоречия, определить единый causal grouping и только затем сформировать bounded correction plan. До согласования implementation PR #232 не менять.
