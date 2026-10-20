@@ -121,3 +121,10 @@ Exact implementation head при начале review должен остават
 - не менять #232.
 
 Цель — прийти к согласованному техническому выводу вместе с Мирой и Лёвой.
+
+## Совещание PR #232 — шаг 1: dedup опубликован (2026-10-20)
+
+- Сверила Lira `6287225975`, Lyova F1–F7 `6287237802`, Mira M1–M3 `6288410411` на exact implementation head `3b30d8d…`.
+- **Lira L1 и Lyova F6 — один behavioral root**, но в F6 пример `base {A}, local {A}, server {B}` смешивает keep-vs-remove A и newer-added B. Поэтому ожидаемый `{B}` не доказан owner rule. Чистый counterexample для newer-only: base/local `{A}`, server newer `{A,B}`, text идентичен, local dirty flag. Сама функциональная проблема остаётся.
+- Девять остальных findings различаются по наблюдаемым transition и контрактам: F1,F2,F3,F4,F5,F7,M1,M2,M3; **всего 10 distinct current-Stage findings** для согласования, не approved correction plan.
+- Детальный технический комментарий в PR #234 `6289118247`. Это первый логический шаг совещания; следующий — causal grouping только по команде owner / координации Миры. Implementation #232 не трогала, новых runtime tests не выполняла. Общий communication-файл не меняла до согласования с Мирой.
