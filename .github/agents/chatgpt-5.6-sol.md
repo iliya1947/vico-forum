@@ -423,3 +423,18 @@ Migration/boundary data-loss suspicion отдельно проверена и н
 - A и E требуют отдельных acceptance assertions по каждому finding.
 - Mixed remove+add остаётся owner product decision; до решения не является acceptance oracle.
 - Implementation #232 остаётся STOP до owner gate.
+
+
+## 2026-10-20 — revised T/S scope PASS
+
+Лёва `6290312937` переработал bounded correction scope после owner T/S decouple; Лира `6290699605` дала independent PASS.
+
+Зафиксировано:
+- T и S разрешаются независимо, persistence остаётся одним atomic CAS;
+- A–G и 10 findings сохраняются;
+- attachment auto-resolution не зависит от равенства текста;
+- общий CAS version сам по себе не доказывает ordering attachment intent;
+- новая persistence layer не нужна;
+- единственный owner gate: mixed attachment-only precedence.
+
+Предложение для owner decision: при common base и доказанном newer attachment intent использовать `S_new ∪ K`, где K — только base-файлы, удалённые одной стороной и сохранённые другой. Для base {A}, local {A}, newer remote {B} результат {A,B}. Несвязанные новые additions без ordering не объединять.
