@@ -1,0 +1,348 @@
+diff --git a/app/forum/public-read.test.tsx b/app/forum/public-read.test.tsx
+index e6e32f0..dc9c7d6 100644
+--- a/app/forum/public-read.test.tsx
++++ b/app/forum/public-read.test.tsx
+@@ -2366,6 +2366,65 @@ describe("published edit revision fence", () => {
+     await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+   });
+ 
++  it("L3 full TopicRoute retains stale selection after revalidation and explicit rebase", async () => {
++    const postId = "edit-fence-post";
++    const ownerId = "edit-fence-owner";
++    const original = { ...topic, posts: [{
++      ...topic.posts[0]!, id: postId, authorId: ownerId,
++      body: { ...topic.posts[0]!.body, id: "fence-r1" },
++      attachments: [{id:"23b93562-0550-4eef-88af-f951d6ea6138",fileName:"A.txt",byteSize:5,detectedType:"text"}],
++    }] };
++    let current = original;
++    const router = createMemoryRouter([{
++      id: "page", path: "*", Component: TopicRoute,
++      loader: () => topicRenderData(current, {
++        editablePostIds: [postId], canReadPostHistory: false,
++      }),
++    }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
++    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
++      if (url.includes("mode=head")) return new Response(null, { status: 404 });
++      if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
++      if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
++      throw new Error("Unexpected editor request: " + url);
++    }));
++    render(
++      <div lang="en" dir="ltr">
++        <I18nextProvider i18n={runtime("en", "ltr")}>
++          <HeaderAuthProvider initialUser={{ id: ownerId, name: "Author" }}>
++            <RouterProvider router={router} />
++          </HeaderAuthProvider>
++        </I18nextProvider>
++      </div>,
++    );
++    const form = await screen.findByRole("form", { name: "Edit published message" });
++    fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
++    const textarea = form.querySelector("textarea")!;
++    fireEvent.change(textarea, { target: { value: "My original unsaved edit " } });
++    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
++    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
++
++    current = { ...original, posts: [{
++      ...original.posts[0]!, attachments:[...original.posts[0]!.attachments,{id:"23b93562-0550-4eef-88af-f951d6ea6139",fileName:"B.txt",byteSize:5,detectedType:"text"}], body: {
++        ...original.posts[0]!.body, id: "fence-r2", originalContent: "Someone else's current edit",
++      },
++    }] };
++    await router.revalidate();
++    await waitFor(() => expect(screen.getByText("Someone else's current edit")).toBeInTheDocument());
++    expect(screen.getByRole("form", { name: "Edit published message" })).toBe(form);
++    expect(textarea).toHaveValue("My original unsaved edit ");
++    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
++    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
++    expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
++
++    fireEvent.click(within(form).getByRole("button", { name: "Apply my edit to the current revision" }));
++    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
++    expect(textarea).toHaveValue("My original unsaved edit ");
++    expect(form.querySelector('input[name="editorRetainedAttachmentIds"]')).toHaveValue(JSON.stringify(["23b93562-0550-4eef-88af-f951d6ea6138"]));
++    expect(within(form).queryByText('B.txt')).toBeNull();
++    console.log('L3 TopicRoute rebase: expected=fence-r2 retained=[A], B absent from local attachment controls');
++    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
++  });
++
+   it("opens the published revision without fetching a former server text draft", async () => {
+     const postId = "edit-remote-fence-post";
+     const ownerId = "edit-remote-fence-owner";
+diff --git a/app/forum/candidate-findings.test.tsx b/app/forum/candidate-findings.test.tsx
+new file mode 100644
+index 0000000..b97efa0
+--- /dev/null
++++ b/app/forum/candidate-findings.test.tsx
+@@ -0,0 +1,133 @@
++import "@testing-library/jest-dom/vitest";
++import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { I18nextProvider } from "react-i18next";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { canonicalEnglishCatalog } from "../localization/catalog";
++import { createTranslationRuntime } from "../localization/runtime";
++import { useEditorAttachments } from "./editor-attachments";
++function canonicalCommonResources(): Record<string, string> {
++    const resources: Record<string, string> = {};
++    for (const [key, descriptor] of Object.entries(canonicalEnglishCatalog.common)) {
++        if (typeof descriptor.source === "string") {
++            resources[key] = descriptor.source;
++            continue;
++        }
++        for (const [branch, value] of Object.entries(descriptor.source)) {
++            resources[key + "_" + branch] = value;
++        }
++    }
++    return resources;
++}
++function runtime() {
++    return createTranslationRuntime({
++        locale: {
++            translationLocale: "en",
++            fallbackLocales: [],
++            direction: "ltr",
++            formatting: { locale: "en", timeZone: "UTC" },
++            nativeName: "English",
++            presentationMetadata: {},
++        },
++        fallbackLocales: [],
++        resourcesByLocale: { en: { common: canonicalCommonResources() } },
++        bundleVersions: { en: { common: "test" } },
++        staleKeys: {},
++    });
++}
++class FakeXMLHttpRequest {
++    static instances: FakeXMLHttpRequest[] = [];
++    method = "";
++    url = "";
++    headers = new Map<string, string>();
++    body: Document | XMLHttpRequestBodyInit | null = null;
++    status = 0;
++    responseText = "";
++    responseType: XMLHttpRequestResponseType = "";
++    aborted = false;
++    onload: ((this: XMLHttpRequest, ev: ProgressEvent<EventTarget>) => unknown) | null = null;
++    onerror: ((this: XMLHttpRequest, ev: ProgressEvent<EventTarget>) => unknown) | null = null;
++    onabort: ((this: XMLHttpRequest, ev: ProgressEvent<EventTarget>) => unknown) | null = null;
++    upload = {
++        onprogress: null as ((this: XMLHttpRequestUpload, ev: ProgressEvent<EventTarget>) => unknown) | null,
++    };
++    constructor() {
++        FakeXMLHttpRequest.instances.push(this);
++    }
++    open(method: string, url: string) {
++        this.method = method;
++        this.url = url;
++    }
++    setRequestHeader(name: string, value: string) {
++        this.headers.set(name, value);
++    }
++    send(body?: Document | XMLHttpRequestBodyInit | null) {
++        this.body = body ?? null;
++    }
++    abort() {
++        this.aborted = true;
++        this.onabort?.call(this as unknown as XMLHttpRequest, new ProgressEvent("abort"));
++    }
++    progress(loaded: number, total: number) {
++        act(() => this.upload.onprogress?.call(this.upload as unknown as XMLHttpRequestUpload, { lengthComputable: true, loaded, total } as ProgressEvent<EventTarget>));
++    }
++    async complete(status: number, payload: unknown) {
++        this.status = status;
++        this.responseText = JSON.stringify(payload);
++        await act(async () => { await this.onload?.call(this as unknown as XMLHttpRequest, new ProgressEvent("load")); });
++    }
++    fail() {
++        act(() => { this.onerror?.call(this as unknown as XMLHttpRequest, new ProgressEvent("error")); });
++    }
++}
++const contextKey = "topic:operation-test:reply";
++const attachmentId = "23b93562-0550-4eef-88af-f951d6ea6138";
++let current: ReturnType<typeof useEditorAttachments>;
++function Harness({ owner = "alice", published = [] }: {
++    owner?: string;
++    published?: Array<{
++        id: string;
++        url: string;
++        fileName: string;
++        byteSize: number;
++        detectedType: string;
++    }>;
++}) {
++    current = useEditorAttachments({ ownerId: owner, contextKey, disabled: false, publishedAttachments: published, insertImage: () => { }, removeImage: () => { } });
++    return <>{current.element}<button onClick={() => current.cancel()}>Cancel</button></>;
++}
++function renderHarness(props: Parameters<typeof Harness>[0] = {}) {
++    return render(<I18nextProvider i18n={runtime()}><Harness {...props}/></I18nextProvider>);
++}
++function stored() { return { outcome: "stored", attachment: { id: attachmentId, fileName: "notes.txt", detectedType: "text", responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" } }; }
++function attach() { fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "notes.txt", { type: "text/plain" })] } }); return FakeXMLHttpRequest.instances.at(-1)!; }
++beforeEach(() => { FakeXMLHttpRequest.instances = []; vi.stubGlobal("XMLHttpRequest", FakeXMLHttpRequest); vi.stubGlobal("fetch", vi.fn(async () => Response.json({ outcome: "removed" }))); });
++afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
++describe('independent L2/L3 hook verification',()=>{
++  it('L2 failed transport leaves only Retry and blocks otherwise usable operation',async()=>{
++    renderHarness();const request=attach();request.fail();
++    expect(current.blocking).toBe(true);
++    expect(screen.getByRole('button',{name:'Retry'})).toBeEnabled();
++    expect(screen.queryByRole('button',{name:'Remove'})).toBeNull();
++    expect(fetch).not.toHaveBeenCalled();
++    console.log('L2 ambiguous failure: Retry=true Remove=false blocking=true');
++    fireEvent.click(screen.getByText('Retry'));await FakeXMLHttpRequest.instances.at(-1)!.complete(201,stored());
++    expect(current.blocking).toBe(false);expect(screen.getByRole('button',{name:'Remove'})).toBeEnabled();
++  });
++  it('L3 explicit local Remove A remains removed on newer published [A,B], but new B is also missing',async()=>{
++    const a={id:attachmentId,url:'/file?post=p',fileName:'A.txt',byteSize:5,detectedType:'text'};
++    const b={...a,id:'23b93562-0550-4eef-88af-f951d6ea6139',fileName:'B.txt'};
++    const view=renderHarness({published:[a]});fireEvent.click(screen.getByRole('button',{name:'Remove'}));
++    await waitFor(()=>expect(current.retainedAttachmentIds).toEqual([]));
++    view.rerender(<I18nextProvider i18n={runtime()}><Harness published={[a,b]}/></I18nextProvider>);
++    expect(current.retainedAttachmentIds).toEqual([]);
++    console.log('L3 explicit local Remove A: incoming [A,B], retained [], B also unintentionally omitted');
++  });
++  it('L3 same-scope published attachment refresh does not retain new B',async()=>{
++    const a={id:attachmentId,url:'/file?post=p',fileName:'A.txt',byteSize:5,detectedType:'text'};
++    const b={...a,id:'23b93562-0550-4eef-88af-f951d6ea6139',fileName:'B.txt'};
++    const view=renderHarness({published:[a]});expect(current.retainedAttachmentIds).toEqual([a.id]);
++    view.rerender(<I18nextProvider i18n={runtime()}><Harness published={[a,b]}/></I18nextProvider>);
++    expect(current.retainedAttachmentIds).toEqual([a.id]);expect(screen.queryByText('B.txt')).toBeNull();
++    console.log('L3 hook: incoming published [A,B], retained [A]');
++  });
++});
+diff --git a/tests/database/candidate-findings.test.ts b/tests/database/candidate-findings.test.ts
+new file mode 100644
+index 0000000..971dfba
+--- /dev/null
++++ b/tests/database/candidate-findings.test.ts
+@@ -0,0 +1,133 @@
++import { readFile, readdir } from "node:fs/promises";
++import { drizzle } from "drizzle-orm/node-postgres";
++import { Client } from "pg";
++import { afterAll, beforeAll, describe, expect, it } from "vitest";
++import { DrizzleForumAttachments } from "../../db/forum-attachments";
++import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
++import { DrizzleForumRepository, ForumAuthorizationError, ForumStateConflictError } from "../../db/forum-repository";
++
++const databaseUrl = process.env.DATABASE_URL;
++if (!databaseUrl) throw new Error("DATABASE_URL is required");
++const url = new URL(databaseUrl);
++if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith("_test")) {
++  throw new Error("Disposable local test database required");
++}
++
++const schema = "candidate_findings_test";
++const connection = () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
++const client = connection();
++const attachments = new DrizzleForumAttachments(drizzle(client));
++const ownerId = "publication-owner";
++const sectionId = "publication-section";
++const topicId = "publication-topic";
++const contextKey = `topic:${topicId}:reply`;
++let clock = Date.parse("2030-01-01T00:00:00Z");
++const policy = { cooldownMs: 0, now: () => new Date(clock += 1) };
++const forum = new DrizzleForumRepository(drizzle(client), policy);
++
++function attachment(draftId: string, key = contextKey) {
++  return {
++    id: crypto.randomUUID(), ownerId, contextKey: key, draftId,
++    objectKey: `private/${crypto.randomUUID()}`,
++    fileName: "retained.txt", declaredMime: "text/plain", detectedType: "text",
++    responseMime: "text/plain; charset=utf-8", byteSize: 12,
++    verificationStatus: "type-checked" as const,
++  };
++}
++
++function reply(id: string, draftId?: string, expectedVersion?: number) {
++  return {
++    id, topicId, authorId: ownerId,
++    publishedDraft: { contextKey, ...(draftId ? { draftId, expectedVersion } : {}) },
++    bodyRevision: { id: `${id}-revision`, originalContent: "Reply text", sourceLocale: "en" },
++  };
++}
++
++function operation(draftId: string, contextKey = "topic:publication-topic:reply") { return {draftId, contextKey, version: 0}; }
++
++beforeAll(async () => {
++  await client.connect();
++  await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
++  const files = (await readdir("drizzle")).filter((file) => /^\d{4}_.+\.sql$/u.test(file)).sort();
++  for (const file of files) {
++    await client.query((await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schema}".`));
++  }
++  for (const id of [ownerId, "publication-topic-author", "publication-other"]) {
++    await client.query('insert into "user" (id, name, email) values ($1, $1, $2)', [id, `${id}@test.invalid`]);
++  }
++  await forum.createCategory({ id: "publication-category", name: "Attachments" });
++  await forum.createSection({ id: sectionId, categoryId: "publication-category", name: "Files" });
++  await forum.createTopicWithInitialPost({
++    id: topicId, sectionId, authorId: "publication-topic-author",
++    titleRevision: { id: "publication-title", originalContent: "Topic", sourceLocale: "en" },
++    initialPost: {
++      id: "publication-initial", topicId, authorId: "publication-topic-author",
++      bodyRevision: { id: "publication-initial-body", originalContent: "Question", sourceLocale: "en" },
++    },
++  });
++});
++
++afterAll(async () => {
++  await client.query(`drop schema if exists ${schema} cascade`);
++  await client.end();
++});
++
++
++describe("candidate findings independent DB verification", () => {
++  for (const removeB of [false, true]) it(`L1 newest ref removed=${removeB}`, async () => {
++    const operationId=crypto.randomUUID(), a=attachment(operationId), b=attachment(operationId);
++    await attachments.createDraftAttachment(a); await attachments.createDraftAttachment(b);
++    const t0=new Date('2035-01-01T00:00:00Z');
++    await client.query('update forum_attachment_draft_refs set created_at=$1 where attachment_id=$2',[t0,a.id]);
++    await client.query('update forum_attachment_draft_refs set created_at=$1 where attachment_id=$2',[new Date(+t0+23*3600000),b.id]);
++    if(removeB) expect(await attachments.removeDraftAttachment(ownerId,contextKey,operationId,b.id)).toBe(true);
++    const deleted:string[]=[];
++    const cleanup=new ForumAttachmentCleanup(drizzle(client),{delete:async(key:string)=>{deleted.push(key);}},()=>new Date(+t0+24*3600000+1000));
++    const result=await cleanup.runOnce();
++    const refs=await client.query('select attachment_id from forum_attachment_draft_refs where draft_id=$1',[operationId]);
++    const terminal=await client.query('select 1 from forum_attachment_draft_generations where draft_id=$1',[operationId]);
++    console.log('L1',JSON.stringify({removeB,refsRemaining:refs.rowCount,terminal:terminal.rowCount,aPhysicallyDeleted:deleted.includes(a.objectKey),prunedRefs:result.prunedRefs}));
++    expect(terminal.rowCount).toBe(removeB?1:0);
++    expect(deleted.includes(a.objectKey)).toBe(removeB);
++    if(!removeB) await attachments.cancelOperation(ownerId,contextKey,operationId);
++    else await expect(attachments.createDraftAttachment(attachment(operationId))).rejects.toMatchObject({reason:'gone'});
++  });
++  it('L2 bare per-file DELETE before late upload does not fence its eventual ref; operation Cancel does',async()=>{
++    const op=crypto.randomUUID(),file=attachment(op);
++    expect(await attachments.removeDraftAttachment(ownerId,contextKey,op,file.id)).toBe(false);
++    await attachments.createDraftAttachment(file);
++    expect(await attachments.readDraftAttachment(ownerId,contextKey,op,file.id)).not.toBeNull();
++    await attachments.cancelOperation(ownerId,contextKey,op);
++    await expect(attachments.createDraftAttachment(file)).rejects.toMatchObject({reason:'gone'});
++    console.log('L2 delete-before-upload=false; late upload creates ref; whole-operation cancel fences retry');
++  });
++  it('L2 committed upload with lost response can be resolved by stable retry then removed without losing another file',async()=>{
++    const op=crypto.randomUUID(),a=attachment(op),b=attachment(op);
++    await attachments.createDraftAttachment(a);await attachments.createDraftAttachment(b);
++    const retry=await attachments.createDraftAttachment(b);
++    expect(retry.id).toBe(b.id);expect(retry.objectKey).toBe(b.objectKey);
++    expect(await attachments.removeDraftAttachment(ownerId,contextKey,op,b.id)).toBe(true);
++    expect(await attachments.readDraftAttachment(ownerId,contextKey,op,a.id)).not.toBeNull();
++    expect(await attachments.readDraftAttachment(ownerId,contextKey,op,b.id)).toBeNull();
++    await attachments.cancelOperation(ownerId,contextKey,op);
++    console.log('L2 existing safe path under recovered network: stable Retry -> ACK -> Remove, other A preserved');
++  });
++  for(const removeA of [false,true]) it(`L3 rebase explicit Remove A=${removeA}`,async()=>{
++    const firstOp=crypto.randomUUID(),a=attachment(firstOp),postId=crypto.randomUUID(),r1=crypto.randomUUID();
++    await attachments.createDraftAttachment(a);
++    await forum.createPost({...reply(postId,firstOp),publishedDraft:{contextKey,draftId:firstOp,attachmentIds:[a.id]},bodyRevision:{id:r1,originalContent:'Original',sourceLocale:'en'}});
++    const opB=crypto.randomUUID(),b=attachment(opB,`post:${postId}:edit`);
++    await attachments.createDraftAttachment(b);
++    await forum.editPublishedPost({postId,topicId,actorId:ownerId,expectedRevisionId:r1,body:'Other tab added B',draftId:opB,attachmentIds:[b.id],retainedAttachmentIds:[a.id]});
++    const r2=(await forum.readPost(postId))!.body.id;
++    expect(await attachments.readPublishedAttachment(postId,b.id)).not.toBeNull();
++    const editA={postId,topicId,actorId:ownerId,expectedRevisionId:r1,body:'Local text change',draftId:crypto.randomUUID(),attachmentIds:[],retainedAttachmentIds:removeA?[]:[a.id]};
++    await expect(forum.editPublishedPost(editA)).rejects.toBeInstanceOf(ForumStateConflictError);
++    expect(await attachments.readPublishedAttachment(postId,b.id)).not.toBeNull();
++    await forum.editPublishedPost({...editA,expectedRevisionId:r2});
++    expect(await attachments.readPublishedAttachment(postId,b.id)).toBeNull();
++    expect(!!await attachments.readPublishedAttachment(postId,a.id)).toBe(!removeA);
++    expect((await forum.readPost(postId))!.body.originalContent).toBe('Local text change');
++    console.log('L3',JSON.stringify({removeA,staleSaveRejected:true,rebasedSaveSucceeded:true,bPublicRefLost:true,aKept:!removeA,history:(await forum.readPostHistory(postId,topicId)).length}));
++  });
++});

@@ -1,5 +1,20 @@
 # Лёва — Codex-6.1 Sol
 
+
+## Актуально — L1–L3 независимо CONFIRMED, опубликовано по команде владельца
+
+Проверен implementation head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`** по назначению Миры `6299889366`. [Полное заключение и проверяемые causal chains](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6300266423). Владелец отдельно разрешил публикацию командой «Публикуй».
+
+- **L1 CONFIRMED:** при A=t0, B=t23h и Remove B cleanup=t24h+1s закрывает operation, снимает A ref, вызывает bucket.delete(A) и удаляет A DB asset. Контроль без Remove B сохраняет оба refs и активную operation. Корень — max(created_at) оставшихся refs вместо времени последнего успешного нового upload. Нарушается текущий 24-hour idle contract; future scheduler не снимает эту обязанность processor.
+- **L2 CONFIRMED:** transport failure → Retry без Remove, blocking=true. Это нарушает текущие §6/§8 Editor contract. Реальный DB контроль показывает, что per-file DELETE до late upload не fence-ит появление ref; просто убрать guard небезопасно. При восстановленной сети текущий путь stable Retry → ACK → Remove работает и сохраняет другой готовый файл. Whole-operation Cancel безопасно закрывает всю operation, но не является отказом от одного файла.
+- **L3 CONFIRMED:** actual TopicRoute revalidation r1/{A} → r2/{A,B}, затем explicit rebase, оставляет retained={A} при expectedRevisionId=r2. Action передаёт stale selection, repository Save действительно удаляет B public ref и создаёт r3 с локальным текстом. Старый revision без rebase корректно отклоняется и сохраняет B. Вариант с явным Remove A также проверен: намеренное снятие A и непреднамеренное снятие B — разные действия. Физическое удаление B не заявляется.
+
+[Воспроизводимый diagnostic patch, инструкции и логи](codex-6.1-sol-verification-5dc32be/README.md): **6 PostgreSQL + 4 component diagnostic cases**; 64 несвязанных component cases skipped. PASS здесь подтверждает контрпример, а не acceptance/исправление. L1 bucket.delete — recording stub; новый Chromium/Worker/R2/full-suite прогон не выполнялся. Диагностика — отдельный detached checkout и отдельная disposable local PostgreSQL 17 DB.
+
+#232 не менялся; correction plan не проектировался/не реализовывался, новой implementation ветки нет. Это scoped verification findings, не новый whole-PR PASS. Следующий шаг — Мира координирует согласование correction-подэтапа с владельцем; само подтверждение не разрешает исправления. Мишаню не подключать.
+
+Ниже — предшествующие материалы реализации. Visual gate отменён прямым уточнением владельца в общем service-channel; галерея историческая и не требует owner acceptance.
+
 ## Visual evidence для owner acceptance — 2026-10-20
 
 По назначению Миры [6293327413](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6293327413) подготовлены скриншоты существующего `app/ui-preview` с неизменённого exact implementation head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**. Исходники/ветка #232 не менялись; новая ветка не создавалась.

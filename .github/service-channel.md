@@ -13,7 +13,7 @@
 - Chromium/Worker/PostgreSQL/local private R2: все четыре authoring flows, no autosave/reload recovery, uploads/private download/exact publication, reply/IME и published edit Remove/Cancel/Save/access revocation PASS; draft requests/page errors отсутствовали.
 - Exact-head CI: [39434488911](https://github.com/iliya1947/vico-forum/actions/runs/39434488911) **checks SUCCESS, database SUCCESS** на exact head 5dc32be: 974 application tests (94 files) и 272 PostgreSQL tests (26 files) PASS.
 - Merged migrations 0034–0044 не изменены; unmerged snapshot-purpose 0045 удалена из итогового diff. Новая table/registry/attachment-version не вводится.
-- Реализация остановлена до нового independent whole-PR review/owner visual acceptance. Они не выполнялись/не запускались. Merge, production/external migrations/deployment не выполнялись; служебный PR не merge.
+- Текущий результат review/verification: **L1–L3 CONFIRMED** на unchanged 5dc32be; [независимые воспроизведения Лёвы](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6300266423). Whole-PR PASS/готовность к merge не подтверждены; corrections ещё не разрешены/не выполнялись. Visual gate отменён владельцем. Merge, production/external migrations/deployment не выполнялись; служебный PR не merge.
 
 Ниже сохранены предшествующие решения/материалы согласования; snapshot correction и связанные findings superseded более поздним owner removal decision. Текущие scope/статус определяются removal-разделами и этим блоком.
 
@@ -659,8 +659,18 @@ Static screenshots Лёвы остаются только исторически
 
 Следующая независимая проверка назначена Лире (ChatGPT-6). Лира должна получить задачу из служебного PR #234 и независимо проверить весь agreed removal scope PR #232 на том же exact head, не внося исправлений и не читая findings Миры. Результат сначала сообщить владельцу в своём чате. Visual review/Pages не входят в эту проверку.
 
+## Независимая верификация Лёвы — L1–L3 CONFIRMED
+
+Назначение Миры `6299889366` выполнено на exact implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`. Владелец разрешил публикацию результатов отдельной командой. [Полное заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6300266423); [diagnostic patch и логи](agents/codex-6.1-sol-verification-5dc32be/README.md).
+
+- **L1 CONFIRMED:** Remove самого свежего upload ref стирает activity time; cleanup по max(created_at) оставшихся refs преждевременно закрывает operation и удаляет A, хотя со времени последнего успешного нового upload B прошло около часа. Контроль без Remove B не истекает. Нарушение текущего 24-hour idle contract.
+- **L2 CONFIRMED:** ambiguous transport error оставляет Retry без Remove и блокирует Publish, вопреки текущему Editor contract. Per-file DELETE до позднего upload не предотвращает последующее создание ref; простое снятие UI guard небезопасно. При восстановившейся сети Retry → ACK → Remove работает; whole-operation Cancel не заменяет отказ от одного файла.
+- **L3 CONFIRMED:** published-edit rebase обновляет expectedRevisionId, сохраняя stale retained selection. TopicRoute revalidation и PostgreSQL подтвердили снятие нового B public ref после Save без локального Remove B; варианты без/с явным Remove A проверены отдельно. Stale Save до rebase корректно отклоняется. Физическое удаление B не заявляется.
+
+Доказательства: 6 PostgreSQL + 4 component diagnostic cases (64 несвязанных component cases skipped); PASS диагностик означает воспроизведение проблем, не исправление. L1 bucket.delete проверен recording stub, не внешним R2. Новый Chromium/Worker/full-suite прогон не выполнялся. Все три дефекта относятся к surviving current-Stage attachment/editor/edit-publication scope, не к удалённым text drafts или будущей инфраструктуре.
+
+Implementation #232 не менялся; correction plan не проектировался/не реализовывался. Это scoped verification, не whole-PR PASS и не автоматическое implementation approval.
+
 ## Текущий следующий шаг
 
-По прямой команде владельца Лёва (Codex-6.1 Sol) проводит независимую техническую верификацию трёх candidate findings из review Лиры `6298206964` на неизменённом implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
-
-Кандидаты не считаются подтверждёнными дефектами только потому, что их нашли Лира и Мира. Лёва должен самостоятельно проверить фактическую causal chain, ожидаемое поведение, current-Stage применимость и альтернативные объяснения для каждого пункта. #232 во время этой проверки не менять; correction plan не проектировать до результата верификации.
+Мира проверяет опубликованную верификацию Лёвы и координирует согласование дальнейшего correction-подэтапа с владельцем. Подтверждённые findings сами по себе не разрешают исправления; Мишаню в эту цепочку не подключаем. Merge только владельцем.
