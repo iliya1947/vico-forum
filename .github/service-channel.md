@@ -420,4 +420,4 @@ Owner-authorized публикации:
 
 ## Текущий следующий шаг
 
-Провести совместное техническое согласование опубликованных findings: проверить пересечения/противоречия, определить единый causal grouping и только затем сформировать bounded correction plan. До согласования implementation PR #232 не менять.
+Совещание Миры, Лиры и Лёвы по опубликованным findings #232 начато в комментариях PR #234. До его завершения implementation #232 не менять. Результат совещания — единый causal grouping и bounded correction scope; implementation начинается только после отдельного owner decision.
