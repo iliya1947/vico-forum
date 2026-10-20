@@ -153,3 +153,12 @@ Mixed remove+add precedence не определять самостоятельн
 - D expiry localStorage ownership, F manual candidate visibility и G whitespace Simple focus — отдельные компактные boundaries.
 - Mixed remove+add owner precedence **не определено**; clean F6 acceptance — `{A}→{A,B}` с одинаковым текстом и доказанным серверным порядком, offline incomparable остаётся manual.
 - Вывод опубликован в комментарии PR #234 `6289437454`. Ни реализации, ни новых runtime tests не проводила; общую сводку не изменяла до решения Миры. Следующий шаг — Мира сводит consensus и готовит owner decision gate.
+
+
+## Совещание #232 — revised T/S-independent scope review (2026-10-20)
+
+- Проверила owner decision `6290262215`, revised Lyova scope `6290312937`, основные source transitions stable implementation head `3b30d8d…`. **PASS** A–G как bounded correction scope под независимые product decisions T и S с одним atomic server CAS. Это не implementation approval и не новый runtime test.
+- Отдельный mandatory owner gate: mixed remove+add attachment-only precedence. Lyova proposal common B, L/R; K = B ∩ (L △ R); `S_new ∪ K` при **доказанном attachment-intent ordering**, иначе manual candidate choice с K. Пример `B={A}, L={A}, R={B}` → proposed `{A,B}`, **не утверждено владельцем**. Само T/S decouple не задаёт mixed attachment precedence.
+- Общая server version, продвинутая только text save, не доказывает более новое attachment intent; incomparable offline additions остаются manual, even if server version differs. Без common authoritative attachment base нельзя выводить K.
+- 10 existing findings + F2 two compatibility cases remain. A/E/F расширены cross-product tests independent T/S decision + partial choice/reload/lost ACK/late input. B/C, local expiry, Simple editor boundaries сохраняются без новой таблицы/version/registry.
+- Детальный разбор записан комментарием PR #234 `6290699605`. Code #232 не изменяла; Mira должна свести вывод и передать unresolved mixed precedence owner, correction STOP.
