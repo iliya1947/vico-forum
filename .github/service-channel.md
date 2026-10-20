@@ -606,7 +606,7 @@ PR #232 больше не является correction-пакетом сущес�
 
 После завершённого архитектурного gate владелец дал явную команду продолжать. Implementation нового removal scope разрешён.
 
-Implementation owner по актуальному `AGENTS.md`: **Мишаня — Codex-5.6 Sol**.
+По прямому решению владельца для этой цепочки implementation owner: **Лёва — Codex-6.1 Sol**. Мишаня в работе #232 не участвует.
 
 Требуемый результат:
 - в существующем PR #232 удалить current user-facing/persistent drafts/autosave runtime по принятому removal scope;
@@ -620,4 +620,4 @@ Implementation owner по актуальному `AGENTS.md`: **Мишаня —
 
 ## Текущий следующий шаг
 
-Мишаня реализует новый bounded removal scope в PR #232 и после стабильного exact head публикует в #234 только итог реализации и фактически выполненные проверки. До завершения реализации independent whole-PR review не запускать.
+Лёва реализует новый bounded removal scope в PR #232 и после стабильного exact head публикует в #234 только итог реализации и фактически выполненные проверки. Мишаню в эту цепочку не подключать. До завершения реализации independent whole-PR review не запускать.
