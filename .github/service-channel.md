@@ -4,12 +4,16 @@
 
 ## Текущее состояние
 
-- Implementation PR: #232 — Editor 2.0 follow-up corrections.
-- Current head: `ae121565ccedcb7868cba01987e2cde0392b90e9`; exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70`.
-- Реализация STOP. Старый план локально исправить два lifecycle defect отменён.
-- По прямому решению владельца Лёва был отдельно подключён для архитектурного разбора repeated patch-chain. Это разовая архитектурная проверка; в обычный review-cycle #232 Лёва автоматически не возвращается.
+- Implementation PR: #232 — Editor 2.0 snapshot/CAS correction.
+- Stable implementation/code/test head: `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`.
+- После проверки плана #234 владелец прямо поручил реализацию Лёве вместо передачи Мишане. Прежний implementation STOP снят этим поручением; текущий пакет реализован в #232. Служебный PR по-прежнему не merge.
+- Реализован один snapshot/version для текста, manifest и generation/status; refs служат retention pool. Runtime contexts/boundaries больше не используются; data migration `0045_draft_snapshot_selection` переносит их необходимое состояние без продления editedAt.
+- Локально: 1072 application tests и 320 PostgreSQL 17 tests PASS; typecheck, lint без ошибок, application/UI-preview builds, Drizzle metadata/schema parity, migration-history guard, schema-manifest/runtime privilege probes и production-build Workers smoke PASS.
+- Chromium → настоящий Worker/PostgreSQL + локальный private R2: focused paste→typing, native input/IME в пустом абзаце, параллельные uploads с сериализованным selection CAS без early text save, selected-only publication, published edit download/Remove/Save и access revocation PASS; page errors отсутствовали.
+- CI exact head: https://github.com/iliya1947/vico-forum/actions/runs/39348511251 — `checks` SUCCESS, `database` SUCCESS.
+- Новый independent whole-PR review, owner visual acceptance и merge не выполнены. Старые review/acceptance не относятся к новой реализации. Production migration/deployment и external R2 не выполнялись.
 
-## Подтверждённые current-Stage defects
+## Подтверждённые дефекты исходного кода — regression targets нового пакета
 
 1. Long-lived in-memory local draft может обойти 30-day expiry и воскреснуть через aged-terminal path.
 2. First attachment upload новой generation после hidden aged terminal может получить HTTP 409 до первого ordinary text save.
@@ -27,9 +31,9 @@
 
 ## Подтверждённая проблема технического подхода
 
-Attachment composition и text version сейчас не образуют одну однозначную версионную модель. Независимые attachment mutations потребовали последовательных компенсирующих слоёв: `draftAttachmentIds`, provenance/context evidence, version boundaries, physical retention через boundaries и отдельный boundary-release cleanup.
+В исходной реализации attachment composition и text version не образовывали одну однозначную версионную модель. Независимые attachment mutations потребовали последовательных компенсирующих слоёв: `draftAttachmentIds`, provenance/context evidence, version boundaries, physical retention через boundaries и отдельный boundary-release cleanup.
 
-Это не означает, что существующие защиты надо удалить: часть закрывает реальные race/data-loss cases. Но repeated compensation уже прошёл порог AGENTS.md «остановиться и пересмотреть причину». Продолжать локальные patch fixes до согласования модели запрещено.
+Это было основанием остановить локальную patch-chain и согласовать приведённую ниже модель. В #232 protections заменены единым snapshot/retention contract с regression proof; отсутствие дефектов новой реализации ещё должно быть проверено независимо.
 
 ## Принятый технический план Лёвы
 
@@ -375,23 +379,8 @@ Immediately STOP and report owner before correction if:
 - implementation scope expands outside Editor 2.0 current Stage.
 
 
-## Обязательный pre-implementation gate
+## Pre-implementation gate и текущий следующий шаг
 
-1. Технический план проверен Мирой и Лирой, но **не утверждён Лёвой**.
-2. Разработчик подключает **Лёву — Codex-6.1 Sol** к PR #234 для самостоятельного аудита уже готового плана и его причинной цепочки.
-3. До положительного решения Лёвы — **STOP**, implementation PR #232 не менять; новые confirmed current-Stage defects выносить разработчику до correction.
-4. Если Лёва обнаруживает недостаток модели или плана — сначала согласовать изменения, не начинать код. Мишаню к промежуточному review не подключать.
+Готовый план проверен в текущем owner-сеансе; после этого владелец прямо назначил Лёву исполнителем реализации. Повторного разрешения на начало кода не требуется. Этот пакет не является независимым review его автора.
 
-## Pre-implementation gate — готов к проверке Лёвой
-
-Мира проверила завершённый PASS Лиры `6279272069` и готовый план в общем service-channel.
-
-Состояние:
-- план прошёл Mira + Lira design/plan review;
-- новых confirmed current-Stage defects не добавлено;
-- implementation PR #232 остаётся на `ae121565ccedcb7868cba01987e2cde0392b90e9` и не меняется;
-- код до решения Лёвы начинать запрещено.
-
-## Следующий шаг
-
-Лёва независимо проверяет **готовый implementation plan в PR #234** на полноту причинной цепочки, отсутствие новой compensation chain, сохранение current-Stage invariants и готовность к реализации. Проверять именно план; implementation #232 не менять. При недостатке плана — вернуть замечание без кода. При PASS — явно разрешить переход к implementation planning handoff Мишане.
+Следующий шаг: получить owner visual acceptance и выполнить новый Mira + Lira independent whole-PR review по правилам AGENTS.md. Мишаня подключается к финальному whole-PR review после чистых результатов обоих; автоматического возврата Лёвы в независимый review-cycle нет. Merge выполняет только владелец.

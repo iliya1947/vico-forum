@@ -2,9 +2,11 @@
 
 ## Текущий статус
 
-По прямой команде владельца выполнен отдельный архитектурный разбор repeated patch-chain PR #232. Вывод и технический план приняты владельцем как новый действующий план. Это не возвращает Лёву автоматически в обычный review-cycle #232.
+После самостоятельной проверки плана PR #234 владелец прямо назначил Лёву исполнителем реализации. Реализация внесена в #232: `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. Это отменяет прежнюю задачу «проверить только план, код не менять» и не делает автора независимым проверяющим собственного пакета.
 
-Подтверждено: проблема не требует полного rewrite Editor 2.0, но локальные fixes должны быть остановлены до согласования version/conflict/attachment model.
+Локально PASS: 1072 application / 320 PostgreSQL 17 tests, TypeScript, lint без ошибок, builds, migration/schema/privilege guards и production-build Workers smoke. Реальный Chromium/Worker/PostgreSQL/local R2 подтвердил всю цепочку upload→selection→publication, published edit/access revocation и Simple paste/native-input/IME. Подробности реализации и контракт — в #232 и обновлённых `docs/EDITOR.md` / `PROJECT_STATE.md`.
+
+Exact-head CI #39348511251 завершён: checks SUCCESS, database SUCCESS. Новый review-cycle, owner visual acceptance, merge и production rollout ещё не выполнены. Ниже сохранён предшествующий контекст архитектурного/plan gate; его запрет начинать код больше не является текущей задачей.
 
 ## Действующий технический вывод
 
@@ -46,3 +48,7 @@ Text draft version сейчас не определяет однозначно a
 - новый confirmed current-Stage defect исходного кода сначала вынести владельцу;
 - если проблема только в плане, указать конкретный blocker и требуемое изменение;
 - при чистом результате дать явный PASS для перехода к implementation.
+
+## Текущий следующий шаг (2026-10-20)
+
+Exact-head CI подтверждён и зафиксирован. После owner visual acceptance новый пакет должен пройти независимый Mira + Lira whole-PR review, затем финальную whole-PR проверку Мишани. Служебный PR не merge; implementation PR не merge без владельца.
