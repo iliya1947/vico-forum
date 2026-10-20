@@ -487,6 +487,38 @@ Owner-authorized публикации:
 - Новая table/registry/attachment-version не обоснована. Частичные UI choices не требуют отдельной DB persistence; recovery должен сохранять candidates и позволять повторный независимый выбор. Exact seen-CAS, поздний ввод, lost-ACK и generation proofs обязательны.
 - Runtime/DB/browser execution в этом шаге не выполнялся: это revision scope по новому продуктовому правилу и checked source paths. Код #232 не менялся.
 
+## Совещание #232 — revised T/S scope проверен
+
+Лёва `6290312937` пересмотрел bounded correction scope после owner decision `6290262215`; Лира `6290699605` независимо проверила его и дала **PASS revised direction**.
+
+Согласовано:
+
+- **Text decision (T) и attachment decision (S) независимы на product/conflict уровне**, но итоговый `T_result + S_result` сохраняется одним atomic CAS относительно exact seen server snapshot.
+- Text choice не выбирает attachment composition; attachment choice/ACK не заменяет body/title/tags/reply target и не подтверждает dirty text.
+- Auto attachment reconciliation не требует одинакового текста: attachment outcome может быть определён отдельно, пока text conflict остаётся открытым.
+- Если T одинаковый, но S несопоставим — нужен только attachment choice. Если T различается, но S определяется автоматически — нужен только text choice. Если конфликтуют обе оси — нужны два независимых решения.
+- A–G остаются bounded workstreams; сохраняются 10 independent regression obligations F1–F7 + M1–M3 и оба compatibility-сценария F2.
+- Единая snapshot/CAS persistence model остаётся достаточной. Отдельная attachment-version/table/registry или whole-runtime rewrite не обоснованы.
+- Ordering вложений нельзя выводить только из общего CAS version, client time или позднего GET: text-only save может увеличить version без более нового attachment intent.
+- Pool/staged bytes не равны selected manifest; M1 writer fence остаётся обязательным.
+- #232 остаётся exact head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; implementation не менялся.
+
+### Единственный оставшийся owner gate внутри attachments
+
+Независимость T/S **не определяет автоматически** precedence внутри самого S для mixed remove+add.
+
+Предложение Лёвы, которое Лира считает технически последовательным, но не owner-approved:
+
+- взять доказанно более новый attachment composition;
+- отдельно сохранить каждый файл из общего authoritative base, который одна сторона оставила, а другая удалила;
+- не union'ить несвязанные новые additions без доказанного ordering.
+
+Для `base={A}, local={A}, newer remote={B}` это даёт **`{A,B}`**: A сохраняется по same-file keep, B сохраняется как newer addition.
+
+Для `base={A}, local={A,X}, remote={Y}` при недоказанном ordering X/Y — manual attachment choice между `{A,X}` и `{A,Y}`; автоматического `{A,X,Y}` нет.
+
+До owner decision mixed remove+add не является acceptance oracle.
+
 ## Текущий следующий шаг
 
-Лёва завершил revised bounded scope. Следующий предлагаемый gate: Лира независимо проверяет scope и mixed attachment-only предложение из комментария `6290312937`; Мира сводит результат для owner decision. Предлагаемый mixed precedence не считать утверждённым; implementation #232 пока не менять.
+Владелец подтверждает или изменяет attachment-only mixed rule: при доказанном common base и newer attachment intent сохранять removed-vs-retained base-файл поверх newer additions (`S_new ∪ K`), что для `{A} / {A} / {B}` даёт `{A,B}`.
