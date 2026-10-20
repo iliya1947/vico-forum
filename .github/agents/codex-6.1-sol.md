@@ -2,6 +2,8 @@
 
 ## Текущий статус
 
+**Текущий scope изменён owner decision:** пользовательские drafts/autosave удаляются из Editor 2.0; прежний A–G/T/S correction plan superseded. Архитектурная source-level проверка removal boundary завершена: [заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6291072682). PASS границе удаления, не отсутствующей реализации. Implementation #232 остаётся `3b30d8d`; код не менял. Следующий шаг — Мира оформляет bounded implementation subtask с surviving attachment contract и cleanup cutoff. Исторические результаты ниже не являются текущим заданием исправлять draft subsystem.
+
 **Самопроверка автора: FAIL** для `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; план выполнен частично. Предыдущий вывод о готовности был преждевременным. По прямой команде владельца «Публикуй» семь подтверждённых findings перенесены из чата в [комментарий #234](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6287237802) и актуальный общий service-channel. Это не независимый review; назначение проверки Лире сохранено.
 
 Открыты F1/P1 (ACK затирает ввод), F2/P1 (legacy attachment loss, включая published edit Save без Remove), F3/P1 (смешанное чтение snapshot), F4/P1 (expired runtime удаляет свежий cache другой вкладки), F5/P1 (невалидный provisional selectionIntent), F6/P2 (новый authoritative состав вызывает лишний конфликт), F7/P2 (leading space теряет Simple leaf/focus). F3/F7 подтверждены и на исходном ae121565; остальные относятся к новой реализации/неполному выполнению критерия. Семь component-сценариев и два PostgreSQL legacy-сценария воспроизвели нарушения; пять DB baseline-сценариев прошли, F7 дополнительно проверен Chromium.
@@ -93,3 +95,14 @@ Owner перевёл опубликованные findings в совместно
 - Общая version может продвинуться только из-за текста; это не доказательство возраста offline attachment intent. Generation/status/published revision сохраняются как fences, не свободные стороны product choice.
 - Новая таблица/registry/attachment-version не обоснована; code rewrite не нужен. Approval исправлений не объявлял. Код/тесты #232 и source-of-truth docs не менялись, новых runtime прогонов в этом шаге нет.
 - Следующий предлагаемый gate: Лира проверяет revised scope, Мира сводит результат для owner decision, включая mixed precedence. Correction пока не начинать.
+
+## Removal boundary review — 2026-10-20
+
+Проверены owner decision/service head `4bdd630`, implementation `3b30d8d` и main `21386887`. [Полный source-level audit](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6291072682).
+
+- Удаление drafts/autosave технически обосновано. Не исправлять старый T/S conflict mechanism перед удалением; не сохранять text head ради attachment fences.
+- Подтверждены зависимости editor-attachments, attachment API context validation, DB attachment create/read/list/initializer/ref operations, publication finalizer и cleanup от draft store. В subtask обязательно снять их сквозным проходом, сохранив права/locking и upload/publication operation без текста/recovery.
+- Существующие refs, generation retirement и publication receipts пригодны как основа минимальной technical operation; новая persistent table заранее не нужна. Post revision CAS и retained/new published-file validation сохраняются.
+- F1–F6/M2/M3 не отдельный correction backlog при удалённых paths; F2 recovery requirement отменён, published asset safety остаётся. M1 oracle пересматривается под final submitted selection + validated operation refs; F7 независим и обязателен.
+- Не переписывать merged migrations 0034–0044 и не тащить 0045 без необходимости. Без массовой schema-чистки/переименований ради слов draft. Старый text не импортировать в technical session.
+- Новых runtime/DB/browser тестов не выполнял, implementation не менялся. Scope готов для оформления bounded subtask, где фиксируются конкретный attachment contract/cleanup cutoff; это не implementation approval и не утверждение об уже исправленных findings. Следующий шаг — Мира.

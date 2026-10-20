@@ -553,6 +553,17 @@ PR #232 больше не является correction-пакетом сущес�
 
 #232 до implementation subtask не менять.
 
+## Архитектурная проверка removal boundary Лёвы — завершена
+
+[Заключение и проверяемые критерии](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6291072682): проверены source paths implementation `3b30d8d` и main `21386887`. **PASS продуктовой границе удаления**, не PASS ещё отсутствующей removal-реализации. Runtime/DB/browser проверки в этом шаге не выполнялись; #232 не менялся.
+
+- Установлены surviving зависимости attachments/publication/cleanup от text draft-store: readiness/callbacks editor, context validation в upload API, read/list/create/initializer/ref mutations, finishPublishedDraft terminal writes и cleanup purgeExpired. Простого удаления useEditorDraft недостаточно.
+- Минимальная technical operation identity допускает temporary refs, verification, scope locks, retirement/late-request fencing и existing publication receipts без пользовательского text payload, autosave/recovery/conflicts. Новая persistent subsystem/table не обоснована. Exact implementation contract и технический cleanup cutoff фиксируются в bounded subtask.
+- Published edit сохраняет самостоятельный post revision fence, retained/new attachment validation, Save/Cancel, rollback и access revocation. Это не draft recovery. Mode/fullscreen/Undo и buffer после validation error также сохраняются.
+- Прежние F1–F6/M2/M3 закрываются только фактическим удалением paths; legacy draft recovery F2 больше не requirement. M1 переклассифицируется по новому operation/ref publication contract; отсутствие selected text snapshot само по себе больше не failure. **F7 остаётся отдельным current-Stage исправлением.**
+- Merged migration history 0034–0044 не переписывать; snapshot-purpose 0045 не включать без surviving necessity. Массовый DROP/rename исторических таблиц не является условием runtime removal. Старые drafts не импортировать в новую operation.
+- Старые A–G/T/S/mixed-conflict gates superseded removal scope; их не чинить перед удалением. Новое завершение требует статического удаления связей, browser/network/storage proof отсутствия autosave/recovery, real PostgreSQL/Worker/R2 attachment lifecycle, F7 и применимых full checks на новом stable head.
+
 ## Текущий следующий шаг
 
-Мира завершает removal-boundary audit и передаёт Лёве через #234 только результат/критерии нового bounded removal scope для независимой технической проверки перед изменением #232.
+Лёва завершил независимую source-level проверку removal boundary в комментарии `6291072682`. Мира сводит bounded implementation subtask с surviving attachment/publication contract, cleanup cutoff и acceptance criteria; #232 не менять до назначения implementation subtask согласно owner decision. Старый mixed-conflict gate не переносится.
