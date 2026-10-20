@@ -410,3 +410,16 @@ Migration/boundary data-loss suspicion отдельно проверена и н
 - три finding Миры не дублируют F1–F7; M3 отличается от F6 тем, что рассматривает корректный manual fallback, а не лишний конфликт.
 
 Текущее рабочее множество: **10 уникальных current-Stage findings** для совместного согласования. Correction/implementation ещё не назначены.
+
+
+## 2026-10-20 — совещание #232, шаг 2
+
+Сведены выводы Лёвы `6289132230` и Лиры `6289437454`.
+
+Результат:
+- A–G приняты как bounded correction workstreams, не как единые root causes.
+- Сохраняются 10 независимых regression obligations F1–F7 + M1–M3; F2 имеет два compatibility-сценария.
+- Snapshot/CAS достаточна как архитектурная основа; новая table/registry/attachment-version не обоснована.
+- A и E требуют отдельных acceptance assertions по каждому finding.
+- Mixed remove+add остаётся owner product decision; до решения не является acceptance oracle.
+- Implementation #232 остаётся STOP до owner gate.
