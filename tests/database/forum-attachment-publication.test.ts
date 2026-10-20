@@ -72,9 +72,6 @@ afterAll(async () => {
   await client.end();
 });
 
-describe("text-only publication attachment fence", () => {
-});
-
 describe("published post editing and revision history", () => {
 
   it("removes only deselected published refs atomically with Save and includes the selection in retry identity", async () => {

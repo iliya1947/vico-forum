@@ -35,13 +35,14 @@ post-edit сохраняет expectedRevisionId, Save/Cancel и историю. 
 сохраняются. Merged migrations не переписываются, unmerged snapshot migration 0045 удалена.
 F7 исправляется в visual surface и editable whitespace range.
 
-Локально прошли 974 application tests, 272 PostgreSQL 17 tests, typecheck, builds,
-migration-history/schema parity и runtime privilege probes. Chromium на настоящих
-Worker/PostgreSQL/local private R2 подтвердил четыре authoring flows, отсутствие text
-autosave после 61 секунды и reload recovery, parallel uploads, selected-only publication,
-reply/IME, post-edit Remove/Cancel/Save и access revocation. Отдельно проверен native
-ввод после одного, двух и четырёх ведущих пробелов. Exact-head CI, owner visual acceptance
-и новый независимый whole-PR review ещё не выполнены. Подробный действующий контракт — docs/EDITOR.md.
+Локальные targeted component/application проверки (93 теста) и publication/operation
+PostgreSQL проверки (12 тестов) проходят с нулём failed suites и unhandled errors.
+TypeScript, builds, migration/schema/privilege guards и production-build Workers smoke
+проверены. Chromium/Worker/PostgreSQL/local private R2 подтвердил четыре authoring flows,
+отсутствие text autosave/reload recovery, upload/publication/edit access и F7, включая
+1/2/4 ведущих пробела. Итоги полного exact-head CI фиксируются в служебном канале;
+owner visual acceptance и новый independent whole-PR review ещё не выполнены.
+Подробный действующий контракт — docs/EDITOR.md.
 Production/external migrations/deployment не выполнялись. Ниже сохранены исторические
 срезы Editor 2.0; их описания drafts/boundaries/CAS не являются текущими требованиями.
 

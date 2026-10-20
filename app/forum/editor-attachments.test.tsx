@@ -314,8 +314,6 @@ describe("editor attachment UI", () => {
 });
 
 
-describe("late attachment removal", () => {
-});
 
 function renderDraftEditor() {
   return render(<I18nextProvider i18n={runtime()}>
@@ -393,7 +391,4 @@ describe("MarkdownEditor inline image source/history integration", () => {
     await waitFor(() => expect(textarea).toHaveValue("Before After"));
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
-});
-
-describe("MarkdownEditor attachment and draft integration", () => {
 });

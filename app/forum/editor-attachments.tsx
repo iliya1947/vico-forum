@@ -266,7 +266,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
     function handleDragOver(event: DragEvent<HTMLElement>) { if (event.dataTransfer.types.includes("Files"))
         event.preventDefault(); }
     function handlePaste(event: ClipboardEvent<HTMLElement>) {
-        const files = Array.from(event.clipboardData.files).filter(file => file.type.startsWith("image/"));
+        const files = Array.from(event.clipboardData?.files ?? []).filter(file => file.type.startsWith("image/"));
         if (files.length) {
             event.preventDefault();
             event.stopPropagation();
