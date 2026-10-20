@@ -143,3 +143,13 @@ Exact implementation head при начале review должен остават
 - дать явный PASS/REQUEST REVISION grouping для следующего шага совещания.
 
 Mixed remove+add precedence не определять самостоятельно. Implementation #232 не менять; correction не начинать.
+
+
+## Совещание #232 — шаг 2: independent causal-group review (2026-10-20)
+
+- Задача Миры после accepted dedup: проверить группировку Лёвы A–G и скрытые product decisions на unchanged implementation head `3b30d8d…`.
+- **PASS A–G как bounded correction workstreams, не как семь доказанных root causes.** Особенно A=F1/F3/F5 (ACK overwrites newer input; versionless GET mixes candidates; invalid provisional cache), E=F6/M2 (known-newer attachment order vs repeated identical autosave) требуют раздельного доказательства для каждого finding. 10 distinct current-Stage findings остаются; F2 два compatibility cases.
+- B↔C dependency: legacy восстановление selected должно стать authoritative snapshot до publication; staged pool-only asset не publishable. Legacy absent/explicit [] нельзя смешивать; непроверенную selection нельзя автоматически восстанавливать из всего pool.
+- D expiry localStorage ownership, F manual candidate visibility и G whitespace Simple focus — отдельные компактные boundaries.
+- Mixed remove+add owner precedence **не определено**; clean F6 acceptance — `{A}→{A,B}` с одинаковым текстом и доказанным серверным порядком, offline incomparable остаётся manual.
+- Вывод опубликован в комментарии PR #234 `6289437454`. Ни реализации, ни новых runtime tests не проводила; общую сводку не изменяла до решения Миры. Следующий шаг — Мира сводит consensus и готовит owner decision gate.
