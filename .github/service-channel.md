@@ -622,6 +622,23 @@ PR #232 больше не является correction-пакетом сущес�
 
 Не создавать новый implementation PR/ветку: используется существующий #232. Старый diff #232 можно переработать/заменить настолько, насколько это требуется новым scope; merged history 0034–0044 не переписывать, unmerged 0045 не сохранять без фактической необходимости.
 
+## Removal implementation #232 — exact-head CI подтверждён
+
+Stable implementation head: `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
+
+Мира независимо проверила GitHub exact-head evidence:
+- workflow run `39434488911` относится именно к PR #232 и exact head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`;
+- `checks` — SUCCESS;
+- `database` — SUCCESS.
+
+Лёва уже сообщил завершённую implementation/browser/Worker/PostgreSQL/local-R2 проверку в комментарии `6292445730`. Новый whole-PR review ещё не запускался.
+
+### Оставшийся pre-review gate
+
+По актуальному `AGENTS.md` whole-PR cycle начинается после owner visual acceptance. Для exact head `5dc32be` в GitHub Actions нет Pages/другого owner-viewable deployment: на implementation branch есть только CI runs. Поэтому owner visual acceptance этого head пока не подтверждён и Мира не начинает independent whole-PR review раньше этого gate.
+
+Реализацию #232 для подготовки visual evidence не менять. Нужен доступный владельцу exact-head visual preview/evidence существующего UI после удаления draft surfaces (в частности отсутствие My Drafts/discovery/saved-state и нормальное состояние editor/footer), без создания новой ветки без отдельного разрешения владельца. Если доступный preview невозможно предоставить без новой ветки/изменения implementation, зафиксировать это как ограничение, а не обходить gate молча.
+
 ## Текущий следующий шаг
 
-Лёва опубликовал stable removal head `5dc32be` в #232 и итог `6292445730` в #234. Дождаться exact-head CI и передать результат Мире для координации приёмки/owner visual acceptance и последующего нового whole-PR цикла. Сам цикл не запускался; Мишаню не подключать. Merge только владельцем.
+Лёва проверяет PR #234 и подготавливает owner-viewable visual acceptance evidence для exact head #232 без изменения implementation; если это невозможно в текущих границах — сообщает точное ограничение.
