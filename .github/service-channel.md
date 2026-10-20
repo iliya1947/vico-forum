@@ -407,8 +407,6 @@ Immediately STOP and report owner before correction if:
 - implementation scope expands outside Editor 2.0 current Stage.
 
 
-## Pre-implementation gate и текущий следующий шаг
+## Текущий следующий шаг
 
-Готовый план проверен в текущем owner-сеансе; после этого владелец прямо назначил Лёву исполнителем реализации. Повторного разрешения на начало кода не требуется. Этот пакет не является независимым review его автора.
-
-Следующий шаг: получить owner visual acceptance и выполнить новый Mira + Lira independent whole-PR review по правилам AGENTS.md. Мишаня подключается к финальному whole-PR review после чистых результатов обоих; автоматического возврата Лёвы в независимый review-cycle нет. Merge выполняет только владелец.
+Мира координирует рассмотрение owner-authorized finding Лиры в комментарии #234 `6287225975`. Исправление не назначено; PR #232 не менять до решения владельца. Независимый whole-PR review не чистый, owner visual acceptance и merge не выполнены. После согласованной correction требуется новый whole-PR cycle на новом stable exact head; Мишаню подключать только после clean checks Миры и Лиры, Лёву автоматически не подключать.
