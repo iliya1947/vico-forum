@@ -6,11 +6,11 @@ Owner назначил Лёву исполнителем removal scope; реал
 
 Удалены пользовательские drafts/autosave/recovery/conflicts/UI; сохранены недрафтовый editor и operation/ref-based attachments/publication/editing без text storage/CAS. F7 исправлен, включая whitespace range/projection/native caret. Merged migration history не менялась, unmerged 0045 удалена.
 
-Локально PASS: исправленные targeted suites 93 application/component / 12 PostgreSQL tests с success=true и без failed suites/unhandled errors, types, builds, lint без ошибок (старое warning), schema/history/manifest/privilege guards, production-build Workers smoke. Реальный Chromium/Worker/PostgreSQL/local R2 подтвердил четыре flows, отсутствие autosave/reload recovery, uploads/publication/IME/edit-access и 1/2/4 leading spaces. CI [39434488911](https://github.com/iliya1947/vico-forum/actions/runs/39434488911) pending; автор не является независимым reviewer.
+Локально PASS: исправленные targeted suites 93 application/component / 12 PostgreSQL tests с success=true и без failed suites/unhandled errors, types, builds, lint без ошибок (старое warning), schema/history/manifest/privilege guards, production-build Workers smoke. Реальный Chromium/Worker/PostgreSQL/local R2 подтвердил четыре flows, отсутствие autosave/reload recovery, uploads/publication/IME/edit-access и 1/2/4 leading spaces. CI [39434488911](https://github.com/iliya1947/vico-forum/actions/runs/39434488911) **checks SUCCESS, database SUCCESS**, 974 application / 272 PostgreSQL tests PASS; автор не является независимым reviewer.
 
-Остановился после реализации. Independent whole-PR review/owner visual acceptance не запускались, merge/deployment не выполнялись. Мишаня не участвует. Следующий шаг — exact-head CI и Мира для координации приёмки. Исторические draft-correction материалы ниже superseded owner removal decision.
+Остановился после реализации. Independent whole-PR review/owner visual acceptance не запускались, merge/deployment не выполнялись. Мишаня не участвует. Следующий шаг — Мира для координации приёмки проверенного head. Исторические draft-correction материалы ниже superseded owner removal decision.
 
-Первый removal head a29e15f/CI 39433774478 был FAIL: пустые retired test suites и text-only clipboard без files. Прошедшие 974/272 assertions ранее ошибочно названы полным PASS; утверждение исправлено. Причины устранены в 5dc32be; новый full exact-head CI pending.
+Первый removal head a29e15f/CI 39433774478 был FAIL: пустые retired test suites и text-only clipboard без files. Прошедшие 974/272 assertions ранее ошибочно названы полным PASS; утверждение исправлено. Причины устранены в 5dc32be; новый full exact-head CI 39434488911 завершился SUCCESS в обоих jobs.
 
 ## Действующий технический вывод
 
