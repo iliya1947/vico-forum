@@ -107,3 +107,17 @@ Exact implementation head при начале review должен остават
 - **Current-Stage product-rule regression, source-level:** `checkRemoteNow()` может открыть conflict при одинаковом text `T`, local dirty marker и подтверждённой newer server version с unrelated new attachment. Пример: base `G@v1 {A}`; local `G@v1 {A}`, `editedAt != syncedEditedAt`, body/title/tags совпадают; server `G@v2 {A,B}`. `keptAttachmentSelection` возвращает `null` для new `B`; clean-local path не работает; payload JSON отличается; получается `updateConflict`, хотя owner rule требует newer authoritative attachment set `{A,B}`. Для clean local fast-path корректен — finding только о dirty-but-text-equivalent варианте.
 - Прямая публикация по команде владельца в комментарии PR #234 `6287225975`; туда включены причинная цепочка, границы воспроизведения и targeted regression.
 - Browser/PG тест именно этого сценария мной не выполнен, потеря файлов не доказана. Никакого кода #232 не меняла, correction не проектировала/не выполняла до owner agreement. Следующий workflow — Мира координирует рассмотрение findings.
+
+
+## Совещание по findings #232 — участие Лиры
+
+Независимый review завершён, findings раскрыты владельцем для согласования. Теперь независимость этапа review больше не требуется: можно читать и обсуждать findings Миры и Лёвы.
+
+В комментариях PR #234:
+- проверить F1–F7 Лёвы и M1–M3 Миры на дубли/противоречия со своим finding;
+- отдельно проверить, какие нарушения имеют общий root cause;
+- оспаривать finding, если causal chain недостаточна;
+- предложить causal grouping и минимальные correction boundaries, не диктуя реализацию;
+- не менять #232.
+
+Цель — прийти к согласованному техническому выводу вместе с Мирой и Лёвой.
