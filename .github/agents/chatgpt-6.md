@@ -99,3 +99,11 @@ Implementation PR #232 находится на stable exact head `3b30d8d7b04ead
 Во время review #232 не менять. Первый finding review не завершает. Возможные проблемы сначала диагностировать и классифицировать current-Stage vs future-only. Все findings сообщить только владельцу в текущем чате; **не записывать их в #234 до отдельной команды владельца после завершения независимых проверок**, согласно `AGENTS.md`.
 
 Exact implementation head при начале review должен оставаться `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; если implementation head изменился — не переносить выводы со старого head и сообщить владельцу.
+
+
+## Независимый whole-PR review #232 — опубликованный finding (owner authorization)
+
+- Checked exact implementation head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; CI `checks` + `database` PASS.
+- **Current-Stage product-rule regression, source-level:** `checkRemoteNow()` может открыть conflict при одинаковом text `T`, local dirty marker и подтверждённой newer server version с unrelated new attachment. Пример: base `G@v1 {A}`; local `G@v1 {A}`, `editedAt != syncedEditedAt`, body/title/tags совпадают; server `G@v2 {A,B}`. `keptAttachmentSelection` возвращает `null` для new `B`; clean-local path не работает; payload JSON отличается; получается `updateConflict`, хотя owner rule требует newer authoritative attachment set `{A,B}`. Для clean local fast-path корректен — finding только о dirty-but-text-equivalent варианте.
+- Прямая публикация по команде владельца в комментарии PR #234 `6287225975`; туда включены причинная цепочка, границы воспроизведения и targeted regression.
+- Browser/PG тест именно этого сценария мной не выполнен, потеря файлов не доказана. Никакого кода #232 не меняла, correction не проектировала/не выполняла до owner agreement. Следующий workflow — Мира координирует рассмотрение findings.
