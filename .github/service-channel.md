@@ -436,6 +436,24 @@ Owner-authorized публикации:
 
 Лёва предложил семь causal groups A–G и дал architect conclusion: текущая snapshot/CAS модель достаточна для bounded correction; новая table/registry/attachment-version сейчас не требуется. Это **ещё не общий consensus совещания**, пока Лира независимо не проверит grouping и transition boundaries.
 
+## Совещание #232 — шаг 2 завершён: bounded correction consensus
+
+По независимой проверке Лиры `6289437454` и архитектурному разбору Лёвы `6289132230` согласовано:
+
+- Разбиение **A–G принято как семь ограниченных correction workstreams**, а не как семь доказанных единых root causes.
+- **A = F1/F3/F5**: одна область сохранности/владения candidate, но три независимых перехода и три отдельные regression obligations.
+- **B = F2**: отдельная legacy→authoritative boundary; оба подтверждённых compatibility-сценария обязательны. Undefined manifest нельзя автоматически трактовать ни как explicit `[]`, ни как «весь pool selected».
+- **C = M1**: отдельный server-side publication fence; pool/staged asset не становится publishable без authoritative selected manifest. При этом text-only publication, explicit empty selection и корректный post-edit path должны сохраниться.
+- **D = F4**: отдельная localStorage ownership/expiry boundary; просроченная вкладка не может удалить свежую запись другой вкладки и не должна воскрешать собственный expired payload.
+- **E = F6 + M2**: общий workstream ACK/dirty/ordering, но два самостоятельных дефекта. `syncedEditedAt` не является достаточным универсальным доказательством causality.
+- **F = M3**: отдельный manual-conflict presentation boundary; различающийся selected composition должен быть понятен только там, где manual choice действительно корректен.
+- **G = F7**: отдельная Simple DOM boundary; исправление ограничивается сохранением editable surface/focus для empty/whitespace и связанных native/IME/programmatic transitions.
+- Всего остаётся **10 independent current-Stage regression obligations**: F1–F7 + M1–M3; у F2 два обязательных compatibility-сценария.
+- **Snapshot/CAS модель признана достаточной основой** для bounded correction. Подтверждённой необходимости новой persistent table, registry, отдельной attachment-version или полного rewrite runtime нет.
+- Если локальное исправление любого workstream потребует нового compensating registry/table/version, молчаливого объединения несовместимых legacy generations или нарушит принятый invariant — **architect STOP**, а не наращивание patch-chain.
+- Mixed remove+add остаётся **неутверждённым продуктовым случаем**: base `{A}`, local retains `{A}`, authoritative newer server `{B}` одновременно затрагивает keep removed-vs-retained и newer-composition rules. До решения владельца этот сценарий не использовать как acceptance oracle. Чистый F6 case `{A} → {A,B}` уже достаточен для доказательства текущего defect.
+- PR #232 остаётся на exact implementation head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; correction не начинался.
+
 ## Текущий следующий шаг
 
-Лира проверяет предложенный Лёвой causal grouping A–G, особенно объединения F1/F3/F5 и F6/M2, а также границы F2/M1/F4/M3/F7. Она должна явно указать согласие/возражения, недостающие transition proofs и неявные product decisions. #232 не менять.
+Owner gate: владелец определяет precedence для mixed remove+add и отдельно разрешает либо отклоняет bounded correction. До этого #232 не менять.
