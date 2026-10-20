@@ -82,3 +82,14 @@ Owner перевёл опубликованные findings в совместно
 - Принятая snapshot/CAS модель достаточна как основа bounded correction. Не установлена необходимость новой table/registry/attachment-version или возврата boundaries. Это не approval текущего кода/реализации correction.
 - До owner decision нужны согласованный scope и transition proof, особенно headless legacy/multiple generations, migration applicability, pending intent across generation, publication без раннего autosave и сохранность fresh other-tab cache.
 - Следующий шаг: Лира проверяет grouping/возражения, Мира сводит общий результат для owner decision. Их согласие не объявлено заранее. Correction не начат.
+
+## Revised scope после owner decouple decision — 2026-10-20
+
+Назначение из service head b7434ba выполнено: [scope и attachment-only предложение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6290312937), implementation остаётся `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`.
+
+- T/S decisions независимы, persistence/CAS атомарны. Старый same-text gate helper и whole-payload choice не соответствуют новому требованию; revised A/E/F закрывают независимые решения и их recovery. Это revision требований, не новый finding задним числом.
+- A–G и 10 исходных regression obligations сохранены. Добавлена матрица одинакового/различающегося T × auto/manual S, cross-combinations и stale head после частичного выбора.
+- Предложил mixed rule: доказанный retained-vs-removed base-file K сохраняется, остальные additions — known-newer либо manual choice; `S_result = S_chosen ∪ K`. Не выдавать это уточнение precedence за уже утверждённый owner rule. Без base/causality не выдумывать K/newer, не union unrelated additions.
+- Общая version может продвинуться только из-за текста; это не доказательство возраста offline attachment intent. Generation/status/published revision сохраняются как fences, не свободные стороны product choice.
+- Новая таблица/registry/attachment-version не обоснована; code rewrite не нужен. Approval исправлений не объявлял. Код/тесты #232 и source-of-truth docs не менялись, новых runtime прогонов в этом шаге нет.
+- Следующий предлагаемый gate: Лира проверяет revised scope, Мира сводит результат для owner decision, включая mixed precedence. Correction пока не начинать.

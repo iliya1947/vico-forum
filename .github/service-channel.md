@@ -476,6 +476,17 @@ Owner-authorized публикации:
 
 #232 остаётся неизменённым до обновления bounded correction scope под это решение.
 
+## Revised bounded scope Лёвы под независимые T/S decisions — на проверку
+
+По назначению после owner decision Лёва опубликовал [конкретный revised scope](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6290312937) для unchanged implementation head `3b30d8d`.
+
+- Утверждённый owner contract: T (текст) и S (selected composition) разрешаются независимо; единый atomic snapshot/version и generation/status fences сохраняются. Прежние same-text-only ограничения auto attachment rules и выбор целого payload не являются актуальными требованиями к correction.
+- A–G и десять исходных regression obligations сохранены; scope A/E/F дополнен независимыми decisions, combined exact-CAS commit и матрицей text-only / attachments-only / двух отдельных choices. Это предложение архитектора, не общее approval correction.
+- Mixed attachment-only **предложение для согласования**, а не принятое owner rule: при доказанном общем base B вычислить `K = B ∩ (L △ R)`; сохранять K по same-file keep, а остальные additions брать из доказанно более нового S либо независимого manual attachment choice. Не union unrelated additions. Пример base/local `{A}`, newer remote `{B}` → предложено `{A,B}` (keep A + newer B). Независимость T/S сама по себе не утверждает этот precedence.
+- Нет доказанного общего base/ordering — не выдумывать remove/retain или newer intent по номеру text-only commit/часам клиента. Применять согласованный manual fallback; legacy ambiguity не решать присвоением pool статуса selected.
+- Новая table/registry/attachment-version не обоснована. Частичные UI choices не требуют отдельной DB persistence; recovery должен сохранять candidates и позволять повторный независимый выбор. Exact seen-CAS, поздний ввод, lost-ACK и generation proofs обязательны.
+- Runtime/DB/browser execution в этом шаге не выполнялся: это revision scope по новому продуктовому правилу и checked source paths. Код #232 не менялся.
+
 ## Текущий следующий шаг
 
-Лёва пересматривает bounded correction scope для #232 с новым owner rule: text conflict resolution и attachment conflict resolution независимы, при сохранении единого atomic snapshot/CAS persistence contract.
+Лёва завершил revised bounded scope. Следующий предлагаемый gate: Лира независимо проверяет scope и mixed attachment-only предложение из комментария `6290312937`; Мира сводит результат для owner decision. Предлагаемый mixed precedence не считать утверждённым; implementation #232 пока не менять.
