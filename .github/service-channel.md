@@ -519,6 +519,40 @@ Owner-authorized публикации:
 
 До owner decision mixed remove+add не является acceptance oracle.
 
+## Решение владельца: черновики/автосохранение убрать из текущего Editor 2.0
+
+Владелец прекратил дальнейшую correction-chain draft subsystem и перенёс **пользовательские черновики + автосохранение** в возможные будущие функции.
+
+### Текущий product scope
+
+Из текущего Editor 2.0 должны быть удалены:
+
+- persistent local text draft/cache и восстановление после reload/navigation;
+- 60-second server text autosave;
+- metadata/content recovery, cross-tab/device draft synchronization и draft conflict/version-choice UI;
+- 30-day user-draft lifecycle/expiry semantics;
+- страница «Мои черновики», draft discovery/banner и header entry;
+- draft status/copy, относящиеся к пользовательскому сохранению/восстановлению;
+- post-edit recovery как пользовательский draft feature.
+
+`Drafts and autosave` уже существует в `main` как отдельный `Under development` target (`UNDER_DEVELOPMENT_FEATURES: drafts`) и остаётся там как future functionality. Документация Editor должна также перестать объявлять drafts/autosave текущим контрактом и перенести их в секцию возможных будущих функций.
+
+### Что НЕ удаляется вместе с drafts
+
+Editor 2.0 сохраняет текущие недрафтовые возможности: Simple/Advanced Markdown, formatting/code tooling, Preview/Split/Fullscreen, Reply/Quote, mentions, attachments, publication и editing published posts.
+
+Attachments должны продолжить работать, но **не через persistent text-draft lifecycle**. Допустима только минимальная техническая identity/session для незавершённых upload/publication операций, если она реально необходима; она не должна сохранять пользовательский text payload, выполнять background text autosave, восстанавливать текст после reload или вводить cross-tab draft merge/conflict semantics. Конкретную реализацию исполнитель выбирает после проверки существующих attachment refs/publication boundaries; новую persistent subsystem/table не вводить без подтверждённой необходимости.
+
+### Последствие для PR #232 и прежних findings
+
+PR #232 больше не является correction-пакетом существующей draft snapshot/CAS модели. Он должен быть переработан в bounded removal/decoupling текущей draft-функции без создания новой ветки.
+
+Прежние F1–F6, M2/M3 и связанные draft reconciliation obligations **не переносятся автоматически** в новый scope: если удаляется их runtime/path, finding закрывается удалением причины, а не отдельным исправлением. F7 (Simple whitespace/focus) независим от drafts и остаётся current-Stage defect. M1/attachment publication и другие attachment invariants должны быть повторно классифицированы уже против реально оставшегося post-removal path; не сохранять старую архитектуру только ради закрытия старых findings.
+
+Не переписывать уже merged migration history 0034–0044. Если после decoupling schema действительно становится неиспользуемой, cleanup выполняется forward migration только в фактически необходимом объёме. Незамерженную 0045 из #232 не считать обязательной и не вносить в main, если её draft snapshot purpose исчезает.
+
+#232 до implementation subtask не менять.
+
 ## Текущий следующий шаг
 
-Владелец подтверждает или изменяет attachment-only mixed rule: при доказанном common base и newer attachment intent сохранять removed-vs-retained base-файл поверх newer additions (`S_new ∪ K`), что для `{A} / {A} / {B}` даёт `{A,B}`.
+Мира завершает removal-boundary audit и передаёт Лёве через #234 только результат/критерии нового bounded removal scope для независимой технической проверки перед изменением #232.
