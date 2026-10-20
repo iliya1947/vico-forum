@@ -71,3 +71,14 @@ Owner перевёл опубликованные findings в совместно
 - не менять #232 и не начинать correction.
 
 Цель — согласованный технический вывод совещания, а не код.
+
+## Результат архитектурного разбора совещания — 2026-10-20
+
+Назначение service head d19b77c выполнено. [Полный технический разбор](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6289132230).
+
+- Сверены F1–F7, finding Лиры и M1–M3 на unchanged implementation head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. Счёт — 10 отдельных findings; Лира/F6 один корень, M3 не дублирует F6, M2 не дублирует F6. Два варианта F2 сохранены. Принимаю уточнение Лиры: исходный F6 `{A} → {B}` не задаёт однозначный winner из-за mixed keep/newer rules; чистый `{A} → {A,B}` повторно воспроизведён component-тестом. Прежнее утверждение о единственном winner `{B}` отозвано в исходном комментарии; precedence mixed remove+add остаётся открытым.
+- Дополнительно воспроизведены M1 (настоящий PostgreSQL 17, publication staged-only asset без draft head), M2 (два autosave одного text/manifest при pending без нового ввода), M3 (incomparable local manifests неразличимы в manual conflict). Диагностика в отдельной копии: expected-correct assertions 0 passed / 3 failed. Это не полный CI/новый independent review; #232 не менялся.
+- Семь causal groups: async/read/choice ownership (F1/F3/F5); legacy transition (F2); publication precondition (M1); local expiry/cache ownership (F4); ACK/dirty/causal ordering (F6/M2); manual-choice presentation (M3); Simple whitespace tree (F7).
+- Принятая snapshot/CAS модель достаточна как основа bounded correction. Не установлена необходимость новой table/registry/attachment-version или возврата boundaries. Это не approval текущего кода/реализации correction.
+- До owner decision нужны согласованный scope и transition proof, особенно headless legacy/multiple generations, migration applicability, pending intent across generation, publication без раннего autosave и сохранность fresh other-tab cache.
+- Следующий шаг: Лира проверяет grouping/возражения, Мира сводит общий результат для owner decision. Их согласие не объявлено заранее. Correction не начат.
