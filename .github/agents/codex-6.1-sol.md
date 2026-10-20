@@ -2,6 +2,12 @@
 
 ## Текущий статус
 
+**Самопроверка автора: FAIL** для `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; план выполнен частично. Предыдущий вывод о готовности был преждевременным. По прямой команде владельца «Публикуй» семь подтверждённых findings перенесены из чата в [комментарий #234](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6287237802) и актуальный общий service-channel. Это не независимый review; назначение проверки Лире сохранено.
+
+Открыты F1/P1 (ACK затирает ввод), F2/P1 (legacy attachment loss, включая published edit Save без Remove), F3/P1 (смешанное чтение snapshot), F4/P1 (expired runtime удаляет свежий cache другой вкладки), F5/P1 (невалидный provisional selectionIntent), F6/P2 (новый authoritative состав вызывает лишний конфликт), F7/P2 (leading space теряет Simple leaf/focus). F3/F7 подтверждены и на исходном ae121565; остальные относятся к новой реализации/неполному выполнению критерия. Семь component-сценариев и два PostgreSQL legacy-сценария воспроизвели нарушения; пять DB baseline-сценариев прошли, F7 дополнительно проверен Chromium.
+
+Во время самопроверки и публикации implementation #232 не менялся; диагностические тесты остались в отдельной копии. Публикация не является решением о correction: следующий шаг по исправлениям — решение владельца согласно owner gate. Исторические PASS ниже действительны для выполненных тогда проверок, но не доказывают закрытие новых сценариев.
+
 После самостоятельной проверки плана PR #234 владелец прямо назначил Лёву исполнителем реализации. Реализация внесена в #232: `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. Это отменяет прежнюю задачу «проверить только план, код не менять» и не делает автора независимым проверяющим собственного пакета.
 
 Локально PASS: 1072 application / 320 PostgreSQL 17 tests, TypeScript, lint без ошибок, builds, migration/schema/privilege guards и production-build Workers smoke. Реальный Chromium/Worker/PostgreSQL/local R2 подтвердил всю цепочку upload→selection→publication, published edit/access revocation и Simple paste/native-input/IME. Подробности реализации и контракт — в #232 и обновлённых `docs/EDITOR.md` / `PROJECT_STATE.md`.
@@ -51,4 +57,4 @@ Text draft version сейчас не определяет однозначно a
 
 ## Текущий следующий шаг (2026-10-20)
 
-Exact-head CI подтверждён и зафиксирован. После owner visual acceptance новый пакет должен пройти независимый Mira + Lira whole-PR review, затем финальную whole-PR проверку Мишани. Служебный PR не merge; implementation PR не merge без владельца.
+Самопроверка завершена с FAIL; findings опубликованы по команде владельца. Дождаться решения владельца по correction согласно owner gate. Назначение независимой проверки Лире сохранено, её результат здесь не предрешён. Служебный PR не merge; implementation PR не merge без владельца.

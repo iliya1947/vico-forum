@@ -4,6 +4,8 @@
 
 ## Текущее состояние
 
+- **Самопроверка автора: FAIL** для `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. План выполнен частично; предыдущий вывод о готовности не подтверждён. [Полные findings, причинные цепочки и воспроизведения](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6287237802).
+- По прямой команде владельца «Публикуй» результаты перенесены из чата в #234. Код #232 не менялся. Решение о correction ещё не принято; действует owner gate ниже. Назначение независимой проверки Лире сохранено; самопроверка автора её не заменяет.
 - Implementation PR: #232 — Editor 2.0 snapshot/CAS correction.
 - Stable implementation/code/test head: `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`.
 - После проверки плана #234 владелец прямо поручил реализацию Лёве вместо передачи Мишане. Прежний implementation STOP снят этим поручением; текущий пакет реализован в #232. Служебный PR по-прежнему не merge.
@@ -11,7 +13,7 @@
 - Локально: 1072 application tests и 320 PostgreSQL 17 tests PASS; typecheck, lint без ошибок, application/UI-preview builds, Drizzle metadata/schema parity, migration-history guard, schema-manifest/runtime privilege probes и production-build Workers smoke PASS.
 - Chromium → настоящий Worker/PostgreSQL + локальный private R2: focused paste→typing, native input/IME в пустом абзаце, параллельные uploads с сериализованным selection CAS без early text save, selected-only publication, published edit download/Remove/Save и access revocation PASS; page errors отсутствовали.
 - CI exact head: https://github.com/iliya1947/vico-forum/actions/runs/39348511251 — `checks` SUCCESS, `database` SUCCESS.
-- Новый independent whole-PR review, owner visual acceptance и merge не выполнены. Старые review/acceptance не относятся к новой реализации. Production migration/deployment и external R2 не выполнялись.
+- Новый independent whole-PR review не признан чистым: опубликован finding Лиры (см. ниже). Owner visual acceptance и merge не выполнены. Старые review/acceptance не относятся к новой реализации. Production migration/deployment и external R2 не выполнялись.
 
 ## Независимый whole-PR review #232 — открытый finding
 
@@ -22,6 +24,22 @@
 - CI exact-head остаётся green. Finding опубликован для согласования; **разрешения на коррекцию это не означает**. PR #232 не менять до решения владельца и координации Миры.
 
 Текущий этап independent review **не признан чистым**, merge преждевременен. Следующий шаг: Мира координирует рассмотрение опубликованного finding с владельцем и соответствующим исполнителем; старые scope/acceptance правила сохраняются.
+
+## Подтверждённые дефекты реализации 3b30d8d — открыты
+
+Самопроверка автора, опубликована по прямой команде владельца. Подробные воспроизведения и exact-head source links: [комментарий Лёвы](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6287237802).
+
+1. **F1 / P1:** ACK автоматического attachment keep/remove CAS безусловно применяет server payload и теряет текст, введённый во время запроса. Новая регрессия.
+2. **F2 / P1:** legacy-нормализация теряет selected attachment при upload до первого text save; в старом post-edit draft отсутствие manifest превращается в [], и обычный Save может удалить опубликованный файл без Remove. Подтверждены оба варианта на PostgreSQL; новая регрессия перехода.
+3. **F3 / P1:** attachment GET без snapshot version подменяет local manifest данными N+1 при сохранённом baseVersion N. Остаточный дефект исходного head, единая модель не доведена до reader path.
+4. **F4 / P1:** expired runtime вкладки A удаляет свежую localStorage-копию вкладки B без проверки владения текущей записью. Новая регрессия.
+5. **F5 / P1:** provisional conflict-choice cache меняет draftId, сохраняя selectionIntent.draftId прежней generation; read/reload до ACK удаляет cache как невалидный. Новая регрессия.
+6. **F6 / P2:** после собственного manifest-only ACK более новый authoritative состав с тем же текстом вызывает ручной конфликт вместо принятия нового состава по правилу владельца. Критерий плана закрыт не полностью.
+7. **F7 / P2:** первый пробел в пустом Simple размонтирует editable leaf, теряет фокус и блокирует последующий ввод. Остаточный дефект исходного head; коррекция начального ввода неполна.
+
+Диагностическое подтверждение: семь component-сценариев воспроизвели нарушения; два PostgreSQL legacy-сценария воспроизвели нарушения при пяти прошедших baseline-сценариях. F3/F7 также воспроизведены на исходном ae121565; F7 подтверждён Chromium. Диагностика выполнена отдельно, implementation PR не изменён. Исторические green checks ниже не закрывают эти сценарии.
+
+Следующий шаг по исправлениям: решение владельца по findings согласно owner gate. Принятый correction-пакет и новые исправления пока отсутствуют; готовность к merge не подтверждена.
 
 ## Подтверждённые дефекты исходного кода — regression targets нового пакета
 
