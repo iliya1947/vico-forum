@@ -2,19 +2,13 @@
 
 ## Текущий статус
 
-**Текущий scope изменён owner decision:** пользовательские drafts/autosave удаляются из Editor 2.0; прежний A–G/T/S correction plan superseded. Архитектурная source-level проверка removal boundary завершена: [заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6291072682). PASS границе удаления, не отсутствующей реализации. Implementation #232 остаётся `3b30d8d`; код не менял. Следующий шаг — Мира оформляет bounded implementation subtask с surviving attachment contract и cleanup cutoff. Исторические результаты ниже не являются текущим заданием исправлять draft subsystem.
+Owner назначил Лёву исполнителем removal scope; реализовано и опубликовано в существующем #232: **`a29e15ffb27a6f03b5233cceb79d83df609925bc`**. [Итог](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6292445730).
 
-**Самопроверка автора: FAIL** для `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; план выполнен частично. Предыдущий вывод о готовности был преждевременным. По прямой команде владельца «Публикуй» семь подтверждённых findings перенесены из чата в [комментарий #234](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6287237802) и актуальный общий service-channel. Это не независимый review; назначение проверки Лире сохранено.
+Удалены пользовательские drafts/autosave/recovery/conflicts/UI; сохранены недрафтовый editor и operation/ref-based attachments/publication/editing без text storage/CAS. F7 исправлен, включая whitespace range/projection/native caret. Merged migration history не менялась, unmerged 0045 удалена.
 
-Открыты F1/P1 (ACK затирает ввод), F2/P1 (legacy attachment loss, включая published edit Save без Remove), F3/P1 (смешанное чтение snapshot), F4/P1 (expired runtime удаляет свежий cache другой вкладки), F5/P1 (невалидный provisional selectionIntent), F6/P2 (новый authoritative состав вызывает лишний конфликт), F7/P2 (leading space теряет Simple leaf/focus). F3/F7 подтверждены и на исходном ae121565; остальные относятся к новой реализации/неполному выполнению критерия. Семь component-сценариев и два PostgreSQL legacy-сценария воспроизвели нарушения; пять DB baseline-сценариев прошли, F7 дополнительно проверен Chromium.
+Локально PASS: 974 application / 272 PostgreSQL 17 tests, types, builds, lint без ошибок (старое warning), schema/history/manifest/privilege guards, production-build Workers smoke. Реальный Chromium/Worker/PostgreSQL/local R2 подтвердил четыре flows, отсутствие autosave/reload recovery, uploads/publication/IME/edit-access и 1/2/4 leading spaces. CI [39433774478](https://github.com/iliya1947/vico-forum/actions/runs/39433774478) pending; автор не является независимым reviewer.
 
-Во время самопроверки и публикации implementation #232 не менялся; диагностические тесты остались в отдельной копии. Публикация не является решением о correction: следующий шаг по исправлениям — решение владельца согласно owner gate. Исторические PASS ниже действительны для выполненных тогда проверок, но не доказывают закрытие новых сценариев.
-
-После самостоятельной проверки плана PR #234 владелец прямо назначил Лёву исполнителем реализации. Реализация внесена в #232: `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. Это отменяет прежнюю задачу «проверить только план, код не менять» и не делает автора независимым проверяющим собственного пакета.
-
-Локально PASS: 1072 application / 320 PostgreSQL 17 tests, TypeScript, lint без ошибок, builds, migration/schema/privilege guards и production-build Workers smoke. Реальный Chromium/Worker/PostgreSQL/local R2 подтвердил всю цепочку upload→selection→publication, published edit/access revocation и Simple paste/native-input/IME. Подробности реализации и контракт — в #232 и обновлённых `docs/EDITOR.md` / `PROJECT_STATE.md`.
-
-Exact-head CI #39348511251 завершён: checks SUCCESS, database SUCCESS. Новый review-cycle, owner visual acceptance, merge и production rollout ещё не выполнены. Ниже сохранён предшествующий контекст архитектурного/plan gate; его запрет начинать код больше не является текущей задачей.
+Остановился после реализации. Independent whole-PR review/owner visual acceptance не запускались, merge/deployment не выполнялись. Мишаня не участвует. Следующий шаг — exact-head CI и Мира для координации приёмки. Исторические draft-correction материалы ниже superseded owner removal decision.
 
 ## Действующий технический вывод
 

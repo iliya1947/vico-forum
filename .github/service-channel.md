@@ -4,16 +4,18 @@
 
 ## Текущее состояние
 
-- **Самопроверка автора: FAIL** для `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. План выполнен частично; предыдущий вывод о готовности не подтверждён. [Полные findings, причинные цепочки и воспроизведения](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6287237802).
-- По прямой команде владельца «Публикуй» результаты перенесены из чата в #234. Код #232 не менялся. Решение о correction ещё не принято; действует owner gate ниже. Назначение независимой проверки Лире сохранено; самопроверка автора её не заменяет.
-- Implementation PR: #232 — Editor 2.0 snapshot/CAS correction.
-- Stable implementation/code/test head: `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`.
-- После проверки плана #234 владелец прямо поручил реализацию Лёве вместо передачи Мишане. Прежний implementation STOP снят этим поручением; текущий пакет реализован в #232. Служебный PR по-прежнему не merge.
-- Реализован один snapshot/version для текста, manifest и generation/status; refs служат retention pool. Runtime contexts/boundaries больше не используются; data migration `0045_draft_snapshot_selection` переносит их необходимое состояние без продления editedAt.
-- Локально: 1072 application tests и 320 PostgreSQL 17 tests PASS; typecheck, lint без ошибок, application/UI-preview builds, Drizzle metadata/schema parity, migration-history guard, schema-manifest/runtime privilege probes и production-build Workers smoke PASS.
-- Chromium → настоящий Worker/PostgreSQL + локальный private R2: focused paste→typing, native input/IME в пустом абзаце, параллельные uploads с сериализованным selection CAS без early text save, selected-only publication, published edit download/Remove/Save и access revocation PASS; page errors отсутствовали.
-- CI exact head: https://github.com/iliya1947/vico-forum/actions/runs/39348511251 — `checks` SUCCESS, `database` SUCCESS.
-- Новый independent whole-PR review не признан чистым: опубликован finding Лиры (см. ниже). Owner visual acceptance и merge не выполнены. Старые review/acceptance не относятся к новой реализации. Production migration/deployment и external R2 не выполнялись.
+- Implementation PR: #232 — removal пользовательских drafts/autosave; опубликован head **`a29e15ffb27a6f03b5233cceb79d83df609925bc`**.
+- Owner-authorized исполнитель — **Лёва**, Мишаня не участвует. Новый PR/ветка не создавались. [Итог реализации и фактические проверки](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6292445730).
+- Persistent text drafts/cache/API/store, 60-second autosave, recovery/discovery/cross-tab conflict UI, My Drafts/header/status удалены. Открытый editor buffer/Undo сохраняется в памяти; reload не восстанавливает текст. Future target Drafts and autosave остаётся Under development.
+- Attachments/publication/edit-published работают через минимальную operation identity, existing temporary refs/terminal markers/publication receipts без текста и text CAS. Exact submitted selection проверяется/publishes atomically; post expectedRevisionId, Save/Cancel, permissions, idempotency и published/shared-file protection сохранены. Cleanup abandoned refs — 24-hour technical idle cutoff.
+- F7 исправлен и проверен component/Chromium, включая 1/2/4 leading spaces. Старые A–G/T/S/mixed correction gates superseded removal; прежние findings по удалённым paths не являются отдельным correction backlog.
+- Локально: **974 application / 272 PostgreSQL 17 PASS**; TypeScript, application/UI-preview builds, Drizzle/schema/migration-history/manifest/runtime privilege checks и production-build Workers smoke PASS. ESLint без ошибок, одно прежнее предупреждение ui.test.tsx.
+- Chromium/Worker/PostgreSQL/local private R2: все четыре authoring flows, no autosave/reload recovery, uploads/private download/exact publication, reply/IME и published edit Remove/Cancel/Save/access revocation PASS; draft requests/page errors отсутствовали.
+- Exact-head CI: [39433774478](https://github.com/iliya1947/vico-forum/actions/runs/39433774478) **pending**. Старый CI 3b30d8d не подтверждает новый head.
+- Merged migrations 0034–0044 не изменены; unmerged snapshot-purpose 0045 удалена из итогового diff. Новая table/registry/attachment-version не вводится.
+- Реализация остановлена до нового independent whole-PR review/owner visual acceptance. Они не выполнялись/не запускались. Merge, production/external migrations/deployment не выполнялись; служебный PR не merge.
+
+Ниже сохранены предшествующие решения/материалы согласования; snapshot correction и связанные findings superseded более поздним owner removal decision. Текущие scope/статус определяются removal-разделами и этим блоком.
 
 ## Независимый whole-PR review #232 — открытый finding
 
@@ -620,4 +622,4 @@ PR #232 больше не является correction-пакетом сущес�
 
 ## Текущий следующий шаг
 
-Лёва реализует новый bounded removal scope в PR #232 и после стабильного exact head публикует в #234 только итог реализации и фактически выполненные проверки. Мишаню в эту цепочку не подключать. До завершения реализации independent whole-PR review не запускать.
+Лёва опубликовал stable removal head `a29e15f` в #232 и итог `6292445730` в #234. Дождаться exact-head CI и передать результат Мире для координации приёмки/owner visual acceptance и последующего нового whole-PR цикла. Сам цикл не запускался; Мишаню не подключать. Merge только владельцем.
