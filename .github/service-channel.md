@@ -13,6 +13,16 @@
 - CI exact head: https://github.com/iliya1947/vico-forum/actions/runs/39348511251 — `checks` SUCCESS, `database` SUCCESS.
 - Новый independent whole-PR review, owner visual acceptance и merge не выполнены. Старые review/acceptance не относятся к новой реализации. Production migration/deployment и external R2 не выполнялись.
 
+## Независимый whole-PR review #232 — открытый finding
+
+По прямому разрешению владельца Лира опубликовала в комментарии #234 `6287225975` finding на exact implementation head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`:
+
+- **Current-Stage violation owner rule, source-level:** при одинаковом тексте и доказанном более новом серверном snapshot с новым файлом может появиться ручной конфликт, если локальная копия помечена dirty (`editedAt != syncedEditedAt`). Пример: base `v1 {A}`, local `v1 {A}` с тем же text и dirty marker, server `v2 {A,B}`. `keptAttachmentSelection()` запрещает unrelated additions, clean-local fast-path не применяется, и `checkRemoteNow()` вызывает `updateConflict` вместо принятия `{A,B}`. Чистая локальная копия этим finding не затрагивается.
+- Отдельного браузерного/DB воспроизведения данного пути не было; потери файлов не установлено. Targeted regression нужен при согласовании исправления.
+- CI exact-head остаётся green. Finding опубликован для согласования; **разрешения на коррекцию это не означает**. PR #232 не менять до решения владельца и координации Миры.
+
+Текущий этап independent review **не признан чистым**, merge преждевременен. Следующий шаг: Мира координирует рассмотрение опубликованного finding с владельцем и соответствующим исполнителем; старые scope/acceptance правила сохраняются.
+
 ## Подтверждённые дефекты исходного кода — regression targets нового пакета
 
 1. Long-lived in-memory local draft может обойти 30-day expiry и воскреснуть через aged-terminal path.
