@@ -399,9 +399,11 @@
   Preview и опубликованные сообщения используют `ForumMarkdown`.
 - `use-editor-draft.tsx` хранит owner/context runtime; `draft-client.ts` — локальный кеш.
   `forum-editor-drafts.ts` применяет server timestamps, 30-day expiry, CAS и terminal generations.
-  Когда terminal tombstone старше 30 дней скрыт из metadata, fresh draft с новым
-  generation ID может пройти server-fenced CAS с начальным expectedVersion=0;
-  прежняя generation остаётся retired и не может возродиться.
+  Mutation head читается отдельно от display metadata и включает скрытые terminal rows.
+  Новая generation использует именно увиденную версию head; отсутствие terminal в
+  списке не даёт права отправить expectedVersion=0. Прежняя generation остаётся retired.
+  Срок локального snapshot проверяется по исходному editedAt перед capture, выбором
+  файла, sync и публикацией; уже mounted копия не может продлить себя после 30 дней.
   Контексты: `section:<id>:new`, `help:new`, `topic:<id>:reply`, `post:<id>:edit`.
 - Публикация ждёт уже начатый штатный 60-second save, затем повторяет native submit
   в следующей задаче event loop с актуальным fence и исходным submitter. Нельзя повторять
@@ -411,8 +413,10 @@
   опубликованные файлы обычными private draft refs, под owner/context и post revision
   locks, без немедленного сохранения текста. `forum_attachment_edit_snapshots` фиксирует
   однократную инициализацию поколения, включая пустую выборку, и переносится при rebind.
-  Прежние и новые файлы после этого используют один список, Remove и exact publication
-  manifest. Восстановление не зависит от текущего публичного списка файлов.
+  Прежние и новые файлы используют один список, Remove и exact publication manifest.
+  До первого selection CAS показываются только всё ещё опубликованные файлы исходной
+  revision, по published download URL; staged bytes не становятся выбранными от GET.
+  После CAS выбор восстанавливается из authoritative manifest и retention pool.
   Снятие published refs и promotion выбранных draft refs происходят только в Save;
   Cancel/черновик не меняют публичные ссылки. Старые API callers без явного retained
   manifest сохраняют прежнее поведение. Legacy retained JSON учитывается при первой
@@ -424,35 +428,46 @@
 - Upload/rebind/publication/delete сериализуются общим owner/context lock, работают
   с устойчивым upload ID, CAS и retired/redirected generations. Browser callbacks
   проверяют текущий owner/context и epoch; неожиданный поздний результат не выбирает текст.
-- Точная приватная выборка вложений версии черновика хранится отдельно в optional JSONB
-  `draftAttachmentIds`: отсутствие поля означает legacy/ещё не установленную выборку,
-  а `[]` — установленную пустую выборку. `retainedAttachmentIds` сохраняет только прежнюю
-  семантику опубликованных файлов при первом snapshot правки и не переиспользуется как
-  общий manifest. Успешный text-draft CAS с `draftAttachmentIds` в той же owner/context
-  транзакции приводит private draft refs к этой выборке; перенос поколения перемещает
-  только выбранные refs и удаляет проигравшие refs старого поколения. Durable
-  `forum_attachment_draft_contexts` хранит только доказательство прежней допустимой
-  owner/context-привязки: оно позволяет победившему CAS восстановить ref после
-  опередившего DELETE и не даёт использовать UUID файла из другого контекста.
-  `forum_attachment_draft_boundaries` сохраняет membership до первой attachment-операции
-  каждой text-version. Явный выбор версии атомарно устанавливает этот snapshot (либо
-  manifest выбранной локальной версии) и продвигает CAS до закрытия conflict UI. Пока
-  boundary не разрешена, перечисленные в ней объекты не считаются физически осиротевшими
-  даже при временном отсутствии live draft/post refs; после разрешения действует обычная очистка.
-  После expiry/terminalization фоновой проход снимает уже неактуальные boundaries даже
-  при нулевом числе live refs, чтобы не удерживать осиротевший объект бессрочно.
-- POST/DELETE вложения передают версию text draft, с которой началась операция. После
-  продвижения CAS устаревшая операция допустима только когда уже победивший
-  `draftAttachmentIds` требует тот же итог: POST для включённого ID или DELETE для
-  исключённого ID. Это сохраняет медленную загрузку, выбранную победителем, и запрещает
-  позднему проигравшему запросу изменить его набор. Правило не ускоряет обычный
-  60-second text sync и не позволяет переносить refs между owner/context.
+- Единственный authoritative snapshot — `forum_editor_drafts.version`, generation/status,
+  текст и точный `payload.draftAttachmentIds`. Отсутствие manifest означает legacy,
+  `[]` — установленный пустой выбор. Legacy нормализуется под scope lock; миграция
+  `0045_draft_snapshot_selection` переносит старые boundaries в retention pool и
+  manifest без обновления editedAt. Неиспользуемые contexts/boundaries остаются в
+  схеме, но runtime больше не читает, не пишет и не удерживает по ним объекты.
+- `forum_attachment_draft_refs` — retention pool поколения, а не текущий выбор.
+  Upload сохраняет проверенные bytes/asset/ref с устойчивым ID и не меняет snapshot.
+  Отдельный manifest-only CAS добавляет/удаляет ID, продвигает ту же общую version и
+  сохраняет server text; для первой правки берёт опубликованный исходник закреплённой
+  revision. Dirty local text отправляется обычным 60-second autosave. Недостающий,
+  чужой или retired asset отклоняет весь CAS. Явное разрешение конфликта может выбрать
+  живой pool asset другого поколения того же owner/context; rebind переносит весь
+  pool и redirect, но не выбирает поздно пришедшие bytes.
+- Снятие выбора немедленно закрывает draft download, сохраняя ref для живого
+  конкурирующего snapshot. Publication проверяет manifest и version, продвигает только
+  выбранные refs; лишний pool не блокирует explicit-selected публикацию. Оставшийся
+  pool очищается после terminal/expiry, включая просроченный draft со свежим ref.
+  Физическое удаление сохраняет durable claim/lease и защиту общих published refs.
+- Все snapshot mutations одного owner/context runtime идут через одну очередь:
+  autosave, manifest selection, conflict choice, edit initialization и rebind.
+  Передача bytes может идти параллельно. Upload ACK ещё не является selection ACK:
+  preview и публикация доступны только после отдельного ACK или точного read-proof.
+  Локально сохраняются имя/размер/stable ID ожидающих файлов и незавершённый selection
+  intent, но не bytes. После потери ACK/перезагрузки допустим только полный совпавший
+  snapshot N+1; более поздняя версия требует нового явного выбора.
+- Cached local candidate не изображает серверную версию. Выбор использует неизменный
+  увиденный server base; отказ CAS открывает обновлённый конфликт без автоматического
+  присвоения нового номера старому payload. При одинаковом тексте и доказанном общем
+  server base конфликт keep/remove сохраняет файл; несвязанные новые выборки не
+  объединяются по времени или простой union-эвристике.
 - Simple-mode Enter заменяет фактический source range нативного caret/selection на два
   перевода строки. Текстовая вставка обрабатывается на уровне всей visual surface, поэтому
   диапазон через несколько Markdown leaves не теряется. Native input визуальной таблицы
   сохраняет собственные selection/paste semantics и не перехватывается body-level paste path.
   Ctrl/Cmd+Shift+V имеет приоритет над tabular detection, а отклонённая TSV-конверсия сохраняет
-  исходный plain text.
+  исходный plain text. Programmatic paste обновляет и focused visual leaf; echo
+  обычного native input не переписывает уже совпавший DOM. Пустой и заполненный
+  абзац занимают одну React tree position: первая буква/IME не remount-ит leaf и
+  не теряет фокус.
 - Controlled download каждый раз проверяет актуальную draft/post reference. Raster
   может открываться inline; source preview — инертный текст по явному действию;
   остальные файлы скачиваются. Удаление ссылки прекращает выдачу через эту публикацию,

@@ -88,10 +88,10 @@ class FakeXMLHttpRequest {
     ));
   }
 
-  complete(status: number, payload: unknown) {
+  async complete(status: number, payload: unknown) {
     this.status = status;
     this.responseText = JSON.stringify(payload);
-    act(() => { this.onload?.call(this as unknown as XMLHttpRequest, new ProgressEvent("load")); });
+    await act(async () => { await this.onload?.call(this as unknown as XMLHttpRequest, new ProgressEvent("load")); });
   }
 
   fail() {
@@ -154,6 +154,21 @@ function Harness({
     completeRebind,
     retryDraftReconciliation: retryDraft,
     noteAttachmentChange: noteChange,
+    stageAttachment: () => true,
+    initializeAttachments: async () => ({ attachments: [] }),
+    rebindAttachments: async (from, to) => fetch("/api/attachments", {method: "PATCH", headers: {
+      "X-Vico-Draft-Context": encodeURIComponent(context), "X-Vico-Draft-Id": to,
+      "X-Vico-Attachment-From-Draft-Id": from, "X-Vico-Draft-Version": String(rebindVersion),
+    }}),
+    selectAttachment: async (_generation, attachment, present) => {
+      if (present) { noteChange(id); return true; }
+      const response = await fetch("/api/attachments", {method: "DELETE", headers: {
+        "X-Vico-Draft-Context": encodeURIComponent(context), "X-Vico-Draft-Id": id,
+        "X-Vico-Draft-Version": String(expectedVersion), "X-Vico-Attachment-Id": attachment,
+      }});
+      if (response.status === 410) retryDraft();
+      return response.ok || response.status === 404 || response.status === 410;
+    },
     noteAttachmentManifest: noteManifest,
     insertImage: () => {},
     removeImage: () => {},
@@ -210,7 +225,7 @@ describe("editor attachment UI", () => {
     await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
     expect(screen.queryByText("reopened.txt")).not.toBeInTheDocument();
     committed = true;
-    request.complete(201, { outcome: "stored", attachment: saved });
+    await request.complete(201, { outcome: "stored", attachment: saved });
     expect(await screen.findByText("reopened.txt")).toBeInTheDocument();
     expect(screen.getByText("Uploaded")).toBeInTheDocument();
   });
@@ -276,7 +291,7 @@ describe("editor attachment UI", () => {
     const retry = FakeXMLHttpRequest.instances[1]!;
     expect(retry.headers.get("X-Vico-Draft-Id")).toBe(oldDraftId);
     expect(retry.headers.get("X-Vico-Attachment-Id")).toBe(first.headers.get("X-Vico-Attachment-Id"));
-    retry.complete(201, { outcome: "stored", attachment: {
+    await retry.complete(201, { outcome: "stored", attachment: {
       id: first.headers.get("X-Vico-Attachment-Id"), fileName: "late.txt", detectedType: "text",
       responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked",
     } });
@@ -302,7 +317,7 @@ describe("editor attachment UI", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     view.rerender(<I18nextProvider i18n={runtime()}><Harness id={draftId} noteChange={noteChange} /></I18nextProvider>);
-    FakeXMLHttpRequest.instances[1]!.complete(201, { outcome: "stored", attachment: {
+    await FakeXMLHttpRequest.instances[1]!.complete(201, { outcome: "stored", attachment: {
       id: request.headers.get("X-Vico-Attachment-Id"), fileName: "retained.txt", detectedType: "text",
       responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked",
     } });
@@ -333,7 +348,7 @@ describe("editor attachment UI", () => {
     </I18nextProvider>);
     await waitFor(() => expect(screen.getByText("winner.txt")).toBeInTheDocument());
     expect(screen.queryByText("loser.txt")).not.toBeInTheDocument();
-    staleUpload.complete(201, { outcome: "stored", attachment: {
+    await staleUpload.complete(201, { outcome: "stored", attachment: {
       id: staleUpload.headers.get("X-Vico-Attachment-Id"), fileName: "loser.txt",
       detectedType: "text", responseMime: "text/plain", byteSize: 5,
       verificationStatus: "type-checked",
@@ -477,7 +492,7 @@ describe("editor attachment UI", () => {
     fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "closed.txt")] } });
     FakeXMLHttpRequest.instances[0]!.fail();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    FakeXMLHttpRequest.instances[1]!.complete(410, { error: "gone" });
+    await FakeXMLHttpRequest.instances[1]!.complete(410, { error: "gone" });
     expect(screen.getByText("This draft was published or deleted.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(screen.queryByText("closed.txt")).not.toBeInTheDocument();
@@ -504,7 +519,7 @@ describe("editor attachment UI", () => {
     renderHarness();
     await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
     fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "notes.txt")] } });
-    FakeXMLHttpRequest.instances[0]!.complete(503, { error: "unavailable" });
+    await FakeXMLHttpRequest.instances[0]!.complete(503, { error: "unavailable" });
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(FakeXMLHttpRequest.instances[1]!.headers.get("X-Vico-Attachment-Id"))
@@ -601,7 +616,7 @@ describe("editor attachment UI", () => {
     expect(FakeXMLHttpRequest.instances).toHaveLength(2);
     expect(FakeXMLHttpRequest.instances[1]!.headers.get("X-Vico-Attachment-Id")).toBe(attachmentId);
 
-    FakeXMLHttpRequest.instances[1]!.complete(201, {
+    await FakeXMLHttpRequest.instances[1]!.complete(201, {
       outcome: "stored",
       attachment: {
         id: attachmentId,
@@ -633,7 +648,7 @@ describe("editor attachment UI", () => {
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    FakeXMLHttpRequest.instances[1]!.complete(201, {
+    await FakeXMLHttpRequest.instances[1]!.complete(201, {
       outcome: "stored",
       attachment: {
         id: attachmentId,
@@ -668,7 +683,7 @@ describe("editor attachment UI", () => {
     fireEvent.change(screen.getByLabelText("Attach"), {
       target: { files: [new File([""], "empty.txt", { type: "text/plain" })] },
     });
-    FakeXMLHttpRequest.instances[0]!.complete(422, {
+    await FakeXMLHttpRequest.instances[0]!.complete(422, {
       outcome: "rejected",
       reason: "empty",
       suspicious: false,
@@ -727,7 +742,7 @@ describe("editor attachment UI", () => {
       "Finish or remove attachment uploads before publishing.",
     );
 
-    FakeXMLHttpRequest.instances[0]!.complete(201, {
+    await FakeXMLHttpRequest.instances[0]!.complete(201, {
       outcome: "stored",
       attachment: {
         id: attachmentId,
@@ -847,10 +862,17 @@ async function reconcileDraft() {
 describe("MarkdownEditor inline image source/history integration", () => {
   it("inserts at the caret, preserves Undo/Redo and renders only an authorized stored image", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(attachmentId);
+    let selected: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
+      if (init?.method === "POST") {
+        const sent = JSON.parse(init.body as string);
+        selected = sent.payload.draftAttachmentIds;
+        return Response.json({ outcome: "saved", draft: { ...remoteDraft(sent.draftId, sent.expectedVersion + 1, ""), payload: sent.payload } });
+      }
       if (uri.includes("mode=metadata")) return Response.json({ drafts: [] });
       if (uri === "/api/attachments" && init?.method === "GET") {
-        return Response.json({ attachments: [] });
+        return Response.json({ attachments: selected.map((id) => ({ id, fileName: "shot.png", detectedType: "png", responseMime: "image/png", byteSize: 6, verificationStatus: "type-checked" })) });
       }
       if (uri === "/api/attachments" && init?.method === "DELETE") {
         return Response.json({ outcome: "removed" });
@@ -876,7 +898,7 @@ describe("MarkdownEditor inline image source/history integration", () => {
     fireEvent.keyDown(textarea, { key: "y", ctrlKey: true });
     expect(textarea).toHaveValue("Before " + token + "After");
 
-    FakeXMLHttpRequest.instances[0]!.complete(201, { outcome: "stored", attachment: {
+    await FakeXMLHttpRequest.instances[0]!.complete(201, { outcome: "stored", attachment: {
       id: attachmentId, fileName: "shot.png", detectedType: "png",
       responseMime: "image/png", byteSize: 6, verificationStatus: "type-checked",
     } });
@@ -935,6 +957,7 @@ describe("MarkdownEditor attachment and draft integration", () => {
       payload: { ...emptyDraftPayload, body: "Local losing text" } });
     const remote = remoteDraft(draftId, 5, "Chosen server text");
     vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return Response.json({ drafts: [remote] });
       if (uri.includes("mode=content")) return Response.json({ draft: remote });
       if (init?.method === "GET") return Response.json({ attachments: [] });
@@ -1005,8 +1028,8 @@ describe("MarkdownEditor attachment and draft integration", () => {
     expect(upload.aborted).toBe(false);
     committed = true;
     if (result === "stored") {
-      upload.complete(201, { outcome: "stored", attachment: { ...winner, id: originId, fileName: "late-origin-A.txt" } });
-    } else if (result === "unavailable") upload.complete(503, { error: "unavailable" });
+      await upload.complete(201, { outcome: "stored", attachment: { ...winner, id: originId, fileName: "late-origin-A.txt" } });
+    } else if (result === "unavailable") await upload.complete(503, { error: "unavailable" });
     else upload.fail();
     if (redirected) await screen.findByText("late-origin-A.txt");
     else {

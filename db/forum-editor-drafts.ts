@@ -3,6 +3,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumEditorDrafts,
   forumPosts,
+  forumPostRevisions,
+  forumAttachmentEditSnapshots,
   forumSections,
   forumTopics,
   type ForumEditorDraftPayload,
@@ -13,8 +15,7 @@ import {
 } from "./editor-draft-context";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 import {
-  clearAttachmentDraftBoundaries,
-  ensureAttachmentDraftBoundary,
+  attachmentPoolIds,
   ForumAttachmentDraftConflictError,
   lockAttachmentDraftScope,
   reconcileAttachmentDraftManifest,
@@ -23,6 +24,9 @@ import {
 } from "./attachment-draft-generation";
 
 export { isEditorDraftContextKey };
+export interface DraftSaveOptions {
+  manifestOnly?: boolean;
+}
 
 export type ForumEditorDraftStatus = "active" | "published" | "deleted";
 export interface ForumEditorDraftMetadata {
@@ -78,7 +82,7 @@ export function validEditorDraftPayload(input: unknown): input is ForumEditorDra
         && item.publishedRevisionId.length <= 128));
 }
 
-function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
+export function toDraft(row: typeof forumEditorDrafts.$inferSelect): ForumEditorDraft {
   return {
     contextKey: row.contextKey,
     draftId: row.draftId,
@@ -193,13 +197,23 @@ export class DrizzleForumEditorDrafts {
   async get(ownerId: string, contextKey: string): Promise<ForumEditorDraft | null> {
     if (!isEditorDraftContextKey(contextKey)) throw new InvalidForumEditorDraftError();
     await this.purgeExpired(ownerId);
-    const [row] = await this.db.select().from(forumEditorDrafts)
-      .where(and(
-        eq(forumEditorDrafts.ownerId, ownerId),
-        eq(forumEditorDrafts.contextKey, contextKey),
-      ))
-      .limit(1);
-    return row ? toDraft(row) : null;
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const [row] = await tx.select().from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, contextKey),
+      )).limit(1);
+      if (!row) return null;
+      if (row.status === "active" && row.payload.draftAttachmentIds === undefined) {
+        const ids = await attachmentPoolIds(tx, ownerId, contextKey, row.draftId);
+        const [normalized] = await tx.update(forumEditorDrafts).set({
+          payload: { ...row.payload, draftAttachmentIds: ids },
+          version: sql`${forumEditorDrafts.version}+1`,
+        }).where(and(eq(forumEditorDrafts.ownerId, ownerId),
+          eq(forumEditorDrafts.contextKey, contextKey))).returning();
+        return toDraft(normalized!);
+      }
+      return toDraft(row);
+    });
   }
 
   async save(
@@ -208,6 +222,7 @@ export class DrizzleForumEditorDrafts {
     draftId: string,
     payload: ForumEditorDraftPayload,
     expectedVersion: number,
+    options: DraftSaveOptions = {},
   ): Promise<SaveDraftResult> {
     if (
       !isEditorDraftContextKey(contextKey)
@@ -224,12 +239,34 @@ export class DrizzleForumEditorDrafts {
       eq(forumEditorDrafts.ownerId, ownerId),
       eq(forumEditorDrafts.contextKey, contextKey),
     );
-    const previous = await this.get(ownerId, contextKey);
-    const isNewGeneration = !previous || previous.draftId !== draftId;
-    if (isNewGeneration) await this.assertContextExists(contextKey);
+    await this.purgeExpired(ownerId);
+    const [existing] = await this.db.select({ draftId: forumEditorDrafts.draftId }).from(forumEditorDrafts)
+      .where(whereOwner).limit(1);
+    if (!existing || existing.draftId !== draftId) await this.assertContextExists(contextKey);
 
     const changed = await this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const [previous] = await tx.select().from(forumEditorDrafts).where(whereOwner).limit(1);
+      const isNewGeneration = !previous || previous.draftId !== draftId;
+      if (!previous && expectedVersion !== 0) return { outcome: "gone" as const, version: 0 };
+      // A manifest action must never send dirty local text ahead of the timer.
+      let serverText: ForumEditorDraftPayload = previous?.status === "active" ? previous.payload : { title: "", body: "", tags: "" };
+      if (options.manifestOnly && isNewGeneration && contextKey.startsWith("post:")) {
+        const [pinned] = await tx.select({ revisionId: forumAttachmentEditSnapshots.revisionId })
+          .from(forumAttachmentEditSnapshots).where(and(
+            eq(forumAttachmentEditSnapshots.ownerId, ownerId), eq(forumAttachmentEditSnapshots.contextKey, contextKey),
+            eq(forumAttachmentEditSnapshots.draftId, draftId),
+          )).limit(1);
+        if (pinned) {
+          const [revision] = await tx.select().from(forumPostRevisions).where(eq(forumPostRevisions.id, pinned.revisionId)).limit(1);
+          if (revision) serverText = { ...serverText, body: revision.originalContent, publishedRevisionId: pinned.revisionId };
+        }
+      }
+      const selected = payload.draftAttachmentIds ?? previous?.payload.draftAttachmentIds
+        ?? await attachmentPoolIds(tx, ownerId, contextKey, draftId);
+      const snapshot = options.manifestOnly
+        ? { ...serverText, draftAttachmentIds: selected }
+        : { ...payload, draftAttachmentIds: selected };
       let closed: boolean;
       try {
         closed = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId) !== draftId;
@@ -250,7 +287,7 @@ export class DrizzleForumEditorDrafts {
             draftId,
             version: 1,
             status: "active",
-            payload,
+            payload: snapshot,
             editedAt: now,
             updatedAt: now,
           })
@@ -260,28 +297,21 @@ export class DrizzleForumEditorDrafts {
               draftId,
               version: sql`${forumEditorDrafts.version}+1`,
               status: "active",
-              payload,
+              payload: snapshot,
               editedAt: now,
               updatedAt: now,
             },
             setWhere: and(
               ne(forumEditorDrafts.status, "active"),
               ne(forumEditorDrafts.draftId, draftId),
-              expectedVersion === 0
-                ? or(
-                  eq(forumEditorDrafts.version, expectedVersion),
-                  // Metadata hides old terminal rows. A fresh generation must
-                  // still be creatable with its normal no-head (version 0) base.
-                  lt(forumEditorDrafts.updatedAt, new Date(now.getTime() - EDITOR_DRAFT_EXPIRY_MS)),
-                )
-                : eq(forumEditorDrafts.version, expectedVersion),
+              eq(forumEditorDrafts.version, expectedVersion),
             ),
           })
           .returning()
         : await tx.update(forumEditorDrafts)
           .set({
             version: sql`${forumEditorDrafts.version}+1`,
-            payload,
+            payload: snapshot,
             editedAt: now,
             updatedAt: now,
           })
@@ -292,17 +322,8 @@ export class DrizzleForumEditorDrafts {
             eq(forumEditorDrafts.status, "active"),
           ))
           .returning();
-      if (rows[0] && payload.draftAttachmentIds !== undefined) {
-        await reconcileAttachmentDraftManifest(
-          tx,
-          ownerId,
-          contextKey,
-          draftId,
-          payload.draftAttachmentIds,
-        );
-      }
       if (rows[0]) {
-        await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
+        await reconcileAttachmentDraftManifest(tx, ownerId, contextKey, draftId, selected);
       }
       return { outcome: "changed" as const, rows };
     });
@@ -334,45 +355,7 @@ export class DrizzleForumEditorDrafts {
       throw new InvalidForumEditorDraftError();
     }
 
-    const now = new Date();
-    const changed = await this.db.transaction(async (tx) => {
-      await lockAttachmentDraftScope(tx, ownerId, contextKey);
-      const [draft] = await tx.select().from(forumEditorDrafts).where(and(
-        eq(forumEditorDrafts.ownerId, ownerId),
-        eq(forumEditorDrafts.contextKey, contextKey),
-      )).for("update").limit(1);
-      if (!draft || draft.status !== "active" || draft.draftId !== draftId) {
-        return { outcome: "gone" as const, version: draft?.version ?? 0 };
-      }
-      if (draft.version !== expectedVersion) {
-        return { outcome: "conflict" as const, version: draft.version };
-      }
-      const boundary = await ensureAttachmentDraftBoundary(
-        tx, ownerId, contextKey, draftId, expectedVersion,
-      );
-      const selectedPayload = payload.draftAttachmentIds === undefined
-        ? { ...payload, draftAttachmentIds: boundary }
-        : payload;
-      const [row] = await tx.update(forumEditorDrafts).set({
-        version: sql`${forumEditorDrafts.version}+1`,
-        payload: selectedPayload,
-        editedAt: now,
-        updatedAt: now,
-      }).where(and(
-        eq(forumEditorDrafts.ownerId, ownerId),
-        eq(forumEditorDrafts.contextKey, contextKey),
-        eq(forumEditorDrafts.draftId, draftId),
-        eq(forumEditorDrafts.version, expectedVersion),
-        eq(forumEditorDrafts.status, "active"),
-      )).returning();
-      if (!row) return { outcome: "conflict" as const, version: draft.version };
-      await reconcileAttachmentDraftManifest(
-        tx, ownerId, contextKey, draftId, selectedPayload.draftAttachmentIds!,
-      );
-      await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
-      return { outcome: "saved" as const, draft: toDraft(row) };
-    });
-    return changed;
+    return this.save(ownerId, contextKey, draftId, payload, expectedVersion);
   }
 
   async delete(
@@ -409,7 +392,6 @@ export class DrizzleForumEditorDrafts {
         .returning({ version: forumEditorDrafts.version });
       if (result.length > 0) {
         await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
-        await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
       }
       return result.length > 0;
     });
@@ -451,7 +433,6 @@ export class DrizzleForumEditorDrafts {
       }).returning();
       if (result.length > 0) {
         await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
-        await clearAttachmentDraftBoundaries(tx, ownerId, contextKey, draftId);
       }
       return result.length > 0;
     });

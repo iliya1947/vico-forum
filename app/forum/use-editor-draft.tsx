@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { keptAttachmentSelection, sameDraftText } from "./draft-snapshot";
 import type { ForumEditorDraftPayload } from "../../db/schema";
 import {
   clearLocalEditorDraft, draftStorageKey, fetchDraftContent, fetchDraftMetadata,
-  mutateDraft, readLocalEditorDraft, writeLocalEditorDraft,
+  mutateDraft, readLocalEditorDraft, writeLocalEditorDraft, fetchDraftHead, DRAFT_LIFETIME_MS,
   DraftMutationRejectedError,
-  type DraftMetadata, type DraftRemote, type LocalEditorDraft,
+  type DraftMetadata, type DraftRemote, type LocalEditorDraft, type PendingDraftAttachment,
 } from "./draft-client";
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
 type Status = "idle" | "saved" | "pending" | "saving" | "restored" | "conflict" | "error";
 type Conflict = {
   local: LocalEditorDraft;
-  server: DraftRemote | DraftMetadata;
+  server: DraftRemote | DraftMetadata | null;
   localCandidate?: LocalEditorDraft;
 };
 type Runtime = {
@@ -41,6 +42,10 @@ type Runtime = {
   serverCycle: Promise<void> | null;
   publishing: boolean;
   attachmentVerified: boolean;
+  serverHead: DraftRemote | DraftMetadata | null;
+  mutations: Promise<unknown>;
+  readToken: object | null;
+  mutating: boolean;
 };
 
 const blank = (): ForumEditorDraftPayload => ({ body: "", title: "", tags: "" });
@@ -52,10 +57,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const [expectedVersion, setExpectedVersion] = useState(0);
   const [attachmentReady, setAttachmentReady] = useState(false);
+  const [attachmentSnapshotEstablished, setAttachmentSnapshotEstablished] = useState(false);
   const [attachmentRebindFrom, setAttachmentRebindFrom] = useState<string | null>(null);
   const [attachmentRebindVersion, setAttachmentRebindVersion] = useState<number | null>(null);
   const [attachmentRevision, setAttachmentRevision] = useState(0);
   const [attachmentSelectionEpoch, setAttachmentSelectionEpoch] = useState(0);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingDraftAttachment[]>([]);
   const runtimeRef = useRef<Runtime | null>(null);
   const callbacksRef = useRef({ restore });
   callbacksRef.current = { restore };
@@ -63,15 +70,41 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   const identityRef = useRef(identity);
   identityRef.current = identity;
 
+  function samePayload(a: ForumEditorDraftPayload, b: ForumEditorDraftPayload) {
+    const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort();
+    return keys.every((key) => JSON.stringify(a[key as keyof typeof a]) === JSON.stringify(b[key as keyof typeof b]));
+  }
   function current(ctx: Runtime) {
     return !ctx.disposed && runtimeRef.current === ctx && identityRef.current === ctx.identity;
   }
   function currentAt(ctx: Runtime, epoch: number) {
     return current(ctx) && ctx.epoch === epoch;
   }
+  function expireLocal(ctx: Runtime, final = false): boolean {
+    if (!ctx.local || Date.now() - Date.parse(ctx.local.editedAt) < DRAFT_LIFETIME_MS) return false;
+    clearLocalEditorDraft(ctx.ownerId, ctx.contextKey);
+    if (final) { ctx.local = null; ctx.payload = blank(); ctx.hasInput = false; }
+    else { reset(ctx, ctx.serverHead?.version ?? ctx.startVersion); void checkRemote(ctx); }
+    return true;
+  }
+  function enqueue<T>(ctx: Runtime, operation: () => Promise<T>): Promise<T | undefined> {
+    const epoch = ctx.epoch;
+    const task = ctx.mutations.then(async () => {
+      if (!currentAt(ctx, epoch)) return undefined;
+      // Reads never block a user decision. Invalidate an older read before the
+      // ordered mutation; its eventual response cannot replace the new state.
+      ctx.readToken = null;
+      ctx.reading = false;
+      ctx.mutating = true;
+      try { return await operation(); } finally { ctx.mutating = false; }
+    });
+    ctx.mutations = task.catch(() => {});
+    return task;
+  }
   function setAttachmentVerified(ctx: Runtime, verified: boolean) {
     if (!current(ctx)) return;
     ctx.attachmentVerified = verified;
+    setAttachmentSnapshotEstablished(ctx.serverHead?.status === "active" && ctx.serverHead.draftId === ctx.draftId);
     const attachmentDraftId = ctx.local?.attachmentDraftId;
     const rebindFrom = !ctx.conflict
       && attachmentDraftId && attachmentDraftId !== ctx.draftId
@@ -96,6 +129,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
   function capture(ctx: Runtime, final = false) {
     if (final ? ctx.disposed : !current(ctx)) return;
+    if (expireLocal(ctx, final)) return;
     // Mount/StrictMode cleanup must not turn the published source into a local
     // edit before metadata establishes its CAS base. Only capture actual input.
     if (!ctx.hasInput) return;
@@ -112,6 +146,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       baseVersion: previous?.baseVersion ?? ctx.startVersion,
       syncedEditedAt: previous?.syncedEditedAt ?? null,
       attachmentDraftId: previous?.attachmentDraftId,
+      basePayload: previous?.basePayload ?? (ctx.serverHead && "payload" in ctx.serverHead ? ctx.serverHead.payload : undefined),
+      pendingAttachments: previous?.pendingAttachments,
+      selectionIntent: previous?.selectionIntent,
     };
     if (!writeLocalEditorDraft(next)) {
       if (!final && current(ctx)) setStatus("error");
@@ -129,6 +166,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     setAttachmentVerified(ctx, false);
     clearLocalEditorDraft(ctx.ownerId, ctx.contextKey);
     ctx.local = null;
+    setPendingAttachments([]);
     ctx.payload = blank();
     ctx.hasInput = false;
     ctx.syncing = false;
@@ -157,6 +195,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       editedAt: localCandidate ? new Date().toISOString() : remote.editedAt,
       baseVersion: remote.version, syncedEditedAt: localCandidate ? null : remote.editedAt,
       payload: remote.payload,
+      basePayload: remote.payload,
       // Keep the chosen tab's provenance; a cache snapshot is not a server ACK.
       // A clean server refresh retains provenance within the same generation.
       attachmentDraftId: localCandidate
@@ -166,10 +205,12 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
     ctx.local = next;
+    setPendingAttachments([]);
     ctx.draftId = remote.draftId;
     ctx.payload = { ...remote.payload };
     ctx.hasInput = false;
     ctx.rejectedSyncEditedAt = null;
+    ctx.serverHead = remote;
     setDraftId(remote.draftId);
     setExpectedVersion(remote.version);
     callbacksRef.current.restore(remote.payload);
@@ -177,15 +218,25 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     return true;
   }
 
-  async function checkRemote(ctx: Runtime) {
-    if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
+  function checkRemote(ctx: Runtime) { return checkRemoteNow(ctx); }
+  async function checkRemoteNow(ctx: Runtime) {
+    if (!current(ctx) || ctx.syncing || ctx.mutating || ctx.reading || ctx.conflict || ctx.publishing) return;
+    expireLocal(ctx);
     const epoch = ctx.epoch;
     ctx.reading = true;
+    const token = {};
+    ctx.readToken = token;
+    const readCurrent = () => currentAt(ctx, epoch) && ctx.readToken === token && !ctx.publishing;
     setAttachmentVerified(ctx, false);
     try {
-      const meta = (await fetchDraftMetadata(ctx.locale))
+      const listed = (await fetchDraftMetadata(ctx.locale))
         .find((entry) => entry.contextKey === ctx.contextKey);
-      if (!currentAt(ctx, epoch)) return;
+      const meta = listed ?? await fetchDraftHead(ctx.locale, ctx.contextKey);
+      if (!readCurrent()) return;
+      if (ctx.serverHead?.version !== meta?.version || ctx.serverHead?.draftId !== meta?.draftId) {
+        ctx.serverHead = meta ?? null;
+      }
+      if (!readCurrent()) return;
       if (ctx.hasInput) capture(ctx); // Never overwrite unpersisted typing on a late fetch.
       const local = ctx.local;
       if (!meta) { setAttachmentVerified(ctx, true); return; }
@@ -211,12 +262,49 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         setAttachmentVerified(ctx, true);
         return;
       }
-      const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
-      if (!currentAt(ctx, epoch) || !remote) return;
+      const remote = listed ? await fetchDraftContent(ctx.locale, ctx.contextKey) : meta as DraftRemote;
+      if (!readCurrent() || !remote) return;
+      ctx.serverHead = remote;
       if (ctx.hasInput) capture(ctx);
       const latest = ctx.local;
       if (!latest) {
         if (applyRemote(ctx, remote)) setAttachmentVerified(ctx, true);
+        return;
+      }
+      const intent = latest.selectionIntent;
+      if (intent && intent.draftId === remote.draftId && remote.version === intent.expectedVersion + 1
+        && latest.basePayload && sameDraftText(remote.payload, latest.basePayload)
+        && JSON.stringify([...(remote.payload.draftAttachmentIds ?? [])].sort()) === JSON.stringify([...intent.attachmentIds].sort())) {
+        // A reload/lost ACK may recover the exact own selection transition. Dirty
+        // local text remains dirty; only the observed complete snapshot is a base.
+        const next = { ...latest, baseVersion: remote.version, basePayload: remote.payload,
+          selectionIntent: undefined,
+          pendingAttachments: latest.pendingAttachments?.filter((item) => item.id !== intent.attachmentId) };
+        if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
+        ctx.local = next;
+        ctx.startVersion = remote.version;
+        setExpectedVersion(remote.version);
+        setPendingAttachments(next.pendingAttachments ?? []);
+        setAttachmentVerified(ctx, true);
+        return;
+      }
+      const keep = latest.pendingAttachments?.length ? null
+        : keptAttachmentSelection(latest.payload, remote.payload, latest.basePayload);
+      if (keep) {
+        let winner = remote;
+        if (JSON.stringify(keep) !== JSON.stringify([...(remote.payload.draftAttachmentIds ?? [])].sort())) {
+          const result = await enqueue(ctx, () => mutateDraft(ctx.locale, { intent: "attachments", contextKey: ctx.contextKey,
+            draftId: remote.draftId, expectedVersion: remote.version,
+            payload: { ...blank(), draftAttachmentIds: keep } }));
+          if (!currentAt(ctx, epoch) || !result) return;
+          if (result.outcome !== "saved" || !result.draft) {
+            const head = await fetchDraftHead(ctx.locale, ctx.contextKey);
+            if (currentAt(ctx, epoch)) updateConflict(ctx, { local: latest, server: head });
+            return;
+          }
+          winner = result.draft;
+        }
+        if (applyRemote(ctx, winner)) setAttachmentVerified(ctx, true);
         return;
       }
       // Preserve attachment provenance even when the text copy is already clean.
@@ -242,14 +330,15 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       }
       updateConflict(ctx, { local: latest, server: remote });
     } catch {
-      if (currentAt(ctx, epoch) && ctx.local && !ctx.conflict) setStatus("pending");
+      if (readCurrent() && ctx.local && !ctx.conflict) setStatus("pending");
     } finally {
-      if (ctx.epoch === epoch) ctx.reading = false;
+      if (ctx.readToken === token) { ctx.reading = false; ctx.readToken = null; }
     }
   }
 
   async function sync(ctx: Runtime) {
     if (!current(ctx) || ctx.syncing || ctx.reading || ctx.conflict) return;
+    if (expireLocal(ctx)) return;
     const sent = ctx.local;
     if (
       !sent
@@ -262,14 +351,18 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     try {
       const result = await mutateDraft(ctx.locale, {
         intent: "save", contextKey: ctx.contextKey, draftId: sent.draftId,
-        payload: sent.payload, expectedVersion: sent.baseVersion,
+        payload: { ...sent.payload, draftAttachmentIds: sent.payload.draftAttachmentIds?.filter(
+          (id) => !sent.pendingAttachments?.some((item) => item.id === id)) },
+        expectedVersion: sent.baseVersion,
       });
-      if (!currentAt(ctx, epoch)) return;
+      if (!currentAt(ctx, epoch) || ctx.conflict) return;
       if (result.outcome === "saved" && result.draft) {
+        ctx.serverHead = result.draft;
+        ctx.startVersion = result.draft.version;
         const latest = ctx.local;
         if (!latest || latest.draftId !== sent.draftId) return;
-        const next = { ...latest, baseVersion: result.draft.version,
-          syncedEditedAt: latest === sent ? sent.editedAt : latest.syncedEditedAt };
+        const next = { ...latest, baseVersion: result.draft.version, basePayload: result.draft.payload,
+          syncedEditedAt: latest === sent && !latest.pendingAttachments?.length ? sent.editedAt : latest.syncedEditedAt };
         ctx.local = next;
         ctx.rejectedSyncEditedAt = null;
         writeLocalEditorDraft(next);
@@ -280,8 +373,8 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       } else if (result.outcome === "conflict" || result.outcome === "gone") {
         ctx.rejectedSyncEditedAt = null;
         // Refetch authoritative metadata, not a client clock or an assumed deletion.
-        const meta = (await fetchDraftMetadata(ctx.locale))
-          .find((entry) => entry.contextKey === ctx.contextKey);
+        const meta = await fetchDraftHead(ctx.locale, ctx.contextKey);
+        ctx.serverHead = meta;
         if (!currentAt(ctx, epoch)) return;
         if (!meta) return;
         if (meta.status !== "active" && meta.draftId === sent.draftId) {
@@ -315,10 +408,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function runServerCycle(ctx: Runtime) {
     if (!current(ctx) || ctx.publishing) return Promise.resolve();
     if (ctx.serverCycle) return ctx.serverCycle;
-    const task = (async () => {
-      await sync(ctx);
-      await checkRemote(ctx);
-    })();
+    const task = enqueue(ctx, () => sync(ctx)).then(() => checkRemote(ctx)).then(() => {});
     ctx.serverCycle = task;
     void task.then(
       () => { if (ctx.serverCycle === task) ctx.serverCycle = null; },
@@ -330,9 +420,10 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   async function preparePublication() {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx) || ctx.conflict) return null;
+    if (expireLocal(ctx)) return null;
     const epoch = ctx.epoch;
     ctx.publishing = true;
-    const inFlight = ctx.serverCycle;
+    const inFlight = ctx.mutations;
     if (inFlight) {
       try {
         await inFlight;
@@ -349,6 +440,30 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       return null;
     }
     if (ctx.hasInput) capture(ctx);
+    if (ctx.local?.pendingAttachments?.length) { ctx.publishing = false; return null; }
+    const selected = ctx.payload.draftAttachmentIds;
+    const head = ctx.serverHead;
+    const established = head?.status === "active" && "payload" in head ? head.payload.draftAttachmentIds : undefined;
+    if (selected && selected.length && JSON.stringify([...selected].sort()) !== JSON.stringify([...(established ?? [])].sort())) {
+      try {
+        const result = await mutateDraft(ctx.locale, { intent: "attachments", contextKey: ctx.contextKey,
+          draftId: ctx.draftId, expectedVersion: ctx.local?.baseVersion ?? ctx.startVersion,
+          payload: { ...blank(), draftAttachmentIds: selected } });
+        if (!currentAt(ctx, epoch)) return null;
+        if (result.outcome !== "saved" || !result.draft) {
+          ctx.publishing = false;
+          await checkRemoteNow(ctx);
+          return null;
+        }
+        ctx.serverHead = result.draft;
+        ctx.startVersion = result.draft.version;
+        setExpectedVersion(result.draft.version);
+        if (ctx.local) {
+          ctx.local = { ...ctx.local, baseVersion: result.draft.version, basePayload: result.draft.payload };
+          writeLocalEditorDraft(ctx.local);
+        }
+      } catch { ctx.publishing = false; return null; }
+    }
     const local = ctx.local;
     return {
       draftId: local?.draftId ?? ctx.draftId,
@@ -364,6 +479,16 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function noteEdit(body: string, immediate = false) {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx)) return;
+    const oldBody = ctx.payload.body;
+    if (expireLocal(ctx)) {
+      let prefix = 0;
+      while (prefix < oldBody.length && oldBody[prefix] === body[prefix]) prefix++;
+      let suffix = 0;
+      while (suffix < oldBody.length - prefix && suffix < body.length - prefix
+        && oldBody[oldBody.length - 1 - suffix] === body[body.length - 1 - suffix]) suffix++;
+      body = body.slice(prefix, body.length - suffix);
+      callbacksRef.current.restore({ ...blank(), body });
+    }
     ctx.payload = { ...ctx.payload, body };
     ctx.hasInput = true;
     if (immediate || /\s$/u.test(body) || body.length === 0) capture(ctx);
@@ -371,6 +496,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   function noteFields(patch: Partial<Omit<ForumEditorDraftPayload, "body">>, immediate = false) {
     const ctx = runtimeRef.current;
     if (!ctx || !current(ctx)) return;
+    if (expireLocal(ctx)) return;
     ctx.payload = { ...ctx.payload, ...patch };
     ctx.hasInput = true;
     if (immediate) capture(ctx);
@@ -386,6 +512,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
   function reserveAttachmentGeneration(unchanged = false): string | null {
     const ctx = runtimeRef.current;
+    if (ctx && current(ctx) && expireLocal(ctx)) return null;
     if (!ctx || !current(ctx) || !ctx.attachmentVerified || ctx.conflict
       || ctx.reading || ctx.syncing || ctx.publishing) return null;
     if (ctx.local?.attachmentDraftId && ctx.local.attachmentDraftId !== ctx.draftId) return null;
@@ -397,11 +524,16 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       }
     }
     const now = new Date().toISOString();
+    const serverBase = ctx.serverHead && "payload" in ctx.serverHead ? ctx.serverHead.payload
+      : ctx.contextKey.startsWith("post:") ? { ...blank(), body: initialPayload.body,
+        publishedRevisionId: initialPayload.publishedRevisionId } : { ...blank(), draftAttachmentIds: [] };
     const next: LocalEditorDraft = ctx.local
-      ? { ...ctx.local, attachmentDraftId: ctx.draftId, editedAt: now, syncedEditedAt: null }
+      ? { ...ctx.local, attachmentDraftId: ctx.draftId, editedAt: now, syncedEditedAt: null,
+          basePayload: ctx.local.basePayload ?? serverBase }
       : { ownerId: ctx.ownerId, contextKey: ctx.contextKey, draftId: ctx.draftId,
           payload: { ...ctx.payload }, editedAt: now, syncedEditedAt: null,
-          baseVersion: ctx.startVersion, attachmentDraftId: ctx.draftId };
+          baseVersion: ctx.startVersion, attachmentDraftId: ctx.draftId,
+          basePayload: serverBase };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return null; }
     ctx.local = next;
     ctx.hasInput = false;
@@ -410,7 +542,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
   function noteAttachmentChange(generation: string) {
     const ctx = runtimeRef.current;
-    if (!ctx || !current(ctx) || ctx.draftId !== generation || !ctx.local) return;
+    if (!ctx || !current(ctx) || ctx.draftId !== generation || !ctx.local || expireLocal(ctx)) return;
     if (ctx.hasInput) capture(ctx);
     const next = { ...ctx.local, editedAt: new Date().toISOString(), syncedEditedAt: null };
     if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
@@ -420,7 +552,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
   function noteAttachmentManifest(generation: string, attachmentIds: readonly string[]) {
     const ctx = runtimeRef.current;
-    if (!ctx || !current(ctx) || ctx.draftId !== generation) return;
+    if (!ctx || !current(ctx) || ctx.draftId !== generation || expireLocal(ctx)) return;
     if (ctx.hasInput) capture(ctx);
     const selected = [...new Set(attachmentIds.map((id) => id.toLowerCase()))].sort();
     const existing = ctx.payload.draftAttachmentIds;
@@ -460,129 +592,187 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   }
   async function chooseVersion(which: "local" | "server") {
     const ctx = runtimeRef.current;
-    if (!ctx || !current(ctx) || !ctx.conflict || ctx.resolving) return;
-    if (ctx.hasInput) {
-      capture(ctx);
-      if (ctx.hasInput) return;
-    }
+    if (!ctx || !current(ctx) || !ctx.conflict || ctx.resolving || expireLocal(ctx)) return;
+    if (ctx.hasInput) capture(ctx);
     const conflictNow = ctx.conflict;
-    if ("payload" in conflictNow.server) {
-      const cachedCandidate = conflictNow.localCandidate;
-      const selectedLocal = which === "server" && cachedCandidate
-        ? cachedCandidate
-        : conflictNow.local;
-      const selectedPayload = which === "server" && !cachedCandidate
-        ? conflictNow.server.payload
-        : selectedLocal.payload;
-      const selectedProvenance = which === "local"
-        ? conflictNow.local.attachmentDraftId
-        : cachedCandidate?.attachmentDraftId;
-      ctx.resolving = true;
-      try {
-        let intent: "save" | "resolve" = "resolve";
-        let targetDraftId = conflictNow.server.draftId;
-        let authoritativeVersion = conflictNow.server.version;
-        if (cachedCandidate) {
-          const head = (await fetchDraftMetadata(ctx.locale))
-            .find((entry) => entry.contextKey === ctx.contextKey);
-          if (!current(ctx) || ctx.conflict !== conflictNow) return;
-          authoritativeVersion = head?.version ?? 0;
-          if (head?.status === "active") {
-            targetDraftId = head.draftId;
-          } else {
-            intent = "save";
-            targetDraftId = selectedLocal.draftId;
-            if (head?.draftId === targetDraftId) targetDraftId = crypto.randomUUID();
-          }
-        }
-        const provisional: LocalEditorDraft = {
-          ownerId: ctx.ownerId,
-          contextKey: ctx.contextKey,
-          draftId: targetDraftId,
-          payload: selectedPayload,
-          editedAt: new Date().toISOString(),
-          baseVersion: authoritativeVersion,
-          syncedEditedAt: null,
-          attachmentDraftId: selectedProvenance,
-        };
-        // Prove the selected snapshot is recoverable before advancing the
-        // authoritative server boundary.
-        if (!writeLocalEditorDraft(provisional)) { setStatus("error"); return; }
-        const result = await mutateDraft(ctx.locale, {
-          intent,
-          contextKey: ctx.contextKey,
-          draftId: targetDraftId,
-          payload: selectedPayload,
-          expectedVersion: authoritativeVersion,
-        });
+    if (!conflictNow) return;
+    const seen = conflictNow.server;
+    const selected = which === "local" ? conflictNow.local : conflictNow.localCandidate;
+    if (!selected && (!seen || seen.status !== "active")) {
+      reset(ctx, seen?.version ?? ctx.startVersion);
+      setAttachmentSelectionEpoch((value) => value + 1);
+      void checkRemote(ctx);
+      return;
+    }
+    let payload = selected?.payload ?? (seen && "payload" in seen ? seen.payload : null);
+    if (!payload) return;
+    const other = conflictNow.localCandidate?.payload ?? (seen && "payload" in seen ? seen.payload : null);
+    const keep = other && keptAttachmentSelection(conflictNow.local.payload, other, conflictNow.local.basePayload);
+    if (keep) payload = { ...payload, draftAttachmentIds: keep };
+    if (selected?.pendingAttachments?.length) payload = { ...payload,
+      draftAttachmentIds: payload.draftAttachmentIds?.filter((id) => !selected.pendingAttachments!.some((item) => item.id === id)) };
+    const targetId = seen?.status === "active" ? seen.draftId
+      : selected?.draftId === seen?.draftId ? crypto.randomUUID() : selected!.draftId;
+    const version = seen?.version ?? ctx.startVersion;
+    const provisional: LocalEditorDraft = { ...conflictNow.local, draftId: targetId,
+      payload, baseVersion: version, syncedEditedAt: null, editedAt: new Date().toISOString(),
+      attachmentDraftId: selected?.attachmentDraftId, pendingAttachments: selected?.pendingAttachments };
+    if (!writeLocalEditorDraft(provisional)) { setStatus("error"); return; }
+    ctx.resolving = true;
+    ctx.readToken = null;
+    ctx.reading = false;
+    try {
+      await enqueue(ctx, async () => {
+        // The exact seen base is immutable. Never fetch a fresh number to make
+        // an old choice pass CAS; a changed head is another user decision.
+        const result = await mutateDraft(ctx.locale, { intent: seen?.status === "active" ? "resolve" : "save",
+          contextKey: ctx.contextKey, draftId: targetId, payload, expectedVersion: version });
         if (!current(ctx) || ctx.conflict !== conflictNow) return;
         if (result.outcome !== "saved" || !result.draft) {
-          writeLocalEditorDraft(conflictNow.local);
-          const remote = await fetchDraftContent(ctx.locale, ctx.contextKey);
-          if (current(ctx) && ctx.conflict === conflictNow && remote) {
-            updateConflict(ctx, { ...conflictNow, server: remote });
+          const candidate = selected ?? conflictNow.local;
+          writeLocalEditorDraft(candidate);
+          const head = await fetchDraftHead(ctx.locale, ctx.contextKey);
+          if (current(ctx) && ctx.conflict === conflictNow) {
+            ctx.serverHead = head;
+            ctx.local = candidate;
+            ctx.payload = { ...candidate.payload };
+            callbacksRef.current.restore(candidate.payload);
+            updateConflict(ctx, { local: candidate, server: head });
           }
           return;
         }
         if (!applyRemote(ctx, result.draft, true)) return;
-        if (selectedProvenance && ctx.local) {
-          const next = { ...ctx.local, attachmentDraftId: selectedProvenance };
-          if (!writeLocalEditorDraft(next)) { setStatus("error"); return; }
-          ctx.local = next;
+        if ((provisional.attachmentDraftId || provisional.pendingAttachments?.length) && ctx.local) {
+          ctx.local = { ...ctx.local, attachmentDraftId: provisional.attachmentDraftId,
+            pendingAttachments: provisional.pendingAttachments };
+          setPendingAttachments(provisional.pendingAttachments ?? []);
+          writeLocalEditorDraft(ctx.local);
         }
-        if (which === "server") setAttachmentSelectionEpoch((value) => value + 1);
-        ctx.epoch++;
-        ctx.reading = false;
-        ctx.serverCycle = null;
+        setAttachmentSelectionEpoch((value) => value + 1);
         updateConflict(ctx, null);
         setAttachmentVerified(ctx, true);
-        return;
-      } catch {
-        if (current(ctx) && ctx.conflict === conflictNow) {
-          writeLocalEditorDraft(conflictNow.local);
-          setStatus("conflict");
-        }
-        return;
-      } finally {
-        if (current(ctx)) ctx.resolving = false;
-      }
-    }
+      });
+    } catch {
+      if (current(ctx)) { writeLocalEditorDraft(conflictNow.local); setStatus("conflict"); }
+    } finally { if (current(ctx)) ctx.resolving = false; }
+  }
 
-    let verified = false;
-    if (which === "server") {
-      reset(ctx, conflictNow.server.version);
-      // Same text draft ID does not imply the same attachment selection.
-      setAttachmentSelectionEpoch((value) => value + 1);
-    } else {
-      // Explicit selection is the only way to replace another generation.
-      const local = conflictNow.local;
-      const next = { ...local, baseVersion: conflictNow.server.version, syncedEditedAt: null,
-        draftId: conflictNow.server.status === "active" ? conflictNow.server.draftId : crypto.randomUUID() };
-      verified = writeLocalEditorDraft(next);
-      if (!verified) { setStatus("error"); return; }
-      ctx.local = next;
-      ctx.draftId = next.draftId;
-      ctx.payload = { ...next.payload };
-      ctx.hasInput = false;
-      ctx.rejectedSyncEditedAt = null;
-      setDraftId(next.draftId);
-      setExpectedVersion(next.baseVersion);
-      callbacksRef.current.restore(next.payload);
-      setStatus(verified ? "pending" : "error");
-    }
-    // Pending reads/saves belong to the rejected choice. Their DB operations can
-    // finish, but their replies must not reset this selected snapshot or block
-    // its next regular save cycle.
-    ctx.epoch++;
-    ctx.syncing = false;
-    ctx.reading = false;
-    ctx.serverCycle = null;
-    updateConflict(ctx, null);
-    const checkLocalCandidate = !!conflictNow.localCandidate;
-    setAttachmentVerified(ctx, verified && !checkLocalCandidate);
-    if (checkLocalCandidate || (!verified && which === "server" && !("payload" in conflictNow.server))) {
-      void checkRemote(ctx);
-    }
+  async function rebindAttachments(fromDraftId: string, toDraftId: string): Promise<Response> {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || expireLocal(ctx)) throw new Error("draft unavailable");
+    const response = await enqueue(ctx, async () => {
+      if (ctx.conflict || ctx.draftId !== toDraftId || expireLocal(ctx)) throw new Error("draft changed");
+      return fetch("/api/attachments", { method: "PATCH", credentials: "same-origin", headers: {
+        "X-Vico-Draft-Context": encodeURIComponent(ctx.contextKey), "X-Vico-Draft-Id": toDraftId,
+        "X-Vico-Attachment-From-Draft-Id": fromDraftId,
+        "X-Vico-Draft-Version": String(ctx.local?.baseVersion ?? ctx.startVersion),
+      } });
+    });
+    if (!response) throw new Error("draft changed");
+    return response;
+  }
+  async function initializeAttachments(generation: string, revisionId: string) {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || expireLocal(ctx)) throw new Error("draft unavailable");
+    return enqueue(ctx, async () => {
+      if (ctx.conflict || ctx.draftId !== generation || expireLocal(ctx)) throw new Error("draft changed");
+      const version = ctx.local?.baseVersion ?? ctx.startVersion;
+      const response = await fetch("/api/attachments", { method: "PUT", credentials: "same-origin",
+        headers: { "X-Vico-Draft-Context": encodeURIComponent(ctx.contextKey),
+          "X-Vico-Draft-Id": generation, "X-Vico-Post-Revision": encodeURIComponent(revisionId),
+          "X-Vico-Draft-Version": String(version) } });
+      if (!response.ok) {
+        if (response.status === 409 || response.status === 410) await checkRemoteNow(ctx);
+        throw new Error("attachment initialization unavailable");
+      }
+      const data = await response.json() as { attachments?: unknown[]; draft?: DraftRemote };
+      if (!current(ctx) || ctx.draftId !== generation) throw new Error("draft changed");
+      return data;
+    });
+  }
+  function stageAttachment(generation: string, attachment: PendingDraftAttachment): boolean {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || expireLocal(ctx) || ctx.draftId !== generation || !ctx.local) return false;
+    const pending = [...(ctx.local.pendingAttachments ?? []).filter((item) => item.id !== attachment.id), attachment];
+    const next = { ...ctx.local, pendingAttachments: pending };
+    if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
+    ctx.local = next;
+    setPendingAttachments(pending);
+    return true;
+  }
+  async function selectAttachment(generation: string, id: string, present: boolean): Promise<boolean> {
+    const ctx = runtimeRef.current;
+    if (!ctx || !current(ctx) || ctx.publishing || ctx.conflict || expireLocal(ctx)) return false;
+    const epoch = ctx.epoch;
+    return (await enqueue(ctx, async () => {
+      if (!currentAt(ctx, epoch) || ctx.conflict || ctx.draftId !== generation || expireLocal(ctx)) return false;
+      if (ctx.hasInput) capture(ctx);
+      const version = ctx.local?.baseVersion ?? ctx.startVersion;
+      let head = ctx.serverHead;
+      if (head?.status === "active" && !("payload" in head)) {
+        const observed = await fetchDraftContent(ctx.locale, ctx.contextKey);
+        if (!currentAt(ctx, epoch)) return false;
+        if (!observed || observed.version !== version || observed.draftId !== generation) {
+          if (ctx.local) updateConflict(ctx, { local: ctx.local, server: observed });
+          return false;
+        }
+        head = observed;
+      }
+      const selected = new Set(head?.status === "active" && "payload" in head
+        ? head.payload.draftAttachmentIds ?? []
+        : (ctx.payload.draftAttachmentIds ?? []).filter((fileId) => !ctx.local?.pendingAttachments?.some((item) => item.id === fileId)));
+      if (present) selected.add(id); else selected.delete(id);
+      const ids = [...selected].sort();
+      const beforeText = head?.status === "active" && "payload" in head ? head.payload
+        : ctx.local?.basePayload ?? blank();
+      if (ctx.local) {
+        const next = { ...ctx.local, basePayload: beforeText,
+          selectionIntent: { draftId: generation, expectedVersion: version, attachmentIds: ids, attachmentId: id } };
+        if (!writeLocalEditorDraft(next)) { setStatus("error"); return false; }
+        ctx.local = next;
+      }
+      const provesOwnSelection = (observed: DraftRemote | null): observed is DraftRemote => !!observed
+        && observed.draftId === generation && observed.version === version + 1
+        && observed.status === "active" && samePayload(observed.payload, { ...beforeText, draftAttachmentIds: ids });
+      let result;
+      try {
+        result = await mutateDraft(ctx.locale, { intent: "attachments", contextKey: ctx.contextKey,
+          draftId: generation, expectedVersion: version, payload: { ...blank(), draftAttachmentIds: ids } });
+      } catch {
+        // A read can establish the exact own transition only at N+1, with the
+        // expected complete snapshot. A later external version cannot rebase us.
+        const observed = await fetchDraftHead(ctx.locale, ctx.contextKey);
+        if (!provesOwnSelection(observed)) return false;
+        result = { outcome: "saved", draft: observed };
+      }
+      if (!currentAt(ctx, epoch)) return false;
+      if (result.outcome !== "saved" || !result.draft) {
+        const observed = await fetchDraftHead(ctx.locale, ctx.contextKey);
+        if (!currentAt(ctx, epoch)) return false;
+        if (!provesOwnSelection(observed)) {
+          if (ctx.local) { ctx.serverHead = observed; updateConflict(ctx, { local: ctx.local, server: observed }); }
+          return false;
+        }
+        result = { outcome: "saved", draft: observed };
+      }
+      const saved = result.draft;
+      if (!saved) return false;
+      ctx.serverHead = saved;
+      ctx.startVersion = saved.version;
+      setAttachmentVerified(ctx, true);
+      setExpectedVersion(saved.version);
+      const localIds = new Set(ctx.payload.draftAttachmentIds ?? []);
+      if (present) localIds.add(id); else localIds.delete(id);
+      ctx.payload = { ...ctx.payload, draftAttachmentIds: [...localIds].sort() };
+      if (ctx.local) {
+        ctx.local = { ...ctx.local, baseVersion: saved.version,
+          payload: ctx.payload, syncedEditedAt: null, basePayload: saved.payload, selectionIntent: undefined,
+          pendingAttachments: ctx.local.pendingAttachments?.filter((item) => item.id !== id) };
+        setPendingAttachments(ctx.local.pendingAttachments ?? []);
+        if (!writeLocalEditorDraft(ctx.local)) { setStatus("error"); return false; }
+      }
+      return true;
+    })) ?? false;
   }
 
   function acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
@@ -612,7 +802,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       local: null, payload: { ...initialPayload }, hasInput: false, startVersion: 0, conflict: null,
       rejectedSyncEditedAt: null,
       syncing: false, resolving: false, reading: false, disposed: false, epoch: 0, attachmentVerified: false,
-      serverCycle: null, publishing: false,
+      serverCycle: null, publishing: false, serverHead: null, mutations: Promise.resolve(), readToken: null, mutating: false,
     };
     runtimeRef.current = ctx;
     setDraftId(ctx.draftId);
@@ -627,6 +817,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       ctx.local = local;
       ctx.draftId = local.draftId;
       ctx.payload = { ...local.payload };
+      setPendingAttachments(local.pendingAttachments ?? []);
       setDraftId(local.draftId);
       setExpectedVersion(local.baseVersion);
       callbacksRef.current.restore(local.payload);
@@ -647,6 +838,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
       if (ctx.hasInput) capture(ctx);
       if ((!ctx.local || ctx.local.editedAt === ctx.local.syncedEditedAt)
         && (!ctx.local?.attachmentDraftId || ctx.local.attachmentDraftId === other.draftId)) {
+        ctx.epoch++;
+        ctx.readToken = null;
+        ctx.reading = false;
         setAttachmentVerified(ctx, false);
         ctx.local = other;
         ctx.payload = { ...other.payload };
@@ -660,12 +854,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
         void checkRemote(ctx);
       } else if (other.draftId !== ctx.local.draftId
         || JSON.stringify(other.payload) !== JSON.stringify(ctx.local.payload)) {
-        updateConflict(ctx, { local: ctx.local, localCandidate: other, server: {
-          contextKey, draftId: other.draftId, version: other.baseVersion,
-          status: "active", editedAt: other.editedAt, updatedAt: other.editedAt,
-          title: other.payload.title, snippet: other.payload.body.slice(0, 140),
-          payload: other.payload,
-        } });
+        updateConflict(ctx, { local: ctx.local, localCandidate: other, server: ctx.serverHead });
       }
     };
     window.addEventListener("pagehide", onPageHide);
@@ -694,7 +883,7 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
     saving: t("editorDraftSaving"), restored: t("editorDraftRestored"),
     conflict: t("editorDraftConflict"), error: t("editorDraftLocalError"),
   };
-  const conflictRemotePayload = conflict && "payload" in conflict.server ? conflict.server.payload : null;
+  const conflictRemotePayload = conflict?.localCandidate?.payload ?? (conflict?.server && "payload" in conflict.server ? conflict.server.payload : null);
   const conflictTitleLabel = contextKey === "help:new"
     ? t("helpSolutionsQuestionTitleLabel")
     : t("topicTitleLabel");
@@ -737,9 +926,9 @@ export function useEditorDraft({ ownerId, contextKey, locale, initialPayload, re
   ) : null;
   return {
     noteEdit, noteFields, seedFields, saveLocal, draftId, expectedVersion, acknowledgePublished,
-    preparePublication, releasePublication, attachmentReady, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
+    preparePublication, releasePublication, attachmentReady, attachmentSnapshotEstablished, attachmentRebindFrom, attachmentRebindVersion, attachmentRevision,
     attachmentSelectionEpoch,
-    noteAttachmentChange, noteAttachmentManifest,
+    noteAttachmentChange, noteAttachmentManifest, selectAttachment, stageAttachment, pendingAttachments, initializeAttachments, rebindAttachments,
     reserveAttachmentGeneration, retryAttachmentReconciliation, completeAttachmentRebind,
     statusLabel: ownerId && contextKey ? labels[status] : "",
     conflictElement,

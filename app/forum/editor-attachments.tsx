@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { PendingDraftAttachment } from "./draft-client";
 import type { UiKey } from "../localization/catalog";
 
 export interface DraftAttachment {
@@ -19,7 +20,7 @@ export interface DraftAttachment {
   verificationStatus: "type-checked";
 }
 
-type UploadStatus = "uploading" | "stored" | "error" | "removing";
+type UploadStatus = "uploading" | "selecting" | "stored" | "error" | "removing";
 type UploadEntry = {
   id: string;
   draftId: string;
@@ -41,6 +42,8 @@ interface Props {
   expectedVersion: number;
   publishedRevisionId?: string;
   hasPublishedAttachments?: boolean;
+  publishedAttachments?: readonly { id: string; url: string }[];
+  snapshotEstablished?: boolean;
   draftReady: boolean;
   draftRevision: number;
   selectionEpoch: number;
@@ -50,6 +53,11 @@ interface Props {
   reserveGeneration(unchanged?: boolean): string | null;
   completeRebind(fromDraftId: string, toDraftId: string, retired?: boolean): boolean;
   retryDraftReconciliation(): void;
+  pendingAttachments?: readonly PendingDraftAttachment[];
+  rebindAttachments(fromDraftId: string, toDraftId: string): Promise<Response>;
+  initializeAttachments(draftId: string, revisionId: string): Promise<{ attachments?: unknown[] } | undefined>;
+  stageAttachment(draftId: string, attachment: PendingDraftAttachment): boolean;
+  selectAttachment(draftId: string, id: string, present: boolean): Promise<boolean>;
   noteAttachmentChange(draftId: string): void;
   noteAttachmentManifest(draftId: string, attachmentIds: readonly string[]): void;
   insertImage(id: string, fileName: string): void;
@@ -156,6 +164,8 @@ export function useEditorAttachments({
   expectedVersion,
   publishedRevisionId,
   hasPublishedAttachments = false,
+  publishedAttachments = [],
+  snapshotEstablished = true,
   draftReady,
   draftRevision,
   selectionEpoch,
@@ -166,11 +176,20 @@ export function useEditorAttachments({
   completeRebind,
   retryDraftReconciliation,
   noteAttachmentChange,
+  selectAttachment,
+  stageAttachment,
+  initializeAttachments,
+  rebindAttachments,
+  pendingAttachments = [],
   noteAttachmentManifest,
   insertImage,
   removeImage,
 }: Props) {
   const { t, i18n } = useTranslation("common");
+  const attachmentUrl = (id: string, generation: string) => !snapshotEstablished
+    && publishedAttachments.find((file) => file.id === id)?.url
+    || `/api/attachments/file/${encoded(id)}?draft=${encoded(generation)}&context=${encoded(contextKey!)}`;
+
   const [entries, setEntries] = useState<UploadEntry[]>([]);
   const entriesRef = useRef(entries);
   entriesRef.current = entries;
@@ -186,6 +205,10 @@ export function useEditorAttachments({
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
+    selectAttachment,
+    stageAttachment,
+    initializeAttachments,
+  rebindAttachments,
     noteAttachmentManifest,
     insertImage,
     removeImage,
@@ -195,6 +218,10 @@ export function useEditorAttachments({
     completeRebind,
     retryDraftReconciliation,
     noteAttachmentChange,
+    selectAttachment,
+    stageAttachment,
+    initializeAttachments,
+  rebindAttachments,
     noteAttachmentManifest,
     insertImage,
     removeImage,
@@ -261,16 +288,7 @@ export function useEditorAttachments({
     const toDraftId = draftId;
     let ignore = false;
     setRebindState("loading");
-    void fetch("/api/attachments", {
-      method: "PATCH",
-      headers: {
-        "X-Vico-Draft-Context": encoded(contextKey),
-        "X-Vico-Draft-Id": toDraftId,
-        "X-Vico-Attachment-From-Draft-Id": fromDraftId,
-        "X-Vico-Draft-Version": String(rebindVersion),
-      },
-      credentials: "same-origin",
-    }).then(async (response) => {
+    void callbacksRef.current.rebindAttachments(fromDraftId, toDraftId).then(async (response) => {
       if (ignore || scopeRef.current !== scopeAtStart) return;
       if (response.status === 410) {
         if (!callbacksRef.current.completeRebind(fromDraftId, toDraftId, true)) {
@@ -310,17 +328,16 @@ export function useEditorAttachments({
       && hasPublishedAttachments) return;
     let ignore = false;
     setRestoreState("loading");
-    void fetch("/api/attachments", {
-      method: publishedRevisionId ? "PUT" : "GET",
-      headers: {
-        "X-Vico-Draft-Context": encoded(contextKey),
-        "X-Vico-Draft-Id": draftId,
-        ...(publishedRevisionId ? { "X-Vico-Post-Revision": encoded(publishedRevisionId) } : {}),
-      },
-      credentials: "same-origin",
-    }).then(async (response) => {
-      if (!response.ok) throw new Error(String(response.status));
-      const payload = await response.json() as { attachments?: unknown[] };
+    const request = publishedRevisionId
+      ? callbacksRef.current.initializeAttachments(draftId, publishedRevisionId)
+      : fetch("/api/attachments", { method: "GET", credentials: "same-origin", headers: {
+        "X-Vico-Draft-Context": encoded(contextKey), "X-Vico-Draft-Id": draftId,
+      } }).then(async (response) => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json() as Promise<{ attachments?: unknown[] }>;
+      });
+    void request.then((payload) => {
+      if (!payload) throw new Error("draft changed");
       const restored = (payload.attachments ?? [])
         .map(storedAttachment)
         .filter((item): item is DraftAttachment => item !== null)
@@ -333,6 +350,10 @@ export function useEditorAttachments({
         return [
           ...restored.filter((entry) => !removedIdsRef.current.has(entry.id)
             && !mutations.some((item) => item.id === entry.id)),
+          ...pendingAttachments.filter((item) => !removedIdsRef.current.has(item.id)
+            && !restored.some((entry) => entry.id === item.id) && !mutations.some((entry) => entry.id === item.id))
+            .map((item): UploadEntry => ({ ...item, draftId, status: "error", progress: null,
+              file: null, attachment: null, error: "unavailable", removeError: false, uncertainCommit: false })),
           ...mutations,
         ];
       });
@@ -394,6 +415,7 @@ export function useEditorAttachments({
     const identityAtStart = identity;
     const selectionAtStart = selectionEpoch;
     const versionAtStart = expectedVersionRef.current;
+    if (!callbacksRef.current.stageAttachment(generation, { id: stableId, fileName: namedFile.name, byteSize: namedFile.size })) return;
     const next: UploadEntry = {
       id: stableId,
       draftId: generation,
@@ -427,7 +449,7 @@ export function useEditorAttachments({
       const progress = Math.max(0, Math.min(100, Math.round((event.loaded / event.total) * 100)));
       setEntry(stableId, (current) => ({ ...current, progress }));
     };
-    request.onload = () => {
+    request.onload = async () => {
       requestsRef.current.delete(stableId);
       const payload = parseJson(request.responseText);
       const attachment = storedAttachment(payload?.attachment);
@@ -438,8 +460,12 @@ export function useEditorAttachments({
           notifyAttachmentChange(identityAtStart);
           return;
         }
-        setEntry(stableId, () => restoredEntry(attachment, generation));
-        callbacksRef.current.noteAttachmentChange(draftIdRef.current);
+        setEntry(stableId, (current) => ({ ...current, status: "selecting", attachment, progress: null }));
+        let selected = false;
+        try { selected = await callbacksRef.current.selectAttachment(generation, stableId, true); } catch { /* Retry retains the staged asset. */ }
+        if (identityRef.current !== identityAtStart || selectionEpochRef.current !== selectionAtStart) return;
+        if (selected) setEntry(stableId, () => restoredEntry(attachment, draftIdRef.current));
+        else setEntry(stableId, (current) => ({ ...current, status: "error", error: "unavailable" }));
         return;
       }
       if (!active()) {
@@ -496,8 +522,18 @@ export function useEditorAttachments({
   }
 
   function retry(entry: UploadEntry) {
-    if (!entry.file || entry.status !== "error") return;
-    startUpload(entry.file, entry.id, true, entry.uncertainCommit, entry.draftId);
+    if (entry.status !== "error") return;
+    if (entry.attachment || !entry.file) {
+      const scopeAtStart = scope;
+      setEntry(entry.id, (current) => ({ ...current, status: "selecting" }));
+      void callbacksRef.current.selectAttachment(draftIdRef.current, entry.id, true).then((selected) => {
+        if (scopeRef.current !== scopeAtStart) return;
+        if (selected && !entry.attachment) { setRestoredScope(null); setRestoreAttempt((value) => value + 1); }
+        setEntry(entry.id, (current) => ({ ...current, status: selected ? "stored" : "error" }));
+      }).catch(() => {
+        if (scopeRef.current === scopeAtStart) setEntry(entry.id, (current) => ({ ...current, status: "error" }));
+      });
+    } else startUpload(entry.file, entry.id, true, entry.uncertainCommit, entry.draftId);
   }
 
   async function remove(entry: UploadEntry) {
@@ -505,12 +541,12 @@ export function useEditorAttachments({
       !contextKey
       || !identity
       || entry.status === "uploading"
+      || entry.status === "selecting"
       || entry.status === "removing"
       || entry.uncertainCommit
     ) return;
     const identityAtStart = identity;
     const selectionAtStart = selectionEpoch;
-    const versionAtStart = expectedVersionRef.current;
     if (entry.error === "gone") {
       callbacksRef.current.removeImage(entry.id);
       setEntries((current) => current.filter((item) => item.id !== entry.id));
@@ -523,23 +559,12 @@ export function useEditorAttachments({
       && entriesRef.current.some((item) => item.id === entry.id
         && item.draftId === entry.draftId && item.status === "removing");
     try {
-      const response = await fetch("/api/attachments", {
-        method: "DELETE",
-        headers: {
-          "X-Vico-Draft-Context": encoded(contextKey),
-          "X-Vico-Draft-Id": entry.draftId,
-          "X-Vico-Attachment-Id": entry.id,
-          "X-Vico-Draft-Version": String(versionAtStart),
-        },
-        credentials: "same-origin",
-      });
-      if (!response.ok && response.status !== 404 && response.status !== 410) throw new Error(String(response.status));
+      const selected = await callbacksRef.current.selectAttachment(draftIdRef.current, entry.id, false);
+      if (!selected) throw new Error("selection unavailable");
       if (activeRemoval()) {
         removedIdsRef.current.add(entry.id);
         callbacksRef.current.removeImage(entry.id);
         setEntries((current) => current.filter((item) => item.id !== entry.id));
-        if (response.status === 410) callbacksRef.current.retryDraftReconciliation();
-        else callbacksRef.current.noteAttachmentChange(draftIdRef.current);
       } else {
         // A late commit can invalidate the new selection's GET snapshot. Refresh
         // authoritative refs without applying this obsolete UI operation.
@@ -647,7 +672,7 @@ export function useEditorAttachments({
               <div className="markdown-editor-attachment-copy">
                 <strong dir="auto">{entry.fileName}</strong>
                 <span>{formattedBytes(entry.byteSize)}</span>
-                {entry.status === "uploading" ? (
+                {entry.status === "uploading" || entry.status === "selecting" ? (
                   <span>
                     {entry.progress === null
                       ? t("editorAttachmentUploading")
@@ -666,16 +691,17 @@ export function useEditorAttachments({
               </div>
               {entry.status === "stored" && entry.attachment && contextKey ? (
                 <ForumAttachmentDisplay attachment={entry.attachment}
-                  url={`/api/attachments/file/${encoded(entry.id)}?draft=${encoded(draftId)}&context=${encoded(contextKey)}`}
+                  url={attachmentUrl(entry.id, draftId)}
                   deferImage compact />
               ) : null}
               <div className="markdown-editor-attachment-actions">
-                {entry.status === "error" && entry.file ? (
+                {entry.status === "error" ? (
                   <button type="button" disabled={disabled} onClick={() => retry(entry)}>
                     {t("editorAttachmentRetry")}
                   </button>
                 ) : null}
                 {entry.status !== "uploading"
+                  && entry.status !== "selecting"
                   && entry.status !== "removing"
                   && !entry.uncertainCommit ? (
                     <button type="button" disabled={disabled} onClick={() => void remove(entry)}>
@@ -714,7 +740,7 @@ export function useEditorAttachments({
         fileName: entry.fileName,
         byteSize: entry.byteSize,
         detectedType: entry.attachment!.detectedType,
-        url: `/api/attachments/file/${encoded(entry.id)}?draft=${encoded(entry.draftId)}&context=${encoded(contextKey!)}`,
+        url: attachmentUrl(entry.id, entry.draftId),
       })),
     controls,
     details,

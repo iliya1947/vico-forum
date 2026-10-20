@@ -89,6 +89,7 @@ describe("editor draft lifecycle", () => {
       title: "", snippet: "", editedAt, updatedAt: editedAt, payload: empty };
     const posts: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         posts.push(JSON.parse(options.body as string));
         remote = { ...remote, version: 2, editedAt: new Date().toISOString() };
@@ -120,6 +121,7 @@ describe("editor draft lifecycle", () => {
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server content" } };
     let contentAvailable = false;
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") return response({ outcome: "saved", draft: {
         ...remote, version: 5, payload: JSON.parse(options.body as string).payload,
       } });
@@ -148,6 +150,7 @@ describe("editor draft lifecycle", () => {
     vi.useFakeTimers();
     const posts: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         posts.push(JSON.parse(options.body as string));
         return response({ outcome: "saved", draft: {
@@ -200,6 +203,7 @@ describe("editor draft lifecycle", () => {
       title: "", snippet: "Server reply", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server reply" } };
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") return response({ outcome: "saved", draft: {
         ...remote, version: 5, payload: JSON.parse(options.body as string).payload,
       } });
@@ -241,6 +245,7 @@ describe("editor draft lifecycle", () => {
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server reply" } };
     const posts: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string);
         posts.push(sent);
@@ -285,6 +290,7 @@ describe("editor draft lifecycle", () => {
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Server B" } };
     const posts: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, init?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (init?.method === "POST") {
         const sent = JSON.parse(init.body as string);
         posts.push(sent);
@@ -302,7 +308,7 @@ describe("editor draft lifecycle", () => {
     expect(readLocalEditorDraft("alice", contextKey)).toMatchObject({
       draftId: newId, attachmentDraftId: oldId,
     });
-    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("0");
+    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("1");
 
     fireEvent.change(screen.getByRole("textbox", { name: "Body" }), { target: { value: "Edited local B" } });
     fireEvent.click(screen.getByRole("button", { name: "Leave editor" }));
@@ -319,7 +325,7 @@ describe("editor draft lifecycle", () => {
     });
     expect(readLocalEditorDraft("alice", contextKey)?.attachmentDraftId).toBeUndefined();
     expect(screen.getByTestId("attachment-rebind")).toHaveTextContent("none");
-    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("1");
+    expect(screen.getByTestId("attachment-selection-epoch")).toHaveTextContent("2");
     expect(posts).toHaveLength(2);
   });
 
@@ -332,6 +338,7 @@ describe("editor draft lifecycle", () => {
       title: "", snippet: "New text", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "New text" } };
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) return response({ draft: remote });
       throw new Error("Unexpected fetch");
@@ -371,6 +378,7 @@ describe("editor draft lifecycle", () => {
       title: "", snippet: "New text", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "New text" } };
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) return response({ draft: remote });
       throw new Error("Unexpected fetch");
@@ -390,6 +398,7 @@ describe("editor draft lifecycle", () => {
       title: "", snippet: "Same text", editedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(), payload: { ...empty, body: "Same text" } };
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [remote] });
       if (uri.includes("mode=content")) return response({ draft: remote });
       throw new Error("Unexpected fetch");
@@ -405,6 +414,7 @@ describe("editor draft lifecycle", () => {
     vi.useFakeTimers();
     const posts: Array<Record<string, unknown>> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string) as Record<string, unknown>;
         posts.push(sent);
@@ -437,6 +447,7 @@ describe("editor draft lifecycle", () => {
     vi.useFakeTimers();
     let postCalls = 0;
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         postCalls++;
         return response({ error: "invalid" }, 413);
@@ -473,6 +484,7 @@ describe("editor draft lifecycle", () => {
     writeLocalEditorDraft(local);
     const posts: Array<Record<string, unknown>> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string) as Record<string, unknown>;
         posts.push(sent);
@@ -510,6 +522,7 @@ describe("editor draft lifecycle", () => {
       editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       title: "", snippet: "Remote code", payload: { ...empty, body: "Remote code" } };
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") return response({ outcome: "saved", draft: {
         ...other, version: 3, payload: JSON.parse(options.body as string).payload,
       } });
@@ -554,6 +567,7 @@ describe("editor draft lifecycle", () => {
       },
     };
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [other] });
       if (uri.includes("mode=content")) return response({ draft: other });
       throw new Error("Unexpected fetch");
@@ -577,7 +591,12 @@ describe("editor draft lifecycle", () => {
       editedAt: new Date().toISOString(),
       baseVersion: 0, syncedEditedAt: null, payload: { ...empty, body: "Distinct local reply " } };
     writeLocalEditorDraft(local);
-    vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const sent = JSON.parse(options.body as string);
+        return response({ outcome: "saved", draft: { contextKey, draftId: sent.draftId, version: 9, status: "active", editedAt: new Date().toISOString(), payload: sent.payload } });
+      }
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [{
         contextKey, draftId: oldId, version: 8, status: "published",
         title: "", snippet: "", editedAt: "2090-01-01T00:00:00.000Z",
@@ -591,8 +610,9 @@ describe("editor draft lifecycle", () => {
     expect(screen.getByText("This draft was published or deleted.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
     fireEvent.click(screen.getByRole("button", { name: "Keep local" }));
-    expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(8);
-    expect(readLocalEditorDraft("alice", contextKey)?.draftId).not.toBe(newId);
+    await flush();
+    expect(readLocalEditorDraft("alice", contextKey)?.baseVersion).toBe(9);
+    expect(readLocalEditorDraft("alice", contextKey)?.draftId).toBe(newId);
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Distinct local reply ");
   });
 
@@ -600,6 +620,7 @@ describe("editor draft lifecycle", () => {
     let resolveMetadata!: (value: Response) => void;
     const metadata = new Promise<Response>((resolve) => { resolveMetadata = resolve; });
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return metadata;
       throw new Error("Unexpected fetch");
     }));
@@ -636,6 +657,7 @@ describe("editor draft lifecycle", () => {
 
   it("does not overwrite unflushed typing when another tab changes the local copy", async () => {
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [] });
       throw new Error("Unexpected fetch");
     }));
@@ -664,6 +686,7 @@ describe("editor draft lifecycle", () => {
       payload: { ...empty, body: "Delete from this device" } };
     writeLocalEditorDraft(local);
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) return response({ drafts: [] });
       throw new Error("Unexpected fetch");
     }));
@@ -685,6 +708,7 @@ describe("editor draft lifecycle", () => {
     const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
     let calls = 0;
     vi.stubGlobal("fetch", vi.fn(async (uri: string) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri.includes("mode=metadata")) {
         calls++;
         return calls === 1 ? first : response({ drafts: [] });
@@ -716,6 +740,7 @@ describe("conflict choices from another tab", () => {
       payload: { ...empty, body: "Current unsaved tab" } });
     const posts: Array<Record<string, unknown>> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string);
         posts.push(sent);
@@ -761,6 +786,7 @@ describe("conflict choices from another tab", () => {
       payload: { ...empty, body: "Current generation" } });
     const posts: Array<Record<string, unknown>> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string);
         posts.push(sent);
@@ -804,6 +830,7 @@ describe("conflict choices from another tab", () => {
     let finish: ((value: Response) => void) | undefined;
     const posts: Array<Record<string, unknown>> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         posts.push(JSON.parse(options.body as string));
         return new Promise<Response>((resolve) => { finish = resolve; });
@@ -844,6 +871,7 @@ describe("conflict choices from another tab", () => {
       title: "", snippet: "Server", editedAt, updatedAt: editedAt, payload: { ...empty, body: "Actual server" } };
     const posts: Array<{ draftId: string; expectedVersion: number; payload: typeof empty }> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string);
         posts.push(sent);
@@ -895,10 +923,14 @@ describe("conflict choices from another tab", () => {
     let acknowledge: ((response: Response) => void) | undefined;
     const posts: Array<{ draftId: string; expectedVersion: number; payload: typeof empty }> = [];
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return response({ draft: {contextKey, draftId: oldId, version: 2, status: "published", editedAt, payload: empty} });
       if (options?.method === "POST") {
         const sent = JSON.parse(options.body as string);
         posts.push(sent);
-        if (sent.draftId === oldId) return new Promise<Response>((resolve) => { acknowledge = resolve; });
+        if (sent.draftId === oldId) {
+          if (terminal) return response({ outcome: "gone", version: 2 }, 410);
+          return new Promise<Response>((resolve) => { acknowledge = resolve; });
+        }
         newSaved = true;
         return response({ outcome: "saved", draft: {
           contextKey, draftId: newId, version: 3, status: "active", editedAt: new Date().toISOString(), payload: sent.payload,
@@ -923,10 +955,15 @@ describe("conflict choices from another tab", () => {
     await flush();
     await act(async () => { acknowledge!(response({ outcome: "gone", version: 2 }, 410)); });
     await flush();
+    expect(screen.getByRole("group", {name: "Draft conflict"})).toBeInTheDocument();
+    // The previous choice saw version 1. It cannot borrow unseen terminal v2.
+    expect(posts[1]).toMatchObject({expectedVersion: 1});
+    fireEvent.click(screen.getByRole("button", {name: "Keep local"}));
+    await flush();
     expect(screen.getByRole("textbox", { name: "Body" })).toHaveValue("Selected new generation");
     expect(readLocalEditorDraft("alice", contextKey)?.draftId).toBe(newId);
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(posts[1]).toMatchObject({ draftId: newId, expectedVersion: 2, payload: { ...empty, body: "Selected new generation" } });
+    expect(posts[2]).toMatchObject({ draftId: newId, expectedVersion: 2, payload: { ...empty, body: "Selected new generation" } });
   });
 });
 
@@ -937,6 +974,7 @@ it("keeps the local-choice conflict and original generation on storage failure",
   const remote = { contextKey, draftId: newId, version: 4, status: "active" as const,
     title: "", snippet: "Server", editedAt, updatedAt: editedAt, payload: { ...empty, body: "Other server text" } };
   vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
     if (options?.method === "POST") return response({ outcome: "saved", draft: {
       ...remote, version: 5, payload: JSON.parse(options.body as string).payload,
     } });
@@ -962,6 +1000,7 @@ it("verifies a selected cached generation while an obsolete metadata request rem
   let acknowledge: ((response: Response) => void) | undefined;
   let reads = 0;
   vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
     if (options?.method === "POST") {
       const sent = JSON.parse(options.body as string);
       return response({ outcome: "saved", draft: {
@@ -982,7 +1021,7 @@ it("verifies a selected cached generation while an obsolete metadata request rem
   await act(async () => { window.dispatchEvent(new StorageEvent("storage", { key: draftStorageKey("alice", contextKey) })); });
   fireEvent.click(screen.getByRole("button", { name: "Keep server" }));
   await flush();
-  expect(reads).toBe(2);
+  expect(reads).toBe(1);
   expect(screen.getByTestId("attachment-ready")).toHaveTextContent("ready");
   await act(async () => { acknowledge!(response({ drafts: [{ contextKey, draftId: oldId, version: 1,
     status: "active", title: "", snippet: "", editedAt, updatedAt: editedAt }] })); });

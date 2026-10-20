@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-18
+Последнее обновление: 2026-10-20
 
 ## Назначение
 
@@ -19,6 +19,40 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## Editor 2.0 — исправление snapshot-протокола (2026-10-20, PR #232)
+
+По прямому поручению владельца реализация плана из служебного PR #234 выполняется
+в implementation PR #232. Один `forum_editor_drafts.version` теперь связывает текст,
+selected manifest и generation/status. Upload только создаёт retention-pool asset;
+включение/удаление файла — manifest-only CAS без преждевременной отправки dirty text.
+Клиент сериализует mutations, отделяет cached candidate от server head и не подставляет
+свежий CAS номер под старый выбор. Mutation head включает скрытые terminal rows;
+локальный 30-day срок проверяется до обновления mounted snapshot. Focused Simple paste
+согласует source и DOM перед следующим native input.
+
+Runtime больше не зависит от contexts/boundaries. Data migration
+`0045_draft_snapshot_selection` восстанавливает нужные pool refs и selected manifest,
+продвигая version без продления editedAt; таблицы и production grants не меняются.
+Unselected pool удерживается до terminal/expiry, а direct draft download и publication
+используют выбранный snapshot. Полный контракт находится в `docs/EDITOR.md`.
+
+Локально прошли полный application suite (1072 теста), полный PostgreSQL 17 suite
+(320 тестов), TypeScript, ESLint
+(без ошибок; прежнее предупреждение в ui.test.tsx), application/UI-preview builds,
+Drizzle metadata/schema parity, migration guard unit tests, schema-manifest parity
+и PostgreSQL runtime privilege probes. Chromium с настоящими Workers/PostgreSQL и
+локальным приватным R2 подтвердил focused Simple paste + следующий native input,
+параллельные byte uploads с последовательным selection CAS без ранней отправки текста,
+selected-only publication, IME в пустом абзаце, published edit download/Remove/Save
+и отзыв file access. Ошибок страницы в этом прогоне не было. Отдельная PostgreSQL
+регрессия покрывает первую edit selection из pinned published revision без раннего
+сохранения dirty text. Новый whole-PR review, owner visual acceptance и merge ещё
+не выполнены; exact-head CI здесь заранее не заявлен. Production
+migration/deployment и внешняя R2-инфраструктура этим пакетом не выполняются.
+
+Ниже — предшествующее состояние Editor 2.0; описания boundary-протокола и исключения
+expectedVersion=0 для старого terminal superseded текущим snapshot-протоколом.
 
 ## Editor 2.0 — завершение реализации в PR #215 (2026-10-15)
 

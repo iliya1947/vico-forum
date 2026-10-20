@@ -863,7 +863,17 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("invalid attachment publication selection");
       }
       const selected = new Set(draft.attachmentIds.map((id) => id.toLowerCase()));
-      const refs = await tx.select({
+      const [snapshot] = await tx.select().from(forumEditorDrafts).where(and(
+        eq(forumEditorDrafts.ownerId, ownerId), eq(forumEditorDrafts.contextKey, draft.contextKey),
+      )).limit(1);
+      if (snapshot?.status === "active" && snapshot.payload.draftAttachmentIds !== undefined) {
+        const manifest = snapshot.payload.draftAttachmentIds;
+        if (snapshot.draftId !== draft.draftId || snapshot.version !== draft.expectedVersion
+          || manifest.length !== selected.size || manifest.some((id) => !selected.has(id))) {
+          throw new ForumStateConflictError("selected snapshot changed before publication");
+        }
+      }
+      const pool = await tx.select({
         id: forumAttachmentDraftRefs.attachmentId,
         ownerId: forumAttachments.ownerId,
         verificationStatus: forumAttachments.verificationStatus,
@@ -875,6 +885,11 @@ export class DrizzleForumRepository {
         eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
         eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
       ));
+      if (snapshot?.status === "active" && snapshot.payload.draftAttachmentIds === undefined
+        && (pool.length !== selected.size || pool.some((ref) => !selected.has(ref.id)))) {
+        throw new ForumStateConflictError("legacy attachment selection changed before publication");
+      }
+      const refs = pool.filter((ref) => selected.has(ref.id.toLowerCase()));
       if (refs.length !== selected.size || refs.some((ref) =>
         !selected.has(ref.id.toLowerCase()) || ref.ownerId !== ownerId || ref.verificationStatus !== "type-checked"
       )) throw new ForumStateConflictError("selected attachments changed before publication");
@@ -916,7 +931,7 @@ export class DrizzleForumRepository {
           ? ne(forumAttachmentDraftRefs.draftId, currentDraft.draftId) : undefined,
       ))
       .limit(1);
-    if (attachment) {
+    if (attachment && draft.attachmentIds === undefined) {
       throw new ForumStateConflictError("draft attachments must be removed before text-only publication");
     }
 

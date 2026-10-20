@@ -178,8 +178,9 @@ describe("account-scoped durable editor drafts", () => {
     expect((await store.metadata(owner)).some((row) => row.contextKey === key)).toBe(false);
     expect(await store.get(owner, key)).toMatchObject({ draftId: id1, version: 2, status: "deleted" });
 
-    // A fresh editor sees no metadata and sends the normal expectedVersion:0.
-    expect(await store.save(owner, key, id2, text2, 0)).toMatchObject({
+    // Display metadata is not the mutation head. A fresh editor must read it.
+    expect(await store.save(owner, key, id2, text2, 0)).toMatchObject({ outcome: "gone", version: 2 });
+    expect(await store.save(owner, key, id2, text2, 2)).toMatchObject({
       outcome: "saved", draft: { draftId: id2, version: 3, status: "active", payload: text2 },
     });
     expect((await store.save(owner, key, id1, text1, 2)).outcome).toBe("gone");

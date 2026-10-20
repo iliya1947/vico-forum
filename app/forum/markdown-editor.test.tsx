@@ -48,6 +48,7 @@ function renderEditor(element: ReactNode) {
 
 function stubEmptyDraftMetadata() {
   vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
     if (uri === "/api/attachments" && options?.method === "GET") {
       return new Response(JSON.stringify({ attachments: [] }), {
         status: 200,
@@ -119,7 +120,16 @@ describe("MarkdownEditor", () => {
     const contextKey = "post:attachment-only:edit";
     let files = [{ id, fileName: "published.txt", byteSize: 4, detectedType: "text",
       responseMime: "text/plain", verificationStatus: "type-checked" }];
+    let head: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return head ? Response.json({ draft: head }) : new Response(null, {status: 404});
+      if (options?.method === "POST") {
+        const sent = JSON.parse(options.body as string);
+        files = files.filter((file) => sent.payload.draftAttachmentIds.includes(file.id));
+        head = { contextKey, draftId: sent.draftId, version: sent.expectedVersion + 1, status: "active",
+          editedAt: new Date().toISOString(), payload: sent.payload };
+        return Response.json({outcome: "saved", draft: head});
+      }
       if (uri === "/api/attachments") {
         if (options?.method === "DELETE") files = [];
         return Response.json({ attachments: files });
@@ -1460,6 +1470,29 @@ describe("MarkdownEditor", () => {
     clearLocalEditorDraft(userId, contextKey);
   });
 
+  it("keeps the native leaf mounted through the first character and a new paragraph", () => {
+    renderEditor(<form><MarkdownEditor id="native-empty" name="body" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    fireEvent.compositionStart(leaf);
+    leaf.textContent = "你";
+    fireEvent.input(leaf, {data: "你", isComposing: true});
+    expect(document.querySelector('[data-visual-text="true"]')).toBe(leaf);
+    expect(leaf).toHaveFocus();
+    fireEvent.compositionEnd(leaf, {data: "你"});
+    leaf.textContent = "你好";
+    fireEvent.input(leaf, {data: "好"});
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe("你好");
+    const range = document.createRange(); range.selectNodeContents(leaf); range.collapse(false);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, {key: "Enter"});
+    const trailing = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')].at(-1)!;
+    trailing.focus(); trailing.textContent = "Next"; fireEvent.input(trailing, {data: "Next"});
+    expect([...document.querySelectorAll('[data-visual-text="true"]')].at(-1)).toBe(trailing);
+    expect(trailing).toHaveFocus();
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe("你好\n\nNext");
+  });
+
   it("captures a one-line Simple paste immediately", () => {
     stubEmptyDraftMetadata();
     const userId = "draft-trigger-paste-user";
@@ -1486,7 +1519,14 @@ describe("MarkdownEditor", () => {
       format === "text/plain" ? " pasted " : "" } });
 
     const body = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
+    expect(body).toBe("Before pasted After");
+    expect(leaf).toHaveFocus();
+    expect(leaf.textContent).toBe(body);
     expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe(body);
+    // Model the next native keystroke against the actual focused DOM.
+    leaf.textContent = leaf.textContent!.replace(" pasted ", " pasted X");
+    fireEvent.input(leaf, {data: "X"});
+    expect(screen.getByLabelText("Body")).toHaveValue("Before pasted XAfter");
     clearLocalEditorDraft(userId, contextKey);
   });
 
@@ -1662,6 +1702,7 @@ describe("MarkdownEditor", () => {
       headers: { "Content-Type": "application/json" },
     });
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri === "/api/attachments" && options?.method === "GET") {
         return json({ attachments: [] });
       }
@@ -1776,6 +1817,12 @@ describe("MarkdownEditor", () => {
   it("submits only selected stored attachments with the text CAS fence", async () => {
     const storedId = "23b93562-0550-4eef-88af-f951d6ea6138";
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const sent = JSON.parse(options.body as string);
+        return Response.json({ outcome: "saved", draft: { contextKey: sent.contextKey, draftId: sent.draftId,
+          version: sent.expectedVersion + 1, status: "active", editedAt: new Date().toISOString(), payload: sent.payload } });
+      }
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri === "/api/attachments" && options?.method === "GET") {
         return new Response(JSON.stringify({ attachments: [{
           id: storedId,
@@ -1826,6 +1873,7 @@ describe("MarkdownEditor", () => {
 
   it("resets body and history when the draft context changes for the same account", async () => {
     vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
+      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
       if (uri === "/api/attachments" && options?.method === "GET") {
         return new Response(JSON.stringify({ attachments: [] }), {
           status: 200,

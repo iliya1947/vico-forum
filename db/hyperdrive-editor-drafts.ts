@@ -12,6 +12,7 @@ import {
   type ForumEditorDraft,
   type ForumEditorDraftMetadata,
   type SaveDraftResult,
+  type DraftSaveOptions,
 } from "./forum-editor-drafts";
 import type { ForumEditorDraftPayload } from "./schema";
 
@@ -25,6 +26,7 @@ export interface ForumDraftStore {
     draftId: string,
     payload: ForumEditorDraftPayload,
     expectedVersion: number,
+    options?: DraftSaveOptions,
   ): Promise<SaveDraftResult>;
   resolve(
     ownerId: string,
@@ -92,8 +94,8 @@ export function createHyperdriveForumDraftStore(
     assertContextExists: (contextKey) => apply((store) => store.assertContextExists(contextKey)),
     metadata: (ownerId) => apply((store) => store.metadata(ownerId)),
     get: (ownerId, key) => apply((store) => store.get(ownerId, key)),
-    save: (ownerId, key, draftId, payload, version) =>
-      apply((store) => store.save(ownerId, key, draftId, payload, version)),
+    save: (ownerId, key, draftId, payload, version, options) =>
+      apply((store) => store.save(ownerId, key, draftId, payload, version, options)),
     resolve: (ownerId, key, draftId, payload, version) =>
       apply((store) => store.resolve(ownerId, key, draftId, payload, version)),
     delete: (ownerId, key, draftId, version) =>

@@ -54,6 +54,14 @@ async function savedDraft(draftId: string, key = contextKey) {
   return saved.draft;
 }
 
+
+async function selectFiles(draft: { draftId: string; version: number; contextKey: string; payload: {body: string; title: string; tags: string} }, ids: string[]) {
+  const saved = await draftStore.save(ownerId, draft.contextKey, draft.draftId,
+    { ...draft.payload, draftAttachmentIds: ids }, draft.version, { manifestOnly: true });
+  if (saved.outcome !== "saved") throw new Error("test selection failed");
+  Object.assign(draft, saved.draft);
+}
+
 async function backendId(connection: Client): Promise<number> {
   const state = await connection.query<{ pid: number }>("select pg_backend_pid() as pid");
   return state.rows[0]!.pid;
@@ -106,6 +114,7 @@ describe("text-only publication attachment fence", () => {
     const draft = await savedDraft(draftId);
     const file = attachment(draftId);
     await attachments.createDraftAttachment(file);
+    await selectFiles(draft, [file.id]);
 
     await expect(forum.createPost(reply("blocked-attachment-reply", draftId, draft.version)))
       .rejects.toBeInstanceOf(ForumStateConflictError);
@@ -122,7 +131,8 @@ describe("text-only publication attachment fence", () => {
     expect(await attachments.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
 
     await attachments.removeDraftAttachment(ownerId, contextKey, draftId, file.id);
-    await forum.createPost(reply("allowed-text-reply", draftId, draft.version));
+    await forum.createPost({ ...reply("allowed-text-reply", draftId, draft.version + 1),
+      publishedDraft: {contextKey, draftId, expectedVersion: draft.version + 1, attachmentIds: []} });
     expect(await draftStore.get(ownerId, contextKey)).toMatchObject({ status: "published" });
   });
 
@@ -159,6 +169,7 @@ describe("text-only publication attachment fence", () => {
     const draft = await savedDraft(draftId);
     const file = attachment(sourceId);
     await attachments.createDraftAttachment(file);
+    await selectFiles(draft, [file.id]);
     await attachments.rebindDraftAttachments(ownerId, contextKey, sourceId, draftId, draft.version);
     await expect(forum.createPost(reply("blocked-rebound-reply", draftId, draft.version)))
       .rejects.toBeInstanceOf(ForumStateConflictError);
@@ -168,7 +179,7 @@ describe("text-only publication attachment fence", () => {
     await attachments.removeDraftAttachment(ownerId, contextKey, draftId, file.id);
     await expect(forum.createPost(reply("blocked-stale-source-reply", sourceId, draft.version)))
       .rejects.toBeInstanceOf(ForumStateConflictError);
-    await draftStore.delete(ownerId, contextKey, draftId, draft.version);
+    await draftStore.delete(ownerId, contextKey, draftId, (await draftStore.get(ownerId, contextKey))!.version);
   });
 
   it("rejects a legacy unfenced publication when an unsynced generation has files", async () => {
@@ -212,9 +223,9 @@ describe("text-only publication attachment fence", () => {
       expect(await publishing).toBeInstanceOf(ForumStateConflictError);
       expect((await client.query("select id from forum_posts where id = 'concurrent-file-reply'")).rows).toEqual([]);
       expect(await draftStore.get(ownerId, contextKey)).toMatchObject({ status: "active", version: draft.version });
-      expect(await uploadStore.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
+      expect(await uploadStore.listDraftAttachments(ownerId, contextKey, draftId)).toEqual([]);
       await attachments.removeDraftAttachment(ownerId, contextKey, draftId, file.id);
-      await draftStore.delete(ownerId, contextKey, draftId, draft.version);
+      await draftStore.delete(ownerId, contextKey, draftId, (await draftStore.get(ownerId, contextKey))!.version);
     } finally {
       await client.query("rollback");
       await Promise.all([uploadClient.end(), publicationClient.end()]);
@@ -342,6 +353,7 @@ describe("published post editing and revision history", () => {
     const draft = await savedDraft(generation, localContext);
     const file = attachment(generation, localContext);
     await attachments.createDraftAttachment(file);
+    await selectFiles(draft, [file.id]);
     await forum.createPost({ ...reply(postId, generation, draft.version), topicId: localTopicId,
       publishedDraft: { contextKey: localContext, draftId: generation, expectedVersion: draft.version, attachmentIds: [file.id] },
       bodyRevision: { id: revisionId, originalContent: "Original", sourceLocale: "en" },
@@ -356,11 +368,13 @@ describe("published post editing and revision history", () => {
     // Opening the attachment snapshot does not accelerate the 60-second text save.
     expect(await draftStore.get(ownerId, key)).toBeNull();
     await attachments.initializePostEditAttachments(ownerId, key, b, revisionId);
-    await attachments.removeDraftAttachment(ownerId, key, b, file.id);
+    await draftStore.save(ownerId, key, b, {title: "", body: "", tags: "", draftAttachmentIds: []}, 0, {manifestOnly: true});
     const added = attachment(b, key);
     await attachments.createDraftAttachment(added);
+    const bHead = (await draftStore.get(ownerId, key))!;
+    await selectFiles(bHead, [added.id]);
     await forum.editPublishedPost({ postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: revisionId,
-      body: "Device B", draftId: b, expectedVersion: 0, attachmentIds: [added.id], retainedAttachmentIds: [] });
+      body: "Device B", draftId: b, expectedVersion: 2, attachmentIds: [added.id], retainedAttachmentIds: [] });
     expect(await attachments.readPublishedAttachment(postId, file.id)).toBeNull();
     const removedObjects: string[] = [];
     const cleanup = new ForumAttachmentCleanup(drizzle(client), {
@@ -368,12 +382,12 @@ describe("published post editing and revision history", () => {
     }, () => new Date(Date.now() + 2 * 60 * 60_000));
     await cleanup.runOnce();
     expect(removedObjects).not.toContain(file.objectKey);
-    expect(await attachments.readDraftAttachment(ownerId, key, a, file.id)).toMatchObject({ id: file.id });
+    expect(await attachments.readDraftAttachment(ownerId, key, a, file.id)).toBeNull();
     // Explicitly choosing local against B's terminal marker starts C. Its text
     // reaches the regular CAS before the existing A→C attachment rebind.
     const terminal = await draftStore.get(ownerId, key);
     const saved = await draftStore.save(ownerId, key, c,
-      { title: "", tags: "", body: "Device A", publishedRevisionId: revisionId }, terminal!.version);
+      { title: "", tags: "", body: "Device A", publishedRevisionId: revisionId, draftAttachmentIds: [file.id] }, terminal!.version);
     if (saved.outcome !== "saved") throw new Error("local choice must save");
     await attachments.rebindDraftAttachments(ownerId, key, a, c, saved.draft.version);
     const currentRevision = (await forum.readPost(postId))!.body.id;
@@ -392,12 +406,13 @@ describe("published post editing and revision history", () => {
     const { postId, revisionId, file, key } = await publishedFilePost();
     const a = crypto.randomUUID(), b = crypto.randomUUID();
     await attachments.initializePostEditAttachments(ownerId, key, a, revisionId);
-    await attachments.removeDraftAttachment(ownerId, key, a, file.id);
+    await draftStore.save(ownerId, key, a, {title: "", body: "", tags: "", draftAttachmentIds: []}, 0, {manifestOnly: true});
     await attachments.initializePostEditAttachments(ownerId, key, a, revisionId);
     expect(await attachments.listDraftAttachments(ownerId, key, a)).toEqual([]);
     expect(await attachments.readPublishedAttachment(postId, file.id)).not.toBeNull();
+    await draftStore.finish(ownerId, key, a, "deleted");
     const saved = await savedDraft(b, key);
-    await attachments.rebindDraftAttachments(ownerId, key, a, b, saved.version);
+    await expect(attachments.rebindDraftAttachments(ownerId, key, a, b, saved.version)).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
     await attachments.initializePostEditAttachments(ownerId, key, b, revisionId);
     expect(await attachments.listDraftAttachments(ownerId, key, b)).toEqual([]);
   });
@@ -442,7 +457,7 @@ describe("published post editing and revision history", () => {
       await publishing;
       if (snapshotFirst) {
         await initializing;
-        expect(await attachments.readDraftAttachment(ownerId, key, a, file.id)).not.toBeNull();
+        expect(await attachments.readDraftAttachment(ownerId, key, a, file.id)).toBeNull();
       } else {
         await expect(initializing).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
         expect(await attachments.listDraftAttachments(ownerId, key, a)).toEqual([]);
@@ -469,6 +484,7 @@ describe("published post editing and revision history", () => {
     const removed = attachment(generation, contextKey), kept = attachment(generation, contextKey);
     await attachments.createDraftAttachment(removed);
     await attachments.createDraftAttachment(kept);
+    await selectFiles(original, [removed.id, kept.id]);
     await forum.createPost({ ...reply(postId, generation, original.version),
       topicId: localTopicId,
       publishedDraft: { contextKey, draftId: generation, expectedVersion: original.version, attachmentIds: [removed.id, kept.id] },
@@ -482,6 +498,7 @@ describe("published post editing and revision history", () => {
     const saved = await savedDraft(editGeneration, editContext);
     const added = attachment(editGeneration, editContext);
     await attachments.createDraftAttachment(added);
+    await selectFiles(saved, [added.id]);
     const edit = { postId, topicId: localTopicId, actorId: ownerId, expectedRevisionId: revisionId,
       body: "After", draftId: editGeneration, expectedVersion: saved.version,
       attachmentIds: [added.id], retainedAttachmentIds: [kept.id] };
@@ -574,6 +591,7 @@ describe("published post editing and revision history", () => {
     const initialDraft = await savedDraft(publicationGeneration, localContext);
     const file = attachment(publicationGeneration, localContext);
     await attachments.createDraftAttachment(file);
+    await selectFiles(initialDraft, [file.id]);
     await forum.createPost({
       id: postId, topicId: localTopicId, authorId: ownerId,
       publishedDraft: {
@@ -604,6 +622,7 @@ describe("published post editing and revision history", () => {
     const draft = await savedDraft(generation, editContext);
     const file = attachment(generation, editContext);
     await attachments.createDraftAttachment(file);
+    await selectFiles(draft, [file.id]);
     await forum.editPublishedPost({
       postId, topicId, actorId: ownerId, expectedRevisionId: revisionId,
       body: "", draftId: generation, expectedVersion: draft.version, attachmentIds: [file.id],

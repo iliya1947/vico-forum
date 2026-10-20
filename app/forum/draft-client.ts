@@ -4,6 +4,7 @@ import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
 import { isEditorDraftContextKey, parseEditorDraftContextKey } from "../../db/editor-draft-context";
 
 export const DRAFT_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+export interface PendingDraftAttachment { id: string; fileName: string; byteSize: number }
 export interface LocalEditorDraft {
   ownerId: string;
   contextKey: string;
@@ -14,6 +15,9 @@ export interface LocalEditorDraft {
   syncedEditedAt: string | null;
   /** Draft generation used for an attachment operation; retained across text-generation changes until refs are reconciled. */
   attachmentDraftId?: string;
+  basePayload?: ForumEditorDraftPayload;
+  pendingAttachments?: PendingDraftAttachment[];
+  selectionIntent?: { draftId: string; expectedVersion: number; attachmentIds: string[]; attachmentId: string };
 }
 export interface DraftMetadata {
   contextKey: string;
@@ -47,6 +51,13 @@ const prefix = "vico:editor:draft:";
 export function draftStorageKey(ownerId: string, contextKey: string) {
   return prefix + encodeURIComponent(ownerId) + ":" + encodeURIComponent(contextKey);
 }
+function validPayload(value: unknown): value is ForumEditorDraftPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as ForumEditorDraftPayload;
+  return typeof payload.body === "string" && typeof payload.title === "string" && typeof payload.tags === "string"
+    && (payload.draftAttachmentIds === undefined || (Array.isArray(payload.draftAttachmentIds)
+      && payload.draftAttachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))));
+}
 function validLocalDraft(value: unknown, ownerId: string, contextKey: string): value is LocalEditorDraft {
   if (!value || typeof value !== "object") return false;
   const data = value as Partial<LocalEditorDraft>;
@@ -59,6 +70,19 @@ function validLocalDraft(value: unknown, ownerId: string, contextKey: string): v
     && (data.attachmentDraftId === undefined
       || (typeof data.attachmentDraftId === "string" && /^[0-9a-f-]{36}$/iu.test(data.attachmentDraftId)))
     && Number.isSafeInteger(data.baseVersion) && data.baseVersion! >= 0
+    && (data.pendingAttachments === undefined || (Array.isArray(data.pendingAttachments)
+      && data.pendingAttachments.every((item) => item && /^[0-9a-f-]{36}$/iu.test(item.id)
+        && typeof item.fileName === "string" && item.fileName.length <= 255
+        && Number.isSafeInteger(item.byteSize) && item.byteSize >= 0)))
+    && (data.basePayload === undefined || validPayload(data.basePayload))
+    && (data.selectionIntent === undefined || (data.selectionIntent !== null
+      && typeof data.selectionIntent === "object"
+      && data.selectionIntent.draftId === data.draftId
+      && Number.isSafeInteger(data.selectionIntent.expectedVersion) && data.selectionIntent.expectedVersion >= 0
+      && typeof data.selectionIntent.attachmentId === "string"
+      && /^[0-9a-f-]{36}$/iu.test(data.selectionIntent.attachmentId)
+      && Array.isArray(data.selectionIntent.attachmentIds)
+      && data.selectionIntent.attachmentIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id))))
     && !!data.payload && typeof data.payload.body === "string"
     && typeof data.payload.title === "string" && typeof data.payload.tags === "string"
     && (data.payload.retainedAttachmentIds === undefined || (Array.isArray(data.payload.retainedAttachmentIds)
@@ -129,6 +153,14 @@ export async function fetchDraftMetadata(locale: string): Promise<DraftMetadata[
   if (!response.ok) throw new Error("draft metadata unavailable");
   const data = await response.json() as { drafts: DraftMetadata[] };
   return data.drafts;
+}
+/** Context mutation head, including terminal rows outside the display window. */
+export async function fetchDraftHead(locale: string, contextKey: string): Promise<DraftRemote | null> {
+  const url = draftEndpoint(locale) + "?mode=head&key=" + encodeURIComponent(contextKey);
+  const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("draft head unavailable");
+  return (await response.json() as { draft: DraftRemote }).draft;
 }
 export async function fetchDraftContent(locale: string, contextKey: string): Promise<DraftRemote | null> {
   const url = draftEndpoint(locale) + "?mode=content&key=" + encodeURIComponent(contextKey);

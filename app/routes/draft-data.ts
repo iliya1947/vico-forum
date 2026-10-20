@@ -9,6 +9,7 @@ import {
   isEditorDraftContextKey,
   validEditorDraftPayload,
 } from "../../db/forum-editor-drafts";
+import { ForumAttachmentDraftConflictError } from "../../db/attachment-draft-generation";
 import { ForumDraftStorageUnavailableError } from "../../db/hyperdrive-editor-drafts";
 
 const json = (payload: unknown, status = 200) => Response.json(payload, {
@@ -28,6 +29,7 @@ async function readJsonObject(request: Request): Promise<Record<string, unknown>
 }
 
 function draftStorageFailure(error: unknown): Response | null {
+  if (error instanceof ForumAttachmentDraftConflictError) return json({ outcome: "conflict" }, 409);
   if (error instanceof InvalidForumEditorDraftError) {
     return json({ error: "invalid" }, 400);
   }
@@ -57,12 +59,13 @@ export async function loader({
     if (mode === "metadata") {
       return json({ drafts: await store.metadata(session.user.id) });
     }
-    if (mode !== "content") return json({ error: "invalid" }, 400);
+    if (mode !== "content" && mode !== "head") return json({ error: "invalid" }, 400);
 
     const key = url.searchParams.get("key") ?? "";
     if (!isEditorDraftContextKey(key)) return json({ error: "invalid" }, 400);
     const draft = await store.get(session.user.id, key);
     if (!draft) return json({ error: "notFound" }, 404);
+    if (mode === "head") return json({ draft });
     if (draft.status !== "active") {
       return json({ error: "gone", version: draft.version }, 410);
     }
@@ -122,8 +125,9 @@ export async function action({
     }
 
     if (
-      (input.intent !== "save" && input.intent !== "resolve")
+      (input.intent !== "save" && input.intent !== "resolve" && input.intent !== "attachments")
       || !validEditorDraftPayload(input.payload)
+      || (input.intent === "attachments" && !Array.isArray(input.payload.draftAttachmentIds))
       || !Number.isSafeInteger(input.expectedVersion)
       || (input.expectedVersion as number) < 0
     ) {
@@ -141,6 +145,7 @@ export async function action({
       draftId,
       input.payload,
       input.expectedVersion as number,
+      ...(input.intent === "attachments" ? [{ manifestOnly: true }] : []),
     );
     if (result.outcome === "saved") return json(result);
     return json(result, result.outcome === "gone" ? 410 : 409);

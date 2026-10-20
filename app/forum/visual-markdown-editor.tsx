@@ -293,9 +293,9 @@ function VisualTextLeaf({
   const spellCheck = useContext(visualSpellcheckContext);
   useLayoutEffect(() => {
     const element = ref.current;
-    // The browser owns the active editable text node. React never rewrites its
-    // children during a keystroke, which avoids resetting the caret.
-    if (element && element !== document.activeElement && element.textContent !== text) {
+    // Native input already has this text, so its echo is a no-op. A programmatic
+    // source edit must update the active leaf too, before selection restoration.
+    if (element && element.textContent !== text) {
       element.textContent = text;
     }
   }, [text]);
@@ -614,19 +614,20 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
           </div>
         );
         const root = parseForumMarkdown(segment.source) as VisualNode;
-        return root.children?.length
-          ? <VisualNodeView key={index} node={root} markdown={segment.source}
-              baseOffset={sourceBase + segment.span.start} disabled={disabled}
-              resolveSurfaceSelection={resolveSurfaceSelection} {...actions} />
-          : null;
+        // Empty and typed paragraphs must occupy the same React tree position.
+        // A separate trailing placeholder remounted on the first native input,
+        // dropping focus (and an in-progress composition) onto document.body.
+        const emptyParagraph = index === segments.length - 1
+          && (!markdown || markdown.endsWith("\n\n"));
+        const offset = segment.source.length;
+        const renderedRoot = emptyParagraph ? { ...root, children: [
+          ...(root.children ?? []), { type: "paragraph", children: [{ type: "text", value: "",
+            position: { start: { offset }, end: { offset } } } as VisualNode] },
+        ] } : root;
+        return <VisualNodeView key={index} node={renderedRoot} markdown={segment.source}
+          baseOffset={sourceBase + segment.span.start} disabled={disabled}
+          resolveSurfaceSelection={resolveSurfaceSelection} {...actions} />;
       })}
-      {(!markdown || markdown.endsWith("\n\n")) ? (
-        <p dir="auto"><VisualTextLeaf text="" raw=""
-          range={{ start: sourceBase + markdown.length, end: sourceBase + markdown.length }}
-          disabled={disabled} onTextEdit={actions.onTextEdit}
-          onSelection={actions.onSelection} onInsertParagraph={actions.onInsertParagraph}
-          resolveSurfaceSelection={resolveSurfaceSelection} /></p>
-      ) : null}
     </section>
     </visualSpellcheckContext.Provider>
   );

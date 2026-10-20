@@ -1,10 +1,9 @@
-import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
-  forumAttachmentDraftBoundaries,
   forumAttachmentDraftGenerations,
-  forumAttachmentDraftContexts,
   forumAttachmentDraftRefs,
+  forumAttachments,
 } from "./schema";
 
 type AttachmentDraftConnection = Pick<NodePgDatabase, "delete" | "execute" | "insert" | "select">;
@@ -75,7 +74,11 @@ export async function retireAttachmentDraftGeneration(
   }).onConflictDoNothing();
 }
 
-/** Apply the exact attachment set carried by one successful text-draft CAS. */
+/** Retention refs are a generation pool, never the selected composition.
+ * Selection can borrow an owned, live pool asset from another generation of the
+ * same context during explicit resolution. Missing/retired assets reject the CAS.
+ * Call under the owner/context lock and in the snapshot transaction.
+ */
 export async function reconcileAttachmentDraftManifest(
   connection: AttachmentDraftConnection,
   ownerId: string,
@@ -84,86 +87,47 @@ export async function reconcileAttachmentDraftManifest(
   attachmentIds: readonly string[],
 ): Promise<void> {
   const selected = [...new Set(attachmentIds.map((id) => id.toLowerCase()))];
-  const scope = and(
+  if (!selected.length) return;
+  const references = await connection.select({
+    attachmentId: forumAttachmentDraftRefs.attachmentId,
+    draftId: forumAttachmentDraftRefs.draftId,
+    createdAt: forumAttachmentDraftRefs.createdAt,
+  }).from(forumAttachmentDraftRefs).innerJoin(forumAttachments, and(
+    eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
+    eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
+  )).where(and(
     eq(forumAttachmentDraftRefs.ownerId, ownerId),
     eq(forumAttachmentDraftRefs.contextKey, contextKey),
-    eq(forumAttachmentDraftRefs.draftId, draftId),
-  );
-  await connection.delete(forumAttachmentDraftRefs).where(selected.length
-    ? and(scope, notInArray(forumAttachmentDraftRefs.attachmentId, selected))
-    : scope);
-  if (selected.length === 0) return;
-  const existingReferences = await connection.select({
-    attachmentId: forumAttachmentDraftContexts.attachmentId,
-    createdAt: forumAttachmentDraftContexts.createdAt,
-  }).from(forumAttachmentDraftContexts).where(and(
-    eq(forumAttachmentDraftContexts.ownerId, ownerId),
-    eq(forumAttachmentDraftContexts.contextKey, contextKey),
-    inArray(forumAttachmentDraftContexts.attachmentId, selected),
+    eq(forumAttachments.verificationStatus, "type-checked"),
+    eq(forumAttachments.cleanupStatus, "active"),
+    inArray(forumAttachmentDraftRefs.attachmentId, selected),
   ));
-  const references = [...new Map(existingReferences.map((reference) => [
-    reference.attachmentId,
-    reference,
-  ])).values()];
-  if (references.length === 0) return;
-  await connection.insert(forumAttachmentDraftRefs).values(references.map((reference) => ({
-    attachmentId: reference.attachmentId,
-    ownerId,
-    contextKey,
-    draftId,
-    createdAt: reference.createdAt,
+  const valid = new Map<string, typeof references[number]>();
+  for (const ref of references) {
+    try {
+      await resolveAttachmentDraftGeneration(connection, ownerId, contextKey, ref.draftId);
+      valid.set(ref.attachmentId, ref);
+    } catch (error) {
+      if (!(error instanceof ForumAttachmentDraftConflictError)) throw error;
+    }
+  }
+  if (valid.size !== selected.length) throw new ForumAttachmentDraftConflictError();
+  await connection.insert(forumAttachmentDraftRefs).values([...valid.values()].map((ref) => ({
+    attachmentId: ref.attachmentId, ownerId, contextKey, draftId, createdAt: ref.createdAt,
   }))).onConflictDoNothing();
 }
 
-/** Capture membership before the first attachment mutation at a text version. */
-export async function ensureAttachmentDraftBoundary(
-  connection: AttachmentDraftConnection,
-  ownerId: string,
-  contextKey: string,
-  draftId: string,
-  version: number,
+/** Resolve absent legacy manifests exactly once before pool semantics begin.
+ * Explicit [] must never fall back to retained refs.
+ */
+export async function attachmentPoolIds(
+  connection: AttachmentDraftConnection, ownerId: string, contextKey: string, draftId: string,
 ): Promise<string[]> {
-  const whereBoundary = and(
-    eq(forumAttachmentDraftBoundaries.ownerId, ownerId),
-    eq(forumAttachmentDraftBoundaries.contextKey, contextKey),
-    eq(forumAttachmentDraftBoundaries.draftId, draftId),
-    eq(forumAttachmentDraftBoundaries.version, version),
-  );
-  const [existing] = await connection.select({
-    attachmentIds: forumAttachmentDraftBoundaries.attachmentIds,
-  }).from(forumAttachmentDraftBoundaries).where(whereBoundary).limit(1);
-  if (existing) return existing.attachmentIds;
-
-  const references = await connection.select({
-    attachmentId: forumAttachmentDraftRefs.attachmentId,
-  }).from(forumAttachmentDraftRefs).where(and(
-    eq(forumAttachmentDraftRefs.ownerId, ownerId),
-    eq(forumAttachmentDraftRefs.contextKey, contextKey),
-    eq(forumAttachmentDraftRefs.draftId, draftId),
-  )).orderBy(
-    asc(forumAttachmentDraftRefs.createdAt),
-    asc(forumAttachmentDraftRefs.attachmentId),
-  );
-  const attachmentIds = references.map((reference) => reference.attachmentId);
-  await connection.insert(forumAttachmentDraftBoundaries).values({
-    ownerId,
-    contextKey,
-    draftId,
-    version,
-    attachmentIds,
-  });
-  return attachmentIds;
-}
-
-export async function clearAttachmentDraftBoundaries(
-  connection: AttachmentDraftConnection,
-  ownerId: string,
-  contextKey: string,
-  draftId: string,
-): Promise<void> {
-  await connection.delete(forumAttachmentDraftBoundaries).where(and(
-    eq(forumAttachmentDraftBoundaries.ownerId, ownerId),
-    eq(forumAttachmentDraftBoundaries.contextKey, contextKey),
-    eq(forumAttachmentDraftBoundaries.draftId, draftId),
-  ));
+  const rows = await connection.select({ id: forumAttachmentDraftRefs.attachmentId })
+    .from(forumAttachmentDraftRefs).where(and(
+      eq(forumAttachmentDraftRefs.ownerId, ownerId),
+      eq(forumAttachmentDraftRefs.contextKey, contextKey),
+      eq(forumAttachmentDraftRefs.draftId, draftId),
+    )).orderBy(asc(forumAttachmentDraftRefs.attachmentId));
+  return rows.map((row) => row.id);
 }
