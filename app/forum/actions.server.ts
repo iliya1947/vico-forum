@@ -31,20 +31,12 @@ import {
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
 
-type DraftPublicationFence = { draftId: string; draftVersion: number };
+type PublicationOperation = { draftId: string };
 
-function validatedDraftPublicationFence(form: FormData): DraftPublicationFence | null | undefined {
-  const draftId = form.get("editorDraftId");
-  const rawVersion = form.get("editorDraftVersion");
-  if (draftId === null && rawVersion === null) return null;
-  if (
-    typeof draftId !== "string"
-    || !/^[0-9a-f-]{36}$/iu.test(draftId)
-    || typeof rawVersion !== "string"
-    || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
-  ) return undefined;
-  const draftVersion = Number(rawVersion);
-  return Number.isSafeInteger(draftVersion) ? { draftId, draftVersion } : undefined;
+function validatedDraftPublicationFence(form: FormData): PublicationOperation | null | undefined {
+  const operationId = form.get("editorOperationId");
+  if (operationId === null) return null;
+  return typeof operationId === "string" && /^[0-9a-f-]{36}$/iu.test(operationId) ? {draftId: operationId} : undefined;
 }
 
 // Omission retains legacy text-only calls; an explicit [] is a verified empty selection.
@@ -499,7 +491,7 @@ export async function topicAction({ request, params, context }: {
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.editPublishedPost({
         topicId, postId, actorId, expectedRevisionId, body,
-        draftId: draftFence.draftId, draftVersion: draftFence.draftVersion, attachmentIds,
+        draftId: draftFence.draftId, attachmentIds,
         ...(retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds }),
       });
       return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));

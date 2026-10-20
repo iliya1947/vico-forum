@@ -4,11 +4,10 @@ import { Client, Pool, type DatabaseError } from "pg";
 import { RouterContextProvider } from "react-router";
 import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
 import { sectionAction, helpSolutionsCategoryAction, topicAction } from "../../app/forum/actions.server";
-import { forumWriterContext } from "../../app/forum/request-context";
+import { forumReaderContext, forumWriterContext } from "../../app/forum/request-context";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { authorizationContext } from "../../app/authorization/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
-import { forumDraftStoreContext } from "../../app/forum/draft-request-context";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
@@ -17,7 +16,6 @@ import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForu
 import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
-import { DrizzleForumEditorDrafts } from "../../db/forum-editor-drafts";
 import { ForumAttachmentCleanup, ATTACHMENT_CLEANUP_CLAIM_LEASE_MS } from "../../db/forum-attachment-cleanup";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -190,7 +188,7 @@ describe("forum attachment lifecycle foundation", () => {
       "select count(*)::text as count from forum_editor_drafts",
     );
     expect(draftRows.rows[0]?.count).toBe("0");
-    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toEqual([]);
+    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
     expect(await store.listDraftAttachments(otherId, contextKey, draftId)).toEqual([]);
 
     await setDraft(ownerId, contextKey, draftId);
@@ -236,24 +234,6 @@ describe("forum attachment lifecycle foundation", () => {
       "insert into forum_attachment_draft_refs (attachment_id, owner_id, context_key, draft_id, created_at) values ($1, $2, $3, $4, now())",
       [attachmentId, otherId, contextKey, "c526541e-a1ff-4b80-bcbf-6b20ec30ce74"],
     )).rejects.toMatchObject({ code: "23503" } satisfies Partial<DatabaseError>);
-  });
-
-  it("atomically rebinds only owned references between draft generations and remains idempotent", async () => {
-    const nextDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
-    await setDraft(ownerId, contextKey, nextDraftId);
-    await setDraft(otherId, contextKey, nextDraftId);
-    expect(await store.rebindDraftAttachments(otherId, contextKey, draftId, nextDraftId, 1)).toBe(0);
-    expect(await store.rebindDraftAttachments(ownerId, contextKey, draftId, nextDraftId, 1)).toBe(1);
-    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
-    expect(await store.listDraftAttachments(ownerId, contextKey, nextDraftId)).toHaveLength(1);
-    expect(await store.rebindDraftAttachments(ownerId, contextKey, draftId, nextDraftId, 1)).toBe(0);
-    await expect(store.rebindDraftAttachments(ownerId, contextKey, nextDraftId, draftId, 1))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
-    const rows = await client.query<{ draft_id: string }>(
-      "select draft_id from forum_attachment_draft_refs where attachment_id = $1", [attachmentId],
-    );
-    expect(rows.rows).toEqual([{ draft_id: nextDraftId }]);
   });
 
   it("enforces one derived security event across concurrent database writers", async () => {
@@ -340,395 +320,14 @@ describe("forum attachment lifecycle foundation", () => {
     expect(deleted.rows).toEqual([{ id: attachmentId }]);
   });
 
-  it.each(["upload-first", "rebind-first"] as const)(
-    "retains late uploads when concurrent operations commit %s, including an empty source",
-    async (order) => {
-      const context = `topic:${order}:reply`;
-      const source = crypto.randomUUID();
-      const target = crypto.randomUUID();
-      const input = upload(context, source);
-      await setDraft(ownerId, context, target, "active", 4);
-      await client.query("update forum_editor_drafts set payload=jsonb_set(payload, '{draftAttachmentIds}', '[]'::jsonb) where owner_id=$1 and context_key=$2", [ownerId, context]);
-      const before = await client.query("select * from forum_editor_drafts where owner_id = $1 and context_key = $2", [ownerId, context]);
-      const create = (repository: DrizzleForumAttachments) => repository.createDraftAttachment(input);
-      const rebind = (repository: DrizzleForumAttachments) => repository.rebindDraftAttachments(ownerId, context, source, target, 4);
-      if (order === "upload-first") {
-        const [created, moved] = await queuedOperations(context, create, rebind);
-        expect(created.id).toBe(input.id);
-        expect(moved).toBe(1);
-      } else {
-        const [moved, created] = await queuedOperations(context, rebind, create);
-        expect(moved).toBe(0);
-        expect(created.id).toBe(input.id);
-      }
-      expect((await store.listDraftAttachments(ownerId, context, target)).map((item) => item.id)).toEqual([]);
-      expect((await store.listDraftAttachments(ownerId, context, source)).map((item) => item.id)).toEqual([]);
-      const refs = await client.query("select draft_id from forum_attachment_draft_refs where attachment_id = $1", [input.id]);
-      expect(refs.rows).toEqual([{ draft_id: target }]);
-      const after = await client.query("select * from forum_editor_drafts where owner_id = $1 and context_key = $2", [ownerId, context]);
-      expect(after.rows).toEqual(before.rows);
-    },
-  );
-
-  it("converges concurrent retries on one asset and never resurrects an explicitly removed ref", async () => {
-    const context = "topic:concurrent-retry:reply";
-    const source = crypto.randomUUID();
-    const target = crypto.randomUUID();
-    const first = upload(context, source);
-    const retry = { ...first, objectKey: `private/${crypto.randomUUID()}` };
-    const [original, duplicate] = await queuedOperations(context,
-      (repository) => repository.createDraftAttachment(first),
-      (repository) => repository.createDraftAttachment(retry));
-    expect(duplicate).toEqual(original);
-    expect(await store.listDraftAttachments(ownerId, context, source)).toEqual([]);
-    await setDraft(ownerId, context, target);
-    expect(await store.rebindDraftAttachments(ownerId, context, source, target, 1)).toBe(1);
-    expect(await store.createDraftAttachment(retry)).toEqual(original);
-    expect(await store.removeDraftAttachment(ownerId, context, source, first.id)).toBe(true);
-    expect(await store.removeDraftAttachment(ownerId, context, target, first.id)).toBe(false);
-    expect(await store.createDraftAttachment(retry)).toEqual(original);
-    expect(await store.listDraftAttachments(ownerId, context, target)).toEqual([]);
-  });
-
-  it.each(["remove-first", "rebind-first"] as const)(
-    "fences removal until the generation move has committed committing %s",
-    async (order) => {
-      const context = `topic:${order}:reply`;
-      const source = crypto.randomUUID();
-      const target = crypto.randomUUID();
-      const input = upload(context, source);
-      await store.createDraftAttachment(input);
-      await setDraft(ownerId, context, target);
-      const remove = (repository: DrizzleForumAttachments) => repository.removeDraftAttachment(ownerId, context, source, input.id);
-      const rebind = (repository: DrizzleForumAttachments) => repository.rebindDraftAttachments(ownerId, context, source, target, 1);
-      if (order === "remove-first") {
-        const [removed, moved] = await queuedOperations(context, (repository) => remove(repository).catch((error) => error), rebind);
-        expect(removed).toBeInstanceOf(ForumAttachmentDraftConflictError);
-        expect(moved).toBe(1);
-      } else {
-        const [moved, removed] = await queuedOperations(context, rebind, remove);
-        expect(moved).toBe(1);
-        expect(removed).toBe(true);
-      }
-      expect((await store.listDraftAttachments(ownerId, context, target)).map((file) => file.id)).toEqual(order === "remove-first" ? [input.id] : []);
-    },
-  );
-
-  it("fences stale, reverse and terminal moves while following chained generation aliases", async () => {
-    const context = "topic:chained-generation:reply";
-    const source = crypto.randomUUID();
-    const middle = crypto.randomUUID();
-    const target = crypto.randomUUID();
-    const input = upload(context, source);
-    await store.createDraftAttachment(input);
-    await setDraft(ownerId, context, middle);
-    await expect(store.rebindDraftAttachments(ownerId, context, source, middle, 2))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    expect(await store.rebindDraftAttachments(ownerId, context, source, middle, 1)).toBe(1);
-    await setDraft(ownerId, context, target, "active", 2);
-    expect(await store.rebindDraftAttachments(ownerId, context, source, target, 2)).toBe(1);
-    for (const generation of [source, middle, target]) {
-      expect((await store.listDraftAttachments(ownerId, context, generation)).map((item) => item.id)).toEqual([input.id]);
-    }
-    await expect(store.rebindDraftAttachments(ownerId, context, source, middle, 1))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    // Even a fabricated active row cannot turn an already redirected generation into a root.
-    await setDraft(ownerId, context, middle, "active", 3);
-    await expect(store.rebindDraftAttachments(ownerId, context, target, middle, 3))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    await setDraft(ownerId, context, target, "deleted", 4);
-    await expect(store.rebindDraftAttachments(ownerId, context, source, target, 4))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    await expect(store.createDraftAttachment(upload(context, source)))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    await expect(store.createDraftAttachment({ ...input, objectKey: `private/${crypto.randomUUID()}` }))
-      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    expect(await store.listDraftAttachments(otherId, context, source)).toEqual([]);
-    expect(await store.listDraftAttachments(ownerId, "topic:unrelated-context:reply", source)).toEqual([]);
-  });
-
   it("rejects a terminal same-generation upload without creating its asset", async () => {
     const context = "topic:terminal-upload:reply";
     const generation = crypto.randomUUID();
     const input = upload(context, generation);
-    await setDraft(ownerId, context, generation, "published", 7);
+    await store.cancelOperation(ownerId, context, generation);
     await expect(store.createDraftAttachment(input)).rejects.toMatchObject({ reason: "gone" });
     const assets = await client.query("select id from forum_attachments where id = $1", [input.id]);
     expect(assets.rows).toEqual([]);
-  });
-
-  it("binds stale upload and delete mutations to the winning draft manifest", async () => {
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-
-    const uploadContext = "topic:manifest-stale-upload:reply";
-    const uploadDraft = crypto.randomUUID();
-    const pending = upload(uploadContext, uploadDraft);
-    await setDraft(ownerId, uploadContext, uploadDraft, "active", 1);
-    expect((await drafts.save(ownerId, uploadContext, uploadDraft, {
-      title: "", body: "winner", tags: "", draftAttachmentIds: [],
-    }, 1)).outcome).toBe("saved");
-    expect(await store.createDraftAttachment({ ...pending, expectedVersion: 1 })).toMatchObject({ id: pending.id });
-    expect(await store.readDraftAttachment(ownerId, uploadContext, uploadDraft, pending.id)).toBeNull();
-
-    const deleteContext = "topic:manifest-stale-delete:reply";
-    const deleteDraft = crypto.randomUUID();
-    await setDraft(ownerId, deleteContext, deleteDraft, "active", 1);
-    const retained = await store.createDraftAttachment({
-      ...upload(deleteContext, deleteDraft), expectedVersion: 1,
-    });
-    expect((await drafts.save(ownerId, deleteContext, deleteDraft, {
-      title: "", body: "winner", tags: "", draftAttachmentIds: [retained.id],
-    }, 1)).outcome).toBe("saved");
-    await expect(store.removeDraftAttachment(ownerId, deleteContext, deleteDraft, retained.id, 1))
-      .rejects.toMatchObject({ reason: "conflict" });
-    expect(await store.readDraftAttachment(ownerId, deleteContext, deleteDraft, retained.id))
-      .toMatchObject({ id: retained.id });
-  });
-
-  it("selects verified bytes through the current snapshot", async () => {
-    const context = "topic:manifest-in-flight:reply";
-    const generation = crypto.randomUUID();
-    const pending = upload(context, generation);
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-    await setDraft(ownerId, context, generation, "active", 1);
-
-    await store.createDraftAttachment({ ...pending, expectedVersion: 1 });
-    expect((await drafts.save(ownerId, context, generation, {
-      title: "", body: "winner", tags: "", draftAttachmentIds: [pending.id],
-    }, 1)).outcome).toBe("saved");
-    await expect(store.createDraftAttachment({ ...pending, expectedVersion: 1 }))
-      .resolves.toMatchObject({ id: pending.id });
-    expect(await store.readDraftAttachment(ownerId, context, generation, pending.id))
-      .toMatchObject({ id: pending.id });
-  });
-
-  it("restores a winning attachment when a concurrent DELETE commits before its draft CAS", async () => {
-    const context = "topic:manifest-delete-before-save:reply";
-    const generation = crypto.randomUUID();
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-    await setDraft(ownerId, context, generation, "active", 1);
-    const retained = await store.createDraftAttachment({
-      ...upload(context, generation), expectedVersion: 1,
-    });
-
-    expect(await store.removeDraftAttachment(ownerId, context, generation, retained.id, 1)).toBe(true);
-    expect(await store.readDraftAttachment(ownerId, context, generation, retained.id)).toBeNull();
-    expect((await drafts.save(ownerId, context, generation, {
-      title: "", body: "winner", tags: "", draftAttachmentIds: [retained.id],
-    }, 1)).outcome).toBe("conflict");
-    expect((await drafts.resolve(ownerId, context, generation, { title: "", body: "winner", tags: "", draftAttachmentIds: [retained.id] }, 2)).outcome).toBe("saved");
-    expect(await store.readDraftAttachment(ownerId, context, generation, retained.id))
-      .toMatchObject({ id: retained.id });
-  });
-
-  it("stages same-version POST without selecting it before or after Keep-server", async () => {
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-
-    const committedContext = "topic:same-version-post-before-resolution:reply";
-    const committedGeneration = crypto.randomUUID();
-    await setDraft(ownerId, committedContext, committedGeneration, "active", 1);
-    const losing = await store.createDraftAttachment({
-      ...upload(committedContext, committedGeneration), expectedVersion: 1,
-    });
-    const resolved = await drafts.resolve(ownerId, committedContext, committedGeneration, {
-      title: "", body: "server winner", tags: "", draftAttachmentIds: [],
-    }, 1);
-    expect(resolved).toMatchObject({ outcome: "saved", draft: {
-      version: 2, payload: { draftAttachmentIds: [] },
-    } });
-    expect(await store.readDraftAttachment(ownerId, committedContext, committedGeneration, losing.id)).toBeNull();
-    await expect(store.createDraftAttachment({
-      ...upload(committedContext, committedGeneration, losing.id), expectedVersion: 1,
-    })).resolves.toMatchObject({ verificationStatus: "type-checked" });
-
-    const pendingContext = "topic:same-version-resolution-before-post:reply";
-    const pendingGeneration = crypto.randomUUID();
-    await setDraft(ownerId, pendingContext, pendingGeneration, "active", 1);
-    expect((await drafts.resolve(ownerId, pendingContext, pendingGeneration, {
-      title: "", body: "server winner", tags: "", draftAttachmentIds: [],
-    }, 1)).outcome).toBe("saved");
-    await expect(store.createDraftAttachment({
-      ...upload(pendingContext, pendingGeneration), expectedVersion: 1,
-    })).resolves.toMatchObject({ verificationStatus: "type-checked" });
-  });
-
-  it("requires the current CAS when restoring a removed file through conflict resolution", async () => {
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-
-    const committedContext = "topic:same-version-delete-before-resolution:reply";
-    const committedGeneration = crypto.randomUUID();
-    await setDraft(ownerId, committedContext, committedGeneration, "active", 1);
-    const retained = await store.createDraftAttachment(upload(committedContext, committedGeneration));
-    expect(await store.removeDraftAttachment(
-      ownerId, committedContext, committedGeneration, retained.id, 1,
-    )).toBe(true);
-    expect((await drafts.resolve(ownerId, committedContext, committedGeneration, {
-      title: "", body: "server winner", tags: "", draftAttachmentIds: [retained.id],
-    }, 2)).outcome).toBe("saved");
-    expect(await store.readDraftAttachment(ownerId, committedContext, committedGeneration, retained.id))
-      .toMatchObject({ id: retained.id });
-    await expect(store.removeDraftAttachment(
-      ownerId, committedContext, committedGeneration, retained.id, 1,
-    )).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-
-    const pendingContext = "topic:same-version-resolution-before-delete:reply";
-    const pendingGeneration = crypto.randomUUID();
-    await setDraft(ownerId, pendingContext, pendingGeneration, "active", 1);
-    const stillRetained = await store.createDraftAttachment(upload(pendingContext, pendingGeneration));
-    expect((await drafts.resolve(ownerId, pendingContext, pendingGeneration, {
-      title: "", body: "server winner", tags: "",
-    }, 1)).outcome).toBe("saved");
-    await expect(store.removeDraftAttachment(
-      ownerId, pendingContext, pendingGeneration, stillRetained.id, 1,
-    )).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    expect(await store.readDraftAttachment(ownerId, pendingContext, pendingGeneration, stillRetained.id))
-      .toMatchObject({ id: stillRetained.id });
-  });
-
-  it("keeps legacy retainedAttachmentIds separate from the exact private manifest", async () => {
-    const context = "topic:legacy-retained-manifest:reply";
-    const generation = crypto.randomUUID();
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-    await setDraft(ownerId, context, generation, "active", 1);
-    const privateFile = await store.createDraftAttachment({
-      ...upload(context, generation), expectedVersion: 1,
-    });
-
-    expect((await drafts.save(ownerId, context, generation, {
-      title: "", body: "legacy edit", tags: "", retainedAttachmentIds: [],
-    }, 1)).outcome).toBe("saved");
-    expect(await store.readDraftAttachment(ownerId, context, generation, privateFile.id))
-      .toMatchObject({ id: privateFile.id });
-
-    expect((await drafts.save(ownerId, context, generation, {
-      title: "", body: "authoritative empty", tags: "",
-      retainedAttachmentIds: [], draftAttachmentIds: [],
-    }, 2)).outcome).toBe("saved");
-    expect(await store.readDraftAttachment(ownerId, context, generation, privateFile.id)).toBeNull();
-  });
-
-  it("rebinds the retention pool without changing the winning manifest and never imports an attachment from another context", async () => {
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-    const sourceContext = "topic:manifest-source-context:reply";
-    const sourceGeneration = crypto.randomUUID();
-    const sourceFile = await store.createDraftAttachment(upload(sourceContext, sourceGeneration));
-
-    const targetGeneration = crypto.randomUUID();
-    await setDraft(ownerId, sourceContext, targetGeneration, "active", 1);
-    expect((await drafts.save(ownerId, sourceContext, targetGeneration, {
-      title: "", body: "server winner", tags: "", draftAttachmentIds: [],
-    }, 1)).outcome).toBe("saved");
-    expect(await store.rebindDraftAttachments(
-      ownerId, sourceContext, sourceGeneration, targetGeneration, 2,
-    )).toBe(1);
-    expect(await store.listDraftAttachments(ownerId, sourceContext, targetGeneration)).toEqual([]);
-    expect((await client.query(
-      "select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
-      [sourceFile.id],
-    )).rows).toEqual([{attachment_id: sourceFile.id}]);
-
-    const foreignContext = "topic:manifest-foreign-context:reply";
-    const foreignFile = await store.createDraftAttachment(upload(foreignContext, crypto.randomUUID()));
-    const otherContext = "topic:manifest-other-context:reply";
-    const otherGeneration = crypto.randomUUID();
-    await setDraft(ownerId, otherContext, otherGeneration, "active", 1);
-    await expect(drafts.save(ownerId, otherContext, otherGeneration, {
-      title: "", body: "other", tags: "", draftAttachmentIds: [foreignFile.id],
-    }, 1)).rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-    expect(await store.readDraftAttachment(ownerId, otherContext, otherGeneration, foreignFile.id)).toBeNull();
-  });
-
-  it.each(["published", "deleted", "expired"] as const)("keeps a %s generation closed after the text draft advances", async (terminal) => {
-    const context = "section:attachment-section:new";
-    const completed = crypto.randomUUID();
-    const fresh = crypto.randomUUID();
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-    await setDraft(ownerId, context, completed);
-    if (terminal === "published") {
-      expect(await drafts.finish(ownerId, context, completed, "published")).toBe(true);
-    } else if (terminal === "deleted") {
-      expect(await drafts.delete(ownerId, context, completed, 1)).toBe(true);
-    } else {
-      await client.query("update forum_editor_drafts set edited_at = now() - interval '31 days' where owner_id = $1 and context_key = $2", [ownerId, context]);
-      await drafts.purgeExpired(ownerId);
-    }
-    expect((await drafts.save(ownerId, context, fresh, { title: "Fresh", body: "new text", tags: "" }, 2)).outcome).toBe("saved");
-    await expect(store.createDraftAttachment(upload(context, completed)))
-      .rejects.toMatchObject({ reason: "gone" });
-    await expect(store.rebindDraftAttachments(ownerId, context, completed, fresh, 3))
-      .rejects.toMatchObject({ reason: "gone" });
-    expect(await store.createDraftAttachment(upload(context, fresh))).toMatchObject({ fileName: "concurrent.txt" });
-  });
-
-  it("migrates existing terminal drafts into durable attachment retirement", async () => {
-    const migrationSchema = `attachment_backfill_${crypto.randomUUID().replaceAll("-", "")}`;
-    const connection = new Client({ connectionString: databaseUrl, options: `-c search_path=${migrationSchema}` });
-    await client.query(`create schema ${migrationSchema}`);
-    await connection.connect();
-    try {
-      for (const tag of migrations.filter((tag) => Number(tag.slice(0, 4)) < 37)) {
-        await connection.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      }
-      await connection.query('insert into "user" (id, name, email) values ($1, $1, $2)', [ownerId, `${ownerId}@test.invalid`]);
-      const retired = crypto.randomUUID();
-      const fresh = crypto.randomUUID();
-      await connection.query(`insert into forum_editor_drafts (owner_id, context_key, draft_id, version, status, payload, edited_at, updated_at)
-        values ($1, 'help:new', $2, 1, 'published', '{"title":"","body":"","tags":""}', now(), now())`, [ownerId, retired]);
-      await connection.query((await readFile("drizzle/0037_forum_attachment_draft_generations.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      await connection.query((await readFile("drizzle/0038_forum_attachment_cleanup_claims.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      await connection.query((await readFile("drizzle/0039_forum_publication_receipts.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      await connection.query((await readFile("drizzle/0040_post_edit_history_permissions.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      await connection.query((await readFile("drizzle/0044_attachment_draft_conflict_boundaries.sql", "utf8")).replaceAll('"public".', `"${migrationSchema}".`));
-      const drafts = new DrizzleForumEditorDrafts(drizzle(connection));
-      expect((await drafts.save(ownerId, "help:new", fresh, { title: "Fresh", body: "new", tags: "" }, 1)).outcome).toBe("saved");
-      const attachments = new DrizzleForumAttachments(drizzle(connection));
-      await expect(attachments.createDraftAttachment(upload("help:new", retired)))
-        .rejects.toMatchObject({ reason: "gone" });
-      expect(await attachments.createDraftAttachment(upload("help:new", fresh))).toMatchObject({ fileName: "concurrent.txt" });
-    } finally {
-      await connection.end();
-      await client.query(`drop schema ${migrationSchema} cascade`);
-    }
-  });
-
-  it("runs upload retry and generation moves with the actual attachment runtime grants", async () => {
-    const role = `vico_attachment_${crypto.randomUUID().replaceAll("-", "")}`;
-    const context = "topic:runtime-attachment:reply";
-    const source = crypto.randomUUID();
-    const target = crypto.randomUUID();
-    const input = upload(context, source);
-    await setDraft(ownerId, context, target);
-    await client.query(`create role ${role}`);
-    const runtime = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
-    try {
-      await client.query(`grant usage on schema ${schema} to ${role}`);
-      await client.query(`grant select, insert on forum_attachments, forum_attachment_draft_contexts, forum_attachment_draft_generations, forum_attachment_edit_snapshots to ${role}`);
-      await client.query(`grant select, insert, delete on forum_attachment_draft_boundaries to ${role}`);
-      await client.query(`grant select, insert, delete on forum_attachment_draft_refs to ${role}`);
-      await client.query(`grant select, update on forum_editor_drafts to ${role}`);
-      await client.query(`grant select, update on forum_posts to ${role}`);
-      await client.query(`grant select on forum_post_attachments to ${role}`);
-      await runtime.connect();
-      await runtime.query(`set role ${role}`);
-      const restricted = new DrizzleForumAttachments(drizzle(runtime));
-      const original = await restricted.createDraftAttachment(input);
-      expect(await restricted.createDraftAttachment({ ...input, objectKey: `private/${crypto.randomUUID()}` })).toEqual(original);
-      expect(await restricted.rebindDraftAttachments(ownerId, context, source, target, 1)).toBe(1);
-      expect(await restricted.createDraftAttachment({ ...input, objectKey: `private/${crypto.randomUUID()}` })).toEqual(original);
-      expect(await restricted.removeDraftAttachment(ownerId, context, source, input.id)).toBe(true);
-      const editPostId = crypto.randomUUID(), editRevisionId = crypto.randomUUID();
-      await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() })
-        .createPost({ id: editPostId, topicId: "attachment-topic", authorId: ownerId,
-          bodyRevision: { id: editRevisionId, originalContent: "Snapshot runtime", sourceLocale: "en" } });
-      await client.query("insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1, $2, now())", [editPostId, input.id]);
-      const editGeneration = crypto.randomUUID();
-      await restricted.initializePostEditAttachments(ownerId, `post:${editPostId}:edit`, editGeneration, editRevisionId);
-      expect((await restricted.listDraftAttachments(ownerId, `post:${editPostId}:edit`, editGeneration)).map((file) => file.id)).toEqual([input.id]);
-    } finally {
-      await runtime.end();
-      await client.query(`drop owned by ${role}`);
-      await client.query(`drop role ${role}`);
-    }
   });
 });
 
@@ -755,8 +354,8 @@ async function withSecurityUploadRoute(run: (fixture: {
       async post(options = {}) {
         const context = new RouterContextProvider();
         context.set(authSessionContext, { user: { id: options.owner ?? ownerId } } as AuthSession);
+        context.set(forumReaderContext, {readTopicPage:async()=>({id:"topic"}),readSection:async()=>({id:"section"})} as never);
         context.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
-        context.set(forumDraftStoreContext, { assertContextExists: async () => {} } as never);
         context.set(privateAttachmentBucketContext, bucket);
         context.set(forumAttachmentStoreContext, {
           async recordSecurityEvent(event: RecordAttachmentSecurityEventInput) {
@@ -777,8 +376,8 @@ async function withSecurityUploadRoute(run: (fixture: {
               "X-Vico-Attachment-Id": options.clientId ?? clientId,
               "X-Vico-Attachment-Name": encodeURIComponent(options.fileName ?? "masked.txt"),
               "X-Vico-Attachment-Size": "4",
-              "X-Vico-Draft-Context": encodeURIComponent(options.context ?? contextKey),
-              "X-Vico-Draft-Id": options.generation ?? draftId,
+              "X-Vico-Editor-Context": encodeURIComponent(options.context ?? contextKey),
+              "X-Vico-Operation-Id": options.generation ?? draftId,
               "X-Vico-Draft-Version": "0",
             },
             body: new Uint8Array([0x4d, 0x5a, 0x90, 0x00]).buffer,
@@ -861,7 +460,7 @@ describe("atomic publication of selected draft refs", () => {
           id: postId, topicId, authorId: ownerId,
           bodyRevision: { id: crypto.randomUUID(), originalContent: "File in question", sourceLocale: "en" },
         },
-        publishedDraft: { contextKey: context, draftId: draft, expectedVersion: 0, attachmentIds: [asset.id] },
+        publishedDraft: { contextKey: context, draftId: draft,  attachmentIds: [asset.id] },
       });
       expect(created.post.id).toBe(postId);
       expect(await store.readPublishedAttachment(postId, asset.id)).toMatchObject({ id: asset.id });
@@ -879,7 +478,7 @@ describe("atomic publication of selected draft refs", () => {
       const { topicId, context, draft } = await topicFixture();
       const file = await store.createDraftAttachment(upload(context, draft));
       await setDraft(ownerId, context, draft);
-      const makePost = (forum: DrizzleForumRepository) => forum.createPost(reply(topicId, context, draft, [file.id], 1));
+      const makePost = (forum: DrizzleForumRepository) => forum.createPost(reply(topicId, context, draft, [file.id]));
       const remove = (attachments: DrizzleForumAttachments) =>
         attachments.removeDraftAttachment(ownerId, context, draft, file.id);
       if (order === "delete-before-publish") {
@@ -931,52 +530,6 @@ describe("atomic publication of selected draft refs", () => {
     },
   );
 
-  it.each(["rebind-before-publication", "publication-before-rebind"] as const)(
-    "serializes actual rebind/publication against the selected generation: %s",
-    async (order) => {
-      const { topicId, context, draft: source } = await topicFixture();
-      const target = crypto.randomUUID();
-      const file = await store.createDraftAttachment(upload(context, source));
-      // A retained source generation is not yet authoritative for B.
-      await setDraft(ownerId, context, target, "active", 1);
-      const promote = (forum: DrizzleForumRepository) =>
-        forum.createPost(reply(topicId, context, target, [file.id], 1));
-      const rebind = (attachments: DrizzleForumAttachments) =>
-        attachments.rebindDraftAttachments(ownerId, context, source, target, 1);
-
-      if (order === "rebind-before-publication") {
-        const [moved, published] = await queuedOperations(context,
-          (attachments) => rebind(attachments),
-          (_, forum) => promote(forum),
-        );
-        expect(moved).toBe(1);
-        expect(await store.readPublishedAttachment(published.id, file.id)).toMatchObject({ id: file.id });
-        const rows = await client.query(
-          "select attachment_id from forum_post_attachments where post_id = $1", [published.id],
-        );
-        expect(rows.rows).toEqual([{ attachment_id: file.id }]);
-        await expect(store.listDraftAttachments(ownerId, context, source))
-          .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
-      } else {
-        const [result, moved] = await queuedOperations(context,
-          (_, forum) => promote(forum).then(
-            () => "unexpected",
-            (error: unknown) => error instanceof ForumStateConflictError
-              ? "conflict" : Promise.reject(error),
-          ),
-          (attachments) => rebind(attachments),
-        );
-        expect(result).toBe("conflict");
-        expect(moved).toBe(1);
-        expect(await store.listDraftAttachments(ownerId, context, target)).toMatchObject([
-          { id: file.id },
-        ]);
-        const later = await repository.createPost(reply(topicId, context, target, [file.id], 1));
-        expect(await store.readPublishedAttachment(later.id, file.id)).toMatchObject({ id: file.id });
-      }
-    },
-  );
-
   const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
 
   async function topicFixture() {
@@ -991,18 +544,18 @@ describe("atomic publication of selected draft refs", () => {
     });
     return { topicId, context: `topic:${topicId}:reply`, draft: crypto.randomUUID() };
   }
-  function reply(topicId: string, context: string, draft: string, ids: string[], version = 0) {
+  function reply(topicId: string, context: string, draft: string, ids: string[]) {
     return {
       id: crypto.randomUUID(), topicId, authorId: ownerId,
       bodyRevision: { id: crypto.randomUUID(), originalContent: "Reply with file", sourceLocale: "en" },
-      publishedDraft: { contextKey: context, draftId: draft, expectedVersion: version, attachmentIds: ids },
+      publishedDraft: { contextKey: context, draftId: draft,  attachmentIds: ids },
     };
   }
 
   it("promotes only exact selected refs with a first-save CAS, then revokes draft access", async () => {
     const { topicId, context, draft } = await topicFixture();
     const file = await store.createDraftAttachment(upload(context, draft));
-    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).toBeNull();
+    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).toMatchObject({id:file.id});
     expect(await store.readDraftAttachment(otherId, context, draft, file.id)).toBeNull();
     const created = await repository.createPost(reply(topicId, context, draft, [file.id]));
     expect(await store.readPublishedAttachment(created.id, file.id)).toMatchObject({ id: file.id });
@@ -1029,20 +582,23 @@ describe("atomic publication of selected draft refs", () => {
     expect(await store.readPublishedAttachment(shared.id, file.id)).toBeNull();
   });
 
-  it("rolls back post, draft completion and refs on selected-set mismatch or stale CAS", async () => {
+  it("rolls back publication for a missing selected ref or a closed operation", async () => {
     const { topicId, context, draft } = await topicFixture();
     const file = await store.createDraftAttachment(upload(context, draft));
     await setDraft(ownerId, context, draft);
-    const wrong = reply(topicId, context, draft, [], 1);
+    const wrong = reply(topicId, context, draft, [crypto.randomUUID()]);
     await expect(repository.createPost(wrong)).rejects.toBeInstanceOf(ForumStateConflictError);
     expect((await client.query("select id from forum_posts where id = $1", [wrong.id])).rowCount).toBe(0);
     expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).not.toBeNull();
     await setDraft(ownerId, context, draft);
-    const stale = reply(topicId, context, draft, [file.id], 0);
+    await store.cancelOperation(ownerId, context, draft);
+    const stale = reply(topicId, context, draft, [file.id]);
     await expect(repository.createPost(stale)).rejects.toBeInstanceOf(ForumStateConflictError);
     expect((await client.query("select id from forum_posts where id = $1", [stale.id])).rowCount).toBe(0);
-    const accepted = await repository.createPost(reply(topicId, context, draft, [file.id], 1));
-    expect(await store.readPublishedAttachment(accepted.id, file.id)).not.toBeNull();
+    const fresh = crypto.randomUUID();
+    const freshFile = await store.createDraftAttachment(upload(context, fresh));
+    const accepted = await repository.createPost(reply(topicId, context, fresh, [freshFile.id]));
+    expect(await store.readPublishedAttachment(accepted.id, freshFile.id)).not.toBeNull();
     await expect(store.createDraftAttachment(upload(context, draft)))
       .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
   });
@@ -1053,7 +609,7 @@ describe("atomic publication of selected draft refs", () => {
     const invalid = reply(topicId, context, draft, [crypto.randomUUID()]);
     await expect(repository.createPost(invalid)).rejects.toBeInstanceOf(ForumStateConflictError);
     expect(await store.readPublishedAttachment(invalid.id, file.id)).toBeNull();
-    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).toBeNull();
+    expect(await store.readDraftAttachment(ownerId, context, draft, file.id)).toMatchObject({id:file.id});
   });
 });
 
@@ -1079,7 +635,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     body.set("intent", intent);
     body.set("title", "Live route attachment");
     body.set("body", text);
-    body.set("editorDraftId", generation);
+    body.set("editorOperationId", generation);
     body.set("editorDraftVersion", String(version));
     body.set("editorAttachmentIds", JSON.stringify(ids));
     return new Request(`https://forum.test${path}`, {
@@ -1213,7 +769,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     },
   );
 
-  it("returns an HTTP conflict and preserves post/ref/draft on a stale selected manifest", async () => {
+  it("returns an HTTP conflict and preserves post and refs on an unavailable selection", async () => {
     const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
     const topicId = crypto.randomUUID();
     await repository.createTopicWithInitialPost({
@@ -1230,7 +786,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       "select count(*)::text as count from forum_posts where topic_id = $1", [topicId],
     );
     const response = await topicAction({
-      request: publishRequest(`/en/topics/${topicId}`, "reply", draft, 1, []),
+      request: publishRequest(`/en/topics/${topicId}`, "reply", draft, 1, [crypto.randomUUID()]),
       params: { locale: "en", topicId }, context: realContext(),
     });
     expect(responseStatus(response)).toBe(409);
@@ -1273,78 +829,19 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     const cleanup = new ForumAttachmentCleanup(drizzle(client), bucket);
     expect((await cleanup.runOnce()).deleted).toBe(0);
     expect(bucket.delete).not.toHaveBeenCalled();
-    expect(await store.listDraftAttachments(ownerId, context, generation)).toEqual([]);
+    expect(await store.listDraftAttachments(ownerId, context, generation)).toHaveLength(1);
     await client.query("delete from forum_attachment_draft_refs where attachment_id=$1", [asset.id]);
     expect((await cleanup.runOnce()).deleted).toBe(1);
     expect(bucket.delete).toHaveBeenCalledWith(asset.objectKey);
     expect(await row(asset.id)).toBeUndefined();
   });
 
-  it("retains a deselected pool object through resolution until the generation ends", async () => {
-    const { asset, context, generation } = await makeOrphan();
-    const drafts = new DrizzleForumEditorDrafts(drizzle(client));
-    await setDraft(ownerId, context, generation, "active", 1);
-    // Removal advances the selected snapshot but retains the live pool ref.
-    expect(await store.removeDraftAttachment(ownerId, context, generation, asset.id, 1)).toBe(true);
-    const bucket = { delete: vi.fn(async () => {}) };
-    const cleanup = new ForumAttachmentCleanup(drizzle(client), bucket);
-
-    expect(await cleanup.runOnce()).toMatchObject({ claimed: 0, deleted: 0 });
-    expect(bucket.delete).not.toHaveBeenCalled();
-    expect(await row(asset.id)).toMatchObject({ cleanup_status: "active" });
-
-    expect((await drafts.resolve(ownerId, context, generation, {
-      title: "", body: "selected original version", tags: "", draftAttachmentIds: [asset.id],
-    }, 2)).outcome).toBe("saved");
-    expect(await store.readDraftAttachment(ownerId, context, generation, asset.id))
-      .toMatchObject({ id: asset.id });
-
-    expect((await drafts.save(ownerId, context, generation, {
-      title: "", body: "removed after resolution", tags: "", draftAttachmentIds: [],
-    }, 3)).outcome).toBe("saved");
-    expect((await cleanup.runOnce()).deleted).toBe(0);
-    await drafts.delete(ownerId, context, generation, 4);
-    expect((await cleanup.runOnce()).deleted).toBe(1);
-    expect(await row(asset.id)).toBeUndefined();
-  });
-
-  it("releases an expired retention pool during unattended cleanup", async () => {
-    const { asset, context, generation } = await makeOrphan();
-    await setDraft(ownerId, context, generation, "active", 1);
-    expect(await store.removeDraftAttachment(ownerId, context, generation, asset.id, 1)).toBe(true);
-    expect((await client.query(
-      "select 1 from forum_attachment_draft_refs where attachment_id=$1", [asset.id],
-    )).rowCount).toBe(1);
-    expect((await client.query(
-      "select 1 from forum_attachment_draft_boundaries where owner_id=$1 and context_key=$2 and draft_id=$3",
-      [ownerId, context, generation],
-    )).rowCount).toBe(0);
-    await client.query(
-      "update forum_editor_drafts set edited_at=now()-interval '31 days' where owner_id=$1 and context_key=$2",
-      [ownerId, context],
-    );
-
-    const bucket = { delete: vi.fn(async () => {}) };
-    const result = await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
-    expect(result.deleted).toBeGreaterThan(0);
-    expect(bucket.delete).toHaveBeenCalledWith(asset.objectKey);
-    expect(await row(asset.id)).toBeUndefined();
-    expect((await client.query(
-      "select 1 from forum_attachment_draft_boundaries where owner_id=$1 and context_key=$2 and draft_id=$3",
-      [ownerId, context, generation],
-    )).rowCount).toBe(0);
-    expect((await new DrizzleForumEditorDrafts(drizzle(client)).get(ownerId, context))?.status)
-      .toBe("deleted");
-    await expect(store.createDraftAttachment(upload(context, generation))).rejects
-      .toMatchObject({ reason: "gone" });
-  });
-
   it("releases stale refs of deleted drafts and deletes their objects without per-user intervention", async () => {
     const { asset, context, generation } = await makeOrphan();
-    await setDraft(ownerId, context, generation, "deleted", 2);
+    await store.cancelOperation(ownerId, context, generation);
     const bucket = { delete: vi.fn(async () => {}) };
     const outcome = await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
-    expect(outcome.prunedRefs).toBeGreaterThan(0);
+    expect(outcome.prunedRefs).toBe(0);
     expect(outcome.deleted).toBeGreaterThan(0);
     expect(await row(asset.id)).toBeUndefined();
     expect(await client.query(
@@ -1388,36 +885,13 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     const result = await new ForumAttachmentCleanup(
       drizzle(client), { delete: vi.fn(async () => {}) },
     ).runOnce();
-    expect(result.prunedRefs).toBe(1);
+    expect(result.prunedRefs).toBe(0);
     const current = await store.listDraftAttachments(ownerId, context, generation);
-    expect(current).toEqual([]);
-    expect((await client.query("select 1 from forum_attachment_draft_refs where owner_id=$1 and context_key=$2 and draft_id=$3", [ownerId, context, generation])).rowCount).toBe(1);
+    expect(current).toHaveLength(2);
+    expect((await client.query("select 1 from forum_attachment_draft_refs where owner_id=$1 and context_key=$2 and draft_id=$3", [ownerId, context, generation])).rowCount).toBe(2);
     expect(await store.createDraftAttachment(upload(context, generation))).toMatchObject({
       detectedType: "text",
     });
-  });
-
-  it("denies direct draft-file reads after saved draft TTL without touching storage or renewal", async () => {
-    const { asset, context, generation } = await makeOrphan();
-    await setDraft(ownerId, context, generation, "active", 1);
-    await client.query(
-      "update forum_editor_drafts set edited_at = now() - interval '31 days' where owner_id=$1 and context_key=$2",
-      [ownerId, context],
-    );
-    expect(await store.readDraftAttachment(ownerId, context, generation, asset.id)).toBeNull();
-    const status = await client.query<{ status: string }>(
-      "select status from forum_editor_drafts where owner_id=$1 and context_key=$2",
-      [ownerId, context],
-    );
-    expect(status.rows).toEqual([{ status: "active" }]);
-    // The explicit metadata endpoint can independently purge this stale draft.
-    await new DrizzleForumEditorDrafts(drizzle(client)).get(ownerId, context);
-    await expect(store.readDraftAttachment(ownerId, context, generation, asset.id)).rejects
-      .toMatchObject({ reason: "gone" });
-    // This suite shares a disposable schema; do not leave an expired ref/object
-    // for the following exact-claim-count lease test.
-    const cleanup = new ForumAttachmentCleanup(drizzle(client), { delete: vi.fn(async () => {}) });
-    expect((await cleanup.runOnce()).deleted).toBeGreaterThan(0);
   });
 
   it("prunes an already-terminal old generation without trying to retire it twice", async () => {

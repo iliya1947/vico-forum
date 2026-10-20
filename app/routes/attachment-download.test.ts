@@ -83,10 +83,10 @@ describe("controlled attachment read", () => {
 
   it("requires the account owner for draft access and never reads storage before authorization", async () => {
     const guest = setup();
-    expect((await run(guest.context, `/api/attachments/file/${attachmentId}?draft=${draftId}&context=help%3Anew`)).status).toBe(401);
+    expect((await run(guest.context, `/api/attachments/file/${attachmentId}?operation=${draftId}&context=help%3Anew`)).status).toBe(401);
     expect(guest.get).not.toHaveBeenCalled();
     const owner = setup("alice");
-    expect((await run(owner.context, `/api/attachments/file/${attachmentId}?draft=${draftId}&context=help%3Anew`)).status).toBe(200);
+    expect((await run(owner.context, `/api/attachments/file/${attachmentId}?operation=${draftId}&context=help%3Anew`)).status).toBe(200);
     expect(owner.readDraftAttachment).toHaveBeenCalledWith("alice", "help:new", draftId, attachmentId);
   });
 

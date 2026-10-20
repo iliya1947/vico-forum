@@ -431,7 +431,7 @@ infrastructure diagnostics в production прекращаются; рисков�
 - server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
 - воспроизводимые migrations, CI и production-safe external/runtime boundaries;
 - approved target-product forum UX до публичного запуска: глобальный поиск, уведомления,
-  unread/new state и переход к первому непрочитанному, drafts/autosave, forum-oriented user
+  unread/new state и переход к первому непрочитанному, forum-oriented user
   profiles, technology tags и unanswered filtering, permanent message anchors/copy-link,
   reply/quote relationships без tree layout и полноценный editor/code presentation;
 - целевой Light/Dark UX с first-use system preference и persisted manual choice.
@@ -439,3 +439,6 @@ infrastructure diagnostics в production прекращаются; рисков�
 Жалобы, блокировки, reputation/audit log, social-network profile mechanics и другие возможности,
 которые владелец отдельно не утвердил, не входят в обязательный объём без нового продуктового
 решения.
+
+Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
+(`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.

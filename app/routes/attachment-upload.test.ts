@@ -6,10 +6,8 @@ import {
   forumAttachmentStoreContext,
   privateAttachmentBucketContext,
 } from "../forum/attachment-request-context";
-import { forumDraftStoreContext } from "../forum/draft-request-context";
 import { forumReaderContext } from "../forum/request-context";
 import type { PrivateAttachmentBucket } from "../forum/attachment-r2";
-import { ForumEditorDraftContextNotFoundError } from "../../db/forum-editor-drafts";
 import type {
   CreateDraftAttachmentInput,
   ForumAttachmentMetadata,
@@ -44,7 +42,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
     forUser: () => ({ has: vi.fn(async () => allowed) }),
   } as never);
   const assertContextExists = vi.fn(async () => {});
-  ctx.set(forumDraftStoreContext, { assertContextExists } as never);
+  ctx.set(forumReaderContext, {readTopicPage: async () => ({id: "topic"}), readSection: async () => ({id:"section"}), readPostLocation: async () => ({id:"post",authorId:owner})} as never);
 
   const createDraftAttachment = vi.fn(async (
     input: CreateDraftAttachmentInput,
@@ -107,8 +105,8 @@ function request(
       "X-Vico-Attachment-Id": attachmentId,
       "X-Vico-Attachment-Name": encodeURIComponent(fileName),
       "X-Vico-Attachment-Size": String(size),
-      "X-Vico-Draft-Context": encodeURIComponent(key),
-      "X-Vico-Draft-Id": id,
+      "X-Vico-Editor-Context": encodeURIComponent(key),
+      "X-Vico-Operation-Id": id,
       "X-Vico-Draft-Version": version,
     },
     body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
@@ -135,8 +133,8 @@ function scopedRequest(
   } = {},
 ) {
   const headers = new Headers({
-    "X-Vico-Draft-Context": encodeURIComponent(key),
-    "X-Vico-Draft-Id": id,
+    "X-Vico-Editor-Context": encodeURIComponent(key),
+    "X-Vico-Operation-Id": id,
   });
   if (method !== "GET") headers.set("Origin", origin);
   if (attachmentId) headers.set("X-Vico-Attachment-Id", attachmentId);
@@ -146,20 +144,6 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
-  it("initializes a post-edit snapshot with same-origin ownership checks without requiring R2", async () => {
-    const env = setup({ withBucket: false });
-    env.ctx.set(forumReaderContext, { readPostLocation: async () => ({ topicId: "topic", authorId: "real-user" }) } as never);
-    const request = (origin: string) => new Request("https://forum.test/api/attachments", {
-      method: "PUT", headers: { Origin: origin, "X-Vico-Draft-Context": "post:existing:edit",
-        "X-Vico-Draft-Id": draftId, "X-Vico-Post-Revision": "revision-1" },
-    });
-    expect((await action({ request: request("https://other.test"), context: env.ctx })).status).toBe(403);
-    expect(env.initializePostEditAttachments).not.toHaveBeenCalled();
-    const response = await action({ request: request("https://forum.test"), context: env.ctx });
-    expect(response.status).toBe(200);
-    expect(env.initializePostEditAttachments).toHaveBeenCalledWith("real-user", "post:existing:edit", draftId, "revision-1");
-    expect(env.r2.put).not.toHaveBeenCalled();
-  });
 
   it.each([["real-user", 201], ["other", 403], [null, 404]] as const)(
     "uses edit permission plus authoritative post ownership for post-edit files (%s)", async (authorId, status) => {
@@ -213,54 +197,15 @@ describe("private attachment upload API", () => {
     });
     expect(response.status).toBe(200);
     expect(env.removeDraftAttachment).toHaveBeenCalledWith(
-      "real-user", contextKey, draftId, attachmentId, 4,
+      "real-user", contextKey, draftId, attachmentId,
     );
   });
 
-  it("rebinds retained draft references to the resolved generation", async () => {
-    const env = setup();
-    const fromDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
-    env.rebindDraftAttachments.mockResolvedValueOnce(2);
-    const response = await action({
-      request: scopedRequest("PATCH", { fromDraftId }),
-      context: env.ctx,
-    });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ outcome: "rebound", moved: 2 });
-    expect(env.rebindDraftAttachments).toHaveBeenCalledWith(
-      "real-user", contextKey, fromDraftId, draftId, 4,
-    );
-  });
-
-  it("requires a valid CAS version for rebind and reports stale or terminal targets as conflict", async () => {
-    const env = setup();
-    const fromDraftId = "c526541e-a1ff-4b80-bcbf-6b20ec30ce74";
-    for (const version of ["", "0", "-1", "1.5", "9007199254740992"]) {
-      const result = await action({ request: scopedRequest("PATCH", { fromDraftId, version }), context: env.ctx });
-      expect(result.status).toBe(400);
-    }
-    expect(env.rebindDraftAttachments).not.toHaveBeenCalled();
-    env.rebindDraftAttachments.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
-    const result = await action({ request: scopedRequest("PATCH", { fromDraftId }), context: env.ctx });
-    expect(result.status).toBe(409);
-    expect(await result.json()).toEqual({ error: "conflict" });
-  });
-
-  it("requires a valid draft version for upload/delete and reports stale mutations as conflict", async () => {
+  it("does not require a text version and still rejects closed operation mutations", async () => {
     const bytes = new TextEncoder().encode("hello");
-    for (const version of ["", "-1", "1.5", "9007199254740992"]) {
-      const uploadEnv = setup();
-      expect((await action({ request: request(bytes, { version }), context: uploadEnv.ctx })).status).toBe(400);
-      expect(uploadEnv.r2.put).not.toHaveBeenCalled();
-      expect(uploadEnv.createDraftAttachment).not.toHaveBeenCalled();
-
-      const deleteEnv = setup();
-      expect((await action({
-        request: scopedRequest("DELETE", { attachmentId: uploadId, version }),
-        context: deleteEnv.ctx,
-      })).status).toBe(400);
-      expect(deleteEnv.removeDraftAttachment).not.toHaveBeenCalled();
-    }
+    const noVersion = request(bytes);
+    noVersion.headers.delete("X-Vico-Draft-Version");
+    expect((await action({request:noVersion,context:setup().ctx})).status).toBe(201);
 
     const uploadEnv = setup();
     uploadEnv.createDraftAttachment.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
@@ -281,28 +226,6 @@ describe("private attachment upload API", () => {
     expect(result.status).toBe(410);
     expect(env.r2.delete).toHaveBeenCalledOnce();
     expect(JSON.stringify(await result.json())).not.toContain("private/");
-  });
-
-  it("rejects malformed UUIDs before repository operations", async () => {
-    const env = setup();
-    const malformed = "------------------------------------";
-    expect((await loader({
-      request: scopedRequest("GET", { id: malformed }),
-      context: env.ctx,
-    })).status).toBe(400);
-    expect(env.listDraftAttachments).not.toHaveBeenCalled();
-
-    expect((await action({
-      request: scopedRequest("DELETE", { attachmentId: malformed }),
-      context: env.ctx,
-    })).status).toBe(400);
-    expect(env.removeDraftAttachment).not.toHaveBeenCalled();
-
-    expect((await action({
-      request: scopedRequest("PATCH", { fromDraftId: malformed }),
-      context: env.ctx,
-    })).status).toBe(400);
-    expect(env.rebindDraftAttachments).not.toHaveBeenCalled();
   });
 
   it("requires session, same origin and current authoring permission before storage", async () => {
@@ -326,7 +249,7 @@ describe("private attachment upload API", () => {
 
   it("rejects a fabricated editor context before touching R2", async () => {
     const env = setup();
-    env.assertContextExists.mockRejectedValueOnce(new ForumEditorDraftContextNotFoundError());
+    env.ctx.set(forumReaderContext, {readTopicPage:async()=>undefined} as never);
     const response = await action({
       request: request(new TextEncoder().encode("hello")),
       context: env.ctx,

@@ -1,7 +1,7 @@
 import { createContext, useContext, useLayoutEffect, useRef, type ReactNode } from "react";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { useTranslation } from "react-i18next";
-import type { EditorSelection } from "./editor-document";
+import { includeVisualWhitespace, type EditorSelection } from "./editor-document";
 import { ForumMarkdown, ForumInlineImage } from "./markdown";
 import { segmentTechnicalMarkdown, encodeTableCell, type MarkdownTable } from "./technical-markdown";
 import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
@@ -27,7 +27,6 @@ interface VisualEditorProps {
     range: EditorSelection,
     value: string,
     selectionAfter?: EditorSelection,
-    saveLocal?: boolean,
   ): void;
   onSelection(selection: EditorSelection | null): void;
   onInsertParagraph(selection: EditorSelection): void;
@@ -41,7 +40,8 @@ interface VisualEditorProps {
 export function escapeVisualMarkdownText(value: string): string {
   // Use the same literal-text escaping rule for visual typing and plain paste:
   // a leading #, >, list marker or rule must not silently become Markdown syntax.
-  return clipboardPlainToMarkdown(value);
+  const literal = /^[ ]{4}|^\t/u.test(value) ? (value[0] === "\t" ? "&#9;" : "&#32;") + value.slice(1) : value;
+  return clipboardPlainToMarkdown(literal);
 }
 
 /** Resolve DOM ranges relative to the whole visual leaf, not to one text node.
@@ -344,7 +344,7 @@ function VisualTextLeaf({
         onTextEdit(range, next, afterStart === null || afterEnd === null ? undefined : {
           start: range.start + afterStart,
           end: range.start + afterEnd,
-        }, (event.nativeEvent as InputEvent).data === " ");
+        });
       }}
       onSelect={reportSelection}
       onKeyUp={reportSelection}
@@ -434,10 +434,13 @@ VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditT
       </span>;
     }
     case "text": {
-      const range = sourceRange(node);
-      if (!range) return node.value ?? "";
+      const parsedRange = sourceRange(node);
+      if (!parsedRange) return node.value ?? "";
+      const range = includeVisualWhitespace(markdown, parsedRange);
+      const prefix = markdown.slice(range.start, parsedRange.start);
+      const suffix = markdown.slice(parsedRange.end, range.end);
       return <VisualTextLeaf
-        text={node.value ?? ""} raw={markdown.slice(range.start, range.end)}
+        text={prefix + (node.value ?? "") + suffix} raw={markdown.slice(range.start, range.end)}
         range={{ start: range.start + baseOffset, end: range.end + baseOffset }} disabled={disabled} {...actions}
       />;
     }
@@ -620,7 +623,9 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         const emptyParagraph = index === segments.length - 1
           && (!markdown || markdown.endsWith("\n\n"));
         const offset = segment.source.length;
-        const renderedRoot = emptyParagraph ? { ...root, children: [
+        const emptySource = !(root.children?.length);
+        const renderedRoot = emptySource ? { ...root, children: [{type: "paragraph", children: [{type: "text", value: segment.source,
+          position: {start: {offset: 0}, end: {offset}}} as VisualNode]}]} : emptyParagraph ? { ...root, children: [
           ...(root.children ?? []), { type: "paragraph", children: [{ type: "text", value: "",
             position: { start: { offset }, end: { offset } } } as VisualNode] },
         ] } : root;

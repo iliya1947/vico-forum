@@ -16,15 +16,14 @@ import {
 } from "./forum-attachments";
 
 export interface ForumAttachmentStore {
-  initializePostEditAttachments(ownerId: string, contextKey: string, draftId: string, revisionId: string): Promise<void>;
+  cancelOperation(ownerId: string, contextKey: string, operationId: string): Promise<void>;
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
   readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
   readDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
   recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void>;
   readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage>;
   listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
-  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string, expectedVersion?: number): Promise<boolean>;
-  rebindDraftAttachments(ownerId: string, contextKey: string, fromDraftId: string, toDraftId: string, expectedVersion: number): Promise<number>;
+  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<boolean>;
 }
 
 export class ForumAttachmentStorageUnavailableError extends Error {
@@ -75,8 +74,7 @@ export function createHyperdriveForumAttachmentStore(
   }
 
   return {
-    initializePostEditAttachments: (ownerId, contextKey, draftId, revisionId) =>
-      apply((store) => store.initializePostEditAttachments(ownerId, contextKey, draftId, revisionId)),
+    cancelOperation: (ownerId, contextKey, operationId) => apply((store) => store.cancelOperation(ownerId, contextKey, operationId)),
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
     readPublishedAttachment: (postId, attachmentId) => apply((store) => store.readPublishedAttachment(postId, attachmentId)),
     readDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
@@ -85,9 +83,7 @@ export function createHyperdriveForumAttachmentStore(
     readSecurityAttachmentEvents: (page) => apply((store) => store.readSecurityAttachmentEvents(page)),
     listDraftAttachments: (ownerId, contextKey, draftId) =>
       apply((store) => store.listDraftAttachments(ownerId, contextKey, draftId)),
-    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId, expectedVersion) =>
-      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId, expectedVersion)),
-    rebindDraftAttachments: (ownerId, contextKey, fromDraftId, toDraftId, expectedVersion) =>
-      apply((store) => store.rebindDraftAttachments(ownerId, contextKey, fromDraftId, toDraftId, expectedVersion)),
+    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
+      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)),
   };
 }

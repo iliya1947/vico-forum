@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { createRef, StrictMode, useState, type ReactNode } from "react";
+import { createRef, type ReactNode } from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
@@ -9,7 +9,6 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 import { HeaderAuthProvider } from "../auth/auth-controls";
-import { readLocalEditorDraft, writeLocalEditorDraft, clearLocalEditorDraft } from "./draft-client";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -84,21 +83,6 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
-  it("does not capture untouched published source as a local edit during StrictMode cleanup before metadata", async () => {
-    const owner = "strict-edit-owner", key = "post:strict-edit:edit";
-    vi.stubGlobal("fetch", vi.fn(async (uri: string) => uri === "/api/attachments"
-      ? Response.json({ attachments: [] })
-      : Response.json({ drafts: [{ contextKey: key, draftId: crypto.randomUUID(), version: 3,
-        status: "published", editedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), title: "", snippet: "" }] })));
-    renderEditor(<StrictMode><HeaderAuthProvider initialUser={{ id: owner, name: "Author" }}>
-      <form><MarkdownEditor id="strict-edit" name="body" defaultValue="Published source"
-        draftContextKey={key} draftLocale="en" /></form>
-    </HeaderAuthProvider></StrictMode>);
-    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
-    expect(readLocalEditorDraft(owner, key)).toBeNull();
-    expect(document.querySelector('input[name="editorDraftVersion"]')).toHaveValue("3");
-    expect(screen.queryByText("Draft changed on another device. Choose which version to keep.")).not.toBeInTheDocument();
-  });
 
   it.each([
     ["b", "**alpha** beta"], ["i", "_alpha_ beta"], ["k", "[alpha](https://) beta"],
@@ -112,51 +96,6 @@ describe("MarkdownEditor", () => {
     expect(new FormData(field.form!).get("body")).toBe(expected);
     fireEvent.keyDown(field, { key: "z", ctrlKey: true });
     expect(new FormData(field.form!).get("body")).toBe("alpha beta");
-  });
-
-  it("uses durable draft references for published files and does not re-adopt a removed file on reopen", async () => {
-    const owner = "published-file-edit-owner";
-    const id = "23b93562-0550-4eef-88af-f951d6ea6138";
-    const contextKey = "post:attachment-only:edit";
-    let files = [{ id, fileName: "published.txt", byteSize: 4, detectedType: "text",
-      responseMime: "text/plain", verificationStatus: "type-checked" }];
-    let head: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (uri: string, options?: RequestInit) => {
-      if (uri.includes("mode=head")) return head ? Response.json({ draft: head }) : new Response(null, {status: 404});
-      if (options?.method === "POST") {
-        const sent = JSON.parse(options.body as string);
-        files = files.filter((file) => sent.payload.draftAttachmentIds.includes(file.id));
-        head = { contextKey, draftId: sent.draftId, version: sent.expectedVersion + 1, status: "active",
-          editedAt: new Date().toISOString(), payload: sent.payload };
-        return Response.json({outcome: "saved", draft: head});
-      }
-      if (uri === "/api/attachments") {
-        if (options?.method === "DELETE") files = [];
-        return Response.json({ attachments: files });
-      }
-      return Response.json({ drafts: [] });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    const editor = () => <HeaderAuthProvider initialUser={{ id: owner, name: "Author" }}>
-      <form><MarkdownEditor id="file-edit" name="body" draftContextKey={contextKey} draftLocale="en"
-        initialPublishedRevisionId="r1" existingInlineAttachments={[{
-          id, fileName: "published.txt", byteSize: 4, detectedType: "text", url: "/file?post=attachment-only",
-        }]} /></form>
-    </HeaderAuthProvider>;
-    const view = renderEditor(editor());
-    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
-    expect(new FormData(document.querySelector("form")!).get("editorAttachmentIds")).toBe(JSON.stringify([id]));
-    expect(fetchMock).toHaveBeenCalledWith("/api/attachments", expect.objectContaining({ method: "PUT" }));
-    await userEvent.click(screen.getByRole("button", { name: "Remove" }));
-    expect(new FormData(document.querySelector("form")!).get("editorRetainedAttachmentIds")).toBe("[]");
-    await waitFor(() => expect(screen.queryByText("published.txt")).not.toBeInTheDocument());
-    expect(readLocalEditorDraft(owner, contextKey)?.attachmentDraftId).toBeTruthy();
-    view.unmount();
-    renderEditor(editor());
-    await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
-    expect(new FormData(document.querySelector("form")!).get("editorAttachmentIds")).toBe("[]");
-    expect(screen.queryByText("published.txt")).not.toBeInTheDocument();
-    clearLocalEditorDraft(owner, contextKey);
   });
 
   it("replays publication after the native submission task, retaining validation and the submitter", async () => {
@@ -176,8 +115,8 @@ describe("MarkdownEditor", () => {
           submitted(new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter));
         }}>
           <input name="title" required defaultValue="Title" />
-          <MarkdownEditor id="native-submit" name="body" draftContextKey="help:new" draftLocale="en"
-            draftPublicationIntent="createHelpQuestion" defaultValue="Body" />
+          <MarkdownEditor id="native-submit" name="body" editorContextKey="help:new" editorLocale="en"
+            publicationIntent="createHelpQuestion" defaultValue="Body" />
           <button type="submit" name="intent" value="createHelpQuestion">Publish</button>
         </form>
       </HeaderAuthProvider>,
@@ -191,7 +130,8 @@ describe("MarkdownEditor", () => {
     await waitFor(() => expect(submitted).toHaveBeenCalledTimes(1));
     expect(submitted.mock.calls[0]![0].get("intent")).toBe("createHelpQuestion");
     expect(submitted.mock.calls[0]![0].get("body")).toBe("Body");
-    expect(submitted.mock.calls[0]![0].get("editorDraftVersion")).toBe("0");
+    expect(submitted.mock.calls[0]![0].get("editorDraftVersion")).toBeNull();
+    expect(submitted.mock.calls[0]![0].get("editorOperationId")).toMatch(/^[0-9a-f-]{36}$/u);
   });
 
   it("applies account preference removal in an already open editor without changing its source", async () => {
@@ -227,7 +167,7 @@ describe("MarkdownEditor", () => {
       <HeaderAuthProvider initialUser={{ id: "mention-author-" + mode, name: "Author" }}>
         <form>
           <label htmlFor="mention-body">Body</label>
-          <MarkdownEditor id="mention-body" name="body" draftLocale="en"
+          <MarkdownEditor id="mention-body" name="body" editorLocale="en"
             defaultAuthoringMode={mode} defaultValue="Hello " />
         </form>
       </HeaderAuthProvider>,
@@ -1425,51 +1365,6 @@ describe("MarkdownEditor", () => {
     expect(screen.getByLabelText("Body")).toHaveValue("Before\nleft\tright\nonly-one");
   });
 
-  it("captures a Simple-mode space in the middle of the document immediately", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-trigger-space-user";
-    const contextKey = "topic:space:reply";
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-space-body">Body</label>
-          <MarkdownEditor id="draft-space-body" name="body" defaultValue="AlphaBeta"
-            draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
-    leaf.textContent = "Alpha Beta";
-    fireEvent.input(leaf, { data: " ", inputType: "insertText" });
-
-    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe("Alpha Beta");
-    clearLocalEditorDraft(userId, contextKey);
-  });
-
-  it("captures Simple-mode Enter before later document content immediately", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-trigger-enter-user";
-    const contextKey = "topic:enter:reply";
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-enter-body">Body</label>
-          <MarkdownEditor id="draft-enter-body" name="body" defaultValue={"First\n\nSecond"}
-            draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    const firstLeaf = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')[0]!;
-    fireEvent.keyDown(firstLeaf, { key: "Enter" });
-    const body = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
-
-    expect(body.endsWith("Second")).toBe(true);
-    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe(body);
-    clearLocalEditorDraft(userId, contextKey);
-  });
-
   it("keeps the native leaf mounted through the first character and a new paragraph", () => {
     renderEditor(<form><MarkdownEditor id="native-empty" name="body" /></form>);
     const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
@@ -1491,384 +1386,6 @@ describe("MarkdownEditor", () => {
     expect([...document.querySelectorAll('[data-visual-text="true"]')].at(-1)).toBe(trailing);
     expect(trailing).toHaveFocus();
     expect(new FormData(document.querySelector("form")!).get("body")).toBe("你好\n\nNext");
-  });
-
-  it("captures a one-line Simple paste immediately", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-trigger-paste-user";
-    const contextKey = "topic:paste:reply";
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-paste-body">Body</label>
-          <MarkdownEditor id="draft-paste-body" name="body" defaultValue="BeforeAfter"
-            draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
-    leaf.focus();
-    const selection = window.getSelection()!;
-    const range = document.createRange();
-    range.setStart(leaf.firstChild!, "Before".length);
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
-      format === "text/plain" ? " pasted " : "" } });
-
-    const body = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
-    expect(body).toBe("Before pasted After");
-    expect(leaf).toHaveFocus();
-    expect(leaf.textContent).toBe(body);
-    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe(body);
-    // Model the next native keystroke against the actual focused DOM.
-    leaf.textContent = leaf.textContent!.replace(" pasted ", " pasted X");
-    fireEvent.input(leaf, {data: "X"});
-    expect(screen.getByLabelText("Body")).toHaveValue("Before pasted XAfter");
-    clearLocalEditorDraft(userId, contextKey);
-  });
-
-  it("keeps non-body draft fields authoritative across a context cleanup", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-payload-context-user";
-    const firstContext = "section:first:new";
-    const secondContext = "section:second:new";
-    const form = (contextKey: string) => (
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-payload-title">Title</label>
-          <input id="draft-payload-title" name="title" />
-          <label htmlFor="draft-payload-body">Body</label>
-          <MarkdownEditor id="draft-payload-body" name="body" defaultValue="Body"
-            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>
-    );
-    const rendered = renderEditor(form(firstContext));
-
-    fireEvent.input(screen.getByLabelText("Title"), {
-      target: { value: "First title" }, inputType: "insertText", data: "e",
-    });
-    rendered.rerender(form(secondContext));
-
-    expect(readLocalEditorDraft(userId, firstContext)?.payload).toMatchObject({
-      title: "First title", body: "Body",
-    });
-    clearLocalEditorDraft(userId, firstContext);
-    clearLocalEditorDraft(userId, secondContext);
-  });
-
-  it("does not save ordinary title typing merely because body is empty", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-title-trigger-user";
-    const contextKey = "section:title-trigger:new";
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-title-trigger">Title</label>
-          <input id="draft-title-trigger" name="title" />
-          <label htmlFor="draft-title-trigger-body">Body</label>
-          <MarkdownEditor id="draft-title-trigger-body" name="body"
-            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    fireEvent.input(screen.getByLabelText("Title"), {
-      target: { value: "Ordinary" }, inputType: "insertText", data: "y",
-    });
-
-    expect(readLocalEditorDraft(userId, contextKey)).toBeNull();
-  });
-
-  it("saves title and tags immediately from their own space and paste events", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-field-trigger-user";
-    const contextKey = "section:field-trigger:new";
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-field-title">Title</label>
-          <input id="draft-field-title" name="title" />
-          <label htmlFor="draft-field-tags">Tags</label>
-          <input id="draft-field-tags" name="tags" />
-          <label htmlFor="draft-field-body">Body</label>
-          <MarkdownEditor id="draft-field-body" name="body" defaultValue="Body"
-            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    fireEvent.input(screen.getByLabelText("Title"), {
-      target: { value: "New " }, inputType: "insertText", data: " ",
-    });
-    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
-      title: "New ", tags: "", body: "Body",
-    });
-
-    fireEvent.input(screen.getByLabelText("Tags"), {
-      target: { value: "typescript" }, inputType: "insertFromPaste", data: "typescript",
-    });
-    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
-      title: "New ", tags: "typescript", body: "Body",
-    });
-
-    clearLocalEditorDraft(userId, contextKey);
-  });
-
-  it("records the Reply parent before same-event text insertion", () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-parent-authoritative-user";
-    const contextKey = "topic:parent:reply";
-    const parentPostId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d50";
-    const ref = createRef<MarkdownEditorHandle>();
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-parent-body">Body</label>
-          <MarkdownEditor ref={ref} id="draft-parent-body" name="body"
-            defaultAuthoringMode="advanced" draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    act(() => {
-      ref.current?.setDraftParentPostId(parentPostId);
-      ref.current?.insertText("> quoted\n\n");
-    });
-    expect(readLocalEditorDraft(userId, contextKey)?.payload).toMatchObject({
-      body: "> quoted\n\n", parentPostId,
-    });
-    clearLocalEditorDraft(userId, contextKey);
-  });
-
-  it("captures toolbar formatting after focusout instead of saving only the pre-command body", async () => {
-    stubEmptyDraftMetadata();
-    const userId = "draft-trigger-format-user";
-    const contextKey = "topic:format:reply";
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-format-body">Body</label>
-          <MarkdownEditor id="draft-format-body" name="body" defaultValue="alpha beta"
-            draftContextKey={contextKey} draftLocale="en" />
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
-    leaf.focus();
-    const selection = window.getSelection()!;
-    const range = document.createRange();
-    range.setStart(leaf.firstChild!, 0);
-    range.setEnd(leaf.firstChild!, 5);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    fireEvent.mouseUp(leaf);
-
-    await userEvent.click(screen.getByRole("button", { name: "Bold" }));
-
-    expect(screen.getByLabelText("Body")).toHaveValue("**alpha** beta");
-    expect(readLocalEditorDraft(userId, contextKey)?.payload.body).toBe("**alpha** beta");
-    clearLocalEditorDraft(userId, contextKey);
-  });
-
-  it("serializes publication behind its own in-flight autosave and submits the fresh CAS fence", async () => {
-    vi.useFakeTimers();
-    const userId = "draft-publication-race-user";
-    const draftContextKey = "topic:publication-race:reply";
-    type DraftPayload = { title: string; body: string; tags: string; parentPostId?: string | null };
-    type ServerDraft = {
-      contextKey: string;
-      draftId: string;
-      version: number;
-      status: "active";
-      title: string;
-      snippet: string;
-      editedAt: string;
-      updatedAt: string;
-      payload: DraftPayload;
-    };
-    const saveRequests: Array<Record<string, unknown>> = [];
-    let resolveFirstSave!: (response: Response) => void;
-    const firstSave = new Promise<Response>((resolve) => { resolveFirstSave = resolve; });
-    let serverDraft: ServerDraft | null = null;
-    let postCalls = 0;
-
-    const json = (body: unknown) => new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
-      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
-      if (uri === "/api/attachments" && options?.method === "GET") {
-        return json({ attachments: [] });
-      }
-      if (options?.method === "POST") {
-        postCalls++;
-        const sent = JSON.parse(options.body as string) as Record<string, unknown>;
-        saveRequests.push(sent);
-        if (postCalls === 1) return firstSave;
-        const now = new Date().toISOString();
-        serverDraft = {
-          contextKey: draftContextKey,
-          draftId: sent.draftId as string,
-          version: 2,
-          status: "active",
-          title: "",
-          snippet: "Reply changed ",
-          editedAt: now,
-          updatedAt: now,
-          payload: sent.payload as DraftPayload,
-        };
-        return json({ outcome: "saved", draft: serverDraft });
-      }
-      if (uri.includes("mode=metadata")) {
-        return json({ drafts: serverDraft ? [serverDraft] : [] });
-      }
-      throw new Error("Unexpected fetch");
-    }));
-
-    const submitted = vi.fn();
-    let setPublicationPending!: (value: boolean) => void;
-    function PublicationHarness() {
-      const [publicationPending, setPending] = useState(false);
-      setPublicationPending = setPending;
-      return (
-        <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-          <form onSubmit={(event) => {
-            if (event.defaultPrevented) return;
-            event.preventDefault();
-            setPending(true);
-            const data = new FormData(event.currentTarget);
-            submitted({
-              draftId: data.get("editorDraftId"),
-              version: data.get("editorDraftVersion"),
-            });
-          }}>
-            <input type="hidden" name="intent" value="reply" />
-            <label htmlFor="draft-publication-body">Body</label>
-            <MarkdownEditor
-              id="draft-publication-body"
-              name="body"
-              defaultAuthoringMode="advanced"
-              draftContextKey={draftContextKey}
-              draftLocale="en"
-              draftPublicationIntent="reply"
-              draftPublicationPending={publicationPending}
-            />
-            <button type="submit">Publish</button>
-          </form>
-        </HeaderAuthProvider>
-      );
-    }
-
-    renderEditor(<PublicationHarness />);
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Reply " } });
-
-    act(() => { vi.advanceTimersByTime(60_000); });
-    await act(async () => { await Promise.resolve(); });
-    expect(postCalls).toBe(1);
-    expect(saveRequests[0]?.expectedVersion).toBe(0);
-
-    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-    expect(submitted).not.toHaveBeenCalled();
-
-    const sent = saveRequests[0]!;
-    const now = new Date().toISOString();
-    serverDraft = {
-      contextKey: draftContextKey,
-      draftId: sent.draftId as string,
-      version: 1,
-      status: "active",
-      title: "",
-      snippet: "Reply ",
-      editedAt: now,
-      updatedAt: now,
-      payload: sent.payload as DraftPayload,
-    };
-    await act(async () => {
-      resolveFirstSave(json({ outcome: "saved", draft: serverDraft }));
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-
-    expect(submitted).toHaveBeenCalledTimes(1);
-    expect(submitted).toHaveBeenCalledWith({
-      draftId: sent.draftId,
-      version: "1",
-    });
-
-    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(postCalls).toBe(1);
-
-    act(() => { setPublicationPending(false); });
-    fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Reply changed " } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(postCalls).toBe(2);
-  });
-
-  it("submits only selected stored attachments with the text CAS fence", async () => {
-    const storedId = "23b93562-0550-4eef-88af-f951d6ea6138";
-    vi.stubGlobal("fetch", vi.fn(async (uri: string, options?: RequestInit) => {
-      if (options?.method === "POST") {
-        const sent = JSON.parse(options.body as string);
-        return Response.json({ outcome: "saved", draft: { contextKey: sent.contextKey, draftId: sent.draftId,
-          version: sent.expectedVersion + 1, status: "active", editedAt: new Date().toISOString(), payload: sent.payload } });
-      }
-      if (uri.includes("mode=head")) return new Response(JSON.stringify({error: "notFound"}), {status: 404});
-      if (uri === "/api/attachments" && options?.method === "GET") {
-        return new Response(JSON.stringify({ attachments: [{
-          id: storedId,
-          fileName: "kept.txt",
-          detectedType: "text",
-          responseMime: "text/plain; charset=utf-8",
-          byteSize: 4,
-          verificationStatus: "type-checked",
-        }] }), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
-      if (!options?.method && uri.includes("mode=metadata")) {
-        return new Response(JSON.stringify({ drafts: [] }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("Unexpected fetch");
-    }));
-
-    const submitted = vi.fn();
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: "attachment-publication-user", name: "Author" }}>
-        <form onSubmit={(event) => {
-          if (event.defaultPrevented) return;
-          event.preventDefault();
-          submitted(new FormData(event.currentTarget).get("editorAttachmentIds"));
-        }}>
-          <label htmlFor="attachment-publication-body">Body</label>
-          <MarkdownEditor
-            id="attachment-publication-body"
-            name="body"
-            defaultValue="Text"
-            defaultAuthoringMode="advanced"
-            draftContextKey="topic:attachment-publication:reply"
-            draftLocale="en"
-            draftPublicationIntent="reply"
-          />
-          <button type="submit" name="intent" value="reply">Publish</button>
-        </form>
-      </HeaderAuthProvider>,
-    );
-
-    expect(await screen.findByText("kept.txt")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-    await waitFor(() => expect(submitted).toHaveBeenCalledWith(JSON.stringify([storedId])));
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("resets body and history when the draft context changes for the same account", async () => {
@@ -1898,8 +1415,8 @@ describe("MarkdownEditor", () => {
               id="draft-context-body"
               name="body"
               defaultAuthoringMode="advanced"
-              draftContextKey={contextKey}
-              draftLocale="en"
+              editorContextKey={contextKey}
+              editorLocale="en"
             />
           </form>
         </HeaderAuthProvider>
@@ -1908,39 +1425,15 @@ describe("MarkdownEditor", () => {
     const rendered = render(editor("topic:first:reply"));
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: "First topic reply " } });
-    const firstDraftId = (document.querySelector('input[name="editorDraftId"]') as HTMLInputElement).value;
-    expect(document.querySelector('input[name="editorDraftVersion"]')).toHaveValue("0");
+    const firstDraftId = (document.querySelector('input[name="editorOperationId"]') as HTMLInputElement).value;
+    expect(document.querySelector('input[name="editorDraftVersion"]')).toBeNull();
 
     rendered.rerender(editor("topic:second:reply"));
     expect(screen.getByLabelText("Body")).toHaveValue("");
-    const secondDraftId = (document.querySelector('input[name="editorDraftId"]') as HTMLInputElement).value;
+    const secondDraftId = (document.querySelector('input[name="editorOperationId"]') as HTMLInputElement).value;
     expect(secondDraftId).not.toBe(firstDraftId);
     fireEvent.keyDown(screen.getByLabelText("Body"), { key: "z", ctrlKey: true });
     expect(screen.getByLabelText("Body")).toHaveValue("");
-  });
-
-  it("restores a saved reply's parent relation alongside the Markdown body", () => {
-    const userId = "draft-reply-restoration-user";
-    const contextKey = "topic:abc:reply";
-    const parentId = "e7bdbd73-61d4-4b06-bc03-b24b1c217d50";
-    writeLocalEditorDraft({
-      ownerId: userId, contextKey, draftId: "e7bdbd73-61d4-4b06-bc03-b24b1c217d55",
-      payload: { title: "", body: "Quoted reply", tags: "", parentPostId: parentId },
-      editedAt: new Date().toISOString(), baseVersion: 0, syncedEditedAt: null,
-    });
-    const onRestoreParent = vi.fn();
-    renderEditor(
-      <HeaderAuthProvider initialUser={{ id: userId, name: "Author" }}>
-        <form>
-          <label htmlFor="draft-reply-body">Body</label>
-          <MarkdownEditor id="draft-reply-body" name="body" defaultAuthoringMode="advanced"
-            draftContextKey={contextKey} draftLocale="en" onDraftRestoreParent={onRestoreParent} />
-        </form>
-      </HeaderAuthProvider>,
-    );
-    expect(onRestoreParent).toHaveBeenCalledWith(parentId);
-    expect(screen.getByLabelText("Body")).toHaveValue("Quoted reply");
-    clearLocalEditorDraft(userId, contextKey);
   });
 
   it("submits the Simple visual authoring form on Ctrl+Enter", () => {
@@ -2103,4 +1596,34 @@ describe("MarkdownEditor", () => {
     expect(target.top()).toBe(0);
   });
 
+});
+
+it("does not persist text or autosave after sixty seconds, and reopening starts empty", async () => {
+  vi.useFakeTimers();
+  const request = vi.fn(); vi.stubGlobal("fetch", request);
+  const editor = () => <HeaderAuthProvider initialUser={{id:"no-drafts",name:"Author"}}><form>
+    <MarkdownEditor id="no-drafts" name="body" defaultAuthoringMode="advanced" editorContextKey="topic:p:reply" editorLocale="en" />
+  </form></HeaderAuthProvider>;
+  const view = renderEditor(editor());
+  const textarea = document.querySelector("textarea")!;
+  fireEvent.change(textarea, {target:{value:"Unpublished text"}});
+  await act(async()=>{await vi.advanceTimersByTimeAsync(61_000);});
+  expect(request).not.toHaveBeenCalled();
+  expect([...Array(localStorage.length)].map((_,i)=>localStorage.key(i))).not.toContainEqual(expect.stringContaining("vico:editor:draft:"));
+  view.unmount();renderEditor(editor());
+  expect(document.querySelector("textarea")).toHaveValue("");
+  vi.useRealTimers();vi.unstubAllGlobals();
+});
+
+it.each([
+  [" ", " Alpha"],
+  ["    ", "&#32;   Alpha"],
+  ["  ", "  Alpha"],
+])("keeps a focused Simple leaf for leading whitespace %j and subsequent native typing", (prefix, source) => {
+  renderEditor(<form><MarkdownEditor id="leading-space" name="body" /></form>);
+  const leaf=document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();leaf.textContent=prefix;fireEvent.input(leaf,{data:prefix});
+  expect(leaf).toHaveFocus();expect(leaf).toBeInTheDocument();
+  leaf.textContent=prefix + "Alpha";fireEvent.input(leaf,{data:"Alpha"});
+  expect(leaf).toHaveFocus();expect(document.querySelector('input[name="body"]')).toHaveValue(source);
 });

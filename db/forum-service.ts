@@ -87,7 +87,7 @@ export class ForumService {
   editPublishedPost(input: {
     topicId: string; postId: string; actorId: string;
     expectedRevisionId: string; body: string;
-    draftId: string; expectedVersion: number; attachmentIds: readonly string[]; retainedAttachmentIds?: readonly string[];
+    draftId: string; attachmentIds: readonly string[]; retainedAttachmentIds?: readonly string[];
   }) {
     validateEntity(input.postId, input.actorId);
     requireText(input.topicId, "topic id");

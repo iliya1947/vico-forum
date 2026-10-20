@@ -1,8 +1,12 @@
+import { and, eq } from "drizzle-orm";
+import { forumAttachmentDraftRefs } from "./schema";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { EDITOR_DRAFT_EXPIRY_MS, DrizzleForumEditorDrafts } from "./forum-editor-drafts";
-import { lockAttachmentDraftScope, resolveAttachmentDraftGeneration, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
+import { lockAttachmentDraftScope, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
 import type { PrivateAttachmentBucket } from "../app/forum/attachment-r2";
+
+// Temporary uploads expire after 24 hours without another successful upload. No text is stored.
+export const ATTACHMENT_OPERATION_IDLE_MS = 24 * 60 * 60_000;
 
 export const ATTACHMENT_CLEANUP_BATCH_SIZE = 20;
 export const ATTACHMENT_CLEANUP_CLAIM_LEASE_MS = 5 * 60_000;
@@ -38,106 +42,25 @@ export class ForumAttachmentCleanup {
   ) {}
 
   private async pruneStaleRefs(batchSize: number): Promise<number> {
-    const expiry = new Date(this.clock().getTime() - EDITOR_DRAFT_EXPIRY_MS);
-    const result = await this.db.execute(sql<StaleRef>`
-      select r.attachment_id, r.owner_id, r.context_key, r.draft_id
-      from forum_attachment_draft_refs r
-      left join forum_editor_drafts d
-        on d.owner_id = r.owner_id and d.context_key = r.context_key
-      left join forum_attachment_draft_generations g
-        on g.owner_id = r.owner_id and g.context_key = r.context_key and g.draft_id = r.draft_id
-      where (g.draft_id is not null and g.target_draft_id is null)
-         or (d.draft_id = r.draft_id and d.status in ('published', 'deleted'))
-         or (d.draft_id = r.draft_id and d.status = 'active' and d.edited_at < ${expiry})
-         or (r.created_at < ${expiry} and (
-           d.owner_id is null or d.draft_id <> r.draft_id
-           or d.status <> 'active' or d.edited_at < ${expiry}
-         ))
-      order by r.created_at, r.attachment_id limit ${batchSize}
+    const expiry = new Date(this.clock().getTime() - ATTACHMENT_OPERATION_IDLE_MS);
+    const candidates = await this.db.execute(sql<StaleRef>`
+      select owner_id, context_key, draft_id from forum_attachment_draft_refs
+      group by owner_id, context_key, draft_id having max(created_at) < ${expiry}
+      order by max(created_at) limit ${batchSize}
     `);
-    const rows: StaleRef[] = result.rows.map((row) => ({
-      attachment_id: String(row.attachment_id),
-      owner_id: String(row.owner_id),
-      context_key: String(row.context_key),
-      draft_id: String(row.draft_id),
-    }));
-    // Make expired active text drafts terminal before removing any of their refs.
-    for (const ownerId of new Set(rows.map((row) => row.owner_id))) {
-      await new DrizzleForumEditorDrafts(this.db).purgeExpired(ownerId);
-    }
     let removed = 0;
-    for (const row of rows) {
-      const count = await this.db.transaction(async (tx) => {
-        await lockAttachmentDraftScope(tx, row.owner_id, row.context_key);
-        // Expired attachment-only generations have no text-draft row to retire.
-        // Close A under the scope lock before dropping its last old reference:
-        // otherwise a late upload could resurrect A after the object is deleted.
-        const expiredWithoutText = await tx.execute(sql`
-          select 1 from forum_attachment_draft_refs r
-          where r.attachment_id = ${row.attachment_id}
-            and r.owner_id = ${row.owner_id}
-            and r.context_key = ${row.context_key}
-            and r.draft_id = ${row.draft_id}
-            and r.created_at < ${expiry}
-            and not exists (
-              select 1 from forum_attachment_draft_refs recent
-              where recent.owner_id = r.owner_id
-                and recent.context_key = r.context_key
-                and recent.draft_id = r.draft_id
-                and recent.created_at >= ${expiry}
-            )
-            and not exists (
-              select 1 from forum_attachment_draft_generations prior
-              where prior.owner_id = r.owner_id
-                and prior.context_key = r.context_key
-                and prior.draft_id = r.draft_id
-            )
-            and not exists (
-              select 1 from forum_editor_drafts d
-              where d.owner_id = r.owner_id and d.context_key = r.context_key
-                and d.draft_id = r.draft_id and d.status = 'active'
-            )
-          limit 1
-        `);
-        if (expiredWithoutText.rows.length) {
-          const canonical = await resolveAttachmentDraftGeneration(
-            tx, row.owner_id, row.context_key, row.draft_id,
-          );
-          if (canonical === row.draft_id) {
-            await retireAttachmentDraftGeneration(tx, row.owner_id, row.context_key, row.draft_id);
-          }
-        }
-        // Recheck after the scope lock, with a fresh READ COMMITTED snapshot.
-        const remaining = await tx.execute(sql`
-          delete from forum_attachment_draft_refs r
-          where r.attachment_id = ${row.attachment_id}
-            and r.owner_id = ${row.owner_id}
-            and r.context_key = ${row.context_key}
-            and r.draft_id = ${row.draft_id}
-            and (
-              exists (
-                select 1 from forum_attachment_draft_generations g
-                where g.owner_id = r.owner_id and g.context_key = r.context_key
-                  and g.draft_id = r.draft_id and g.target_draft_id is null
-              )
-              or exists (
-                select 1 from forum_editor_drafts d
-                where d.owner_id = r.owner_id and d.context_key = r.context_key
-                  and d.draft_id = r.draft_id and d.status in ('published', 'deleted')
-              )
-              or (r.created_at < ${expiry} and not exists (
-                select 1 from forum_editor_drafts d
-                where d.owner_id = r.owner_id and d.context_key = r.context_key
-                  and d.draft_id = r.draft_id and d.status = 'active'
-                  and d.edited_at >= ${expiry}
-              ))
-            )
-          returning r.attachment_id
-        `);
-        return remaining.rows.length;
-      });
-      removed += count;
-    }
+    for (const row of candidates.rows) await this.db.transaction(async (tx) => {
+      const owner = String(row.owner_id), context = String(row.context_key), operation = String(row.draft_id);
+      await lockAttachmentDraftScope(tx, owner, context);
+      const recent = await tx.execute(sql`select 1 from forum_attachment_draft_refs where owner_id=${owner}
+        and context_key=${context} and draft_id=${operation} and created_at>=${expiry} limit 1`);
+      if (recent.rows.length) return;
+      await retireAttachmentDraftGeneration(tx, owner, context, operation);
+      const result = await tx.delete(forumAttachmentDraftRefs).where(and(eq(forumAttachmentDraftRefs.ownerId, owner),
+        eq(forumAttachmentDraftRefs.contextKey, context), eq(forumAttachmentDraftRefs.draftId, operation)))
+        .returning({id: forumAttachmentDraftRefs.attachmentId});
+      removed += result.length;
+    });
     return removed;
   }
 

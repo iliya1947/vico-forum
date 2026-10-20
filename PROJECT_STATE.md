@@ -20,39 +20,30 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## Editor 2.0 — исправление snapshot-протокола (2026-10-20, PR #232)
+## Editor 2.0 — removal drafts/autosave (2026-10-20, PR #232)
 
-По прямому поручению владельца реализация плана из служебного PR #234 выполняется
-в implementation PR #232. Один `forum_editor_drafts.version` теперь связывает текст,
-selected manifest и generation/status. Upload только создаёт retention-pool asset;
-включение/удаление файла — manifest-only CAS без преждевременной отправки dirty text.
-Клиент сериализует mutations, отделяет cached candidate от server head и не подставляет
-свежий CAS номер под старый выбор. Mutation head включает скрытые terminal rows;
-локальный 30-day срок проверяется до обновления mounted snapshot. Focused Simple paste
-согласует source и DOM перед следующим native input.
+По решению владельца пользовательские черновики/автосохранение перенесены в возможные
+будущие функции (`Under development: drafts`). Runtime local/server text persistence,
+60-second autosave, recovery/discovery, межвкладочные конфликты, My Drafts и status UI
+удаляются в существующем #232. Прежний snapshot correction scope отменён.
 
-Runtime больше не зависит от contexts/boundaries. Data migration
-`0045_draft_snapshot_selection` восстанавливает нужные pool refs и selected manifest,
-продвигая version без продления editedAt; таблицы и production grants не меняются.
-Unselected pool удерживается до terminal/expiry, а direct draft download и publication
-используют выбранный snapshot. Полный контракт находится в `docs/EDITOR.md`.
+Текущая реализация использует in-memory editor buffer и отдельную upload/publication
+operation без текста. Private refs, terminal markers и publication receipts используют
+существующую схему. Final submit atomically проверяет/продвигает выбранные файлы;
+post-edit сохраняет expectedRevisionId, Save/Cancel и историю. Abandoned uploads имеют
+технический 24-hour idle cleanup cutoff; durable claims и published-ref protection
+сохраняются. Merged migrations не переписываются, unmerged snapshot migration 0045 удалена.
+F7 исправляется в visual surface и editable whitespace range.
 
-Локально прошли полный application suite (1072 теста), полный PostgreSQL 17 suite
-(320 тестов), TypeScript, ESLint
-(без ошибок; прежнее предупреждение в ui.test.tsx), application/UI-preview builds,
-Drizzle metadata/schema parity, migration guard unit tests, schema-manifest parity
-и PostgreSQL runtime privilege probes. Chromium с настоящими Workers/PostgreSQL и
-локальным приватным R2 подтвердил focused Simple paste + следующий native input,
-параллельные byte uploads с последовательным selection CAS без ранней отправки текста,
-selected-only publication, IME в пустом абзаце, published edit download/Remove/Save
-и отзыв file access. Ошибок страницы в этом прогоне не было. Отдельная PostgreSQL
-регрессия покрывает первую edit selection из pinned published revision без раннего
-сохранения dirty text. Новый whole-PR review, owner visual acceptance и merge ещё
-не выполнены; exact-head CI здесь заранее не заявлен. Production
-migration/deployment и внешняя R2-инфраструктура этим пакетом не выполняются.
-
-Ниже — предшествующее состояние Editor 2.0; описания boundary-протокола и исключения
-expectedVersion=0 для старого terminal superseded текущим snapshot-протоколом.
+Локально прошли 974 application tests, 272 PostgreSQL 17 tests, typecheck, builds,
+migration-history/schema parity и runtime privilege probes. Chromium на настоящих
+Worker/PostgreSQL/local private R2 подтвердил четыре authoring flows, отсутствие text
+autosave после 61 секунды и reload recovery, parallel uploads, selected-only publication,
+reply/IME, post-edit Remove/Cancel/Save и access revocation. Отдельно проверен native
+ввод после одного, двух и четырёх ведущих пробелов. Exact-head CI, owner visual acceptance
+и новый независимый whole-PR review ещё не выполнены. Подробный действующий контракт — docs/EDITOR.md.
+Production/external migrations/deployment не выполнялись. Ниже сохранены исторические
+срезы Editor 2.0; их описания drafts/boundaries/CAS не являются текущими требованиями.
 
 ## Editor 2.0 — завершение реализации в PR #215 (2026-10-15)
 

@@ -39,16 +39,13 @@ import {
 } from "./visual-markdown-editor";
 import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./technical-markdown";
 import { useHeaderAuthUser } from "../auth/auth-controls";
-import { useEditorDraft } from "./use-editor-draft";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
 import { useEditorAttachments } from "./editor-attachments";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
+  cancelOperation: () => void;
   insertText: (text: string) => void;
-  setDraftParentPostId: (parentPostId: string | null) => void;
-  setDraftPublishedRevisionId: (revisionId: string) => void;
-  acknowledgePublished: (draftId: string, publishedVersion: number) => void;
 }
 
 export interface MarkdownEditorProps {
@@ -61,13 +58,11 @@ export interface MarkdownEditorProps {
   defaultValue?: string;
   defaultPreviewOpen?: boolean;
   defaultAuthoringMode?: "simple" | "advanced";
-  draftContextKey?: string;
-  draftLocale?: string;
-  onDraftRestoreParent?: (parentPostId: string | null) => void;
+  editorContextKey?: string;
+  editorLocale?: string;
   initialPublishedRevisionId?: string;
-  onDraftRestorePublishedRevisionId?: (revisionId: string | null) => void;
-  draftPublicationIntent?: string;
-  draftPublicationPending?: boolean;
+  publicationIntent?: string;
+  publicationPending?: boolean;
   onPublicationReadyChange?: (ready: boolean) => void;
   actions?: ReactNode;
   existingInlineAttachments?: Array<{
@@ -98,13 +93,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       defaultValue = "",
       defaultPreviewOpen = false,
       defaultAuthoringMode = "simple",
-      draftContextKey,
-      draftLocale,
-      onDraftRestoreParent,
+      editorContextKey,
+      editorLocale,
       initialPublishedRevisionId,
-      onDraftRestorePublishedRevisionId,
-      draftPublicationIntent,
-      draftPublicationPending = false,
+      publicationIntent,
+      publicationPending = false,
       onPublicationReadyChange,
       actions,
       existingInlineAttachments = [],
@@ -134,7 +127,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [replaceText, setReplaceText] = useState("");
     const [mentionToken, setMentionToken] = useState<MentionToken | null>(null);
     const [mentionCandidates, setMentionCandidates] = useState<Array<{ id: string; name: string }>>([]);
-    const [draftPublishedRevisionId, setDraftPublishedRevisionId] = useState(initialPublishedRevisionId);
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
@@ -187,8 +179,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const editorRef = useRef<HTMLDivElement>(null);
     const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const draftIdInputRef = useRef<HTMLInputElement>(null);
-    const draftVersionInputRef = useRef<HTMLInputElement>(null);
     const publicationReplayRef = useRef(false);
     const publicationPreparingRef = useRef(false);
     const publicationPreparedRef = useRef(false);
@@ -197,7 +187,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const historyRef = useRef(createEditorHistory(defaultValue));
     const [value, setValue] = useState(defaultValue);
-    const editorScope = JSON.stringify([accountId, draftContextKey ?? null, draftLocale ?? null]);
+    const editorScope = JSON.stringify([accountId, editorContextKey ?? null, editorLocale ?? null]);
     const previousScopeRef = useRef(editorScope);
     useEffect(() => {
       if (previousScopeRef.current === editorScope) return;
@@ -210,30 +200,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(defaultValue);
       setPasteWarning(false);
       setFindOpen(false);
-      setDraftPublishedRevisionId(initialPublishedRevisionId);
       publicationReplayRef.current = false;
       publicationPreparingRef.current = false;
       publicationPreparedRef.current = false;
       publicationPendingSeenRef.current = false;
     }, [editorScope, defaultValue, initialPublishedRevisionId]);
-
-    const draft = useEditorDraft({
-      ownerId: accountId, contextKey: draftContextKey, locale: draftLocale,
-      initialPayload: { body: defaultValue, title: "", tags: "", parentPostId: null,
-        ...(initialPublishedRevisionId ? { publishedRevisionId: initialPublishedRevisionId } : {}) },
-      restore: (payload) => {
-        setDraftPublishedRevisionId(payload.publishedRevisionId);
-        onDraftRestorePublishedRevisionId?.(payload.publishedRevisionId ?? null);
-        historyRef.current = createEditorHistory(payload.body);
-        onDraftRestoreParent?.(payload.parentPostId ?? null);
-        setValue(payload.body);
-        const form = textareaRef.current?.form;
-        for (const key of ["title", "tags"] as const) {
-          const field = form?.elements.namedItem(key);
-          if (field instanceof HTMLInputElement) field.value = payload[key];
-        }
-      },
-    });
 
     // Source insertion is synchronous with the paste/picker action. The stable
     // ID is inert Markdown until a verified attachment is present in this scope.
@@ -255,7 +226,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         pendingSelectionRef.current = after;
       }
       setValue(next);
-      draft.noteEdit(next, true);
     }
 
     function removeImage(id: string) {
@@ -275,78 +245,46 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         pendingSelectionRef.current = after;
       }
       setValue(next);
-      draft.noteEdit(next, true);
     }
 
     const attachments = useEditorAttachments({
       ownerId: accountId,
-      contextKey: accountId ? draftContextKey : undefined,
-      draftId: draft.draftId,
-      expectedVersion: draft.expectedVersion,
-      publishedRevisionId: draftPublishedRevisionId,
-      hasPublishedAttachments: existingInlineAttachments.length > 0,
+      contextKey: accountId ? editorContextKey : undefined,
+      disabled: disabled || publicationPending,
       publishedAttachments: existingInlineAttachments,
-      snapshotEstablished: draft.attachmentSnapshotEstablished,
-      draftReady: draft.attachmentReady,
-      draftRevision: draft.attachmentRevision,
-      selectionEpoch: draft.attachmentSelectionEpoch,
-      rebindFrom: draft.attachmentRebindFrom,
-      rebindVersion: draft.attachmentRebindVersion,
-      disabled,
-      reserveGeneration: draft.reserveAttachmentGeneration,
-      completeRebind: draft.completeAttachmentRebind,
-      retryDraftReconciliation: draft.retryAttachmentReconciliation,
-      noteAttachmentChange: draft.noteAttachmentChange,
-      selectAttachment: draft.selectAttachment,
-      stageAttachment: draft.stageAttachment,
-      initializeAttachments: draft.initializeAttachments,
-      rebindAttachments: draft.rebindAttachments,
-      pendingAttachments: draft.pendingAttachments,
-      noteAttachmentManifest: draft.noteAttachmentManifest,
       insertImage,
       removeImage,
     });
 
-    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length > 0;
-    const publicationReady = !disabled && !draftPublicationPending && !attachments.blocking && hasPublishContent;
+    const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length + attachments.retainedAttachmentIds.length > 0;
+    function cancelEditing() {
+      attachments.cancel();
+      historyRef.current = createEditorHistory(defaultValue);
+      setValue(defaultValue);
+      visualSelectionRef.current = null;
+      visualSelectionKnownRef.current = false;
+      pendingSelectionRef.current = null;
+      pendingVisualSelectionRef.current = null;
+    }
+    const publicationReady = !disabled && !publicationPending && !attachments.blocking && hasPublishContent;
     useEffect(() => { onPublicationReadyChange?.(publicationReady); }, [onPublicationReadyChange, publicationReady]);
 
     useEffect(() => {
-      if (draftPublicationPending) {
+      if (publicationPending) {
         if (publicationPreparedRef.current) publicationPendingSeenRef.current = true;
         return;
       }
       if (!publicationPendingSeenRef.current) return;
       publicationPendingSeenRef.current = false;
       publicationPreparedRef.current = false;
-      draft.releasePublication();
-    }, [draftPublicationPending, draft]);
+    }, [publicationPending]);
 
     useEffect(() => {
-      if (!accountId || !draftContextKey) return;
+      if (!accountId || !editorContextKey) return;
       const form = textareaRef.current?.form;
       if (!form) return;
-      const fieldValue = (fieldName: string) => {
-        const field = form.elements.namedItem(fieldName);
-        return field instanceof HTMLInputElement ? field.value : "";
-      };
-      draft.seedFields({
-        title: fieldValue("title"),
-        tags: fieldValue("tags"),
-        parentPostId: fieldValue("parentPostId") || null,
-      });
-      const onInput = (event: Event) => {
-        const field = event.target;
-        if (!(field instanceof HTMLInputElement) || (field.name !== "title" && field.name !== "tags")) return;
-        const input = event as InputEvent;
-        draft.noteFields(
-          field.name === "title" ? { title: field.value } : { tags: field.value },
-          input.data === " " || input.inputType === "insertFromPaste",
-        );
-      };
-      const flush = () => draft.saveLocal();
       const onSubmit = (event: SubmitEvent) => {
-        if (!draftPublicationIntent) return;
+        if (!publicationIntent) return;
         if (publicationReplayRef.current) {
           publicationReplayRef.current = false;
           return;
@@ -361,9 +299,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const intentField = form.elements.namedItem("intent");
         const intent = submitterIntent
           ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
-        if (intent !== draftPublicationIntent) return;
+        if (intent !== publicationIntent) return;
 
-        if (!hasPublishContent || attachments.blocking || disabled || draftPublicationPending) {
+        if (!hasPublishContent || attachments.blocking || disabled || publicationPending) {
           event.preventDefault();
           if (attachments.blocking) attachments.markPublicationAttempt();
           return;
@@ -377,39 +315,25 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             ? submitter
             : undefined;
 
-        void draft.preparePublication().then(async (fence) => {
-          // A fulfilled promise can resume while the browser is still firing
-          // the original submit event. Native requestSubmit then does nothing
-          // (HTML's firing-submission-events guard). Replay in the next task,
-          // after that algorithm has finished, retaining native validation.
-          await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
-          if (previousScopeRef.current !== editorScope || !form.isConnected) return;
+        // Replay in a later task: requestSubmit inside the original submit event
+        // is ignored by the browser's firing-submission-events guard.
+        window.setTimeout(() => {
           publicationPreparingRef.current = false;
-          if (!fence) return;
-          if (draftIdInputRef.current) draftIdInputRef.current.value = fence.draftId;
-          if (draftVersionInputRef.current) {
-            draftVersionInputRef.current.value = String(fence.expectedVersion);
-          }
+          if (previousScopeRef.current !== editorScope || !form.isConnected) return;
           publicationPreparedRef.current = true;
           publicationReplayRef.current = true;
           form.requestSubmit(replaySubmitter);
           if (publicationReplayRef.current) {
             publicationReplayRef.current = false;
             publicationPreparedRef.current = false;
-            draft.releasePublication();
           }
-        }).catch(() => {
-          publicationPreparingRef.current = false;
-          publicationPreparedRef.current = false;
-          draft.releasePublication();
-        });
+        }, 0);
       };
-      form.addEventListener("input", onInput);
-      form.addEventListener("focusout", flush);
+      const onClick = (event: Event) => {if ((event.target as Element).closest?.("[data-editor-cancel]")) cancelEditing();};
+      form.addEventListener("click", onClick, true);
       form.addEventListener("submit", onSubmit);
       return () => {
-        form.removeEventListener("input", onInput);
-        form.removeEventListener("focusout", flush);
+        form.removeEventListener("click", onClick, true);
         form.removeEventListener("submit", onSubmit);
       };
     });
@@ -456,7 +380,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(nextValue);
       // commitSource is used only by discrete editor actions (Enter, toolbar,
       // imperative Reply/Quote), all of which are explicit local-save triggers.
-      draft.noteEdit(nextValue, true);
     }
 
     function changeParagraphDirection(direction: ParagraphDirection) {
@@ -477,7 +400,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       };
       historyRef.current = recordEditorEdit(historyRef.current, nextValue, before, after);
       setValue(nextValue);
-      draft.noteEdit(nextValue);
     }
 
     function travelHistory(direction: "undo" | "redo") {
@@ -501,26 +423,25 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }
       if (mode === "preview") setMode("write");
       setValue(next.current.markdown);
-      draft.noteEdit(next.current.markdown, true);
     }
     const [codeLanguage, setCodeLanguage] = useState("");
     const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "preview" : "write");
 
     useEffect(() => {
       const selection = historyRef.current.current.selection;
-      setMentionToken(accountId && draftLocale && mode === "write" && !disabled
+      setMentionToken(accountId && editorLocale && mode === "write" && !disabled
         && selection.start === selection.end
         ? mentionTokenAtCaret(value, selection.end)
         : null);
-    }, [value, mode, accountId, draftLocale, disabled]);
+    }, [value, mode, accountId, editorLocale, disabled]);
 
     const mentionQuery = mentionToken?.query ?? null;
     useEffect(() => {
       setMentionCandidates([]);
-      if (!accountId || !draftLocale || !mentionQuery || disabled) return;
+      if (!accountId || !editorLocale || !mentionQuery || disabled) return;
       const controller = new AbortController();
       const timer = window.setTimeout(() => {
-        void fetch(`/${encodeURIComponent(draftLocale)}/mentions?q=${encodeURIComponent(mentionQuery)}`, {
+        void fetch(`/${encodeURIComponent(editorLocale)}/mentions?q=${encodeURIComponent(mentionQuery)}`, {
           signal: controller.signal,
           credentials: "same-origin",
         }).then((result) => result.ok ? result.json() : null)
@@ -533,14 +454,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           }).catch(() => { /* Offline editor remains usable without suggestions. */ });
       }, 120);
       return () => { window.clearTimeout(timer); controller.abort(); };
-    }, [accountId, draftLocale, mentionQuery, disabled]);
+    }, [accountId, editorLocale, mentionQuery, disabled]);
 
     function chooseMention(user: { id: string; name: string }) {
       const token = mentionToken;
-      if (!token || !draftLocale || value.slice(token.start, token.end) !== "@" + token.query) return;
+      if (!token || !editorLocale || value.slice(token.start, token.end) !== "@" + token.query) return;
       replaceSourceRange(
         { start: token.start, end: token.end },
-        mentionProfileLink(user.name, forumProfilePath(draftLocale, user.id)),
+        mentionProfileLink(user.name, forumProfilePath(editorLocale, user.id)),
       );
       setMentionToken(null);
       setMentionCandidates([]);
@@ -558,7 +479,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       range: EditorSelection,
       text: string,
       selectionAfter?: EditorSelection,
-      saveLocal = false,
     ) {
       const next = editVisualText(
         historyRef.current,
@@ -571,7 +491,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       visualSelectionRef.current = next.current.selection;
       visualSelectionKnownRef.current = true;
       setValue(next.current.markdown);
-      draft.noteEdit(next.current.markdown, saveLocal);
     }
 
     function replaceSourceRange(
@@ -591,7 +510,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         pendingSelectionRef.current = after;
       }
       setValue(next);
-      draft.noteEdit(next, true);
       setPasteWarning(false);
     }
 
@@ -599,7 +517,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const next = addTableDimension(value, table, dimension);
       historyRef.current = recordEditorEdit(historyRef.current, next, table.span, table.span);
       setValue(next);
-      draft.noteEdit(next, true);
     }
 
     function pasteSpreadsheet(range: EditorSelection, text: string) {
@@ -910,17 +827,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         setMode("write");
         commitSource(nextValue, selection, after);
       },
-      setDraftParentPostId(parentPostId: string | null) {
-        draft.noteFields({ parentPostId }, true);
-      },
-      setDraftPublishedRevisionId(revisionId: string) {
-        setDraftPublishedRevisionId(revisionId);
-        draft.noteFields({ publishedRevisionId: revisionId }, true);
-      },
-      acknowledgePublished(publishedDraftId: string, publishedVersion: number) {
-        draft.acknowledgePublished(publishedDraftId, publishedVersion);
-      },
-    }), [mode, value, authoringMode, draft]);
+      cancelOperation() { cancelEditing(); },
+    }), [mode, value, authoringMode, attachments]);
 
     const basicTools = (<>
       <button type="button" disabled={disabled} aria-label={t("editorBold")} title={t("editorBold")}
@@ -992,14 +900,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               return;
             }
           }
-          if (disabled || draftPublicationPending) return;
+          if (disabled || publicationPending) return;
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             const form = editorRef.current?.closest("form");
             if (!form || !publicationReady) return;
-            const explicit = draftPublicationIntent
+            const explicit = publicationIntent
               ? [...form.querySelectorAll<HTMLButtonElement>('button[type="submit"]')]
-                .find((button) => button.name === "intent" && button.value === draftPublicationIntent)
+                .find((button) => button.name === "intent" && button.value === publicationIntent)
               : undefined;
             if (explicit?.disabled) return;
             form.requestSubmit(explicit);
@@ -1020,13 +928,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           }
         }}
       >
-        {accountId && draftContextKey ? (
+        {accountId && editorContextKey ? (
           <>
-            <input ref={draftIdInputRef} type="hidden" name="editorDraftId" value={draft.draftId} readOnly />
-            <input ref={draftVersionInputRef} type="hidden" name="editorDraftVersion" value={draft.expectedVersion} readOnly />
+            <input type="hidden" name="editorOperationId" value={attachments.operationId} readOnly />
             <input type="hidden" name="editorAttachmentIds" value={JSON.stringify(attachments.selectedAttachmentIds)} readOnly />
             {initialPublishedRevisionId ? <input type="hidden" name="editorRetainedAttachmentIds"
-              value="[]" readOnly /> : null}
+              value={JSON.stringify(attachments.retainedAttachmentIds)} readOnly /> : null}
           </>
         ) : null}
         <div className="markdown-editor-toolbar" role="toolbar" aria-label={t("editorToolbar")}>
@@ -1172,7 +1079,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <textarea
               ref={textareaRef}
               id={id}
-              required={required && attachments.selectedAttachmentIds.length === 0}
+              required={required && attachments.selectedAttachmentIds.length + attachments.retainedAttachmentIds.length === 0}
               tabIndex={mode === "preview" || authoringMode === "simple" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
@@ -1193,11 +1100,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 setMentionToken(selection.start === selection.end
                   ? mentionTokenAtCaret(value, selection.end) : null);
               }}
-              onKeyUp={(event) => {
+              onKeyUp={() => {
                 rememberSelection(textareaSourceSelection());
-                if (event.key === " " || event.key === "Enter") draft.saveLocal();
               }}
-              onPasteCapture={() => { window.setTimeout(() => draft.saveLocal(), 0); }}
               onScroll={(event) => syncSplitScroll(event.currentTarget, previewRef.current)}
               onKeyDown={(event) => {
                 if (!disabled && !event.ctrlKey && !event.metaKey && !event.altKey && codeKey(event.key, event.shiftKey)) {
@@ -1274,10 +1179,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           </div>
         ) : null}
         {attachments.details}
-        {draft.conflictElement}
         <div className="markdown-editor-footer">
           {attachments.controls}
-          <div className="markdown-editor-draft-state" aria-live="polite">{draft.statusLabel}</div>
           {actions ? <div className="markdown-editor-actions">{actions}</div> : null}
         </div>
       </div>

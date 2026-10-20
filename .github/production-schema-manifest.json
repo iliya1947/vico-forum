@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0045_draft_snapshot_selection",
+  "targetMigration": "0044_attachment_draft_conflict_boundaries",
   "tables": {
     "account": {
       "columns": [
