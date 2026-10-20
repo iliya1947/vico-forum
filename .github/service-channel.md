@@ -4,18 +4,20 @@
 
 ## Текущее состояние
 
-- Implementation PR: #232 — removal пользовательских drafts/autosave; опубликован head **`a29e15ffb27a6f03b5233cceb79d83df609925bc`**.
+- Implementation PR: #232 — removal пользовательских drafts/autosave; опубликован head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**.
 - Owner-authorized исполнитель — **Лёва**, Мишаня не участвует. Новый PR/ветка не создавались. [Итог реализации и фактические проверки](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6292445730).
 - Persistent text drafts/cache/API/store, 60-second autosave, recovery/discovery/cross-tab conflict UI, My Drafts/header/status удалены. Открытый editor buffer/Undo сохраняется в памяти; reload не восстанавливает текст. Future target Drafts and autosave остаётся Under development.
 - Attachments/publication/edit-published работают через минимальную operation identity, existing temporary refs/terminal markers/publication receipts без текста и text CAS. Exact submitted selection проверяется/publishes atomically; post expectedRevisionId, Save/Cancel, permissions, idempotency и published/shared-file protection сохранены. Cleanup abandoned refs — 24-hour technical idle cutoff.
 - F7 исправлен и проверен component/Chromium, включая 1/2/4 leading spaces. Старые A–G/T/S/mixed correction gates superseded removal; прежние findings по удалённым paths не являются отдельным correction backlog.
-- Локально: **974 application / 272 PostgreSQL 17 PASS**; TypeScript, application/UI-preview builds, Drizzle/schema/migration-history/manifest/runtime privilege checks и production-build Workers smoke PASS. ESLint без ошибок, одно прежнее предупреждение ui.test.tsx.
+- Локально: исправленные targeted suites **93 application/component + 12 PostgreSQL PASS** (success=true, failed suites/unhandled errors=0); TypeScript, application/UI-preview builds, Drizzle/schema/migration-history/manifest/runtime privilege checks и production-build Workers smoke PASS. ESLint без ошибок, одно прежнее предупреждение ui.test.tsx.
 - Chromium/Worker/PostgreSQL/local private R2: все четыре authoring flows, no autosave/reload recovery, uploads/private download/exact publication, reply/IME и published edit Remove/Cancel/Save/access revocation PASS; draft requests/page errors отсутствовали.
-- Exact-head CI: [39433774478](https://github.com/iliya1947/vico-forum/actions/runs/39433774478) **pending**. Старый CI 3b30d8d не подтверждает новый head.
+- Exact-head CI: [39434488911](https://github.com/iliya1947/vico-forum/actions/runs/39434488911) **pending**. Старый CI 3b30d8d не подтверждает новый head.
 - Merged migrations 0034–0044 не изменены; unmerged snapshot-purpose 0045 удалена из итогового diff. Новая table/registry/attachment-version не вводится.
 - Реализация остановлена до нового independent whole-PR review/owner visual acceptance. Они не выполнялись/не запускались. Merge, production/external migrations/deployment не выполнялись; служебный PR не merge.
 
 Ниже сохранены предшествующие решения/материалы согласования; snapshot correction и связанные findings superseded более поздним owner removal decision. Текущие scope/статус определяются removal-разделами и этим блоком.
+
+Первый removal head a29e15f/CI 39433774478 был FAIL: пустые retired test suites и text-only clipboard без files. Прошедшие 974/272 assertions ранее ошибочно названы полным PASS; утверждение исправлено. Причины устранены в 5dc32be; новый full exact-head CI pending.
 
 ## Независимый whole-PR review #232 — открытый finding
 
@@ -622,4 +624,4 @@ PR #232 больше не является correction-пакетом сущес�
 
 ## Текущий следующий шаг
 
-Лёва опубликовал stable removal head `a29e15f` в #232 и итог `6292445730` в #234. Дождаться exact-head CI и передать результат Мире для координации приёмки/owner visual acceptance и последующего нового whole-PR цикла. Сам цикл не запускался; Мишаню не подключать. Merge только владельцем.
+Лёва опубликовал stable removal head `5dc32be` в #232 и итог `6292445730` в #234. Дождаться exact-head CI и передать результат Мире для координации приёмки/owner visual acceptance и последующего нового whole-PR цикла. Сам цикл не запускался; Мишаню не подключать. Merge только владельцем.
