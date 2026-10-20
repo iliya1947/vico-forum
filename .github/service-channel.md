@@ -454,6 +454,28 @@ Owner-authorized публикации:
 - Mixed remove+add остаётся **неутверждённым продуктовым случаем**: base `{A}`, local retains `{A}`, authoritative newer server `{B}` одновременно затрагивает keep removed-vs-retained и newer-composition rules. До решения владельца этот сценарий не использовать как acceptance oracle. Чистый F6 case `{A} → {A,B}` уже достаточен для доказательства текущего defect.
 - PR #232 остаётся на exact implementation head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; correction не начинался.
 
+## Решение владельца: текст и вложения разрешаются независимо
+
+Владелец упростил conflict semantics: **текст и состав вложений являются двумя независимыми предметами разрешения конфликта**. Один не выбирает другой как побочный эффект.
+
+1. **Текст** разрешается только по правилам текстового конфликта:
+   - одинаковый текст не создаёт text conflict;
+   - различающийся текст требует установленного explicit/manual выбора версии;
+   - выбор текста сам по себе не определяет attachment composition.
+
+2. **Вложения** разрешаются отдельно по правилам attachment composition:
+   - решение по вложениям не выбирает текстовую версию;
+   - same-file remove-vs-retain и newer/incomparable attachment transitions анализируются только внутри attachment state;
+   - attachment result затем сочетается с независимо разрешённым text result.
+
+3. Предыдущая постановка mixed remove+add как выбора между целыми snapshot `{A}` и `{B}` больше не является правильной продуктовой моделью, если она заставляет attachment winner одновременно определять text winner или наоборот.
+
+4. Техническая snapshot/CAS версия по-прежнему может атомарно хранить text + selected manifest для согласованности persistence/CAS. Это **не означает**, что продуктовая conflict-resolution логика обязана выбирать их единым winner.
+
+5. Точный алгоритм attachment-only reconciliation для mixed remove+add должен быть выведен из этих независимых правил и проверен архитектором без возвращения к связанному winner-механизму.
+
+#232 остаётся неизменённым до обновления bounded correction scope под это решение.
+
 ## Текущий следующий шаг
 
-Owner gate: владелец определяет precedence для mixed remove+add и отдельно разрешает либо отклоняет bounded correction. До этого #232 не менять.
+Лёва пересматривает bounded correction scope для #232 с новым owner rule: text conflict resolution и attachment conflict resolution независимы, при сохранении единого atomic snapshot/CAS persistence contract.
