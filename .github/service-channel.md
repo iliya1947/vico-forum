@@ -564,6 +564,44 @@ PR #232 больше не является correction-пакетом сущес�
 - Merged migration history 0034–0044 не переписывать; snapshot-purpose 0045 не включать без surviving necessity. Массовый DROP/rename исторических таблиц не является условием runtime removal. Старые drafts не импортировать в новую operation.
 - Старые A–G/T/S/mixed-conflict gates superseded removal scope; их не чинить перед удалением. Новое завершение требует статического удаления связей, browser/network/storage proof отсутствия autosave/recovery, real PostgreSQL/Worker/R2 attachment lifecycle, F7 и применимых full checks на новом stable head.
 
+## Removal scope #232 — технический gate Лёвы PASS
+
+Лёва проверил owner removal decision и summary Миры против unchanged #232 head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0` и актуального main. Результат: **PASS продуктовой/архитектурной границе удаления**. Старый correction scope A–G, T/S conflict matrix и mixed precedence gate больше не являются текущей задачей.
+
+### Принятый bounded implementation scope
+
+- удалить runtime пользовательских text drafts: local/server persistence, 60-second autosave, reload/navigation recovery, metadata/content recovery, cross-tab/device merge/conflicts, 30-day user-draft lifecycle, My Drafts/discovery/header entry и draft status UI;
+- не чинить удаляемый draft mechanism только ради старых F1–F6/M2/M3;
+- F7 (Simple leading whitespace/focus) остаётся отдельным current-Stage defect;
+- attachments/publication/editing сохранить, но отвязать от persistent text-draft storage;
+- для attachments допустима минимальная identity открытой editor operation: owner + context + opaque operation/session ID; без body/title/tags, text autosave/recovery и draft conflict semantics;
+- pending/selected attachment state текущего mounted editor может жить в памяти; reload начинает новую operation и не восстанавливает user text;
+- verified upload создаёт только temporary private asset/ref current operation; final submit явно передаёт выбранные IDs, а server в той же transaction проверяет owner/context/operation/verification/active-ref state и atomically публикует только submitted selection;
+- pool/upload ACK больше не обязан подтверждаться через text-draft manifest CAS; прежний M1 oracle заменяется новым operation/ref publication contract;
+- post-edit сохраняет independent `expectedRevisionId`/post-row protection, retained/new attachment selection, atomic Save и Cancel semantics; это не user draft conflict;
+- publication/Cancel/cleanup terminally закрывают operation; late upload/retry не может воскресить её; existing publication receipts/idempotency сохраняются;
+- abandoned temporary refs получают bounded technical cleanup lifetime, но это не 30-day user draft feature;
+- context/auth/origin/permissions сохраняются отдельным недрафтовым path;
+- merged migrations 0034–0044 не переписываются; runtime removal не требует массового DROP. Schema cleanup только forward и только если доказанно нужен. Unmerged 0045 и её metadata/tests не должны входить в итоговый diff, если draft snapshot purpose исчезает;
+- `Drafts and autosave` остаётся future target в `Under development`.
+
+### Переклассификация старых findings
+
+- F1/F3/F4/F5/F6/M2/M3: obligation — доказать удаление соответствующих runtime/read/conflict/cache paths, без отдельных fixes;
+- F2: legacy text-draft recovery больше не acceptance requirement; published attachment safety и cleanup старых private refs сохраняются;
+- M1: перепроверяется по новому operation/ref publication contract; ownership, exact submitted selection, verification, terminal fencing, atomicity и idempotency обязательны;
+- F7: остаётся отдельным correction.
+
+### Acceptance нового #232
+
+1. Static: нет runtime text-draft storage/recovery/autosave/cross-tab merge/fake text snapshot head для attachments.
+2. Browser: >60s ввода не вызывает text draft request/storage; reload не восстанавливает текст; mounted editor сохраняет обычный in-memory buffer при mode/fullscreen/Undo и validation failure.
+3. PostgreSQL: parallel/retry/lost-ACK/late upload, Publish/Cancel/cleanup, subset/text-only/attachment-only publication, malformed/foreign/missing IDs, shared refs, rollback, duplicate publish/lost response, concurrent post edit.
+4. Chromium + Worker/PostgreSQL/local private R2: четыре authoring flows, upload/remove/retry/cancel/publish, published edit Save/Cancel/revision conflict, download/access revocation; F7 whitespace/focus/IME и существующие editor regressions.
+5. Full applicable app/DB/typecheck/lint/build/schema/migration/privilege checks на одном stable head; docs/tests отражают отсутствие current drafts/autosave. После реализации — новый independent whole-PR review cycle.
+
+#232 в этом gate не изменялся.
+
 ## Текущий следующий шаг
 
-Лёва завершил независимую source-level проверку removal boundary в комментарии `6291072682`. Мира сводит bounded implementation subtask с surviving attachment/publication contract, cleanup cutoff и acceptance criteria; #232 не менять до назначения implementation subtask согласно owner decision. Старый mixed-conflict gate не переносится.
+STOP после архитектурного gate. Следующий подэтап — implementation нового bounded removal scope в существующем PR #232 только по следующей явной команде владельца.
