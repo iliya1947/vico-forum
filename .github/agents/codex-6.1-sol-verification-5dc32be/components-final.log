@@ -1,0 +1,95 @@
+
+ RUN  v5.0.0 /workspace/work/editor-candidate-verification
+
+stderr | app/forum/public-read.test.tsx > published edit revision fence > L3 full TopicRoute retains stale selection after revalidation and explicit rebase
+No `HydrateFallback` element provided to render during initial hydration
+
+ ↓ app/forum/public-read.test.tsx > public forum read flow (en) > loads and links category → section → topic → posts with the canonical locale
+ ↓ app/forum/public-read.test.tsx > public forum read flow (he) > loads and links category → section → topic → posts with the canonical locale
+ ↓ app/forum/public-read.test.tsx > optional homepage presence failures > keeps categories available when online presence storage is temporarily unavailable
+ ↓ app/forum/public-read.test.tsx > optional homepage presence failures > does not swallow unexpected online reader defects
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > renders real service-section questions and keeps the storage section out of navigation
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows dedicated question authoring only when topic creation is allowed
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows Needs help from persisted unsolved questions and falls back unknown modes to All
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > combines Help filters at the reader boundary and preserves them across modes
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > keeps the Needs review filter behind solution moderation permission
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows Want to help only to authenticated users and binds exclusion to the session identity
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows For me only to authenticated users and binds recommendation signals to the session identity
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows Active questions with replies and renders its empty state
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > presents the protected moderator queue as individual actionable cases
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > separates attachment-security reader authorization from Help moderation
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > requires origin and effective per-kind permission before processing a signal
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > rejects stale appeal ids before issuing a moderation mutation
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows My questions only to authenticated users and binds it to the session identity
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > renders the authenticated My questions empty state
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > rejects direct guest access to My questions without querying an author
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > keeps duplicate appeal details private and disputed badge moderator-only
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > duplicate-only permission does not expose an empty admin panel on ordinary topics
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > keeps needs-review topic badge hidden from public readers and visible to moderators
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > keeps needs-review hidden from public Help lists and visible to moderators
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > resets a stale outdated reason when the authoritative best answer changes on revalidation
+ ↓ app/forum/public-read.test.tsx > Help & solutions modes and authoring > filters Solutions mode to solved questions and keeps All as the canonical default
+ ↓ app/forum/public-read.test.tsx > Popular topics > loads all three activity periods and keeps topic links locale-aware
+ ↓ app/forum/public-read.test.tsx > Forum search > loads a query through the public reader and keeps result links locale-aware
+ ↓ app/forum/public-read.test.tsx > Forum search > renders a truthful no-results state
+ ↓ app/forum/public-read.test.tsx > Technology tags > loads the tag index and a filtered tag page with locale-aware topic links
+ ↓ app/forum/public-read.test.tsx > Unanswered topics > loads unanswered topics and keeps topic links locale-aware
+ ↓ app/forum/public-read.test.tsx > content translation presentation > shows persisted current translations to a guest with provenance, original toggle, metadata and safe Markdown
+ ↓ app/forum/public-read.test.tsx > section topic count presentation > keeps localized message count semantics inside compact topic rows
+ ↓ app/forum/public-read.test.tsx > category count presentation > composes topic and message totals through independent plural lookups
+ ↓ app/forum/public-read.test.tsx > forum path encoding > encodes an opaque forum id as one path segment and round-trips the route param
+ ↓ app/forum/public-read.test.tsx > published editing presentation permissions > shows no edit/history control to a non-owner, but displays public edit date
+ ↓ app/forum/public-read.test.tsx > published editing presentation permissions > lets an authorized author open and cancel a distinct post edit draft
+ ↓ app/forum/public-read.test.tsx > published edit resume navigation > consumes the resume URL on Cancel, stays closed after same-topic refresh, and permits explicit reentry
+ ↓ app/forum/public-read.test.tsx > published edit revision fence > renders attachment-only posts without sending empty text to translation or generation ("")
+ ↓ app/forum/public-read.test.tsx > published edit revision fence > renders attachment-only posts without sending empty text to translation or generation (" \n")
+ ↓ app/forum/public-read.test.tsx > published edit revision fence > keeps the original revision fence and typed text on same-topic revalidation until explicit rebase
+stdout | app/forum/public-read.test.tsx > published edit revision fence > L3 full TopicRoute retains stale selection after revalidation and explicit rebase
+L3 TopicRoute rebase: expected=fence-r2 retained=[A], B absent from local attachment controls
+
+ ✓ app/forum/public-read.test.tsx > published edit revision fence > L3 full TopicRoute retains stale selection after revalidation and explicit rebase 1238ms
+ ↓ app/forum/public-read.test.tsx > published edit revision fence > opens the published revision without fetching a former server text draft
+ ↓ app/forum/public-read.test.tsx > published edit revision fence > ignores a versioned legacy text cache and opens only the current publication
+ ↓ app/forum/public-read.test.tsx > published edit revision fence > ignores a legacy without a baseline legacy text cache and opens only the current publication
+ ↓ app/forum/public-read.test.tsx > published edit submission lifecycle > keeps a reply locked through loading and Cancel discards the unsent buffer
+ ↓ app/forum/public-read.test.tsx > published edit submission lifecycle > keeps the editor and its publication barrier locked through loader revalidation
+ ↓ app/forum/public-read.test.tsx > published edit submission lifecycle > preserves the live edit and retry body after a real 400 failure even when local storage writes fail
+ ↓ app/forum/public-read.test.tsx > published attachment caller integration > resolves inline images and inert source previews from verified types, not names
+ ↓ app/forum/public-read.test.tsx > forum read states > targets direct replies, exposes parent/child anchors, and quotes only selected message text
+ ↓ app/forum/public-read.test.tsx > forum read states > copies a clean permanent locale-aware message link, keeps one active status, and reports clipboard failure
+ ↓ app/forum/public-read.test.tsx > forum read states > shows public solved state, highlights the answer, and links to its stable post anchor
+ ↓ app/forum/public-read.test.tsx > forum read states > promotes the selected best answer after the original question without renumbering anchors
+ ↓ app/forum/public-read.test.tsx > forum read states > keeps a replaced Help answer marked outdated while the new best answer stays clean
+ ↓ app/forum/public-read.test.tsx > forum read states > keeps message metadata in the author column while best-answer selection stays beside topic controls
+ ↓ app/forum/public-read.test.tsx > forum read states > keeps the topic title and original question in one message card
+ ↓ app/forum/public-read.test.tsx > forum read states > shows the admin panel on regular topics for moderation capabilities only
+ ↓ app/forum/public-read.test.tsx > forum read states > shows solution controls only to the topic author behind progressive disclosure
+ ↓ app/forum/public-read.test.tsx > forum read states > keeps a selected best answer on an unsolved topic and asks only the topic author whether the problem is solved
+ ↓ app/forum/public-read.test.tsx > forum read states > keeps title source-locale correction while message-level correction waits for the admin-panel redesign
+ ↓ app/forum/public-read.test.tsx > forum read states > shows accessible forum write forms only for an authenticated loader result
+ ↓ app/forum/public-read.test.tsx > forum read states > shows a pending state while create-topic submission is in flight
+ ↓ app/forum/public-read.test.tsx > forum read states > shows a pending state only for the reply submission
+ ↓ app/forum/public-read.test.tsx > forum read states > returns route-level 404 responses for missing entities
+ ↓ app/forum/public-read.test.tsx > forum read states > renders the localized forum not-found state for an unknown locale-scoped URL
+stdout | app/forum/candidate-findings.test.tsx > independent L2/L3 hook verification > L2 failed transport leaves only Retry and blocks otherwise usable operation
+L2 ambiguous failure: Retry=true Remove=false blocking=true
+
+stdout | app/forum/candidate-findings.test.tsx > independent L2/L3 hook verification > L3 explicit local Remove A remains removed on newer published [A,B], but new B is also missing
+L3 explicit local Remove A: incoming [A,B], retained [], B also unintentionally omitted
+
+stdout | app/forum/candidate-findings.test.tsx > independent L2/L3 hook verification > L3 same-scope published attachment refresh does not retain new B
+L3 hook: incoming published [A,B], retained [A]
+
+ ✓ app/forum/candidate-findings.test.tsx > independent L2/L3 hook verification > L2 failed transport leaves only Retry and blocks otherwise usable operation 419ms
+ ✓ app/forum/candidate-findings.test.tsx > independent L2/L3 hook verification > L3 explicit local Remove A remains removed on newer published [A,B], but new B is also missing 62ms
+ ✓ app/forum/candidate-findings.test.tsx > independent L2/L3 hook verification > L3 same-scope published attachment refresh does not retain new B 96ms
+
+ Test Files  2 passed (2)
+      Tests  4 passed | 64 skipped (68)
+   Start at  19:59:39
+   Duration  6.90s (environment 31%, tests 28%, transform 20%, import 20%)
+
+    Isolate  2 workers spawned · ~1.20s startup each (spawn + environment, per file)
+             at least ~1.20s faster with isolate: false — reuses workers across files instead of one per file
+

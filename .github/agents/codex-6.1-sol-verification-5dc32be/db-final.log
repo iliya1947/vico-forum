@@ -1,0 +1,33 @@
+
+ RUN  v5.0.0 /workspace/work/editor-candidate-verification
+
+stdout | tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L1 newest ref removed=false
+L1 {"removeB":false,"refsRemaining":2,"terminal":0,"aPhysicallyDeleted":false,"prunedRefs":0}
+
+ ✓ tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L1 newest ref removed=false 58ms
+stdout | tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L1 newest ref removed=true
+L1 {"removeB":true,"refsRemaining":0,"terminal":1,"aPhysicallyDeleted":true,"prunedRefs":1}
+
+stdout | tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L2 bare per-file DELETE before late upload does not fence its eventual ref; operation Cancel does
+L2 delete-before-upload=false; late upload creates ref; whole-operation cancel fences retry
+
+stdout | tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L2 committed upload with lost response can be resolved by stable retry then removed without losing another file
+L2 existing safe path under recovered network: stable Retry -> ACK -> Remove, other A preserved
+
+ ✓ tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L1 newest ref removed=true 67ms
+ ✓ tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L2 bare per-file DELETE before late upload does not fence its eventual ref; operation Cancel does 27ms
+ ✓ tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L2 committed upload with lost response can be resolved by stable retry then removed without losing another file 41ms
+stdout | tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L3 rebase explicit Remove A=false
+L3 {"removeA":false,"staleSaveRejected":true,"rebasedSaveSucceeded":true,"bPublicRefLost":true,"aKept":true,"history":3}
+
+stdout | tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L3 rebase explicit Remove A=true
+L3 {"removeA":true,"staleSaveRejected":true,"rebasedSaveSucceeded":true,"bPublicRefLost":true,"aKept":false,"history":3}
+
+ ✓ tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L3 rebase explicit Remove A=false 86ms
+ ✓ tests/database/candidate-findings.test.ts > candidate findings independent DB verification > L3 rebase explicit Remove A=true 77ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  19:59:38
+   Duration  2.03s (tests 40%, import 33%, transform 27%)
+
