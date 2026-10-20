@@ -602,6 +602,22 @@ PR #232 больше не является correction-пакетом сущес�
 
 #232 в этом gate не изменялся.
 
+## Owner authorization — implementation removal scope
+
+После завершённого архитектурного gate владелец дал явную команду продолжать. Implementation нового removal scope разрешён.
+
+Implementation owner по актуальному `AGENTS.md`: **Мишаня — Codex-5.6 Sol**.
+
+Требуемый результат:
+- в существующем PR #232 удалить current user-facing/persistent drafts/autosave runtime по принятому removal scope;
+- сохранить недрафтовый Editor 2.0, attachments/publication/edit-published и необходимые safety/auth/idempotency boundaries;
+- не переносить superseded draft-correction A–G/T-S/mixed logic ради совместимости удаляемого механизма;
+- включить отдельное исправление F7 Simple leading whitespace/focus;
+- привести tests/docs/PROJECT_STATE к фактическому результату;
+- выполнить применимые проверки из acceptance removal scope на одном stable exact head и остановиться до нового whole-PR review.
+
+Не создавать новый implementation PR/ветку: используется существующий #232. Старый diff #232 можно переработать/заменить настолько, насколько это требуется новым scope; merged history 0034–0044 не переписывать, unmerged 0045 не сохранять без фактической необходимости.
+
 ## Текущий следующий шаг
 
-STOP после архитектурного gate. Следующий подэтап — implementation нового bounded removal scope в существующем PR #232 только по следующей явной команде владельца.
+Мишаня реализует новый bounded removal scope в PR #232 и после стабильного exact head публикует в #234 только итог реализации и фактически выполненные проверки. До завершения реализации independent whole-PR review не запускать.
