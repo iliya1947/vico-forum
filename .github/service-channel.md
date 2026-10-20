@@ -647,6 +647,12 @@ Stable implementation head: `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
 
 Owner visual acceptance по-прежнему не получен. CI/runtime evidence реализации не подменяется статическими screenshots; старые review/acceptance не переносятся.
 
+## Owner clarification — visual gate для #232 не применяется
+
+Прямое правило владельца: визуальные проверки выполняются только по его запросу. В #232 нет отдельного визуального продукта/дизайна, требующего owner visual acceptance; затронутые функциональные UI behaviors уже покрываются browser/runtime проверками. Поэтому ранее введённый visual gate и галерея не являются prerequisite для review и больше не блокируют цикл.
+
+Static screenshots Лёвы остаются только историческим evidence и не требуют просмотра владельцем. Pages preview не нужен.
+
 ## Текущий следующий шаг
 
-Владелец просматривает подготовленную галерею и подтверждает visual acceptance либо сообщает замечания. Затем Мира координирует новый independent whole-PR cycle. Пока review не запускался; Мишаню не подключать. Merge только владельцем.
+Мира проводит независимую whole-PR проверку #232 на exact head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`. До завершения этой проверки findings не публиковать в служебный PR.
