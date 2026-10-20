@@ -451,3 +451,14 @@ Audit result:
 - old draft findings are not mechanically preserved; only defects on surviving code paths remain relevant; F7 is independently surviving, attachment/publication invariants must be rechecked after decoupling;
 - existing #232 should be repurposed, not a new branch;
 - merged migrations 0034–0044 stay immutable; any actual schema cleanup is forward-only; unmerged 0045 is not required if its draft purpose disappears.
+
+
+## 2026-10-20 — Lyova PASS draft-removal architecture gate
+
+Accepted technical boundary:
+- remove user text draft runtime instead of correcting it;
+- preserve attachments via minimal open-operation identity only, no text payload/autosave/recovery/conflicts;
+- keep post revision fencing and publication receipts/idempotency;
+- old draft findings are closed by path removal where applicable; M1 re-evaluated on new operation/ref contract; F7 survives;
+- no new persistence table justified;
+- #232 unchanged until next explicit owner command starts implementation.
