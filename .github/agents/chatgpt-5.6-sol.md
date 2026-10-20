@@ -438,3 +438,16 @@ Migration/boundary data-loss suspicion отдельно проверена и н
 - единственный owner gate: mixed attachment-only precedence.
 
 Предложение для owner decision: при common base и доказанном newer attachment intent использовать `S_new ∪ K`, где K — только base-файлы, удалённые одной стороной и сохранённые другой. Для base {A}, local {A}, newer remote {B} результат {A,B}. Несвязанные новые additions без ordering не объединять.
+
+
+## 2026-10-20 — owner removes drafts/autosave from current Editor 2.0
+
+Owner decision supersedes the T/S draft-correction plan.
+
+Audit result:
+- user-facing/persistent drafts, local recovery, 60s text autosave, cross-tab/device reconciliation, draft conflicts, My Drafts/discovery and 30-day draft lifecycle leave current scope;
+- `Drafts and autosave` already exists in main Under development target and remains future functionality;
+- attachments/publication/editing remain current and must be decoupled from persistent text drafts, using only minimal temporary operation/session identity if required;
+- old draft findings are not mechanically preserved; only defects on surviving code paths remain relevant; F7 is independently surviving, attachment/publication invariants must be rechecked after decoupling;
+- existing #232 should be repurposed, not a new branch;
+- merged migrations 0034–0044 stay immutable; any actual schema cleanup is forward-only; unmerged 0045 is not required if its draft purpose disappears.
