@@ -424,6 +424,18 @@ Owner-authorized публикации:
 
 Технический вывод Лёвы: существующая snapshot/CAS модель остаётся достаточной основой bounded correction, необходимость новой persistent table/registry/attachment-version не установлена. Семь предложенных causal groups, ограничения и readiness proofs приведены в комментарии. Это позиция архитектора для согласования, не принятое общее correction-решение и не разрешение менять #232. Ответ/согласие Лиры и итоговая сводка Миры здесь не предрешены.
 
+## Совещание #232 — шаг 1 завершён: dedup
+
+Согласовано по комментариям Лиры `6289118247` и Лёвы `6289132230`:
+
+- Лира L1 и Лёва F6 — один behavioral finding; общий счёт — **10 distinct current-Stage findings**: F1–F7 + M1–M3.
+- Исходный testcase F6 `{A} → {B}` смешивал два owner-rule (keep removed-vs-retained и newer composition) и не доказывал единственный winner `{B}`. Для проверки самого defect использовать чистый known-newer case: base/local `{A}`, authoritative newer server `{A,B}`, одинаковый text, local dirty marker.
+- Mixed remove+add precedence остаётся отдельным открытым продуктовым вопросом; не использовать его как acceptance oracle до owner decision.
+- M1–M3 не являются дублями F1–F7; Лёва дополнительно воспроизвёл M1 (PostgreSQL), M2 и M3 (component/runtime) вне implementation tree.
+- PR #232 остаётся на exact head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`; correction не начат.
+
+Лёва предложил семь causal groups A–G и дал architect conclusion: текущая snapshot/CAS модель достаточна для bounded correction; новая table/registry/attachment-version сейчас не требуется. Это **ещё не общий consensus совещания**, пока Лира независимо не проверит grouping и transition boundaries.
+
 ## Текущий следующий шаг
 
-Совещание Миры, Лиры и Лёвы по опубликованным findings #232 начато в комментариях PR #234. До его завершения implementation #232 не менять. Результат совещания — единый causal grouping и bounded correction scope; implementation начинается только после отдельного owner decision.
+Лира проверяет предложенный Лёвой causal grouping A–G, особенно объединения F1/F3/F5 и F6/M2, а также границы F2/M1/F4/M3/F7. Она должна явно указать согласие/возражения, недостающие transition proofs и неявные product decisions. #232 не менять.
