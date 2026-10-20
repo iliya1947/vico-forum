@@ -392,3 +392,21 @@ Candidate plan уточнён без изменения scope:
 Лира завершила narrow re-review и дала PASS для передачи готового плана Лёве. План уже находится в общем service-channel. Implementation #232 остаётся STOP.
 
 Следующая задача — Лёва выполняет независимую pre-implementation проверку плана через PR #234. До его решения реализацию не начинать.
+
+
+## Independent whole-PR review #232 — findings опубликованы
+
+Проверен exact head `3b30d8d7b04eadd867c1b762d68bf040605b0ab0`. После owner authorization три finding Миры опубликованы в комментарии PR #234 `6288410411`. Implementation #232 не менялся.
+
+1. **M1 / P1 — publication bypass selected-manifest ACK.** При отсутствии authoritative active snapshot server publication допускает `expectedVersion=0 + attachmentIds` из retention pool и публикует файл, хотя upload/pool ACK по принятому контракту не является selected-manifest ACK.
+2. **M2 / P1 — version churn при unresolved pending attachment.** Successful text autosave продвигает `baseVersion`, но при pending attachment не продвигает `syncedEditedAt`; следующий 60-second cycle снова CAS-сохраняет тот же snapshot и может повторять это без нового user edit.
+3. **M3 / P2 — manual attachment conflict не показывает `draftAttachmentIds`.** Conflict UI показывает legacy `retainedAttachmentIds`, но не authoritative selected manifest, поэтому при корректном manual fallback пользователь может не видеть различие между attachment compositions.
+
+Migration/boundary data-loss suspicion отдельно проверена и не подтверждена.
+
+После публикаций:
+- finding Лиры `6287225975` совпадает по корню с F6 Лёвы (неполная реализация newer-authoritative attachment rule);
+- самопроверка Лёвы `6287237802` содержит F1–F7;
+- три finding Миры не дублируют F1–F7; M3 отличается от F6 тем, что рассматривает корректный manual fallback, а не лишний конфликт.
+
+Текущее рабочее множество: **10 уникальных current-Stage findings** для совместного согласования. Correction/implementation ещё не назначены.
