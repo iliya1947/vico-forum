@@ -128,3 +128,18 @@ Exact implementation head при начале review должен остават
 - **Lira L1 и Lyova F6 — один behavioral root**, но в F6 пример `base {A}, local {A}, server {B}` смешивает keep-vs-remove A и newer-added B. Поэтому ожидаемый `{B}` не доказан owner rule. Чистый counterexample для newer-only: base/local `{A}`, server newer `{A,B}`, text идентичен, local dirty flag. Сама функциональная проблема остаётся.
 - Девять остальных findings различаются по наблюдаемым transition и контрактам: F1,F2,F3,F4,F5,F7,M1,M2,M3; **всего 10 distinct current-Stage findings** для согласования, не approved correction plan.
 - Детальный технический комментарий в PR #234 `6289118247`. Это первый логический шаг совещания; следующий — causal grouping только по команде owner / координации Миры. Implementation #232 не трогала, новых runtime tests не выполняла. Общий communication-файл не меняла до согласования с Мирой.
+
+
+## Совещание PR #232 — шаг 2: проверка causal grouping
+
+После шага 1 dedup согласован: L1=F6, всего 10 distinct findings; testcase F6 очищен до known-newer `{A}→{A,B}`. Лёва предложил grouping A–G в комментарии `6289132230`.
+
+Следующая задача:
+- независимо проверить, действительно ли proposed groups объединены общим root boundary, а не только соседством кода;
+- особенно проверить A = F1/F3/F5 и E = F6/M2;
+- проверить, не потеряны ли отдельные transition/readiness requirements F2, M1, F4, M3, F7;
+- отметить любые скрытые product decisions или contradiction с owner rules;
+- определить, достаточна ли существующая snapshot/CAS модель для каждого group без новой compensation layer;
+- дать явный PASS/REQUEST REVISION grouping для следующего шага совещания.
+
+Mixed remove+add precedence не определять самостоятельно. Implementation #232 не менять; correction не начинать.
