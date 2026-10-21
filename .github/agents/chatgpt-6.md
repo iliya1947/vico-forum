@@ -757,3 +757,46 @@ PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согл�
 - Evidence: `docs/EDITOR.md`, top current `PROJECT_STATE.md`, `app/forum/markdown-editor.tsx`, `editor-attachments.tsx`, `editor-document.ts`, `visual-markdown-editor.tsx`, `markdown.tsx`, `quote-*.ts*`, `mentions.ts`, `views.tsx`, `app/forum/actions.server.ts`, `db/forum-repository.ts`, `db/forum-attachments.ts`; `app/forum/public-read.test.tsx`, `markdown-editor.test.tsx`, `editor-attachments.test.tsx`, `attachment-operation.test.tsx`, `editor-document.test.ts`, `markdown.test.tsx`, `tests/database/forum-attachments.test.ts`, `forum-attachment-publication.test.ts` (existing tests inspected, not executed).
 - Limit: local runtime has no project checkout and direct GitHub is network-blocked; fresh Chromium+Worker+Postgres/R2 E2E not performed. Checkpoint **does not declare definitive clearance** of potential UI conflicts/stalled uploads. Audit findings remain in chat until owner authorizes publication at completion; no unverified finding placed in general channel.
 - Next on explicit owner command: итоговый этап — матрица реализованных функций/requirements против reviewed/tested evidence, remaining gaps, disputed findings and their Stage classification. No modification of implementation/main or other audit cycle.
+
+
+## AUD-20261022 — этап 1, часть 5
+
+Статус: **PARTIAL — этап 1 не завершён**. Baseline: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Эта запись относится только к AUD-20261022.
+
+### Покрытие
+
+| Документ | Строки | Git blob | Статус |
+| --- | ---: | --- | --- |
+| docs/translation/LOCALES.md | 571 | f58527e4a3067ca593c9a91ee7cdd195c0459193 | DOC_READ, 1–EOF |
+| docs/translation/UI_TRANSLATION.md | 452 | dabc15f8c466f670c60b97395e818c50891b597c | DOC_READ, 1–EOF |
+
+Полное чтение до фактического EOF, включая последнюю строку LOCALES без завершающего newline. В части 5 — 1023 строки; накопительно — четырнадцать документов, 6615 строк. DOC_READ не означает PASS реализации.
+
+### Требования для последующих прикладных проверок
+
+- Canonical BCP47 translation identity отделена от formatting extensions/preferences; locale не задаёт timezone. SSR и hydration получают одинаковые formatting inputs и initial relative-time reference.
+- Registry — единственный источник разрешённых locale и UI direction; readiness и publication независимы. Alias/match/fallback graph проверяется на ambiguity/cycles/duplicates; exact reserved api/assets не являются prefix ban.
+- en code-owned, active/ready bootstrap; persistent en запрещён. Persistent rows валидируются целиком как graph; invalid dataset не публикуется. Empty healthy bootstrap-only state отличается от expected migration acceptance.
+- Один lazy immutable registry snapshot на request; technical routes без locale consumer не открывают registry DB path. Cross-request stale registry cache и module-global pg Client/Pool не разрешены этим baseline.
+- Classified registry unavailable/schema/integrity failure допускает bootstrap-only English; non-English GET/HEAD временно redirect-ится с no-store без записи preference cookie, writes fail closed. Programming failures автоматически не маскируются.
+- Controlled graph writer использует short SERIALIZABLE transaction и self-exclusive table lock до первого SELECT/DML; no external side effects inside transaction. Unknown commit outcome требует reconciliation, а не blind retry.
+- Explicit URL authoritative: active alias/case/deprecated GET/HEAD → 308 canonical; unknown/inactive/disabled/malformed → 307 /en с remainder/query. Non-GET/HEAD redirect-required → 404 без Location до action. Root negotiation только GET/HEAD, user → cookie → Accept-Language → en, q=0 исключён.
+- Locale boundary server loader обязателен для server validation при client navigation; middleware сам по себе не гарантирует network request. Неизвестный child route возвращает реальный 404.
+- Bootstrap/resource fallback не включает implicit i18next locale reduction/dev. По locale specificity exact-target machine может выиграть fallback-locale manual; внутри locale current local manual → persistent manual → machine.
+- Resources остаются раздельными по locale; fallback не flatten-ится в target, особенно для plural rules. Только текущая route locale chain/namespaces передаётся клиенту; все language packs целиком не импортируются.
+- Canonical English descriptor содержит semantic metadata; missing canonical key — catalog defect. Structured plural/select единица имеет общий lifecycle/fingerprint и полный required branch set.
+- Local packs допускают partial/stale state; unknown keys, invalid placeholders/structure/markup — structural errors. Stale value исключается с fallback; автоматический re-fingerprint без review запрещён. Strict zero-stale CI не предполагается.
+- SSR i18next request-scoped; browser использует те же locale/chain/resources/versions без повторного language detection.
+- Verified persisted bundle hit обходит raw namespace reads; miss/invalid/incompatible deploy использует controlled raw/local/English fallback. Provider в read path не вызывается. Machine publication атомарна с task completion и exact-locale whole-namespace bundle.
+- UI generation eligibility: registered canonical non-English, active/inactive допустимы, disabled запрещён; planner/preflight используют один predicate. Self-healing bounded/deduplicated/internal-policy controlled; page request не запускает прямой provider/fan-out.
+- Provider/local output недоверен; placeholders, technical tokens, branch structure, size, emptiness и markup проходят runtime validation. Plain provider не объявляется structured-capable.
+
+Указанные в документах 28 уникальных component references присутствуют в architecture registry; неизвестных IDs не обнаружено. Файловые цели локальных Markdown-ссылок существуют; anchors и внешние URL не проверялись. Новых подтверждённых противоречий в прочитанной части не установлено; полная сверка с оставшимися translation/storage/job контрактами ещё не завершена.
+
+Tests/build/browser, внешние сервисы и их acceptance не выполнялись. Исходники и main-документы не менялись.
+
+### Остаток и остановка
+
+Остались CONTENT_TRANSLATION.md, STORAGE_AND_VERSIONING.md, PROVIDERS_AND_JOBS.md и RESEARCH.md, затем итоговая сверка всего разрешённого документального объёма.
+
+Следующая часть: полностью прочитать CONTENT_TRANSLATION.md и STORAGE_AND_VERSIONING.md, сверить immutable revisions, protected content, freshness/trust, bundle identity и cache/read semantics. Исполнитель останавливается до разрешения владельца продолжить этап 1, часть 6.
