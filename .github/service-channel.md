@@ -746,6 +746,14 @@ Implementation #232 не менялся; correction plan не проектиро
 
 Новый Chromium/Worker/private-R2 прогон для correction L1–L3 не выполнялся; исполнитель обосновал это тем, что native/browser upload/submit mechanics не менялись, а исправленные переходы покрыты component + real PostgreSQL. Это ещё не whole-PR acceptance.
 
+## Independent whole-PR review — Мира завершила
+
+Мира завершила новую независимую whole-PR проверку implementation PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`. Результат и возможные findings до завершения независимых проверок в служебный PR не публикуются.
+
+Проверка охватила correction delta `5dc32be → a528c6d`, целиком критические surviving attachment/editor/publication/post-edit paths на новом head, удаление user draft runtime, migration boundary 0034–0044, F7 regression boundary, current `main`/base alignment и exact-head CI evidence.
+
+Следующая независимая проверка назначена Лире (ChatGPT-6). Лира должна получить задачу из служебного PR #234 и независимо проверить весь agreed removal + L1–L3 correction scope PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`, не внося исправлений и не запрашивая/не читая результат Миры. Visual review/Pages не входят в эту проверку.
+
 ## Текущий следующий шаг
 
-STOP после завершения implementation-подэтапа. Следующий подэтап по явной команде владельца — новая независимая whole-PR проверка PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`, начиная с Миры.
+Лира проверяет PR #234 и выполняет назначенную там независимую whole-PR проверку PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
