@@ -668,3 +668,46 @@ PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согл�
 - Established evidence from source/existing tests: effective permission independent from session role; one snapshot of role/grants/overrides; next-request request-local resolution; management mutators independently authorize within serialized DB lock, protect final manager; typed classified authorization unavailable vs unexpected errors; optional public UI degradation; protected route owner/Origin and per-permission gating; explicit boundaries on editor upload and download. No tests or live browser/runtime executed in this stage.
 - Audit-wide findings are **not** transferred to shared communication channel before completion; preliminary findings remain in the conversation. No implementation, schema, `main`, service-channel or other cycle statuses changed.
 - Next step on owner instruction: прежний этап 13 — завершить проверку Editor 2.0/Markdown/attachments и спорных findings (scope уточнить по уже согласованному плану); затем самостоятельный final coverage/test gap stage.
+
+
+## AUD-20261022 — этап 1, часть 3
+
+Статус: **PARTIAL — этап 1 не завершён**. Baseline: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Эта запись относится к AUD-20261022, отдельно от независимого прохода с другой нумерацией.
+
+### Покрытие
+
+| Документ | Строки | Git blob | Статус |
+| --- | ---: | --- | --- |
+| docs/EDITOR.md | 402 | a43653c66f323255e2fd2f63c3339fb18267bf3e | DOC_READ, 1–EOF |
+| docs/UI_UX_PASS.md | 704 | 340d8e93d8669ee2212098f83ecaa8b87746652f | DOC_READ, 1–EOF |
+
+Оба документа прочитаны полностью до фактического EOF и сопоставлены с материалами частей 1–2. В части 3 — 1106 строк; накопительно — десять документов, 5015 строк. DOC_READ не является проверкой реализации.
+
+### Прикладные требования для последующих этапов
+
+- Четыре authoring flows используют один Markdown source: create-topic, reply, Help question, published-post edit. Simple/Advanced и Preview/Fullscreen без правки не изменяют bytes; Undo/Redo переходит между режимами.
+- Simple сохраняет protected/unsupported technical blocks, редактирует безопасные текстовые spans и обычные таблицы; изменение соседнего текста не пересериализует сложный блок. Native input/IME, whitespace, focused DOM, cross-leaf selection/Enter и table paste — отдельные обязательные переходы.
+- Code Copy сохраняет исходные bytes без gutter/metadata; wrap/line numbers — presentation-only, code всегда LTR. Code-only Tab/indent/pairs не затрагивают prose. HTML/TSV clipboard import не должен молча терять неподдерживаемые данные.
+- Цитата сохраняет автора и permanent anchor; collapse зависит от реальных видимых строк, а не только newline count. Simple, Preview/public и translation protection должны согласовываться.
+- In-memory body/history сохраняются при mode/view switch и validation failure; reload/navigation не восстанавливают text draft. Account-scoped mode/spellcheck/wrap/line-number settings отделены от сообщения и не переносятся между аккаунтами.
+- Немедленная загрузка и typed errors не мешают вводу текста; retained pending/error files блокируют Publish/Save. Attachment-only publication допустима. Stable upload identity и publication receipt защищают от logical duplicates после lost ACK.
+- Remove изменяет mounted selection, а не удаляет pool ref; late ACK не возвращает снятый файл. Final submit публикует exact selected uploaded/retained IDs, проверяя authoritative owner/context/operation/permission/verification/ref/cleanup state.
+- Save опубликованной правки использует expectedRevisionId и immutable history. Cancel/Remove не меняют public refs. Explicit rebase учитывает актуальный published baseline, явные local removals и новые local uploads; stale Save не применяет частичные изменения.
+- Operation закрывается terminally при Cancel/Publish. Abandoned pool имеет 24-hour idle от успешного нового upload; Remove/read/failure/idempotent ACK не продлевают idle. Shared/published refs, durable claims и grace защищают от premature deletion.
+- Файлы проверяются server-side по размеру, типу и bounded structure; active HTML/SVG не исполняется. Type-check не называется антивирусом. Suspicious events durable, deduplicated, permission-protected и read-only в Security/Attachments.
+- Mentions связываются со stable account ID; уведомления создаются atomically при publish/edit, исключают quotes/code/self и дедуплицируются с reply и lifetime notified-set сообщения.
+- Direction auto/manual сохраняет source; supported explicit markers узко распознаются. Technical content остаётся LTR. Browser spellcheck не обещает одинаковые словари/качество во всех ОС.
+- Общий UI сохраняет category → section → topic → messages, canonical locale, catalog-owned strings, logical CSS, content lang/dir и safe provenance/original fallback.
+- Best answer визуально идёт после original без перенумерации; solved независим. Help internal section скрыт из generic discovery; внимание, пользовательские сигналы, complaints scaffold и attachment security не смешиваются.
+- Profiles остаются bounded public projection с owner-only write, без email/session/grants; присутствие основано на authoritative heartbeat и не считает guests. Выборки, ранжирование, counters и permission privacy проверяются по собственным контрактам позднее.
+- Финальная browser/product matrix включает desktop/mobile/tablet, LTR/RTL/mixed content, Guest/User/Manager, populated/empty/error/pending и keyboard/focus/reflow/reduced-motion. Static Pages/green CI не доказывают real runtime flows.
+- Позднее специальное условие Editor о Pages/owner visual acceptance только по запросу не смешивается с обязательной финальной product acceptance перед публичным релизом. Отложенная косметика не отменяет functional/security/data/authz checks.
+- External сервисы и их acceptance из этого аудита исключены по указанию владельца; требования к внутренним lifecycle/download/authz остаются в объёме.
+
+Файловые цели локальных Markdown-ссылок этих двух документов не содержат отсутствующих файлов; anchors/внешние URL не проверялись. Tests/build/browser и сервисные вызовы не выполнялись. Код и документы main не менялись. Замечания сообщены только владельцу в чате по порядку независимых проверок; PR содержит покрытие, требования и следующий шаг.
+
+### Остаток и остановка
+
+Осталось восемь профильных документов: docs/auth/AUTHORIZATION.md, docs/database/MIGRATIONS.md (прикладные контракты; сервисные разделы — только контекст) и шесть docs/translation/*.md. Затем требуется общая сверка всего разрешённого документального объёма. Исключённый docs/database/HYPERDRIVE.md не добавляется в объём.
+
+Следующая часть: полное чтение AUTHORIZATION.md и MIGRATIONS.md, сопоставление dynamic permissions, ownership/lockout/error semantics и локальных schema/migration contracts. Исполнитель останавливается до разрешения владельца продолжить этап 1, часть 4.
