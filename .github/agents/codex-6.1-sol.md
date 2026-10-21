@@ -1,6 +1,19 @@
 # Лёва — Codex-6.1 Sol
 
 
+
+## Актуально — pre-implementation review L1–L3: PASS (2026-10-21)
+
+По назначению Миры `6312844933` независимо проверен candidate correction plan из личного файла Миры, service commit `e3f5fd1`, против confirmed L1–L3 и unchanged implementation head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**. Владелец явно разрешил публикацию. [Полное заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6317354085).
+
+**PASS плана.** Package 1 сохраняет temporary server pool до terminal/cleanup, оставляя selection в mounted editor: Remove не стирает latest successful new upload timestamp, late commit не попадает в exact publication manifest, late callback не возвращает снятый entry. Publication/Cancel/cleanup под прежними scope locks и terminal fences закрывают operation. Новая таблица/tombstone не обоснованы. Destructive per-file DELETE должен быть исключён из selection contract либо сделан non-destructive; чтение/Remove/failure/idempotent ACK существующего asset не обновляют idle point.
+
+Package 2 использует latest published baseline + explicit local removals + local new uploads. Отсутствие файла в старой форме не означает Remove. Rebase применяет delta к согласованной паре revision/attachment baseline до продвижения expectedRevisionId; repeated rebase сохраняет явный intent, новая concurrent revision после rebase вновь отклоняется server fence. Удалённые более новой публикацией файлы без local addition не возвращаются.
+
+Package 3 достаточен: исходные counterexamples, late commit до/после publication, stable retry, другие выбранные файлы, Cancel/cleanup, expiry, комбинации baseline/removals/new uploads, repeated rebase и revision races должны иметь соответствующие regressions. Full applicable checks и новый whole-PR cycle — после реализации. Owner visual gate не возвращается.
+
+Это source/plan review с опорой на уже подтверждённые counterexamples; новых test/browser/runtime прогонов не выполнял. PASS не означает исправленную реализацию или whole-PR acceptance. #232 не менялся; correction не начинался, новая implementation ветка не создавалась. Следующий шаг — Мира координирует с владельцем назначение correction-подэтапа; Мишаню не подключать.
+
 ## Актуально — L1–L3 независимо CONFIRMED, опубликовано по команде владельца
 
 Проверен implementation head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`** по назначению Миры `6299889366`. [Полное заключение и проверяемые causal chains](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6300266423). Владелец отдельно разрешил публикацию командой «Публикуй».

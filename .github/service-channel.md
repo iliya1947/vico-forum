@@ -679,18 +679,26 @@ Implementation #232 не менялся; correction plan не проектиро
 - **L2 CONFIRMED:** ambiguous transport failure оставляет Retry, скрывает Remove и блокирует Publish; прямой per-file Remove без server-side resolution небезопасен из-за возможного late commit.
 - **L3 CONFIRMED:** после published-edit rebase на новую revision retained selection старой формы не получает новый concurrent attachment; последующий Save может снять его public ref как будто пользователь его удалил.
 
-Все три — реальные current-Stage defects surviving removal scope. #232 во время диагностики не менялся. Correction plan ещё не согласован и не реализован.
+Все три — реальные current-Stage defects surviving removal scope. #232 во время диагностики не менялся. Candidate correction plan получил технический PASS Лёвы; implementation ещё не назначен и не начат.
 
 Подробная независимая верификация Лёвы: комментарий PR #234 `6300266423`.
 
 ## Candidate correction plan L1–L3 — подготовлен Мирой
 
-Мира подготовила bounded pre-implementation plan для трёх подтверждённых дефектов на unchanged #232 head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`. Полный candidate plan находится в `.github/agents/chatgpt-5.6-sol.md` (service commit `e3f5fd1`). Он ещё не прошёл независимую техническую проверку и не является разрешением менять #232.
+Мира подготовила bounded pre-implementation plan для трёх подтверждённых дефектов на unchanged #232 head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`. Полный candidate plan находится в `.github/agents/chatgpt-5.6-sol.md` (service commit `e3f5fd1`). План прошёл независимую техническую проверку Лёвы: **PASS**, [заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6317354085). PASS плана не является командой менять #232.
 
 Ключевая граница плана: L1+L2 закрываются возвратом к принятой модели `server temporary upload pool + mounted-editor selection + exact publication manifest`, без новой tombstone/table; L3 закрывается attachment-aware rebase через latest published baseline + explicit local removals + local new uploads, также только в mounted editor state.
 
+## Pre-implementation review L1–L3 — Лёва PASS
+
+По назначению Миры `6312844933` проверен candidate plan service commit `e3f5fd1` против confirmed L1–L3 и unchanged implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`. Владелец разрешил публикацию. [Полное заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6317354085).
+
+- **Package 1 достаточен для L1/L2:** temporary refs удерживаются до terminal/cleanup; selection — mounted-editor state; точный submitted manifest не публикует лишний pool. Это сохраняет latest successful new upload timestamp после Remove и позволяет отказаться от ambiguous upload без per-file tombstone. Late commit/callback не возвращает selected entry; scope locks и terminal markers сохраняются. Destructive per-file DELETE исключается из selection contract либо становится non-destructive. Remove/read/failure/idempotent ACK существующего asset не продлевают idle.
+- **Package 2 достаточен для L3:** latest published baseline + explicit local removals + local new uploads; attachment rebase предшествует продвижению expectedRevisionId. Отсутствие в старой форме не равно Remove; repeated rebase сохраняет explicit intent, subsequent concurrent revision снова требует fence/rebase.
+- **Package 3 достаточен:** обязательны regressions исходных counterexamples и перечисленных race/rebase transitions, applicable full checks на новом stable exact head и свежий whole-PR cycle. Новая persistence/table/version/general synchronization subsystem не обоснована. Owner visual gate отменён владельцем и не возвращается.
+
+Это PASS плана, не реализации или whole-PR acceptance; новых test/browser/runtime прогонов при plan review не выполнялось. #232 не менялся, correction не начинался.
+
 ## Текущий следующий шаг
 
-Лёва (Codex-6.1 Sol) проводит независимую pre-implementation проверку candidate bounded plan L1–L3 из `.github/agents/chatgpt-5.6-sol.md` (service commit `e3f5fd1`) на фоне неизменённого implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
-
-Проверить план как гипотезу, а не как утверждённое решение: достаточно ли `temporary server pool + mounted selection + exact manifest` для L1/L2 без новой persistence; корректно ли L3 rebase сохраняет только явный локальный attachment intent; не создаёт ли план новую compensation chain или скрытые current-Stage regressions. #232 не менять. Дать PASS или REQUEST REVISION с проверяемой причиной.
+Мира проверяет опубликованный PASS Лёвы, фиксирует завершение pre-implementation gate и координирует с владельцем назначение correction-подэтапа. PASS/его публикация сами по себе не являются командой начать implementation. Мишаню не подключаем. Merge только владельцем.
