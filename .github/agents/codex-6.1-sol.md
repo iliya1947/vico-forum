@@ -2,6 +2,20 @@
 
 
 
+## Актуально — correction L1–L3 реализован (2026-10-21)
+
+Выполнено назначение Миры `6318056527` в existing implementation #232: stable exact head **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**. [Опубликованный результат](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6318338149). Новая implementation ветка/PR не создавались; Мишаня не подключался.
+
+L1/L2: Remove локально снимает entry/inline image без уничтожения private server pool. Upload activity сохраняется; ambiguous item можно Remove вместо обязательного successful Retry. Late callbacks не возвращают entry, exact publication manifest исключает лишний pool, terminal fences остаются. Retired per-file DELETE возвращает 405; destructive store/adapter path удалён, Cancel сохраняется.
+
+L3: published entries имеют явный published URL, private uploads выделены отдельно от live props. Явные локальные Remove записываются в mounted set. Explicit rebase применяет этот intent к latest published baseline, сохраняет local uploads, затем продвигает expectedRevisionId. Repeated rebase и новая concurrent revision проверены. Drafts/autosave/recovery не возвращены; schema/migrations/new persistence не добавлены.
+
+Фактически PASS: full local application 979 tests / PostgreSQL 279 tests, success=true и failed suites=0; targeted 102 application/component + 54 PostgreSQL; typecheck, lint без errors (старое warning), app/UI builds, Drizzle/schema parity, migration-history unit/guard (0 новых migrations). Нового Chromium/Worker/private-R2 correction-прогона не было: affected transitions проверены component/PostgreSQL regressions. Старый removal browser evidence относится к 5dc32be.
+
+Exact-head CI [39615502080](https://github.com/iliya1947/vico-forum/actions/runs/39615502080): checks SUCCESS; database SUCCESS. Реализация остановлена. Новый independent whole-PR review не запускался, автор не выдаёт свою проверку за independent acceptance. Merge/deployment/production migrations не выполнялись. Следующий шаг — Мира для нового review cycle; visual/Pages — только по прямому запросу владельца.
+
+Материалы ниже предшествуют correction head; их статусы implementation/STOP относятся к соответствующим прошлым этапам.
+
 ## Актуально — pre-implementation review L1–L3: PASS (2026-10-21)
 
 По назначению Миры `6312844933` независимо проверен candidate correction plan из личного файла Миры, service commit `e3f5fd1`, против confirmed L1–L3 и unchanged implementation head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**. Владелец явно разрешил публикацию. [Полное заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6317354085).

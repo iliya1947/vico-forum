@@ -4,16 +4,15 @@
 
 ## Текущее состояние
 
-- Implementation PR: #232 — removal пользовательских drafts/autosave; опубликован head **`5dc32be046b5cb5dc7029d0371137308bc2ef55b`**.
-- Owner-authorized исполнитель — **Лёва**, Мишаня не участвует. Новый PR/ветка не создавались. [Итог реализации и фактические проверки](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6292445730).
-- Persistent text drafts/cache/API/store, 60-second autosave, recovery/discovery/cross-tab conflict UI, My Drafts/header/status удалены. Открытый editor buffer/Undo сохраняется в памяти; reload не восстанавливает текст. Future target Drafts and autosave остаётся Under development.
-- Attachments/publication/edit-published работают через минимальную operation identity, existing temporary refs/terminal markers/publication receipts без текста и text CAS. Exact submitted selection проверяется/publishes atomically; post expectedRevisionId, Save/Cancel, permissions, idempotency и published/shared-file protection сохранены. Cleanup abandoned refs — 24-hour technical idle cutoff.
-- F7 исправлен и проверен component/Chromium, включая 1/2/4 leading spaces. Старые A–G/T/S/mixed correction gates superseded removal; прежние findings по удалённым paths не являются отдельным correction backlog.
-- Локально: исправленные targeted suites **93 application/component + 12 PostgreSQL PASS** (success=true, failed suites/unhandled errors=0); TypeScript, application/UI-preview builds, Drizzle/schema/migration-history/manifest/runtime privilege checks и production-build Workers smoke PASS. ESLint без ошибок, одно прежнее предупреждение ui.test.tsx.
-- Chromium/Worker/PostgreSQL/local private R2: все четыре authoring flows, no autosave/reload recovery, uploads/private download/exact publication, reply/IME и published edit Remove/Cancel/Save/access revocation PASS; draft requests/page errors отсутствовали.
-- Exact-head CI: [39434488911](https://github.com/iliya1947/vico-forum/actions/runs/39434488911) **checks SUCCESS, database SUCCESS** на exact head 5dc32be: 974 application tests (94 files) и 272 PostgreSQL tests (26 files) PASS.
-- Merged migrations 0034–0044 не изменены; unmerged snapshot-purpose 0045 удалена из итогового diff. Новая table/registry/attachment-version не вводится.
-- Текущий результат review/verification: **L1–L3 CONFIRMED** на unchanged 5dc32be; [независимые воспроизведения Лёвы](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6300266423). Whole-PR PASS/готовность к merge не подтверждены; corrections ещё не разрешены/не выполнялись. Visual gate отменён владельцем. Merge, production/external migrations/deployment не выполнялись; служебный PR не merge.
+- Implementation PR: #232 — removal drafts/autosave и bounded correction L1–L3; опубликован stable head **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**. [Итог реализации](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6318338149).
+- Исполнитель — Лёва по назначению Миры `6318056527` и owner continuation. Мишаня не подключался; новая implementation ветка/PR не создавались.
+- L1/L2 исправлены разделением private server pool и mounted selection: Remove не удаляет refs/activity evidence, доступен после ambiguous failure, late callback/commit не включает снятый файл в exact manifest. Per-file DELETE возвращает 405, destructive store path удалён; whole-operation Cancel и terminal fences сохранены.
+- L3 исправлен явным attachment-aware rebase: latest published baseline минус explicit local Remove плюс local private uploads, затем advancement expectedRevisionId. Repeated rebase и дальнейшая concurrent revision покрыты regressions.
+- Полные локальные suites: **979 application + 279 PostgreSQL PASS**, success=true, failed suites=0. Targeted: 102 application/component + 54 PostgreSQL PASS. Typecheck, lint (0 errors, одно прежнее warning), application/UI-preview builds, Drizzle/schema parity и migration-history checks PASS.
+- Новый exact-head CI [39615502080](https://github.com/iliya1947/vico-forum/actions/runs/39615502080): **checks SUCCESS; database SUCCESS**. Прежний CI 5dc32be не переносится на новый head.
+- Нового Chromium/Worker/private-R2 correction-прогона не было: переходы L1–L3 проверены components и настоящим PostgreSQL. Предыдущие removal browser evidence относятся к 5dc32be. Configured CI Workers smoke/guards/privilege probes входят в job database.
+- Text drafts/autosave/recovery не возвращены; новая persistence/table/tombstone/version/general sync не добавлена. Schema и merged migrations не менялись.
+- Новый independent whole-PR review correction head ещё не запускался; готовность к merge не подтверждается. Owner visual/Pages gate отменён владельцем, отдельный visual review — только по прямому запросу. Merge/deployment/production migrations не выполнялись; service PR не merge.
 
 Ниже сохранены предшествующие решения/материалы согласования; snapshot correction и связанные findings superseded более поздним owner removal decision. Текущие scope/статус определяются removal-разделами и этим блоком.
 
@@ -728,6 +727,10 @@ Implementation #232 не менялся; correction plan не проектиро
 
 После реализации остановиться, опубликовать новый exact head и фактически выполненные проверки. Whole-PR review до этого не запускать.
 
+## Bounded correction L1–L3 — реализован Лёвой
+
+Назначение `6318056527` выполнено в existing #232 на stable exact head **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**. [Фактический результат и границы проверок](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6318338149). Package 1/2 реализованы без новой persistence; согласованные regressions и docs/PROJECT_STATE обновлены. Полные локальные suites — 979 application / 279 PostgreSQL PASS; типы, lint/builds, schema/history checks PASS. CI 39615502080: checks SUCCESS, database SUCCESS. Реализация остановлена до нового review cycle; это результат автора, не independent whole-PR PASS.
+
 ## Текущий следующий шаг
 
-Лёва проверяет PR #234 и выполняет назначенную там bounded correction implementation L1–L3 в существующем PR #232.
+Exact-head CI correction head a528c6d завершён успешно в обоих jobs. Мира проверяет результат реализации и координирует новый independent whole-PR cycle. Лёва whole-PR review не запускает, Мишаню не подключаем. Merge только владельцем.
