@@ -711,3 +711,39 @@ PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согл�
 Осталось восемь профильных документов: docs/auth/AUTHORIZATION.md, docs/database/MIGRATIONS.md (прикладные контракты; сервисные разделы — только контекст) и шесть docs/translation/*.md. Затем требуется общая сверка всего разрешённого документального объёма. Исключённый docs/database/HYPERDRIVE.md не добавляется в объём.
 
 Следующая часть: полное чтение AUTHORIZATION.md и MIGRATIONS.md, сопоставление dynamic permissions, ownership/lockout/error semantics и локальных schema/migration contracts. Исполнитель останавливается до разрешения владельца продолжить этап 1, часть 4.
+
+
+## AUD-20261022 — этап 1, часть 4
+
+Статус: **PARTIAL — этап 1 не завершён**. Baseline: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Продолжение AUD-20261022; нумерация независимого прохода не изменяется.
+
+### Покрытие
+
+| Документ | Строки | Git blob | Статус |
+| --- | ---: | --- | --- |
+| docs/auth/AUTHORIZATION.md | 264 | 79b68863e17bb1202609abd9d5641b5fc6454917 | DOC_READ, 1–EOF |
+| docs/database/MIGRATIONS.md | 313 | e8ad5ef6b862ab4b7d57d9664a6f25fe810a685d | DOC_READ, 1–EOF; operational sections CONTEXT |
+
+Оба документа прочитаны полностью до фактического EOF; сопоставлены с уже прочитанными базовыми/product/editor документами. В части 4 — 577 строк; накопительно — двенадцать документов, 5592 строки. DOC_READ не является PASS реализации. Внешние утверждения MIGRATIONS прочитаны как контекст без проверки сервисов и без расширения объёма.
+
+### Требования для последующих прикладных проверок
+
+- Better Auth определяет authenticated identity/session; application permissions разрешаются сервером из PostgreSQL, независимо от role claims/client input.
+- Одна explicit role на пользователя с built-in user fallback, динамические built-in/custom grants и per-user overrides. Precedence: deny → allow → role grant → deny. Role inheritance/multiple-role membership не входят в текущую модель.
+- Permission catalog code-backed: 15 документированных ключей. Все документированные initial grants входят в этот catalog: user — 7, moderator — 14, admin — 15. Это механическая проверка документа, а не сравнение с runtime catalog/seed/schema.
+- editOwn, solution.manageOwn и sourceLocale.correctOwn проверяют authoritative ownership; pin и attachmentSecurity.read независимы. Управление duplicate/сигналами проверяется по своей persisted kind/resource applicability, а не по клиентскому выбору permission.
+- resolveUser и management-state composite reads требуют internally consistent snapshot; freshness действует со следующего request, cache допускается только внутри request.
+- Typed dependency unavailability отделена от denial. Protected mutation fail-closed; optional public controls могут деградировать только при classified availability failure. Unexpected schema/programming/config/invariant errors не подавляются catch-all.
+- Каждая management mutation заново проверяет capability, validation и same-origin boundary; custom role удаляется только без assignments. Нельзя атомарно убрать последнего effective authorization manager. External bootstrap исключён; публичный unauthenticated bootstrap запрещён.
+- Development schema evolution использует reviewed forward SQL, journal и snapshots. После merge SQL/snapshot/journal history immutable; исправление — forward migration.
+- History guard, metadata check и clean PostgreSQL integration имеют разные цели. Local DB tests ограничены disposable PostgreSQL 17 с именем *_test; DATABASE_URL server/admin-only, без browser/Worker bundle и логирования.
+- Feature schema и runtime могут merge вместе при доказанной local/CI согласованности; это не требует немедленной внешней миграции. Внешний rollout/evidence остаётся отдельной границей, исключённой из этого аудита; старое accepted external evidence не объявляется дефектом только из-за новых local migrations.
+- Прикладное разделение DB capabilities следует реальным queries/least privilege; application roles не тождественны PostgreSQL runtime roles. Проверка внешних grants/credentials/Hyperdrive/deployment не выполнялась.
+
+Проверка файловых целей локальных Markdown-ссылок в этих документах: отсутствующих файлов нет. Anchors и внешние URL не проверялись. Миграции/БД/tests/build/browser не запускались. Реализация и main-документы не менялись. Замечания переданы владельцу только в чате по порядку независимых проверок; в служебный PR записаны покрытие, требования и следующий шаг.
+
+### Остаток и остановка
+
+Остаются шесть документов docs/translation: LOCALES.md, UI_TRANSLATION.md, CONTENT_TRANSLATION.md, STORAGE_AND_VERSIONING.md, PROVIDERS_AND_JOBS.md и RESEARCH.md, затем финальная сверка разрешённого документального объёма.
+
+Следующая часть: полностью прочитать LOCALES.md и UI_TRANSLATION.md, сопоставить locale routing/registry/fallback, UI source fingerprints, trust и SSR/hydration требования. Исполнитель останавливается до разрешения владельца продолжить этап 1, часть 5. Исключённые сервисы в объём не возвращаются.
