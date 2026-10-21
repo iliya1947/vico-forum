@@ -12,7 +12,7 @@
 - Новый exact-head CI [39615502080](https://github.com/iliya1947/vico-forum/actions/runs/39615502080): **checks SUCCESS; database SUCCESS**. Прежний CI 5dc32be не переносится на новый head.
 - Нового Chromium/Worker/private-R2 correction-прогона не было: переходы L1–L3 проверены components и настоящим PostgreSQL. Предыдущие removal browser evidence относятся к 5dc32be. Configured CI Workers smoke/guards/privilege probes входят в job database.
 - Text drafts/autosave/recovery не возвращены; новая persistence/table/tombstone/version/general sync не добавлена. Schema и merged migrations не менялись.
-- Новый independent whole-PR review correction head ещё не запускался; готовность к merge не подтверждается. Owner visual/Pages gate отменён владельцем, отдельный visual review — только по прямому запросу. Merge/deployment/production migrations не выполнялись; service PR не merge.
+- Назначенные whole-PR gates correction head завершены: Мира PASS, Лира PASS, финальный technical gate Лёвы PASS ([заключение](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6320419547)). Новых confirmed current-Stage defects не осталось по этим проверкам; merge не выполнялся. Owner visual/Pages gate отменён владельцем, отдельный visual review — только по прямому запросу. Merge/deployment/production migrations не выполнялись; service PR не merge.
 
 Ниже сохранены предшествующие решения/материалы согласования; snapshot correction и связанные findings superseded более поздним owner removal decision. Текущие scope/статус определяются removal-разделами и этим блоком.
 
@@ -773,6 +773,16 @@ Stable implementation head остаётся `a528c6d2cfba8029072c1f18ae963946a0b
 
 Результат: `PASS` либо `REQUEST REVISION` с проверяемой причиной. Merge не выполнять.
 
+## Финальный technical whole-PR gate — Лёва PASS
+
+Назначение `6320049171` завершено на unchanged exact implementation head **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**, main/base `21386887cec954618807a1bb1d08f186676e22ce`. Владелец прямо разрешил публикацию. [Полное заключение и пределы evidence](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6320419547).
+
+**PASS:** новых подтверждённых current-Stage defects в agreed removal + L1–L3 correction scope не обнаружено. Проверены removal runtime, четыре authoring flows/editor/history/submit/error/Cancel, auth/context/origin/permission/private download, exact new/retained manifest, atomicity/receipt/idempotency, terminal fencing, cleanup claims/shared refs, attachment-aware/repeated rebase и subsequent revision fence, F7, docs/migration/schema boundary. L1–L3 закрыты по проверенным causal chains. Future infrastructure/AV/cosmetic refinement и исторические неисполняемые draft labels не объявляются blockers.
+
+Exact-head CI `39615502080` заново проверен: checks/database SUCCESS. Own implementation evidence 979 application / 279 PostgreSQL PASS, success=true/failed suites=0 (targeted 102/54) сверено; suites в финальном gate повторно не запускались. Нового Chromium/Worker/private-R2 acceptance прогона не было. Лёва — автор реализации и назначенный final technical gate, не дополнительная independent reviewer identity; независимые PASS Миры/Лиры зафиксированы отдельно.
+
+#232 в review не менялся; fixes/visual/Pages/merge/deployment/production migrations не выполнялись. Мишаня по правилу владельца в цикл не подключался. Отдельный owner visual gate не применяется без его запроса.
+
 ## Текущий следующий шаг
 
-Лёва проверяет PR #234 и выполняет назначенную там финальную техническую whole-PR проверку PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
+Мира проверяет опубликованный final technical PASS Лёвы, фиксирует завершение назначенного review cycle и координирует передачу владельцу для решения о merge PR #232 exact head a528c6d. Сам merge выполняет только владелец; service PR #234 не merge.
