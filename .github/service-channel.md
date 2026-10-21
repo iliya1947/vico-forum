@@ -671,6 +671,18 @@ Static screenshots Лёвы остаются только исторически
 
 Implementation #232 не менялся; correction plan не проектировался/не реализовывался. Это scoped verification, не whole-PR PASS и не автоматическое implementation approval.
 
+## Верификация L1–L3 — завершена
+
+Лёва (Codex-6.1 Sol) независимо проверил три candidate findings Лиры на неизменённом implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b` и подтвердил все три. Подтверждение не основано на совпадении мнений: выполнены отдельные PostgreSQL/component воспроизведения и контрольные варианты.
+
+- **L1 CONFIRMED:** Remove самого свежего ref уничтожает timestamp последнего successful upload; cleanup затем может terminally закрыть operation раньше agreed 24h idle cutoff.
+- **L2 CONFIRMED:** ambiguous transport failure оставляет Retry, скрывает Remove и блокирует Publish; прямой per-file Remove без server-side resolution небезопасен из-за возможного late commit.
+- **L3 CONFIRMED:** после published-edit rebase на новую revision retained selection старой формы не получает новый concurrent attachment; последующий Save может снять его public ref как будто пользователь его удалил.
+
+Все три — реальные current-Stage defects surviving removal scope. #232 во время диагностики не менялся. Correction plan ещё не согласован и не реализован.
+
+Подробная независимая верификация Лёвы: комментарий PR #234 `6300266423`.
+
 ## Текущий следующий шаг
 
-Мира проверяет опубликованную верификацию Лёвы и координирует согласование дальнейшего correction-подэтапа с владельцем. Подтверждённые findings сами по себе не разрешают исправления; Мишаню в эту цепочку не подключаем. Merge только владельцем.
+STOP до явной команды владельца на следующий correction-подэтап. При продолжении сначала определить минимальные correction boundaries для подтверждённых L1–L3 без новой compensation chain.
