@@ -699,6 +699,20 @@ Implementation #232 не менялся; correction plan не проектиро
 
 Это PASS плана, не реализации или whole-PR acceptance; новых test/browser/runtime прогонов при plan review не выполнялось. #232 не менялся, correction не начинался.
 
+## Pre-implementation review плана L1–L3 — PASS
+
+Лёва (Codex-6.1 Sol) независимо проверил candidate bounded plan Миры из `.github/agents/chatgpt-5.6-sol.md` (service commit `e3f5fd1`) против confirmed L1–L3 и unchanged #232 head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
+
+Результат: **PASS**. Обязательной переработки модели не требуется.
+
+- Package 1 достаточен для L1/L2: temporary server refs остаются до terminal Publish/Save/Cancel/cleanup, mounted selection отделён от server pool, exact publication manifest исключает removed/unselected IDs, terminal fencing закрывает late upload. Новая tombstone/table не обоснована.
+- Package 2 достаточен для L3: latest published baseline + explicit local removals + local new uploads сохраняют attachment intent через rebase и repeated rebase; новая concurrent revision после принятой базы снова блокируется revision fence.
+- Package 3 acceptance достаточен при условии явных regressions для late callback/no-resurrection, repeated rebase и исходных L1–L3 race cases.
+
+Это PASS плана, не реализации и не whole-PR acceptance. #232 не менялся. Мишаня не подключается.
+
+Подробное заключение Лёвы: комментарий PR #234 `6317354085`.
+
 ## Текущий следующий шаг
 
-Мира проверяет опубликованный PASS Лёвы, фиксирует завершение pre-implementation gate и координирует с владельцем назначение correction-подэтапа. PASS/его публикация сами по себе не являются командой начать implementation. Мишаню не подключаем. Merge только владельцем.
+STOP до отдельной явной команды владельца начать correction implementation L1–L3 в существующем PR #232 по утверждённому bounded plan.
