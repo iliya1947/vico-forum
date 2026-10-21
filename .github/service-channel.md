@@ -798,6 +798,17 @@ Stable implementation head: **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**.
 
 #232 остаётся OPEN, mergeable=true и Draft=true. Код после review не менялся. Следующий шаг принадлежит только владельцу проекта: снять Draft и выполнить merge #232, если он принимает завершённый review cycle.
 
+## PR #232 — merged
+
+Владелец завершил merge implementation PR #232.
+
+- PR #232: CLOSED / MERGED.
+- Final implementation head: `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
+- Merge commit: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+- GitHub `main` подтверждён на том же merge commit `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+- Перед merge: Мира PASS, Лира PASS, Лёва final technical PASS; exact-head CI checks/database SUCCESS; confirmed current-Stage defects отсутствовали.
+- Service PR #234 остаётся служебным и не merge.
+
 ## Текущий следующий шаг
 
-Владелец переводит PR #232 из Draft в Ready for review и выполняет merge. Service PR #234 не merge.
+Текущая цепочка #232 завершена. Новая работа начинается только с следующей задачи владельца.
