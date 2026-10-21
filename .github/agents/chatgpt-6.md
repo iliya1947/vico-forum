@@ -1,6 +1,6 @@
 # Лира — ChatGPT-6
 
-Активная задача: независимый аудит форума. Этап 9 завершён; следующий этап 10 — после команды владельца.
+Активная задача: независимый аудит форума. Этап 10 завершён; следующий этап 11 — после команды владельца.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Лиры в рамках текущего служебного PR.
 
@@ -557,3 +557,11 @@
 | `workers/database-bindings.test.ts` | 2 | IN / NOT_REVIEWED |
 | `workers/database-bindings.ts` | 2 | IN / NOT_REVIEWED |
 | `wrangler.jsonc` | 2 | IN / NOT_REVIEWED |
+
+## Аудит форума — этап 10 (2026-10-22)
+
+- Проверен `main` на `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Scope: создание тем и ответов; независимые solved/best-answer transitions; post ownership/authz/Origin; unread/new/read markers; reply/mention notifications; профиль и профильные counters; online presence и browser heartbeat.
+- Прослежены UI → routes/actions → `ForumService` → `DrizzleForumRepository`/SQL; рассмотрены актуальные source-of-truth `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, существующие unit/route tests и native PostgreSQL `tests/database/migrations.test.ts`, `stage4-core-e2e.test.ts`, `forum-profiles.test.ts`, `forum-online-presence.test.ts`.
+- Подтверждённые свойства по коду и тестовым сценариям: серверные авторизация/Origin и привязка actor к session; topic/post consistency; best answer независим от solved; monotonic per-user unread marker с concurrent regression; owner-bound notification mark-read, dedup, atomic reply/notification transaction; public-only profile projection, owner-only profile write, URL validation; bounded 5-minute authenticated presence and rate-limited heartbeat. Тесты на этом шаге отдельно не запускались, live browser/external runtime не проверялись.
+- Новых подтверждённых current-Stage defects по текущему проверенному scope не установлено. Непроверенные/дискуссионные наблюдения предыдущих этапов не повышаются до статуса командных defects до завершения всего аудита.
+- Следующий этап после команды владельца: 11 — Help & Solutions и модерация. Изменений implementation, документации `main`, общего `.github/service-channel.md` и комментариев PR не делалось.
