@@ -462,3 +462,103 @@ Accepted technical boundary:
 - old draft findings are closed by path removal where applicable; M1 re-evaluated on new operation/ref contract; F7 survives;
 - no new persistence table justified;
 - #232 unchanged until next explicit owner command starts implementation.
+
+
+## 2026-10-21 — candidate bounded correction plan L1–L3
+
+Implementation PR #232 remains unchanged at exact head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
+This is a candidate plan for pre-implementation review, not authorization to edit #232.
+
+### Goal
+
+Correct only the three independently confirmed current-Stage defects L1–L3 without restoring text drafts/autosave/CAS, without a new general synchronization subsystem, and without a new persistence table unless the plan is independently shown insufficient.
+
+### Package 1 — temporary upload pool vs mounted-editor selection (L1 + L2)
+
+Restore the already accepted post-draft-removal separation:
+
+- a successful upload creates a private temporary server ref for the open operation;
+- the set currently selected for publication is mounted-editor state, not server-side selection state;
+- user Remove removes the item from the mounted selection/UI, but does not need to destroy the temporary server ref before the operation terminates;
+- final Publish/Save continues to send the exact selected private IDs; extra temporary refs are not published;
+- successful Publish/Save and whole-operation Cancel remain terminal: retire the operation and remove all temporary refs;
+- abandoned temporary refs are removed by the existing idle cleanup;
+- late upload/retry after terminal completion remains rejected by the existing generation fence.
+
+This removes the need for a new per-file tombstone:
+the current repository already validates only submitted selected IDs, ignores extra refs, then retires the operation and deletes all its refs. Therefore an ambiguous upload that later commits can remain an unselected private ref until Publish/Cancel/cleanup without being able to enter the published manifest.
+
+L1 invariant:
+- the 24-hour idle point remains based on the latest successful upload even after the user deselects/removes that file from the form.
+- Remove/read/failure/retry-without-success must not extend the idle period.
+- With temporary refs retained until terminal/cleanup, the existing latest-ref timestamp can continue representing successful upload activity; no separate activity table is required.
+
+L2 invariant:
+- after an ambiguous transport failure the user can choose Retry or Remove;
+- Remove must immediately remove that item from the current form selection and must allow publication of the remaining valid content;
+- a late server commit for that same upload ID must remain private/unselected and must not resurrect the UI item or become published;
+- if publication wins the race, terminal fencing rejects the late upload; if upload wins first, exact-manifest publication excludes it and terminal cleanup removes its ref;
+- Retry with the stable upload ID remains available and converges as today.
+
+The current destructive per-file DELETE must no longer be the authority for editor selection. It may be removed/retired from the current editor contract or otherwise made non-destructive, but it must not erase the operation's latest-successful-upload evidence or be required to make Remove safe.
+
+No new schema/table/tombstone is planned for Package 1. If implementation proves one is actually necessary, STOP and return to architecture review before adding it.
+
+### Package 2 — published-edit rebase preserves attachment intent (L3)
+
+The edit form must distinguish:
+- latest published attachment baseline;
+- explicit local removals of published attachments;
+- local new private uploads.
+
+When the user chooses “Apply my edit to the current revision”:
+- keep local text and local new uploads;
+- start from the latest published attachment set;
+- apply explicit local removals to that latest set;
+- include newly published attachments that were not present when the form originally opened;
+- do not resurrect attachments removed by the newer published revision unless the user has an actual local addition for them;
+- only after attachment state is rebased may the accepted `expectedRevisionId` advance to the current revision.
+
+Thus absence from an old form is not interpreted as Remove. Only an explicit local removal is removal intent.
+
+The local attachment-intent state is mounted-editor state only and is reset when the edit form closes/reopens. No persistent draft/conflict subsystem is introduced.
+
+Repeated rebases must be safe: a later concurrent revision is rebased using the same explicit local delta, and a further race after rebase is still rejected by the server revision fence.
+
+### Package 3 — regressions, documents, exact-head acceptance
+
+Required targeted regressions before whole-PR review:
+
+L1:
+- A upload at t=0; B successful upload at t≈23h; user removes B from selection; cleanup at t≈24h+ε must not retire the operation or remove A;
+- after 24h from B with no later successful upload, cleanup may retire it;
+- removing all current selections does not itself terminally close the operation.
+
+L2:
+- ambiguous/lost-ACK transport failure exposes both Retry and Remove;
+- Remove unblocks publication when the remaining text/files are otherwise valid;
+- race variants: late upload commits before publication, publication commits before late upload, and retry path; removed ID is never published or resurrected;
+- another selected file remains selected/published;
+- whole-operation Cancel remains terminal.
+
+L3:
+- base {A}, concurrent published {A,B}, no local attachment change -> rebase/Save keeps {A,B};
+- explicit local Remove A + concurrent {A,B} -> rebase/Save keeps {B};
+- local new upload C + concurrent {A,B} -> rebase/Save keeps {A,B,C};
+- explicit Remove A + local C + concurrent {A,B} -> {B,C};
+- if the newer published revision removed an attachment that local user never explicitly changed, rebase does not resurrect it;
+- stale Save before rebase remains rejected;
+- a new concurrent revision after rebase remains rejected.
+
+Run the applicable component and PostgreSQL suites for these transitions, then full application/database tests, typecheck, lint, builds, schema/migration guards and existing privilege checks on one new stable exact head. Browser/Worker/private-R2 checks are required only where the corrected behavior depends on browser/runtime semantics not established by component/PostgreSQL coverage. No owner visual acceptance/Pages work unless the owner explicitly requests it.
+
+Update `docs/EDITOR.md`, `PROJECT_STATE.md` and affected tests to describe the actual surviving model:
+server temporary upload pool + mounted selection, exact publication manifest, terminal operation cleanup, and attachment-aware published-edit rebase. Also correct only the already-known current #232 wording that still treats owner visual acceptance as an automatic gate; do not rewrite historical records.
+
+### Done criteria
+
+- L1, L2 and L3 counterexamples no longer reproduce.
+- No regression in exact selected publication, lost-ACK idempotency, terminal fencing, private download authorization, cleanup grace/claim protection, post revision history or F7.
+- No text draft/autosave/recovery/conflict path returns.
+- No new persistence table, attachment version registry or generalized synchronization layer unless a failed pre-implementation review proves it necessary.
+- #232 reaches a new stable exact head with applicable checks green and then starts a fresh independent whole-PR review cycle.
