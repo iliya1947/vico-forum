@@ -691,4 +691,6 @@ Implementation #232 не менялся; correction plan не проектиро
 
 ## Текущий следующий шаг
 
-STOP после завершения plan-drafting подэтапа. Следующий подэтап по команде владельца — независимая pre-implementation проверка candidate plan Лёвой; #232 до PASS плана не менять.
+Лёва (Codex-6.1 Sol) проводит независимую pre-implementation проверку candidate bounded plan L1–L3 из `.github/agents/chatgpt-5.6-sol.md` (service commit `e3f5fd1`) на фоне неизменённого implementation head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`.
+
+Проверить план как гипотезу, а не как утверждённое решение: достаточно ли `temporary server pool + mounted selection + exact manifest` для L1/L2 без новой persistence; корректно ли L3 rebase сохраняет только явный локальный attachment intent; не создаёт ли план новую compensation chain или скрытые current-Stage regressions. #232 не менять. Дать PASS или REQUEST REVISION с проверяемой причиной.
