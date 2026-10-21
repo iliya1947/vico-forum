@@ -323,3 +323,56 @@ describe("publication operations without text drafts", () => {
     await expect(attachments.createDraftAttachment(attachment(operationId))).rejects.toMatchObject({reason:"gone"});
   });
 });
+
+
+describe("temporary pool and explicit mounted selection",()=>{
+  it("retains latest successful upload activity after deselection, then expires after 24h; reads/retry do not renew it",async()=>{
+    const op=crypto.randomUUID(),a=attachment(op),b=attachment(op);
+    await attachments.createDraftAttachment(a);await attachments.createDraftAttachment(b);
+    const now=Date.now(),t0=now-24*3600000-1000,tB=t0+23*3600000;
+    await client.query('update forum_attachment_draft_refs set created_at=$1 where attachment_id=$2',[new Date(t0),a.id]);
+    await client.query('update forum_attachment_draft_refs set created_at=$1 where attachment_id=$2',[new Date(tB),b.id]);
+    // Remove deselects B in the mounted form, including when all files are deselected.
+    // It makes no server mutation, so B still carries the operation activity time.
+    const deleted:string[]=[];const bucket={delete:async(key:string)=>{deleted.push(key);}};
+    expect((await new ForumAttachmentCleanup(drizzle(client),bucket,()=>new Date(now)).runOnce()).prunedRefs).toBe(0);
+    expect(await attachments.readDraftAttachment(ownerId,contextKey,op,a.id)).not.toBeNull();
+    await attachments.createDraftAttachment(b); // A lost ACK retry does not refresh successful-new-upload time.
+    await attachments.listDraftAttachments(ownerId,contextKey,op);
+    expect((await client.query('select created_at from forum_attachment_draft_refs where attachment_id=$1',[b.id])).rows[0].created_at.getTime()).toBe(tB);
+    const result=await new ForumAttachmentCleanup(drizzle(client),bucket,()=>new Date(tB+24*3600000+1)).runOnce();
+    expect(result.prunedRefs).toBe(2);
+    expect(deleted).toContain(a.objectKey);expect(deleted).toContain(b.objectKey);
+    await expect(attachments.createDraftAttachment(attachment(op))).rejects.toMatchObject({reason:"gone"});
+  });
+  it.each(["upload-first","publish-first"] as const)("excludes a removed ambiguous upload across %s ordering",async(order)=>{
+    const op=crypto.randomUUID(),a=attachment(op),removed=attachment(op);
+    await attachments.createDraftAttachment(a);
+    const publish=()=>forum.createPost({...reply(crypto.randomUUID(),op),publishedDraft:{contextKey,draftId:op,attachmentIds:[a.id]}});
+    if(order==="upload-first")await attachments.createDraftAttachment(removed);
+    const post=await publish();
+    if(order==="publish-first")await expect(attachments.createDraftAttachment(removed)).rejects.toMatchObject({reason:"gone"});
+    expect(await attachments.readPublishedAttachment(post.id,a.id)).not.toBeNull();
+    expect(await attachments.readPublishedAttachment(post.id,removed.id)).toBeNull();
+    expect((await client.query('select 1 from forum_attachment_draft_refs where draft_id=$1',[op])).rowCount).toBe(0);
+  });
+  it.each([[false,false],[true,false],[false,true],[true,true]])("saves rebased published selection: Remove A=%s, new C=%s",async(removeA,addC)=>{
+    const op=crypto.randomUUID(),a=attachment(op),postId=crypto.randomUUID(),r1=crypto.randomUUID();
+    await attachments.createDraftAttachment(a);
+    await forum.createPost({...reply(postId,op),publishedDraft:{contextKey,draftId:op,attachmentIds:[a.id]},bodyRevision:{id:r1,originalContent:"Original",sourceLocale:"en"}});
+    const editContext=`post:${postId}:edit`,otherOp=crypto.randomUUID(),b=attachment(otherOp,editContext);
+    await attachments.createDraftAttachment(b);
+    await forum.editPublishedPost({postId,topicId,actorId:ownerId,expectedRevisionId:r1,body:"Other tab added B",draftId:otherOp,attachmentIds:[b.id],retainedAttachmentIds:[a.id]});
+    const r2=(await forum.readPost(postId))!.body.id;
+    const localOp=crypto.randomUUID(),c=attachment(localOp,editContext);
+    if(addC)await attachments.createDraftAttachment(c);
+    const edit={postId,topicId,actorId:ownerId,body:"My edit",draftId:localOp,attachmentIds:addC?[c.id]:[],retainedAttachmentIds:removeA?[b.id]:[a.id,b.id]};
+    await expect(forum.editPublishedPost({...edit,expectedRevisionId:r1})).rejects.toBeInstanceOf(ForumStateConflictError);
+    await forum.editPublishedPost({...edit,expectedRevisionId:r2});
+    expect(!!await attachments.readPublishedAttachment(postId,a.id)).toBe(!removeA);
+    expect(await attachments.readPublishedAttachment(postId,b.id)).not.toBeNull();
+    expect(!!await attachments.readPublishedAttachment(postId,c.id)).toBe(addC);
+    await forum.editPublishedPost({...edit,expectedRevisionId:r2}); // lost Save ACK remains idempotent
+    expect(await forum.readPostHistory(postId,topicId)).toHaveLength(3);
+  });
+});

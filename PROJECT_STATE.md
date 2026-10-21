@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-20
+Последнее обновление: 2026-10-21
 
 ## Назначение
 
@@ -35,13 +35,26 @@ post-edit сохраняет expectedRevisionId, Save/Cancel и историю. 
 сохраняются. Merged migrations не переписываются, unmerged snapshot migration 0045 удалена.
 F7 исправляется в visual surface и editable whitespace range.
 
-Локальные targeted component/application проверки (93 теста) и publication/operation
+На исходном removal head targeted component/application проверки (93 теста) и publication/operation
 PostgreSQL проверки (12 тестов) проходят с нулём failed suites и unhandled errors.
 TypeScript, builds, migration/schema/privilege guards и production-build Workers smoke
 проверены. Chromium/Worker/PostgreSQL/local private R2 подтвердил четыре authoring flows,
 отсутствие text autosave/reload recovery, upload/publication/edit access и F7, включая
 1/2/4 ведущих пробела. Итоги полного exact-head CI фиксируются в служебном канале;
-owner visual acceptance и новый independent whole-PR review ещё не выполнены.
+Независимая проверка выявила L1–L3; после их верификации и PASS плана
+реализован bounded correction. Remove теперь меняет mounted selection без удаления
+server temporary pool/activity timestamps и допускается после ambiguous upload failure;
+per-file DELETE выведен из контракта. Явный published-edit rebase применяет local Remove
+к latest published attachments, сохраняет local new uploads и затем продвигает revision
+fence. Новая persistence/table/tombstone не вводится. Регрессии проверяют idle cutoff,
+late ACK/commit, точный manifest, rebase/removals/uploads и повторную concurrent revision.
+Полные локальные application (979 tests) и PostgreSQL (279 tests) suites проходят
+с success=true и без failed suites. Typecheck, lint (одно прежнее warning) и обе сборки
+прошли. Результат нового exact-head CI фиксируется в служебном канале после завершения.
+Нового Chromium/Worker/private-R2 прогона для L1–L3 не выполнялось: изменённые
+переходы проверены component/PostgreSQL regressions. Новый whole-PR cycle correction
+head ещё не запускался.
+Отдельный visual/Pages gate отменён владельцем; visual review — только по его запросу.
 Подробный действующий контракт — docs/EDITOR.md.
 Production/external migrations/deployment не выполнялись. Ниже сохранены исторические
 срезы Editor 2.0; их описания drafts/boundaries/CAS не являются текущими требованиями.

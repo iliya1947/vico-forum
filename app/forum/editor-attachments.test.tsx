@@ -188,7 +188,7 @@ describe("editor attachment UI", () => {
     expect(await screen.findByText("Uploaded")).toBeInTheDocument();
   });
 
-  it("keeps an ambiguous transport failure retry-only until the stable upload ID resolves", async () => {
+  it("offers Retry and Remove after ambiguous failure and retains stable-ID retry", async () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === "GET") return Response.json({ attachments: [] });
       if (init?.method === "DELETE") return Response.json({ outcome: "removed" });
@@ -203,7 +203,7 @@ describe("editor attachment UI", () => {
     fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [file] } });
     FakeXMLHttpRequest.instances[0]!.fail();
     await screen.findByText("Attachment storage is temporarily unavailable. Try again.");
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await FakeXMLHttpRequest.instances[1]!.complete(201, {
@@ -221,13 +221,10 @@ describe("editor attachment UI", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     await waitFor(() => expect(screen.queryByText("notes.txt")).not.toBeInTheDocument());
-    const deletion = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE");
-    expect(deletion).toBeTruthy();
-    const headers = (deletion?.[1]?.headers ?? {}) as Record<string, string>;
-    expect(headers["X-Vico-Attachment-Id"]).toBe(attachmentId);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("allows an exact DELETE after a determinate rejected upload", async () => {
+  it("allows local Remove after a determinate rejected upload", async () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === "GET") return Response.json({ attachments: [] });
       if (init?.method === "DELETE") return Response.json({ error: "notFound" }, { status: 404 });

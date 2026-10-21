@@ -161,4 +161,55 @@ describe("in-memory attachment operation", () => {
         await request.complete(201, stored());
         expect(current.selectedAttachmentIds).toEqual([]);
     });
+    it("Remove after lost ACK unblocks publication and ignores late ACK/progress without deleting pool refs", async () => {
+        renderHarness();
+        const request = attach(); request.fail();
+        expect(current.blocking).toBe(true);
+        expect(screen.getByRole("button", {name:"Retry"})).toBeEnabled();
+        fireEvent.click(screen.getByRole("button", {name:"Remove"}));
+        expect(current.blocking).toBe(false);
+        expect(current.selectedAttachmentIds).toEqual([]);
+        expect(fetch).not.toHaveBeenCalled();
+        request.progress(5,5); await request.complete(201,stored());
+        expect(screen.queryByText("notes.txt")).not.toBeInTheDocument();
+        expect(current.selectedAttachmentIds).toEqual([]);
+    });
+    it("removing an ambiguous second upload keeps the first selected",async()=>{
+        renderHarness();await attach().complete(201,stored());
+        const failed=attach();failed.fail();
+        const row=screen.getByRole("button",{name:"Retry"}).closest("li")!;
+        fireEvent.click(row.querySelectorAll("button")[1]!);
+        expect(current.blocking).toBe(false);
+        expect(current.selectedAttachmentIds).toEqual([attachmentId]);
+        await failed.complete(201,{outcome:"stored",attachment:{...stored().attachment,id:failed.headers.get("X-Vico-Attachment-Id")}});
+        expect(current.selectedAttachmentIds).toEqual([attachmentId]);
+        expect(fetch).not.toHaveBeenCalled();
+    });
+    it.each([false,true])("rebase preserves local Remove=%s and a private upload across repeated published revisions",async(removeA)=>{
+        const a={id:"23b93562-0550-4eef-88af-f951d6ea6139",url:"/file?post=p",fileName:"A.txt",byteSize:5,detectedType:"text"};
+        const b={...a,id:"23b93562-0550-4eef-88af-f951d6ea6140",fileName:"B.txt"};
+        const d={...a,id:"23b93562-0550-4eef-88af-f951d6ea6141",fileName:"D.txt"};
+        const view=renderHarness({published:[a]});
+        if(removeA)fireEvent.click(screen.getByRole("button",{name:"Remove"}));
+        const initialOp=current.operationId;
+        await attach().complete(201,stored());
+        function refresh(published:typeof a[]){view.rerender(<I18nextProvider i18n={runtime()}><Harness published={published}/></I18nextProvider>);}
+        refresh([a,b]);
+        expect(current.retainedAttachmentIds).toEqual(removeA?[]:[a.id]);
+        act(()=>{expect(current.rebasePublishedAttachments()).toBe(true);});
+        expect(current.retainedAttachmentIds).toEqual((removeA?[b.id]:[a.id,b.id]).sort());
+        expect(current.selectedAttachmentIds).toEqual([attachmentId]);
+        refresh([a,b,d]);act(()=>{current.rebasePublishedAttachments();});
+        expect(current.retainedAttachmentIds).toEqual((removeA?[b.id,d.id]:[a.id,b.id,d.id]).sort());
+        refresh([d]);act(()=>{current.rebasePublishedAttachments();});
+        expect(current.retainedAttachmentIds).toEqual([d.id]);
+        expect(current.selectedAttachmentIds).toEqual([attachmentId]);
+        expect(current.operationId).toBe(initialOp);
+        expect(fetch).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText("Cancel"));
+        refresh([a,d]);act(()=>{current.rebasePublishedAttachments();});
+        expect(current.retainedAttachmentIds).toEqual([a.id,d.id].sort());
+        expect(current.selectedAttachmentIds).toEqual([]);
+    });
+
 });

@@ -150,22 +150,7 @@ export async function action({ request, context }: { request: Request; context: 
     try { await store.cancelOperation(scope.userId, scope.contextKey, scope.draftId); return json({outcome: "cancelled"}); }
     catch (error) { const response = attachmentStoreFailure(error); if (response) return response; throw error; }
   }
-  if (request.method === "DELETE") {
-    const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
-    if (!isForumAttachmentUuid(attachmentId)) {
-      return json({ error: "invalid" }, 400);
-    }
-    try {
-      const removed = await store.removeDraftAttachment(
-        scope.userId, scope.contextKey, scope.draftId, attachmentId,
-      );
-      return removed ? json({ outcome: "removed" }) : json({ error: "notFound" }, 404);
-    } catch (error) {
-      const response = attachmentStoreFailure(error);
-      if (response) return response;
-      throw error;
-    }
-  }
+  if (request.method === "DELETE") return json({ error: "method" }, 405);
 
   const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
   const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);

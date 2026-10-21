@@ -2317,6 +2317,7 @@ describe("published edit revision fence", () => {
     const original = { ...topic, posts: [{
       ...topic.posts[0]!, id: postId, authorId: ownerId,
       body: { ...topic.posts[0]!.body, id: "fence-r1" },
+      attachments: [{id:"23b93562-0550-4eef-88af-f951d6ea6138",fileName:"A.txt",byteSize:5,detectedType:"text"}],
     }] };
     let current = original;
     const router = createMemoryRouter([{
@@ -2348,7 +2349,7 @@ describe("published edit revision fence", () => {
     expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
 
     current = { ...original, posts: [{
-      ...original.posts[0]!, body: {
+      ...original.posts[0]!, attachments:[...original.posts[0]!.attachments,{id:"23b93562-0550-4eef-88af-f951d6ea6139",fileName:"B.txt",byteSize:5,detectedType:"text"}], body: {
         ...original.posts[0]!.body, id: "fence-r2", originalContent: "Someone else's current edit",
       },
     }] };
@@ -2364,6 +2365,20 @@ describe("published edit revision fence", () => {
     expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
     expect(textarea).toHaveValue("My original unsaved edit ");
     await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+
+    expect(form.querySelector('input[name="editorRetainedAttachmentIds"]')).toHaveValue(JSON.stringify([
+      "23b93562-0550-4eef-88af-f951d6ea6138","23b93562-0550-4eef-88af-f951d6ea6139",
+    ]));
+    current={...current,posts:[{...current.posts[0]!,body:{...current.posts[0]!.body,id:"fence-r3",originalContent:"Another concurrent edit"}}]};
+    await router.revalidate();
+    await waitFor(()=>expect(within(form).getByRole("button",{name:"Save changes"})).toBeDisabled());
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+    fireEvent.click(within(form).getByRole("button",{name:"Apply my edit to the current revision"}));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r3");
+    expect(form.querySelector('input[name="editorRetainedAttachmentIds"]')).toHaveValue(JSON.stringify([
+      "23b93562-0550-4eef-88af-f951d6ea6138","23b93562-0550-4eef-88af-f951d6ea6139",
+    ]));
+    expect(textarea).toHaveValue("My original unsaved edit ");
   });
 
   it("opens the published revision without fetching a former server text draft", async () => {

@@ -22,7 +22,7 @@ type UploadEntry = {
     attachment: DraftAttachment | null;
     error: string | null;
     removeError: boolean;
-    uncertainCommit: boolean;
+    publishedUrl: string | null;
 };
 interface Props {
     ownerId: string | null;
@@ -110,7 +110,7 @@ function storedAttachment(value: unknown): DraftAttachment | null {
         verificationStatus: "type-checked",
     };
 }
-function restoredEntry(attachment: DraftAttachment, draftId: string): UploadEntry {
+function restoredEntry(attachment: DraftAttachment, draftId: string, publishedUrl: string | null = null): UploadEntry {
     return {
         id: attachment.id,
         draftId,
@@ -122,7 +122,7 @@ function restoredEntry(attachment: DraftAttachment, draftId: string): UploadEntr
         attachment,
         error: null,
         removeError: false,
-        uncertainCommit: false,
+        publishedUrl,
     };
 }
 function likelySecretFile(name: string): boolean {
@@ -143,15 +143,17 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
     identityRef.current = identity;
     const requestsRef = useRef(new Map<string, XMLHttpRequest>());
     const previousScope = useRef(JSON.stringify([ownerId, contextKey]));
+    const removedPublishedIds = useRef(new Set<string>());
     const headers = { "X-Vico-Editor-Context": encoded(contextKey ?? ""), "X-Vico-Operation-Id": draftId };
     function initialEntries(): UploadEntry[] {
-        return publishedAttachments.map((file) => restoredEntry({ ...file, responseMime: "application/octet-stream", verificationStatus: "type-checked" }, draftId));
+        return publishedAttachments.map((file) => restoredEntry({ ...file, responseMime: "application/octet-stream", verificationStatus: "type-checked" }, draftId, file.url));
     }
     const [initialized, setInitialized] = useState(false);
     useEffect(() => {
         const scope = JSON.stringify([ownerId, contextKey]);
         if (!initialized || previousScope.current !== scope) {
             previousScope.current = scope;
+            removedPublishedIds.current.clear();
             setEntries(initialEntries());
             setInitialized(true);
             setOperationId(crypto.randomUUID());
@@ -163,17 +165,24 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
         return () => { identityRef.current = ""; for (const request of requests.values())
             request.abort(); requests.clear(); };
     }, [identity]);
-    const attachmentUrl = (id: string, generation: string) => publishedAttachments.find((file) => file.id === id)?.url
-        ?? `/api/attachments/file/${encoded(id)}?operation=${encoded(generation)}&context=${encoded(contextKey ?? "")}`;
+    const attachmentUrl = (entry: UploadEntry) => entry.publishedUrl
+        ?? `/api/attachments/file/${encoded(entry.id)}?operation=${encoded(entry.draftId)}&context=${encoded(contextKey ?? "")}`;
     const canAdd = !!ownerId && !!contextKey && initialized && !disabled;
     const hasUnsettled = entries.some((entry) => entry.status !== "stored");
     const blocking = !!contextKey && (!initialized || hasUnsettled);
-    const selectedIds = entries.filter((entry) => entry.status === "stored" && !publishedAttachments.some((file) => file.id === entry.id)).map((entry) => entry.id).sort();
-    const retainedAttachmentIds = entries.filter((entry) => entry.status === "stored" && publishedAttachments.some((file) => file.id === entry.id)).map((entry) => entry.id).sort();
+    const selectedIds = entries.filter((entry) => entry.status === "stored" && entry.publishedUrl === null).map((entry) => entry.id).sort();
+    const retainedAttachmentIds = entries.filter((entry) => entry.status === "stored" && entry.publishedUrl !== null).map((entry) => entry.id).sort();
     function setEntry(id: string, update: (entry: UploadEntry) => UploadEntry) {
         setEntries((current) => current.map((entry) => entry.id === id ? update(entry) : entry));
     }
-    function reset() { setOperationId(crypto.randomUUID()); setEntries(initialEntries()); setPublicationWarning(false); }
+    function reset() { removedPublishedIds.current.clear(); setOperationId(crypto.randomUUID()); setEntries(initialEntries()); setPublicationWarning(false); }
+    function rebasePublishedAttachments() {
+        if (!initialized) return false;
+        const baseline = initialEntries().filter(entry => !removedPublishedIds.current.has(entry.id));
+        // Preserve only explicit local intent, never infer Remove from an old baseline.
+        setEntries(current => [...baseline, ...current.filter(entry => entry.publishedUrl === null)]);
+        return true;
+    }
     function cancel() {
         const operationHeaders = headers;
         for (const request of requestsRef.current.values())
@@ -191,7 +200,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
             return;
         const identityAtStart = identity;
         const entry: UploadEntry = { id: stableId, draftId, fileName: namedFile.name, byteSize: namedFile.size,
-            status: "uploading", progress: 0, file: namedFile, attachment: null, error: null, removeError: false, uncertainCommit: false };
+            status: "uploading", progress: 0, file: namedFile, attachment: null, error: null, removeError: false, publishedUrl: null };
         if (replacing)
             setEntry(stableId, () => entry);
         else
@@ -216,11 +225,10 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
                 return;
             }
             setEntry(stableId, (current) => ({ ...current, status: "error", progress: null,
-                error: typeof payload?.reason === "string" ? payload.reason : typeof payload?.error === "string" ? payload.error : "unavailable",
-                uncertainCommit: request.status >= 500 || !payload }));
+                error: typeof payload?.reason === "string" ? payload.reason : typeof payload?.error === "string" ? payload.error : "unavailable" }));
         };
         const failure = () => { requestsRef.current.delete(stableId); if (active())
-            setEntry(stableId, (current) => ({ ...current, status: "error", progress: null, error: "unavailable", uncertainCommit: true })); };
+            setEntry(stableId, (current) => ({ ...current, status: "error", progress: null, error: "unavailable" })); };
         request.onerror = failure;
         request.onabort = failure;
         request.open("POST", "/api/attachments");
@@ -237,26 +245,13 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
         startUpload(file); }
     function retry(entry: UploadEntry) { if (entry.file)
         startUpload(entry.file, entry.id, true); }
-    async function remove(entry: UploadEntry) {
-        if (entry.status === "uploading" || entry.status === "removing" || entry.uncertainCommit)
-            return;
-        const identityAtStart = identity;
-        setEntry(entry.id, current => ({ ...current, status: "removing", removeError: false }));
-        try {
-            if (!publishedAttachments.some((file) => file.id === entry.id)) {
-                const response = await fetch("/api/attachments", { method: "DELETE", credentials: "same-origin", headers: { ...headers, "X-Vico-Attachment-Id": entry.id } });
-                if (!response.ok && response.status !== 404)
-                    throw new Error("remove failed");
-            }
-            if (identityRef.current !== identityAtStart)
-                return;
-            callbacksRef.current.removeImage(entry.id);
-            setEntries(current => current.filter(item => item.id !== entry.id));
-        }
-        catch {
-            if (identityRef.current === identityAtStart)
-                setEntry(entry.id, current => ({ ...current, status: entry.status, removeError: true }));
-        }
+    function remove(entry: UploadEntry) {
+        if (disabled || entry.status === "uploading") return;
+        if (entry.publishedUrl !== null) removedPublishedIds.current.add(entry.id);
+        // The private server pool is retained until operation completion/cleanup.
+        // Late upload ACKs only update existing entries, so cannot reselect this ID.
+        callbacksRef.current.removeImage(entry.id);
+        setEntries(current => current.filter(item => item.id !== entry.id));
     }
     function handleDrop(event: DragEvent<HTMLElement>) { if (event.dataTransfer.files.length) {
         event.preventDefault();
@@ -309,15 +304,14 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
                   </span>) : entry.status === "stored" ? (<span>{t("editorAttachmentUploaded")}</span>) : entry.status === "removing" ? (<span>{t("editorAttachmentRemoving")}</span>) : (<span className="is-error">{t(uploadErrorKey(entry.error))}</span>)}
                 {entry.removeError ? (<span className="is-error">{t("editorAttachmentRemoveError")}</span>) : null}
               </div>
-              {entry.status === "stored" && entry.attachment && contextKey ? (<ForumAttachmentDisplay attachment={entry.attachment} url={attachmentUrl(entry.id, draftId)} deferImage compact/>) : null}
+              {entry.status === "stored" && entry.attachment && contextKey ? (<ForumAttachmentDisplay attachment={entry.attachment} url={attachmentUrl(entry)} deferImage compact/>) : null}
               <div className="markdown-editor-attachment-actions">
                 {entry.status === "error" ? (<button type="button" disabled={disabled} onClick={() => retry(entry)}>
                     {t("editorAttachmentRetry")}
                   </button>) : null}
                 {entry.status !== "uploading"
                     && entry.status !== "selecting"
-                    && entry.status !== "removing"
-                    && !entry.uncertainCommit ? (<button type="button" disabled={disabled} onClick={() => void remove(entry)}>
+                    && entry.status !== "removing" ? (<button type="button" disabled={disabled} onClick={() => void remove(entry)}>
                       {t("editorAttachmentRemove")}
                     </button>) : null}
               </div>
@@ -338,13 +332,14 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
         retainedAttachmentIds,
         cancel,
         reset,
+        rebasePublishedAttachments,
         previewAttachments: entries.filter((entry) => entry.status === "stored" && entry.attachment && contextKey)
             .map((entry) => ({
             id: entry.id,
             fileName: entry.fileName,
             byteSize: entry.byteSize,
             detectedType: entry.attachment!.detectedType,
-            url: attachmentUrl(entry.id, entry.draftId),
+            url: attachmentUrl(entry),
         })),
         controls,
         details,

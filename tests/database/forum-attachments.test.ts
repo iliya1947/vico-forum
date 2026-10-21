@@ -310,8 +310,8 @@ describe("forum attachment lifecycle foundation", () => {
     expect(postRefs.rowCount).toBe(0);
     expect(await store.listDraftAttachments(ownerId, contextKey, draftId)).toHaveLength(1);
 
-    expect(await store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)).toBe(true);
-    expect(await store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)).toBe(false);
+    await store.cancelOperation(ownerId, contextKey, draftId);
+    await store.cancelOperation(ownerId, contextKey, draftId);
     await client.query("delete from forum_attachment_draft_refs where attachment_id=$1", [attachmentId]);
     const deleted = await client.query(
       "delete from forum_attachments where id = $1 returning id",
@@ -472,31 +472,30 @@ describe("atomic publication of selected draft refs", () => {
     },
   );
 
-  it.each(["delete-before-publish", "publish-before-delete"] as const)(
-    "serializes concurrent DELETE/publication without losing the selected set: %s",
+  it.each(["cancel-before-publish", "publish-before-cancel"] as const)(
+    "serializes concurrent Cancel/publication without losing the selected set: %s",
     async (order) => {
       const { topicId, context, draft } = await topicFixture();
       const file = await store.createDraftAttachment(upload(context, draft));
       await setDraft(ownerId, context, draft);
       const makePost = (forum: DrizzleForumRepository) => forum.createPost(reply(topicId, context, draft, [file.id]));
       const remove = (attachments: DrizzleForumAttachments) =>
-        attachments.removeDraftAttachment(ownerId, context, draft, file.id);
-      if (order === "delete-before-publish") {
+        attachments.cancelOperation(ownerId, context, draft);
+      if (order === "cancel-before-publish") {
         const [removed, published] = await queuedOperations(context,
           (attachments) => remove(attachments),
           (_, forum) => makePost(forum).then(() => "unexpected", (error: unknown) =>
             error instanceof ForumStateConflictError ? "conflict" : Promise.reject(error)),
         );
-        expect(removed).toBe(true);
+        expect(removed).toBeUndefined();
         expect(published).toBe("conflict");
       } else {
         const [published, removed] = await queuedOperations(context,
           (_, forum) => makePost(forum),
-          (attachments) => remove(attachments).then(() => "unexpected", (error: unknown) =>
-            error instanceof ForumAttachmentDraftConflictError ? "gone" : Promise.reject(error)),
+          (attachments) => remove(attachments),
         );
         expect(published.id).toBeDefined();
-        expect(removed).toBe("gone");
+        expect(removed).toBeUndefined();
         expect(await store.readPublishedAttachment(published.id, file.id)).toMatchObject({ id: file.id });
       }
     },

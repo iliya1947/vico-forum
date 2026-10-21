@@ -265,19 +265,6 @@ export class DrizzleForumAttachments {
     });
   }
 
-  async removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<boolean> {
-    if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
-    return this.db.transaction(async (tx) => {
-      await lockAttachmentDraftScope(tx, ownerId, contextKey);
-      const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
-      const removed = await tx.delete(forumAttachmentDraftRefs).where(and(
-        eq(forumAttachmentDraftRefs.ownerId, ownerId), eq(forumAttachmentDraftRefs.contextKey, contextKey),
-        eq(forumAttachmentDraftRefs.draftId, generation), eq(forumAttachmentDraftRefs.attachmentId, attachmentId),
-      )).returning({id: forumAttachmentDraftRefs.attachmentId});
-      return removed.length > 0;
-    });
-  }
-
   async cancelOperation(ownerId: string, contextKey: string, draftId: string): Promise<void> {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) throw new InvalidForumAttachmentError();
     await this.db.transaction(async (tx) => {

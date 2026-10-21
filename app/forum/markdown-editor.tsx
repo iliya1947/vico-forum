@@ -45,6 +45,7 @@ import { useEditorAttachments } from "./editor-attachments";
 export interface MarkdownEditorHandle {
   focus: () => void;
   cancelOperation: () => void;
+  rebasePublishedAttachments: () => boolean;
   insertText: (text: string) => void;
 }
 
@@ -793,6 +794,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     useImperativeHandle(forwardedRef, () => ({
+      rebasePublishedAttachments: attachments.rebasePublishedAttachments,
       focus() {
         const selection = sourceSelection() ?? historyRef.current.current.selection;
         if (authoringMode === "simple") {

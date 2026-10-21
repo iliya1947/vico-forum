@@ -23,7 +23,6 @@ export interface ForumAttachmentStore {
   recordSecurityEvent(input: RecordAttachmentSecurityEventInput): Promise<void>;
   readSecurityAttachmentEvents(page: number): Promise<ForumAttachmentSecurityEventPage>;
   listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
-  removeDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<boolean>;
 }
 
 export class ForumAttachmentStorageUnavailableError extends Error {
@@ -83,7 +82,5 @@ export function createHyperdriveForumAttachmentStore(
     readSecurityAttachmentEvents: (page) => apply((store) => store.readSecurityAttachmentEvents(page)),
     listDraftAttachments: (ownerId, contextKey, draftId) =>
       apply((store) => store.listDraftAttachments(ownerId, contextKey, draftId)),
-    removeDraftAttachment: (ownerId, contextKey, draftId, attachmentId) =>
-      apply((store) => store.removeDraftAttachment(ownerId, contextKey, draftId, attachmentId)),
   };
 }

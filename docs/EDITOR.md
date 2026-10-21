@@ -361,16 +361,26 @@ Drafts and autosave остаётся в `Under development` как возмож�
   owner/context/permission/origin checks действуют независимо от client identity.
   Stable file ID позволяет повторить ambiguous upload без второго logical asset.
   Failed/pending uploads блокируют штатную публикацию, не мешая набору текста.
+  Remove снимает файл только из mounted selection/UI, в том числе после ambiguous
+  transport failure. Temporary server ref остаётся в private pool до Publish/Save,
+  Cancel или idle cleanup; per-file DELETE больше не поддерживается. Поздний ACK
+  не возвращает снятый файл в selection. Не выбранный pool никогда не публикуется.
 - Final submit передаёт exact selected uploaded IDs и retained published IDs. Repository
   под scope/post locks проверяет owner/context/operation, verification, live refs и
   cleanup state; atomically пишет публикацию и её refs, закрывает operation и сохраняет
   fingerprint receipt. Лишние temporary refs не публикуются. Text snapshot/CAS не нужен.
 - Post edit сохраняет `expectedRevisionId` и revision history. Remove/Cancel не меняют
   public refs; Save атомарно применяет retained/new selection. Concurrent stale Save
-  отклоняется без частичной публикации/удаления файлов.
+  отклоняется без частичной публикации/удаления файлов. При явном rebase берётся
+  актуальный published attachment baseline, из него вычитаются только явные локальные
+  Remove; новые локальные uploads сохраняются отдельно. Лишь затем продвигается
+  expectedRevisionId. Отсутствие файла в старой форме не считается Remove; repeated
+  rebase сохраняет этот intent, а новая concurrent revision вновь отклоняет stale Save.
 - Cancel/Publish terminally закрывают operation; late upload/retry не возрождает её.
   Temporary refs abandoned operation освобождаются процессором после 24 часов без
-  успешного нового upload. Объект может быть удалён только после existing one-hour grace от создания, с
+  успешного нового upload. Удержание pool refs сохраняет дату последнего такого upload
+  даже после локального Remove всех файлов. Remove/read/failure и idempotent retry ACK
+  уже существующего asset не продлевают idle. Объект может быть удалён только после existing one-hour grace от создания, с
   durable delete claim/lease и trigger locks; published/shared refs защищены всегда.
   Реальное расписание cleanup и внешняя инфраструктура — отложенный Stage 6.
 - Existing merged schema с историческими `draft_id` именами используется только для
@@ -386,6 +396,7 @@ Drafts and autosave остаётся в `Under development` как возмож�
   Worker/local private R2. Проверять отсутствие text storage/requests после >60s, reload,
   in-memory history, attachment-only/subset/text-only publish, retry/lost ACK, Cancel,
   terminal/cleanup races, post revision conflict, downloads и F7 whitespace/focus/IME.
-  Старый CI не заменяет проверки нового exact head и owner visual acceptance.
+  Старый CI не заменяет проверки нового exact head. Отдельная owner visual acceptance
+  и Pages preview выполняются только по прямому запросу владельца.
 - Production migration/deployment, external R2/Neon, scheduling и AV provider не входят
   в этот PR. Финальная косметическая доводка остаётся общепроектным refinement-pass.

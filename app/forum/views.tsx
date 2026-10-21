@@ -2845,7 +2845,9 @@ export function TopicView({
                           <div className="topic-page-alert" role="alert">
                             <p>{t(editBaseRevisionId ? "postEditRevisionChanged" : "postEditRevisionUnknown")}</p>
                             <button type="button" disabled={isEditSubmitting} onClick={() => {
-                              setEditBaseRevisionId(post.body.id);
+                              if (editEditorRef.current?.rebasePublishedAttachments()) {
+                                setEditBaseRevisionId(post.body.id);
+                              }
                             }}>{t("postEditAcceptCurrentRevision")}</button>
                           </div>
                         ) : null}

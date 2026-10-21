@@ -64,7 +64,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   });
   const readSecurityAttachmentEvents = vi.fn(async () => ({ events: [], hasMore: false, page: 0 }));
   const listDraftAttachments = vi.fn(async (): Promise<ForumAttachmentMetadata[]> => []);
-  const removeDraftAttachment = vi.fn(async () => true);
+  const cancelOperation = vi.fn(async () => {});
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
   ctx.set(forumAttachmentStoreContext, {
@@ -72,7 +72,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
     recordSecurityEvent,
     readSecurityAttachmentEvents,
     listDraftAttachments,
-    removeDraftAttachment,
+    cancelOperation,
     rebindDraftAttachments,
     initializePostEditAttachments,
   } as never);
@@ -80,7 +80,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
     ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent,
-    listDraftAttachments, removeDraftAttachment, rebindDraftAttachments, initializePostEditAttachments,
+    listDraftAttachments, cancelOperation, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
 
@@ -188,17 +188,17 @@ describe("private attachment upload API", () => {
     expect((await action({ request: scopedRequest("GET"), context: env.ctx })).status).toBe(405);
   });
 
-  it("removes only the exact owner/context/draft reference", async () => {
+  it("rejects retired per-file DELETE without changing the private pool", async () => {
     const env = setup();
-    const attachmentId = "23b93562-0550-4eef-88af-f951d6ea6138";
-    const response = await action({
-      request: scopedRequest("DELETE", { attachmentId }),
-      context: env.ctx,
-    });
+    const response = await action({request: scopedRequest("DELETE", {attachmentId: uploadId}), context: env.ctx});
+    expect(response.status).toBe(405);
+    expect(env.cancelOperation).not.toHaveBeenCalled();
+  });
+  it("cancels only the authorized owner/context/operation", async () => {
+    const env = setup();
+    const response = await action({request: scopedRequest("DELETE"), context: env.ctx});
     expect(response.status).toBe(200);
-    expect(env.removeDraftAttachment).toHaveBeenCalledWith(
-      "real-user", contextKey, draftId, attachmentId,
-    );
+    expect(env.cancelOperation).toHaveBeenCalledWith("real-user", contextKey, draftId);
   });
 
   it("does not require a text version and still rejects closed operation mutations", async () => {
@@ -213,9 +213,9 @@ describe("private attachment upload API", () => {
     expect(uploadEnv.r2.delete).toHaveBeenCalledOnce();
 
     const deleteEnv = setup();
-    deleteEnv.removeDraftAttachment.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
+    deleteEnv.cancelOperation.mockRejectedValueOnce(new ForumAttachmentDraftConflictError());
     expect((await action({
-      request: scopedRequest("DELETE", { attachmentId: uploadId }), context: deleteEnv.ctx,
+      request: scopedRequest("DELETE"), context: deleteEnv.ctx,
     })).status).toBe(409);
   });
 
