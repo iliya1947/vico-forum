@@ -614,3 +614,13 @@
 PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согласованности документации; инструкции уже прочитаны на этапе 0), docs/EDITOR.md, docs/UI_UX_PASS.md, docs/auth/AUTHORIZATION.md, docs/database/MIGRATIONS.md в прикладном объёме и шесть профильных документов docs/translation. docs/database/HYPERDRIVE.md исключён как сервисный документ; doc_old — только контекст при необходимости.
 
 Следующая часть: полное чтение PROJECT_STATE.md и PROJECT_HISTORY.md с фиксацией действующего состояния и сверкой с базовыми требованиями, затем профильные контракты. По условию владельца исполнитель останавливается после этой части и ждёт разрешения продолжить этап 1.
+
+
+## Аудит форума — этап 11 (предыдущий независимый проход, 2026-10-22)
+
+- Этот checkpoint продолжает этапы 8–10 предыдущего прохода из текущего чата. Он **не** закрывает этап 5 отдельного цикла `AUD-20261022` и не изменяет его manifest, статусы и критерии покрытия.
+- Source: `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Проверены Help & Solutions reader/actions/views: category modes all/open/active/solutions/mine/help/for-me, четыре комбинируемых фильтра, Help question creation и similar questions; server permissions и запросы.
+- Проверены moderation signals (needs-details/needs-review/solution-outdated/duplicate), withdraw/accept/reject и устаревшие cases; решение/подмена best answer; duplicate canonical-root, self-link, active relation, appeals, private visibility; `/:locale/attention` с независимыми Signals/Complaints placeholders/Security Attachments, per-permission case visibility, counts, group-specific pagination и exact case IDs.
+- Код и тесты: `app/routes/category.tsx`, `attention.tsx`, `topic.tsx`; `app/forum/actions.server.ts`, `views.tsx`; `db/forum-service.ts`, `db/forum-repository.ts`; `app/forum/public-read.test.tsx`, `write-actions.test.ts`; `tests/database/migrations.test.ts`, `forum-help-attention.test.ts`; relevant `PROJECT_STATE.md`, `docs/UI_UX_PASS.md`, `docs/auth/AUTHORIZATION.md`. Тесты прочитаны как evidence, но в этом шаге заново не запускались; live browser, real DB run и external runtime не проверены.
+- Не установлено новых **подтверждённых** дефектов текущего Stage по проверенным цепочкам. Отсутствие видимых user-signal submission форм сверено с зафиксированным backend-only scope PR #206 и последующим moderator-queue PR #217; не классифицировать автоматически как дефект. Общий product-completeness вопрос оставить до финального этапа без преждевременного finding.
+- Следующий этап предыдущего прохода (по новой команде владельца): 12 — сквозные сценарии авторизации, динамических разрешений и деградации зависимостей. `main`, общий service-channel и implementation PR не менялись.
