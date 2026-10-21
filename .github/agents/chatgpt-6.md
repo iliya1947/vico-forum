@@ -565,3 +565,52 @@
 - Подтверждённые свойства по коду и тестовым сценариям: серверные авторизация/Origin и привязка actor к session; topic/post consistency; best answer независим от solved; monotonic per-user unread marker с concurrent regression; owner-bound notification mark-read, dedup, atomic reply/notification transaction; public-only profile projection, owner-only profile write, URL validation; bounded 5-minute authenticated presence and rate-limited heartbeat. Тесты на этом шаге отдельно не запускались, live browser/external runtime не проверялись.
 - Новых подтверждённых current-Stage defects по текущему проверенному scope не установлено. Непроверенные/дискуссионные наблюдения предыдущих этапов не повышаются до статуса командных defects до завершения всего аудита.
 - Следующий этап после команды владельца: 11 — Help & Solutions и модерация. Изменений implementation, документации `main`, общего `.github/service-channel.md` и комментариев PR не делалось.
+
+
+## AUD-20261022 — этап 1, часть 1
+
+Статус: **PARTIAL — этап 1 не завершён**. Baseline: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Это продолжение поэтапного плана AUD-20261022, а не независимого аудита с другой нумерацией выше.
+
+### Покрытие документации
+
+Документы прочитаны целиком до фактического EOF, включая последние строки без завершающего перевода строки:
+
+| Документ | Строки | Git blob | Статус |
+| --- | ---: | --- | --- |
+| PROJECT.md | 109 | d261cf8f85d2ecfb44c54ff327fc2cf8fce70e7e | DOC_READ, 1–EOF |
+| README.md | 50 | c6e23326b23c6982bdf521b7dd60b351d73c25f4 | DOC_READ, 1–EOF |
+| ROADMAP.md | 444 | 5cbaf503e3e6715f50635f8f131ee6034c90367c | DOC_READ, 1–EOF |
+| SCAFFOLD_PLAN.md | 435 | 996f542bc166afa8b29952b4beb7501f9a54e43c | DOC_READ, 1–EOF |
+| TRANSLATION_ARCHITECTURE.md | 250 | 0294c0245e846b5fdd5dab22bbc6afe79733cdcf | DOC_READ, 1–EOF |
+
+Всего 1288 строк. DOC_READ обозначает полное чтение и сопоставление этих документов; не подтверждает реализацию требований в коде. Таблица manifest этапа 0 остаётся исходным снимком; эта запись — дополнительный журнал покрытия.
+
+### Требования для последующих проверок
+
+- Классическая структура category → section → topic → post; публичное чтение, участие после входа, безопасный Markdown/code.
+- Модульный монолит с SSR; права приложения отделены от identity. Изменяемые роли и персональные allow/deny, актуальность полномочий на следующем запросе, защита от потери управления.
+- Email verification, рассылки и password reset отложены решением владельца; не объявлять их отсутствие дефектом текущего объёма.
+- Каноническая locale в URL имеет приоритет; registry поддерживает BCP47 без жёсткого потолка языков. Root negotiation: пользователь → cookie → Accept-Language → en.
+- Locale routing зависит от HTTP method: GET/HEAD canonical redirects; неканонический mutation получает 404 до action без Location. Root negotiation — no-store.
+- Для UI en — canonical source; внутри locale current local manual → persistent manual → machine, затем registry fallback → en. Устаревшие fingerprints не считаются текущими переводами.
+- SSR i18next request-scoped; locale/resources и входы форматирования должны совпадать при hydration.
+- Content translation привязан к неизменяемой revision и target locale; title/body разделены. Техническая структура Markdown сохраняется; invalid/unavailable translation возвращает текущий оригинал.
+- Provider не вызывается внутри SSR; durable job сохраняется до enqueue, используются claim/generation/retry/stale fencing. Внешний exactly-once не предполагается.
+- Solved и best answer проверяются как независимые состояния.
+- Drafts/autosave обозначены ROADMAP как возможное будущее развитие после решения владельца, а не обязательный scope текущего Editor 2.0.
+- SCAFFOLD_PLAN описывает исторический Stage 1; его первоначально узкий состав не сравнивается с текущим продуктом как перечень недостающих функций.
+- Отложенная косметическая UI/UX полировка не исключает функциональные, security, data-integrity и authz дефекты.
+- Operational утверждения об исключённых Cloudflare, Neon, Hyperdrive, R2, OAuth и backup/restore не проверяются и не становятся acceptance gates этого аудита.
+
+### Проверки согласованности и ограничения
+
+- Все 49 уникальных component IDs translation registry присутствуют в ROADMAP; лишних IDs в ROADMAP не обнаружено.
+- Проверка файловых целей локальных Markdown-ссылок в этих пяти документах: отсутствующих целей нет. Это не проверка anchors или внешних URL.
+- Подтверждённых противоречий внутри прочитанного среза не установлено. Сопоставление с PROJECT_STATE и профильными контрактами ещё впереди; общий вывод о документации или реализации не сделан.
+- Исходники не менялись; tests/build/browser и внешние сервисы на этой части не запускались. Findings прежних проходов автоматически не перенесены.
+
+### Остаток этапа 1
+
+PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согласованности документации; инструкции уже прочитаны на этапе 0), docs/EDITOR.md, docs/UI_UX_PASS.md, docs/auth/AUTHORIZATION.md, docs/database/MIGRATIONS.md в прикладном объёме и шесть профильных документов docs/translation. docs/database/HYPERDRIVE.md исключён как сервисный документ; doc_old — только контекст при необходимости.
+
+Следующая часть: полное чтение PROJECT_STATE.md и PROJECT_HISTORY.md с фиксацией действующего состояния и сверкой с базовыми требованиями, затем профильные контракты. По условию владельца исполнитель останавливается после этой части и ждёт разрешения продолжить этап 1.
