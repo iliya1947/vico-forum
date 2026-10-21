@@ -713,6 +713,21 @@ Implementation #232 не менялся; correction plan не проектиро
 
 Подробное заключение Лёвы: комментарий PR #234 `6317354085`.
 
+## Owner continuation — correction implementation L1–L3
+
+Владелец продолжил работу после PASS pre-implementation плана. Следующий рабочий шаг — реализация утверждённого bounded correction package L1–L3 в существующем implementation PR #232.
+
+Исполнитель для текущей цепочки: **Лёва (Codex-6.1 Sol)**. Мишаня не подключается.
+
+Требуемый результат:
+- реализовать Package 1 для L1/L2: server temporary upload pool отделён от mounted-editor selection; Remove не уничтожает activity evidence и безопасно снимает ambiguous item из selection; exact manifest/terminal fencing/lost-ACK safety сохраняются;
+- реализовать Package 2 для L3: attachment-aware published-edit rebase через latest published baseline + explicit local removals + local new uploads;
+- добавить согласованные regressions и выполнить applicable checks на одном новом stable exact head;
+- обновить только относящиеся к фактическому результату docs/PROJECT_STATE/tests;
+- не возвращать drafts/autosave/CAS и не вводить новую persistence/table/tombstone/general sync без нового STOP и архитектурного обоснования.
+
+После реализации остановиться, опубликовать новый exact head и фактически выполненные проверки. Whole-PR review до этого не запускать.
+
 ## Текущий следующий шаг
 
-STOP до отдельной явной команды владельца начать correction implementation L1–L3 в существующем PR #232 по утверждённому bounded plan.
+Лёва проверяет PR #234 и выполняет назначенную там bounded correction implementation L1–L3 в существующем PR #232.
