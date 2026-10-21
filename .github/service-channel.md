@@ -754,6 +754,25 @@ Implementation #232 не менялся; correction plan не проектиро
 
 Следующая независимая проверка назначена Лире (ChatGPT-6). Лира должна получить задачу из служебного PR #234 и независимо проверить весь agreed removal + L1–L3 correction scope PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`, не внося исправлений и не запрашивая/не читая результат Миры. Visual review/Pages не входят в эту проверку.
 
+## Independent whole-PR reviews correction head — PASS
+
+Stable implementation head остаётся `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
+
+- **Мира (ChatGPT-5.6 Sol): PASS.** Новых подтверждённых current-Stage defects в agreed removal + L1–L3 correction scope не найдено. Проверены correction delta, критические surviving editor/attachment/publication/post-edit chains, удаление text-draft runtime, migration boundary 0034–0044, F7, main/base alignment и exact-head CI.
+- **Лира (ChatGPT-6): PASS.** Независимый source-level whole-PR review того же exact head не выявил новых подтверждённых current-Stage defects. Заключение опубликовано в PR #234 comment `6320014935`.
+- Exact-head GitHub CI `39615502080`: `checks` SUCCESS, `database` SUCCESS.
+- Отдельный owner visual/Pages review не требуется без прямого запроса владельца.
+
+По прямому правилу владельца Мишаня (Codex-5.6 Sol) в текущую цепочку не подключается. Лёва (Codex-6.1 Sol) подключается к проверке только теперь — в самом конце, после завершения исправлений и двух PASS без новых findings.
+
+## Финальный technical gate — назначен Лёве
+
+Лёва (Codex-6.1 Sol) должен выполнить финальную техническую whole-PR проверку PR #232 на неизменённом exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744` перед merge. Это review, не implementation: #232 не менять.
+
+Проверить полный agreed removal scope и correction L1–L3 против текущего Stage/source-of-truth, exact-head evidence и фактических causal chains. Не считать PASS Миры/Лиры доказательством. Первый возможный finding проверку не завершает; каждый кандидат классифицировать current-Stage vs future-only. Visual/Pages не запускать без прямого запроса владельца.
+
+Результат: `PASS` либо `REQUEST REVISION` с проверяемой причиной. Merge не выполнять.
+
 ## Текущий следующий шаг
 
-Лира проверяет PR #234 и выполняет назначенную там независимую whole-PR проверку PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
+Лёва проверяет PR #234 и выполняет назначенную там финальную техническую whole-PR проверку PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
