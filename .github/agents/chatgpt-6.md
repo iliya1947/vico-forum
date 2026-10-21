@@ -624,3 +624,37 @@ PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согл�
 - Код и тесты: `app/routes/category.tsx`, `attention.tsx`, `topic.tsx`; `app/forum/actions.server.ts`, `views.tsx`; `db/forum-service.ts`, `db/forum-repository.ts`; `app/forum/public-read.test.tsx`, `write-actions.test.ts`; `tests/database/migrations.test.ts`, `forum-help-attention.test.ts`; relevant `PROJECT_STATE.md`, `docs/UI_UX_PASS.md`, `docs/auth/AUTHORIZATION.md`. Тесты прочитаны как evidence, но в этом шаге заново не запускались; live browser, real DB run и external runtime не проверены.
 - Не установлено новых **подтверждённых** дефектов текущего Stage по проверенным цепочкам. Отсутствие видимых user-signal submission форм сверено с зафиксированным backend-only scope PR #206 и последующим moderator-queue PR #217; не классифицировать автоматически как дефект. Общий product-completeness вопрос оставить до финального этапа без преждевременного finding.
 - Следующий этап предыдущего прохода (по новой команде владельца): 12 — сквозные сценарии авторизации, динамических разрешений и деградации зависимостей. `main`, общий service-channel и implementation PR не менялись.
+
+
+## AUD-20261022 — этап 1, часть 2
+
+Статус: **PARTIAL — этап 1 не завершён**. Baseline неизменен: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Нумерация относится только к AUD-20261022; записи независимого прохода сохранены.
+
+### Покрытие
+
+| Документ | Строки | Git blob | Статус |
+| --- | ---: | --- | --- |
+| PROJECT_STATE.md | 2020 | 0affd914738d9c94733d0e0ec1473f7b2569097c | DOC_READ, 1–EOF |
+| PROJECT_HISTORY.md | 496 | a86ca1c654316e921c3f182437d69907faf4cab0 | DOC_READ, 1–EOF |
+| AGENTS.md | 105 | 20acb9210685bf3347f153c0d44d19420e8dc9bc | DOC_READ, 1–EOF |
+
+Полное чтение до фактического EOF и сопоставление с пятью документами части 1. В части 2 — 2621 строка; накопительно — восемь документов, 3909 строк. DOC_READ не является PASS реализации.
+
+### Зафиксированные границы дальнейшей проверки
+
+- Текущее продуктовое решение о removal drafts/autosave сопоставлено с историческими editor slices: исторические CAS/text-sync/recovery требования не переносятся в текущую обязательную функциональность.
+- Upload/publication operation без текста, exact selected-file manifest, publication receipt, revision-fenced post edit и технический idle cleanup остаются прикладными контрактами для последующих этапов.
+- Product-first usable MVP и отложенная косметическая полировка не отменяют проверки functional/security/data/authz defects.
+- Для Help отдельно учитываются authoritative состояния, backend-only signal foundation, moderator queue и provisional UX; незаявленный текущим slice UI не объявляется автоматически дефектом.
+- Historical ledger не используется как источник текущего поведения. В частности, старые записи stale-pack, authorization catch-all, generation ordering и persisted bundle convergence требуют сверки с актуальными профильными контрактами и кодом на соответствующих этапах.
+- Чтение упоминаний excluded services — только контекст: внешние состояния, credentials, deployments, service API, grants и live acceptance не проверялись.
+- Проверка файловых целей локальных Markdown-ссылок этих трёх документов не нашла отсутствующих целей; anchors и внешние URL не проверялись.
+- Для точной сверки repository state read-only просмотрены локальный Git log и checked-in migration journal/наличие файла. Это не выполнение миграций и не аудит внешней БД.
+
+Замечания этой части сообщаются владельцу в текущем чате; в служебный PR перенесены только покрытие, границы и следующий шаг по действующему порядку независимых проверок. Вывод о полном соответствии документации ещё не сделан. Tests/build/browser не запускались; реализация и документы main не менялись.
+
+### Остаток и остановка
+
+Полностью прочитать и сопоставить десять профильных документов: docs/EDITOR.md, docs/UI_UX_PASS.md, docs/auth/AUTHORIZATION.md, docs/database/MIGRATIONS.md в разрешённом прикладном объёме и шесть docs/translation/*.md. После этого — итоговая сверка требований и противоречий всего разрешённого документального объёма. docs/database/HYPERDRIVE.md остаётся исключённым, doc_old — контекстом при необходимости.
+
+Следующая часть: docs/EDITOR.md и docs/UI_UX_PASS.md — действующий authoring/product scope и применимые acceptance требования. Исполнитель останавливается и ждёт разрешения владельца продолжить этап 1, часть 3.
