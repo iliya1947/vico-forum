@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-16
+Последнее обновление: 2026-10-21
 
 ## Назначение
 
@@ -20,7 +20,75 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Editor 2.0 — removal drafts/autosave (2026-10-20, PR #232)
+
+По решению владельца пользовательские черновики/автосохранение перенесены в возможные
+будущие функции (`Under development: drafts`). Runtime local/server text persistence,
+60-second autosave, recovery/discovery, межвкладочные конфликты, My Drafts и status UI
+удаляются в существующем #232. Прежний snapshot correction scope отменён.
+
+Текущая реализация использует in-memory editor buffer и отдельную upload/publication
+operation без текста. Private refs, terminal markers и publication receipts используют
+существующую схему. Final submit atomically проверяет/продвигает выбранные файлы;
+post-edit сохраняет expectedRevisionId, Save/Cancel и историю. Abandoned uploads имеют
+технический 24-hour idle cleanup cutoff; durable claims и published-ref protection
+сохраняются. Merged migrations не переписываются, unmerged snapshot migration 0045 удалена.
+F7 исправляется в visual surface и editable whitespace range.
+
+На исходном removal head targeted component/application проверки (93 теста) и publication/operation
+PostgreSQL проверки (12 тестов) проходят с нулём failed suites и unhandled errors.
+TypeScript, builds, migration/schema/privilege guards и production-build Workers smoke
+проверены. Chromium/Worker/PostgreSQL/local private R2 подтвердил четыре authoring flows,
+отсутствие text autosave/reload recovery, upload/publication/edit access и F7, включая
+1/2/4 ведущих пробела. Итоги полного exact-head CI фиксируются в служебном канале;
+Независимая проверка выявила L1–L3; после их верификации и PASS плана
+реализован bounded correction. Remove теперь меняет mounted selection без удаления
+server temporary pool/activity timestamps и допускается после ambiguous upload failure;
+per-file DELETE выведен из контракта. Явный published-edit rebase применяет local Remove
+к latest published attachments, сохраняет local new uploads и затем продвигает revision
+fence. Новая persistence/table/tombstone не вводится. Регрессии проверяют idle cutoff,
+late ACK/commit, точный manifest, rebase/removals/uploads и повторную concurrent revision.
+Полные локальные application (979 tests) и PostgreSQL (279 tests) suites проходят
+с success=true и без failed suites. Typecheck, lint (одно прежнее warning) и обе сборки
+прошли. Результат нового exact-head CI фиксируется в служебном канале после завершения.
+Нового Chromium/Worker/private-R2 прогона для L1–L3 не выполнялось: изменённые
+переходы проверены component/PostgreSQL regressions. Новый whole-PR cycle correction
+head ещё не запускался.
+Отдельный visual/Pages gate отменён владельцем; visual review — только по его запросу.
+Подробный действующий контракт — docs/EDITOR.md.
+Production/external migrations/deployment не выполнялись. Ниже сохранены исторические
+срезы Editor 2.0; их описания drafts/boundaries/CAS не являются текущими требованиями.
+
 ## Editor 2.0 — завершение реализации в PR #215 (2026-10-15)
+
+Follow-up PR #232 исправляет четыре подтверждённых current-Stage boundary-дефекта поверх
+смёрженного Editor 2.0. Cleanup теперь учитывает unresolved attachment-version membership и
+не claim/delete-ит объект до завершения conflict resolution; после снятия boundary обычная
+очистка сохраняется. Simple table input оставляет native paste внутри выбранной ячейки, а
+surface paste продолжает обслуживать body/cross-leaf сценарии. Межвкладочный выбор cached
+candidate повторно читает authoritative server head: active draft проходит explicit resolve,
+а две version-0 вкладки либо новая generation поверх terminal head проходят обычный CAS save;
+conflict UI закрывается только после успешного ответа сервера. Simple Enter использует общий
+surface Range для selection между соседними leaves/blocks вместо leaf-local fallback.
+Targeted application regressions (118 tests), полный application suite (1064 tests), полный
+attachment PostgreSQL 17 suite (58 tests), TypeScript, production build и changed-files ESLint
+локально проходят. Exact code/test head `36e1306832e1910a5ed9e0bf9e5400d39abf45b6`
+прошёл GitHub Actions #39135879866: `checks` SUCCESS (1064 application tests, lint,
+typecheck, application/UI-preview builds и guards) и `database` SUCCESS (313 PostgreSQL 17
+tests, migration/schema/privilege checks и Workers smoke). После первого независимого
+review Миры и Лиры были подтверждены два дополнительных draft/attachment lifecycle defect;
+их bounded correction внесён следующим набором изменений.
+
+Bounded follow-up correction PR #232 (2026-10-19): после согласованного review добавлены
+защита от indefinite retention attachment boundary после 30-day expiry (включая отсутствие
+live refs) и server-fenced новый draft при скрытом >30d terminal tombstone и baseVersion=0.
+Добавлены отдельные PostgreSQL regression scenarios для обоих случаев.
+Exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` прошёл
+GitHub Actions #39176074057: `checks` SUCCESS (1064 application tests / 96 files,
+typecheck, lint, build/guards) и `database` SUCCESS (315 PostgreSQL 17 tests /
+27 files, schema/privilege/Workers checks). Повторный независимый whole-PR review
+нового head ещё не выполнялся; новых browser/runtime прогонов для двух follow-up
+коррекций здесь не заявлено.
 
 По прямому назначению владельца Codex принимает implementation ownership;
 обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex

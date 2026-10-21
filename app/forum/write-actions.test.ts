@@ -189,8 +189,8 @@ function writer() {
 describe("post edit and protected history action permissions", () => {
   const fields = {
     intent: "editPost", postId: "post-1", expectedRevisionId: "post-r1",
-    body: "Changed text", editorDraftId: "76568e3b-7cf0-4f32-9847-051d5a9b8071",
-    editorDraftVersion: "0", editorAttachmentIds: "[]",
+    body: "Changed text", editorOperationId: "76568e3b-7cf0-4f32-9847-051d5a9b8071",
+    editorAttachmentIds: "[]",
   };
   const input = (writer: ForumWriter, permissions: readonly PermissionKey[], values: Record<string, string> = fields) => ({
     request: request("/en/topics/topic-1", values),
@@ -213,14 +213,14 @@ describe("post edit and protected history action permissions", () => {
     expect(permitted.editPublishedPost).toHaveBeenCalledWith({
       topicId: "topic-1", postId: "post-1", actorId: "session-user",
       expectedRevisionId: "post-r1", body: "Changed text",
-      draftId: fields.editorDraftId, draftVersion: 0, attachmentIds: [],
+      draftId: fields.editorOperationId, attachmentIds: [],
     });
   });
 
   it("rejects missing publication generation and invalid attachment manifest", async () => {
     const w = writer();
     for (const invalid of [
-      { ...fields, editorDraftVersion: "-1" },
+      { ...fields, editorOperationId: "bad-operation" },
       { ...fields, editorAttachmentIds: '["not-a-uuid"]' },
       { ...fields, postId: "" },
     ]) {

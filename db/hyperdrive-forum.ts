@@ -24,13 +24,13 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 export interface ForumWriter {
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
   recordOnlinePresence(userId: string): Promise<void>;
-  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ topicId: string }>;
+  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; attachmentIds?: string[] }): Promise<{ topicId: string }>;
   editPublishedPost(input: {
     topicId: string; postId: string; actorId: string;
     expectedRevisionId: string; body: string;
-    draftId: string; draftVersion: number; attachmentIds: string[]; retainedAttachmentIds?: string[];
+    draftId: string; attachmentIds: string[]; retainedAttachmentIds?: string[];
   }): Promise<void>;
-  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; draftVersion?: number; attachmentIds?: string[] }): Promise<{ postId: string }>;
+  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; attachmentIds?: string[] }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
   setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string }): Promise<void>;
@@ -165,7 +165,7 @@ export function createHyperdriveForumWriter(
         throw error;
       } finally { bestEffortDiscardClient(client); }
     },
-    createTopic: ({ sectionId, authorId, title, body, tags = [], draftId, draftVersion, attachmentIds }) => write(async (forum) => {
+    createTopic: ({ sectionId, authorId, title, body, tags = [], draftId, attachmentIds }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
       const created = await forum.createTopicWithInitialPost({
         id: topicId,
@@ -173,7 +173,7 @@ export function createHyperdriveForumWriter(
         authorId,
         publishedDraft: {
           contextKey: sectionId === "help-solutions-questions" ? "help:new" : `section:${sectionId}:new`,
-          ...(draftId !== undefined || draftVersion !== undefined ? { draftId, expectedVersion: draftVersion } : {}),
+          ...(draftId !== undefined ? { draftId } : {}),
           ...(attachmentIds !== undefined ? { attachmentIds } : {}),
         },
         titleRevision: { id: crypto.randomUUID(), originalContent: title, sourceLocale: "und" },
@@ -185,18 +185,18 @@ export function createHyperdriveForumWriter(
       });
       return { topicId: created.topic.id };
     }),
-    editPublishedPost: ({ topicId, postId, actorId, expectedRevisionId, body, draftId, draftVersion, attachmentIds, retainedAttachmentIds }) =>
+    editPublishedPost: ({ topicId, postId, actorId, expectedRevisionId, body, draftId, attachmentIds, retainedAttachmentIds }) =>
       writeCorrection((forum) => forum.editPublishedPost({
         topicId, postId, actorId, expectedRevisionId, body,
-        draftId, expectedVersion: draftVersion, attachmentIds, retainedAttachmentIds,
+        draftId, attachmentIds, retainedAttachmentIds,
       })),
-    createReply: ({ topicId, authorId, body, parentPostId = null, draftId, draftVersion, attachmentIds }) => write(async (forum) => {
+    createReply: ({ topicId, authorId, body, parentPostId = null, draftId, attachmentIds }) => write(async (forum) => {
       const postId = crypto.randomUUID();
       const created = await forum.createPost({
         id: postId, topicId, authorId, parentPostId,
         publishedDraft: {
           contextKey: `topic:${topicId}:reply`,
-          ...(draftId !== undefined || draftVersion !== undefined ? { draftId, expectedVersion: draftVersion } : {}),
+          ...(draftId !== undefined ? { draftId } : {}),
           ...(attachmentIds !== undefined ? { attachmentIds } : {}),
         },
         bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },

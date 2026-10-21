@@ -7,11 +7,9 @@ import {
   authzRoles,
   authzUserRoles,
   forumProfiles,
-  forumAttachmentDraftGenerations,
   forumAttachmentDraftRefs,
   forumAttachments,
   forumPostAttachments,
-  forumEditorDrafts,
   forumOnlinePresence,
   forumCategories,
   forumHelpDuplicateAppeals,
@@ -432,7 +430,7 @@ export interface CreateTopicInput {
 }
 
 export interface CreatePostInput {
-  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] };
+  publishedDraft?: { contextKey: string; draftId?: string; attachmentIds?: readonly string[] };
   id: string;
   topicId: string;
   authorId: string;
@@ -441,7 +439,7 @@ export interface CreatePostInput {
 }
 
 export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
-  publishedDraft?: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] };
+  publishedDraft?: { contextKey: string; draftId?: string; attachmentIds?: readonly string[] };
   initialPost: CreatePostInput;
 }
 
@@ -577,8 +575,7 @@ export class DrizzleForumRepository {
         bodyLocale: input.initialPost.bodyRevision.sourceLocale,
         tags: (input.tags ?? []).map((tag) => [tag.key, tag.name]),
         attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
-        draftVersion: input.publishedDraft.expectedVersion,
-      }) : null;
+          }) : null;
     return this.database.transaction(async (tx) => {
       if (input.publishedDraft) {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
@@ -670,8 +667,7 @@ export class DrizzleForumRepository {
         kind: "reply", topicId: input.topicId, parentPostId: input.parentPostId ?? null,
         body: input.bodyRevision.originalContent, bodyLocale: input.bodyRevision.sourceLocale,
         attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
-        draftVersion: input.publishedDraft.expectedVersion,
-      }) : null;
+          }) : null;
     return this.database.transaction(async (tx) => {
       if (input.publishedDraft) {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
@@ -822,191 +818,34 @@ export class DrizzleForumRepository {
   }
 
   private async finishPublishedDraft(
-    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
-    ownerId: string,
-    draft: { contextKey: string; draftId?: string; expectedVersion?: number; attachmentIds?: readonly string[] },
-    postId: string,
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0], ownerId: string,
+    operation: { contextKey: string; draftId?: string; attachmentIds?: readonly string[] }, postId: string,
   ) {
-    const hasFence = draft.draftId !== undefined || draft.expectedVersion !== undefined;
-    if (
-      hasFence
-      && (
-        typeof draft.draftId !== "string"
-        || !/^[0-9a-f-]{36}$/iu.test(draft.draftId)
-        || !Number.isSafeInteger(draft.expectedVersion)
-        || (draft.expectedVersion ?? -1) < 0
-      )
-    ) {
-      throw new ForumStateConflictError("invalid editor draft publication fence");
-    }
-
-    // The caller locks the scope before topic/user rows: uploading a ref also
-    // needs its owner's FK lock, so acquiring the scope later would deadlock.
-    // A text-only publication must not retire a generation with retained files.
-    let canonicalDraftId: string | null = null;
-    if (hasFence) {
-      try {
-        canonicalDraftId = await resolveAttachmentDraftGeneration(tx, ownerId, draft.contextKey, draft.draftId!);
-      } catch (error) {
-        if (error instanceof ForumAttachmentDraftConflictError) {
-          throw new ForumStateConflictError("editor draft generation finished before publication");
-        }
-        throw error;
-      }
-    }
-    // Selection is an explicit snapshot, not evidence of ownership or verification.
-    // The caller holds the owner/context scope lock through this publication transaction.
-    if (draft.attachmentIds !== undefined) {
-      if (!hasFence || !Array.isArray(draft.attachmentIds)
-        || draft.attachmentIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/iu.test(id))
-        || new Set(draft.attachmentIds.map((id) => id.toLowerCase())).size !== draft.attachmentIds.length) {
-        throw new ForumStateConflictError("invalid attachment publication selection");
-      }
-      const selected = new Set(draft.attachmentIds.map((id) => id.toLowerCase()));
-      const refs = await tx.select({
-        id: forumAttachmentDraftRefs.attachmentId,
-        ownerId: forumAttachments.ownerId,
-        verificationStatus: forumAttachments.verificationStatus,
-      }).from(forumAttachmentDraftRefs).innerJoin(forumAttachments, and(
-        eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId),
-        eq(forumAttachments.ownerId, forumAttachmentDraftRefs.ownerId),
-      )).where(and(
-        eq(forumAttachmentDraftRefs.ownerId, ownerId),
-        eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
-        eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
-      ));
-      if (refs.length !== selected.size || refs.some((ref) =>
-        !selected.has(ref.id.toLowerCase()) || ref.ownerId !== ownerId || ref.verificationStatus !== "type-checked"
-      )) throw new ForumStateConflictError("selected attachments changed before publication");
-      if (refs.length) {
-        const createdAt = new Date();
-        await tx.insert(forumPostAttachments).values(refs.map((ref) => ({
-          postId, attachmentId: ref.id, createdAt,
-        })));
-        await tx.delete(forumAttachmentDraftRefs).where(and(
-          eq(forumAttachmentDraftRefs.ownerId, ownerId),
-          eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
-          eq(forumAttachmentDraftRefs.draftId, canonicalDraftId!),
-          inArray(forumAttachmentDraftRefs.attachmentId, refs.map((ref) => ref.id)),
-        ));
-      }
-    }
-    const [currentDraft] = hasFence ? [] : await tx.select({
-      draftId: forumEditorDrafts.draftId,
-      status: forumEditorDrafts.status,
-    }).from(forumEditorDrafts).where(and(
-      eq(forumEditorDrafts.ownerId, ownerId),
-      eq(forumEditorDrafts.contextKey, draft.contextKey),
-    )).limit(1);
-    const [attachment] = await tx.select({ id: forumAttachmentDraftRefs.attachmentId })
-      .from(forumAttachmentDraftRefs)
-      .leftJoin(forumAttachmentDraftGenerations, and(
-        eq(forumAttachmentDraftGenerations.ownerId, forumAttachmentDraftRefs.ownerId),
-        eq(forumAttachmentDraftGenerations.contextKey, forumAttachmentDraftRefs.contextKey),
-        eq(forumAttachmentDraftGenerations.draftId, forumAttachmentDraftRefs.draftId),
-      ))
-      .where(and(
-        eq(forumAttachmentDraftRefs.ownerId, ownerId),
-        eq(forumAttachmentDraftRefs.contextKey, draft.contextKey),
-        canonicalDraftId ? eq(forumAttachmentDraftRefs.draftId, canonicalDraftId) : undefined,
-        or(isNull(forumAttachmentDraftGenerations.draftId), isNotNull(forumAttachmentDraftGenerations.targetDraftId)),
-        // Legacy callers have no generation fence. Retired references may await
-        // cleanup, but another unsynced generation must still block publication.
-        !hasFence && currentDraft && currentDraft.status !== "active"
-          ? ne(forumAttachmentDraftRefs.draftId, currentDraft.draftId) : undefined,
-      ))
-      .limit(1);
-    if (attachment) {
-      throw new ForumStateConflictError("draft attachments must be removed before text-only publication");
-    }
-
-    const now = new Date();
-    const emptyPayload = { title: "", body: "", tags: "" };
-    if (hasFence) {
-      const draftId = draft.draftId!;
-      const expectedVersion = draft.expectedVersion!;
-      const changed = await tx.update(forumEditorDrafts)
-        .set({
-          draftId,
-          status: "published",
-          payload: emptyPayload,
-          version: sql`${forumEditorDrafts.version}+1`,
-          editedAt: now,
-          updatedAt: now,
-        })
-        .where(and(
-          eq(forumEditorDrafts.ownerId, ownerId),
-          eq(forumEditorDrafts.contextKey, draft.contextKey),
-          eq(forumEditorDrafts.version, expectedVersion),
-          or(
-            and(eq(forumEditorDrafts.status, "active"), eq(forumEditorDrafts.draftId, draftId)),
-            and(ne(forumEditorDrafts.status, "active"), ne(forumEditorDrafts.draftId, draftId)),
-          ),
-        ))
-        .returning({ version: forumEditorDrafts.version });
-      if (changed.length > 0) {
-        await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, draftId);
-        return;
-      }
-
-      if (expectedVersion === 0) {
-        const inserted = await tx.insert(forumEditorDrafts).values({
-          ownerId,
-          contextKey: draft.contextKey,
-          draftId,
-          version: 1,
-          status: "published",
-          payload: emptyPayload,
-          editedAt: now,
-          updatedAt: now,
-        }).onConflictDoNothing().returning({ version: forumEditorDrafts.version });
-        if (inserted.length > 0) {
-          await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, draftId);
-          return;
-        }
-      }
-      throw new ForumStateConflictError("editor draft changed before publication");
-    }
-
-    // Non-editor callers do not have a client CAS token. They may publish only
-    // when there is no active editor generation to overwrite.
-    const markerDraftId = crypto.randomUUID();
-    const terminal = await tx.update(forumEditorDrafts)
-      .set({
-        draftId: markerDraftId,
-        status: "published",
-        payload: emptyPayload,
-        version: sql`${forumEditorDrafts.version}+1`,
-        editedAt: now,
-        updatedAt: now,
-      })
-      .where(and(
-        eq(forumEditorDrafts.ownerId, ownerId),
-        eq(forumEditorDrafts.contextKey, draft.contextKey),
-        ne(forumEditorDrafts.status, "active"),
-      ))
-      .returning({ version: forumEditorDrafts.version });
-    if (terminal.length > 0) {
-      await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, markerDraftId);
+    const selected = operation.attachmentIds ?? [];
+    if (!operation.draftId) {
+      if (selected.length) throw new ForumStateConflictError("attachments require an operation");
       return;
     }
-
-    const inserted = await tx.insert(forumEditorDrafts).values({
-      ownerId,
-      contextKey: draft.contextKey,
-      draftId: markerDraftId,
-      version: 1,
-      status: "published",
-      payload: emptyPayload,
-      editedAt: now,
-      updatedAt: now,
-    }).onConflictDoNothing().returning({ version: forumEditorDrafts.version });
-    if (inserted.length > 0) {
-      await retireAttachmentDraftGeneration(tx, ownerId, draft.contextKey, markerDraftId);
-      return;
-    }
-
-    throw new ForumStateConflictError("active editor draft must be reconciled before publication");
+    if (!/^[0-9a-f-]{36}$/iu.test(operation.draftId) || !Array.isArray(selected)
+      || selected.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/iu.test(id))
+      || new Set(selected.map((id) => id.toLowerCase())).size !== selected.length)
+      throw new ForumStateConflictError("invalid publication operation");
+    let generation: string;
+    try { generation = await resolveAttachmentDraftGeneration(tx, ownerId, operation.contextKey, operation.draftId); }
+    catch (error) { if (error instanceof ForumAttachmentDraftConflictError) throw new ForumStateConflictError("operation finished"); throw error; }
+    if (generation !== operation.draftId) throw new ForumStateConflictError("operation changed");
+    const refs = await tx.select({id: forumAttachments.id, verification: forumAttachments.verificationStatus,
+      cleanup: forumAttachments.cleanupStatus}).from(forumAttachmentDraftRefs)
+      .innerJoin(forumAttachments, eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId))
+      .where(and(eq(forumAttachmentDraftRefs.ownerId, ownerId), eq(forumAttachments.ownerId, ownerId),
+        eq(forumAttachmentDraftRefs.contextKey, operation.contextKey), eq(forumAttachmentDraftRefs.draftId, generation)));
+    const ids = selected.map((id) => id.toLowerCase());
+    if (ids.some((id) => !refs.some((ref) => ref.id === id && ref.verification === "type-checked" && ref.cleanup === "active")))
+      throw new ForumStateConflictError("selected attachments are unavailable");
+    if (ids.length) await tx.insert(forumPostAttachments).values(ids.map((attachmentId) => ({postId, attachmentId, createdAt: new Date()})));
+    await retireAttachmentDraftGeneration(tx, ownerId, operation.contextKey, generation);
+    await tx.delete(forumAttachmentDraftRefs).where(and(eq(forumAttachmentDraftRefs.ownerId, ownerId),
+      eq(forumAttachmentDraftRefs.contextKey, operation.contextKey), eq(forumAttachmentDraftRefs.draftId, generation)));
   }
 
   async listCategories(): Promise<ForumCategorySummary[]> {
@@ -3835,17 +3674,17 @@ export class DrizzleForumRepository {
   async editPublishedPost(input: {
     postId: string; topicId: string; actorId: string;
     expectedRevisionId: string; body: string;
-    draftId: string; expectedVersion: number; attachmentIds: readonly string[]; retainedAttachmentIds?: readonly string[];
+    draftId: string; attachmentIds: readonly string[]; retainedAttachmentIds?: readonly string[];
   }) {
     const contextKey = `post:${input.postId}:edit`;
     const draft = {
       contextKey, draftId: input.draftId,
-      expectedVersion: input.expectedVersion, attachmentIds: input.attachmentIds,
+      attachmentIds: input.attachmentIds,
     };
     const fingerprint = await publicationFingerprint({
       kind: "edit", postId: input.postId, topicId: input.topicId,
       expectedRevisionId: input.expectedRevisionId, body: input.body,
-      draftVersion: input.expectedVersion, attachmentIds: [...input.attachmentIds].sort(),
+      attachmentIds: [...input.attachmentIds].sort(),
       ...(input.retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds: [...input.retainedAttachmentIds].sort() }),
     });
     return this.database.transaction(async (tx) => {

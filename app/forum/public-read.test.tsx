@@ -2224,7 +2224,7 @@ describe("published editing presentation permissions", () => {
     const editorForm = await screen.findByRole("form", { name: "Edit published message" });
     expect(editorForm.querySelector('input[name="postId"]')).toHaveValue("answer");
     expect(editorForm.querySelector('input[name="expectedRevisionId"]')).toHaveValue("post-r1");
-    expect(editorForm.querySelector('input[name="editorDraftId"]')).not.toBeNull();
+    expect(editorForm.querySelector('input[name="editorOperationId"]')).not.toBeNull();
     expect(editorForm.querySelector('input[name="body"]')).toHaveValue("Start with an explicit response type.");
     fireEvent.click(within(editorForm).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
@@ -2256,8 +2256,7 @@ describe("published edit resume navigation", () => {
     );
 
     const form = await screen.findByRole("form", { name: "Edit published message" });
-    const editorDraftId = form.querySelector('input[name="editorDraftId"]')?.getAttribute("value");
-    expect(editorDraftId).toBeTruthy();
+    await waitFor(() => expect(form.querySelector('input[name="editorOperationId"]')?.getAttribute("value")).toBeTruthy());
     fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
     await waitFor(() => {
       expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
@@ -2270,7 +2269,7 @@ describe("published edit resume navigation", () => {
 
     await router.navigate(resumedUrl);
     const resumed = await screen.findByRole("form", { name: "Edit published message" });
-    expect(resumed.querySelector('input[name="editorDraftId"]')).not.toBeNull();
+    expect(resumed.querySelector('input[name="editorOperationId"]')).not.toBeNull();
   });
 });
 
@@ -2318,6 +2317,7 @@ describe("published edit revision fence", () => {
     const original = { ...topic, posts: [{
       ...topic.posts[0]!, id: postId, authorId: ownerId,
       body: { ...topic.posts[0]!.body, id: "fence-r1" },
+      attachments: [{id:"23b93562-0550-4eef-88af-f951d6ea6138",fileName:"A.txt",byteSize:5,detectedType:"text"}],
     }] };
     let current = original;
     const router = createMemoryRouter([{
@@ -2327,6 +2327,7 @@ describe("published edit revision fence", () => {
       }),
     }], { initialEntries: ["/en/topics/typed-api?editPost=" + postId] });
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
       if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
@@ -2348,7 +2349,7 @@ describe("published edit revision fence", () => {
     expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
 
     current = { ...original, posts: [{
-      ...original.posts[0]!, body: {
+      ...original.posts[0]!, attachments:[...original.posts[0]!.attachments,{id:"23b93562-0550-4eef-88af-f951d6ea6139",fileName:"B.txt",byteSize:5,detectedType:"text"}], body: {
         ...original.posts[0]!.body, id: "fence-r2", originalContent: "Someone else's current edit",
       },
     }] };
@@ -2360,13 +2361,27 @@ describe("published edit revision fence", () => {
     expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
     expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
 
-    fireEvent.click(within(form).getByRole("button", { name: "Apply my draft to the current revision" }));
+    fireEvent.click(within(form).getByRole("button", { name: "Apply my edit to the current revision" }));
     expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
     expect(textarea).toHaveValue("My original unsaved edit ");
     await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+
+    expect(form.querySelector('input[name="editorRetainedAttachmentIds"]')).toHaveValue(JSON.stringify([
+      "23b93562-0550-4eef-88af-f951d6ea6138","23b93562-0550-4eef-88af-f951d6ea6139",
+    ]));
+    current={...current,posts:[{...current.posts[0]!,body:{...current.posts[0]!.body,id:"fence-r3",originalContent:"Another concurrent edit"}}]};
+    await router.revalidate();
+    await waitFor(()=>expect(within(form).getByRole("button",{name:"Save changes"})).toBeDisabled());
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+    fireEvent.click(within(form).getByRole("button",{name:"Apply my edit to the current revision"}));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r3");
+    expect(form.querySelector('input[name="editorRetainedAttachmentIds"]')).toHaveValue(JSON.stringify([
+      "23b93562-0550-4eef-88af-f951d6ea6138","23b93562-0550-4eef-88af-f951d6ea6139",
+    ]));
+    expect(textarea).toHaveValue("My original unsaved edit ");
   });
 
-  it("restores a server-synced edit's original revision fence on another device", async () => {
+  it("opens the published revision without fetching a former server text draft", async () => {
     const postId = "edit-remote-fence-post";
     const ownerId = "edit-remote-fence-owner";
     const contextKey = `post:${postId}:edit`;
@@ -2382,6 +2397,7 @@ describe("published edit revision fence", () => {
         publishedRevisionId: "fence-r1" },
     };
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [remoteDraft] });
       if (url.startsWith("/en/drafts/data?mode=content&key=")) return json({ draft: remoteDraft });
       if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
@@ -2401,16 +2417,16 @@ describe("published edit revision fence", () => {
       </div>,
     );
     const form = await screen.findByRole("form", { name: "Edit published message" });
-    await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Remote unsaved edit "));
-    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r1");
-    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
-    expect(within(form).getByRole("alert")).toHaveTextContent("This message changed");
+    await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Updated published message"));
+    expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
+    expect(within(form).queryByRole("alert")).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it.each([
     ["versioned", "fence-r1"],
     ["legacy without a baseline", undefined],
-  ])("blocks a %s restored edit from silently inheriting the current published revision", async (_label, savedRevision) => {
+  ])("ignores a %s legacy text cache and opens only the current publication", async (_label, savedRevision) => {
     const postId = "edit-resume-fence-post";
     const ownerId = "edit-resume-fence-owner";
     const contextKey = `post:${postId}:edit`;
@@ -2427,6 +2443,7 @@ describe("published edit revision fence", () => {
         ...(savedRevision ? { publishedRevisionId: savedRevision } : {}) },
     }));
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
       if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
@@ -2448,14 +2465,10 @@ describe("published edit revision fence", () => {
         </div>,
       );
       const form = await screen.findByRole("form", { name: "Edit published message" });
-      await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Recovered offline edit "));
-      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue(savedRevision ?? "");
-      expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
-      expect(within(form).getByRole("alert")).toHaveTextContent(savedRevision
-        ? "This message changed" : "no recorded source revision");
-      fireEvent.click(within(form).getByRole("button", { name: "Apply my draft to the current revision" }));
+      await waitFor(() => expect(form.querySelector('input[name="body"]')).toHaveValue("Updated publication"));
       expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("fence-r2");
-      expect(form.querySelector('input[name="body"]')).toHaveValue("Recovered offline edit ");
+      expect(within(form).queryByRole("alert")).not.toBeInTheDocument();
+      expect(fetch).not.toHaveBeenCalled();
     } finally {
       localStorage.removeItem(storageKey);
     }
@@ -2463,9 +2476,10 @@ describe("published edit revision fence", () => {
 });
 
 describe("published edit submission lifecycle", () => {
-  it("keeps a reply locked through loading and Cancel preserves the draft for resuming", async () => {
+  it("keeps a reply locked through loading and Cancel discards the unsent buffer", async () => {
     const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
       if (url.includes("mode=metadata")) return json({ drafts: [] });
       if (url === "/api/attachments") return json({ attachments: [] });
       throw new Error("Unexpected request: " + url);
@@ -2491,7 +2505,8 @@ describe("published edit submission lifecycle", () => {
     fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("form", { name: "Add a reply" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add a reply" }));
-    expect(field).toHaveValue("Recoverable reply ");
+    expect(field).toHaveValue("");
+    fireEvent.change(field, { target: { value: "Recoverable reply " } });
     const publish = within(form).getByRole("button", { name: "Post reply" });
     await waitFor(() => expect(publish).toBeEnabled());
     fireEvent.click(publish);
@@ -2502,7 +2517,7 @@ describe("published edit submission lifecycle", () => {
     expect(within(form).getByRole("button", { name: "Cancel" })).toBeDisabled();
     resolveLoader(current);
     await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
-    expect(field).toBeEnabled();
+    await waitFor(() => expect(field).toBeEnabled());
     expect(field).toHaveValue("Recoverable reply ");
   });
 
@@ -2511,6 +2526,7 @@ describe("published edit submission lifecycle", () => {
       status: 200, headers: { "Content-Type": "application/json" },
     });
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
       if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);
@@ -2607,6 +2623,7 @@ describe("published edit submission lifecycle", () => {
       status: 200, headers: { "Content-Type": "application/json" },
     });
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
       if (url === "/en/drafts/data?mode=metadata") return json({ drafts: [] });
       if (url === "/api/attachments" && (options?.method === "GET" || options?.method === "PUT")) return json({ attachments: [] });
       throw new Error("Unexpected editor request: " + url);

@@ -24,8 +24,8 @@ function request(path: string, intent: string, ids: string) {
   data.set("intent", intent);
   data.set("title", "Title");
   data.set("body", "Body");
-  data.set("editorDraftId", draftId);
-  data.set("editorDraftVersion", "0");
+  data.set("editorOperationId", draftId);
+
   data.set("editorAttachmentIds", ids);
   return new Request("https://forum.test" + path, {
     method: "POST", headers: { Origin: "https://forum.test" }, body: data,
@@ -42,7 +42,7 @@ describe("authoring attachment manifest boundary", () => {
     });
     expect((response as Response).status).toBe(302);
     expect(regular.createTopic).toHaveBeenCalledWith(expect.objectContaining({
-      sectionId: "my-section", authorId: "author", attachmentIds: [id], draftId, draftVersion: 0,
+      sectionId: "my-section", authorId: "author", attachmentIds: [id], draftId,
     }));
 
     const help = setup();

@@ -31,7 +31,7 @@ export async function loader({ request, params, context }: {
   if (!isForumAttachmentUuid(attachmentId)) return failure(404);
   const query = new URL(request.url).searchParams;
   const postId = query.get("post");
-  const draftId = query.get("draft");
+  const draftId = query.get("operation");
   const contextKey = query.get("context");
   const view = query.get("view");
   if (view !== null && view !== "inline" && view !== "text") return failure(400);

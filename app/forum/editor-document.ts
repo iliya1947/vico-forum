@@ -491,6 +491,9 @@ export function clearInlineMarkdownFormatting(
  * untouched. Unrecognized syntax is never reserialized or silently discarded.
  */
 export function editableVisualTextRanges(markdown: string): EditorSelection[] {
+  // Markdown parsers omit whitespace-only paragraphs. The visual surface still
+  // exposes this range so native typing can continue after an initial space.
+  if (/^[\t ]+$/u.test(markdown)) return [{ start: 0, end: markdown.length }];
   const root = parseForumMarkdown(markdown) as PositionedNode;
   const ranges: EditorSelection[] = [];
   function visit(node: PositionedNode): void {
@@ -498,7 +501,7 @@ export function editableVisualTextRanges(markdown: string): EditorSelection[] {
       const start = node.position?.start.offset;
       const end = node.position?.end.offset;
       if (start !== undefined && end !== undefined && start < end) {
-        ranges.push({ start, end });
+        ranges.push(includeVisualWhitespace(markdown, { start, end }));
       }
       return;
     }
@@ -519,6 +522,17 @@ export function editableVisualTextRanges(markdown: string): EditorSelection[] {
   }
   visit(root);
   return ranges;
+}
+
+/** Leading prose indentation is omitted by Markdown's text-node positions. Keep
+ * it in the editable leaf, so a native-input echo never strips it and moves caret. */
+export function includeVisualWhitespace(markdown: string, range: EditorSelection): EditorSelection {
+  const lineStart = markdown.lastIndexOf("\n", range.start - 1) + 1;
+  return {
+    start: /^[\t ]+$/u.test(markdown.slice(lineStart, range.start)) ? lineStart : range.start,
+    // Preserve end-of-source whitespace without swallowing Markdown hard breaks.
+    end: /^[\t ]+$/u.test(markdown.slice(range.end)) ? markdown.length : range.end,
+  };
 }
 
 /**

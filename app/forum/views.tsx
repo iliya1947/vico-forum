@@ -50,8 +50,6 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
-import { useHeaderAuthUser } from "../auth/auth-controls";
-import { fetchDraftMetadata, readLocalEditorDraft } from "./draft-client";
 import { attributedQuoteMarkdown } from "./quote-markdown";
 
 export function HomeView({
@@ -1053,20 +1051,6 @@ export function HelpSolutionsView({
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
   const [questionReady, setQuestionReady] = useState(false);
-  const draftUser = useHeaderAuthUser();
-  const location = useLocation();
-  useEffect(() => {
-    if (!canAskQuestion || !draftUser) return;
-    if (new URLSearchParams(location.search).has("compose")
-      || readLocalEditorDraft(draftUser.id, "help:new")) setQuestionComposerOpen(true);
-    let live = true;
-    void fetchDraftMetadata(locale).then((drafts) => {
-      if (live && drafts.some((draft) => draft.contextKey === "help:new" && draft.status === "active")) {
-        setQuestionComposerOpen(true);
-      }
-    }).catch(() => { /* Local cache remains available. */ });
-    return () => { live = false; };
-  }, [canAskQuestion, draftUser?.id, location.search, locale]);
 
   const submittingHelpQuestion = navigation.state !== "idle";
   const submittingIntent = navigation.formData?.get("intent");
@@ -1307,12 +1291,12 @@ export function HelpSolutionsView({
                 <label htmlFor="help-question-body">{t("helpSolutionsQuestionBodyLabel")}</label>
                 <MarkdownEditor
                   id="help-question-body"
-                  draftContextKey="help:new" draftLocale={locale}
-                  draftPublicationIntent="createHelpQuestion"
-                  draftPublicationPending={isQuestionSubmitting}
+                  editorContextKey="help:new" editorLocale={locale}
+                  publicationIntent="createHelpQuestion"
+                  publicationPending={isQuestionSubmitting}
                   onPublicationReadyChange={setQuestionReady}
                   actions={<>
-                    <button type="button" disabled={isQuestionFormBusy} onClick={() => setQuestionComposerOpen(false)}>{t("postEditCancel")}</button>
+                    <button type="button" data-editor-cancel disabled={isQuestionFormBusy} onClick={() => setQuestionComposerOpen(false)}>{t("postEditCancel")}</button>
                     <button type="submit" name="intent" value="createHelpQuestion" disabled={isQuestionFormBusy || !questionReady}>
                       {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
                     </button>
@@ -1992,12 +1976,12 @@ export function SectionView({
               <label htmlFor="create-topic-body">{t("initialPostLabel")}</label>
               <MarkdownEditor
                 id="create-topic-body"
-                draftContextKey={`section:${section.id}:new`} draftLocale={locale}
-                draftPublicationIntent="createTopic"
-                draftPublicationPending={isCreateTopicSubmitting}
+                editorContextKey={`section:${section.id}:new`} editorLocale={locale}
+                publicationIntent="createTopic"
+                publicationPending={isCreateTopicSubmitting}
                 onPublicationReadyChange={setTopicReady}
                 actions={<>
-                  <button type="button" disabled={isCreateTopicSubmitting} onClick={() => setComposerOpen(false)}>{t("postEditCancel")}</button>
+                  <button type="button" data-editor-cancel disabled={isCreateTopicSubmitting} onClick={() => setComposerOpen(false)}>{t("postEditCancel")}</button>
                   <button type="submit" disabled={isCreateTopicSubmitting || !topicReady}>
                     {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
                   </button>
@@ -2180,7 +2164,7 @@ export function TopicView({
   const editEditorRef = useRef<MarkdownEditorHandle>(null);
   const historyFetcher = useFetcher<PostHistoryActionData>();
   const editPublicationRef = useRef<{
-    postId: string; expectedRevisionId: string; draftId: string; expectedVersion: number;
+    postId: string; expectedRevisionId: string;
   } | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
@@ -2190,8 +2174,6 @@ export function TopicView({
   const replyEditorRef = useRef<MarkdownEditorHandle>(null);
   const replyPublicationRef = useRef<{
     topicId: string;
-    draftId: string;
-    expectedVersion: number;
     existingPostIds: Set<string>;
   } | null>(null);
   const navigation = useNavigation();
@@ -2228,6 +2210,7 @@ export function TopicView({
   }
 
   function closePostEditor() {
+    editEditorRef.current?.cancelOperation();
     setEditingPostId(null);
     setEditBaseRevisionId(null);
     setEditReady(false);
@@ -2246,11 +2229,8 @@ export function TopicView({
     if (navigation.state !== "submitting" || navigation.formData?.get("intent") !== "editPost") return;
     const postId = navigation.formData.get("postId");
     const expectedRevisionId = navigation.formData.get("expectedRevisionId");
-    const draftId = navigation.formData.get("editorDraftId");
-    const version = Number(navigation.formData.get("editorDraftVersion"));
-    if (typeof postId !== "string" || typeof expectedRevisionId !== "string"
-      || typeof draftId !== "string" || !Number.isSafeInteger(version)) return;
-    editPublicationRef.current = { postId, expectedRevisionId, draftId, expectedVersion: version };
+    if (typeof postId !== "string" || typeof expectedRevisionId !== "string") return;
+    editPublicationRef.current = { postId, expectedRevisionId };
   }, [navigation.state, navigation.formData]);
 
   useEffect(() => {
@@ -2262,7 +2242,6 @@ export function TopicView({
     }
     const updated = topic.posts.find((post) => post.id === submitted.postId);
     if (!updated || updated.body.id === submitted.expectedRevisionId) return;
-    editEditorRef.current?.acknowledgePublished(submitted.draftId, submitted.expectedVersion + 1);
     editPublicationRef.current = null;
     closePostEditor();
   }, [navigation.state, forumWriteError, topic.posts]);
@@ -2272,26 +2251,8 @@ export function TopicView({
       navigation.state !== "submitting"
       || navigation.formData?.get("intent") !== "reply"
     ) return;
-    const draftId = navigation.formData.get("editorDraftId");
-    const rawVersion = navigation.formData.get("editorDraftVersion");
-    if (
-      typeof draftId !== "string"
-      || !/^[0-9a-f-]{36}$/iu.test(draftId)
-      || typeof rawVersion !== "string"
-      || !/^(0|[1-9][0-9]*)$/u.test(rawVersion)
-    ) {
-      replyPublicationRef.current = null;
-      return;
-    }
-    const expectedVersion = Number(rawVersion);
-    if (!Number.isSafeInteger(expectedVersion)) {
-      replyPublicationRef.current = null;
-      return;
-    }
     replyPublicationRef.current = {
       topicId: topic.id,
-      draftId,
-      expectedVersion,
       existingPostIds: new Set(topic.posts.map((post) => post.id)),
     };
   }, [navigation.state, navigation.formData, topic.id, topic.posts]);
@@ -2311,12 +2272,9 @@ export function TopicView({
       return;
     }
     if (!postId || pending.existingPostIds.has(postId) || !topic.posts.some((post) => post.id === postId)) return;
-    replyEditorRef.current?.acknowledgePublished(
-      pending.draftId,
-      pending.expectedVersion + 1,
-    );
     setReplyTargetPostId(null);
     setQuoteSelectionErrorPostId(null);
+    replyEditorRef.current?.cancelOperation();
     replyPublicationRef.current = null;
   }, [forumWriteError, location.hash, navigation.state, topic.id, topic.posts]);
 
@@ -2391,7 +2349,6 @@ export function TopicView({
   }
 
   function targetReply(postId: string) {
-    replyEditorRef.current?.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     focusReplyForm();
@@ -2408,7 +2365,6 @@ export function TopicView({
       permalink,
       content,
     });
-    editor.setDraftParentPostId(postId);
     setReplyTargetPostId(postId);
     setQuoteSelectionErrorPostId(null);
     editor.insertText(quote);
@@ -2869,11 +2825,10 @@ export function TopicView({
                           rows={8}
                           defaultValue={post.body.originalContent}
                           initialPublishedRevisionId={post.body.id}
-                          onDraftRestorePublishedRevisionId={setEditBaseRevisionId}
-                          draftContextKey={`post:${post.id}:edit`}
-                          draftLocale={locale}
-                          draftPublicationIntent="editPost"
-                          draftPublicationPending={isEditSubmitting}
+                          editorContextKey={`post:${post.id}:edit`}
+                          editorLocale={locale}
+                          publicationIntent="editPost"
+                          publicationPending={isEditSubmitting}
                           onPublicationReadyChange={setEditReady}
                           actions={<>
                             <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>{t("postEditCancel")}</button>
@@ -2886,13 +2841,13 @@ export function TopicView({
                             url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
                           }))}
                         />
-                        <p>{t("postEditDraftHint")}</p>
                         {editBaseRevisionId !== post.body.id ? (
                           <div className="topic-page-alert" role="alert">
                             <p>{t(editBaseRevisionId ? "postEditRevisionChanged" : "postEditRevisionUnknown")}</p>
                             <button type="button" disabled={isEditSubmitting} onClick={() => {
-                              editEditorRef.current?.setDraftPublishedRevisionId(post.body.id);
-                              setEditBaseRevisionId(post.body.id);
+                              if (editEditorRef.current?.rebasePublishedAttachments()) {
+                                setEditBaseRevisionId(post.body.id);
+                              }
                             }}>{t("postEditAcceptCurrentRevision")}</button>
                           </div>
                         ) : null}
@@ -3081,7 +3036,6 @@ export function TopicView({
                 <button
                   type="button"
                   onClick={() => {
-                    replyEditorRef.current?.setDraftParentPostId(null);
                     setReplyTargetPostId(null);
                     setQuoteSelectionErrorPostId(null);
                     replyEditorRef.current?.focus();
@@ -3098,17 +3052,16 @@ export function TopicView({
                 <MarkdownEditor
                   ref={replyEditorRef}
                   id="reply-body"
-                  draftContextKey={`topic:${topic.id}:reply`} draftLocale={locale}
-                  draftPublicationIntent="reply"
-                  draftPublicationPending={isReplySubmitting}
+                  editorContextKey={`topic:${topic.id}:reply`} editorLocale={locale}
+                  publicationIntent="reply"
+                  publicationPending={isReplySubmitting}
                   onPublicationReadyChange={setReplyReady}
                   actions={<>
-                    <button type="button" disabled={isReplySubmitting} onClick={() => setReplyComposerOpen(false)}>{t("postEditCancel")}</button>
+                    <button type="button" disabled={isReplySubmitting} onClick={() => {replyEditorRef.current?.cancelOperation();setReplyComposerOpen(false);}}>{t("postEditCancel")}</button>
                     <button type="submit" disabled={isReplySubmitting || !replyReady}>
                       {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
                     </button>
                   </>}
-                  onDraftRestoreParent={(postId) => setReplyTargetPostId(postId && messageNumberById.has(postId) ? postId : null)}
                   name="body"
                   rows={8}
                   disabled={isReplySubmitting}
