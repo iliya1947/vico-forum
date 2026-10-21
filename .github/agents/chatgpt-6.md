@@ -747,3 +747,13 @@ PROJECT_STATE.md, PROJECT_HISTORY.md, AGENTS.md (как предмет согл�
 Остаются шесть документов docs/translation: LOCALES.md, UI_TRANSLATION.md, CONTENT_TRANSLATION.md, STORAGE_AND_VERSIONING.md, PROVIDERS_AND_JOBS.md и RESEARCH.md, затем финальная сверка разрешённого документального объёма.
 
 Следующая часть: полностью прочитать LOCALES.md и UI_TRANSLATION.md, сопоставить locale routing/registry/fallback, UI source fingerprints, trust и SSR/hydration требования. Исполнитель останавливается до разрешения владельца продолжить этап 1, часть 5. Исключённые сервисы в объём не возвращаются.
+
+
+## Аудит форума — этап 13 (предыдущий независимый проход, 2026-10-22)
+
+- Относится исключительно к старому поэтапному аудиту (8→13) текущей цепочки сообщений. **Не обновляет AUD-20261022** и не засчитывается в его tracked manifest/status.
+- Проверенная версия `main`: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Scope: in-memory редактор Simple/Advanced, source-preserving Markdown/Undo/Redo, quote/mention, edit form/history, upload/publish/cancel/ref manifest and private download/cleanup boundaries.
+- По исходникам и существующим компонентным/route/native PostgreSQL тестам проверены editor history/CRLF/protected technical blocks; Markdown safe rendering/quotes/mentions; native submit replay/lock; отсутствие runtime text drafts/autosave; stable attachment ID/retry and selected-vs-pool refs; published edit CAS, exact retained+new attachment set, terminal operation, idempotent receipts and cleanup tests.
+- Evidence: `docs/EDITOR.md`, top current `PROJECT_STATE.md`, `app/forum/markdown-editor.tsx`, `editor-attachments.tsx`, `editor-document.ts`, `visual-markdown-editor.tsx`, `markdown.tsx`, `quote-*.ts*`, `mentions.ts`, `views.tsx`, `app/forum/actions.server.ts`, `db/forum-repository.ts`, `db/forum-attachments.ts`; `app/forum/public-read.test.tsx`, `markdown-editor.test.tsx`, `editor-attachments.test.tsx`, `attachment-operation.test.tsx`, `editor-document.test.ts`, `markdown.test.tsx`, `tests/database/forum-attachments.test.ts`, `forum-attachment-publication.test.ts` (existing tests inspected, not executed).
+- Limit: local runtime has no project checkout and direct GitHub is network-blocked; fresh Chromium+Worker+Postgres/R2 E2E not performed. Checkpoint **does not declare definitive clearance** of potential UI conflicts/stalled uploads. Audit findings remain in chat until owner authorizes publication at completion; no unverified finding placed in general channel.
+- Next on explicit owner command: итоговый этап — матрица реализованных функций/requirements против reviewed/tested evidence, remaining gaps, disputed findings and their Stage classification. No modification of implementation/main or other audit cycle.
