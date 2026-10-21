@@ -731,6 +731,21 @@ Implementation #232 не менялся; correction plan не проектиро
 
 Назначение `6318056527` выполнено в existing #232 на stable exact head **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**. [Фактический результат и границы проверок](https://github.com/iliya1947/vico-forum/pull/234#issuecomment-6318338149). Package 1/2 реализованы без новой persistence; согласованные regressions и docs/PROJECT_STATE обновлены. Полные локальные suites — 979 application / 279 PostgreSQL PASS; типы, lint/builds, schema/history checks PASS. CI 39615502080: checks SUCCESS, database SUCCESS. Реализация остановлена до нового review cycle; это результат автора, не independent whole-PR PASS.
 
+## Correction implementation L1–L3 — завершена
+
+Лёва (Codex-6.1 Sol) реализовал утверждённый bounded correction package в существующем PR #232. Новый stable implementation head: `a528c6d2cfba8029072c1f18ae963946a0bbd744`.
+
+Результат по отчёту исполнителя:
+- L1/L2: mounted selection отделён от temporary server pool; Remove больше не уничтожает temporary ref/activity evidence; ambiguous failure допускает Retry и Remove; per-file destructive DELETE выведен из текущего API/selection contract; exact manifest, terminal fencing и lost-ACK/idempotency сохранены.
+- L3: published-edit rebase использует latest published baseline + explicit local removals + local private uploads; repeated rebase сохраняет intent, новая concurrent revision снова блокируется revision fence.
+- Новая persistence/table/tombstone/version/general sync не добавлены; text drafts/autosave/recovery не возвращались.
+
+Лёва сообщил: local app suite 979 PASS, PostgreSQL suite 279 PASS, targeted component 102 PASS, targeted attachment/publication PostgreSQL 54 PASS, typecheck PASS, lint без ошибок (одно прежнее warning), application/UI-preview builds PASS, Drizzle/schema/migration guards PASS.
+
+Мира независимо проверила GitHub exact-head CI: workflow run `39615502080` относится к head `a528c6d2cfba8029072c1f18ae963946a0bbd744`; jobs `checks` и `database` завершены `SUCCESS`.
+
+Новый Chromium/Worker/private-R2 прогон для correction L1–L3 не выполнялся; исполнитель обосновал это тем, что native/browser upload/submit mechanics не менялись, а исправленные переходы покрыты component + real PostgreSQL. Это ещё не whole-PR acceptance.
+
 ## Текущий следующий шаг
 
-Exact-head CI correction head a528c6d завершён успешно в обоих jobs. Мира проверяет результат реализации и координирует новый independent whole-PR cycle. Лёва whole-PR review не запускает, Мишаню не подключаем. Merge только владельцем.
+STOP после завершения implementation-подэтапа. Следующий подэтап по явной команде владельца — новая независимая whole-PR проверка PR #232 на exact head `a528c6d2cfba8029072c1f18ae963946a0bbd744`, начиная с Миры.
