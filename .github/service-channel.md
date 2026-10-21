@@ -683,6 +683,12 @@ Implementation #232 не менялся; correction plan не проектиро
 
 Подробная независимая верификация Лёвы: комментарий PR #234 `6300266423`.
 
+## Candidate correction plan L1–L3 — подготовлен Мирой
+
+Мира подготовила bounded pre-implementation plan для трёх подтверждённых дефектов на unchanged #232 head `5dc32be046b5cb5dc7029d0371137308bc2ef55b`. Полный candidate plan находится в `.github/agents/chatgpt-5.6-sol.md` (service commit `e3f5fd1`). Он ещё не прошёл независимую техническую проверку и не является разрешением менять #232.
+
+Ключевая граница плана: L1+L2 закрываются возвратом к принятой модели `server temporary upload pool + mounted-editor selection + exact publication manifest`, без новой tombstone/table; L3 закрывается attachment-aware rebase через latest published baseline + explicit local removals + local new uploads, также только в mounted editor state.
+
 ## Текущий следующий шаг
 
-STOP до явной команды владельца на следующий correction-подэтап. При продолжении сначала определить минимальные correction boundaries для подтверждённых L1–L3 без новой compensation chain.
+STOP после завершения plan-drafting подэтапа. Следующий подэтап по команде владельца — независимая pre-implementation проверка candidate plan Лёвой; #232 до PASS плана не менять.
