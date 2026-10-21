@@ -783,6 +783,21 @@ Exact-head CI `39615502080` заново проверен: checks/database SUCCE
 
 #232 в review не менялся; fixes/visual/Pages/merge/deployment/production migrations не выполнялись. Мишаня по правилу владельца в цикл не подключался. Отдельный owner visual gate не применяется без его запроса.
 
+## Review cycle PR #232 — завершён
+
+Stable implementation head: **`a528c6d2cfba8029072c1f18ae963946a0bbd744`**.
+
+- Мира: independent whole-PR PASS.
+- Лира: independent whole-PR PASS.
+- Лёва: final technical whole-PR gate PASS.
+- Новых подтверждённых current-Stage defects не осталось.
+- Exact-head CI `39615502080`: `checks` SUCCESS, `database` SUCCESS.
+- Main/base alignment: clean, base `21386887cec954618807a1bb1d08f186676e22ce`.
+- Owner visual/Pages не применяются без прямого запроса владельца.
+- Мишаня по прямому правилу владельца в этот review cycle не подключался.
+
+#232 остаётся OPEN, mergeable=true и Draft=true. Код после review не менялся. Следующий шаг принадлежит только владельцу проекта: снять Draft и выполнить merge #232, если он принимает завершённый review cycle.
+
 ## Текущий следующий шаг
 
-Мира проверяет опубликованный final technical PASS Лёвы, фиксирует завершение назначенного review cycle и координирует передачу владельцу для решения о merge PR #232 exact head a528c6d. Сам merge выполняет только владелец; service PR #234 не merge.
+Владелец переводит PR #232 из Draft в Ready for review и выполняет merge. Service PR #234 не merge.
