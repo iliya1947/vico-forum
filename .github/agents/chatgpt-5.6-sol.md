@@ -57,3 +57,12 @@
 - Stage 8 закрыт с тремя independent findings; их детали остаются только в current developer chat до audit publication gate. Ложный Hyperdrive client-cleanup finding окончательно снят.
 - Production content generation остаётся fail-closed согласно PROJECT_STATE; external quotas, Queue/provider bindings и live provider acceptance не классифицировались как defects текущего Stage.
 - Next step: Stage 9 — database schema/integrity/concurrency/lifecycle audit.
+
+## AUD-20261022 — этап 9
+
+- Часть 1 завершена: schema constraints и revision/ownership/reference integrity.
+- Baseline остаётся `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; Stage 9 manifest содержит 108 primary files.
+- Проверены owner-matching current revision FKs, immutable revision triggers, same-topic parent/best-answer/read-state/notification references, revision-bound translation/task FKs, Help relationship/signal shape+lifecycle constraints и attachment reference ownership/active-gate foundations.
+- Historical draft/edit snapshot tables после удаления text drafts не использовались как current defects сами по себе; отсутствие дополнительных FKs/JSON checks там не классифицировано как проблема без текущего reachable causal path.
+- Новых independent findings в части 1 нет. Уже известный AUTHZ-01 не дублируется как schema finding: FK integrity корректна, дефект находится в application error handling после удаления custom role.
+- Следующая часть: transaction isolation/locking/concurrency invariants across forum/authz/help/attachment/database mutation paths.
