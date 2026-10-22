@@ -1669,3 +1669,23 @@ Source and evidence:
 
 ### Verdict
 **No NEW confirmed current-Stage defect in bounded public Popular read/rank/UI scenario.** Existing E1,N1,D1,L1,I1 and earlier unconfirmed E2/E3 remain separate; H1 anti-framing, T1 tag pagination, P1 upper-time omission are observations only, not actionable current Stage defects. Real DB test rerun, browser route, deployed Worker, performance/load tests and cross-clock future timestamp scenario NOT_EXECUTED (Информация не проверена). Second audit AUD-20261022 untouched. STOP after this step; wait for owner continuation.
+
+
+---
+
+## Первый аудит — public Unanswered selection, topic lifecycle and UI (2026-10-22)
+
+**ONE BOUNDED SUBTASK COMPLETE. ORIGINAL FIRST AUDIT OPEN.** Separate AUD-20261022 not touched. Fresh main branch verified exact d72b27ca762dd930f0e7ad614e5b00832a07ec0c, AGENTS.md read fully. Source-only and EXISTING test assertions READ not executed. No local PG, Worker, browser, CI rerun, production check, implementation or other-agent/shared-channel change.
+
+### Current Stage contract
+PROJECT_STATE.md:1049–1055,1898–1903 confirms merged PR #169: public forum-wide list of unsolved topics with precisely one persisted initial post, no replies, author/category/section context, newest first. docs/UI_UX_PASS.md:169–176,225–230 approves Unanswered public discovery. Stage 6 deployed acceptance separate.
+
+### Checked chain
+1. app/routes/unanswered.tsx:7–33 public locale route invokes forumReaderForRequest(context).readUnanswered(), projects only id/title/authorName/section/category. No private user fields. app/forum/paths.ts forumUnansweredPath and forumTopicPath maintain locale-aware navigation. ErrorBoundary is ForumRouteError, shared request reader handles classified DB unavailable vs other exceptions.
+2. db/forum-repository.ts:1007–1049 SELECT persisted forumTopics, matched CURRENT topic-title revision, matching actual user + section + category + forumPosts; condition isSolved=false, GROUP BY unique topic and joined fields, HAVING count(forumPosts.id)=1; order by forumTopics.createdAt DESC then id DESC. No duplicate fan-out joins to tags/revisions beyond exact current title; no unsolved topic with >=2 persisted posts can be returned. Query reads ordinary public forum data as intended. No pagination/LIMIT; this could be future performance consideration, not a demonstrated current-Stage defect without threshold or workload.
+3. db/forum-repository.ts:569–663 creates topic and initial post in one DB transaction; createPost at :664–761 adds persisted replies. No deletion of an individual forumPost in inspected repository public write paths. Thus count=1 aligns with one initial post for normal writes; unnatural DB manual deletions or direct external writes not proven present.
+4. app/forum/views.tsx:188–253 shows localized heading/status 'No replies yet', title (dir auto), author's public name, category and section, locale-relative forumTopicPath; separate empty state. Does not misleadingly show solution badge or invent reply count.
+5. EXISTING tests READ only: tests/database/stage4-core-e2e.test.ts:174–310 persists solved topic with 2 posts and unsolved newer topic with 1 initial post, expects latter in readUnanswered; app/forum/public-read.test.tsx:2023–2050 tests public route data projection, locale-aware links, text and location. No fresh tests, no real Worker, browser. Test matrix not exhaustive of e.g. zero posts, solved one-post, multiple unsolved replies, time ties; SQL itself establishes required predicates, missing assertion alone NOT a defect.
+
+### Verdict
+**No newly confirmed current-Stage defect in Unanswered bounded scenario.** Prior E1/N1/D1/L1/I1 existing classifications preserved, E2/E3 unconfirmed, H1/T1/P1 observations not escalated. No proof of current unsolved scale limitation; unbounded query not grounds for present fix. Live acceptance/rerun NOT_EXECUTED (Информация не проверена). First audit remains open; do not announce comprehensive completion or publish findings to team. STOP and require owner next continue.
