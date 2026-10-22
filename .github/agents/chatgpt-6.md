@@ -830,3 +830,25 @@ Tests/build/browser, внешние сервисы и их acceptance не вы�
 - Рабочие заметки можно сохранять только в `.github/agents/chatgpt-6.md` в служебной ветке PR #236 с пометками evidence/uncertainty и явным именем аудита.
 - Не писать неподтверждённые findings в общий `.github/service-channel.md`, не назначать работу другим агентам, не трогать implementation или `main` во время аудита.
 - Не использовать `DONE`, `полный аудит завершён`, `final clearance` до проверки всех обязательных требований выбранного аудита.
+
+
+---
+
+## Первый аудит — дополнительная подзадача: локализация и переводы (2026-10-22)
+
+**Статус: подзадача проверки source/contracts/tests выполнена; ПОЛНЫЙ АУДИТ НЕ ЗАКРЫТ.** Только предыдущий independent audit из текущего чата, не `AUD-20261022`. Baseline GitHub main `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+
+**Контракт:** `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `TRANSLATION_ARCHITECTURE.md`; профильные `docs/translation/LOCALES.md`, `UI_TRANSLATION.md`, `CONTENT_TRANSLATION.md`, `STORAGE_AND_VERSIONING.md`, `PROVIDERS_AND_JOBS.md`. Внешние Stage 6 providers, Queue, Neon, OAuth и deployed acceptance не проверяются и не становятся current-Stage defects только по отсутствию запуска.
+
+**Trace reviewed:**
+1. `app/routes/locale-boundary.tsx`, `app/localization/resolver.ts`, `locale.ts`, `resource-loader.ts`, `runtime.ts`, `persistent-sources.ts`, `db/hyperdrive-ui-translations.ts`: canonical explicit locale loader/middleware; non-GET redirect-required paths fail closed; деградация registry → English; target/fallback locale resources separate; local current > persistent manual > machine within locale; persisted compiled hit avoids raw namespace fetch; invalid/degraded bundle falls back to raw/local/English; SSR snapshot initializes request-scoped i18next, without language re-detection or provider request.
+2. `app/localization/content-translation.ts`, `content-translation-presentation.ts`, `app/routes/topic.tsx`, `db/content-translation-store.ts`: content identity by type/id/revision/target; same-known-source skips lookup, missing/invalid/stale/classified unavailable shows original current revision; quote attribution check and per-block provenance/language/direction; title and post body distinct; attachment-only empty bodies excluded from translation units; manual translation outranks machine on same exact identity.
+3. `app/localization/content-translation-planning.ts`, `content-post-body-planning.ts`, `content-translation-execution.ts`, `content-post-body-execution.ts`, `content-translation-task-consumer.ts`, `content-post-body-task-consumer.ts`, `content-post-body-publication.ts`, `content-translation-publication.ts`, `content-markdown-translation.ts`: authoritative revision + permitted target/source; stable committed task before enqueue; re-evaluate active generation/revision/policy/claim/provider data bounds; protected AST segments exclude code/technical tokens, output reconstituted with structure/attribution check.
+4. `db/content-topic-title-execution-store.ts`, `db/content-post-body-execution-store.ts`, `db/translation-task-store.ts`: machine publish locks generation head → task → current topic/post revision; conditional claim and exact expected revision, serialized transactional write and completion; stale provider results rejected, manual current translation preserved, completion failure rolls back body write; lost claim/duplicate delivery protected.
+5. Existing tests reviewed as code/evidence (not executed here): `app/localization/content-translation.test.ts` (11), `content-translation-presentation.test.ts` (7), `content-markdown-translation.test.tsx` (12), `content-post-body-planning.test.ts` (11), `resource-loader-bundles.test.ts` (5), `resources.test.ts` (10), `app/routes/locale-boundary.test.ts` (5); `tests/database/content-post-body-task-planning.test.ts` (26), `content-topic-title-execution.test.ts` (14), `content-translation-store.test.ts`. Проверяются stale revision during provider window, manual concurrent writes, claim loss, failed completion rollback, no duplicate provider, budget/dedup, original fallback. Дополнительно есть CI exact-tree success PR #232 run #39615502080, но fresh tests/browser не запускались.
+
+**Результат:** в проверенной translation source/persistence/recovery цепочке новых подтверждённых дефектов актуального Stage не установлено. Отсутствие реальной Queue/provider acceptance — явно Stage 6, не finding текущего scope. Это не PASS каждого translation-модуля и не полный security/release audit.
+
+**Остаток первого аудита:** иные ранее не доказанно покрытые области и cross-boundary матрица требований/реализации/тестов; уточнение E1–E3 предыдущего checkpoint и классификация только при наличии достаточных доказательств. Следующая самостоятельная подзадача по команде владельца: сквозные транзакционные, миграционные и security boundaries на уровне приложения, с акцентом на ранее частично проверенные узлы. `AUD-20261022` state/manifest не изменены.
+
+**Сохранение:** личный файл Лиры; `main`, implementation PR, `.github/service-channel.md` и другие personal files не менялись.
