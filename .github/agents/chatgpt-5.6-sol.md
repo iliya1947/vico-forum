@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 3 начат; части 1–2 завершены.
+Активная задача: поэтапный аудит AUD-20261022. Этап 3 завершён; следующий этап 4 — после команды владельца.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -11,24 +11,18 @@
 
 ## AUD-20261022 — этап 2
 
-- Проверены все manifest targets этапа 2; новых подтверждённых current-Stage defects не установлено.
-- Route/config/toolchain/dependency/server-client boundaries зафиксированы в shared channel.
+- Проверены все manifest targets этапа 2; подтверждённых current-Stage defects не установлено.
 
-## AUD-20261022 — этап 3, часть 1 — email/password и session
+## AUD-20261022 — этап 3
 
-- Проверены email/password registration/sign-in, credential return path, request-scoped session, session refresh/expiry, sign-out presentation/revalidation и Better Auth resource route.
-- OAuth service flow исключён.
-- Отдельный real PostgreSQL sign-out regression отсутствует; оставить как coverage observation для этапа 12.
-- Новых подтверждённых functional auth/session defects в этой части не установлено.
-
-## AUD-20261022 — этап 3, часть 2 — dynamic authorization
-
-- Baseline повторно подтверждён; `AGENTS.md` полностью прочитан перед подзадачей.
-- Проверены `app/authorization/catalog.ts`, `request-context.ts`, `admin-view.tsx` и test, `app/routes/authorization-admin.tsx` и test, `db/authorization-service.ts`, `db/authorization-repository.ts` и test, `db/hyperdrive-authorization.ts` и test, `tests/database/authorization-snapshot.test.ts`; дополнительно использовано применимое evidence из `tests/database/migrations.test.ts`.
-- Catalog содержит 15 current permission keys; built-in grants совпадают с source-of-truth. Dynamic role grants и overrides имеют precedence deny → allow → role → deny.
-- Protected management route получает actor только из authenticated session, independently checks effective `access.authorization.manage`, checks same-origin before mutation and maps classified domain/availability failures to controlled responses.
-- Repository mutation повторно проверяет actor permission внутри serialized transaction; singleton lock serializes all authorization mutations and post-mutation manager count prevents atomic removal of the last effective manager. Concurrent-last-two-manager scenario имеет PostgreSQL integration coverage.
-- `resolveUser` и management state используют REPEATABLE READ read-only snapshots; production Hyperdrive capability caches one resolution promise per user only within request, while a new request resolves afresh.
-- Availability adapter wraps only classified connection/query-timeout chains; schema/programming errors remain visible to normal error handling.
-- Детали любых findings не записаны в служебный PR до завершения проверки согласно AGENTS.md.
-- Следующая часть: resource ownership и owner/any boundaries.
+- Часть 1: email/password registration/sign-in, credential return path, request-scoped session, session refresh/expiry, sign-out boundary и Better Auth resource route. OAuth service flow исключён.
+- Часть 2: permission catalog, dynamic roles/grants, per-user overrides, management route/mutations, request-local cache/freshness, consistent read snapshots, availability classification и serialized last-manager lockout protection.
+- Часть 3: ownership boundaries cross-checked against `docs/auth/AUTHORIZATION.md`, `app/forum/editor-permission.server.ts`, `mutations.server.ts`, `actions.server.ts`, `app/routes/post-edit.ts`, topic presentation and authoritative repository/service methods.
+- `forum.post.editOwn`: server session actor forwarded; repository locks target post and rejects non-author.
+- `forum.solution.manageOwn/manageAny`: scope derived exclusively from current server permission resolution; repository re-reads topic author and enforces author for `own`. Forged client actor/author/role/permission/scope is ignored; connected DB test covers forged escalation denial.
+- `forum.sourceLocale.correctOwn/correctAny`: scope derived server-side; service reads authoritative topic/post author and enforces ownership for `own`; PostgreSQL integration covers cross-author denial, moderator any access and current override denial.
+- Duplicate appeal author boundary is enforced by locked authoritative topic row in repository; no client-supplied author is trusted.
+- Presentation controls use the same authoritative author IDs only as UX; mutations independently repeat authorization/ownership checks.
+- No additional ownership defect established in part 3. Details of any prior stage-3 finding remain only in current developer chat until the full checking sequence is complete per AGENTS.md.
+- Test-coverage gaps are deferred for explicit assessment at stage 12.
+- Next step: stage 4 — public read/discovery/search/tags, participation, unread, notifications, profiles, presence.
