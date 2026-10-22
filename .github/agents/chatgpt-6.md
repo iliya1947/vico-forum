@@ -1,8 +1,63 @@
 # Лира — ChatGPT-6
 
-Активные задачи: два раздельных независимых аудита Vico Forum; оба НЕ закрыты как полный аудит. Актуальный рабочий статус см. в последнем checkpoint.
+**Единственный действующий план: объединённый аудит Vico Forum (2026-10-23).** Два прежних аудита объединены по прямой команде владельца. Все записи ниже новой секции — *исторический ledger*, а не два действующих параллельных плана. Первый обязательный проход — ПОВТОРНО проверить ранее просмотренное; только после его завершения приступать к ранее не проверенному. Никаких implementation changes и преждевременного формального объявления findings.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Лиры в рамках текущего служебного PR.
+
+## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (ACTIVE, v1)
+
+**Статус: этап организации/инвентаризации завершён; повторная проверка ЕЩЁ НЕ НАЧАТА; проверка нового НЕ НАЧАТА; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+
+### Объём, происхождение и запреты
+
+1. Из `AUD-20261022` наследуется **единый существующий manifest baseline** в его историческом разделе ниже: **491 путь**, из них **437 INCLUDED**, **42 EXCLUDED (service/operational external)**, **12 CONTEXT (archived)**. Это инвентаризация, не отметка о review. Среди INCLUDED: 18 актуальных Markdown документов, 45 SQL migrations, 45 Drizzle schema snapshots; прочие app/db/tests/config/workflows. Сохранить каждую file identity в manifest и не дублировать файл, даже если у него несколько функций.
+2. Из первого 14-этапного аудита наследуются все **предметные журналы этапов 9–13, сводка этапа 14 и последующие целевые проверки** как исторические evidence *разной глубины*. Исходных подробных checkpoint 1–8 нет: `HISTORICAL_EVIDENCE_UNKNOWN`; номера не восстанавливать догадками. Второй аудит на прежнем этапе 1 завершил чтение **14 из 18** included Markdown документов, что подтверждено file SHA и full-EOF records, но не делал этапы 2–13 как отдельный цикл.
+3. Не проверять внешние service-account/production состояния, OAuth live, real translation providers/Queues, Neon/Hyperdrive operations, R2 live, deployment/backup/restore. **Внутренние** session/authz, adapters, SQL, data lifecycle, providers-independent contracts включены. Future Stage6 issues не назначать current Stage defects по факту наличия.
+4. Во время аудита реализацию не менять; evidence/findings до полного окончания сообщать владельцу в чате. Личный файл является рабочим журналом; общий `.github/service-channel.md` и чужие personal files не менять; отдельный implementation PR не трогать.
+
+### Фактический предварительный ledger: проверено ранее ≠ подтверждено повторно
+
+Обозначения: `DOC_READ` — документ ранее прочитан полностью; `SOURCE_REVIEW` — проверена конкретная цепочка и выборка assertions тестов, но не весь файл/все варианты; `SQL_READ` — прочитана SQL migration; `SNAP_PARSED` — JSON parsed/chain+delta checked, не полная семантика каждого поля; `CI_OBSERVED` — ранее успешный внешний CI exact-tree; `UNKNOWN` — нет надёжного достаточного доказательства; `NOT_EXECUTED` — runtime test не проводился. Ссылка на файл сама по себе **не повышает** `UNKNOWN` до `SOURCE_REVIEW`.
+
+- `DOC_READ`: **14 из 18** включённых Markdown (два комплекта old `AUD-20261022` journal, части 1–5): `AGENTS.md`, `PROJECT.md`, `README.md`, `ROADMAP.md`, `SCAFFOLD_PLAN.md`, `TRANSLATION_ARCHITECTURE.md`, `PROJECT_STATE.md`, `PROJECT_HISTORY.md`, `docs/EDITOR.md`, `docs/UI_UX_PASS.md`, `docs/auth/AUTHORIZATION.md`, `docs/database/MIGRATIONS.md`, `docs/translation/LOCALES.md`, `docs/translation/UI_TRANSLATION.md`. **Ещё не подтверждено полное чтение:** `docs/translation/CONTENT_TRANSLATION.md`, `docs/translation/PROVIDERS_AND_JOBS.md`, `docs/translation/RESEARCH.md`, `docs/translation/STORAGE_AND_VERSIONING.md`.
+- `SQL_READ`: все **45/45 SQL 0000–0044**, согласно двум отдельным прямым пакетным source checks. `SNAP_PARSED`: **45/45 snapshots 0000–0044**, цепочка+эволюция таблиц; для поздних transitions — дополнительная constraints/delta проверка. Не утверждать exhaustive hand-review всех 45 JSON.
+- `SOURCE_REVIEW`: у старого аудита есть конкретные следы по базовой архитектуре и auth, публичным маршрутам, Help, Editor, attachments, localization, PostgreSQL, security, UI; примеры в этапах 9–13, early source-ledger, отдельных тематических checkpoints. Существующие tests в этих пунктах *читались*, а не запускались нашим новым тестовым прогоном. Детальная полнота ветвей НЕ доказана.
+- Сопоставление точных путей из первого/второго журнала с manifest **без его собственной таблицы**: среди 437 INCLUDED **172 пути прямо упоминались**, **265 не имеют точного текстового упоминания**. Это только диагностический указатель для классификации: **не** 172 verified files и **не** 265 unreviewed files (например, SQL и snapshots проверены пакетами по диапазонам). Не путать `NAMED` с `REVIEWED`.
+- `CI_OBSERVED`: GitHub Actions `#39615502080`, jobs checks+database SUCCESS на идентичном Git tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`; не самостоятельный новый прогон. `NOT_EXECUTED`: точные multi-tab/edit409/network ACK, full UI browser accessibility/hydration/LTR/RTL, самостоятельно весь PG/Worker test run, external service integration.
+- Старые findings `E1`, `N1`, `E3`, `I1`, `L1`, `D1`, `E2` — **предварительные исторические выводы для НЕЗАВИСИМОЙ повторной проверки**, а не автоматически принятый набор дефектов. Уточнять actual requirement/current Stage, воспроизведение, альтернативы, доказательства. `E2` не повышать без контракта, `L1` не называть доказанной утечкой, `D1` — documentation only.
+
+### Единая матрица 0–13 — содержательные области, каждый пункт проходит ДВА последовательных режима
+
+`A` — ПОВТОРНАЯ проверка ранее просмотренного; `B` — ПЕРВАЯ проверка оставшегося. **Глобальная граница:** не начинать НИ ОДНОЙ `B`-проверки, пока все `A` по областям 1–12 и прежним findings не завершены и не зафиксированы. На этапе подготовки разрешён только учёт путей/доказательств, без substantive audit нового кода. По окончании каждой логической подзадачи дать отчёт владельцу и STOP до команды.
+
+| № | Единый раздел проверки | Есть фактическое старое evidence | Недоказанное/дальнейший режим B |
+|---|---|---|---|
+| 0 | baseline, manifest, правила статусов, crosswalk двух аудитов | manifest 491/437/42/12; crosswalk составлен сейчас | повторить tree/baseline при drift; stage 0 DONE |
+| 1 | source-of-truth и 18 документов, приоритеты Stage/current contracts | 14 `DOC_READ` full-EOF | 4 без подтверждённого полного чтения; document contradictions/links |
+| 2 | архитектура, Worker/SSR, route graph, bindings, config, dependencies | маршруты, request context, session/init, Node/pnpm/CI wiring — `SOURCE_REVIEW` по выборкам | непроверенные файлы/ветки, runtime assembly и другие config paths |
+| 3 | Better Auth email/password/session; permissions/roles/overrides/ownership | auth/session, scoped roles, lockout, degradation — частичные source/tests | полная auth/authz × role × route × stale/failure matrix; без live OAuth |
+| 4 | public categories/sections/topic/search/popular/tags/unanswered; participation/unread/notifications/profile/presence | предметные этапы 9–10 + extra targeted source checks | оставшиеся routes, request variants, DB/UI transitions, test assertions |
+| 5 | Help, solved/best-answer, moderation signals, duplicate/appeals/attention | старый этап 11 + help-specific checks | оставшиеся cases, negative/concurrent/authorization paths |
+| 6 | Editor 2.0 Simple/Advanced, Markdown, clipboard, history, quotes/mentions, published edit | этап 13 и E1/N1/typed failures source/tests | новые editor cases и реальный runtime/browser failures |
+| 7 | attachments: validation, upload/download, ownership, private refs, publish, cleanup | этап 13 и selected PG/browser upload flow source/tests | незакрытые zip/container/format checks, actual browser/transport error transitions |
+| 8 | locale/translation UI+content, registry, fallback, RTL, durable provider-neutral jobs | translation-specific source/tests, source-locale work | существенная часть полного source/test manifest, task/provider-neutral branch cases |
+| 9 | PostgreSQL, schema, SQL, snapshots, transactions, query plans, indexes | 45 SQL full, 45 snapshot parsed, selected DB assertions/CI | собственный PG execution/query plans и неподтверждённая семантика snapshot/DB paths |
+| 10 | сквозная security и dependency failure boundaries | selected cross-user, CSRF/origin, SSR cache, links, logs, E3/L1/I1 | систематическая negative/fault/error matrix по включённому объёму |
+| 11 | UI browser: accessibility, responsive, keyboard, hydration, LTR/RTL, performance | static CSS/component tests, partial keyboard inspection | real browser matrix **NOT_EXECUTED**; явно фиксировать среды/блокеры |
+| 12 | tests/quality: mapping assertions, lint/type/test/build/DB/Workers CI | старый exact-tree green CI; прочитаны отдельные test assertions | полный test-file review и собственные исполнимые quality gates, если среда доступна |
+| 13 | покрытие manifest, requirements/scenarios, findings, final | прежние частичные сводки и текущая инвентаризация | только после A + B + применимых executions: reconciliation и один итоговый отчёт |
+
+Первичные привязки 437 файлов к этапам уже существуют в историческом `AUD-20261022` manifest: этап 1 — 18; 2 — 20; 3 — 29; 4 — 49; 5 — 2; 6 — 18; 7 — 31; 8 — 128; 9 — 108; 10 — 2; 11 — 17; 12 — 9; cross-cut `4/5/6/7` — 6. Они **не ограничивают** сквозные проверки в иных этапах; статус выставляется по actual evidence каждой required branch.
+
+### Безусловный порядок и критерии остановки
+
+**PASS A (сначала только повторная проверка):** составить по существующим checkpoints пофайловый список с уровнем доказательств; заново прочитать 14 уже full-read docs; заново проверить 45 SQL/45 parsed snapshots в соответствующей прежней глубине и поднять проверенные источники/tests по всем предметным областям 2–12. Каждый кейс: exact baseline+path/lines, действующее требование, positive/negative/concurrent/failure, выбранные реальные test assertions (READ vs EXECUTED), вывод. Ранее не просмотренный файл/сценарий при встрече **включить в будущий B**, не начинать новый substantive review. Доказанный результат A — не прежний штамп и не зеленый CI, а новая проверка. **PASS A CLOSED** только когда ни одно достоверно ранее проверенное требование/файл/сценарий не осталось без повторной проверки и записанного evidence.
+
+**PASS B (строго после полного A):** все INCLUDED items/scenarios manifest без удовлетворительной A-проверки, включая 4 непрочитанных документа и файлы, отсутствующие в source ledger; полный требуемый negative/error/concurrent paths и проверяемые browser/PG/Worker executions. При недоступной среде `BLOCKED/NOT_EXECUTED` с конкретной причиной, не PASS и не бесконечное повторение исходников. Отдельно решать necessity проверок по current Stage.
+
+**CLOSURE:** убрать дубли старых findings, классифицировать verified current defects vs hypothetical/future vs doc-only; пофайлово и по требованиям/сценариям reconcile весь INCLUDED manifest. Полным назвать аудит только после фактического выполнения обязательных проверок; иначе один честный отчёт о незакрытых blockers/limits, без объявления успеха. Не инициировать исправления до завершения и прямой команды владельца. **СЛЕДУЮЩАЯ ПОДЗАДАЧА после команды: PASS A / этап 1 — повторное чтение ранее проверенных 14 документов; затем шаги по следующей области, только по явной команде.**
+
+---
 
 ## Независимый технический аудит форума — 2026-10-21
 
