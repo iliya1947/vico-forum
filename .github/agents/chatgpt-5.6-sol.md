@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 6 начат; часть 1 завершена.
+Активная задача: поэтапный аудит AUD-20261022. Этап 6 начат; части 1–2 завершены.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -21,4 +21,5 @@
 - Advanced code-only keyboard helpers are bounded to fenced-code content, excluding opening/info and closing fence lines; manual code language is normalized but not restricted to a fixed highlight list.
 - Clipboard rich-HTML conversion accepts a bounded safe subset, rejects active/unsafe structures, converts simple spreadsheet tables, and falls back explicitly rather than silently dropping unsupported content.
 - One current-Stage finding was confirmed in the shared literal-text escaping path used by Simple visual typing and plain/paste-without-formatting. Details remain only in current developer chat until the audit publication gate.
-- Next step: stage 6 part 2 — quote/mention.
+- Часть 2 quote/mention завершена: whole/selected quote source and presentation, DOM line collapse, mention token/search/insertion, publication recipient extraction и durable edit notification semantics проверены. Quote source хранится обычным Markdown blockquote; attribution/permalink сохраняются; 1–5 visible rows не сворачиваются, >=6 сворачиваются до первых трёх. Mention lookup authenticated/private/no-store, choice inserts stable-id profile link, published parser excludes blockquote/code/inlineCode/html/image and bare @. Notification rows dedupe recipient+post, поэтому reply+mention не дублируются; edit adds only new recipients, deletion does not revoke and re-add does not resend; stale edit emits nothing. Новых independent findings в части 2 нет.
+- Next step: stage 6 part 3 — publish/edit; attachment lifecycle remains stage 7.
