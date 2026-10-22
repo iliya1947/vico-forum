@@ -1280,3 +1280,44 @@ Baseline GitHub `main` = `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, повто�
 - Real Chromium/Worker/PG scenario `R1 open -> R2 concurrent save -> POST 409 -> inspect warning/current revision and local text` **NOT_EXECUTED by Лира**: no checked-out runtime or running browser app in this audit step. Thus do not claim fresh browser reproduction, current CI pass, or exact runtime measured observation.
 - The names `E1` from this **first independent audit** vs historical `PROJECT_STATE.md:1956–1958` “Editor 2.0 edit lifecycle E1” denote different chains: historical E1 fixed premature unlocking during **successful submitting→loading**, with existing tests. They do not resolve this newly scoped failed **409→latest-loader** recovery gap. Other earlier first-audit D1 mismatch `PROJECT_STATE.md:1568` (journals through 0044) remains unchanged. E2/E3 old suspicions still not confirmed.
 - No fix implemented during independent audit. Technical fix choice stays with implementation team, after full audit/review stage. Only personal audit checkpoint saved per developer permission; no formal handoff. **STOP after this bounded task**; next explicit owner continuation should reconcile outstanding first-audit coverage and stopping criteria, rather than conflate with `AUD-20261022`.
+
+
+---
+
+## Первый аудит — обновлённая инвентаризация доказательств и оставшихся gate (2026-10-22)
+
+**СТАТУС: завершена ТОЛЬКО подзадача reconciliation. ПЕРВЫЙ АУДИТ В ЦЕЛОМ НЕ ЗАКРЫТ.** Не путать с отдельным `AUD-20261022` (0–13; 437-file manifest). Source frozen `main` = `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, branch SHA заново проверен; полный актуальный `AGENTS.md` из `main` перечитан. Рабочие заметки Лиры, без изменений реализации, иных personal files и общего communication.
+
+### Метод и существенная корректировка предыдущей финальной сверки
+
+Прочитаны **собственные личные records** первого аудита (начальное резюме 2026-10-21; этапы 9–13; сводная запись 14; последующие дополнительная локализация/DB/security, E1–E3, ранние 1–8 evidence recovery, target matrix 409/auth/retry/error, финальная reconciliation на строках около 1076–1121; новые checkpoint до 1283). **Предыдущая «финальная сверка» уже выполнялась**, поэтому нынешняя задача не является новым complete audit и не может лишь переименовать прошлую работу в DONE.
+
+Корректировка относительно checkpoint `Первый аудит — финальная сверка ...` (около строк 1076–1121): формулировка «45 SQL and 45 snapshots NOT all line-reviewed» **устарела после новых DB-подзадач**. Сейчас **все 45 migration SQL 0000–0044 прочитаны полностью**, все 45 snapshot JSON 0000–0044 разобраны программно по links/table evolution, последние 0033→0044 дополнительно сравнены по columns/indexes/FK/PK/unique/check and SQL deltas, без обнаруженного нового schema-history mismatch. *Не* подменять это утверждением о полном ручном построчном review семантики каждого из 45 JSON snapshots, либо выполненном PostgreSQL apply.
+
+### Исполненное и фактический результат
+
+| Домен | Доказательный источник | Реально выполнено |
+| --- | --- | --- |
+| Public read/discovery + participation/profile/presence | Stage 9–10 records, route → service/repository → SQL, selected tests | Bounded static source/test assertions review; no live browser |
+| Help moderation, attention, duplicate and appeals | Stage 11, selected PostgreSQL and route cases | Bounded source/negative-case check; no new executions |
+| Better Auth session, role/overrides/freshness/owner and negative authorization | Stage 12 + later expiration/revocation checkpoint | Source chain; native PG tests including next-request revocation examined, NOT rerun |
+| Editor Simple/Advanced / Markdown / 409 / attachments / receipt / cleanup | Stage 13 + later E1, ACK checkpoints | Source-client/server/DB trace, real-PG test assertions inspected; no integrated browser failure experiments |
+| Locale + UI/content translations/queue-neutral persistence | Separate translation subtask | Source and chosen positive/negative test assertions inspected; real providers/Queues Stage6 excluded |
+| Migrations, SQL snapshot schema history, locks | DB review checkpoints 1122–1214 | 45/45 full SQL, 45/45 parsed snapshots chain, last 11 transitions delta parity; no PG apply executed by Лира |
+| CI and build | Historical exact-tree run #39615502080 + package/CI config read | Observed existing checks/database SUCCESS; no fresh own run |
+
+**Current-stage findings:** E1: documented React Router 8 4xx/5xx skip revalidation + missing `topic.tsx` shouldRevalidate / missing TopicView revalidator + UI rebase depends on fresh post revision; accepted 409 leaves old R1 and blocks direct rebase until unrelated refresh. Also under E1, `forumWriteError_conflict` message wrongly describes selecting a solution rather than editing. D1: `PROJECT_STATE.md:1568` historical max migration 0043 versus true journal through 0044; doc only. E2 stuck pending XHR without timeout/Remove and E3 generic writer unknown→503 remain UNCONFIRMED CURRENT-STAGE defect hypotheses, do not suggest fix on hypothetical risk. No evidence of data overwrite.
+
+### Explicit remaining verification and closure criteria
+
+**Not recovered:** Historical original stages 1–8 detailed evidence/scope/tests cannot be inferred. Earlier new current-main source-ledger about early auth/entry/locale/CI does *not* resurrect historical step PASS. This uncertainty cannot be erased by another summary. For complete original full-scope coverage, independently demonstrate all originally required areas or make a new explicit requirement–module–scenario review program; **never re-label the unknown as done**.
+
+**Not executed by Лира:** runtime React Router/React post-409 rejected action → loader refresh → explicit rebase and preserved current edit; same mounted browser form expiry/revocation; post-commit ACK-loss with browser retry under same operation; actual typed 503 vs thrown error UI retention; systematic keyboard/a11y/responsive/hydration states. Some cases have **existing tests**, which were *read*, not personally run. Local test environment for first audit previously inspected and unavailable/incompatible: no pinned Node 24.21.0/pnpm 12.3.4 checkout, PG17, browser app, real Worker private R2. Do not promise current-turn executable verification or production/service testing.
+
+**Prioritization (not unconditional new Stage gates):**
+1. First decide exactly what breadth the *first* technical audit is allowed to certify. For a **full originally promised audit** earlier 1–8 proof/remaining source–test coverage and high-risk browser-specific paths must be supplied by real evidence, not rewritten history. The separate `AUD-20261022` already has a strict 437-file manifest for a genuinely exhaustive pass; its progress MUST stay separate. Do not perform duplicate first-audit pseudo-completeness by borrowing its evidence.
+2. Highest-impact actionable uncertainty is E1 route-level integrated rejected POST 409 (R1→R2) + editor rebase visibility/preservation; current source establishes cause, but not browser observation. A correctly pinned runnable environment is a prerequisite for an execution PASS; otherwise say NOT_EXECUTED.
+3. Error UX and permission/ACK browser transitions need fresh integration proof **only to extent required by first-audit original product-scope acceptance**, not as grounds for hypothetical changes. No current Stage defect from missing manual full-audit test alone.
+4. Conclude with auditable final report: exact baseline, positively reviewed module/scenario scope, executed vs read-only evidence, E1/D1 and E2/E3 classifications, explicit limits and whether full evidence is genuinely complete. Until that point **no whole-first-audit clearance; no general communication/fix assignment**.
+
+**Decision in this bounded step:** updated concise complete-known ledger; *first audit remains OPEN and unproven in exhaustive scope*. Do not redo migrations, E1 or account auth source tracing without fresh test/reproduction benefit. No unrelated fix and no reuse of `AUD-20261022` stage statuses. STOP and await owner explicit continuation.
