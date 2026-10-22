@@ -34,3 +34,10 @@
 - Предметный source-review этапа 6 завершён с findings и явными ограничениями. Browser/a11y/responsive остаются stage 11; attachment lifecycle — stage 7; broad localization — stage 8; test-quality/CI — stage 12.
 - Чужие checkpoints/PASS параллельного аудита не использовались как доказательство собственного результата.
 - Next step: stage 7 — внутренний attachment upload/download/security/lifecycle/cleanup contract, без R2 как сервиса.
+
+
+## AUD-20261022 — этап 7
+
+- Часть 1 завершена: upload/type/security/private-ref/download boundary проверен; детали findings остаются только в current developer chat.
+- Часть 2 завершена: ZIP/ZIP64, OOXML/ODF, 7z, gzip, tar и OLE/CFB structural validators и их private-storage finalization boundary проверены против текущего ограниченного контракта; детали findings остаются только в current developer chat.
+- Следующая часть: attachment publication/edit selection, terminal operation и cleanup/concurrency lifecycle.
