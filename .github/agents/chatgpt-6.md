@@ -6,7 +6,7 @@
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (ACTIVE, v1)
 
-**Статус: этап организации/инвентаризации завершён; повторная проверка ЕЩЁ НЕ НАЧАТА; проверка нового НЕ НАЧАТА; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+**Статус: этап организации/инвентаризации завершён; PASS A / этап 1 (14 ранее DOC_READ документов) перепроверен 2026-10-23; PASS A / этапы 2–12 НЕ НАЧАТЫ; PASS B НЕ НАЧАТ; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
 
 ### Объём, происхождение и запреты
 
@@ -56,6 +56,38 @@
 **PASS B (строго после полного A):** все INCLUDED items/scenarios manifest без удовлетворительной A-проверки, включая 4 непрочитанных документа и файлы, отсутствующие в source ledger; полный требуемый negative/error/concurrent paths и проверяемые browser/PG/Worker executions. При недоступной среде `BLOCKED/NOT_EXECUTED` с конкретной причиной, не PASS и не бесконечное повторение исходников. Отдельно решать necessity проверок по current Stage.
 
 **CLOSURE:** убрать дубли старых findings, классифицировать verified current defects vs hypothetical/future vs doc-only; пофайлово и по требованиям/сценариям reconcile весь INCLUDED manifest. Полным назвать аудит только после фактического выполнения обязательных проверок; иначе один честный отчёт о незакрытых blockers/limits, без объявления успеха. Не инициировать исправления до завершения и прямой команды владельца. **СЛЕДУЮЩАЯ ПОДЗАДАЧА после команды: PASS A / этап 1 — повторное чтение ранее проверенных 14 документов; затем шаги по следующей области, только по явной команде.**
+
+
+### PASS A / этап 1 — повторная проверка ранее читавшихся 14 документов (2026-10-23)
+
+**Выполнено как одна завершённая ограниченная подзадача. Глобальный PASS A ещё НЕ завершён.** Frozen main `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` повторно сверено; все 14 исторически `DOC_READ` документов целиком fetched exact `main` до EOF, структурно/семантически просмотрены по ключевым source-of-truth и Stage границам; каждый файл обработан по строкам в полном объёме для внутренней проверки локальных Markdown-ссылок и version/status markers. Для особо длинного `PROJECT_STATE.md` содержательная сверка действующего состояния и противоречий выполнена по относящимся к текущему scope фрагментам, **не утверждается полный построчный ручной перечит всех 2020 строк legacy log**. Иных source/test full review не выполнялось: это ТОЛЬКО документационный A-slice, не whole Stage 1 including 4 untouched docs.
+
+14 документов / 6615 физических строк / 435295 UTF-8 JS characters; пути и blob SHA:
+```text
+AGENTS.md                              20acb9210685bf3347f153c0d44d19420e8dc9bc
+PROJECT.md                             d261cf8f85d2ecfb44c54ff327fc2cf8fce70e7e
+README.md                              c6e23326b23c6982bdf521b7dd60b351d73c25f4
+ROADMAP.md                             5cbaf503e3e6715f50635f8f131ee6034c90367c
+SCAFFOLD_PLAN.md                       996f542bc166afa8b29952b4beb7501f9a54e43c
+TRANSLATION_ARCHITECTURE.md            0294c0245e846b5fdd5dab22bbc6afe79733cdcf
+PROJECT_STATE.md                       0affd914738d9c94733d0e0ec1473f7b2569097c
+PROJECT_HISTORY.md                     a86ca1c654316e921c3f182437d69907faf4cab0
+docs/EDITOR.md                         a43653c66f323255e2fd2f63c3339fb18267bf3e
+docs/UI_UX_PASS.md                     340d8e93d8669ee2212098f83ecaa8b87746652f
+docs/auth/AUTHORIZATION.md             79b68863e17bb1202609abd9d5641b5fc6454917
+docs/database/MIGRATIONS.md            e8ad5ef6b862ab4b7d57d9664a6f25fe810a685d
+docs/translation/LOCALES.md            f58527e4a3067ca593c9a91ee7cdd195c0459193
+docs/translation/UI_TRANSLATION.md     dabc15f8c466f670c60b97395e818c50891b597c
+```
+
+- **Ссылки**: 78 Markdown local file/directory links after excluding external and anchors checked against exact main tree; missing target **0**. This does not mean every section anchor or external URL was checked.
+- **Stage boundaries reviewed**: Stage 0–5 implemented local/CI; current standalone UI/UX product pass; Stage 6 external infra paused; future Stage7 release gate excluded. Editor 2.0 in-memory source/history, draft/autosave intentionally deferred; its own visual/Pages gate owner-waived except explicit request; wider UI_UX_PASS final real-runtime browser acceptance remains its separate task gate. No contract contradiction inferred from this context. Dynamic permission/authz next-request freshness, write failure semantics and no-client-side role claims; locale authority/canonical en/current source priority, specific method-aware routing and no translation provider in SSR; immutable SQL migration history+separate external rollout.
+- **D1 RECONFIRMED documentation factual error:** `PROJECT_STATE.md:1568` says repository migration history `0000–0043`. Actual `drizzle/meta/_journal.json` 45 entries through `0044_attachment_draft_conflict_boundaries`, corroborated by `PROJECT_STATE.md:367`, `docs/EDITOR.md:389`. Historical external accepted prefix through `0020` is separate and not mistaken.
+- **D2 NEW document-hygiene contradiction, not a functional defect:** `PROJECT_STATE.md:5–21` says only current state and that per-PR commit SHA/CI run history is not duplicated; the same file has >100 lines with PR/CI/commit specifics (`~125` matching lines), including multiple long old Editor PR sections and dated CI successes. `PROJECT_HISTORY.md:5–23` declares itself appropriate history source; this discrepancy undermines current-vs-historical source-of-truth boundary. Don't demand full history rewrite before pre-release by default; no project docs changed.
+- **No new proven runtime defect** from this documentation-only subtask. All old code findings remain `PENDING RECHECK IN A 2–12`, not accepted by rereading docs alone.
+- **PASS B / stage 1 deferred strictly:** `docs/translation/CONTENT_TRANSLATION.md`, `PROVIDERS_AND_JOBS.md`, `RESEARCH.md`, `STORAGE_AND_VERSIONING.md`, and any more exact holes. Do NOT read them before **all** PASS A stages complete.
+- **STOP** until user continuation. Next `PASS A stage 2`: recheck only source/config/runtime wiring already demonstrably reviewed and record exact per-file assertions; newly encountered unreviewed items become B queue. Do not publish findings in shared channel until audit completed and owner authorizes transfer.
+
 
 ---
 
