@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 6 начат; части 1–3 завершены.
+Активная задача: поэтапный аудит AUD-20261022. Этап 6 завершён; следующий этап — 7.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -30,4 +30,7 @@
 - Topic/reply/edit publication receipts проверяются под operation scope до новой записи; exact replay возвращает прежний результат, а modified replay конфликтует. Published edit сохраняет revision history и применяет expectedRevisionId CAS.
 - Controlled validation failure сохраняет тот же live editor buffer и допускает retry; history endpoint остаётся server-permission protected.
 - Детали findings этой части остаются только в current developer chat по правилу проверки PR.
-- Next step: stage 6 coverage reconciliation / closeout before stage 7; attachment lifecycle remains stage 7.
+- Финальная сверка покрытия завершена: все 18/18 первичных файлов stage 6 независимо прочитаны до EOF; stage-6 срезы общих views/actions/mutations/repository и topic route сверены.
+- Предметный source-review этапа 6 завершён с findings и явными ограничениями. Browser/a11y/responsive остаются stage 11; attachment lifecycle — stage 7; broad localization — stage 8; test-quality/CI — stage 12.
+- Чужие checkpoints/PASS параллельного аудита не использовались как доказательство собственного результата.
+- Next step: stage 7 — внутренний attachment upload/download/security/lifecycle/cleanup contract, без R2 как сервиса.
