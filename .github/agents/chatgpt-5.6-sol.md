@@ -1,32 +1,23 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 4 продолжается; части 1–3 и completeness sweep 4a завершены.
+Активная задача: поэтапный аудит AUD-20261022. Этап 4 завершён; следующий этап 5 — после команды владельца.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
 ## AUD-20261022 — этапы 1–3
 
 - Baseline: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
-- Этап 1: 18 актуальных документов / 7934 строки прочитаны полностью; подтверждённых document-contract contradictions нет.
-- Этап 2: architecture/config/dependency/server-client boundaries проверены; подтверждённых current-Stage defects не установлено.
-- Этап 3: email/password/session, dynamic authorization и ownership boundaries проверены. Findings остаются только в current developer chat до завершения checking sequence.
+- Этап 1: 18 актуальных документов / 7934 строки прочитаны полностью.
+- Этап 2: architecture/config/dependency/server-client boundaries проверены.
+- Этап 3: email/password/session, dynamic authorization и ownership boundaries проверены.
+- Findings остаются только в current developer chat до завершения checking sequence.
 
-## AUD-20261022 — этап 4, части 1–3
+## AUD-20261022 — этап 4 — завершён
 
-- Public discovery, generic participation/write, unread/read-state, transactional reply/mention notifications, profiles и online presence проверены.
-- Cross-surface hidden Help service-section presentation finding остаётся только в developer chat.
-- Profiles/presence новых independent findings не добавили.
-
-## AUD-20261022 — этап 4, часть 4a — completeness sweep
-
-- Baseline повторно подтверждён; `AGENTS.md` полностью прочитан перед подзадачей.
-- Проверены оставшиеся малые manifest targets: `app/forum/under-development-view.tsx`, `app/forum/under-development.ts`, `app/i18next.d.ts`, `app/routes/under-development.tsx`, `app/routes/post-edit.ts`, `db/editor-draft-context.ts`, `db/hyperdrive-registry.ts`, `db/hyperdrive-registry.test.ts`, `tests/database/hyperdrive-registry.test.ts`. Дополнительно дочитан remaining section `330–474` connected `tests/database/stage4-core-e2e.test.ts`.
-- Under-development route является статическим localized placeholder; неизвестный `feature` не интерпретируется как translation key, а просто не выделяет requested card.
-- Post-edit route повторно проверяет session ownership + effective `forum.post.editOwn` и только после этого canonical redirect с encoded post id.
-- `editor-draft-context.ts` в текущем no-text-draft состоянии остаётся техническим parser для operation context keys; он не хранит user text и не расширяет removed draft contract.
-- Hyperdrive registry adapter lazy/request-local; availability failures переходят в degraded bootstrap-English registry, а auth/programming/config errors не маскируются. Unit и connected failure tests подтверждают request snapshot reuse, one-time degraded reporting, timeout discard и non-availability propagation.
-- Connected Stage-4 E2E remaining section подтверждает next-request RBAC freshness, deny/allow overrides, forged authorization denial и deterministic global search ranking title > tag > body, activity, topic id.
-- Test inventory по полным файлам: `public-read.test.tsx` 3315 строк / 78 test blocks; `write-actions.test.ts` 1484 / 38; `stage4-core-e2e.test.ts` 474 / 3.
-- Inventory выявил, что значительный Help/solution/duplicate/signal behavior находится в shared files, назначенных manifest-ом этапу 4. Этап 5 содержит только attention route + connected attention DB test, поэтому Help sections shared files нельзя откладывать целиком на этап 5 — иначе возникнет audit gap.
-- Новых current-Stage findings в 4a не установлено.
-- Следующая часть 4b: Help modes/public presentation и связанные shared production/test paths; затем финальный completeness check и закрытие этапа 4 либо точная фиксация остатка.
+- Части 1–3: Home/category/section, Popular/Search/Tags/Unanswered, generic participation/write, unread/read-state, notifications, profiles и online presence.
+- Completeness 4a: under-development targets, post-edit redirect boundary, editor operation-context parser, Hyperdrive registry adapter/tests, remaining Stage-4 connected E2E и full test-block inventory shared files.
+- Completeness 4b: Help category routing/modes, combined filters, authenticated Want-to-help/For-me/My-questions identity binding, public/moderator presentation of Needs details / Needs review / Solution outdated / Duplicate / Disputed, dedicated Help authoring/similar-question entry, topic permission projection and applicable repository projections.
+- Cross-stage rule: `public-read.test.tsx`, `write-actions.test.ts`, `topic.tsx`, `actions.server.ts`, `views.tsx` and Help repository methods are shared. Stage 4 closes only their public/user-facing semantics; moderation mutation concurrency and standalone attention semantics are intentionally re-read in stage 5, editor-specific ranges in stage 6.
+- Connected PostgreSQL evidence reviewed for Help foundation modes/filters, For-me deterministic ranking, public hidden-service-section behavior, read-state, notifications, profiles, presence and Stage-4 authorization/search flow.
+- No source, schema, dependency or implementation changes performed.
+- Next step: stage 5 — solved/best-answer, Help solution moderation, signals, duplicates, appeals, Attention center; explicitly re-review applicable shared Help ranges rather than relying on stage-4 conclusions.
