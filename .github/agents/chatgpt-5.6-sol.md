@@ -65,4 +65,9 @@
 - Проверены owner-matching current revision FKs, immutable revision triggers, same-topic parent/best-answer/read-state/notification references, revision-bound translation/task FKs, Help relationship/signal shape+lifecycle constraints и attachment reference ownership/active-gate foundations.
 - Historical draft/edit snapshot tables после удаления text drafts не использовались как current defects сами по себе; отсутствие дополнительных FKs/JSON checks там не классифицировано как проблема без текущего reachable causal path.
 - Новых independent findings в части 1 нет. Уже известный AUTHZ-01 не дублируется как schema finding: FK integrity корректна, дефект находится в application error handling после удаления custom role.
-- Следующая часть: transaction isolation/locking/concurrency invariants across forum/authz/help/attachment/database mutation paths.
+- Часть 2 завершена: transaction isolation/locking/concurrency invariants across forum/authz/help/attachment/database mutation paths.
+- Проверены: authz singleton mutation lock + last-manager serialization, repeatable-read composite authz snapshots, locale graph SERIALIZABLE/table-lock writer, topic-before-user Help/reply lock order, sorted two-topic duplicate locks, signal accept/reject/withdraw locking, best-answer/solution/duplicate serialization, monotonic unread/read-state UPSERT, pin/unpin topic lock, publication/edit attachment scope-before-post/topic ordering, attachment cleanup claim/ref trigger fencing.
+- Existing HELP-MOD-01 / HELP-DUP-01 остаются application stale-intent findings и не дублируются как database race defects: repository транзакции сериализуют текущий authoritative state, но соответствующие actions не всегда bind пользовательский intent к увиденной identity.
+- ForumWritePolicy app-clock candidate снят: current contract требует transactional per-author serialization, но database-owned lifecycle timestamps отдельно и явно требуются только Help signals.
+- Новых independent findings в части 2 нет.
+- Следующая часть: migration history/schema parity/production-manifest/runtime privilege contract.
