@@ -1647,3 +1647,25 @@ Source and evidence:
 5. app/routes/notifications.tsx:39–69 redirects authenticated mark-read to same #post anchor; app/routes/post-edit.ts:10–22 protected edit entrypoint redirects with editPost query and post fragment. app/forum/public-read.test.tsx:2860–2930 asserts solved-anchor and best-answer promotion preserving permanent numbers.
 
 **Verdict:** no NEW confirmed current-Stage defect within this bounded source-level path. Stable IDs, separate original sequence and visual best order, canonical links and same-topic parent checks align with contract; BUT no direct actual browser hash scroll/SSR hydration, real clipboard permissions, deployed Worker HTTP/mobile acceptance tested (Информация не проверена). Prior E1,N1,D1,L1,I1 unchanged; E2/E3 unconfirmed; H1 anti-framing observation unchanged. First audit overall remains OPEN, separate AUD-20261022 untouched. STOP until next owner command, no implementation or formal team finding publication.
+
+
+---
+
+## Первый аудит — Popular period ranking, time window and UI (2026-10-22)
+
+**ONE BOUNDED STEP COMPLETE; ORIGINAL FIRST AUDIT STILL OPEN.** Not the AUD-20261022 second audit. GitHub main d72b27ca762dd930f0e7ad614e5b00832a07ec0c checked anew; AGENTS.md read completely. Source read only; no new database tests, Chromium, Worker runtime, external deployment or changes to implementation/main/shared channel/other agent files.
+
+### Current Stage contract
+- docs/UI_UX_PASS.md:173–180: Popular three simultaneous columns 24h, 7d, 30d, ranked by activity within a bounded period, not all-time popularity.
+- PROJECT_STATE.md:1038–1054 and 1895–1903: merged PR #168 implements actual existing-message activity ranked by message counts with latest-activity tiebreak, target owner accepted, Stage 6 deployment separate. No user-requested search-index, full-text or performance instrumentation work.
+
+### Source chain and existing tests
+1. app/routes/popular.tsx:9–35 has public locale-scoped loader calling forumReaderForRequest(context).readPopular(), exposing only per-period id,title,authorName,activityCount. app/routes.ts defines path /:locale/popular; ForumRouteError as error boundary. db/hyperdrive-forum.ts:62–87 creates one request-local Drizzle repo Client and translates known DB availability exceptions.
+2. db/forum-repository.ts:945–1003 validates referenceTime as real Date and limitPerPeriod integer 1–20, default ten. Each cutoff is exact elapsed 24h / 7*24h / 30*24h before one referenceTime. One grouped SQL reads forum topics with matching CURRENT title revision and real author, joining real persisted forum posts createdAt >= cutoff30d; aggregate FILTER counts and max createdAt per 24h and 7d, 30d from filtered rows. Per-period discard zero-count, sort by activityCount desc, latestActivityAt desc, id desc for deterministic ties, then .slice(0,limitPerPeriod). Topic starter post counts as one existing forum message by product design. No fake counters/likes/views.
+3. app/forum/views.tsx:127–185 renders periods together in localized ordered lists, numbers 1..n, localized exact message counts, relative forumTopicPath, separate empty state when no real activity. React interpolation renders plain text from public stored title/user name, no raw HTML.
+4. tests/database/stage4-core-e2e.test.ts:245–299 source asserts controlled post createdAt dates: day/7d/30d distinct results and latest activity, topics with no recent posts excluded. app/forum/public-read.test.tsx:1946–1973 source asserts three columns, title links and localized count presentation with mock 3/5/8. **Tests inspected, NOT rerun.** No specific fake future timestamp / near-cutoff test exists in inspected slice.
+5. **Observation P1 (source logic only; not a confirmed current-Stage defect):** Query filters createdAt >= cutoff30d but no createdAt <= referenceTime. If referenceTime is supplied as an earlier instant than persisted post.createdAt, future-to-reference events are included in all three windows. Yet normal route uses default new Date() and normal writer receives timestamp from forumWritePolicy.now() (db/forum-write-policy.ts); future event under default user flow unproven. Cross-worker clock skew, anomalous data, historic referenceTime callers, actual platform clocks and future-dated DB posts not demonstrated. Do not prescribe fix without current Stage symptom.
+6. Scaling note, not current defect: 30d qualifying grouped topics are fetched into Worker and ranked in JS, then bounded to 10 (20 max) per period; no measured data volume or current acceptance threshold supports escalation.
+
+### Verdict
+**No NEW confirmed current-Stage defect in bounded public Popular read/rank/UI scenario.** Existing E1,N1,D1,L1,I1 and earlier unconfirmed E2/E3 remain separate; H1 anti-framing, T1 tag pagination, P1 upper-time omission are observations only, not actionable current Stage defects. Real DB test rerun, browser route, deployed Worker, performance/load tests and cross-clock future timestamp scenario NOT_EXECUTED (Информация не проверена). Second audit AUD-20261022 untouched. STOP after this step; wait for owner continuation.
