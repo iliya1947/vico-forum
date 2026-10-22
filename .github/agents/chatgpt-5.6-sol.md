@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 3 завершён; следующий этап 4 — после команды владельца.
+Активная задача: поэтапный аудит AUD-20261022. Этап 4 начат; часть 1 завершена.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -15,14 +15,18 @@
 
 ## AUD-20261022 — этап 3
 
-- Часть 1: email/password registration/sign-in, credential return path, request-scoped session, session refresh/expiry, sign-out boundary и Better Auth resource route. OAuth service flow исключён.
-- Часть 2: permission catalog, dynamic roles/grants, per-user overrides, management route/mutations, request-local cache/freshness, consistent read snapshots, availability classification и serialized last-manager lockout protection.
-- Часть 3: ownership boundaries cross-checked against `docs/auth/AUTHORIZATION.md`, `app/forum/editor-permission.server.ts`, `mutations.server.ts`, `actions.server.ts`, `app/routes/post-edit.ts`, topic presentation and authoritative repository/service methods.
-- `forum.post.editOwn`: server session actor forwarded; repository locks target post and rejects non-author.
-- `forum.solution.manageOwn/manageAny`: scope derived exclusively from current server permission resolution; repository re-reads topic author and enforces author for `own`. Forged client actor/author/role/permission/scope is ignored; connected DB test covers forged escalation denial.
-- `forum.sourceLocale.correctOwn/correctAny`: scope derived server-side; service reads authoritative topic/post author and enforces ownership for `own`; PostgreSQL integration covers cross-author denial, moderator any access and current override denial.
-- Duplicate appeal author boundary is enforced by locked authoritative topic row in repository; no client-supplied author is trusted.
-- Presentation controls use the same authoritative author IDs only as UX; mutations independently repeat authorization/ownership checks.
-- No additional ownership defect established in part 3. Details of any prior stage-3 finding remain only in current developer chat until the full checking sequence is complete per AGENTS.md.
-- Test-coverage gaps are deferred for explicit assessment at stage 12.
-- Next step: stage 4 — public read/discovery/search/tags, participation, unread, notifications, profiles, presence.
+- Email/password/session, dynamic authorization и ownership boundaries проверены.
+- Детали findings этапа 3 остаются только в current developer chat до завершения всего checking sequence.
+
+## AUD-20261022 — этап 4, часть 1 — public read/discovery
+
+- Baseline повторно подтверждён; `AGENTS.md` полностью прочитан перед подзадачей.
+- Проверены `app/forum/homepage.ts`, `homepage.test.tsx`, `paths.ts`, `request-context.ts`, `public-authz-degradation.test.ts`, `route-error.test.tsx`; routes `home`, `category`, `section`, `popular`, `search`, `tags`, `tag`, `unanswered`, `not-found`, `api`; соответствующие repository reads и connected PostgreSQL evidence из `stage4-core-e2e.test.ts`.
+- Homepage/category hierarchy скрывает reserved Help service section из generic section rows/routes. Help category использует отдельный Q&A projection; topic breadcrumb для service-section topic возвращает пользователя прямо в Help & solutions.
+- Popular использует bounded 24h/7d/30d message activity; connected DB test подтверждает period membership/count/order.
+- Search NFKC-normalizes query, bounds 200 chars, escapes SQL wildcard syntax, searches current title/current post body/tag name/key, ranks title > tag > body and has connected tests for title/tag/body plus literal `%`/`_`.
+- Tags и Unanswered используют current persisted topic projections; missing tag/entity returns route 404.
+- Public section/topic loader degrades only classified optional authorization/storage dependencies and does not suppress unexpected programming errors.
+- Сквозная проверка Help service-section visibility в global Search/Tag/Unanswered выявила finding; детали не записаны в service PR до завершения аудита по AGENTS.md.
+- Metadata localization/SEO, scalability/pagination и visual/a11y intentionally deferred to their assigned audit stages.
+- Следующая часть: participation/write entry points, unread/read-state, notifications.
