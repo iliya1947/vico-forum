@@ -48,5 +48,6 @@
 - Часть 1 завершена: locale identity/registry/resolver, persistent registry, root negotiation, `/:locale` boundary, degraded mode, request-scoped registry wiring и `lang/dir` проверены.
 - Ранний кандидат о необходимости `client.end()` на request-scoped Hyperdrive client снят после сверки с актуальным Cloudflare Hyperdrive connection-lifecycle contract; дефектом не считается.
 - Часть 2 завершена: canonical UI catalog, RU/HE local manual packs, fingerprints/freshness, persistent manual/machine sources, resource loader, compiled bundles и request-scoped i18next snapshot проверены.
+- Часть 3 завершена: content translation presentation, source-locale resolution/correction, topic title/post body `lang/dir`, original disclosure, exact-revision fallback и mixed-language presentation boundaries проверены. Current topic-page translation path и immutable source-locale correction работают согласованно; системная mixed-language metadata gap вне dedicated content presentation path подтверждена, детали остаются только в current developer chat.
 - Детали подтверждённых findings остаются только в current developer chat до audit publication gate.
-- Следующая часть: LTR/RTL и user-content locale/translation presentation boundaries.
+- Следующая часть: финальная сверка stage 8 coverage перед переходом к database stage.
