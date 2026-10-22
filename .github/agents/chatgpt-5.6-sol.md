@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 6 начат; части 1–2 завершены.
+Активная задача: поэтапный аудит AUD-20261022. Этап 6 начат; части 1–3 завершены.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -22,4 +22,12 @@
 - Clipboard rich-HTML conversion accepts a bounded safe subset, rejects active/unsafe structures, converts simple spreadsheet tables, and falls back explicitly rather than silently dropping unsupported content.
 - One current-Stage finding was confirmed in the shared literal-text escaping path used by Simple visual typing and plain/paste-without-formatting. Details remain only in current developer chat until the audit publication gate.
 - Часть 2 quote/mention завершена: whole/selected quote source and presentation, DOM line collapse, mention token/search/insertion, publication recipient extraction и durable edit notification semantics проверены. Quote source хранится обычным Markdown blockquote; attribution/permalink сохраняются; 1–5 visible rows не сворачиваются, >=6 сворачиваются до первых трёх. Mention lookup authenticated/private/no-store, choice inserts stable-id profile link, published parser excludes blockquote/code/inlineCode/html/image and bare @. Notification rows dedupe recipient+post, поэтому reply+mention не дублируются; edit adds only new recipients, deletion does not revoke and re-add does not resend; stale edit emits nothing. Новых independent findings в части 2 нет.
-- Next step: stage 6 part 3 — publish/edit; attachment lifecycle remains stage 7.
+
+## AUD-20261022 — этап 6, часть 3 — publish / edit
+
+- Проверены publication readiness, native submit replay, Ctrl/Cmd+Enter boundaries, operation identity/fingerprint replay, published-post revision CAS/history и controlled action failures.
+- Readiness считает только meaningful text или settled selected/retained attachments; unsettled/error attachments блокируют публикацию. Publication interception сохраняет native validation и submitter, а повторная отправка блокируется через pending state.
+- Topic/reply/edit publication receipts проверяются под operation scope до новой записи; exact replay возвращает прежний результат, а modified replay конфликтует. Published edit сохраняет revision history и применяет expectedRevisionId CAS.
+- Controlled validation failure сохраняет тот же live editor buffer и допускает retry; history endpoint остаётся server-permission protected.
+- Детали findings этой части остаются только в current developer chat по правилу проверки PR.
+- Next step: stage 6 coverage reconciliation / closeout before stage 7; attachment lifecycle remains stage 7.
