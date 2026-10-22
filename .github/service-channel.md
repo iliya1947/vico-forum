@@ -9,8 +9,10 @@
 - В новом цикле: 437 файлов включены в прикладной объём с оговорками по сервисным разделам; 42 сервисных operational-файла исключены; 12 архивных документов — справочный контекст.
 - По прямому указанию владельца сервисы Cloudflare, Neon, Hyperdrive, R2, OAuth и backup/restore не входят в аудит. Их настройки, credentials, provisioning/deploy/rollout и live service acceptance не проверяются. Внутренние контракты соответствующего кода приложения остаются в объёме; обычные локальные PostgreSQL tests не являются аудитом Neon.
 - Этап 1 завершён: все 18 актуальных документов разрешённого объёма прочитаны полностью до EOF, суммарно 7934 строки. Operational разделы MIGRATIONS и внешние/service факты RESEARCH учитывались только как контекст в пределах заданного исключения. Итоговая документальная сверка не выявила подтверждённых противоречий требований. DOC_READ не означает PASS реализации; этапы 2–13 проверяют код, данные, тесты и runtime-сценарии отдельно.
-- Этап 2 завершён: проверены route tree, SSR/Worker composition и request-scoped capability wiring; root React Router/Vite/TypeScript/Drizzle/lint/Vitest/env configs; package/toolchain pins; полный двухдокументный pnpm lockfile и direct dependency consistency; server/client import boundary на уровне архитектуры. Все 35 direct manifest specifier совпадают с project lockfile; env lockfile pin совпадает с `packageManager=pnpm@12.3.4`. Двухдокументный pnpm lockfile является штатной pnpm 12 формой при package-manager pin. Production не экспортирует `clientLoader/clientAction`; runtime DB/server imports route-модулей находятся в server-only exports или type-only paths, клиентские компоненты не тянут DB capabilities/secrets. Новых подтверждённых current-Stage defects на этапе 2 не установлено.
-- Проверка конкретных route/domain semantics переносится в профильные этапы 3–8; dependency vulnerabilities и security boundary — этап 10; локальные build/test/CI gates — этап 12.
+- Этап 2 завершён без подтверждённых current-Stage defects: route tree, SSR/Worker composition, request-scoped capabilities, root configs, package/toolchain pins, полный pnpm lockfile и server/client import boundary проверены.
+- Этап 3 начат. Часть 1 завершена: проверены email/password registration/sign-in, credential return-path safety, request-scoped session initialization, sliding-session cookie propagation, expired-session handling, sign-out UI/revalidation boundary и Better Auth resource route. Server повторно валидирует display name, password limits заданы 8–128, email verification намеренно отключена согласно product contract, generic UI errors не раскрывают provider details. PostgreSQL integration подтверждает hashed credential persistence, login reject/accept, issued session, refresh и expiry cleanup. OAuth service flow не проверялся.
+- Новых подтверждённых current-Stage auth/session defects в части 1 не установлено. Отсутствие отдельного PostgreSQL integration теста реального sign-out зафиксировано только как test-coverage observation для этапа 12, а не функциональный defect.
+- Accessibility presentation credential form будет проверяться на профильном этапе 11; предварительные cross-stage наблюдения в общий канал не публикуются.
 - Предыдущие отчёты и самостоятельные проходы с другой нумерацией не засчитываются автоматически в AUD-20261022.
 - Ограничение доступной среды: Node 24.19.0 / pnpm 11.25.0 вместо pinned Node 24.21.0 / pnpm 12.3.4. Toolchain проверить до применимых локальных прогонов.
 - Если этап не помещается в один ответ, исполнитель сообщает сделанное и остаток, останавливается и ждёт разрешения владельца на продолжение.
@@ -18,8 +20,8 @@
 
 ## Реестр и порядок проверки
 
-Полный manifest с первичными этапами и исходными статусами `NOT_REVIEWED / EXCLUDED / CONTEXT`, правилами evidence и порядком этапов 0–13 находится в разделе **AUD-20261022** файла [Лиры](agents/chatgpt-6.md). Предыдущая запись независимого аудита в этом файле сохранена отдельно; её номера этапов не являются статусами нового плана.
+Полный manifest с первичными этапами и исходными статусами `NOT_REVIEWED / EXCLUDED / CONTEXT`, правилами evidence и порядком этапов 0–13 находится в разделе **AUD-20261022** файла [Лиры](agents/chatgpt-6.md).
 
 ## Текущий следующий шаг
 
-Ожидать разрешения владельца начать этап 3: email/password, sign-in/sign-out, session identity, roles/overrides и resource ownership; OAuth service flow исключён из аудита. Исходники не исправлять.
+Ожидать разрешения владельца продолжить этап 3, часть 2: dynamic authorization — catalog, roles, grants, per-user overrides, management mutations, request-local snapshot/freshness и lockout protection. Resource ownership после этого проверить отдельной частью.
