@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 5 начат; части 1–3 завершены.
+Активная задача: поэтапный аудит AUD-20261022. Этап 5 начат; части 1–2 завершены, часть 3 технически проверена и ожидает owner clarification по current contract.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -35,6 +35,6 @@
 - Attention action requires same-origin + authenticated session. Signal case action reads exact persisted signal, rejects topic mismatch, derives permission from persisted kind, then resolves exact signal id. Repository handles terminal/stale current state under locks.
 - Appeal action requires duplicate-manage, reads current pending appeal for topic and requires `appeal.id === caseId` before mutation; writer passes `expectedAppealId: caseId` so a replacement appeal cannot be acted on through a stale card.
 - Connected DB coverage confirms permission isolation, global counts, case projection, resolved-task disappearance, authoritative review status, expected appeal identity and group-specific paging.
-- No new independent current-Stage finding established in part 3.
+- По одному Attention pagination contract выявлено расхождение current source-of-truth. До решения владельца implementation classification не фиксируется; детали остаются только в current developer chat согласно AGENTS.md.
 - Security attachment content/lifecycle deep audit intentionally remains stage 7; only Attention access/routing/presentation boundary checked here.
-- Next step: stage 5 part 4 completeness sweep and stage closure.
+- Next step after owner clarification: finish stage 5 part 3, then completeness sweep.
