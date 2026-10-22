@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-Активная задача: поэтапный аудит AUD-20261022. Этап 4 начат; части 1–2 завершены.
+Активная задача: поэтапный аудит AUD-20261022. Этап 4 начат; части 1–3 завершены.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Миры в рамках текущего служебного PR.
 
@@ -25,14 +25,21 @@
 
 ## AUD-20261022 — этап 4, часть 2 — participation, unread, notifications
 
+- Проверены write guards, Help authoring, persisted cooldown, monotonic read-state/unread и transactional reply/mention notifications.
+- Existing hidden Help service-section presentation finding also reaches Unread; отдельного root cause нет.
+
+## AUD-20261022 — этап 4, часть 3 — profiles и online presence
+
 - Baseline повторно подтверждён; `AGENTS.md` полностью прочитан перед подзадачей.
-- Participation: generic section create-topic и topic reply paths derive actor from session, require same-origin and effective permissions, hide reserved Help service section from generic create-topic, and route Help authoring through the server-fixed service section. Domain repository verifies target section/topic/parent existence and blocks replies to confirmed duplicates.
-- Persisted write cooldown is 5 seconds per authenticated author across normal forum posts; Better Auth user row acts as per-author DB mutex, so concurrent writes serialize against the same latest-post check. Controlled 429 carries rounded Retry-After and hides internal detail.
-- Read-state: `markTopicRead` uses session user only; repository verifies target post belongs to topic. `forum_topic_read_states` has user/topic PK and composite topic/post FK. Upsert advances only if candidate is strictly newer by `created_at,id`, preventing rollback. PostgreSQL tests cover new→unread→read, equal timestamp ordering, concurrent advances, later new message and user cascade.
-- Unread loader is authenticated and reads only for session user. Its projection uses generic category/section location; therefore the already-established hidden Help service-section visibility finding also applies to Unread. This extends one finding rather than creating a second root cause.
-- Notifications: reply transaction notifies topic author and direct parent author, deduplicates recipients, suppresses self-notifications and records mentions inside the same transaction. Recipient+post unique constraint prevents duplicates; composite topic/post FK keeps target coherent.
-- Notifications loader and unread badge derive user id from session. Open action requires same-origin/session and `markReplyNotificationRead` updates only rows whose `recipient_user_id` equals current user; another user's notification id returns domain not-found. Repeated open is idempotent.
-- DB integration verifies notification atomicity: rejected notification insert rolls back the reply itself. Mention edit tests preserve durable per-post notified set and do not notify on failed stale edit.
-- No new independent current-Stage defect established in this part beyond expansion of the existing global hidden-section presentation finding.
-- Whether a user's own newly published post should automatically advance their read marker is not specified strongly enough by current source-of-truth; current implementation counts posts after the marker regardless of author. Recorded as unresolved semantics, not defect.
-- Next part: profiles and online presence.
+- Проверены `app/forum/profile.ts`, profile tests/view, `app/routes/profile.tsx` и test, `app/forum/online-presence-heartbeat.tsx` и test, `app/routes/presence.ts` и test, repository profile/presence methods, `db/hyperdrive-forum.ts` availability adapter, `db/hyperdrive-forum.test.ts`, `db/schema.ts` constraints, `tests/database/forum-profiles.test.ts`, `tests/database/forum-online-presence.test.ts`.
+- Public profile projection: id/name/image/joinedAt/bio/githubUrl/websiteUrl/effective role/messageCount/bestAnswerCount only. Route explicitly reconstructs this projection and does not serialize email/permission data even if reader returned extra properties.
+- Self-edit: route requires POST, authenticated session, same-origin, exact route ownership; client-supplied userId/role/name ignored. Only bio/GitHub/website are accepted. Repository repeats `validateProfileFields`.
+- Bio contract uses <=500 Unicode characters; presentation textarea uses a looser UTF-16 maxLength but server/DB are authoritative. Profile URLs reject control/whitespace, userinfo and non-http(s); GitHub accepts only canonical profile path and is normalized to HTTPS. Presentation revalidates outbound links again with `safeHttpUrl`, uses text rendering for bio and `rel=nofollow ugc noreferrer`.
+- Avatar passes through `safeHttpUrl`, uses `referrerPolicy=no-referrer` and falls back to initial on load error. External-host privacy implications belong to later privacy/security stage, not this functional pass.
+- Effective role is single-valued because `authz_user_roles.user_id` is PK; profile reader falls back to built-in user role when unassigned. Connected DB tests verify fresh custom role display and no grant leakage.
+- Presence client sends immediate + 60-second heartbeats only while authenticated/visible; hidden tab skips. 401 stops timer/listener and revalidates session. Presence is supplemental; fetch failures do not block browsing.
+- Presence route requires same-origin authenticated POST + exact heartbeat intent and records session identity only. GET is intentionally 404.
+- Repository uses five-minute recent window, one-query window count + max 12 member projection, and 45-second DB-side upsert throttle with monotonic `greatest(last_seen_at, now())`. Public members contain only id/name/image.
+- PostgreSQL tests cover repeated heartbeat/throttle, expiration, full count with bounded member list, no email exposure, nonexistent-user FK failure and cascade.
+- Новых independent current-Stage defects in profiles/presence не установлено.
+- Следующая часть: completeness sweep оставшихся stage-4 manifest targets before closing stage 4.
