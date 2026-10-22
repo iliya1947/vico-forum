@@ -1069,3 +1069,49 @@ Tests/build/browser, внешние сервисы и их acceptance не вы�
 - **Неустановленное evidence:** independently executed Worker/browser/React Router UI conflict/revocation/ACK recovery; full accessibility/responsive/hydration real-browser states; independent all-tests/PG run; systematic all SQL+snapshots line review. Сами по себе эти пробелы не следует объявлять обязательными gate *первого* source review; user-requested separate detailed AUD-20261022 has its own explicit coverage rules. UI_UX_PASS.md:666–704 requires a real browser for standalone product acceptance, while Editor 2.0 owner waived separate visual/Pages gate. Do not extend one task's acceptance onto another by default.
 - **Окончательная оценка:** первый аудит сейчас нельзя обоснованно назвать завершённым полностью или без находок. Допустимое точное название выполненной работы — *documented targeted application source/test audit on the frozen main, with one identified Editor conflict-recovery defect and explicit unverified areas*. Следующий шаг в первом аудите, если владелец разрешит: финальное reconciliation original scope vs реально demonstrated evidence, принятие корректной границы заключения, без выдумывания ранних PASS и без подмены AUD-20261022. При необходимости executable proof требует иной runtime environment.
 - **Остановка:** личный файл Лиры — только рабочая фиксация; не публиковать findings в общий канал, не назначать исправления, не менять main/implementation/другой аудит. Следующую подзадачу начинать только после команды владельца.
+
+
+---
+
+## Первый аудит — финальная сверка исходного объёма и фактических доказательств (2026-10-22)
+
+**Статус: ФИНАЛЬНАЯ СВЕРКА ПЕРВОГО АУДИТА ВЫПОЛНЕНА, НО ПЕРВЫЙ ПОЛНЫЙ АУДИТ НЕ ЗАВЕРШЁН.** Это решение о достоверности покрытия, не final PASS, не final clearance и не публикация командных findings. Относится только к первому independent audit с исходными обзорными этапами 1–14. НЕ к `AUD-20261022` (отдельная явная программа с manifest).
+
+Baseline GitHub `main` = `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, повторно проверен. Текущий полный `AGENTS.md` прочитан из `main`. Режим: read-only source/test review. Не менять код, schema, shared communication, файлы других агентов или другой audit.
+
+### 1. Proven evidence — фактический выполненный обзор
+
+- **Scope/core public forum:** category/section/topic/messages, search/popular/unanswered/tags, notifications/unread/profile/presence, topic/reply create, solved/best answer, Help and moderation/attention. Прямой trace в записях этапов 9–11 и реальных current source/test samples. Для каждого named subsystem есть source-oriented audit evidence, но нет утверждения, что абсолютно каждый файл/ветвь прочитан построчно.
+- **Auth/session and authorization:** Better Auth email/password, request-scoped session/actor, permission snapshot + request freshness, owner and same-origin guard, manager lockout, degraded classified failures, safe error routes; текущие дополнительные проверки `workers/app.ts`, `workers/database-bindings.ts`, `app/auth/auth.server.ts`, `app/routes/auth-api.ts`, `app/routes/authorization-admin.tsx` и `workers/database-bindings.test.ts`, `app/auth/session-context.test.ts`, `credential-view.test.tsx`, `locale-boundary.test.ts`, `locale-negotiation.test.ts`, `write-actions.test.ts`, native DB tests. Source scopes включают критические guards, но не blanket PASS всех permissions × routes × roles.
+- **Editor 2.0+attachment lifecycle:** Simple/Advanced, source buffer/Markdown, quotes/mentions, history, published-edit optimistic revision, selected attachments, private upload/download, receipt/idempotency/cleanup. Evidence этапа 13 + 409 targeted audit + cross-boundary matrix; выбранные actual assertions inspected in `public-read.test.tsx`, `forum-attachment-publication.test.ts`, `attachment-upload.test.ts`, `attachment-download.test.ts`. Полный browser E2E не выполнялся.
+- **Locale/UI/content translations:** canonical locale registry and middleware, fail-closed mutation on redirect-needed locale, original-safe fallback, UI bundle/persistence, content revision/claim/publish/concurrency; отдельная translation source/test subtask details and current boundary assertions в журнале. Real provider/Queues out of scope.
+- **Transactions/migrations/security:** native PG schema/test assertions, migration journal/CI guards, owner/permission/concurrent locks, attachment cleanup; 45 SQL and 45 snapshots NOT all line-reviewed. External DB/Cloudflare acceptance excluded.
+- **Entry/quality:** `app/routes.ts`, `app/root.tsx`, `react-router.config.ts`, `workers/app.ts`, `workers/database-bindings.ts`, `package.json`, `.github/workflows/ci.yml` directly reviewed. Evidence `workers/database-bindings.test.ts` includes literal source wiring assertions (NOT worker E2E). Existing GitHub Actions run #39615502080 (PR #232 exact-tree) jobs `checks` and `database` success was rechecked via GitHub API in this final task; no independently executed new CI/PG/browser test.
+
+### 2. Finding triage — full causal status
+
+- **E1, current Editor 2.0:** confirmed source-level functional failure of direct stale-409 recovery, not data corruption. Backend enforces expectedRevision/409 correctly; `app/routes/topic.tsx` has no `shouldRevalidate`; RR8 SSR official `reactrouter.com/how-to/optimize-revalidation` section Default behavior says failed 4xx/5xx action doesn't revalidate loaders by default; `app/forum/views.tsx:2236–2247,2814–2853` resets error tracker without initiating fresh load, while rebase control requires `editBaseRevisionId !== post.body.id`. Existing test `public-read.test.tsx:2314–2382` triggers `router.revalidate()` itself. E1 thus blocks **automatic discovery/recovery** from conflict on stale snapshot, until unrelated route refresh or navigation; typed text survives while mounted. Browser integration runtime: **информация не проверена**.
+- **E2:** XHR pending without timeout/individual pending Remove; possible resilience UX, no current requirement max pending lifetime, overall Cancel abort exists; NOT confirmed defect.
+- **E3:** `runForumMutation` catch-all unknown→503 is real source behavior; protected authorization unexpected errors rethrow according to `docs/auth/AUTHORIZATION.md`; exact breach of current Stage writer contract not established. NOT confirmed defect.
+- Additional Stage 6 live OAuth/providers/Queues/service infrastructure and later visual refinement are **not current first-audit defects** by mere omission.
+
+### 3. Evidence ledger and actual unresolved verification
+
+| Предмет | Итог |
+| --- | --- |
+| Первоначальные этапы 1–8 по исходному замыслу/истории | **HISTORICAL_EVIDENCE_UNKNOWN**: исходные подробные checkpoints/scope/fulfilled assertions отсутствуют; поздний bounded re-review не подтверждает историческое полное выполнение. |
+| Этапы 9–13 | Предметные журналы source/test review существуют; НЕ full executed E2E/entire source-line coverage. |
+| Обзорный шаг 14 и later reconciliation | Матрица source/tests, E1–E3 triage, permission/negative/error/ambiguous retry, targeted additional reviews now documented; exact original requirement-by-requirement PASS across full stated scope НЕ доказан. |
+| Реальный 409 transition + browser runtime | **NOT_EXECUTED**; direct source/contract defect evidence достаточно для provisional E1, но не для утверждения browser reproduction. |
+| Session expiry/revocation, post-commit lost ACK, UI 503/unexpected recovery | Source-side boundaries inspected; end-to-end behavior **NOT_EXECUTED**. |
+| Fresh full suite/PG, all SQL/snapshots, exhaustive browser accessibility/responsive/hydration | No independent execution/full line-review; обозначить limitation, а не automatically mandatory gate текущего bounded source-review. |
+| Отдельный `AUD-20261022` | Независимая 437-in-scope explicit manifest and progress; status **unchanged** and not awarded credit from this first audit. |
+
+### 4. Вердикт
+
+1. **Финальная сверка выполнена; полноту первого аудита подтвердить невозможно.** Нельзя ни объявить `AUDIT COMPLETE`, ни утверждать, что проверено каждый заявленный механизм/негативный переход. Общий исходный объём ранних этапов нельзя достоверно восстановить из имеющихся записей; изменение определения "полный" на "частичный source review" ради статуса DONE недопустимо.
+2. Корректная формулировка результата: **частичный независимый технический source/test audit на зафиксированном main с одним source-confirmed current-Stage finding E1**, с указанными непроверенными интеграционными сценариями. Остальные ранние механизмы были перепроверены выборочно с конкретными evidence; это не ретроспективные PASS 1–8. Доказательства недостаточны для whole-audit clearance.
+3. Новую разработку и передачу findings другим агентам в рамках этой проверки **не инициировать**. Личный файл — разрешённый owner рабочий checkpoint, но не финальная публикация team findings.
+4. Для реального **полного** покрытия нельзя тратить новые циклы на выдумывание исторических шагов 1–8; требуется объективно заданный scope и отдельное доказательное прохождение, в том числе runtime checks там, где от них зависит результат. Такой explicit manifest уже ведётся **отдельно** в `AUD-20261022`; не подменять его результатами первой проверки. Если owner продолжит именно первый аудит, единственный честный путь — новые предметные проверки недоказанных требований со свежим ledger, не декларация завершения.
+5. **Stop после этой subtask** до команды владельца. Ни один следующий этап аудита не запущен.
+
