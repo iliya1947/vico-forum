@@ -51,3 +51,9 @@
 - Часть 3 завершена: content translation presentation, source-locale resolution/correction, topic title/post body `lang/dir`, original disclosure, exact-revision fallback и mixed-language presentation boundaries проверены. Current topic-page translation path и immutable source-locale correction работают согласованно; системная mixed-language metadata gap вне dedicated content presentation path подтверждена, детали остаются только в current developer chat.
 - Детали подтверждённых findings остаются только в current developer chat до audit publication gate.
 - Следующая часть: финальная сверка stage 8 coverage перед переходом к database stage.
+
+- Части 4A/4B/4C и финальная сверка завершены: durable tasks/retry/reconciliation, request budget, provider allowance, provider/data-policy, TinyLD, CNT-04, content execution/publication, generation UX/status и Hyperdrive adapters сопоставлены с текущим Stage 5 local/CI contract.
+- Все 128 primary manifest entries Stage 8 reconciled; uncovered primary paths не осталось.
+- Stage 8 закрыт с тремя independent findings; их детали остаются только в current developer chat до audit publication gate. Ложный Hyperdrive client-cleanup finding окончательно снят.
+- Production content generation остаётся fail-closed согласно PROJECT_STATE; external quotas, Queue/provider bindings и live provider acceptance не классифицировались как defects текущего Stage.
+- Next step: Stage 9 — database schema/integrity/concurrency/lifecycle audit.
