@@ -1167,3 +1167,44 @@ Baseline GitHub `main` = `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, повто�
 - Existing **D1 documentation mismatch** from previous subtask remains: `PROJECT_STATE.md:1568` says active history 0000–0043, while main journal has 45 migrations through 0044. Do not double-count as a new finding. E1 (409 UI recovery) also unchanged; E2/E3 not elevated.
 - After combined recent tasks **45/45 SQL migrations 0000–0044 have been directly read**. **34/45 historical intermediate snapshots (`0000–0033`) have been parsed for chain/table evolution; 0044 final was inspected and compared to schema earlier.** No exhaustive check yet of 0034–0043 intermediate snapshot chains or all intermediate column/type semantics; and no own PG re-execution. These remaining limitations must not silently be converted to PASS. The whole FIRST audit still lacks recoverable old phases 1–8 ledger and actual browser/integration failure recovery evidence.
 - **Stop now** as this independent subtask is complete; next possible *bounded* part, with owner approval: `0034–0044` snapshot chain/constraint evolution, to complete historical schema-metadata reconciliation; separate audit `AUD-20261022` not affected. No implementation/fix/agent handoff until approved process.
+
+
+---
+
+## Первый аудит — цепочка Drizzle snapshots 0034–0044 (2026-10-22)
+
+**Статус: отдельная подзадача проверки snapshots закрыта. ПЕРВЫЙ АУДИТ ФОРУМА ЦЕЛИКОМ ЕЩЁ НЕ ЗАКРЫТ.** Относится только к первому независимому аудиту, а не к `AUD-20261022`. Source `main` exact SHA `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, проверен GitHub branch API. Актуальный `AGENTS.md` из `main` полностью прочитан. Только чтение проверяемой реализации: исходники, tests, migrations и docs не изменялись.
+
+### Доказанное покрытие промежуточной истории 0033→0044
+
+- Получены и разобраны **все 12 snapshot JSON `0033_snapshot.json`–`0044_snapshot.json`**. Для 11 transitions каждая `prevId` точно совпадает с `id` предыдущей, break=0. Table counts: 0033=37, 0034=38, 0035=41, 0036=42, 0037=43, 0038=43, 0039=44, 0040=44, 0041=44, 0042=45, 0043=45, 0044=47. Дрейфа/удаления таблиц в 11 переходах нет.
+- Для каждой версии сопоставлены прежняя и следующая snapshots по *all* shared-table `columns`, `indexes`, `foreignKeys`, `compositePrimaryKeys`, `uniqueConstraints`, `checkConstraints` (addition/removal/modification) и перечислены новые таблицы. `0000–0033` chain/tabular evolution уже была проверена в предыдущей подзадаче; суммарно теперь **45/45 snapshots охвачены машинной проверкой исторических ссылок/таблиц**, без утверждения о построчном semantic-review каждого поля каждого snapshot.
+- Все 11 SQL `0034–0044` повторно сопоставлены с итоговым `0044_snapshot.json` и зафиксированными **поэтапными** deltas: каждое имя создаваемой таблицы, перечисленные её колонки, именованные PK/FK/UNIQUE/CHECK и индексы обнаружены в итоговом snapshot, errors=0 по выполненной статической name/column inventory. Отдельно проверены определения основных изменённых колонок и catalog check; это не runtime SQL execution.
+
+| Transition | Доказанный snapshot delta и SQL-соответствие |
+| --- | --- |
+| 0034 | +`forum_editor_drafts` (1 table) |
+| 0035 | +`forum_attachments`, `forum_attachment_draft_refs`, `forum_post_attachments` |
+| 0036 | +`forum_attachment_security_events` |
+| 0037 | +`forum_attachment_draft_generations` |
+| 0038 | `forum_attachments` + `cleanup_status` (text, NOT NULL, default `active`), `cleanup_claim_token` nullable, `cleanup_claimed_at` nullable, cleanup index and two CHECK; manual `forum_attachment_require_active_ref` trigger function+2 triggers are in migration SQL, not expressible as Drizzle declarative snapshot |
+| 0039 | +`forum_publication_receipts`; intentional removal `forum_post_revisions_content_check` to permit file-only published message with validated refs |
+| 0040 | `forum_posts.edited_at` nullable `timestamptz`; `authz_permissions_catalog_check` modified to add post edit/history rights |
+| 0041 | `forum_reply_notifications.kind` = text NOT NULL DEFAULT `reply`; check `reply\|mention` |
+| 0042 | +`forum_attachment_edit_snapshots` |
+| 0043 | catalog CHECK modified to add `forum.attachmentSecurity.read`; final 0043 SQL 15 catalog entries match `db/schema.ts:621–629` |
+| 0044 | +`forum_attachment_draft_boundaries`, `forum_attachment_draft_contexts`; foreign keys/indexes captured; historical draft provenance retained |
+
+### Разграничения и тестовое evidence
+
+- Изменение `0040` permission CHECK в snapshot разрешает 14 catalog keys; `0043` добавляет `forum.attachmentSecurity.read`, итоговый `db/schema.ts` содержит те же 15 keys. SQL CHECK сравнен с переходными snapshot expressions, без скрытого whitelist-conflict.
+- `0039` SQL `DROP CONSTRAINT "forum_post_revisions_content_check"` совпадает с тем, что в новом 0039 snapshot check исчезает; добавленный `forum_publication_receipts` сохраняет идемпотентный stable operation receipt. Application/PG test assertions в `tests/database/forum-attachments.test.ts` и `forum-attachment-publication.test.ts` уже осмотрены предыдущей подзадачей, в том числе file-only publish, lost ACK replay, 409 revision CAS.
+- `0038` cleanup admission trigger+function не представлены в snapshot: ожидаемое manual SQL дополнение, реальная работа и PG contention были проверены *содержанием существующих тестов*, в частности `tests/database/forum-attachments.test.ts:961–988` (PG 23514 after cleanup claim), **но этот чат не запускал PostgreSQL**.
+- Таблицы `0034`/`0042`/`0044` с историческим словом `draft` после owner-решения 2026-10-20 НЕ означают, что пользовательские текстовые черновики активны. `docs/EDITOR.md:159–169,351–389`, `PROJECT_STATE.md:23–60` прямо требуют оставить merged SQL intact, убрать runtime text persistence, сохранить attachment/publication machinery. Не трактовать как defect.
+- **Отдельные findings:** E1 — прежнее source-confirmed current-Stage 409 edit conflict recovery UI; D1 — stale `PROJECT_STATE.md:1568` (0000–0043 вместо 0000–0044). E2/E3 still unproven. **Новый defect** в рассматриваемой snapshot-chain/DDL parity: **не установлен**. Не обновлять общий channel и не назначать fix.
+
+### Степень завершения
+
+- **Complete bounded schema-history static pass:** 45/45 migration SQL полностью прочитаны двумя подзадачами; 45/45 snapshot files программно разобраны и проверены на continuity/table evolution; changes 0033→0044 reviewed по column/index/FK/PK/unique/check deltas и SQL linkage. Интеграционное применение PostgreSQL/metadata introspection самими агентом здесь **NOT EXECUTED**; exhaustive field-by-field parity для early intermediate snapshots не заявлена.
+- Это не equates to complete independent audit whole forum. Недостающие первые historical 1–8 checkpoints cannot be retroactively asserted PASS; React Router runtime 409, revocation and ambiguous network recovery unexecuted. Separate `AUD-20261022` audit remains fully isolated.
+- **Остановиться после этой одной подзадачи** до новой явной owner-команды, никаких изменений implementation PR, `main`, общих служебных файлов, чужих personal files.
