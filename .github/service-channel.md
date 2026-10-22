@@ -10,9 +10,10 @@
 - По прямому указанию владельца сервисы Cloudflare, Neon, Hyperdrive, R2, OAuth и backup/restore не входят в аудит. Их настройки, credentials, provisioning/deploy/rollout и live service acceptance не проверяются. Внутренние контракты соответствующего кода приложения остаются в объёме.
 - Этап 1 завершён: все 18 актуальных документов разрешённого объёма прочитаны полностью до EOF, суммарно 7934 строки; подтверждённых противоречий требований не выявлено.
 - Этап 2 завершён: route tree, SSR/Worker composition, request-scoped capabilities, root configs, package/toolchain pins, полный pnpm lockfile и server/client import boundary проверены; подтверждённых current-Stage defects не установлено.
-- Этап 3 завершён. Проверены email/password и session boundary; dynamic roles/grants/overrides, management mutations, snapshot/freshness и atomic lockout protection; resource ownership для post edit, solution manage own/any, source-locale correct own/any и author-only duplicate appeal. Actor и ownership выводятся server-side; client `actorId/authorId/role/permission/scope` не являются evidence. Repository/domain layer повторно проверяет authoritative author/ownership перед mutation.
-- Детали findings этапа 3 остаются только в текущем чате разработчика до завершения всех проверок согласно AGENTS.md; в служебный PR предварительные findings не публикуются.
-- Cross-stage test-coverage observations будут оцениваться на этапе 12.
+- Этап 3 завершён: email/password/session, dynamic RBAC, overrides/snapshots/lockout и ownership boundaries проверены. Детали findings остаются только в текущем чате разработчика до завершения всех проверок согласно AGENTS.md.
+- Этап 4 начат. Часть 1 завершена: проверены Home/category/section public reads, Popular, Search, Tags, Unanswered, localized 404/API catch-all, public authorization degradation и connected PostgreSQL discovery evidence. Help & solutions service section остаётся скрытым в generic section routes/category cards/topic breadcrumb; сквозная проверка global discovery surfaces выявила отдельный finding, детали которого до завершения аудита не публикуются в служебном PR.
+- Search normalization/length/wildcard escaping, deterministic Popular periods, tag projections и unanswered semantics имеют connected DB coverage. Classified optional authorization/presence outages не должны снимать публичный read path; unexpected errors не маскируются.
+- Cross-stage metadata/i18n/a11y/performance вопросы оцениваются на соответствующих этапах и не дублируются здесь.
 - Предыдущие отчёты и самостоятельные проходы с другой нумерацией не засчитываются автоматически в AUD-20261022.
 - Ограничение доступной среды: Node 24.19.0 / pnpm 11.25.0 вместо pinned Node 24.21.0 / pnpm 12.3.4. Toolchain проверить до применимых локальных прогонов.
 - Исходники, зависимости, схема, PROJECT_STATE и implementation PR в ходе аудита не меняются. Этот служебный PR используется только для координации и никогда не merge в `main`.
@@ -23,4 +24,4 @@
 
 ## Текущий следующий шаг
 
-Ожидать разрешения владельца начать этап 4: public read/discovery/search/tags, участие, unread, notifications, profiles и presence. Исходники не исправлять.
+Ожидать разрешения владельца продолжить этап 4, часть 2: участие/write entry points, unread/read-state и notifications. Profiles/presence после этого отдельной частью. Исходники не исправлять.
