@@ -1115,3 +1115,32 @@ Baseline GitHub `main` = `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, повто�
 4. Для реального **полного** покрытия нельзя тратить новые циклы на выдумывание исторических шагов 1–8; требуется объективно заданный scope и отдельное доказательное прохождение, в том числе runtime checks там, где от них зависит результат. Такой explicit manifest уже ведётся **отдельно** в `AUD-20261022`; не подменять его результатами первой проверки. Если owner продолжит именно первый аудит, единственный честный путь — новые предметные проверки недоказанных требований со свежим ledger, не декларация завершения.
 5. **Stop после этой subtask** до команды владельца. Ни один следующий этап аудита не запущен.
 
+
+
+---
+
+## Первый аудит — статическая проверка DB migrations 0034–0044 и актуальности схемы (2026-10-22)
+
+**Одна подзадача завершена. Первый полный аудит всё ещё ОТКРЫТ.** Это только прежний independent source/test audit, не `AUD-20261022`. Фиксированное `main`: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Read-only: implementation/SQL/snapshot/schema/shared service/чужие файлы не менялись.
+
+### Объём и метод
+
+- Полностью прочитаны именно все **11 SQL migrations `drizzle/0034_*.sql`–`drizzle/0044_*.sql`**, включая `0038_forum_attachment_cleanup_claims` с PL/pgSQL guard function и двумя triggers; `0039_forum_publication_receipts`, `0040_post_edit_history_permissions`, `0041_published_mentions`, `0042_attachment_edit_snapshots`, `0043_attachment_security_read_permission`, `0044_attachment_draft_conflict_boundaries`.
+- `drizzle/meta/_journal.json` прочитан и сопоставлен с GitHub directory listing: 45 file names `0000`–`0044` на месте, 45 distinct journal entries, `idx=0…44`, строго возрастающие `when`, missing/extra SQL/journal names = **0**. Также получен/разобран целиком машинно текущий `drizzle/meta/0044_snapshot.json` (47 tables) и сравнен с созданными таблицами/именованными constraints/indexes блока `0034–0044`: все десять создаваемых таблиц присутствуют, missing **named constraints / indexes = 0**. Последний authz `authz_permissions_catalog_check` в migration 0043 и `db/schema.ts:621–629`: 15 keys, два направления различий = 0.
+- `db/schema.ts:508–534,609–656,855–1117` конкретные PK/FK/UNIQUE/check для редактора, revisions, attached assets, owner-ref, idle cleanup, generation terminal markers, edit snapshot/provenance, receipts, security events и built-in permissions сопоставлены с SQL. Manual `0038` trigger/function не входит в декларативный Drizzle snapshot (не объявлять отсутствие trigger в snapshot нарушением). Существующие DB tests `tests/database/forum-attachments.test.ts:232–236,294–320,712–768,917–932,935–959,961–1005`, `forum-attachment-publication.test.ts:280–315,317–378` прочитаны до релевантных assertions.
+- Trigger `forum_attachment_require_active_ref()` под `SECURITY DEFINER` и `SET search_path=pg_catalog` проверяет status целевого asset под `FOR SHARE` до новых draft/published refs; cleanup `db/forum-attachment-cleanup.ts:67–105,108–141` берёт `FOR UPDATE SKIP LOCKED`, свежую проверку refs, durable claim/token+lease перед удалением private object. Тест с двумя PG connections демонстрирует expected `23514` для ref после claim. Дальнейшие tests проверяют shared post refs, rollback, lost object-delete ACK и отсутствие double-claim.
+- SQL `0039` drops nonempty post revision content constraint intentional for attachment-only messages; validation+live referenced assets are enforced in application transaction. Native application/PG tests explicitly verify file-only publish, exact submitted subset, post-edit CAS, replay of identical operation after lost ACK, conflict on modified retry and 24h activity semantics. `0034` legacy `forum_editor_drafts`, `0042` snapshots, `0044` draft-boundary tables remain from accepted historical schema **by design**; current `PROJECT_STATE.md:23–60` and `docs/EDITOR.md:159–175,351–389` explicitly remove runtime text-draft/autosave without rewriting accepted migration 0034–0044. No current defect inferred from dormant tables.
+- Clean native PG17 history/schema tests and GitHub Actions CI #39615502080 previously completed successfully; **in this subtask tests, migrations or production services NOT EXECUTED**. Static checks of DDL names/Drizzle snapshot and existing test assertions do not prove runtime SQL execution in this audit.
+
+### Новое подтверждённое несоответствие документации (D1)
+
+`PROJECT_STATE.md:1557–1568` в разделе *«Реализованный foundation / Текущий repository baseline»* прямо утверждает **«текущая repository migration history — 0000–0043»**. Но в актуальном `main` checked-in `drizzle/meta/_journal.json` есть 45 записей через `0044_attachment_draft_conflict_boundaries`, сам `drizzle/0044_attachment_draft_conflict_boundaries.sql` и snapshot `drizzle/meta/0044_snapshot.json` существуют; `PROJECT_STATE.md:367` также отдельно упоминает migration 0044. Это **подтверждённая текущая source-of-truth freshness inconsistency**, а не schema/runtime defect и не будущая Stage 6 работа. Различие внешней accepted migration evidence, заканчивающейся на 0020, корректно и не связано с D1.
+
+**Classification:** D1 — documentation/state accuracy issue in current product/project source-of-truth, не требующий архитектурного изменения. Действия по исправлению внутри audit не предпринимать; сведения о finding сообщать владельцу в чате, не делать утверждённой записью в общем канале до разрешения. E1 остаётся отдельным подтверждённым source-level current-Stage UI finding; E2/E3 не подтверждены как дефекты.
+
+### Точный остаток
+
+- По выбранной high-risk области покрытие улучшено: все 11 SQL прочитаны; schema/текущий final snapshot и названия constraints проверены; релевантные native test assertions просмотрены.
+- **Не является проверкой всех `0000–0033` SQL построчно, всех 45 промежуточных snapshots/их преобразований, реального execution PG / FKs/DDL, либо runtime Worker.** Не переносить `AUD-20261022` manifest или статусы.
+- Первый аудит всё ещё не может получить whole-scope PASS из-за historical 1–8 ledger gaps + selective evidence and unexecuted observable transitions; одна подзадача не закрывает всю работу. Нет нового доказанного функционального дефекта DB migrations 0034–0044 сверх documentation D1.
+- **Stop** по регламенту после этой подзадачи; следующая требует явной команды владельца. Сохранять только personal note в PR #236; не менять прочие файлы и не назначать agents.
