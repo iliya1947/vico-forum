@@ -41,3 +41,12 @@
 - Часть 1 завершена: upload/type/security/private-ref/download boundary проверен; детали findings остаются только в current developer chat.
 - Часть 2 завершена: ZIP/ZIP64, OOXML/ODF, 7z, gzip, tar и OLE/CFB structural validators и их private-storage finalization boundary проверены против текущего ограниченного контракта; детали findings остаются только в current developer chat.
 - Следующая часть: attachment publication/edit selection, terminal operation и cleanup/concurrency lifecycle.
+
+## AUD-20261022 — этап 8
+
+- Этап 7 завершён; stage 8 localization/i18n начат на том же baseline.
+- Часть 1 завершена: locale identity/registry/resolver, persistent registry, root negotiation, `/:locale` boundary, degraded mode, request-scoped registry wiring и `lang/dir` проверены.
+- Ранний кандидат о необходимости `client.end()` на request-scoped Hyperdrive client снят после сверки с актуальным Cloudflare Hyperdrive connection-lifecycle contract; дефектом не считается.
+- Часть 2 завершена: canonical UI catalog, RU/HE local manual packs, fingerprints/freshness, persistent manual/machine sources, resource loader, compiled bundles и request-scoped i18next snapshot проверены.
+- Детали подтверждённых findings остаются только в current developer chat до audit publication gate.
+- Следующая часть: LTR/RTL и user-content locale/translation presentation boundaries.
