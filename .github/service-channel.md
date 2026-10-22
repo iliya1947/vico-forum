@@ -8,12 +8,11 @@
 - Владелец назначил поэтапный аудит приложения. Этап 0 завершён: зафиксирован объём и составлен полный manifest 491 файла.
 - В новом цикле: 437 файлов включены в прикладной объём с оговорками по сервисным разделам; 42 сервисных operational-файла исключены; 12 архивных документов — справочный контекст.
 - По прямому указанию владельца сервисы Cloudflare, Neon, Hyperdrive, R2, OAuth и backup/restore не входят в аудит. Их настройки, credentials, provisioning/deploy/rollout и live service acceptance не проверяются. Внутренние контракты соответствующего кода приложения остаются в объёме.
-- Этапы 1–4 завершены. Findings до завершения всех предусмотренных проверок остаются только в текущем developer chat согласно AGENTS.md.
-- Этап 5 начат. Части 1–2 завершены. Часть 3 standalone Attention технически проверена.
-- Attention access/mode isolation, group visibility, permission-scoped counts, action identity and stale/concurrent behavior проверены; implementation по этим границам новых independent findings не добавил.
-- По Mixed pagination выявлено отдельное несоответствие актуальных source-of-truth: `docs/UI_UX_PASS.md` требует case selection before paging / 50 cases per page, тогда как `PROJECT_STATE.md` и текущая реализация пагинируют Mixed по qualifying topics и затем разворачивают все cases темы. Владелец подтвердил, что конкретную семантику не утверждал, и отдельно отметил, что 50 элементов по умолчанию выглядит слишком большим. Этот вопрос фиксируется как audit problem / requirement conflict с неопределённым итоговым продуктовым решением и НЕ блокирует дальнейший аудит.
-- До финального отчёта точный page size и case-vs-topic pagination не выбирать самостоятельно; вынести в общий список проблем для отдельного решения после завершения аудита.
-- Следующая часть этапа 5: финальный completeness sweep Help/Attention cross-stage ranges и закрытие этапа либо точная фиксация остатка.
+- Этапы 1–5 завершены. Findings до завершения всех предусмотренных проверок остаются только в текущем developer chat согласно AGENTS.md, кроме отдельно зафиксированного владельцем non-blocking requirement conflict по Attention Mixed pagination.
+- Этап 5 полностью закрыл solved/best-answer, Help solution moderation, ordinary moderation signals, duplicate relationships, appeals и standalone Attention center, включая stale/concurrent paths, permission-scoped visibility/counts/actions и connected PostgreSQL evidence.
+- Completeness sweep подтвердил, что primary stage-5 targets `app/routes/attention.tsx` и `tests/database/forum-help-attention.test.ts` прочитаны полностью, а все применимые shared Help paths в `topic.tsx`, `actions.server.ts`, `views.tsx`, `forum-service.ts`, `forum-repository.ts`, `write-actions.test.ts`, `public-read.test.tsx` и `migrations.test.ts` повторно покрыты в нужных stage-5 диапазонах.
+- Cross-stage остатки не потеряны: editor-specific authoring/editing поведения идут в этап 6; attachment/security storage/lifecycle — в этап 7; cross-cutting security/privacy — в этап 10; browser/a11y/responsive — в этап 11; test-quality/CI completeness — в этап 12.
+- Attention Mixed pagination остаётся audit problem / requirement conflict: `docs/UI_UX_PASS.md` задаёт cases-before-paging и 50-case framing, `PROJECT_STATE.md` + код пагинируют qualifying topics и затем разворачивают их cases. Владелец не утверждал конкретный вариант и отметил, что 50 элементов по умолчанию слишком много. Этот пункт вынести в финальный problem list; точный page size и case-vs-topic semantics до финального решения не выбирать.
 - Cross-stage metadata/i18n/a11y/performance/privacy/test-quality вопросы остаются за этапами 8, 10, 11 и 12.
 - Предыдущие отчёты и самостоятельные проходы с другой нумерацией не засчитываются автоматически в AUD-20261022.
 - Ограничение доступной среды: Node 24.19.0 / pnpm 11.25.0 вместо pinned Node 24.21.0 / pnpm 12.3.4. Toolchain проверить до применимых локальных прогонов.
@@ -25,4 +24,4 @@
 
 ## Текущий следующий шаг
 
-Ожидать разрешения владельца продолжить этап 5, часть 4: финальный completeness sweep Help/Attention и закрытие этапа 5 либо фиксация конкретного остатка. Исходники не исправлять.
+Ожидать разрешения владельца начать этап 6: Editor 2.0 — Simple/Advanced, Markdown, clipboard/history, quote/mention, publish/edit. Исходники не исправлять.
