@@ -958,3 +958,31 @@ Tests/build/browser, внешние сервисы и их acceptance не вы�
 4. Лишь после сквозной сверки реального объёма/пробелов можно назвать результат первого технического аудита оконченным или чётко обозначить оставшийся непроверенный объём. `AUD-20261022` независимо открыт и не получает зачёт с этого review.
 
 **Никакого исправления и объявления полного завершения.** Этот checkpoint только в личном файле Лиры; shared service channel, чужие personal notes, implementation/main и второй audit не трогать.
+
+
+---
+
+## Первый аудит — целевая проверка ошибки 409 в Editor 2.0 (2026-10-22)
+
+**Статус: эта подзадача завершена; полный первый аудит НЕ завершён.** Относится только к independent audit, проходившему ранее по этапам 1–14. `AUD-20261022` (отдельный 437-file audit) не менять. Exact `main`: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+
+**Finding E1 — подтверждён по коду и документированному поведению React Router; функциональный дефект текущего Editor 2.0.** Интегрированная браузерная реализация и новый route-level regression test в этой подзадаче НЕ запускались.
+
+**Ожидаемое по контракту:** `docs/EDITOR.md` published post edit uses immutable revision, rejects stale Save, preserves in-memory typed text and local attachment intent, supports **explicit rebase** to latest published revision; failure must not discard entered content. Отменённый text-draft/autosave не использовать как механизм восстановления.
+
+**Trigger / causality:**
+1. Two tabs start with `post.body.id=R1`. One saves R2; second submits `R1` with edited text. `app/forum/views.tsx:2815-2839`: hidden `expectedRevisionId=editBaseRevisionId` initially R1; Save allowed while matches cached loader `post.body.id`.
+2. `app/forum/actions.server.ts:482-497` forwards expectedRevisionId into `writer.editPublishedPost`; `db/forum-repository.ts:3674-3736` serializes by row lock, checks author/revision and fails stale `ForumStateConflictError` before altering revision/refs. `app/forum/mutations.server.ts:89-111` returns `data({error:"conflict"},{status:409})`; server protects published data correctly.
+3. Project `package.json`: `react-router 8.3.1`, SSR mode `react-router.config.ts`. Official React Router documentation `https://reactrouter.com/how-to/optimize-revalidation` states that Framework SSR **4xx/5xx action failures do not revalidate active loaders by default**. `app/routes/topic.tsx` has loader/action but **no shouldRevalidate**, `TopicView` has no `useRevalidator`/conflict refresh.
+4. `app/forum/views.tsx:2236-2246`: error effect only resets pending publication tracker; `views.tsx:2556-2561` displays generic alert. **No fetch/revalidation of authoritative R2**, so cached `post.body.id` remains R1; hidden `expectedRevisionId` remains R1. `views.tsx:2844-2851` rebase UI appears only when `editBaseRevisionId !== post.body.id`; no difference → no button. Save enabled again when pending stops, so next submission still R1 → another 409.
+5. Typed source remains in live editor (default revision change alone does not reset scope; in-memory state), but user cannot invoke explicit rebase on unchanged loader snapshot. Browser full reload/navigation may fetch R2 but discards typed text (text drafts deliberately gone).
+
+**Alternatives checked:** `app/forum/online-presence-heartbeat.tsx` does not routinely revalidate topics (homepage-only success heartbeat, auth-401 exception). `app/forum/content-generation-controls.tsx` can revalidate when generation queue/poll progresses, but only conditionally and unrelated to a stale edit. Ordinary locale navigation or explicit refresh may refresh loader but not preserve unsent text through full page reload. `app/forum/public-read.test.tsx:2314-2382` confirms text preserved and rebase works after **manual** `router.revalidate()`; :2621-2700 covers failure `400` and local text survival, **not actual 409→automatic refresh**. `tests/database/forum-attachment-publication.test.ts:121-139` covers authoritative stale revision rejection; `app/forum/write-actions.test.ts` verifies server action forwarding/authorization, not end-user recovery.
+
+**Classification:** Confirmed **source-level current-Stage functional defect**: missing guaranteed freshness/recovery transition after failed stale Save. No implication of overwritten server data or lost in-memory typed text. Not to claim «rebase impossible under all circumstances» because unrelated router revalidation may allow recovery. No remaining source-level alternative found that changes the conclusion. **Observation in deployed browser: информация не проверена**. Suitable implementation regression is a deterministic router test `action status 409` + changed loader R2 + type preserved + explicit rebase makes Save ready; no requirement to test production/OAuth/real R2/Neon to establish this defect.
+
+**E2/E3 remain unchanged:** pending XHR no timeout is a conditional UX robustness question, not confirmed current-Stage defect; generic unexpected writer exception→503 is a source fact with insufficient current-Stage contract failure evidence. Do not assign fixes for E2/E3 as if proven.
+
+**Next first-audit subtask after owner instruction:** final cross-boundary requirement × (guest/authorized/permission-limited/stale/concurrent/unavailable/ambiguous retry) gap reconciliation; clarify remaining source/test coverage and audit completion status honestly, without importing separate `AUD-20261022` manifest.
+
+**Service constraints:** only personal `.github/agents/chatgpt-6.md` in PR #236; no change to shared service-channel, other agents' personal files, implementation, main, or separate audit statuses. This checkpoint is not a completed full-audit result nor a handoff to implementation.
