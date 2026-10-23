@@ -28,7 +28,7 @@
 
 **Дисциплина:** Каждая подзадача начинается с точного `main` и полного `AGENTS.md`; просматривать реализацию без внесения исправлений, без правки чужих файлов, без публикации findings до owner-authorized release. Вывод и конкретный уровень source confidence сообщать владельцу только в текущем чате. В личном журнале — статус, coverage, evidence level, не публикуемые спорные подробности. После каждой самостоятельной подзадачи **STOP**, следующий шаг только по явной команде владельца. Никаких работ по окружению/внешней инфраструктуре; не перекладывать задачу на владельца и не придумывать текущему Stage future requirements.
 
-**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2, 3, 4 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **281 CODE_STATIC_REVIEWED** по первичным материалам шагов1–4, **119 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 5–8 ещё НЕ завершены. Следующий строго owner-gated шаг **5: PostgreSQL и data lifecycle**. Code-only audit остаётся OPEN.
+**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2, 3, 4, 5 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **344 CODE_STATIC_REVIEWED** по первичным материалам шагов1–5, **56 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 6–8 ещё НЕ завершены. Следующий строго owner-gated шаг **6: UI/UX, CSS, безопасность и CI**. Code-only audit остаётся OPEN.
 
 ## CODE-ONLY Step 0 — per-path remaining-scope reconciliation (2026-10-24)
 
@@ -70,19 +70,19 @@
 | Git tree file | Prior scope | Current scope/evidence | Next code-only step | Historical evidence bucket |
 | --- | --- | --- | --- | --- |
 | `.env.example` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/production-schema-manifest.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/production-schema-manifest.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/runtime-migration-evidence.json` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/bootstrap-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/bootstrap-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/diagnose-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/diagnose-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/migration-history.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/migration-history.test.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/production-migration-contract.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/production-migration-contract.test.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/migration-history.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/migration-history.test.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-migration-contract.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-migration-contract.test.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/production-privileges.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/scripts/production-privileges.test.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
-| `.github/scripts/production-schema-manifest.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-schema-manifest.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
@@ -96,20 +96,20 @@
 | `.github/scripts/recover-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/runtime-migration-evidence.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/runtime-privileges.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/runtime-privileges.test.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/runtime-privileges.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/runtime-privileges.test.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/validate-production-web-credential-input.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/validate-production-web-credential-input.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-migration-history.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/verify-migration-history.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/verify-production-migration-identity.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-production-migration-identity.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-production-migration.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-production-runtime-privileges.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-production-schema-manifest.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/verify-production-schema-manifest.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/verify-recovery-v2-validation-run.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/scripts/verify-recovery-v2-validation-run.test.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/scripts/verify-runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-runtime-privilege-probes.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/verify-runtime-privilege-probes.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-web-credential-recovery-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
@@ -381,9 +381,9 @@
 | `db/hyperdrive-ui-translations.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/locale-repository.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/locale-repository.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/postgres-deadlines.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/postgres-deadlines.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/schema.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/postgres-deadlines.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/postgres-deadlines.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/schema.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/translation-task-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/ui-translation-bundle-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/ui-translation-bundle-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -413,7 +413,7 @@
 | `docs/translation/STORAGE_AND_VERSIONING.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `docs/translation/UI_TRANSLATION.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `docs/UI_UX_PASS.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
-| `drizzle.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `drizzle.config.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `drizzle/0000_tan_johnny_storm.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
 | `drizzle/0001_seed-locales.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
 | `drizzle/0002_ui_translation_storage.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
@@ -459,52 +459,52 @@
 | `drizzle/0042_attachment_edit_snapshots.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
 | `drizzle/0043_attachment_security_read_permission.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
 | `drizzle/0044_attachment_draft_conflict_boundaries.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
-| `drizzle/meta/_journal.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `drizzle/meta/0000_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0001_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0002_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0003_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0004_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0005_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0006_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0007_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0008_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0009_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0010_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0011_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0012_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0013_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0014_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0015_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0016_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0017_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0018_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0019_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0020_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0021_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0022_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0023_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0024_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0025_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0026_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0027_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0028_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0029_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0030_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0031_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0032_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0033_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0034_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0035_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0036_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0037_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0038_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0039_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0040_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0041_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0042_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0043_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `drizzle/meta/0044_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/_journal.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `drizzle/meta/0000_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0001_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0002_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0003_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0004_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0005_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0006_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0007_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0008_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0009_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0010_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0011_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0012_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0013_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0014_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0015_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0016_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0017_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0018_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0019_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0020_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0021_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0022_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0023_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0024_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0025_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0026_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0027_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0028_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0029_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0030_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0031_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0032_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0033_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0034_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0035_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0036_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0037_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0038_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0039_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0040_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0041_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0042_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0043_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0044_snapshot.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | SNAP_CHAIN_PARSED |
 | `eslint.config.js` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `package.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `pnpm-lock.yaml` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -535,7 +535,7 @@
 | `tests/database/forum-online-presence.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-profiles.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/hyperdrive-registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/migrations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/migrations.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/source-locale-correction.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/stage4-core-e2e.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/translation-generation-authorization.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -546,7 +546,7 @@
 | `tests/database/ui-translation-publication-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/ui-translation-storage.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/ui-translation-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/production-migration-verifier.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/production-migration-verifier.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `TRANSLATION_ARCHITECTURE.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `tsconfig.cloudflare.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tsconfig.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -623,6 +623,27 @@
 **Conclusion/provenance:** No **additional source-confirmed current-Stage defect** established during this scoped Step4 investigation; this is not whole-project PASS, runtime certification, exhaustive assertion-line read or a declaration that unproven behavior is safe. Old candidates remain owner-only for Step7 crosscut recheck and final Stage relevance. Existing Stage6 deployed/provider/Queue acceptance is explicitly future, not an automatic defect of current local/CI foundation. Source-code implementation and other agents' files unchanged; findings not published to service/communication. Step4 ledger statuses upgraded exactly 128 primary rows to `CODE_STATIC_REVIEWED | DONE_S4` while historical evidence provenance retained; cumulative **281 CODE_STATIC_REVIEWED** (Step1 49 + Step2 49 + Step3 55 + Step4 128), **58 SOURCE_FULL_READ_RECORDED**, **119 REVIEW_INCOMPLETE** (Step5 DB=63; Step6 UI/ops/CI=56), 31 documents and 2 binary assets = **491**. Steps 7–8 remain separately required.
 
 **STOP.** Step5 PostgreSQL/data lifecycle static code-only analysis starts only after owner explicitly commands continuation, with renewed main/AGENTS check.
+
+
+## CODE-ONLY Step 5 — PostgreSQL schema, migration provenance and data lifecycle static audit (2026-10-24)
+
+**STEP5 SCOPED STATIC CODE AUDIT COMPLETED; whole code-only audit OPEN.** Exact source `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c` (unchanged from Step4), current `AGENTS.md` read in full. All **63/63** primary Step5 paths fetched directly from exact main: 45 ordered `drizzle/meta/0000_snapshot.json` … `0044_snapshot.json`, Drizzle journal, production-schema manifest, `db/schema.ts`, Drizzle config, pg deadline source/test, migration/privilege/manifest scripts plus scoped test files. Large files `db/schema.ts` (1574 lines), `tests/database/migrations.test.ts` (3109 lines) and manifest (5496 lines) analyzed structurally and through relevant sections, invariants and assertions; **not claimed to have been examined line-by-line for every unrelated declaration**. 45 snapshots were each fully fetched and parsed as JSON. Existing test code READ/selected assertions inspected; **tests were NOT EXECUTED**. No PostgreSQL instance, production environment, external workflow, CI, migrations or browser touched.
+
+**Current scope:** `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` fetched for current release boundaries; Stage 5 local/CI implemented, Stage6 production-like integration/deployment paused or separately gated. This code-only stage checks declared database contracts and future production safety verification code, **not** external Stage6 acceptance.
+
+**Migration history and snapshots:** `drizzle/meta/_journal.json` has **45** contiguous entries, `0000` through `0044_attachment_draft_conflict_boundaries`, strictly increasing timestamps, no duplicate tag; repository tree has exactly the matching **45** `drizzle/*.sql` files and no unmatched journal tag. Each snapshot is valid JSON with dialect `postgresql`, version `7`, and adjacent `prevId` matches previous snapshot `id` across all **45** items. The last snapshot declares **47 tables** and **329 columns**. Referenced sample forward SQL migrations for forum revision FK/triggers, authz, translation task generation/budget/allowance, attachment cleanup, new attachment boundary, and confirmed 3 extra manifest FKs were created by hand-authored forward SQL (forum current title/post revision FKs and best-answer FK). This is a repository static continuity check, **not** independent proof that running every SQL file succeeds in PostgreSQL 17.
+
+**Schema parity:** `db/schema.ts` declares **47** named pgTable relations and exactly matches 47 table names and 329 column identities in the last snapshot and checked-in production manifest. Normalized expected pg-identifier truncation (max 63 bytes): **115 check constraint names**, **35 non-constraint index names**, and declared unique constraint names match between Drizzle snapshot and manifest. Snapshot **61** declared FKs vs manifest **64** because the latter includes 3 deliberate SQL-only current-revision/best-answer FKs; located their SQL definitions. Timestamp aliases (`timestamp` in Drizzle snapshot vs `timestamp without time zone` in PostgreSQL) are representation differences. Manifest `targetMigration` equals last journal tag; no `PENDING` definition hash remains. Manifest includes check/default expression digests and trigger/function metadata. Actual live schema parity and SQL execution **not verified**.
+
+**Integrity/lifecycle:** Examined `db/schema.ts` constraints for canonical/non-bootstrap locales, approved UI translation keys/origins/fingerprints/bundles, translation task state/attempt/generation/allowance, content budget counters, forum hierarchy and version ownership, content exact-revision translation foreign keys, attachments and draft references, authz, Help & Solutions relationships, per-user read state and notifications. Checked expected manual SQL FKs and immutable revision triggers. Tests in `tests/database/migrations.test.ts` include migration idempotence, UTF-8/PostgreSQL 17, hierarchy, append revisions, authz, cooldowns, current pointers, cascades, Help moderation, read/notification flows, registry concurrency and ambiguous commit handling, but were not rerun.
+
+**Migration and operational guard source:** Read `migration-history.mjs`, `production-migration-contract.mjs`, `production-schema-manifest.mjs`, their verifiers and tests, plus supporting `verify-production-migration.mjs` outside primary list. Accepted migrations checked against modified/deleted/renamed SQL/snapshot files; append-only journal continuity and new SQL↔journal parity; pre-migration exact known prefix and post-migration full timestamp+SHA256 ledger parity; postflight full target manifest table/constraint/index/trigger comparison. Reviewed guarded PostgreSQL 17/UTF-8 baseline and persistent English rules. Versioned production role/config, migration credentials and deployed postflight are deliberately **not** asserted from these static contracts.
+
+**Privileges/timeouts:** `runtime-privileges.mjs`, `verify-runtime-privilege-probes.mjs` and `runtime-privileges.test.mjs` trace exact least-privilege relation ACLs for separate `localization-read` / `web` roles, role ownership/membership/LOGIN/CONNECT/CREATE checks, explicit rejection of unexpected PUBLIC/direct privileges, and positive/negative disposable-`*_test` PostgreSQL 17 probes. `db/postgres-deadlines.ts` and its test use bounded connection/query timeouts and typed narrowly matched availability/statement/lock timeout errors, with best-effort cleanup. These are examined source contracts, not live grants or executed database probes.
+
+**Conclusion:** No new **source-confirmed current-Stage defect** established in this scoped Step5 static code investigation. Inference is limited to static consistency of checked-in structures and inspected source branches; neither execution success nor absence of runtime bugs is established. Do not promote future Stage6 external operational prerequisites to current-Stage defects. No implementation, schema, docs or shared communication changed. **63 primary Step5 ledger rows** become `CODE_STATIC_REVIEWED | DONE_S5`; cumulative **344 CODE_STATIC_REVIEWED** (49+49+55+128+63), **58 SOURCE_FULL_READ_RECORDED** historical, **56 REVIEW_INCOMPLETE** for Step6, plus 31 documents and 2 binary assets, 491 total. Step7 crosscut and Step8 closure remain OPEN.
+
+**STOP.** Begin Step6 only on explicit owner continuation, with renewed exact main and AGENTS validation.
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (исторический baseline и evidence, заменён актуальным code-only планом 2026-10-24)
 
