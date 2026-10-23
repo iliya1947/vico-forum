@@ -6,7 +6,7 @@
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (ACTIVE, v1)
 
-**Статус: этап организации/инвентаризации завершён; PASS A / этап 1 (14 ранее DOC_READ документов) перепроверен 2026-10-23; PASS A / этапы 2–12 НЕ НАЧАТЫ; PASS B НЕ НАЧАТ; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+**Статус: этап организации/инвентаризации завершён; PASS A / этапы 1 и 2 перепроверены 2026-10-23 (A2 — только прежние reviewed архитектурные пути); PASS A / этапы 3–12 НЕ НАЧАТЫ; PASS B НЕ НАЧАТ; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
 
 ### Объём, происхождение и запреты
 
@@ -87,6 +87,47 @@ docs/translation/UI_TRANSLATION.md     dabc15f8c466f670c60b97395e818c50891b597c
 - **No new proven runtime defect** from this documentation-only subtask. All old code findings remain `PENDING RECHECK IN A 2–12`, not accepted by rereading docs alone.
 - **PASS B / stage 1 deferred strictly:** `docs/translation/CONTENT_TRANSLATION.md`, `PROVIDERS_AND_JOBS.md`, `RESEARCH.md`, `STORAGE_AND_VERSIONING.md`, and any more exact holes. Do NOT read them before **all** PASS A stages complete.
 - **STOP** until user continuation. Next `PASS A stage 2`: recheck only source/config/runtime wiring already demonstrably reviewed and record exact per-file assertions; newly encountered unreviewed items become B queue. Do not publish findings in shared channel until audit completed and owner authorizes transfer.
+
+
+
+### PASS A / этап 2 — повторная проверка ранее исследованной архитектуры и конфигурации (2026-10-23)
+
+**STATUS: A2 COMPLETED for reliably previously reviewed source/config chains; whole audit and PASS A OPEN.** Exact frozen GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, `AGENTS.md` read fully; baseline `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `SCAFFOLD_PLAN.md` reviewed already in A1. Review is new direct source+existing-test read of the same old cases, **NOT** actual execution of app/tests/build/Worker browser/live CDN. No new service calls.
+
+**Previously reviewed manifest Stage 2 files now source-rechecked (16/20), exact blobs in same main:**
+```text
+.env.example                      91caeb78d06e3607dadb7fd10bfc039694c9fbd5
+.gitignore                        c363c907bdae46191319e6918079447b9b025aff
+.node-version                     df6ae3370f9f89272d88629c442cf554d6c1f9fb
+app/routes.ts                     24ac49aff9bbe60bf0cbd977172ba4e3e69c6c43
+package.json                      f0e7429d23c7c25724293cdcd7ba370ca8a1fbf3
+pnpm-lock.yaml                    88ade74044c2590923eb519e12a75a059ccc53ff
+pnpm-workspace.yaml               fba2ee8c2be560e3b446fe2a778e14f94a7b24a1
+react-router.config.ts            722b4a8dc2d45d8e79a6dd7b6e12b504bfbd98ae
+tsconfig.json                     d7ce9e49b09efb6c613e4c90e10854e33011f995
+vite.config.ts                    6a5db4717ef1208b4417b0320e7edca26f54d111
+vitest.config.ts                  b8b2fdec0c02f84406a8080e1b64210d321ff79c
+vitest.database.config.ts         223bc3c11c73c99235064dcef523caf095d22c1a
+workers/app.ts                    daf3268db5c397c8f6023bce6bd74a4fddbfbead
+workers/database-bindings.test.ts a4d421b00aa05ee7d6e3e55585cfe9ab7309e966
+workers/database-bindings.ts      539f21dcaced85afe62a71e8814157c64f226722
+wrangler.jsonc                    58b568003397b79310f9e68a890656ef6698076f
+```
+
+Additional **historically reviewed architectural cross-cut** rechecked at source, without advancing their own A phases: `app/entry.server.tsx` (22aa313b17eaec69014e61dffe945dd3a520ba3d), `app/root.tsx` (c1708e1ea80d15b72a74242130221daa1606717f), `app/routes/locale-boundary.tsx` (c156f4302543bb31988d53e8d03d0c4728faa4d2), `app/routes/locale-negotiation.ts` (c22c8c48b85b4d88650da97b5c4e234acdbd32c6), `app/routes/api.ts`, `app/routes/auth-api.ts`, `app/routes/not-found.ts`, `app/auth/session-context.ts`, `app/server-logging.ts`; existing source assertions re-read in `app/routes/locale-boundary.test.ts`, `locale-negotiation.test.ts`, `auth-api.test.ts`, `app/auth/session-context.test.ts`. Old confirmed config CI source also re-read: `.github/workflows/ci.yml`, `ui-preview-pages.yml`, `production-worker-rollout.yml`; no attempt to execute workflows.
+
+**Rechecked exact chains and assertions:**
+1. Route graph `app/routes.ts:1–33`: technical `/api/auth/*`, attachments and `/api/*` remain outside generic `/:locale`; route boundary carries index/home and independent catch-all 404, main public forum routes. `locale-boundary.tsx:32–61` middleware guards noncanonical mutation before action; `locale-boundary.tsx:67–151` loader builds per-request locale/i18n snapshot and identity presentation; auth role is server-resolved, unlike client user input. `locale-negotiation.ts:1–21` handles request-specific root locale selection with `307` and no-store. `locale-boundary.test.ts` asserts redirect-required POST `404` with zero downstream calls, canonical-locale POST reaches downstream, registry-degraded `307` no-store, unexpected authorization errors propagate. `locale-negotiation.test.ts` tests authenticated locale priority, root no-store, HEAD, POST fail-closed. `auth-api.test.ts` proves RR route registration before API catchall and forwarding to injected request-scoped handler. **These tests READ, NOT executed.**
+2. `workers/app.ts:25–53` creates `RouterContextProvider` per HTTP request, resolves bindings, initializes actual request session before RR handler, injects scoped forum/authz, registry/translation, attachments, sets generated translation action disabled. `workers/database-bindings.ts` rejects absent/blank `HYPERDRIVE` and `WEB_HYPERDRIVE` without cross-capability fallback. `database-bindings.test.ts` contains split routing, both missing/blank negatives, and a composition source check — *not* a behavioral HTTP integration test. `app/auth/session-context.ts` propagates only Set-Cookie headers, preserving page's actual caching headers; `session-context.test.ts` covers session and wrapper but not real browser cookie behavior.
+3. `app/entry.server.tsx` returns bodyless HEAD; GET SSR renders `ServerRouter`, waits `allReady`, adds text/html; `onError` reports after-shell failures via limited kind-only reporter. `app/root.tsx` derives HTML `lang/dir` from loader data, embeds theme bootstrap and hydrated router scripts. This is source-level SSR wiring, **not actual SSR/hydration or browser-accessibility proof**.
+4. `package.json` pins 35 direct deps/dev deps without semver ranges, Node `24.21.0`, pnpm `12.3.4`; `.node-version`, `pnpm-workspace.yaml` allowBuilds esbuild/workerd checked. `pnpm-lock.yaml` contains **two actual nonempty YAML documents** separated by `---` (not corrupt): 1st package-manager bootstrap; 2nd project importer. Re-evaluated 35/35 direct dependency versions in the project importer; **zero missing/mismatched**. Initial naive split in this check momentarily reported 35 missing due selecting first importer; corrected before any conclusion, actual second doc verified. `vite.config.ts` uses cloudflare plugin+RR SSR, `react-router.config.ts` `ssr:true` and documented pinned-version `routeDiscovery: initial`, `tsconfig.json` references node/cloudflare TS configs, `vitest.config.ts` excludes DB while `vitest.database.config.ts` targets Node database tests. `.gitignore` excludes `.env*`/`.dev.vars*` and preserves blank local placeholder `.env.example`; `wrangler.jsonc` binds public Hyperdrive identifiers and enables query redaction.
+5. Existing `.github/workflows/ci.yml` sets frozen pnpm install, lint, TS, app tests, build, UI preview build, DB metadata/manifest checks, PG17 fresh DB suite and local Workers smoke; Pages preview workflow publishes **mock static site only**. External production Worker workflow has manual `workflow_dispatch` gating; reading does not mean testing live deployment. Historical exact-tree green run `#39615502080` is prior evidence, not independently rerun now. No secret content, real Cloudflare settings, real PostgreSQL, installed package modules or live HTTP validated.
+
+**Outcome**: re-reviewed described config/request/route/SSR chains with no new **confirmed current-Stage functional defect**. Does NOT prove there are no defects in full architecture. Earlier conditional SSR cache/anti-framing issues remain **conditional observations** without demonstrated active Worker cache or exposed attack origin; Stage6 Hyperdrive advisory lock incompatibility remains **future Stage6 compatibility gate** until authorized stage, not current defect; any E1/N1/E3/I1/L1 still **pending their independent A6/A10 rechecks**.
+
+**Deferred strictly to PASS B (no new substantive review):** manifest-stage2 `db/web-runtime-wiring.test.ts`, `eslint.config.js`, `tsconfig.cloudflare.json`, `tsconfig.node.json` (no reliable prior standalone review). They are not silently counted as A2 PASS; source and tests in other stages remain scoped to their own A/B requirement cases. Real application/Worker/browser/runtime CI runs `NOT_EXECUTED`.
+
+**STOP** after this bounded A2 check. Next explicit owner continuation: `PASS A stage 3`, repeat previously reviewed Better Auth session, roles, authorization/ownership and existing negative tests without starting previously unreviewed files. Implementation, main, other people's files and shared communication not altered.
 
 
 ---
