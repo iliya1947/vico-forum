@@ -28,7 +28,7 @@
 
 **Дисциплина:** Каждая подзадача начинается с точного `main` и полного `AGENTS.md`; просматривать реализацию без внесения исправлений, без правки чужих файлов, без публикации findings до owner-authorized release. Вывод и конкретный уровень source confidence сообщать владельцу только в текущем чате. В личном журнале — статус, coverage, evidence level, не публикуемые спорные подробности. После каждой самостоятельной подзадачи **STOP**, следующий шаг только по явной команде владельца. Никаких работ по окружению/внешней инфраструктуре; не перекладывать задачу на владельца и не придумывать текущему Stage future requirements.
 
-**ТЕКУЩИЙ СТАТУС:** шаг **0 ЗАВЕРШЁН** 2026-10-24 по live tree 491 с индивидуальным 458-file code-scope index; **400 REVIEW_INCOMPLETE** по недостаточности сохранённых свидетельств (не равнозначно «никогда не читались»), **58 SOURCE_FULL_READ_RECORDED** без заявления runtime/whole-program proof. Шаги 1–8 ещё не начаты в новой очереди (накопленные A/B source findings и чтение сохраняются). Следующий строго owner-gated шаг **1: архитектура/авторизация**. Code-only audit остаётся OPEN.
+**ТЕКУЩИЙ СТАТУС:** шаги **0 и 1 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **49 CODE_STATIC_REVIEWED** по первичным материалам шага1, **351 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 2–8 ещё НЕ завершены. Следующий строго owner-gated шаг **2: форум и Help & Solutions**. Code-only audit остаётся OPEN.
 
 ## CODE-ONLY Step 0 — per-path remaining-scope reconciliation (2026-10-24)
 
@@ -69,7 +69,7 @@
 
 | Git tree file | Prior scope | Current scope/evidence | Next code-only step | Historical evidence bucket |
 | --- | --- | --- | --- | --- |
-| `.env.example` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.env.example` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/production-schema-manifest.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/runtime-migration-evidence.json` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/bootstrap-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
@@ -128,26 +128,26 @@
 | `.github/workflows/production-web-relation-provision.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/workflows/production-worker-rollout.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `.github/workflows/ui-preview-pages.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
-| `.gitignore` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.node-version` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.gitignore` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.node-version` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `AGENTS.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `app/assets/vico-forum-logo-dark.webp` | INCLUDED | NON_CODE_ASSET | — | B11_BINARY_RIFF_WEBP_SIGNATURE |
 | `app/assets/vico-forum-logo-light.webp` | INCLUDED | NON_CODE_ASSET | — | B11_BINARY_RIFF_WEBP_SIGNATURE |
-| `app/auth/auth-client.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/auth-controls.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/auth-controls.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/auth.server.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/auth.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/credential-path.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/credential-view.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/credential-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/session-context.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/auth/session-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/authorization/admin-view.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/authorization/admin-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/authorization/catalog.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/authorization/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth-client.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth-controls.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth-controls.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth.server.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth.server.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/credential-path.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/credential-view.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/credential-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/request-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/session-context.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/session-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/admin-view.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/admin-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/catalog.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/request-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/entry.client.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/entry.server.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/forum/actions-attachment-publication.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -297,20 +297,20 @@
 | `app/localization/ui-translation-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/markdown-syntax.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/root.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/routes.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/api.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-download.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-download.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-upload.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-upload.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attention.tsx` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
-| `app/routes/auth-api.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/auth-api.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/authorization-admin.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/authorization-admin.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/auth-api.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/auth-api.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/authorization-admin.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/authorization-admin.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/category.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/credential-sign-in.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/credential-sign-up.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/credential-sign-in.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/credential-sign-up.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/home.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/locale-boundary.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/routes/locale-boundary.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -349,9 +349,9 @@
 | `app/ui-preview/preview.css` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/ui-preview/vite.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `db/attachment-draft-generation.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/authorization-repository.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/authorization-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/authorization-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/authorization-repository.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/authorization-repository.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/authorization-service.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/content-post-body-execution-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/content-post-body-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/content-request-budget-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -366,8 +366,8 @@
 | `db/forum-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-write-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-authorization.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-authorization.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-authorization.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-authorization.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/hyperdrive-content-generation-status.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/hyperdrive-content-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -389,7 +389,7 @@
 | `db/ui-translation-bundle-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/ui-translation-publication-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/ui-translation-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/web-runtime-wiring.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/web-runtime-wiring.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
 | `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
 | `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
@@ -505,14 +505,14 @@
 | `drizzle/meta/0042_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
 | `drizzle/meta/0043_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
 | `drizzle/meta/0044_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
-| `eslint.config.js` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `package.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `pnpm-lock.yaml` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `pnpm-workspace.yaml` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `eslint.config.js` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `package.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `pnpm-lock.yaml` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `pnpm-workspace.yaml` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `PROJECT_HISTORY.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `PROJECT_STATE.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `PROJECT.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
-| `react-router.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `react-router.config.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `README.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `ROADMAP.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `SCAFFOLD_PLAN.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
@@ -520,8 +520,8 @@
 | `scripts/reconcile-ui-translation-bundles.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `scripts/smoke-production-worker.sh` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `scripts/smoke-workers.sh` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
-| `tests/database/auth-runtime.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/authorization-snapshot.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/auth-runtime.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/authorization-snapshot.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/content-post-body-task-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/content-request-budget-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -530,7 +530,7 @@
 | `tests/database/content-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/forum-attachment-publication.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-attachments.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/forum-email-registration.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-email-registration.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-help-attention.test.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
 | `tests/database/forum-online-presence.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-profiles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -548,24 +548,38 @@
 | `tests/database/ui-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/production-migration-verifier.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `TRANSLATION_ARCHITECTURE.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
-| `tsconfig.cloudflare.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tsconfig.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tsconfig.node.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `vite.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `vitest.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `vitest.database.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `workers/app.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tsconfig.cloudflare.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tsconfig.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tsconfig.node.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `vite.config.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `vitest.config.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `vitest.database.config.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/app.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `workers/attachment-storage.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `workers/attachment-storage.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `workers/database-bindings.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `workers/database-bindings.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `wrangler.jsonc` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/database-bindings.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/database-bindings.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `wrangler.jsonc` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 
 **STEP0 STOP.** No implementation changes; nothing posted to service communication or other agent files; only this coverage/status log in personal agent journal. Confirm `main` exact before Step1, fully re-read current `AGENTS.md`, use per-file queue to ensure substantive analysis, owner findings only in chat, and **STOP after Step1** until explicit next continuation. Runtime/Worker/PG/browser execution is not a gate for this requested **static code audit**. Code-only audit still OPEN.
 
+## CODE-ONLY Step 1 — architecture/configuration/authz substantive static audit (2026-10-24)
+
+**STEP1 STATIC CODE AUDIT COMPLETED within bounded scope; unified code-only audit OPEN.** Baseline `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c` / `tree 18e73a062eb06984fd0b28132f510a5b12b1cfe2` unchanged; read `AGENTS.md` fully prior to this step. 49/49 primary Step1 source/config/test files fetched direct exact main, inspected at substantive code/contract/test level: 20 architecture/config/Worker wiring and 29 auth/session/roles/permission/management/tests. Secondary crosscut current authz requirements `docs/auth/AUTHORIZATION.md`, runtime stage `ROADMAP.md` and `PROJECT_STATE.md` checked for contract; `drizzle/0006_loving_sentinels.sql` role schema constraint/lock seed and `db/schema.ts` authz scope checked with tests. These crosscut sources retain their originally scheduled Step5 status for full code branch review; no double-counting.
+
+**Verified source observations, not new runtime tests:** Worker request-scoped auth resolution before Router handler and Set-Cookie pass-through; `HYPERDRIVE` localization / `WEB_HYPERDRIVE` web fail-closed binding separation; production content-generation action remains disabled; localized route map sends auth/attachments before generic catchall. package.json locked Node24.21.0/pnpm12.3.4, pinned RR8.3.1/BetterAuth1.7.4; `pnpm-lock.yaml` two YAML documents inspected, actual project importer pins compared with all 15 runtime + 20 dev package specs and **0 mismatches**; not claiming exhaustive audit of 900+ transitive package resolutions. `tsconfig`, Vite, Vitest split, Wrangler, ESLint, env, workspace scripts checked for relevant wiring. Relevant tests are mock/integration source READ, historical GitHub CI only; not independently rerun.
+
+**Authz chain source reviewed:** session context and credential form success/failure/returnTo/CSRF-related route path; auth api loader/action handoff; authentication rate-limit storage and CF supplied IP boundary; `HeaderAuthProvider` revalidation; authorization catalog vs source-of-truth permission precedence, effective resolver request-local cache, `READ ONLY REPEATABLE READ` snapshots, manager route authorization+origin gate+validation, `authz_mutation_lock` transaction serialization/count-of-effective-managers/rechecking actor permission and schema role identity, safe classified-vs-unexpected error mapping. Source tests inspected: authControls/credentialViews, authRuntime/sessionCookie/expired, email/password PostgreSQL, authorization loader/action, management UI, query error-classification and composite snapshot concurrency (REM-10/REM-11), mutation unique-constraint branch. Existing CSS, broader forum crosscuts and actual runtime execution not falsely included in this static step.
+
+**Owner-only observation crosschecked but NOT published as finding to service/communication:** there is a conditional source-level difference between rollback exception precedence in authz mutation path and guarded snapshot path; classification, current Stage relevance and user-impact limitation reported **only owner chat**. Previously known signed-in cross-tab account switch gap (I1) remains a crosscut scenario for Step2/Step3; Step1 reading establishes header/session hooks but does not pretend a browser reproduction. No other new current-stage defect proclaimed merely because a test case is absent. External Google OAuth provisioning belongs deferred Stage6, not today's bug.
+
+**Authoritative live step0 ledger update applied to exact 49 rows:** `CODE_STATIC_REVIEWED` + `DONE_S1` on 20 config/arch + 29 auth paths, preserve previous evidence bucket unchanged; all others retained. New global per-file-status distribution: **49 CODE_STATIC_REVIEWED**, **58 SOURCE_FULL_READ_RECORDED**, **351 REVIEW_INCOMPLETE** (previous 400 less 49), **31 REFERENCE_DOCUMENT**, **2 NON_CODE_ASSET** =491. Pending code-only queue: Step2 49, Step3 55, Step4 128, Step5 63, Step6 56, sum351; previously excluded production operation source remains Step6 and in scope. Stage 7 finding cross-check and Stage8 final ledger remain separate. No implementation edits, no files of other agents changed, no release/production operations or external runtime tests.
+
+**STOP until owner's explicit continuation:** Step2 — public forum + Help & Solutions source-only crosscut. If main moves, re-check affected source first. No runtime-gate scope expansion.
+
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (исторический baseline и evidence, заменён актуальным code-only планом 2026-10-24)
 
-**Статус: объединённый аудит ОТКРЫТ; PASS A1–A12 и PASS B1–B9 ранее проведены только на описанной historical/static/source/test глубине, НЕ runtime sign-off. GAP-CLOSURE B1–B3 и B4–B7 проведены дополнительной доказательной сверкой исходников и существующих тестов; ни один этап не повышен до live/fully-tested PASS. GAP-CLOSURE B8–B9 проведён дополнительной статической сверкой исходников и тестов, runtime-пробелы открыты; GAP-RECONCILIATION B1–B9 ВЫПОЛНЕН на уровне инвентаризации/evidence, runtime-пробелы остаются; PASS B10 выполнен на статических исходниках и выбранных тестовых assertions без runtime-подтверждения; B11 проведён на ограниченной глубине исходников/компонентов/CSS и существующих тестов без реальной browser acceptance; B12 завершён как статическая source/CI сверка и повторная проверка исторических Actions, без нового независимого full local runtime-тестирования; B13 реестр/итоговая классификация ВЫПОЛНЕНЫ; 437 путей сведены в evidence-index, но обязательные runtime/браузерные и семантические gate НЕ ЗАКРЫТЫ; POST-B13 environment feasibility + RT-01..RT-09 test specification завершены, независимый exact-main runtime BLOCKED/NOT_EXECUTED; общий аудит КОДА ОТКРЫТ; code-only Step0 завершён 2026-10-24: 458 актуальных code/config/test путей, 58 full-read historical, 400 evidence-incomplete, 41 source/config ошибочно исключены старой ревизией scope. Новые кандидаты на findings сохраняются ТОЛЬКО в чате владельца до разрешённой публикации, личный журнал содержит статус/покрытие без их деталей. Собственные PG/Vitest/Worker/R2/форум-browser/Better Auth 429/2-tab A→B НЕ ВЫПОЛНЕНЫ; старые E1/N1/E3/I1/A5-AP1 и другие observations не закрыты.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+**Статус: объединённый аудит ОТКРЫТ; PASS A1–A12 и PASS B1–B9 ранее проведены только на описанной historical/static/source/test глубине, НЕ runtime sign-off. GAP-CLOSURE B1–B3 и B4–B7 проведены дополнительной доказательной сверкой исходников и существующих тестов; ни один этап не повышен до live/fully-tested PASS. GAP-CLOSURE B8–B9 проведён дополнительной статической сверкой исходников и тестов, runtime-пробелы открыты; GAP-RECONCILIATION B1–B9 ВЫПОЛНЕН на уровне инвентаризации/evidence, runtime-пробелы остаются; PASS B10 выполнен на статических исходниках и выбранных тестовых assertions без runtime-подтверждения; B11 проведён на ограниченной глубине исходников/компонентов/CSS и существующих тестов без реальной browser acceptance; B12 завершён как статическая source/CI сверка и повторная проверка исторических Actions, без нового независимого full local runtime-тестирования; B13 реестр/итоговая классификация ВЫПОЛНЕНЫ; 437 путей сведены в evidence-index, но обязательные runtime/браузерные и семантические gate НЕ ЗАКРЫТЫ; POST-B13 environment feasibility + RT-01..RT-09 test specification завершены, независимый exact-main runtime BLOCKED/NOT_EXECUTED; общий аудит КОДА ОТКРЫТ; code-only Steps0–1 завершены 2026-10-24: 458 актуальных code/config/test путей, 58 full-read historical, 49 step1 source/config/test статически разобраны, 351 evidence-incomplete, 41 source/config ошибочно исключены старой ревизией scope. Новые кандидаты на findings сохраняются ТОЛЬКО в чате владельца до разрешённой публикации, личный журнал содержит статус/покрытие без их деталей. Собственные PG/Vitest/Worker/R2/форум-browser/Better Auth 429/2-tab A→B НЕ ВЫПОЛНЕНЫ; старые E1/N1/E3/I1/A5-AP1 и другие observations не закрыты.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
 
 ### Объём, происхождение и запреты
 
