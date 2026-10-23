@@ -8,7 +8,7 @@
 
 **Прямое уточнение владельца:** исходное и актуальное поручение — **только техническая проверка кода текущего Vico Forum**, НЕ создание/настройка окружения, НЕ запуск браузерного/PG/Workers интеграционного тестирования, НЕ deployment/production/release acceptance и НЕ исправления. Предыдущий B13 runtime-blocker подход ошибочно расширил задачу и НЕ препятствует завершению **аудита кода**. Runtime-факты можно использовать лишь как существующее внешнее свидетельство; независимый запуск не обещать и не требовать как условие code-audit closure. Старые записи ниже — evidence, а не новые обязательные пункты.
 
-**Baseline/источник:** GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`; перед каждым самостоятельным этапом сверять `main` и полностью читать текущий `AGENTS.md`. При drift сначала определить affected code. Использовать 491 unique manifest paths как инвентаризацию: 437 INCLUDED, 42 external/service EXCLUDED, 12 archival CONTEXT. Из 437: 18 docs как уже прочитанные нормативные источники, 45 прочитанных SQL migrations, 45 структурно проверенных snapshots, 2 бинарных logo; оставшиеся implementation/source/config/tests требуют **предметного просмотра**, а не подсчёта имён. 171 и 128 — старые coarse labels selected/indexed, **не число заведомо непроверенных файлов**. Не стирать доказанные прежние checkpoints, не предполагать их полноту.
+**Baseline/источник:** GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`; перед каждым самостоятельным этапом сверять `main` и полностью читать текущий `AGENTS.md`. При drift сначала определить affected code. Использовать авторитетный Git tree из 491 путей: **458 CURRENT CODE/CONFIG/TEST** в scope code-only (417 из исторических 437 INCLUDED + 41 ошибочно EXCLUDED кодовых/конфигурационных путей), **31 документа** как справочный requirements context (18 исторически INCLUDED + 1 исторически EXCLUDED + 12 archived CONTEXT), **2 бинарных изображения**. Исторический manifest не переписывать: причина и индивидуальное включение 41 пути доказаны Step0 ниже. 58 файлов имеют запись о полном чтении источника (45 SQL, 9 scripts/workflows, 4 short code); 400 требуют досмотра / достаточных свидетельств (314 partial-index/source/test, 45 partially parsed snapshots, 41 previous excluded). Читать именно существующий код и контракты, а не считать файлы. 171 и 128 — старые coarse labels selected/indexed, **не число заведомо непроверенных файлов**. Не стирать доказанные прежние checkpoints, не предполагать их полноту.
 
 **Definition of code review evidence:** Для каждого relevant source/test/config/SQL модуля иметь подтверждение прямого substantive review самого кода (ключевые функции, входы/выходы, ветки, вызовы, ошибки, права, транзакции/конкуренция, инварианты; прочтение существующих assertions по соответствующим сценариям). Для generated resources/schema snapshots — проверять точность и согласованность контрактных структур, без бессмысленного ручного перевода всех одинаковых значений. Области с недостаточным evidence возвращать в очередной тематический блок; каждый оставшийся вопрос иметь SOURCE_CONFIRMED / HYPOTHESIS / STAGE6_FUTURE / DOCUMENT_CONFLICT / CANNOT_PROVE_BY_CODE с причиной. *Наличие файла в manifest ≠ аудит; тест, который только прочитан, ≠ тест, который выполнялся.*
 
@@ -28,11 +28,544 @@
 
 **Дисциплина:** Каждая подзадача начинается с точного `main` и полного `AGENTS.md`; просматривать реализацию без внесения исправлений, без правки чужих файлов, без публикации findings до owner-authorized release. Вывод и конкретный уровень source confidence сообщать владельцу только в текущем чате. В личном журнале — статус, coverage, evidence level, не публикуемые спорные подробности. После каждой самостоятельной подзадачи **STOP**, следующий шаг только по явной команде владельца. Никаких работ по окружению/внешней инфраструктуре; не перекладывать задачу на владельца и не придумывать текущему Stage future requirements.
 
-**ТЕКУЩИЙ СТАТУС:** этот план составлен; шаги 0–8 НЕ начаты в его рамках (накопленный A/B evidence сохранён, повторять его механически не требуется). Следующее действие по команде владельца — **шаг 0: доказательный live-index из B13 перед дальнейшим substantive code review**. В перспективе результат — **полный аудит кода**, не продуктовый runtime/release sign-off. План STOP до следующей явной команды владельца.
+**ТЕКУЩИЙ СТАТУС:** шаг **0 ЗАВЕРШЁН** 2026-10-24 по live tree 491 с индивидуальным 458-file code-scope index; **400 REVIEW_INCOMPLETE** по недостаточности сохранённых свидетельств (не равнозначно «никогда не читались»), **58 SOURCE_FULL_READ_RECORDED** без заявления runtime/whole-program proof. Шаги 1–8 ещё не начаты в новой очереди (накопленные A/B source findings и чтение сохраняются). Следующий строго owner-gated шаг **1: архитектура/авторизация**. Code-only audit остаётся OPEN.
+
+## CODE-ONLY Step 0 — per-path remaining-scope reconciliation (2026-10-24)
+
+**STEP0 COMPLETE; ONLY CODE REVIEW, NOT CODE ACCEPTANCE.** Frozen GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, `tree 18e73a062eb06984fd0b28132f510a5b12b1cfe2`; whole current main `AGENTS.md` fetched/read. Actual Git tree GET nontruncated; 491 blobs, 491 unique paths; B13 437 included paths cross-matched with live tree, missing=0, duplicate=0, previous 54 leftover paths all listed and examined for file type. This step is `scope + historical evidence reconciliation` ONLY, not a code test or new source review.
+
+**CORRECTED SCOPE BUG:** Previous 437 INCLUDED unexpectedly omitted **41 CURRENT REPO CODE/CONFIG PATHS**: 40 existing executable `.mjs` scripts, tests, `.yml` workflows and `.sh` production smoke files PLUS checked-in `.github/runtime-migration-evidence.json` consumed by those scripts. Those files are code/config source *even if production operations belong a later Stage*: **include them in full code AUDIT, classify future-stage defects as future-stage (no fixes), do not execute production workflows**. Inspected directly relevant sample file contents: the 7-line evidence JSON references a migration workflow/journal; `.github/scripts/runtime-migration-evidence.mjs` validates JSON + workflow run + journal; `.github/workflows/production-worker-rollout.yml` defines real dispatch/deploy workflow; `scripts/smoke-production-worker.sh` is executable smoke code. **Not to be excluded solely because production operation is out of today's Stage.** Separately previous excluded `docs/database/HYPERDRIVE.md` is a CURRENT REFERENCE DOCUMENT (~644 lines) but not code, and archived `doc_old/` 12 docs are historical reference only; two `.webp` are binary assets. All source filenames from exact tree, no conjectural paths.
+
+**LIVE CODE-ONLY COUNTS (exactly 491):**
+- `458` `code + executable/test/config/data contracts` subject to static source audit = `417 historical INCLUDED non-doc/non-image` + `41 historical EXCLUDED now re-included`.
+- `31` `REFERENCE_DOCUMENT` = 18 current docs previously read full-EOF in B13 + `docs/database/HYPERDRIVE.md` separate reference document + 12 `doc_old` archives. These can supply requirements; *not a separate documentation-audit assignment*.
+- `2` `NON_CODE_ASSET` = existing UI logos; no binary visual review required in code-only task.
+- `58` `SOURCE_FULL_READ_RECORDED`: 45 historical `SQL_FULL_EOF`, 9 `B12_FULL_SOURCE_NOT_EXECUTED`, 4 `FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION`. Reading source to EOF is **not a claim that all cross-file branches, scenarios or behavior were proven**; relevant interactions may still be examined in steps1–7. No file got a `CODE_REVIEW_PASS` badge.
+- `400` `REVIEW_INCOMPLETE`: `314` prior partial/indexed source-test categories = 171 selected A/B source/test + 128 B8 selected/indexed + 13 B11 short/targeted + 2 B11 long CSS/preview selected; plus `45` `SNAP_CHAIN_PARSED` schemas need substantive contract delta and crosswalk; plus `41` newly included operations files which lacked audit coverage by design. **400 = files requiring additional sufficient code-review evidence, not necessarily 400 never opened.** Stage0 creates per-file work queue but does not certify remaining file code quality.
+
+**REMAINING code path work queue exact counts:** Step1 architecture/config + auth/permissions `49`; Step2 forum/public/Help `49`; Step3 editor/attachments (+six crosscut primary) `55`; Step4 localization/translation `128`; Step5 DB/schema/snapshots `63`; Step6 UI/security/quality + previously excluded production operation source `56`. Total `400`, unique paths. Step7 verify all observed findings; Step8 final 458-code-item sufficiency reconciliation; no extra items or phantom runtime tests.
+
+**Large pending actual code/test files (priority by source bulk, not assumed defects):** 
+- `app/styles.css (204 KiB; step 6)`
+- `db/forum-repository.ts (159 KiB; step 3)`
+- `app/forum/public-read.test.tsx (148 KiB; step 2)`
+- `.github/production-schema-manifest.json (143 KiB; step 5)`
+- `tests/database/migrations.test.ts (129 KiB; step 5)`
+- `app/forum/views.tsx (126 KiB; step 3)`
+- `app/ui-preview/preview-app.tsx (95 KiB; step 6)`
+- `app/localization/catalog.ts (76 KiB; step 4)`
+- `app/forum/markdown-editor.test.tsx (76 KiB; step 3)`
+- `app/localization/manual-values.ts (70 KiB; step 4)`
+- `db/translation-task-store.ts (67 KiB; step 4)`
+- `db/schema.ts (63 KiB; step 5)`
+- `app/forum/write-actions.test.ts (60 KiB; step 2)`
+- `tests/database/content-post-body-task-planning.test.ts (58 KiB; step 4)`
+- `app/forum/markdown-editor.tsx (53 KiB; step 3)`
+- `tests/database/forum-attachments.test.ts (50 KiB; step 3)`
+
+**Evidence contract for table:** `INCLUDED` is historical B13 path designation, `EXCLUDED_REINCLUDED` means previous service-only scope error *corrected now*; `EXCLUDED/CONTEXT` are only documents. `SOURCE_FULL_READ_RECORDED` = source read to EOF, full program interactions not inferred; `REVIEW_INCOMPLETE` = verify or deepen selected source/test/code contract, `REFERENCE_DOCUMENT` = docs source-of-truth contextual but out of code-only audit, `NON_CODE_ASSET` = image. 458 code rows + 31 doc rows + 2 image rows below. `Step` = primary upcoming review owner; crosscut neighboring sources to be revisited as needed. Distinct from B13 frozen historical included-count: **do not silently rewrite old evidence**.
+
+**Exact live 491-path scope + future-review queue:**
+
+| Git tree file | Prior scope | Current scope/evidence | Next code-only step | Historical evidence bucket |
+| --- | --- | --- | --- | --- |
+| `.env.example` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/production-schema-manifest.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/runtime-migration-evidence.json` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/bootstrap-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/bootstrap-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/diagnose-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/diagnose-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/migration-history.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/migration-history.test.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-migration-contract.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-migration-contract.test.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-privileges.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.github/scripts/production-privileges.test.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.github/scripts/production-schema-manifest.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-recovery-workflow.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-worker-rollout.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-worker-rollout.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/provision-production-web-relations.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/provision-production-web-relations.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/recover-production-web-credential-v2.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/recover-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/recover-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/runtime-migration-evidence.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/runtime-privileges.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/runtime-privileges.test.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/validate-production-web-credential-input.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/validate-production-web-credential-input.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-migration-history.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/verify-production-migration-identity.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-migration-identity.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-migration.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-runtime-privileges.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-schema-manifest.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/verify-recovery-v2-validation-run.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.github/scripts/verify-recovery-v2-validation-run.test.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.github/scripts/verify-runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-runtime-privilege-probes.mjs` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-credential-recovery-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-relation-provisioning-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/ci.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.github/workflows/codex-service-channel-bridge.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.github/workflows/production-db-identity.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-db-migrate.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-runtime-privileges.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-bootstrap.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-input-validation.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-preflight-diagnostic.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-recovery-v2.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-recovery.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-rollback-probe.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-relation-provision.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-worker-rollout.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/ui-preview-pages.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `.gitignore` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `.node-version` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `AGENTS.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `app/assets/vico-forum-logo-dark.webp` | INCLUDED | NON_CODE_ASSET | — | B11_BINARY_RIFF_WEBP_SIGNATURE |
+| `app/assets/vico-forum-logo-light.webp` | INCLUDED | NON_CODE_ASSET | — | B11_BINARY_RIFF_WEBP_SIGNATURE |
+| `app/auth/auth-client.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth-controls.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth-controls.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth.server.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/auth.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/credential-path.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/credential-view.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/credential-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/session-context.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/auth/session-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/admin-view.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/admin-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/catalog.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/authorization/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/entry.client.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/entry.server.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/actions-attachment-publication.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/actions.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-container-validation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-container-validation.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-operation.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-presentation.css` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-presentation.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-presentation.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-r2.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-r2.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-structural-validation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-structural-validation.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-validation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-validation.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-zip-validation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/attachment-zip-validation.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/avatar.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/clipboard-markdown.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/clipboard-markdown.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/content-generation-controls.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-generation-controls.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-generation-navigation.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-translation-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/editor-attachments.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/editor-attachments.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/editor-document.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/editor-document.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/editor-permission.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/homepage.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/homepage.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/markdown-editor.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/markdown-editor.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/markdown.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/markdown.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/mentions.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/mentions.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/mutations.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/online-presence-heartbeat.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/online-presence-heartbeat.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/paths.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile-view.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/public-authz-degradation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/public-read.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/quote-markdown.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/quote-presentation.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/route-error.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/technical-markdown.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/technical-markdown.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/ui.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/ui.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/under-development-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/under-development.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/views.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/visual-markdown-editor.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/write-actions.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/i18next.d.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/localization/bundles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/bundles.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/catalog.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/cloudflare-m2m100-provider.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/cloudflare-m2m100-provider.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-action.server.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-action.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-response.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-status.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-view.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-view.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-markdown-translation.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-markdown-translation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-execution.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-execution.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-planning.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-publication.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-task-consumer.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-provider-allowance.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-provider-allowance.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-request-budget.server.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-request-budget.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-source-locale.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-source-locale.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-execution.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-execution.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-planning.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-presentation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-presentation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-provider.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-publication.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-task-consumer.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/fingerprint.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/i18next-types.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale-navigation.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale-rules.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale-rules.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/manual-fingerprints.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/manual-packs.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/manual-values.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-registry.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-sources.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-sources.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/registry.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/request-context.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resolver.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resolver.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resource-loader-bundles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resource-loader.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resources.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/runtime.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/sources.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/tinyld-source-locale-detector.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/tinyld-source-locale-detector.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-execution.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-execution.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-failures.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider-data-policy.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider-data-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-publication.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-publication.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-consumer.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-consumer.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-dispatch.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-dispatch.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-reconciliation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-reconciliation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-tasks.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-tasks.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-validation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-validation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/ui-translation-service.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/ui-translation-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/markdown-syntax.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/root.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/routes.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/api.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/attachment-download.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/attachment-download.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/attachment-upload.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/attachment-upload.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/attention.tsx` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
+| `app/routes/auth-api.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/auth-api.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/authorization-admin.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/authorization-admin.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/category.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/credential-sign-in.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/credential-sign-up.tsx` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/home.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/locale-boundary.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-boundary.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-negotiation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-negotiation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/mentions.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/mentions.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/not-found.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/not-found.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/notifications.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/notifications.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/popular.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/post-edit.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/presence.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/presence.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/profile.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/profile.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/search.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/section.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/tag.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/tags.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/topic.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/unanswered.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/under-development.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/unread.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/unread.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/server-logging.test.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
+| `app/server-logging.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
+| `app/styles.css` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
+| `app/theme.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/index.html` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/main.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/preview-app.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/preview-app.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
+| `app/ui-preview/preview-i18n.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/preview.css` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/vite.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `db/attachment-draft-generation.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/authorization-repository.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/authorization-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/authorization-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/content-post-body-execution-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-post-body-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-request-budget-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-topic-title-execution-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-topic-title-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-translation-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/editor-draft-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-attachment-cleanup.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-attachments.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-identifiers.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-write-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-authorization.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-authorization.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-generation-status.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-translations.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-forum-attachments.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-forum.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-forum.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-registry.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-ui-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-ui-translations.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/locale-repository.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/locale-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/postgres-deadlines.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/postgres-deadlines.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/schema.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/translation-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-bundle-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-bundle-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-publication-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/web-runtime-wiring.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_HISTORY_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_HISTORY_old_22.9.26_2.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_22.9.26_2.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_22.9.26_3.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_22.9.26_4.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_22.9.26_5.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_22.9.26_6.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `doc_old/PROJECT_STATE_old_23.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `docs/auth/AUTHORIZATION.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/database/HYPERDRIVE.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
+| `docs/database/MIGRATIONS.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/EDITOR.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/translation/CONTENT_TRANSLATION.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/translation/LOCALES.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/translation/PROVIDERS_AND_JOBS.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/translation/RESEARCH.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/translation/STORAGE_AND_VERSIONING.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/translation/UI_TRANSLATION.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `docs/UI_UX_PASS.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `drizzle.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `drizzle/0000_tan_johnny_storm.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0001_seed-locales.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0002_ui_translation_storage.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0003_gorgeous_donald_blake.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0004_forum_domain_foundation.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0005_calm_proemial_gods.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0006_loving_sentinels.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0007_durable_translation_tasks.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0008_translation_task_claim_lease.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0009_translation_task_completion.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0010_translation_task_generation_order.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0011_persistent_translation_locale_invariant.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0012_translation_task_retry_dlq.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0013_translation_task_reconciliation.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0014_content_translation_persistence.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0015_content_topic_title_tasks.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0016_content_post_body_tasks.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0017_content_translation_request_budget.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0018_source_locale_correction_permissions.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0019_content_provider_allowance_admission.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0020_translation_generation_permission.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0021_forum_tags.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0022_forum_reply_relationships.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0023_forum_topic_read_states.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0024_forum_reply_notifications.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0025_forum_topic_pins.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0026_best_answer_independent_from_solved.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0027_help_solutions_foundation.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0028_help_solution_moderation.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0029_help_question_needs_details.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0030_help_duplicate_workflow.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0031_help_user_moderation_signals.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0032_forum_profiles.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0033_forum_online_presence.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0034_forum_editor_drafts.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0035_forum_attachments_foundation.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0036_forum_attachment_security_events.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0037_forum_attachment_draft_generations.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0038_forum_attachment_cleanup_claims.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0039_forum_publication_receipts.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0040_post_edit_history_permissions.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0041_published_mentions.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0042_attachment_edit_snapshots.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0043_attachment_security_read_permission.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/0044_attachment_draft_conflict_boundaries.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | SQL_FULL_EOF |
+| `drizzle/meta/_journal.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `drizzle/meta/0000_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0001_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0002_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0003_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0004_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0005_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0006_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0007_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0008_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0009_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0010_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0011_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0012_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0013_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0014_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0015_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0016_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0017_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0018_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0019_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0020_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0021_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0022_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0023_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0024_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0025_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0026_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0027_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0028_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0029_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0030_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0031_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0032_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0033_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0034_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0035_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0036_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0037_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0038_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0039_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0040_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0041_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0042_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0043_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `drizzle/meta/0044_snapshot.json` | INCLUDED | REVIEW_INCOMPLETE | 5 | SNAP_CHAIN_PARSED |
+| `eslint.config.js` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `package.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `pnpm-lock.yaml` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `pnpm-workspace.yaml` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `PROJECT_HISTORY.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `PROJECT_STATE.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `PROJECT.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `react-router.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `README.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `ROADMAP.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `SCAFFOLD_PLAN.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `scripts/configure-localization-deadlines.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `scripts/reconcile-ui-translation-bundles.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `scripts/smoke-production-worker.sh` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `scripts/smoke-workers.sh` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
+| `tests/database/auth-runtime.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/authorization-snapshot.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-post-body-task-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-request-budget-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-topic-title-execution.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-topic-title-task-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/forum-attachment-publication.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-attachments.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-email-registration.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-help-attention.test.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
+| `tests/database/forum-online-presence.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-profiles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/hyperdrive-registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/migrations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/source-locale-correction.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/stage4-core-e2e.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/translation-generation-authorization.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-task-generation-isolation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-task-reconciliation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-task-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-bundle-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-publication-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-storage.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/production-migration-verifier.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `TRANSLATION_ARCHITECTURE.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
+| `tsconfig.cloudflare.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tsconfig.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tsconfig.node.json` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `vite.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `vitest.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `vitest.database.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/app.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/attachment-storage.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/attachment-storage.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/database-bindings.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `workers/database-bindings.ts` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `wrangler.jsonc` | INCLUDED | REVIEW_INCOMPLETE | 1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+
+**STEP0 STOP.** No implementation changes; nothing posted to service communication or other agent files; only this coverage/status log in personal agent journal. Confirm `main` exact before Step1, fully re-read current `AGENTS.md`, use per-file queue to ensure substantive analysis, owner findings only in chat, and **STOP after Step1** until explicit next continuation. Runtime/Worker/PG/browser execution is not a gate for this requested **static code audit**. Code-only audit still OPEN.
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (исторический baseline и evidence, заменён актуальным code-only планом 2026-10-24)
 
-**Статус: объединённый аудит ОТКРЫТ; PASS A1–A12 и PASS B1–B9 ранее проведены только на описанной historical/static/source/test глубине, НЕ runtime sign-off. GAP-CLOSURE B1–B3 и B4–B7 проведены дополнительной доказательной сверкой исходников и существующих тестов; ни один этап не повышен до live/fully-tested PASS. GAP-CLOSURE B8–B9 проведён дополнительной статической сверкой исходников и тестов, runtime-пробелы открыты; GAP-RECONCILIATION B1–B9 ВЫПОЛНЕН на уровне инвентаризации/evidence, runtime-пробелы остаются; PASS B10 выполнен на статических исходниках и выбранных тестовых assertions без runtime-подтверждения; B11 проведён на ограниченной глубине исходников/компонентов/CSS и существующих тестов без реальной browser acceptance; B12 завершён как статическая source/CI сверка и повторная проверка исторических Actions, без нового независимого full local runtime-тестирования; B13 реестр/итоговая классификация ВЫПОЛНЕНЫ; 437 путей сведены в evidence-index, но обязательные runtime/браузерные и семантические gate НЕ ЗАКРЫТЫ; POST-B13 environment feasibility + RT-01..RT-09 test specification завершены, независимый exact-main runtime BLOCKED/NOT_EXECUTED; общий аудит ОТКРЫТ. Новые кандидаты на findings сохраняются ТОЛЬКО в чате владельца до разрешённой публикации, личный журнал содержит статус/покрытие без их деталей. Собственные PG/Vitest/Worker/R2/форум-browser/Better Auth 429/2-tab A→B НЕ ВЫПОЛНЕНЫ; старые E1/N1/E3/I1/A5-AP1 и другие observations не закрыты.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+**Статус: объединённый аудит ОТКРЫТ; PASS A1–A12 и PASS B1–B9 ранее проведены только на описанной historical/static/source/test глубине, НЕ runtime sign-off. GAP-CLOSURE B1–B3 и B4–B7 проведены дополнительной доказательной сверкой исходников и существующих тестов; ни один этап не повышен до live/fully-tested PASS. GAP-CLOSURE B8–B9 проведён дополнительной статической сверкой исходников и тестов, runtime-пробелы открыты; GAP-RECONCILIATION B1–B9 ВЫПОЛНЕН на уровне инвентаризации/evidence, runtime-пробелы остаются; PASS B10 выполнен на статических исходниках и выбранных тестовых assertions без runtime-подтверждения; B11 проведён на ограниченной глубине исходников/компонентов/CSS и существующих тестов без реальной browser acceptance; B12 завершён как статическая source/CI сверка и повторная проверка исторических Actions, без нового независимого full local runtime-тестирования; B13 реестр/итоговая классификация ВЫПОЛНЕНЫ; 437 путей сведены в evidence-index, но обязательные runtime/браузерные и семантические gate НЕ ЗАКРЫТЫ; POST-B13 environment feasibility + RT-01..RT-09 test specification завершены, независимый exact-main runtime BLOCKED/NOT_EXECUTED; общий аудит КОДА ОТКРЫТ; code-only Step0 завершён 2026-10-24: 458 актуальных code/config/test путей, 58 full-read historical, 400 evidence-incomplete, 41 source/config ошибочно исключены старой ревизией scope. Новые кандидаты на findings сохраняются ТОЛЬКО в чате владельца до разрешённой публикации, личный журнал содержит статус/покрытие без их деталей. Собственные PG/Vitest/Worker/R2/форум-browser/Better Auth 429/2-tab A→B НЕ ВЫПОЛНЕНЫ; старые E1/N1/E3/I1/A5-AP1 и другие observations не закрыты.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
 
 ### Объём, происхождение и запреты
 
