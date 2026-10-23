@@ -28,7 +28,7 @@
 
 **Дисциплина:** Каждая подзадача начинается с точного `main` и полного `AGENTS.md`; просматривать реализацию без внесения исправлений, без правки чужих файлов, без публикации findings до owner-authorized release. Вывод и конкретный уровень source confidence сообщать владельцу только в текущем чате. В личном журнале — статус, coverage, evidence level, не публикуемые спорные подробности. После каждой самостоятельной подзадачи **STOP**, следующий шаг только по явной команде владельца. Никаких работ по окружению/внешней инфраструктуре; не перекладывать задачу на владельца и не придумывать текущему Stage future requirements.
 
-**ТЕКУЩИЙ СТАТУС:** шаги **0 и 1 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **49 CODE_STATIC_REVIEWED** по первичным материалам шага1, **351 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 2–8 ещё НЕ завершены. Следующий строго owner-gated шаг **2: форум и Help & Solutions**. Code-only audit остаётся OPEN.
+**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **98 CODE_STATIC_REVIEWED** по первичным материалам шагов1–2, **302 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 3–8 ещё НЕ завершены. Следующий строго owner-gated шаг **3: Editor 2.0 и вложения**. Code-only audit остаётся OPEN.
 
 ## CODE-ONLY Step 0 — per-path remaining-scope reconciliation (2026-10-24)
 
@@ -179,8 +179,8 @@
 | `app/forum/editor-document.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/editor-document.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/editor-permission.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/homepage.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/homepage.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/homepage.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/homepage.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/markdown-editor.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/markdown-editor.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/markdown.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -188,29 +188,29 @@
 | `app/forum/mentions.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/mentions.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/mutations.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/online-presence-heartbeat.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/online-presence-heartbeat.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/paths.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/profile-view.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/profile-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/profile.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/profile.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/public-authz-degradation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/public-read.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/online-presence-heartbeat.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/online-presence-heartbeat.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/paths.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile-view.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/profile.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/public-authz-degradation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/public-read.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/quote-markdown.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/quote-presentation.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/route-error.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/request-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/route-error.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/technical-markdown.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/technical-markdown.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/ui.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/forum/ui.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/forum/under-development-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/under-development.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/under-development-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/under-development.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/views.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/visual-markdown-editor.tsx` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/write-actions.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/i18next.d.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/forum/write-actions.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/i18next.d.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/localization/bundles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/localization/bundles.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/localization/catalog.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -298,7 +298,7 @@
 | `app/markdown-syntax.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/root.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/routes.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/api.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/api.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-download.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-download.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-upload.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -308,35 +308,35 @@
 | `app/routes/auth-api.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/authorization-admin.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/authorization-admin.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/category.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/category.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/credential-sign-in.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/credential-sign-up.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/home.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/home.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/locale-boundary.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/routes/locale-boundary.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/routes/locale-negotiation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/routes/locale-negotiation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/routes/mentions.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/mentions.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/not-found.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/not-found.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/notifications.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/notifications.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/popular.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/post-edit.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/presence.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/presence.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/profile.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/profile.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/search.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/section.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/tag.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/tags.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/topic.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/unanswered.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/under-development.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/unread.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/unread.tsx` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/not-found.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/not-found.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/notifications.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/notifications.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/popular.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/post-edit.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/presence.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/presence.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/profile.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/profile.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/search.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/section.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/tag.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/tags.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/topic.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/unanswered.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/under-development.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/unread.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `app/routes/unread.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/server-logging.test.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
 | `app/server-logging.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
 | `app/styles.css` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
@@ -359,13 +359,13 @@
 | `db/content-topic-title-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/content-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/content-translation-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/editor-draft-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/editor-draft-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-attachment-cleanup.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-attachments.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/forum-identifiers.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-identifiers.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/forum-write-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/forum-write-policy.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-authorization.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-authorization.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -373,10 +373,10 @@
 | `db/hyperdrive-content-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/hyperdrive-content-translations.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/hyperdrive-forum-attachments.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-forum.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-forum.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-forum.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-registry.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `db/hyperdrive-registry.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-ui-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/hyperdrive-ui-translations.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/locale-repository.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -532,12 +532,12 @@
 | `tests/database/forum-attachments.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-email-registration.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-help-attention.test.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
-| `tests/database/forum-online-presence.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/forum-profiles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/hyperdrive-registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-online-presence.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/forum-profiles.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/hyperdrive-registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/migrations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/source-locale-correction.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/stage4-core-e2e.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
+| `tests/database/stage4-core-e2e.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/translation-generation-authorization.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/translation-task-generation-isolation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/translation-task-reconciliation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -577,9 +577,21 @@
 
 **STOP until owner's explicit continuation:** Step2 — public forum + Help & Solutions source-only crosscut. If main moves, re-check affected source first. No runtime-gate scope expansion.
 
+## CODE-ONLY Step 2 — public forum / Help & Solutions code review (2026-10-24)
+
+**STEP2 SUBSTANTIVE STATIC SOURCE REVIEW COMPLETE, code-only audit OPEN; no runtime execution.** Exact `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c` tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`; current AGENTS.md fully read. 49/49 Step2 file identities directly fetched from exact main; route loaders/actions, helper modules, writer/read surfaces, UI forms and source test assertions inspected. Large `public-read.test.tsx` (3315 lines, 76 it/describe declarations) and `write-actions.test.ts` (1484 lines, 38 it/describe declarations) were programmatically indexed by test purpose/assertions, with direct detailed source reads of Help/signal/moderation, stale appeal, authz degradation, write rate-limit, revision and failure paths; **do not claim these large tests were line-by-line read beyond selected detailed regions**. Crosscut primary files `app/forum/actions.server.ts`, `app/forum/mutations.server.ts`, `app/forum/views.tsx`, `db/forum-repository.ts`, `db/forum-service.ts`, `db/hyperdrive-forum.ts`, `app/routes/attention.tsx` selected relevant chains, no change to primary Step3/Step5 provenance.
+
+**Reviewed functional chains:** homepage categories + selected public presence fallback and truthful unavailable UI, category/section/topic reads with optional typed authz degradation but unexpected error propagation, Help modal/filter modes `open/help/for-me/active/solutions/mine` and protected `needs-review`, Search NFKC/trim/200-length bound, Popular windows, Unanswered, tag path segment, unread/session-only read-state, notifications/read receipt and user-scoped redirect, profile public projection and owner-only update with safe URL validation, posted timestamp serializers, locale-aware path assembly, under-development routing, forum 404/typed 503 error copy, request context and Hyperdrive registry lazy/degradation. Guard/source tests considered: `homepage.test.tsx`, `online-presence-heartbeat.test.tsx`, `public-authz-degradation.test.ts`, `public-read.test.tsx` selected sections, `write-actions.test.ts` selected sections, `profile.test.ts`, `profile-view.test.tsx`, `route-error.test.tsx`, route tests for presence/notifications/profile/unread/404, `db/hyperdrive-forum.test.ts` classified transport failures + original-error preservation, `db/hyperdrive-registry.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-profiles.test.ts`, `tests/database/stage4-core-e2e.test.ts` connected route→repository and dynamic-auth assertions. Test files READ, not newly executed.
+
+**Historical owner-only finding relevance reconfirmed in source WITHOUT public detail/communication:** stale in-topic Help duplicate appeal case identity is not fenced like Attention Center; source path through in-page form → action → web writer → service → repository compared with existing Attention tests. Distinct from ordinary authorization bypass (server checks effective manage permission), issue is stale optimistic case A to later B; no live concurrency run. Prior A→B cross-tab stale header/online-presence behavior revalidated against 401/204 heartbeat logic; no browser reproduction or real signed-in change. Previously noted catch-all mutation error->503 remains crosscut Step3; no further current-stage defect confirmed purely from absence of tests. Source-level safety boundaries for anonymous/unauthorized/foreign-origin writes, resource ownership, typed outage handling verified where applicable. Avoid repeating or publishing detailed findings in personal journal pending owner release.
+
+**Actual Step0 evidence queue changed, 49 Step2 rows updated `CODE_STATIC_REVIEWED | DONE_S2` while original B13 buckets retained.** Step1 49 + Step2 49 = 98 code primary path statuses `CODE_STATIC_REVIEWED`; 58 `SOURCE_FULL_READ_RECORDED` historically; 302 `REVIEW_INCOMPLETE` (Step3=55, Step4=128, Step5=63, Step6=56), 31 docs context, 2 binary assets =491. 41 former erroneously excluded source/config remain Step6 (included now). Stage7 = finding-chain crosscheck, Stage8 = sufficiency ledger. Code was **not modified**; no external runtime, production or service communication.
+
+**STOP**: one logical Step2 completed. Next owner-command-gated Step3 Editor 2.0 + attachment code, `main` drift check and full `AGENTS.md` before work. Overall code-only audit remains OPEN.
+
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (исторический baseline и evidence, заменён актуальным code-only планом 2026-10-24)
 
-**Статус: объединённый аудит ОТКРЫТ; PASS A1–A12 и PASS B1–B9 ранее проведены только на описанной historical/static/source/test глубине, НЕ runtime sign-off. GAP-CLOSURE B1–B3 и B4–B7 проведены дополнительной доказательной сверкой исходников и существующих тестов; ни один этап не повышен до live/fully-tested PASS. GAP-CLOSURE B8–B9 проведён дополнительной статической сверкой исходников и тестов, runtime-пробелы открыты; GAP-RECONCILIATION B1–B9 ВЫПОЛНЕН на уровне инвентаризации/evidence, runtime-пробелы остаются; PASS B10 выполнен на статических исходниках и выбранных тестовых assertions без runtime-подтверждения; B11 проведён на ограниченной глубине исходников/компонентов/CSS и существующих тестов без реальной browser acceptance; B12 завершён как статическая source/CI сверка и повторная проверка исторических Actions, без нового независимого full local runtime-тестирования; B13 реестр/итоговая классификация ВЫПОЛНЕНЫ; 437 путей сведены в evidence-index, но обязательные runtime/браузерные и семантические gate НЕ ЗАКРЫТЫ; POST-B13 environment feasibility + RT-01..RT-09 test specification завершены, независимый exact-main runtime BLOCKED/NOT_EXECUTED; общий аудит КОДА ОТКРЫТ; code-only Steps0–1 завершены 2026-10-24: 458 актуальных code/config/test путей, 58 full-read historical, 49 step1 source/config/test статически разобраны, 351 evidence-incomplete, 41 source/config ошибочно исключены старой ревизией scope. Новые кандидаты на findings сохраняются ТОЛЬКО в чате владельца до разрешённой публикации, личный журнал содержит статус/покрытие без их деталей. Собственные PG/Vitest/Worker/R2/форум-browser/Better Auth 429/2-tab A→B НЕ ВЫПОЛНЕНЫ; старые E1/N1/E3/I1/A5-AP1 и другие observations не закрыты.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+**Статус: объединённый аудит ОТКРЫТ; PASS A1–A12 и PASS B1–B9 ранее проведены только на описанной historical/static/source/test глубине, НЕ runtime sign-off. GAP-CLOSURE B1–B3 и B4–B7 проведены дополнительной доказательной сверкой исходников и существующих тестов; ни один этап не повышен до live/fully-tested PASS. GAP-CLOSURE B8–B9 проведён дополнительной статической сверкой исходников и тестов, runtime-пробелы открыты; GAP-RECONCILIATION B1–B9 ВЫПОЛНЕН на уровне инвентаризации/evidence, runtime-пробелы остаются; PASS B10 выполнен на статических исходниках и выбранных тестовых assertions без runtime-подтверждения; B11 проведён на ограниченной глубине исходников/компонентов/CSS и существующих тестов без реальной browser acceptance; B12 завершён как статическая source/CI сверка и повторная проверка исторических Actions, без нового независимого full local runtime-тестирования; B13 реестр/итоговая классификация ВЫПОЛНЕНЫ; 437 путей сведены в evidence-index, но обязательные runtime/браузерные и семантические gate НЕ ЗАКРЫТЫ; POST-B13 environment feasibility + RT-01..RT-09 test specification завершены, независимый exact-main runtime BLOCKED/NOT_EXECUTED; общий аудит КОДА ОТКРЫТ; code-only Steps0–2 завершены 2026-10-24: 458 актуальных code/config/test путей, 58 full-read historical, 98 step1–2 source/config/test статически разобраны, 302 evidence-incomplete, 41 source/config ошибочно исключены старой ревизией scope. Новые кандидаты на findings сохраняются ТОЛЬКО в чате владельца до разрешённой публикации, личный журнал содержит статус/покрытие без их деталей. Собственные PG/Vitest/Worker/R2/форум-browser/Better Auth 429/2-tab A→B НЕ ВЫПОЛНЕНЫ; старые E1/N1/E3/I1/A5-AP1 и другие observations не закрыты.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
 
 ### Объём, происхождение и запреты
 
