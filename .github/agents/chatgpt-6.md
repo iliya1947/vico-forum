@@ -6,7 +6,7 @@
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (ACTIVE, v1)
 
-**Статус: этап организации/инвентаризации завершён; PASS A / этапы 1–5 повторно проверены 2026-10-23 (A5 — Help/Solutions и moderation source+существующие test assertions, без исполнения); PASS A / этапы 6–12 НЕ НАЧАТЫ; PASS B НЕ НАЧАТ; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
+**Статус: этап организации/инвентаризации завершён; PASS A / этапы 1–6 повторно проверены 2026-10-23 (A6 — ранее исследованные Editor 2.0 source+test chains, без исполнения); PASS A / этапы 7–12 НЕ НАЧАТЫ; PASS B НЕ НАЧАТ; аудит в целом ОТКРЫТ.** Этот раздел заменяет два прежних активных плана, но не стирает их историю и не приписывает прошлому фиктивные PASS. Baseline GitHub `main` `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. При drift main сначала зафиксировать новый SHA и определить affected files; нельзя смешивать версии.
 
 ### Объём, происхождение и запреты
 
@@ -194,6 +194,40 @@ Cross-check from source-of-truth previously read A1: `PROJECT_STATE.md` accepted
 
 **Limits:** A5 covers historical reviewed behaviors; 2 stage-5 dedicated files plus six cross-cut files revisited *only in Help-related slices*, not claimed comprehensive 8-file semantic audit. Native PG, browser multitab, loaded app and all negative combinations `NOT_EXECUTED`; distinct untouched cases and unknown manifest evidence preserved for PASS B. Do not mark whole 437 file audit complete. No source changes or updates to `main`, other agents or shared communication.
 **STOP** after logical A5 task. Next command from developer: `PASS A stage 6` Editor 2.0 and revision conflict/error state previously reviewed; new source branches deferred to later B.
+
+
+### PASS A / этап 6 — Editor 2.0, source-preserving modes, edit/revision/errors, mentions/quotes (2026-10-23)
+
+**A6 RECHECK COMPLETED for previously evidenced source/test slices; A7–A12 and global B NOT STARTED; unified audit remains OPEN.** Frozen GitHub main `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; full current `AGENTS.md` read. No tests executed independently. Main implementation, general service-channel and other agents' files untouched. Owner-directed audit recheck only; no source fixes. Previous detailed historical Stage 13 and targeted Editor cases used as audit map, not credited as new PASS.
+
+**Re-fetched all 18/18 stage6 manifest-specific source+test files**, at their main blobs (source:
+`app/forum/clipboard-markdown.ts` 0fde94be,
+`editor-document.ts` 7febd899,
+`markdown-editor.tsx` 13cfd96f,
+`markdown.tsx` ab52bcfc,
+`mentions.ts` c088c130,
+`quote-markdown.ts` c31eb2c3,
+`quote-presentation.tsx` f62ed07e,
+`technical-markdown.ts` 12b938b7,
+`visual-markdown-editor.tsx` d4d9378c,
+`app/markdown-syntax.ts` b67e2363,
+`app/routes/mentions.ts` ac7025d1;
+tests `clipboard-markdown.test.ts` f211f4f7, `editor-document.test.ts` f50f49a8, `markdown-editor.test.tsx` 7188044b, `markdown.test.tsx` b6555123, `mentions.test.ts` ff87c41a, `routes/mentions.test.ts` c16fb089, `technical-markdown.test.ts` 94f5f0bf).
+Not every 1,630-line test file assertion executed or individually evaluated, but test case index and representative assertions in prior evidenced scope reviewed.
+
+**Cross-cut source/test reviews relevant to A6** (not whole-file closure of another stage): `app/routes/topic.tsx`, `app/forum/views.tsx:2056–2375,2730–2865,2890–3080`, `app/forum/actions.server.ts:440–522`, `app/forum/mutations.server.ts:1–185`, `db/forum-repository.ts:3652–3738`, `app/forum/ui.tsx:401–433`, `app/localization/catalog.ts:397–408,584–591`, `app/forum/public-read.test.tsx:2204–2708,2740–2818`, `app/forum/write-actions.test.ts:189–261,1111–1190`, `app/forum/route-error.test.tsx:60–84`, `docs/EDITOR.md:155–169,259–292,328–400`.
+
+**Exact reacquired evidence:**
+1. Single source/Undo: `markdown-editor.tsx:189–208,343–425` `value/historyRef` held in open component, `editor-document.ts:200–254` unchanged Markdown is no-op history edit and 100 bounded undo; `markdown-editor.test.tsx:592–644,775–848,1391–1458` tests mode transitions/Undo, exact FormData incl CRLF, account-scoped preferences and scope-reset; `markdown-editor.test.tsx:1599–1629` verifies intentional no local/server text autosave/reopen recovery. Viewed test assertions only, not executed.
+2. Simple+Advanced: `visual-markdown-editor.tsx:279–369,542–635` uses editable safe prose leaves and protected technical sections, fails closed on ambiguous selection, source-span mapping, safe plain/paste fallback. `technical-markdown.ts:163–207` handles tables/spoilers/code fences; `app/markdown-syntax.ts` selectively enables ~~ strike and ltr/rtl authored direction; `markdown-editor.test.tsx` covers focus, visual Enter, Ctrl/Cmd+Enter, Tab only in code, keyboard shortcuts, split/preview/fullscreen, spreadsheet paste, protected code, stable revision. Actual browser, screenreader, IME behavior `NOT_EXECUTED`.
+3. Clipboard/render security: `clipboard-markdown.ts` safe subset of HTML, reject active content/unsafe links, text fallback; `markdown.tsx:1–48,314–410` markdown URL transformation only permits actual verified `vico-attachment:UUID` raster refs, no arbitrary src, external rel nofollow noopener noreferrer ugc; code block copy reads original code, optional highlighting bounded. Existing `clipboard-markdown.test.ts` and `markdown.test.tsx` cases/selected assertions re-read.
+4. Quote/Reply and mentions: `views.tsx:2280–2375` reply target and whole/selection attributed quote, permanent permalink, keeps original quote lines; `quote-markdown.ts` recognized metadata in Markdown not privileged HTML; `quote-presentation.tsx` collapses by computed visual line count >=6 without losing source; `public-read.test.tsx:2740–2818`, `markdown.test.tsx:70–165` test attribution/permalinks/nested content/show full, existing jsdom geometry mocks only. `mentions.ts` recognizes Unicode token at caret and extracts immutable recipient IDs only from eligible profile links outside code/quotes/images; `routes/mentions.ts` session 401, no-store, minimal ID/name payload, typed outage 503 and unexpected propagate; matching `mentions.test.ts` and `routes/mentions.test.ts` read.
+5. Published edit/history and conflict: `actions.server.ts:458–498` checks current session editOwn / history.read and author in repository, revision fence + attachment operation ID; `db/forum-repository.ts:3672–3738` locks post row, checks owner+expected revision, writes new revision and idempotent receipt within DB transaction; `views.tsx:2149–2250,2817–2855` retains open edit buffer and only offers explicit current-revision rebase once new loader post revision is observed. Actual returned 4xx/5xx action data keep form mounted; unexpected throw instead reaches route `ErrorBoundary` and unmounts in-memory text. Existing `public-read.test.tsx:2314–2385` invokes **explicit router.revalidate()**, NOT default post-409 refresh; `:2621–2708` exercises 400 buffer retry; `write-actions.test.ts:1134–1190` explicitly checks classified dependency vs unexpected exception. Official React Router current `https://reactrouter.com/how-to/optimize-revalidation` confirms SSR Framework failed 4xx/5xx submissions don't refresh loader by default; `https://reactrouter.com/how-to/error-boundary` explains thrown action ErrorBoundary renders in place of route. These two old user-facing findings were **reconfirmed at source/framework contract** and discussed with owner in chat, NOT newly formalized in service communication before complete review. Browser/Worker actual multi-tab reproduction `NOT_EXECUTED`. Incorrect shared error copy: `catalog.ts:588` says "That solution cannot be selected for this topic" even when `editPost` returns conflict; same already related old edit-conflict deficiency, not silently assigned a standalone unreviewed issue.
+6. General `runForumMutation` unrecognized catch→generic 503 is a **cross-cut error classification subject reserved for A10** and not adjudicated in A6. Account-change identity reconciliation I1 goes to A10; all attachment cleanup/security/concurrency beyond editor-facing usage belongs A7. `docs/EDITOR.md:159–169` explicitly excludes persistent text drafts/autosave/reload recovery in current Stage, while `:271` explicitly requires preserving mounted authoring text/attachments after server/internet submission failure. No invented requirement for whole-page reload recovery.
+
+**Classification**: no NEW independent current-Stage Editor mechanism defect in reviewed modes/quotes/mentions. Previously owner-disclosed issues rechecked and kept owner-only until final complete audit; E3 future cross-cut recheck remains open. No unreviewed file from A6 prematurely marked full PASS for B. Unexecuted route 409, unexpected exception preservation, XHR/network lost ACK, browser IME + accessibility and PG race cases are **BLOCKED / NOT_EXECUTED** with runtime environment limitation already evidenced in history, rather than claimed PASS. Fresh current repo trace may reveal more B cases later; do not extend this A slice to all possibilities.
+
+**STOP** after this bounded stage. On user's next explicit continuation, proceed to `PASS A stage 7` — repeat previously reviewed attachments/read/write/security/cleanup source/test chains, keep genuinely unreviewed details for B. Do not transmit proposed fixes to implementation/other agents at this time.
 
 ---
 
