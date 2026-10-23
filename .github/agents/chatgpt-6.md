@@ -28,7 +28,7 @@
 
 **Дисциплина:** Каждая подзадача начинается с точного `main` и полного `AGENTS.md`; просматривать реализацию без внесения исправлений, без правки чужих файлов, без публикации findings до owner-authorized release. Вывод и конкретный уровень source confidence сообщать владельцу только в текущем чате. В личном журнале — статус, coverage, evidence level, не публикуемые спорные подробности. После каждой самостоятельной подзадачи **STOP**, следующий шаг только по явной команде владельца. Никаких работ по окружению/внешней инфраструктуре; не перекладывать задачу на владельца и не придумывать текущему Stage future requirements.
 
-**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2, 3 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **153 CODE_STATIC_REVIEWED** по первичным материалам шагов1–3, **247 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 4–8 ещё НЕ завершены. Следующий строго owner-gated шаг **4: локализация и переводы**. Code-only audit остаётся OPEN.
+**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2, 3, 4 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **281 CODE_STATIC_REVIEWED** по первичным материалам шагов1–4, **119 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 5–8 ещё НЕ завершены. Следующий строго owner-gated шаг **5: PostgreSQL и data lifecycle**. Code-only audit остаётся OPEN.
 
 ## CODE-ONLY Step 0 — per-path remaining-scope reconciliation (2026-10-24)
 
@@ -170,10 +170,10 @@
 | `app/forum/avatar.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/forum/clipboard-markdown.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/clipboard-markdown.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/content-generation-controls.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/forum/content-generation-controls.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/forum/content-generation-navigation.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/forum/content-translation-view.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-generation-controls.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-generation-controls.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-generation-navigation.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/forum/content-translation-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/forum/editor-attachments.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/editor-attachments.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/editor-document.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -211,90 +211,90 @@
 | `app/forum/visual-markdown-editor.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/write-actions.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/i18next.d.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/localization/bundles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/bundles.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/catalog.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/cloudflare-m2m100-provider.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/cloudflare-m2m100-provider.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-action.server.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-action.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-response.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-status.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-view.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-generation-view.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-markdown-translation.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-markdown-translation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-post-body-execution.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-post-body-execution.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-post-body-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-post-body-planning.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-post-body-publication.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-post-body-task-consumer.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-provider-allowance.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-provider-allowance.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-request-budget.server.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-request-budget.server.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-source-locale.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-source-locale.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-execution.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-execution.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-planning.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-presentation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-presentation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-provider.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-publication.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation-task-consumer.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/content-translation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/fingerprint.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/i18next-types.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/locale-navigation.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/locale-rules.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/locale-rules.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/locale.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/manual-fingerprints.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/manual-packs.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/manual-values.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/persistent-registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/persistent-registry.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/persistent-sources.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/persistent-sources.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/registry.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/registry.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/request-context.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/request-context.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/resolver.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/resolver.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/resource-loader-bundles.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/resource-loader.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/resources.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/runtime.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/sources.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/tinyld-source-locale-detector.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/tinyld-source-locale-detector.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-execution.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-execution.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-failures.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-provider-data-policy.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-provider-data-policy.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-provider.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-provider.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-publication.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-publication.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-task-consumer.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-task-consumer.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-task-dispatch.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-task-dispatch.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-task-reconciliation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-task-reconciliation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-tasks.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-tasks.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-validation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/translation-validation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/ui-translation-service.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/localization/ui-translation-service.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/bundles.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/bundles.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/catalog.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/cloudflare-m2m100-provider.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/cloudflare-m2m100-provider.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-action.server.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-action.server.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-policy.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-response.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-status.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-view.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-generation-view.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-markdown-translation.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-markdown-translation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-execution.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-execution.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-planning.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-planning.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-publication.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-post-body-task-consumer.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-provider-allowance.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-provider-allowance.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-request-budget.server.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-request-budget.server.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-source-locale.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-source-locale.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-execution.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-execution.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-planning.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-planning.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-presentation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-presentation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-provider.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-publication.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation-task-consumer.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/content-translation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/fingerprint.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/i18next-types.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale-navigation.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale-rules.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale-rules.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/locale.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/manual-fingerprints.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/manual-packs.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/manual-values.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-registry.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-sources.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/persistent-sources.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/registry.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/request-context.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/request-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resolver.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resolver.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resource-loader-bundles.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resource-loader.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/resources.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/runtime.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/sources.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/tinyld-source-locale-detector.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/tinyld-source-locale-detector.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-execution.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-execution.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-failures.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider-data-policy.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider-data-policy.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-provider.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-publication.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-publication.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-consumer.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-consumer.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-dispatch.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-dispatch.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-reconciliation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-task-reconciliation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-tasks.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-tasks.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-validation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/translation-validation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/ui-translation-service.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/localization/ui-translation-service.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/markdown-syntax.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/root.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/routes.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -312,10 +312,10 @@
 | `app/routes/credential-sign-in.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/credential-sign-up.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/home.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/routes/locale-boundary.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/routes/locale-boundary.tsx` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/routes/locale-negotiation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `app/routes/locale-negotiation.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-boundary.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-boundary.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-negotiation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `app/routes/locale-negotiation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/routes/mentions.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/mentions.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/not-found.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -352,13 +352,13 @@
 | `db/authorization-repository.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/authorization-repository.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/authorization-service.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/content-post-body-execution-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/content-post-body-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/content-request-budget-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/content-topic-title-execution-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/content-topic-title-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/content-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/content-translation-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-post-body-execution-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-post-body-task-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-request-budget-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-topic-title-execution-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-topic-title-task-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-translation-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/content-translation-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/editor-draft-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-attachment-cleanup.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/forum-attachments.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -368,27 +368,27 @@
 | `db/forum-write-policy.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-authorization.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-authorization.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/hyperdrive-content-generation-status.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/hyperdrive-content-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/hyperdrive-content-translations.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-generation-status.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-generation-status.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-translations.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-content-translations.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/hyperdrive-forum-attachments.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-forum.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-forum.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/hyperdrive-registry.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/hyperdrive-ui-translations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/hyperdrive-ui-translations.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/locale-repository.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/locale-repository.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-ui-translations.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/hyperdrive-ui-translations.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/locale-repository.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/locale-repository.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/postgres-deadlines.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/postgres-deadlines.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/schema.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `db/translation-task-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/ui-translation-bundle-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/ui-translation-bundle-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/ui-translation-publication-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `db/ui-translation-store.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/translation-task-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-bundle-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-bundle-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-publication-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `db/ui-translation-store.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `db/web-runtime-wiring.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
 | `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` | EXCLUDED/CONTEXT | REFERENCE_DOCUMENT | — | ARCHIVE_OR_ADDITIONAL_DOC |
@@ -517,17 +517,17 @@
 | `ROADMAP.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `SCAFFOLD_PLAN.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `scripts/configure-localization-deadlines.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
-| `scripts/reconcile-ui-translation-bundles.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `scripts/reconcile-ui-translation-bundles.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `scripts/smoke-production-worker.sh` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
 | `scripts/smoke-workers.sh` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `tests/database/auth-runtime.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/authorization-snapshot.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/content-generation-status.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/content-post-body-task-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/content-request-budget-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/content-topic-title-execution.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/content-topic-title-task-planning.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/content-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-generation-status.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-post-body-task-planning.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-request-budget-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-topic-title-execution.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-topic-title-task-planning.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/content-translation-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/forum-attachment-publication.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-attachments.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/forum-email-registration.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -536,16 +536,16 @@
 | `tests/database/forum-profiles.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/hyperdrive-registry.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/migrations.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/source-locale-correction.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/source-locale-correction.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/database/stage4-core-e2e.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `tests/database/translation-generation-authorization.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/translation-task-generation-isolation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/translation-task-reconciliation.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/translation-task-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/ui-translation-bundle-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/ui-translation-publication-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/ui-translation-storage.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `tests/database/ui-translation-store.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-generation-authorization.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-task-generation-isolation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-task-reconciliation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/translation-task-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-bundle-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-publication-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-storage.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
+| `tests/database/ui-translation-store.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `tests/production-migration-verifier.test.ts` | INCLUDED | REVIEW_INCOMPLETE | 5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `TRANSLATION_ARCHITECTURE.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `tsconfig.cloudflare.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -604,6 +604,25 @@
 **Live Step0 491-file ledger upgraded exactly 55 Step3 primary rows to `CODE_STATIC_REVIEWED | DONE_S3` preserving historical evidence buckets; Step1 49 + Step2 49 + Step3 55 = **153 CODE_STATIC_REVIEWED**; **58 SOURCE_FULL_READ_RECORDED**, **247 REVIEW_INCOMPLETE** (Step4 localization=128, Step5 DB=63, Step6 UI/ops/CI=56), 31 documents and 2 noncode assets: 491 total. This status means **primary scoped static review, not full line-by-line of all large files**, nor behavioral runtime acceptance. No implementation changed or service communication findings, only personal audit coverage status.
 
 **STOP.** Step3 completed. Next explicit owner-command-gated Step4 = localization and translation 128-file deep coverage (mostly B8 identity/selected-chain predecessors), re-read current `main` + `AGENTS.md`. Stage7 final findings, Stage8 audit sufficiency still pending. No work on external environment or future Stage6.
+
+
+## CODE-ONLY Step 4 — localization, UI/content translation and persistent job lifecycle static audit (2026-10-24)
+
+**STEP4 SCOPED STATIC CODE AUDIT COMPLETED; whole code-only audit OPEN.** Fixed source of truth `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`; current main `AGENTS.md` (SHA `20acb9210685bf3347f153c0d44d19420e8dc9bc`) read fully. All **128/128** primary Step4 source/test/data/config paths fetched directly at exact main. Function and test declarations, relevant guards, exceptions, transactional/concurrency branches inventoried file-by-file; substantive code paths and selected assertions examined directly for significant mechanisms. Do **NOT** treat a large file's path-level status as complete line-by-line inspection of every unrelated line or every assertion: particularly `db/translation-task-store.ts` (1757 lines), large `tests/database/content-post-body-task-planning.test.ts` (1638 lines), and repeated localization resource literals were examined by appropriate function/branch/test purpose plus selected detailed reads. Existing tests were **READ, NOT EXECUTED**.
+
+**Applicable contracts/current Stage:** root `TRANSLATION_ARCHITECTURE.md` reviewed through EOF; topical `docs/translation/{LOCALES,UI_TRANSLATION,CONTENT_TRANSLATION,PROVIDERS_AND_JOBS,STORAGE_AND_VERSIONING}.md` and `ROADMAP.md` / `PROJECT_STATE.md` checked for scope and current-stage boundaries. Local/CI Stage 5 translation foundation is implemented; external provider, Queue, production credentials and deployed integration acceptance are separately Stage 6 and not bugs solely by absence. No environment, browser, PostgreSQL, Workers AI or Queue operations executed.
+
+**Identity, registry, negotiation, SSR:** `locale.ts`, `registry.ts`, `persistent-registry.ts`, `resolver.ts`, request context and `app/routes/{locale-boundary,locale-negotiation}` read against tests. Canonical BCP-47 translation tags and formatter extensions separated; bootstrap `en`, active/inactive/disabled publication status, reserved URL segments, aliases, cycle-safe fallback and persistent semantic identity; explicit path guard for mutation vs GET/HEAD redirect and degraded English fallback; negotiation order authenticated locale → cookie → Accept-Language → `en`. Request-scoped resource snapshot, `I18nextProvider` hydration, RTL direction and locale navigation inspected. Typed registry/optional read failures versus unexpected propagation distinguished. Refer to previous Step1/Step6 for the already-scoped general Worker/SSR/CSS crosscuts.
+
+**UI resource/freshness/validation:** `catalog.ts`, `manual-values.ts`, `manual-fingerprints.ts`, `manual-packs.ts`, `fingerprint.ts`, `sources.ts`, `persistent-sources.ts`, `bundles.ts`, `resource-loader.ts`, `runtime.ts`, `translation-validation.ts` and `locale-rules.ts` inspected against source tests. Structural key audit: **527** canonical `common` keys (524 helper descriptors + 3 literal descriptors), **527** Russian, **527** Hebrew and **527** fixed reviewed fingerprint identities, zero duplicates and zero missing/extra across these sets. This is identity/shape parity, **not human linguistic proofreading** or a newly executed digest-verification test. Current local manual → persistent manual → current machine priority within exact locale; sourceFingerprint/policy invalidation, per-locale (not flattened) fallback chain, plural branch structural validation, inert markup/placeholders/protected terms, deterministic exact-locale compiled namespace versions; database outage/invalid-bundle fallback and unexpected error propagation examined. Existing `resources.test.ts` expresses pack freshness assertions but was not rerun.
+
+**Content/source language/Markdown:** `content-source-locale.ts`, `tinyld-source-locale-detector.ts`, `content-translation.ts`, `content-translation-presentation.ts`, `content-markdown-translation.ts`, title/body planners/consumers/publishers/executors and their tests examined. Revision-bound source language with `und` detection and explicit new-revision correction, exact target locale and original-content fallback; quote attribution and protected Markdown segmentation/technical tokens, strict result set matching and structure restoration; provider and policy preflight on current revision/fingerprint/generation before execution and transactional publication; title and body distinct units. Content UI coordination `content-generation-controls.tsx`, navigation tests, finite status polling, stale exact-revision feedback fences inspected. Translation store and Hyperdrive reader return only exact revision/current valid content; typed availability degrades to originals, unknown failures not silently hidden.
+
+**Provider and durable task chain:** `translation-provider.ts`, `cloudflare-m2m100-provider.ts`, data-policy, allowances, request-budget pseudonymization, action capability, `translation-tasks.ts`, `translation-task-store.ts`, `translation-task-reconciliation.ts`, `db/{content-topic-title-task-store,content-post-body-task-store,content-topic-title-execution-store,content-post-body-execution-store,content-request-budget-store,ui-translation-publication-store,ui-translation-bundle-store}.ts` and selected integration/test assertions. Dispatch persists durable task **before** enqueue of ID; failed/unknown enqueue reconciles. Exact task identity, ordered generation-head lock, source/revision/policy preflight, bounded provider allowance and request budget, lease/claim-token fencing, attempt-count retry/DLQ equivalent, `FOR UPDATE SKIP LOCKED` reconciliation, backend retry/error categorization, conditional atomic write and final completion reviewed. Title/body publication checks head/task/current-revision/translation ownership under transaction; UI publication holds namespace generation-head locks through bundle compilation/commit so competing keys do not overwrite stale bundle snapshots. Provider routes capability per adapter; Cloudflare M2M100 denies content by default unless policy admits the public-title subset. Direct existing PG/test scenarios for duplicates, races, budget partial rollback, lost ACK, manual precedence, claim reassign, stale revisions, bundle reconciliation and failure rollback were indexed and selected assertion ranges examined, **not independently run**.
+
+**Conclusion/provenance:** No **additional source-confirmed current-Stage defect** established during this scoped Step4 investigation; this is not whole-project PASS, runtime certification, exhaustive assertion-line read or a declaration that unproven behavior is safe. Old candidates remain owner-only for Step7 crosscut recheck and final Stage relevance. Existing Stage6 deployed/provider/Queue acceptance is explicitly future, not an automatic defect of current local/CI foundation. Source-code implementation and other agents' files unchanged; findings not published to service/communication. Step4 ledger statuses upgraded exactly 128 primary rows to `CODE_STATIC_REVIEWED | DONE_S4` while historical evidence provenance retained; cumulative **281 CODE_STATIC_REVIEWED** (Step1 49 + Step2 49 + Step3 55 + Step4 128), **58 SOURCE_FULL_READ_RECORDED**, **119 REVIEW_INCOMPLETE** (Step5 DB=63; Step6 UI/ops/CI=56), 31 documents and 2 binary assets = **491**. Steps 7–8 remain separately required.
+
+**STOP.** Step5 PostgreSQL/data lifecycle static code-only analysis starts only after owner explicitly commands continuation, with renewed main/AGENTS check.
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (исторический baseline и evidence, заменён актуальным code-only планом 2026-10-24)
 
