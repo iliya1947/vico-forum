@@ -28,7 +28,7 @@
 
 **Дисциплина:** Каждая подзадача начинается с точного `main` и полного `AGENTS.md`; просматривать реализацию без внесения исправлений, без правки чужих файлов, без публикации findings до owner-authorized release. Вывод и конкретный уровень source confidence сообщать владельцу только в текущем чате. В личном журнале — статус, coverage, evidence level, не публикуемые спорные подробности. После каждой самостоятельной подзадачи **STOP**, следующий шаг только по явной команде владельца. Никаких работ по окружению/внешней инфраструктуре; не перекладывать задачу на владельца и не придумывать текущему Stage future requirements.
 
-**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2, 3, 4, 5 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **344 CODE_STATIC_REVIEWED** по первичным материалам шагов1–5, **56 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 6–8 ещё НЕ завершены. Следующий строго owner-gated шаг **6: UI/UX, CSS, безопасность и CI**. Code-only audit остаётся OPEN.
+**ТЕКУЩИЙ СТАТУС:** шаги **0, 1, 2, 3, 4, 5, 6 ЗАВЕРШЕНЫ** 2026-10-24 (code-only scope), **400 CODE_STATIC_REVIEWED** по первичным материалам шагов1–6, **0 REVIEW_INCOMPLETE**, **58 SOURCE_FULL_READ_RECORDED** исторически; объём 458 code/config/test подтверждён по 491 Git blob. Шаги 7–8 ещё НЕ завершены. Следующий строго owner-gated шаг **7: сквозная перепроверка и классификация findings**. Code-only audit остаётся OPEN.
 
 ## CODE-ONLY Step 0 — per-path remaining-scope reconciliation (2026-10-24)
 
@@ -71,11 +71,11 @@
 | --- | --- | --- | --- | --- |
 | `.env.example` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/production-schema-manifest.json` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/runtime-migration-evidence.json` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/bootstrap-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/bootstrap-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/diagnose-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/diagnose-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/runtime-migration-evidence.json` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/bootstrap-production-web-credential.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/bootstrap-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/diagnose-production-web-credential.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/diagnose-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/migration-history.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/migration-history.test.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/production-migration-contract.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -83,50 +83,50 @@
 | `.github/scripts/production-privileges.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/scripts/production-privileges.test.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/scripts/production-schema-manifest.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/production-web-credential-recovery-workflow.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/production-worker-rollout.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/production-worker-rollout.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/provision-production-web-relations.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/provision-production-web-relations.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/recover-production-web-credential-v2.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/recover-production-web-credential.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/recover-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/runtime-migration-evidence.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-web-credential-recovery-workflow.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-worker-rollout.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/production-worker-rollout.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/provision-production-web-relations.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/provision-production-web-relations.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/recover-production-web-credential-v2.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/recover-production-web-credential.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/recover-production-web-credential.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/runtime-migration-evidence.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/runtime-privileges.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/runtime-privileges.test.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/validate-production-web-credential-input.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/validate-production-web-credential-input.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/validate-production-web-credential-input.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/validate-production-web-credential-input.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-migration-history.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/verify-production-migration-identity.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-production-migration-identity.test.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-production-migration.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-production-runtime-privileges.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-migration-identity.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-migration-identity.test.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-migration.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-production-runtime-privileges.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-production-schema-manifest.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.github/scripts/verify-recovery-v2-validation-run.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/scripts/verify-recovery-v2-validation-run.test.mjs` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
-| `.github/scripts/verify-runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-runtime-migration-evidence.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/scripts/verify-runtime-privilege-probes.mjs` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S5 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-web-credential-recovery-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/scripts/verify-web-relation-provisioning-probes.mjs` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-credential-recovery-probes.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/scripts/verify-web-relation-provisioning-probes.mjs` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/workflows/ci.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.github/workflows/codex-service-channel-bridge.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
-| `.github/workflows/production-db-identity.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-db-migrate.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-runtime-privileges.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-credential-bootstrap.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-credential-input-validation.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-credential-preflight-diagnostic.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-credential-recovery-v2.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-credential-recovery.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-credential-rollback-probe.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-web-relation-provision.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
-| `.github/workflows/production-worker-rollout.yml` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-db-identity.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-db-migrate.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-runtime-privileges.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-bootstrap.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-input-validation.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-preflight-diagnostic.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-recovery-v2.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-recovery.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-credential-rollback-probe.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-web-relation-provision.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
+| `.github/workflows/production-worker-rollout.yml` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `.github/workflows/ui-preview-pages.yml` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `.gitignore` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `.node-version` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -148,8 +148,8 @@
 | `app/authorization/admin-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/authorization/catalog.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/authorization/request-context.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/entry.client.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/entry.server.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/entry.client.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/entry.server.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/forum/actions-attachment-publication.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/actions.server.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/attachment-container-validation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -167,7 +167,7 @@
 | `app/forum/attachment-validation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/attachment-zip-validation.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/attachment-zip-validation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/avatar.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/avatar.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/forum/clipboard-markdown.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/clipboard-markdown.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/content-generation-controls.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
@@ -203,8 +203,8 @@
 | `app/forum/route-error.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/technical-markdown.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/technical-markdown.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/forum/ui.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/forum/ui.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/ui.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/forum/ui.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/forum/under-development-view.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/under-development.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/forum/views.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -296,7 +296,7 @@
 | `app/localization/ui-translation-service.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/localization/ui-translation-service.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
 | `app/markdown-syntax.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
-| `app/root.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/root.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `app/routes.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/api.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/routes/attachment-download.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -339,15 +339,15 @@
 | `app/routes/unread.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S2 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `app/server-logging.test.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
 | `app/server-logging.ts` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | FULL_SHORT_SOURCE_WITH_CROSSCUT_SELECTION |
-| `app/styles.css` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
-| `app/theme.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/ui-preview/index.html` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/ui-preview/main.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/ui-preview/preview-app.test.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/ui-preview/preview-app.tsx` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
-| `app/ui-preview/preview-i18n.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/ui-preview/preview.css` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
-| `app/ui-preview/vite.config.ts` | INCLUDED | REVIEW_INCOMPLETE | 6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/styles.css` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
+| `app/theme.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/index.html` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/main.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/preview-app.test.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/preview-app.tsx` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_FULL_TEXT_SCAN_SELECTED_SEMANTICS |
+| `app/ui-preview/preview-i18n.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/preview.css` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
+| `app/ui-preview/vite.config.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | B11_SHORT_OR_TARGETED_SOURCE |
 | `db/attachment-draft-generation.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S3 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/authorization-repository.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `db/authorization-repository.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -518,7 +518,7 @@
 | `SCAFFOLD_PLAN.md` | INCLUDED | REFERENCE_DOCUMENT | — | DOC_FULL_EOF |
 | `scripts/configure-localization-deadlines.sql` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `scripts/reconcile-ui-translation-bundles.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S4 | B8_IDENTITY_INDEX_SELECTED_CHAINS |
-| `scripts/smoke-production-worker.sh` | EXCLUDED_REINCLUDED | REVIEW_INCOMPLETE | 6 | NO_CODE_REVIEW_BASELINE |
+| `scripts/smoke-production-worker.sh` | EXCLUDED_REINCLUDED | CODE_STATIC_REVIEWED | DONE_S6 | NO_CODE_REVIEW_BASELINE |
 | `scripts/smoke-workers.sh` | INCLUDED | SOURCE_FULL_READ_RECORDED | — | B12_FULL_SOURCE_NOT_EXECUTED |
 | `tests/database/auth-runtime.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
 | `tests/database/authorization-snapshot.test.ts` | INCLUDED | CODE_STATIC_REVIEWED | DONE_S1 | A_B_SELECTED_SOURCE_OR_TEST_ASSERTIONS |
@@ -644,6 +644,25 @@
 **Conclusion:** No new **source-confirmed current-Stage defect** established in this scoped Step5 static code investigation. Inference is limited to static consistency of checked-in structures and inspected source branches; neither execution success nor absence of runtime bugs is established. Do not promote future Stage6 external operational prerequisites to current-Stage defects. No implementation, schema, docs or shared communication changed. **63 primary Step5 ledger rows** become `CODE_STATIC_REVIEWED | DONE_S5`; cumulative **344 CODE_STATIC_REVIEWED** (49+49+55+128+63), **58 SOURCE_FULL_READ_RECORDED** historical, **56 REVIEW_INCOMPLETE** for Step6, plus 31 documents and 2 binary assets, 491 total. Step7 crosscut and Step8 closure remain OPEN.
 
 **STOP.** Begin Step6 only on explicit owner continuation, with renewed exact main and AGENTS validation.
+
+
+## CODE-ONLY Step 6 — remaining UI/UX, CSS and operational security/CI source review (2026-10-24)
+
+**STEP6 SCOPED STATIC CODE AUDIT COMPLETED; whole code-only audit OPEN.** Exact reviewed source `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, GitHub `main` verified unchanged; current `AGENTS.md` fully read. All **56/56** originally pending Step6 primary files fetched directly from exact `main`, including **41 code/config paths previously wrongly tagged EXCLUDED and re-included by Step0** and **15 historical INCLUDED source/test paths**. Scope: 1 provenance JSON, 28 operational scripts/tests/verifiers, 11 production GitHub Actions workflows, 15 application/preview code+CSS/test/config paths, and 1 production Worker smoke shell script. Large `app/styles.css` **9,644 lines**, `app/ui-preview/preview-app.tsx` **2,158 lines** and lengthy operational scripts/tests investigated by whole-source structural scans, declaration/branch maps, selected relevant ranges, and selected test assertions; not every line or every assertion was manually read sequentially. Existing tests were **READ, NOT EXECUTED**, with no live environment, browser, PostgreSQL, Cloudflare, GitHub Action dispatch, or deployment activity.
+
+**Current-Stage boundary verified:** `ROADMAP.md` and `PROJECT_STATE.md` current `main` explicitly show product-first UI/UX work and pre-release Stage6 external integration on hold pending explicit owner approval. Prepared workflow/source code is audited statically; absent external acceptance, outstanding OAuth, Queue/provider, migration/deployed smoke and operational Stage6 rollouts are **not** new defects of the current local code solely by being deferred. This code-only audit is distinct from product Stage6 rollout or a visual acceptance.
+
+**Production DB identity, web credentials, privilege/provisioning and recovery:** analyzed `.github/runtime-migration-evidence.json`, bootstrap/diagnostic/validation/recovery(v1,v2)/provisioning implementations and paired `*.test.mjs` assertions, relevant execution/control paths and compensating failure transitions. Exact database and owner/runtime-role constraints, SCRAM verifier derived from bounded inputs and stored without logging raw passwords, PostgreSQL-specific role-lease validity, preflight checks of authority/ACL/defaults, confirm tokens, one-shot workflow run gates, transaction rollback and post-commit credential verification, compensation/reconcile after ambiguous effects, reason-limited error output; input-validation `BEGIN READ ONLY`/rollback; conditional relation grants committed only after privilege end-state check. Verified static existence of recovery-v2 validation-run gate with same exact main SHA, successful manual validation workflow and first attempt before privileged Environment step; cross-checked `verify-recovery-v2-validation-run.mjs`. These are source/code checks only, not evidence that an externally configured credential or workflow currently works.
+
+**Workflows and scripted deployment gates:** all 11 primary `.github/workflows/production-*.yml` files inspected for manual `workflow_dispatch`, `main` restrictions, pinned checkout and actions, Environment gates, permission scopes, serialized production-db-migrations/Worker rollout groups, explicit one-shot or SHA confirmation where applicable, secret environment boundaries, rollback and rejection behaviors. `production-worker-rollout.mjs`, `production-worker-rollout.test.mjs`, `production-worker-rollout.yml` and `scripts/smoke-production-worker.sh` traced from exact-SHA guard and local disposable test/build through migration evidence/Worker baseline full ID, upload **without traffic**, workers.dev Version URL smoke, optional 100%-traffic promotion, deployment validation, rollback to previous accepted version and HTTP GET-only auth response checks. Static control order and outcomes read; Wrangler, Cloudflare, workflow permissions and rollback semantics were **not** live-executed. Reviewed provenance verifier matching workflow run, hash, journal prefix and branch/SHA, plus PostgreSQL identity/privilege verifier code. No production resources accessed or mutated.
+
+**SSR/layout/accessible UX:** `app/entry.client.tsx`, `entry.server.tsx`, `root.tsx`, `forum/ui.tsx`, `avatar.tsx`, `theme.ts`, `forum/ui.test.tsx` inspected. SSR-to-hydration `ServerRouter`/`HydratedRouter`, HEAD bypass and 5s stream timeout, error handling and localized status presentation; loader-derived document `lang`/`dir`, static fixed prehydration theme script and manual-vs-system theme preference with storage rejection fallback; locale selection with pathname/search/hash preservation; skip link, focusable forum content and route ErrorBoundary display avoiding direct internal exception messages; avatar image URL validation and referrer policy. `app/styles.css` whole-source structural/text scan: 9,644 lines, balanced brace count after comment stripping, **51 @media blocks**, dozens of directional RTL and logical-layout rules, no `@import`/remote `url` declarations, explicit focus-visible and reduced-motion handling, mobile breakpoints 29.99/38/44/52rem etc, LTR-isolated code areas and scroll containers. Representative selector blocks around focus, code, breakpoint and RTL reviewed. **No claim of pixel-perfect/browser visual confirmation or formal CSS parser pass.**
+
+**UI preview:** `app/ui-preview/{index.html,main.tsx,preview-app.tsx,preview-app.test.tsx,preview-i18n.ts,preview.css,vite.config.ts}` reviewed. Static separate Vite preview with `noindex,nofollow`, representative scenario/role/viewport chooser, encoded iframe query parameters, memory-router route variants and mock data; actual user/manager/guest preview identity selection and English/Russian/Hebrew resources, `lang`/`dir` changes, disabled real auth and submit handling, preview-only click/interaction limits. Read representative route, state, i18next and locale switches, source variants and test assertions for editor, Help, preview scenario routes, auth errors, statuses. Preview states do **not** certify real production access control or external integration.
+
+**Conclusion:** No **new code-confirmed current-Stage defect** established in this Step6 scope. Existing cross-cutting potential findings are **not** certified or published as final: they require Step7 complete chain/stage relevance re-evaluation. No code modifications, fixes, environment work or shared communication edits. Updated exactly **56** Step6 primary ledger rows to `CODE_STATIC_REVIEWED | DONE_S6`, keeping historical `INCLUDED` (15) / `EXCLUDED_REINCLUDED` (41) provenance. Audited paths now **400 CODE_STATIC_REVIEWED** (49+49+55+128+63+56), **58 SOURCE_FULL_READ_RECORDED** historical, **0 REVIEW_INCOMPLETE**; 458 code/config/test, 31 documentation and 2 binary assets = 491 baseline. **This is file-scope review coverage only, NOT a final whole-project code-audit approval**: Step7 cross-file findings recheck and Step8 completeness closure remain open.
+
+**STOP** after Step6. Proceed Step7 only on explicit developer continuation command.
 
 ## ЕДИНЫЙ ПЛАН И РЕЕСТР ОБЪЁМА — 2026-10-23 (исторический baseline и evidence, заменён актуальным code-only планом 2026-10-24)
 
