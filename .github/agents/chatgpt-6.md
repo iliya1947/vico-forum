@@ -578,6 +578,26 @@
 ## ЭТАП 8 — СКВОЗНАЯ ПЕРЕПРОВЕРКА (2026-10-24)
 Шесть независимых source-supported current-Stage механизмов повторно сверены; детали owner-only в чате. Runtime не запускался.
 
+## GAP R9 — CSS/PREVIEW (2026-10-24)
+
+Очередная отдельная подзадача по адресному закрытию code-only evidence: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c` immutable, полный текущий `AGENTS.md` перечитан перед работой (SHA `20acb921`). **11 code/config/test файлов повторно прочитаны до EOF**, содержательно сверены CSS cascade + Preview fixture/production boundary, всего **12 652 строки**. Все 11 exact Git blob SHA совпали с 458-row ledger. Диапазоны чтения (1-based inclusive):
+
+- `app/styles.css` 9644, blob `afb2a818`: 1–700, 701–1400, 1401–2100, 2101–2530, 2531–3500, 3501–4500, 4501–5500, 5501–6500, 6501–7400, 7401–8200, 8201–9100, 9101–9644.
+- `app/ui-preview/preview-app.tsx` 2158, blob `f4f250fa`: 1–390, 391–810, 811–1220, 1221–1660, 1661–2158.
+- `app/forum/ui.tsx` 435 `3544dac3`: 1–435.
+- `app/ui-preview/preview-app.test.tsx` 75 `332e6643`: 1–75 (все **4 тела `it`**, scenarios uniqueness, editor catalog, role selector, navigation home→section→topic).
+- `app/ui-preview/preview.css` 138 `b9632803`: 1–138.
+- `app/ui-preview/preview-i18n.ts` 82 `1762bc31`: 1–82.
+- `app/ui-preview/main.tsx` 27 `13e03571`: 1–27.
+- `app/ui-preview/index.html` 14 `1d0f882b`: 1–14.
+- `app/ui-preview/vite.config.ts` 11 `96e75dcb`: 1–11.
+- `app/theme.ts` 17 `c92403e2`: 1–17.
+- `.github/workflows/ui-preview-pages.yml` 51 `5f8b53f6`: 1–51.
+
+Сквозные связи/результаты: `ForumShell` присваивает `.home-shell` всем актуальным variant views; palette light/dark vars scoped правомерно, mobile/reflow 320px+, RTL logical properties/overrides, Editor 2.0 toolbars/panes/fullscreen/attachments, Help/Attention, profile, auth, focus navigation, previews. Статический проход CSS all 9644 lines: 0 несбалансированных скобок/комментариев/строк, 29 определённых custom variables; единственный CSS-only отсутствующий `--forum-code-gutter-width` реально задаёт `app/forum/markdown.tsx:296` inline-style — **не дефект**. Ранее установленный contrast defect остаётся: light `.home-shell` `--color-on-accent:#fff` поверх `--color-accent:#fd6d29` и footer submit `styles.css:9546–9549`, 2.839:1; в dark 6.524:1. Это **старый finding**, а не новый класс. UI Preview содержит representative fake data/routes и предотвращает реальные submissions; его 4 RTL-independent теста не доказывают производственную устойчивость, все сценарии/браузер/Pages CI или visual acceptance не исполнялись. Новых самостоятельных code defect classes из CSS/Preview не подтверждено.
+
+Эта подзадача закрыта. Дополнительные owner-only findings не помещались в shared communication; product source, другие agent files и common communication не изменялись. После индивидуальных GAP R9 checkpoints покрыто повторной доказательной проверкой **24 уникальных файла** (Forum/Editor 3 + Translation/PG 10 + CSS/Preview 11), хотя прежний первичный ledger имеет 458/458 READ/SEM. **Общий аудит всё ещё OPEN:** полнота per-file диапазонов и test/cross-chain proof оставшихся ledger строк не доказана единым независимым реестром. Следующая подзадача только по разрешению: заключительная сверка остаточных индивидуальных evidence/OPEN для 458-path scope. STOP.
+
 ## GAP R9 — TRANSLATION/POSTGRESQL (2026-10-24)
 
 Завершено адресное закрытие доказательных пробелов переводов/PG на неизменном exact main `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; перед началом полностью перечитан `AGENTS.md` SHA `20acb921`. В актуальном 458-row code ledger все 10 exact path/SHA identity совпадают с полученным GitHub source; код фактически повторно прочитан до EOF **9545 строк / 10 файлов**, тесты изучены по телам и assertions, НЕ исполнялись.
