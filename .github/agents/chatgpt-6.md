@@ -47,7 +47,7 @@
 - **На новом проходе проверка ВСЕГО кода: FULL_EOF_READ = 0/458; SEMANTIC_REVIEWED = 0/458; cross-file scenario evidence = 0/458.** Считаются только действия ПОСЛЕ начала нового прохода. Исторические 400 scoped/58 full-read отметки не перенесены в новые PASS.
 - Следующий этап 1: только группа 1 ниже. Впоследствии при любом изменении `main` применить новое сравнение tree/sha и проверить затронутые механизмы.
 
-### Единый новый реестр кода (100/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
+### Единый новый реестр кода (155/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
 
 Идентификатор исходника — **полный Git blob SHA** в конкретном immutable tree; `Bytes` — исходный размер Git blob, **не количество прочитанных байт**. `READ` = `NOT_READ_THIS_PASS`, `SEM` = `NOT_REVIEWED_THIS_PASS` для каждой строки; колонки статуса нельзя изменять без фактической проверки.
 
@@ -156,61 +156,61 @@
 | `tests/database/hyperdrive-registry.test.ts` | 2 | 809 | `464e1ecdc15fac0047d2637a09ce9ea9fc349683` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | `tests/database/stage4-core-e2e.test.ts` | 2 | 19396 | `125d9cbb7c6f9895aa23000fdd9d5c299855a0c9` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 3 — Editor 2.0 и вложения (55)** | | | | | |
-| `app/forum/actions-attachment-publication.test.ts` | 3 | 3868 | `51c9c4fa4d04a7b8206ea6f846cd69a2a4eb49d4` | NOT_READ | NOT_REVIEWED |
-| `app/forum/actions.server.ts` | 3 | 24031 | `bc065366ffd0b867e6a368b53cb2ca637d5334db` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-container-validation.test.ts` | 3 | 10118 | `408b6826cfd9e6a70aa4ca7004cbcf3c84f67e1e` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-container-validation.ts` | 3 | 14948 | `34c8867195a60b4ed7e62c917ec8ba4635e070db` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-operation.test.tsx` | 3 | 11403 | `b4acfdd182bdce8958e6b8bf36e0f9466e42121c` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-presentation.css` | 3 | 572 | `ef4a30bb72b8c95b578b34040077e114cfa1e4fd` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-presentation.test.tsx` | 3 | 3281 | `991421f65c99de528002878cefa6e45cbac23733` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-presentation.tsx` | 3 | 1960 | `e3b88d9b02a5cbec7e830cb23cbda9d805d5d5f6` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-r2.test.ts` | 3 | 11335 | `89af168616293bfdd3d40c3af2bfbf8afc4729ab` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-r2.ts` | 3 | 11037 | `d65210b01844ea4526d8f5f3ba4cf0f05d7f0e73` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-request-context.ts` | 3 | 997 | `bc3f156073beeedf429f8d71f0c2477225e4d8b7` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-structural-validation.test.ts` | 3 | 5222 | `21c4699c1f43286885867ab22c2b298793743a84` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-structural-validation.ts` | 3 | 11263 | `5e44d0a0ed58f582a7fb46021740542100b9aa0b` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-validation.test.ts` | 3 | 11281 | `740e73763cd41d586e5c14da8257e84576c7a429` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-validation.ts` | 3 | 10809 | `3e68579e9a6847253ca67071267d2c8ea9dcac06` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-zip-validation.test.ts` | 3 | 9092 | `9eb3e819818214303bac192ecde60e9964c650ce` | NOT_READ | NOT_REVIEWED |
-| `app/forum/attachment-zip-validation.ts` | 3 | 14844 | `136fcef8950c80cb45510a4ddf1aaac1b49b3f7a` | NOT_READ | NOT_REVIEWED |
-| `app/forum/clipboard-markdown.test.ts` | 3 | 1715 | `f211f4f761d8fc53d286b2e5b68ee615ca301c3e` | NOT_READ | NOT_REVIEWED |
-| `app/forum/clipboard-markdown.ts` | 3 | 4898 | `0fde94be2e35397afd8d2f6713214182c8b16488` | NOT_READ | NOT_REVIEWED |
-| `app/forum/editor-attachments.test.tsx` | 3 | 15718 | `16c163af30b930d1b1520ff4a0e750a100456a35` | NOT_READ | NOT_REVIEWED |
-| `app/forum/editor-attachments.tsx` | 3 | 17221 | `f81134fb5226dee26ba671b4ae61dd325166e827` | NOT_READ | NOT_REVIEWED |
-| `app/forum/editor-document.test.ts` | 3 | 9606 | `f50f49a8dfbfea0c926bc5a612fc3ca2a7e331ff` | NOT_READ | NOT_REVIEWED |
-| `app/forum/editor-document.ts` | 3 | 20645 | `7febd89919a5a09557ba2842573edf19f0c222ef` | NOT_READ | NOT_REVIEWED |
-| `app/forum/editor-permission.server.ts` | 3 | 2174 | `c79473277252ea0ad7e90cbb38694a160a9c405b` | NOT_READ | NOT_REVIEWED |
-| `app/forum/markdown-editor.test.tsx` | 3 | 77601 | `7188044b19686a1a1a7b6b3123db7dcde6eacd12` | NOT_READ | NOT_REVIEWED |
-| `app/forum/markdown-editor.tsx` | 3 | 53916 | `13cfd96fee5a066772ed03015072ef9bef7c5699` | NOT_READ | NOT_REVIEWED |
-| `app/forum/markdown.test.tsx` | 3 | 28725 | `b655512367e7bd10acd9bb68feb77f192943a6b3` | NOT_READ | NOT_REVIEWED |
-| `app/forum/markdown.tsx` | 3 | 16862 | `ab52bcfc9449d1981e1e3b179be1d3f77ab99fbe` | NOT_READ | NOT_REVIEWED |
-| `app/forum/mentions.test.ts` | 3 | 2392 | `ff87c41a661a10ceff2c44f9aa5dc23cdd940815` | NOT_READ | NOT_REVIEWED |
-| `app/forum/mentions.ts` | 3 | 2249 | `c088c13082ce2be5105cea74a1fbf7f50e691f14` | NOT_READ | NOT_REVIEWED |
-| `app/forum/mutations.server.ts` | 3 | 7500 | `16a2db3c785f5f7429b099702cfb88eabcaf31b6` | NOT_READ | NOT_REVIEWED |
-| `app/forum/quote-markdown.ts` | 3 | 3886 | `c31eb2c342d510e25cd52a342b757e67fc5c9e89` | NOT_READ | NOT_REVIEWED |
-| `app/forum/quote-presentation.tsx` | 3 | 3621 | `f62ed07ec514783d65a2cdd4204073fb33a7f49f` | NOT_READ | NOT_REVIEWED |
-| `app/forum/technical-markdown.test.ts` | 3 | 4976 | `94f5f0bfac13730e5645de24543d4387c6da70d0` | NOT_READ | NOT_REVIEWED |
-| `app/forum/technical-markdown.ts` | 3 | 9425 | `12b938b7e0883df0f924bed8801751308fb66532` | NOT_READ | NOT_REVIEWED |
-| `app/forum/views.tsx` | 3 | 129096 | `c65846dd39cb478e4860a6df55c6e89a4eae8b05` | NOT_READ | NOT_REVIEWED |
-| `app/forum/visual-markdown-editor.tsx` | 3 | 28460 | `d4d9378cf52a53c2e7304f74a54cf3e46a3c944a` | NOT_READ | NOT_REVIEWED |
-| `app/markdown-syntax.ts` | 3 | 4133 | `b67e23638eda56c7aaa4808145deb9bbdb77accb` | NOT_READ | NOT_REVIEWED |
-| `app/routes/attachment-download.test.ts` | 3 | 5941 | `f72ce30d91ec423819e96d2a74db5f8405177f17` | NOT_READ | NOT_REVIEWED |
-| `app/routes/attachment-download.ts` | 3 | 3904 | `42f137acbe8e4584268a62a542f7bc753fc6110d` | NOT_READ | NOT_REVIEWED |
-| `app/routes/attachment-upload.test.ts` | 3 | 18664 | `f70852c80ff9f6a62df0285f17ff185ce147d946` | NOT_READ | NOT_REVIEWED |
-| `app/routes/attachment-upload.ts` | 3 | 9442 | `808d2a9ef866f2bbcb845b26d53f6430aef76d67` | NOT_READ | NOT_REVIEWED |
-| `app/routes/mentions.test.ts` | 3 | 2755 | `c16fb0894516c4d5a4fffec2c2d6abd47b34caf2` | NOT_READ | NOT_REVIEWED |
-| `app/routes/mentions.ts` | 3 | 1172 | `ac7025d12e9ab810d1e1c16772b192b0ce9308ff` | NOT_READ | NOT_REVIEWED |
-| `db/attachment-draft-generation.ts` | 3 | 2496 | `0461a182a05ff1714d49f6ee8a01b0f6fcd1bc4f` | NOT_READ | NOT_REVIEWED |
-| `db/forum-attachment-cleanup.ts` | 3 | 6368 | `2deaa921abc75259c9adaa204ba12f1b306012df` | NOT_READ | NOT_REVIEWED |
-| `db/forum-attachments.ts` | 3 | 11093 | `f8ab66e13bf24ba7701952988a426477365f903a` | NOT_READ | NOT_REVIEWED |
-| `db/forum-repository.ts` | 3 | 162943 | `cf1994d369658f7a8062526cb4787bec2728ea16` | NOT_READ | NOT_REVIEWED |
-| `db/forum-service.ts` | 3 | 17502 | `43f3947b69df1dbdf7506e2fa4da195cb6c3fe69` | NOT_READ | NOT_REVIEWED |
-| `db/hyperdrive-forum-attachments.ts` | 3 | 3614 | `17901fe291a7978c60f4b4df5c69a5bbc651a01c` | NOT_READ | NOT_REVIEWED |
-| `db/hyperdrive-forum.ts` | 3 | 14843 | `b6d37ab09092077991eb66ba8ca86f0530a8b23c` | NOT_READ | NOT_REVIEWED |
-| `tests/database/forum-attachment-publication.test.ts` | 3 | 23201 | `88724530783b8ebf703f0e887f919e2be78be056` | NOT_READ | NOT_REVIEWED |
-| `tests/database/forum-attachments.test.ts` | 3 | 51576 | `649eaf1330f24c536e30daf6dcd26185251ac8ec` | NOT_READ | NOT_REVIEWED |
-| `workers/attachment-storage.test.ts` | 3 | 2202 | `a15430749f97b047a45e4c6ba099ef8c1216516c` | NOT_READ | NOT_REVIEWED |
-| `workers/attachment-storage.ts` | 3 | 890 | `39ebce54acd34c9153f90657b0de6f73fab4acfa` | NOT_READ | NOT_REVIEWED |
+| `app/forum/actions-attachment-publication.test.ts` | 3 | 3868 | `51c9c4fa4d04a7b8206ea6f846cd69a2a4eb49d4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/actions.server.ts` | 3 | 24031 | `bc065366ffd0b867e6a368b53cb2ca637d5334db` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-container-validation.test.ts` | 3 | 10118 | `408b6826cfd9e6a70aa4ca7004cbcf3c84f67e1e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-container-validation.ts` | 3 | 14948 | `34c8867195a60b4ed7e62c917ec8ba4635e070db` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-operation.test.tsx` | 3 | 11403 | `b4acfdd182bdce8958e6b8bf36e0f9466e42121c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-presentation.css` | 3 | 572 | `ef4a30bb72b8c95b578b34040077e114cfa1e4fd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-presentation.test.tsx` | 3 | 3281 | `991421f65c99de528002878cefa6e45cbac23733` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-presentation.tsx` | 3 | 1960 | `e3b88d9b02a5cbec7e830cb23cbda9d805d5d5f6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-r2.test.ts` | 3 | 11335 | `89af168616293bfdd3d40c3af2bfbf8afc4729ab` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-r2.ts` | 3 | 11037 | `d65210b01844ea4526d8f5f3ba4cf0f05d7f0e73` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-request-context.ts` | 3 | 997 | `bc3f156073beeedf429f8d71f0c2477225e4d8b7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-structural-validation.test.ts` | 3 | 5222 | `21c4699c1f43286885867ab22c2b298793743a84` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-structural-validation.ts` | 3 | 11263 | `5e44d0a0ed58f582a7fb46021740542100b9aa0b` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-validation.test.ts` | 3 | 11281 | `740e73763cd41d586e5c14da8257e84576c7a429` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-validation.ts` | 3 | 10809 | `3e68579e9a6847253ca67071267d2c8ea9dcac06` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-zip-validation.test.ts` | 3 | 9092 | `9eb3e819818214303bac192ecde60e9964c650ce` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/attachment-zip-validation.ts` | 3 | 14844 | `136fcef8950c80cb45510a4ddf1aaac1b49b3f7a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/clipboard-markdown.test.ts` | 3 | 1715 | `f211f4f761d8fc53d286b2e5b68ee615ca301c3e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/clipboard-markdown.ts` | 3 | 4898 | `0fde94be2e35397afd8d2f6713214182c8b16488` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/editor-attachments.test.tsx` | 3 | 15718 | `16c163af30b930d1b1520ff4a0e750a100456a35` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/editor-attachments.tsx` | 3 | 17221 | `f81134fb5226dee26ba671b4ae61dd325166e827` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/editor-document.test.ts` | 3 | 9606 | `f50f49a8dfbfea0c926bc5a612fc3ca2a7e331ff` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/editor-document.ts` | 3 | 20645 | `7febd89919a5a09557ba2842573edf19f0c222ef` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/editor-permission.server.ts` | 3 | 2174 | `c79473277252ea0ad7e90cbb38694a160a9c405b` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/markdown-editor.test.tsx` | 3 | 77601 | `7188044b19686a1a1a7b6b3123db7dcde6eacd12` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/markdown-editor.tsx` | 3 | 53916 | `13cfd96fee5a066772ed03015072ef9bef7c5699` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/markdown.test.tsx` | 3 | 28725 | `b655512367e7bd10acd9bb68feb77f192943a6b3` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/markdown.tsx` | 3 | 16862 | `ab52bcfc9449d1981e1e3b179be1d3f77ab99fbe` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/mentions.test.ts` | 3 | 2392 | `ff87c41a661a10ceff2c44f9aa5dc23cdd940815` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/mentions.ts` | 3 | 2249 | `c088c13082ce2be5105cea74a1fbf7f50e691f14` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/mutations.server.ts` | 3 | 7500 | `16a2db3c785f5f7429b099702cfb88eabcaf31b6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/quote-markdown.ts` | 3 | 3886 | `c31eb2c342d510e25cd52a342b757e67fc5c9e89` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/quote-presentation.tsx` | 3 | 3621 | `f62ed07ec514783d65a2cdd4204073fb33a7f49f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/technical-markdown.test.ts` | 3 | 4976 | `94f5f0bfac13730e5645de24543d4387c6da70d0` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/technical-markdown.ts` | 3 | 9425 | `12b938b7e0883df0f924bed8801751308fb66532` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/views.tsx` | 3 | 129096 | `c65846dd39cb478e4860a6df55c6e89a4eae8b05` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/visual-markdown-editor.tsx` | 3 | 28460 | `d4d9378cf52a53c2e7304f74a54cf3e46a3c944a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/markdown-syntax.ts` | 3 | 4133 | `b67e23638eda56c7aaa4808145deb9bbdb77accb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/attachment-download.test.ts` | 3 | 5941 | `f72ce30d91ec423819e96d2a74db5f8405177f17` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/attachment-download.ts` | 3 | 3904 | `42f137acbe8e4584268a62a542f7bc753fc6110d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/attachment-upload.test.ts` | 3 | 18664 | `f70852c80ff9f6a62df0285f17ff185ce147d946` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/attachment-upload.ts` | 3 | 9442 | `808d2a9ef866f2bbcb845b26d53f6430aef76d67` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/mentions.test.ts` | 3 | 2755 | `c16fb0894516c4d5a4fffec2c2d6abd47b34caf2` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/mentions.ts` | 3 | 1172 | `ac7025d12e9ab810d1e1c16772b192b0ce9308ff` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/attachment-draft-generation.ts` | 3 | 2496 | `0461a182a05ff1714d49f6ee8a01b0f6fcd1bc4f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/forum-attachment-cleanup.ts` | 3 | 6368 | `2deaa921abc75259c9adaa204ba12f1b306012df` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/forum-attachments.ts` | 3 | 11093 | `f8ab66e13bf24ba7701952988a426477365f903a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/forum-repository.ts` | 3 | 162943 | `cf1994d369658f7a8062526cb4787bec2728ea16` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/forum-service.ts` | 3 | 17502 | `43f3947b69df1dbdf7506e2fa4da195cb6c3fe69` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/hyperdrive-forum-attachments.ts` | 3 | 3614 | `17901fe291a7978c60f4b4df5c69a5bbc651a01c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/hyperdrive-forum.ts` | 3 | 14843 | `b6d37ab09092077991eb66ba8ca86f0530a8b23c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/forum-attachment-publication.test.ts` | 3 | 23201 | `88724530783b8ebf703f0e887f919e2be78be056` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/forum-attachments.test.ts` | 3 | 51576 | `649eaf1330f24c536e30daf6dcd26185251ac8ec` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `workers/attachment-storage.test.ts` | 3 | 2202 | `a15430749f97b047a45e4c6ba099ef8c1216516c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `workers/attachment-storage.ts` | 3 | 890 | `39ebce54acd34c9153f90657b0de6f73fab4acfa` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 4 — Локализация и UI-ресурсы (44)** | | | | | |
 | `app/localization/bundles.test.ts` | 4 | 5185 | `9b27538df785cfa215a7f0bf1a141c9634e4c067` | NOT_READ | NOT_REVIEWED |
 | `app/localization/bundles.ts` | 4 | 9246 | `aee1fc6919dd4955b8e19082c3bfb1a0fd27465c` | NOT_READ | NOT_REVIEWED |
@@ -571,6 +571,18 @@
 | **Итого** | **458** | **0** | **0** |
 
 Этап 0 **не означает** проверки хотя бы одного из 458 файлов по требуемой новой методике. Код не исправлялся, tests/PG/Worker/browser/CI не запускались, findings не опубликованы. **STOP после этапа 0**, следующий этап только по явной команде владельца.
+
+---
+
+## ЭТАП 3 — EDITOR 2.0 И ВЛОЖЕНИЯ (2026-10-24)
+
+**ЭТАП 3 ЗАВЕРШЁН НА УРОВНЕ СТАТИЧЕСКОГО CODE-ONLY АУДИТА. ВЕСЬ АУДИТ ЕЩЁ НЕ ЗАВЕРШЁН.** Зафиксирован GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, актуальный `AGENTS.md` полностью прочитан. Все **55/55 назначенных Stage 3 файлов**, суммарный Git tree size **939486 байт**, прочитаны до EOF и проверены семантически, в том числе **21 тестовый файл**. У всех 55 blob SHA и размеры совпадают с фиксированным деревом, расхождений — 0.
+
+**Охват:** Editor 2.0 (Simple/Advanced, визуальный диапазон и выделение, Markdown preview и техническая разметка, Undo/Redo, clipboard, RTL/LTR, цитаты, mentions, публикация и редактирование), upload/download API и private R2 object storage, type/signature/structural/container ZIP/PDF/image validation, операции и generation fences, правила авторизации и контекст вложений, безопасность публикации, post revision CAS, точный selection и retained attachment manifest, повторная публикация с receipt/idempotency, транзакции, отмена, 24h cleanup, security events, concurrency и отказы storage. Прослежены `app/forum/views.tsx`, `app/forum/markdown-editor.tsx`, `app/forum/visual-markdown-editor.tsx`, `db/forum-repository.ts`, `db/forum-attachments.ts`, соответствующие route handlers, worker и SQL integration assertions.
+
+**Метод:** исходники и тела всех тестов изучены, при проверке логики выполнена сквозная трассировка UI → routes → writer/service → database → storage. **Тесты, lint, typecheck, сборка, реальные PostgreSQL/R2 и браузер не запускались**. Это не подтверждение бездефектности среды; старые находки не переобъявляются новыми и записываются отдельно от coverage по правилам `AGENTS.md`.
+
+**Реестр:** Stage 1+2+3 = **155/458 FULL_EOF_READ и 155/458 SEMANTIC_REVIEWED**; остаётся **303/458**. Другие ветки и реализацию не меняли. Следующий Stage 4 — **44 файла**; **STOP до явной команды владельца**.
 
 ---
 
