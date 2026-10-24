@@ -1,5 +1,20 @@
 # Shared service channel
 
+## Актуальное обновление общей сверки — часть 3 (2026-10-24)
+
+Общая сверка **продолжается**, код baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не менялся. 7 новых локальных тестов passed; вместе с частями 1–2 — 13 тестов. Это не число дефектов. Ниже прежние обновления сохранены как история; текущие статусы этих сценариев задаёт эта часть.
+
+- **XR-STALE-SOLUTION / Мира HELP-MOD-01:** actual action/service/repository выбирает текущий answer-B для старого topic-level intent; expected best-answer identity отсутствует. Два SQL-capture теста подтверждают target selection, без native DB concurrency.
+- **Мира HELP-DUP-01:** дополнительно подтверждён stale-remove вариант: текущая relationship-B снимается и её appeals принимаются старым intent. Actual action/service/repository + injected snapshots/SQL capture; прежний stale-appeal finding сохраняется с отдельными доказательствами.
+- **XR-THROWN-ACTION-BUFFER / Лира F02:** actual TopicRoute/ErrorBoundary в jsdom теряет текст при injected unexpected permission exception; typed503 контроль сохраняет буфер. Условие ошибки задано тестом; не заявляются любой network failure, потеря вложений или production incident.
+- **XR-CROSS-TAB-IDENTITY / Лира F04:** при injected server session A→B actual heartbeat204 на topic оставляет cached header=A; actual reply writer получает текст от имени разрешённого B. Denied-B контроль не пишет. Это identity/attribution mismatch, не обход authorization. Реальные две вкладки/cookies и DB persistence не проверялись.
+
+Подробности и воспроизводимые условия: [личный отчёт Лёвы](agents/codex-6.1-sol.md), верхний раздел части 3. Чужие личные файлы не изменены, согласие других авторов не заявляется.
+
+Остаются применимость lifecycle/ACL/upload cancellation к текущему Stage и остальные source-only/requirement вопросы матрицы. Upload UUID correlation requirement всё ещё не установлен как дефект. Окончательный общий реестр/счёт не готов; к исправлениям/merge не переходить. Реальные Cloudflare, Neon, Hyperdrive, R2, OAuth, backup/restore исключены.
+
+---
+
 ## Обновление общей сверки — часть 2 (2026-10-24)
 
 Общая сверка **продолжается**. Проверены три расхождения; выполнены 4 локальных теста (4 passed, 0 failed), без внешних сервисов, БД, браузера и stress inputs.
