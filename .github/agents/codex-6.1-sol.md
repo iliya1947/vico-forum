@@ -1,5 +1,75 @@
 # Лёва — Codex-6.1 Sol
 
+## Общая сверка аудитов — первый проход (2026-10-24)
+
+Владелец разрешил общую сверку и комментарии. Кодовый baseline d72b27ca762dd930f0e7ad614e5b00832a07ec0c; снимок четырёх личных файлов и service-channel — PR head19f6a3b. Это отдельный межаудиторский этап, не переписывание чужих индивидуальных заключений.
+
+### Происхождение и подсчёт
+
+Мира:27 технических +1 SOT; Лира:6 классов +2 документации; Мишаня:30 утверждений на21386887 с отозванной независимостью; Лёва:51 группа с унаследованными и собственными доказательствами, без заявления слепой независимости. Эти числа не складываются. Разные code-file counts также не сравниваются без одинаковых path-set правил (JSON/config/operational границы отличаются).
+
+### Новые выполненные проверки этой сверки
+
+1. **XR-EDIT-409 / Мира EDITOR-PUB-01/02 / Лира F01**: настоящий локальный Topic loader/view/action с заданным repository conflict. После409 loaderCalls1, fence r1, введённый текст сохранён, rebase отсутствует. Явная router.revalidate даёт loaderCalls2 и rebase. Один успешный тест. Первый запуск имел ошибку относительных imports в тестовом файле; это не ошибка приложения.
+2. **XR-LITERAL / Мира literal-text**: настоящий escapeVisualMarkdownText и published parser. Обычные строки --- / ~~literal~~ / &copy; становятся thematicBreak / delete / ©. Один успешный тест. Это не таблицы EDITOR-02 и не mention-label EDITOR-10.
+
+Оба результата дополняют индивидуальный отчёт Лёвы: их не было в прежнем реестре. Браузер, реальные БД/сервисы и stress inputs в этих двух проверках не использованы.
+
+### Матрица утверждений Миры и Лиры
+
+| Автор / ID | Соответствие | Статус сверки | Решение / границы |
+|---|---|---|---|
+| Мира AUTHZ-01 | AUTH-02 | PARTIAL_DUPLICATE | Удалённая роль совпадает с AUTH-02; более широкий missing-user вариант не подтверждён этим воспроизведением. |
+| Мира AUTH-LINK-01 | — | OUT_OF_SCOPE | Google linking относится к исключённому OAuth; не включать в общий текущий список. |
+| Мира AUTH-SESSION-AVAIL-01 | XR-AUTH-STARTUP | SOURCE_CHAIN_CORROBORATED | getSession/connect rejection перед Router handler подтверждены кодом workers/app.ts и auth runtime; реальный platform HTTP body/status не проверен. |
+| Мира AUTH-COOKIE-ORDER-01 | AUTH-01 | DUPLICATE | Та же последовательность clearing/new cookie; дополнительные локальные доказательства уже есть. |
+| Мира AUTH-LOCALE-RETURN-01 | XR-AUTH-LOCALE | BEHAVIOR_CONFIRMED_REQUIREMENT_TO_CLARIFY | Switcher сохраняет query, а credentialReturnPath отвергает вложенный путь старой локали и возвращает новый locale root. Это не исчезновение query; необходимость ремаппинга destination требует явного требования. |
+| Мира DISCOVERY-01 | XR-HELP-DISCOVERY | PARTIAL_SOURCE_SUPPORT | readUnanswered включает Help topics и отдаёт section metadata; readSection самого service section явно возвращает undefined. Нельзя утверждать открытый generic service-section route. |
+| Мира HELP-MOD-01 | XR-STALE-SOLUTION | SOURCE_CHAIN_CORROBORATED_NOT_RACE_TESTED | Topic forms/actions не передают expected best answer identity; изменение текущего решения и применение старой модерации — отдельный от appeal сценарий. |
+| Мира HELP-DUP-01 | HELP-01 | PARTIAL_DUPLICATE | Старая апелляция совпадает с HELP-01; более общий stale relationship remove — отдельный вариант, пока без нового воспроизведения. |
+| Мира LITERAL-TEXT | XR-LITERAL | REPRODUCED_LOCAL_HELPER | escapeVisualMarkdownText и реальный published parser: --- становится thematicBreak, ~~literal~~ — delete, &copy; — ©. Не дублировать EDITOR-02 (таблицы) или EDITOR-10 (подпись mention). |
+| Мира EDITOR-PUB-01 | XR-EDIT-409 | REPRODUCED_ACTUAL_LOCAL_ROUTE | Настоящие Topic route loader/view/action: после controlled409 загрузчик остаётся на одном вызове, fence r1, текст сохранён, rebase отсутствует; явная revalidation даёт второй вызов и кнопку. |
+| Мира EDITOR-PUB-02 | XR-EDIT-409 | RELATED_SYMPTOM_GROUPED | Неверный conflict feedback сохранить как подпроблему той же цепочки edit409; не прибавлять автоматически второй независимый класс. |
+| Мира CONTENT-SIZE-01 | XR-CONTENT-BOUNDS | POLICY_GAP_NOT_AUTOMATIC_INCIDENT | Отсутствие max title/body подтверждено кодом, но не любой размер автоматически дефект. Связать с конкретным инвариантом/сложностью, не заявлять production timeout. |
+| Мира MARKDOWN-SPOILER-01 | XR-SPOILER-COMPLEXITY | STATIC_ALGORITHM_CORROBORATED_NO_STRESS | spoilerAt сканирует хвост и при отсутствии конца возвращает null; outer loop сдвигает i только на 1. Для N открывающих маркеров сумма проходов квадратична. Это отдельный статический вывод; остановленные ресурсные опыты не возобновлялись. |
+| Мира ATTACH-LIFECYCLE-01 | ATTACH-01 | DUPLICATE | Тот же orphan object без достижимой metadata row и последующего claim очистки. |
+| Мира ATTACH-STRUCT-01 | XR-ZIP-METADATA | STRUCTURAL_CONTRACT_REVIEW_NEEDED | Local header сверяет name/flags/method/bounds, но не все size/CRC/descriptor поля. Это факт покрытия; полноту требуемой bounded structural проверки и контрпример ещё нужно сверить. Не смешивать с classic65535 ZIP. |
+| Мира ATTACH-SEC-01 | XR-SECURITY-ID | IDENTIFIER_SEMANTICS_REVIEW_NEEDED | uploadId намеренно может иметь attachment-v1 hash; исходный attachmentId участвует в hash. Сверить нужную семантику корреляции и label, не объявлять потерю существующей asset-row: rejected upload может не иметь asset. |
+| Мира ATTACH-HTTP-405-01 | XR-HTTP-ALLOW | SOURCE_ROUTE_OMISSION | В attachment routes есть явный405 без Allow. Границы фактического HTTP метода/Router dispatch проверить отдельно до общего final verdict. |
+| Мира I18N-UI-POLICY-01 | XR-UI-POLICY | SOURCE_POLICY_IDENTITY_GAP | Bundle verification хеширует code inputs/resources, а отдельный machine source проверяет generationPolicyVersion. Требуется сверить contract invalidation текущего compiled bundle; policy change не равен автоматически невалидному тексту. |
+| Мира I18N-COPY-01 | LOC-04 | DUPLICATE | Тот же editorAttachmentRestoring в pending истории; не путать с CODE-HISTORY-01 overflow. |
+| Мира I18N-UGC-META-01 | XR-UGC-META | SOURCE_PRESENTATION_GAP_REPORTED | Secondary list/title metadata нужны отдельные точные примеры; dir=auto и известный lang/dir не эквивалентны. Не считать все UGC небезопасными. |
+| Мира DB-MANIFEST-01 | DB-02 | DUPLICATE | Тот же отсутствующий partial index predicate в parity manifest. |
+| Мира DB-ERROR-01 | ARCH-01 | DUPLICATE | Та же catch-all503 ошибка, что Лира F03 и Миша High. High не установлен; не все request errors становятся503. |
+| Мира POST-EDIT-AVAIL-01 | XR-POST-EDIT-503 | SOURCE_CHAIN_CORROBORATED | post-edit loader не преобразует typed forum/authz unavailable; ForumRouteError считает произвольный Error статусом500. Отличать от actual deployed response. |
+| Мира FORUM-READ-AVAIL-01 | XR-PUBLIC-503 | SOURCE_CHAIN_CORROBORATED | Primary readHomepage failure не пойман, тогда как optional presence и notifications typed unavailable обработаны. Это не тот же writer catch-all503. |
+| Мира NOTIFY-BODY-01 | XR-NOTIFY-GUARD | SOURCE_ORDER_CONFIRMED | request.formData вызывается до runForumMutation guard. Сам обход auth/Origin не установлен; body parsing до guard — отдельный порядок обработки. |
+| Мира NOTIFY-PAGING-01 | CORE-02 | DUPLICATE | Тот же latest50 inbox/all unread badge; старый post остаётся доступен другими путями. |
+| Мира TAG-CARDINALITY-01 | XR-TAG-BOUNDS | CARDINALITY_POLICY_GAP | normalizeForumTags ограничивает длину каждого tag64, но не число unique tags; реальный scale failure или согласованный max не доказаны одним отсутствием лимита. |
+| Мира MIGRATION-SOT-01 | DOC-02 | DUPLICATE_DOCUMENTATION | Та же разница0043/0044; отдельно от runtime дефектов. |
+| Лира F01 | XR-EDIT-409 | REPRODUCED_ACTUAL_LOCAL_ROUTE | Совпадает с EDITOR-PUB-01/02; после409 не теряется текст, но нет актуальной revision/rebase. |
+| Лира F02 | XR-THROWN-ACTION-BUFFER | SOURCE_CONDITIONAL_NOT_REPRODUCED | Thrown action заменяет TopicView error boundary и размонтирует memory buffer. Это не любая network failure; применимость обещания сохранения текста при unexpected throw отдельно сверить. |
+| Лира F03 | ARCH-01 | DUPLICATE | Тот же writer catch-all503. |
+| Лира F04 | XR-CROSS-TAB-IDENTITY | SOURCE_CONDITIONAL_NOT_REPRODUCED | Heartbeat401 обновляет root, но204 на topic не обновляет cached identity. A→B stale client/user attribution требует отдельной проверки; server authority не обходится. |
+| Лира F05 | HELP-01 | DUPLICATE | Та же stale appeal identity; прежняя native race сильнее source-only доказательства. |
+| Лира F06 | M-M10 | RELATED_SAME_PALETTE_FAMILY | Белый текст submit на accent — дополнительное место; не тот же цветовой pair, что навигация. Не суммировать как новый класс без определения root cause. |
+| Лира D01 | DOC-02 | DUPLICATE_DOCUMENTATION | Migration0043/0044. |
+| Лира D02 | DOC-04 | DUPLICATE_DOCUMENTATION | History role-only vs effective permission. |
+| Лира R01 | CORE-01 | PRIOR_NATIVE_PROOF_RESOLVES_CONDITIONAL | У Лиры PG race не запускалась; прежнее native PG доказательство в реестре Лёвы найдено. Это не исполнение Лиры. |
+| Лира R02 | SEC-01 | PARTIAL_OVERLAP | Raw diagnostics риск шире; конкретный profile form/SQL leakage подтверждён прежним injected-DB-error доказательством. Не расширять на все handlers без проверки. |
+
+### Остальные реестры
+
+51 группа Лёвы сохранена как отдельные доказательства, а не объявлена коллективным консенсусом. ARCH-02 требует разрешения применимости lifecycle, DB-03 — отделения внутреннего grant-контракта от Stage6 rollout, ATTACH-04 — уточнения требования индивидуальной отмены uploading.
+
+30 утверждений Миши сопоставлены с уже выполненной d72b27c verification:15 confirmed /14partial /1not confirmed. Это классификация утверждений, не30 дефектов. Наличие type-only cycle, неиспользуемого export, отсутствия threshold/timeout/favicon само по себе не устанавливает current-Stage функциональный дефект. Generic pagination/unread-scope scalability не объединяется с реальной потерей доступа к старым notification через inbox.
+
+### Статус
+
+Первый проход общей сверки завершён, окончательная общая классификация открыта. Оставшиеся спорные пункты перечислены явно; никакого общего PASS и команды исправлять весь объединённый список нет. Не нужны повторное чтение всего дерева, реальные исключённые сервисы или возобновление остановленных ресурсных опытов. Следующий проход — точечное разрешение перечисленных расхождений. Личные отчёты других агентов не изменялись.
+
+---
+
 ## Опубликованный итог AUD-20261022 — 2026-10-24
 
 Публикация в личный файл выполнена по прямому разрешению владельца в текущем чате. Текущий итог имеет приоритет перед историческими незавершёнными статусами ниже. Реализация не изменена; общая межагентная сверка этим обновлением не выполняется.
