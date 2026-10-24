@@ -47,7 +47,7 @@
 - **На новом проходе проверка ВСЕГО кода: FULL_EOF_READ = 0/458; SEMANTIC_REVIEWED = 0/458; cross-file scenario evidence = 0/458.** Считаются только действия ПОСЛЕ начала нового прохода. Исторические 400 scoped/58 full-read отметки не перенесены в новые PASS.
 - Следующий этап 1: только группа 1 ниже. Впоследствии при любом изменении `main` применить новое сравнение tree/sha и проверить затронутые механизмы.
 
-### Единый новый реестр кода (392/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
+### Единый новый реестр кода (458/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
 
 Идентификатор исходника — **полный Git blob SHA** в конкретном immutable tree; `Bytes` — исходный размер Git blob, **не количество прочитанных байт**. `READ` = `NOT_READ_THIS_PASS`, `SEM` = `NOT_REVIEWED_THIS_PASS` для каждой строки; колонки статуса нельзя изменять без фактической проверки.
 
@@ -452,72 +452,72 @@
 | `tests/database/migrations.test.ts` | 6 | 132016 | `1b6923993b6f165acd86e7816877fa2e4e620f60` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | `tests/production-migration-verifier.test.ts` | 6 | 1229 | `7f710be04fbac53693d5eb055d5a1a663f157256` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 7 — UI/CSS/Preview, безопасность, CI и scripts (66)** | | | | | |
-| `.github/runtime-migration-evidence.json` | 7 | 252 | `9347ed5ed0b3689636cee5b468c10f37d89663b4` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/bootstrap-production-web-credential.mjs` | 7 | 19382 | `014f90d2813d65d0908e8ac94c5dbb945a2ac15d` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/bootstrap-production-web-credential.test.mjs` | 7 | 8649 | `26640e4472afcfb0573512712a33755febe38210` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/diagnose-production-web-credential.mjs` | 7 | 10041 | `afc67cd9dfe76f110862f2bdd7c667c90fe550ce` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/diagnose-production-web-credential.test.mjs` | 7 | 4835 | `ea790fcfa049a93e15d9a0c174c8988e377c66f4` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-privileges.mjs` | 7 | 17001 | `8e4a33448c3186872c7112d589ebe661f71aafcd` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-privileges.test.mjs` | 7 | 13361 | `a7afb49ac6fc7fd9ec4005c6956dc01b71230e89` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | 7 | 2086 | `a4b2d8a1a5a75d9766e0dc9fbb0a9dd5a7a6d220` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | 7 | 2948 | `0530441fc53fb75c54323d3f0b97c4e9b9cad831` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | 7 | 3640 | `fdb1fd1acccda8c8fadcf0eaf17ee5c721d7e493` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-web-credential-recovery-workflow.test.mjs` | 7 | 2735 | `bda18d741e926903a96bea3592e1b5bb07b35eaf` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-worker-rollout.mjs` | 7 | 4666 | `009182db3ec42fd0801412a087f727edcdab2b2f` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-worker-rollout.test.mjs` | 7 | 8209 | `468dc6b2ea73a5c864389d1d6029ecbe962fd056` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/provision-production-web-relations.mjs` | 7 | 10654 | `1a8fd2a814cd4cdcaa1f642e33263fbfa1892bfc` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/provision-production-web-relations.test.mjs` | 7 | 9645 | `cc09f59c85c3d651d63a931431d7a131179533f5` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/recover-production-web-credential-v2.mjs` | 7 | 3133 | `cacbcf2e9c3dd190a548fcd1c1ee2c27876bb8f5` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/recover-production-web-credential.mjs` | 7 | 10567 | `99753ed6d1dc2033f01a3e8c242e892df95ceefc` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/recover-production-web-credential.test.mjs` | 7 | 10110 | `c8a8457aae839470b5bfbb48950e98db84bd8c0c` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/runtime-migration-evidence.mjs` | 7 | 2543 | `8d06ee99d82707f1aafd842986a856d353974f0a` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/runtime-migration-evidence.test.mjs` | 7 | 2601 | `cdb0c59e5d5763217a84562b67e2343d0909480c` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/validate-production-web-credential-input.mjs` | 7 | 6769 | `270d82b9a165e44e611bc6ade1bec6b29f69e7da` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/validate-production-web-credential-input.test.mjs` | 7 | 6024 | `121dab2956300fae23871b3f2de6bfebd9736acb` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-production-migration-identity.mjs` | 7 | 2010 | `04a5876f2ecb97abab4800f61594f986d404b3dd` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-production-migration-identity.test.mjs` | 7 | 1107 | `1a7af3f4524d73f2536ed5fb91f98be33d238bff` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-production-migration.mjs` | 7 | 8632 | `dbd523fb09db8d645fd5daeaeb750caef650589a` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-production-runtime-privileges.mjs` | 7 | 2099 | `46796604b57c290d6548a8c6f1129f4f8eb88a4c` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-recovery-v2-validation-run.mjs` | 7 | 2757 | `b85179af53b08620edcea22d0653334d4a5ecf44` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-recovery-v2-validation-run.test.mjs` | 7 | 2302 | `6965393134d3e7bca8347862f5d56829d5221442` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-runtime-migration-evidence.mjs` | 7 | 2092 | `dc4afe7bed8ff988537215f66ac958d1c76268c1` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | 7 | 5391 | `95c8806f3edc61b6bc3fabbbde9e0b8e727b6ee8` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | 7 | 4358 | `23164c0b0b290dcd329eb516209277ec660ba252` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-web-credential-recovery-probes.mjs` | 7 | 6272 | `a21e22b85b93047248d4aa1c984ea57cbb018009` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-web-relation-provisioning-probes.mjs` | 7 | 5637 | `5754752544f26c883d6cf00efdf683e3f17a9e5e` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/ci.yml` | 7 | 5154 | `39fac246a79b689bcc9ddf682976fc07abaaf29c` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/codex-service-channel-bridge.yml` | 7 | 2478 | `a736f0aa6fece855bf6511878e7d25691d762dfb` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-db-identity.yml` | 7 | 1041 | `b611d137041e825e85aaa9dd7262ab901f22a89a` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-db-migrate.yml` | 7 | 2247 | `48c63ca6fedc845e48fe541e6e31e5a6ade30f44` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-runtime-privileges.yml` | 7 | 1177 | `6c06f3e934cc8d6161906e8e1dd2d56379f7d376` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-credential-bootstrap.yml` | 7 | 2082 | `3f1278765d941b6de76e090c95b450c40ff2a347` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-credential-input-validation.yml` | 7 | 1941 | `6589bce24c304c18469036fadde883cbee66d608` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-credential-preflight-diagnostic.yml` | 7 | 1388 | `7b5d52b4d40776c0a0b2fc4b6e9e6c322da4baed` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-credential-recovery-v2.yml` | 7 | 3871 | `60c5613f9d9ac7b2387e4ae4c0986fb440718ed5` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-credential-recovery.yml` | 7 | 2057 | `e51b64a3bf15367aed2e81144daf4900195daca8` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-credential-rollback-probe.yml` | 7 | 2102 | `ef2765ff5048eed8823393e0f334335ed5599529` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-web-relation-provision.yml` | 7 | 1465 | `538266b555ebc56e468c0bb88fbf1890f817c311` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/production-worker-rollout.yml` | 7 | 13105 | `28b5fe4bdbd34c7a64a08b6d154660509bfca4b8` | NOT_READ | NOT_REVIEWED |
-| `.github/workflows/ui-preview-pages.yml` | 7 | 1360 | `5f8b53f6ff450fda8acd74e5d925cfc8ac996fd4` | NOT_READ | NOT_REVIEWED |
-| `app/entry.client.tsx` | 7 | 276 | `487c480b952c5e8e67e428e268fd4dd39fe7d830` | NOT_READ | NOT_REVIEWED |
-| `app/entry.server.tsx` | 7 | 1217 | `22aa313b17eaec69014e61dffe945dd3a520ba3d` | NOT_READ | NOT_REVIEWED |
-| `app/forum/avatar.tsx` | 7 | 552 | `2ff52c5154e875ff2f4b27446f637ff95a0affeb` | NOT_READ | NOT_REVIEWED |
-| `app/forum/ui.test.tsx` | 7 | 7090 | `bcd8e15c1f489423964e31107ccb0e1305136a57` | NOT_READ | NOT_REVIEWED |
-| `app/forum/ui.tsx` | 7 | 15451 | `3544dac3df34363fac9f134a1c02eb785705d363` | NOT_READ | NOT_REVIEWED |
-| `app/root.tsx` | 7 | 1794 | `c1708e1ea80d15b72a74242130221daa1606717f` | NOT_READ | NOT_REVIEWED |
-| `app/server-logging.test.ts` | 7 | 1496 | `316bcd8b03537966c3030f01136209df78b9a793` | NOT_READ | NOT_REVIEWED |
-| `app/server-logging.ts` | 7 | 832 | `f37758fa554e05e68437ed46b8698eba032773be` | NOT_READ | NOT_REVIEWED |
-| `app/styles.css` | 7 | 209186 | `afb2a81864df73afa0cce97fe3f62827e3eed5cb` | NOT_READ | NOT_REVIEWED |
-| `app/theme.ts` | 7 | 571 | `c92403e2caefd52acb840266c412c21b3a06502b` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/index.html` | 7 | 368 | `1d0f882ba0f8359df1ebfff0bf70bb89c8207feb` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/main.tsx` | 7 | 954 | `13e035712164266235e15595b2665163f3c1ba80` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/preview-app.test.tsx` | 7 | 3226 | `332e6643b67fa18291774c5f8cbab8888f50ef83` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/preview-app.tsx` | 7 | 97495 | `f4f250fafa7640316eb8681c43178d509e08f682` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/preview-i18n.ts` | 7 | 2830 | `1762bc316506c26f9994ccb2a1a7daa3a850d8cc` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/preview.css` | 7 | 2281 | `b963280365b24c647672f483e6c1526eefa9f8e7` | NOT_READ | NOT_REVIEWED |
-| `app/ui-preview/vite.config.ts` | 7 | 188 | `96e75dcb150e9e08d464349c440c4c0b1b8b156d` | NOT_READ | NOT_REVIEWED |
-| `scripts/smoke-production-worker.sh` | 7 | 584 | `4663b1eb7af50db164fbd676fe663e2d37028845` | NOT_READ | NOT_REVIEWED |
-| `scripts/smoke-workers.sh` | 7 | 1471 | `22a4de1ffba5d0460def7bdb51f0c4aaf99757dc` | NOT_READ | NOT_REVIEWED |
+| `.github/runtime-migration-evidence.json` | 7 | 252 | `9347ed5ed0b3689636cee5b468c10f37d89663b4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/bootstrap-production-web-credential.mjs` | 7 | 19382 | `014f90d2813d65d0908e8ac94c5dbb945a2ac15d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/bootstrap-production-web-credential.test.mjs` | 7 | 8649 | `26640e4472afcfb0573512712a33755febe38210` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/diagnose-production-web-credential.mjs` | 7 | 10041 | `afc67cd9dfe76f110862f2bdd7c667c90fe550ce` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/diagnose-production-web-credential.test.mjs` | 7 | 4835 | `ea790fcfa049a93e15d9a0c174c8988e377c66f4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-privileges.mjs` | 7 | 17001 | `8e4a33448c3186872c7112d589ebe661f71aafcd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-privileges.test.mjs` | 7 | 13361 | `a7afb49ac6fc7fd9ec4005c6956dc01b71230e89` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | 7 | 2086 | `a4b2d8a1a5a75d9766e0dc9fbb0a9dd5a7a6d220` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | 7 | 2948 | `0530441fc53fb75c54323d3f0b97c4e9b9cad831` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | 7 | 3640 | `fdb1fd1acccda8c8fadcf0eaf17ee5c721d7e493` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-web-credential-recovery-workflow.test.mjs` | 7 | 2735 | `bda18d741e926903a96bea3592e1b5bb07b35eaf` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-worker-rollout.mjs` | 7 | 4666 | `009182db3ec42fd0801412a087f727edcdab2b2f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-worker-rollout.test.mjs` | 7 | 8209 | `468dc6b2ea73a5c864389d1d6029ecbe962fd056` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/provision-production-web-relations.mjs` | 7 | 10654 | `1a8fd2a814cd4cdcaa1f642e33263fbfa1892bfc` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/provision-production-web-relations.test.mjs` | 7 | 9645 | `cc09f59c85c3d651d63a931431d7a131179533f5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/recover-production-web-credential-v2.mjs` | 7 | 3133 | `cacbcf2e9c3dd190a548fcd1c1ee2c27876bb8f5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/recover-production-web-credential.mjs` | 7 | 10567 | `99753ed6d1dc2033f01a3e8c242e892df95ceefc` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/recover-production-web-credential.test.mjs` | 7 | 10110 | `c8a8457aae839470b5bfbb48950e98db84bd8c0c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/runtime-migration-evidence.mjs` | 7 | 2543 | `8d06ee99d82707f1aafd842986a856d353974f0a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/runtime-migration-evidence.test.mjs` | 7 | 2601 | `cdb0c59e5d5763217a84562b67e2343d0909480c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/validate-production-web-credential-input.mjs` | 7 | 6769 | `270d82b9a165e44e611bc6ade1bec6b29f69e7da` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/validate-production-web-credential-input.test.mjs` | 7 | 6024 | `121dab2956300fae23871b3f2de6bfebd9736acb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-production-migration-identity.mjs` | 7 | 2010 | `04a5876f2ecb97abab4800f61594f986d404b3dd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-production-migration-identity.test.mjs` | 7 | 1107 | `1a7af3f4524d73f2536ed5fb91f98be33d238bff` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-production-migration.mjs` | 7 | 8632 | `dbd523fb09db8d645fd5daeaeb750caef650589a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-production-runtime-privileges.mjs` | 7 | 2099 | `46796604b57c290d6548a8c6f1129f4f8eb88a4c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-recovery-v2-validation-run.mjs` | 7 | 2757 | `b85179af53b08620edcea22d0653334d4a5ecf44` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-recovery-v2-validation-run.test.mjs` | 7 | 2302 | `6965393134d3e7bca8347862f5d56829d5221442` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-runtime-migration-evidence.mjs` | 7 | 2092 | `dc4afe7bed8ff988537215f66ac958d1c76268c1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | 7 | 5391 | `95c8806f3edc61b6bc3fabbbde9e0b8e727b6ee8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | 7 | 4358 | `23164c0b0b290dcd329eb516209277ec660ba252` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-web-credential-recovery-probes.mjs` | 7 | 6272 | `a21e22b85b93047248d4aa1c984ea57cbb018009` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-web-relation-provisioning-probes.mjs` | 7 | 5637 | `5754752544f26c883d6cf00efdf683e3f17a9e5e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/ci.yml` | 7 | 5154 | `39fac246a79b689bcc9ddf682976fc07abaaf29c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/codex-service-channel-bridge.yml` | 7 | 2478 | `a736f0aa6fece855bf6511878e7d25691d762dfb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-db-identity.yml` | 7 | 1041 | `b611d137041e825e85aaa9dd7262ab901f22a89a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-db-migrate.yml` | 7 | 2247 | `48c63ca6fedc845e48fe541e6e31e5a6ade30f44` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-runtime-privileges.yml` | 7 | 1177 | `6c06f3e934cc8d6161906e8e1dd2d56379f7d376` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-credential-bootstrap.yml` | 7 | 2082 | `3f1278765d941b6de76e090c95b450c40ff2a347` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-credential-input-validation.yml` | 7 | 1941 | `6589bce24c304c18469036fadde883cbee66d608` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-credential-preflight-diagnostic.yml` | 7 | 1388 | `7b5d52b4d40776c0a0b2fc4b6e9e6c322da4baed` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-credential-recovery-v2.yml` | 7 | 3871 | `60c5613f9d9ac7b2387e4ae4c0986fb440718ed5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-credential-recovery.yml` | 7 | 2057 | `e51b64a3bf15367aed2e81144daf4900195daca8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-credential-rollback-probe.yml` | 7 | 2102 | `ef2765ff5048eed8823393e0f334335ed5599529` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-web-relation-provision.yml` | 7 | 1465 | `538266b555ebc56e468c0bb88fbf1890f817c311` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/production-worker-rollout.yml` | 7 | 13105 | `28b5fe4bdbd34c7a64a08b6d154660509bfca4b8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/workflows/ui-preview-pages.yml` | 7 | 1360 | `5f8b53f6ff450fda8acd74e5d925cfc8ac996fd4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/entry.client.tsx` | 7 | 276 | `487c480b952c5e8e67e428e268fd4dd39fe7d830` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/entry.server.tsx` | 7 | 1217 | `22aa313b17eaec69014e61dffe945dd3a520ba3d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/avatar.tsx` | 7 | 552 | `2ff52c5154e875ff2f4b27446f637ff95a0affeb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/ui.test.tsx` | 7 | 7090 | `bcd8e15c1f489423964e31107ccb0e1305136a57` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/forum/ui.tsx` | 7 | 15451 | `3544dac3df34363fac9f134a1c02eb785705d363` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/root.tsx` | 7 | 1794 | `c1708e1ea80d15b72a74242130221daa1606717f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/server-logging.test.ts` | 7 | 1496 | `316bcd8b03537966c3030f01136209df78b9a793` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/server-logging.ts` | 7 | 832 | `f37758fa554e05e68437ed46b8698eba032773be` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/styles.css` | 7 | 209186 | `afb2a81864df73afa0cce97fe3f62827e3eed5cb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/theme.ts` | 7 | 571 | `c92403e2caefd52acb840266c412c21b3a06502b` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/index.html` | 7 | 368 | `1d0f882ba0f8359df1ebfff0bf70bb89c8207feb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/main.tsx` | 7 | 954 | `13e035712164266235e15595b2665163f3c1ba80` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/preview-app.test.tsx` | 7 | 3226 | `332e6643b67fa18291774c5f8cbab8888f50ef83` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/preview-app.tsx` | 7 | 97495 | `f4f250fafa7640316eb8681c43178d509e08f682` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/preview-i18n.ts` | 7 | 2830 | `1762bc316506c26f9994ccb2a1a7daa3a850d8cc` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/preview.css` | 7 | 2281 | `b963280365b24c647672f483e6c1526eefa9f8e7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/ui-preview/vite.config.ts` | 7 | 188 | `96e75dcb150e9e08d464349c440c4c0b1b8b156d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `scripts/smoke-production-worker.sh` | 7 | 584 | `4663b1eb7af50db164fbd676fe663e2d37028845` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `scripts/smoke-workers.sh` | 7 | 1471 | `22a4de1ffba5d0460def7bdb51f0c4aaf99757dc` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 
 ### Вне scope кода: только reference/assets
 
@@ -571,6 +571,23 @@
 | **Итого** | **458** | **0** | **0** |
 
 Этап 0 **не означает** проверки хотя бы одного из 458 файлов по требуемой новой методике. Код не исправлялся, tests/PG/Worker/browser/CI не запускались, findings не опубликованы. **STOP после этапа 0**, следующий этап только по явной команде владельца.
+
+---
+
+
+## ЭТАП 7 — UI, CSS, PREVIEW, БЕЗОПАСНОСТЬ, CI И OPERATIONAL CODE (2026-10-24)
+
+**ЭТАП 7 CODE-ONLY REVIEW ЗАВЕРШЁН; ВЕСЬ АУДИТ ПО-ПРЕЖНЕМУ ОТКРЫТ.** Baseline GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`. В начале этапа заново получен и полностью прочитан `AGENTS.md` из `main`. Все 66 назначенных файлов получены и прочитаны до EOF с содержательной проверкой соответствующих условий, CSS cascade, ветвей ошибок и тестовых утверждений; **17 из 66 — тестовые файлы**. Сверка immutable Git tree (`truncated=false`) подтвердила **66/66 exact path / blob SHA / Git byte size, 0 расхождений**, суммарный Git blob size **591838 байт**. Уникальных записей первичного ledger стало **458/458**.
+
+**UI/SSR:** `app/entry.client.tsx`, `app/entry.server.tsx`, `app/root.tsx`, `app/forum/ui.tsx` и соответствующие тесты: server stream/HEAD/error classification, client hydration, theme preference and OS fallback, locale navigation, safe system states, header/auth/notification links, focus, per-route shell. `app/server-logging.ts` и тест: bounded runtime-safe logging. `app/forum/avatar.tsx` — безопасный инициирующий avatar display. Это только source inspection, не исполненный browser/server test.
+
+**Стили/Preview:** `app/styles.css` прочитан полностью — **9644 строки**; `app/ui-preview/preview-app.tsx` — **2158 строк**, вместе с preview host, CSS, locale data, vite и test source. Проверены CSS base vs `.home-shell` palette scope, dark/light tokens, RTL logical properties and arrow mirroring, responsive tiers, zoom/reflow, keyboard focus, reduced-motion, editor Simple/Advanced/Split/Preview/fullscreen, Markdown code/table/quotes, Help/Attention, topic/profile/system states. Preview создаёт локальные fixture/scenario state и повторно использует production UI-представления; сохранение/публикация формы в демонстрационном режиме блокируется. Обнаруженные предварительные подозрения не повышались до дефекта без анализа каскада и контекста (например, `--color-action-on-accent` определяется в `.home-shell`, которую `ForumShell` применяет ко всем основным вариантам).
+
+**Workflows / scripts:** `.github/workflows/*.yml` — **14 файлов**; `.github/scripts/*.mjs` — **32 файла** (включая тесты), плюс `.github/runtime-migration-evidence.json` и два `scripts/smoke-*.sh`. Прочитаны guard and permission scopes, CI pinned toolchain, exact SHA gates, manual confirmation, database identity and privileges, production migration evidence chain, ephemeral SCRAM credential bootstrapping/recovery/diagnostics, lease and compensation, PostgreSQL-only disposable probes, Worker version upload/smoke/promotion/rollback, GitHub Pages preview. Tests inspected by actual assertions, including error/mismatch/revert paths. Bridge workflow относится к старому PR #147, который на момент проверки закрыт; это само по себе не подтверждает дефект работающего форума или основание менять код.
+
+**Итог:** новых подтверждённых дефектов *текущего* product Stage по этой ограниченной code-only группе не установлено. Это не утверждение об отсутствии runtime-дефектов. Тесты, CI, browser, PostgreSQL, production Workflows и Workers **не запускались**; внешние операции/секреты/provisioning не выполнялись. Старые findings и пересекающиеся цепочки остаются на этап 8, без автоматического переноса вердиктов. Исходники, shared communication и файлы других агентов не изменены.
+
+**Общий статус:** **458/458 первичных code/test/config/data-contract файлов отмечены FULL_EOF_READ + SEMANTIC_REVIEWED**; **этап 8 (сквозная перепроверка) и этап 9 (независимая финальная полнота) ещё не начаты**. Следующий шаг только по явной команде владельца — **этап 8**. **STOP после этапа 7**.
 
 ---
 
