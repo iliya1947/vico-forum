@@ -47,7 +47,7 @@
 - **На новом проходе проверка ВСЕГО кода: FULL_EOF_READ = 0/458; SEMANTIC_REVIEWED = 0/458; cross-file scenario evidence = 0/458.** Считаются только действия ПОСЛЕ начала нового прохода. Исторические 400 scoped/58 full-read отметки не перенесены в новые PASS.
 - Следующий этап 1: только группа 1 ниже. Впоследствии при любом изменении `main` применить новое сравнение tree/sha и проверить затронутые механизмы.
 
-### Единый новый реестр кода (155/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
+### Единый новый реестр кода (199/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
 
 Идентификатор исходника — **полный Git blob SHA** в конкретном immutable tree; `Bytes` — исходный размер Git blob, **не количество прочитанных байт**. `READ` = `NOT_READ_THIS_PASS`, `SEM` = `NOT_REVIEWED_THIS_PASS` для каждой строки; колонки статуса нельзя изменять без фактической проверки.
 
@@ -212,50 +212,50 @@
 | `workers/attachment-storage.test.ts` | 3 | 2202 | `a15430749f97b047a45e4c6ba099ef8c1216516c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | `workers/attachment-storage.ts` | 3 | 890 | `39ebce54acd34c9153f90657b0de6f73fab4acfa` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 4 — Локализация и UI-ресурсы (44)** | | | | | |
-| `app/localization/bundles.test.ts` | 4 | 5185 | `9b27538df785cfa215a7f0bf1a141c9634e4c067` | NOT_READ | NOT_REVIEWED |
-| `app/localization/bundles.ts` | 4 | 9246 | `aee1fc6919dd4955b8e19082c3bfb1a0fd27465c` | NOT_READ | NOT_REVIEWED |
-| `app/localization/catalog.ts` | 4 | 78225 | `502be03c0c1ec91867857b6ac77cc9e2386b048d` | NOT_READ | NOT_REVIEWED |
-| `app/localization/fingerprint.ts` | 4 | 1097 | `79785ec9471a055e0d7800cb2c72b4d7d446a59e` | NOT_READ | NOT_REVIEWED |
-| `app/localization/i18next-types.test.ts` | 4 | 676 | `702260e1e45e22c78b16ef33892d2cc71105474d` | NOT_READ | NOT_REVIEWED |
-| `app/localization/locale-navigation.tsx` | 4 | 947 | `1b52e57d1437b3c6cecb441141df4ee9503c0a75` | NOT_READ | NOT_REVIEWED |
-| `app/localization/locale-rules.test.ts` | 4 | 808 | `c5dc60f52ca795a076abd4cf33759d109c0ad09f` | NOT_READ | NOT_REVIEWED |
-| `app/localization/locale-rules.ts` | 4 | 1564 | `82bd00cc6fe7da1ca4758f56ea35669dbaa0c6b5` | NOT_READ | NOT_REVIEWED |
-| `app/localization/locale.ts` | 4 | 1995 | `be96abce310743ac56f960dbfd3e76a8e2d0d7ed` | NOT_READ | NOT_REVIEWED |
-| `app/localization/manual-fingerprints.ts` | 4 | 48920 | `d3d98732e3ac7eb562d0c18447d9de7907ed3e26` | NOT_READ | NOT_REVIEWED |
-| `app/localization/manual-packs.ts` | 4 | 958 | `2dd633130762cd857b9ea4c2fa1864e42b0eb421` | NOT_READ | NOT_REVIEWED |
-| `app/localization/manual-values.ts` | 4 | 71591 | `0ce5389fb16a69b19f3bbcd7300cc18e4f676c76` | NOT_READ | NOT_REVIEWED |
-| `app/localization/persistent-registry.test.ts` | 4 | 6368 | `117d6df3ea91b963ed5e65ac0308bd633b1c7304` | NOT_READ | NOT_REVIEWED |
-| `app/localization/persistent-registry.ts` | 4 | 9065 | `cbd69cd1dee1558bccbbbf25e40f29fabf9a0cbd` | NOT_READ | NOT_REVIEWED |
-| `app/localization/persistent-sources.test.ts` | 4 | 9987 | `3b0b3e34ca0328169360fa5201bbc5dfd34b0888` | NOT_READ | NOT_REVIEWED |
-| `app/localization/persistent-sources.ts` | 4 | 13011 | `8811c0d8499459d5d1657f0e6d6d8f525545d242` | NOT_READ | NOT_REVIEWED |
-| `app/localization/registry.test.ts` | 4 | 3669 | `1e84a8e3f92bdfa171f7d906707a7e6da8ea6a06` | NOT_READ | NOT_REVIEWED |
-| `app/localization/registry.ts` | 4 | 5628 | `25db393733cb84f906ac8361aac0f70e585be138` | NOT_READ | NOT_REVIEWED |
-| `app/localization/request-context.test.ts` | 4 | 2753 | `477ca0acdf349afa0ad2cd68efcfa260fbde29c4` | NOT_READ | NOT_REVIEWED |
-| `app/localization/request-context.ts` | 4 | 3519 | `9fb451bd79eb9db523a9b2cd7fae5000a756e195` | NOT_READ | NOT_REVIEWED |
-| `app/localization/resolver.test.ts` | 4 | 5433 | `85cf2c5552c318af93ce12d65ca1803c3d2f25bb` | NOT_READ | NOT_REVIEWED |
-| `app/localization/resolver.ts` | 4 | 4922 | `1fd749e3bb2110614997ee8cd96097f384b4e388` | NOT_READ | NOT_REVIEWED |
-| `app/localization/resource-loader-bundles.test.ts` | 4 | 5337 | `3c6b169bfa32dcfb905c5640a7b648b34c5336a9` | NOT_READ | NOT_REVIEWED |
-| `app/localization/resource-loader.ts` | 4 | 2769 | `0e84e076a877167394583708fd8aabb25998271c` | NOT_READ | NOT_REVIEWED |
-| `app/localization/resources.test.ts` | 4 | 11626 | `9c0362717f93e72c0291d8201fae4f223e389ba0` | NOT_READ | NOT_REVIEWED |
-| `app/localization/runtime.ts` | 4 | 654 | `139c13d064bea4db50d7c678d1e0a88e51a658dc` | NOT_READ | NOT_REVIEWED |
-| `app/localization/sources.ts` | 4 | 6251 | `b38c0cc0aa1e60433d2faa06cdc339e1110b855a` | NOT_READ | NOT_REVIEWED |
-| `app/localization/ui-translation-service.test.ts` | 4 | 7841 | `1667739fa6a4980992e3489ae7b5a60139b5faa8` | NOT_READ | NOT_REVIEWED |
-| `app/localization/ui-translation-service.ts` | 4 | 6971 | `0902ad69712fb0d0429cda8c421744d305ce425f` | NOT_READ | NOT_REVIEWED |
-| `app/routes/locale-boundary.test.ts` | 4 | 6596 | `4a3eb7591cb2fad11d59add52b0d31dcd6123899` | NOT_READ | NOT_REVIEWED |
-| `app/routes/locale-boundary.tsx` | 4 | 6209 | `c156f4302543bb31988d53e8d03d0c4728faa4d2` | NOT_READ | NOT_REVIEWED |
-| `app/routes/locale-negotiation.test.ts` | 4 | 3355 | `800c32e49171c6ae352bdd0a8c676a69eb85b94f` | NOT_READ | NOT_REVIEWED |
-| `app/routes/locale-negotiation.ts` | 4 | 825 | `c22c8c48b85b4d88650da97b5c4e234acdbd32c6` | NOT_READ | NOT_REVIEWED |
-| `db/hyperdrive-ui-translations.test.ts` | 4 | 7638 | `89d7089a52fc6d11b893b8109afe321765bff92f` | NOT_READ | NOT_REVIEWED |
-| `db/hyperdrive-ui-translations.ts` | 4 | 5853 | `4daa28f2168b30273625d25880b05b32a402cc4d` | NOT_READ | NOT_REVIEWED |
-| `db/locale-repository.test.ts` | 4 | 7711 | `b16d030c3f8ff0b18b53055f87bd137da15b91d1` | NOT_READ | NOT_REVIEWED |
-| `db/locale-repository.ts` | 4 | 6999 | `7db3c6c4a116ab099032f5cabdeb60cbff26741c` | NOT_READ | NOT_REVIEWED |
-| `db/ui-translation-bundle-store.test.ts` | 4 | 1106 | `e1bd436439838c32f66e47c9a03823a823c161f8` | NOT_READ | NOT_REVIEWED |
-| `db/ui-translation-bundle-store.ts` | 4 | 6496 | `1d97a51aa93e679b884321c96c89f7e8fee1e632` | NOT_READ | NOT_REVIEWED |
-| `db/ui-translation-store.ts` | 4 | 1368 | `f0b63851dd577b7f98e3661fc819cbb2aa7318e5` | NOT_READ | NOT_REVIEWED |
-| `scripts/reconcile-ui-translation-bundles.ts` | 4 | 2246 | `a2671e15a2563d85eda62aaaa4cb6d55c14495c8` | NOT_READ | NOT_REVIEWED |
-| `tests/database/ui-translation-bundle-store.test.ts` | 4 | 10790 | `7b043dae0d50d96851daa2c601682ae4585cbc0f` | NOT_READ | NOT_REVIEWED |
-| `tests/database/ui-translation-storage.test.ts` | 4 | 7018 | `27eff4e275ec3b9d84fd6e3e2cf3c708d6fd1323` | NOT_READ | NOT_REVIEWED |
-| `tests/database/ui-translation-store.test.ts` | 4 | 3836 | `75ad2c6be244f0cd9192c3acb5c3086909c8a044` | NOT_READ | NOT_REVIEWED |
+| `app/localization/bundles.test.ts` | 4 | 5185 | `9b27538df785cfa215a7f0bf1a141c9634e4c067` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/bundles.ts` | 4 | 9246 | `aee1fc6919dd4955b8e19082c3bfb1a0fd27465c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/catalog.ts` | 4 | 78225 | `502be03c0c1ec91867857b6ac77cc9e2386b048d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/fingerprint.ts` | 4 | 1097 | `79785ec9471a055e0d7800cb2c72b4d7d446a59e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/i18next-types.test.ts` | 4 | 676 | `702260e1e45e22c78b16ef33892d2cc71105474d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/locale-navigation.tsx` | 4 | 947 | `1b52e57d1437b3c6cecb441141df4ee9503c0a75` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/locale-rules.test.ts` | 4 | 808 | `c5dc60f52ca795a076abd4cf33759d109c0ad09f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/locale-rules.ts` | 4 | 1564 | `82bd00cc6fe7da1ca4758f56ea35669dbaa0c6b5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/locale.ts` | 4 | 1995 | `be96abce310743ac56f960dbfd3e76a8e2d0d7ed` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/manual-fingerprints.ts` | 4 | 48920 | `d3d98732e3ac7eb562d0c18447d9de7907ed3e26` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/manual-packs.ts` | 4 | 958 | `2dd633130762cd857b9ea4c2fa1864e42b0eb421` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/manual-values.ts` | 4 | 71591 | `0ce5389fb16a69b19f3bbcd7300cc18e4f676c76` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/persistent-registry.test.ts` | 4 | 6368 | `117d6df3ea91b963ed5e65ac0308bd633b1c7304` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/persistent-registry.ts` | 4 | 9065 | `cbd69cd1dee1558bccbbbf25e40f29fabf9a0cbd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/persistent-sources.test.ts` | 4 | 9987 | `3b0b3e34ca0328169360fa5201bbc5dfd34b0888` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/persistent-sources.ts` | 4 | 13011 | `8811c0d8499459d5d1657f0e6d6d8f525545d242` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/registry.test.ts` | 4 | 3669 | `1e84a8e3f92bdfa171f7d906707a7e6da8ea6a06` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/registry.ts` | 4 | 5628 | `25db393733cb84f906ac8361aac0f70e585be138` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/request-context.test.ts` | 4 | 2753 | `477ca0acdf349afa0ad2cd68efcfa260fbde29c4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/request-context.ts` | 4 | 3519 | `9fb451bd79eb9db523a9b2cd7fae5000a756e195` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/resolver.test.ts` | 4 | 5433 | `85cf2c5552c318af93ce12d65ca1803c3d2f25bb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/resolver.ts` | 4 | 4922 | `1fd749e3bb2110614997ee8cd96097f384b4e388` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/resource-loader-bundles.test.ts` | 4 | 5337 | `3c6b169bfa32dcfb905c5640a7b648b34c5336a9` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/resource-loader.ts` | 4 | 2769 | `0e84e076a877167394583708fd8aabb25998271c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/resources.test.ts` | 4 | 11626 | `9c0362717f93e72c0291d8201fae4f223e389ba0` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/runtime.ts` | 4 | 654 | `139c13d064bea4db50d7c678d1e0a88e51a658dc` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/sources.ts` | 4 | 6251 | `b38c0cc0aa1e60433d2faa06cdc339e1110b855a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/ui-translation-service.test.ts` | 4 | 7841 | `1667739fa6a4980992e3489ae7b5a60139b5faa8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/localization/ui-translation-service.ts` | 4 | 6971 | `0902ad69712fb0d0429cda8c421744d305ce425f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/locale-boundary.test.ts` | 4 | 6596 | `4a3eb7591cb2fad11d59add52b0d31dcd6123899` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/locale-boundary.tsx` | 4 | 6209 | `c156f4302543bb31988d53e8d03d0c4728faa4d2` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/locale-negotiation.test.ts` | 4 | 3355 | `800c32e49171c6ae352bdd0a8c676a69eb85b94f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/locale-negotiation.ts` | 4 | 825 | `c22c8c48b85b4d88650da97b5c4e234acdbd32c6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/hyperdrive-ui-translations.test.ts` | 4 | 7638 | `89d7089a52fc6d11b893b8109afe321765bff92f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/hyperdrive-ui-translations.ts` | 4 | 5853 | `4daa28f2168b30273625d25880b05b32a402cc4d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/locale-repository.test.ts` | 4 | 7711 | `b16d030c3f8ff0b18b53055f87bd137da15b91d1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/locale-repository.ts` | 4 | 6999 | `7db3c6c4a116ab099032f5cabdeb60cbff26741c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/ui-translation-bundle-store.test.ts` | 4 | 1106 | `e1bd436439838c32f66e47c9a03823a823c161f8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/ui-translation-bundle-store.ts` | 4 | 6496 | `1d97a51aa93e679b884321c96c89f7e8fee1e632` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/ui-translation-store.ts` | 4 | 1368 | `f0b63851dd577b7f98e3661fc819cbb2aa7318e5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `scripts/reconcile-ui-translation-bundles.ts` | 4 | 2246 | `a2671e15a2563d85eda62aaaa4cb6d55c14495c8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/ui-translation-bundle-store.test.ts` | 4 | 10790 | `7b043dae0d50d96851daa2c601682ae4585cbc0f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/ui-translation-storage.test.ts` | 4 | 7018 | `27eff4e275ec3b9d84fd6e3e2cf3c708d6fd1323` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/ui-translation-store.test.ts` | 4 | 3836 | `75ad2c6be244f0cd9192c3acb5c3086909c8a044` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 5 — Контентные переводы и задачи (84)** | | | | | |
 | `app/forum/content-generation-controls.test.tsx` | 5 | 10766 | `7ac95048b7cabe00bf1553cb90bb2bc6f3c020cc` | NOT_READ | NOT_REVIEWED |
 | `app/forum/content-generation-controls.tsx` | 5 | 10904 | `5b990a6d4fcbba55a8888f8137be700706368438` | NOT_READ | NOT_REVIEWED |
@@ -571,6 +571,20 @@
 | **Итого** | **458** | **0** | **0** |
 
 Этап 0 **не означает** проверки хотя бы одного из 458 файлов по требуемой новой методике. Код не исправлялся, tests/PG/Worker/browser/CI не запускались, findings не опубликованы. **STOP после этапа 0**, следующий этап только по явной команде владельца.
+
+---
+
+## ЭТАП 4 — ЛОКАЛИЗАЦИЯ И UI-ПЕРЕВОДЫ (2026-10-24)
+
+**ЭТАП 4 ЗАВЕРШЁН ТОЛЬКО В ПРЕДЕЛАХ СТАТИЧЕСКОГО АУДИТА КОДА. ВЕСЬ АУДИТ ПРОДОЛЖАЕТСЯ.** Проверенный immutable GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; действующий `AGENTS.md` из main прочитан полностью. Получены и проверены **44/44 файлов**, из них **19 файлов тестов**; Git tree sizes суммарно **405062 байта**, 44/44 SHA и размеры совпадают с замороженным Git tree, mismatches=0.
+
+**Сквозной охват:** BCP-47 canonicalization, explicit URL/negotiation, GET/HEAD redirects и mutation fail-closed; bootstrap EN, in-memory/persistent registry graph validation, semantic identity, degraded health и request-scoped memoization; canonical descriptors и fingerprints, local RU/HE packs и placeholders/plurals; source priorities, stale fingerprints, persistent raw manual/machine rows; exact-locale compile/verify, version/cache identity и i18next SSR/hydration snapshots; generation planner, Hyperdrive failure classifier/circuit, deterministic/atomic bundle store и controlled locale writer с SERIALIZABLE/commit reconciliation. Прочитаны route/source/DB/service/client and unit/DB integration test declarations и assertions, включая safe local-only bundle reconciliation CLI.
+
+**Полная проверка структурированных данных:** 527 canonical keys, 527 literal reviewed fingerprints, по 527 переводов RU/HE; exact set parity, zero duplicates; проверены placeholders у всех **1054** переведённых единиц и target plural branches у **8** plural keys, structural mismatches=0. Fingerprint values syntactically SHA-256 hex и имеют exact-key parity; **значения hash НЕ были фактически пересчитаны** в выполняющемся runtime, о выполненной `validateTranslationPacks` не заявляется. Source-of-truth сверка с `docs/translation/{LOCALES,UI_TRANSLATION,STORAGE_AND_VERSIONING}.md` использовалась как reference, не как отдельный documentation audit. Смежные `db/ui-translation-publication-store.ts`, `translation-task-consumer.ts` прочитаны для проверки текущей границы generation policy, но **их coverage относится к последующим группам**.
+
+**Результат:** нового подтверждённого дефекта текущего Stage по анализируемым механизмам не выявлено; это не знак полного PASS. **Tests, typecheck, lint, build, CLI, disposable PostgreSQL, HTTP Worker и browser не запускались.** Тестовые сценарии проверены по source assertions; не утверждается, что они выполнялись успешно.
+
+**Реестр:** группы 1–4 = **199/458 FULL_EOF_READ + SEMANTIC_REVIEWED**; осталось **259 файлов**. Следующая группа 5 — **84 файла**, STOP до явной команды владельца. Проверяемую реализацию и shared communication-файл не меняли.
 
 ---
 
