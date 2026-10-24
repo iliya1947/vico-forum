@@ -37,6 +37,542 @@
 
 ---
 
+## ЭТАП 0 — КОНТРОЛЬНАЯ ИНВЕНТАРИЗАЦИЯ (2026-10-24)
+
+**ЭТАП 0 ЗАВЕРШЁН — только идентификация и назначение файлов. АУДИТ КОДА ОТКРЫТ.**
+
+- Источник: GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c` / Git tree `18e73a062eb06984fd0b28132f510a5b12b1cfe2`, `truncated=false`; перед этапом целиком прочитан текущий `AGENTS.md`.
+- Свежая независимая сверка Git tree и исторического 491-path реестра: **491/491 уникальных путей**, пропущено **0**, лишних **0**, дубликатов **0**.
+- **458** code/test/config/data-contract (включая 41 ошибочно исключённый ранее), **31** документ только для сверки требований, **2** бинарных WEBP — вне статического аудита кода.
+- **На новом проходе проверка ВСЕГО кода: FULL_EOF_READ = 0/458; SEMANTIC_REVIEWED = 0/458; cross-file scenario evidence = 0/458.** Считаются только действия ПОСЛЕ начала нового прохода. Исторические 400 scoped/58 full-read отметки не перенесены в новые PASS.
+- Следующий этап 1: только группа 1 ниже. Впоследствии при любом изменении `main` применить новое сравнение tree/sha и проверить затронутые механизмы.
+
+### Единый новый реестр кода (0/458)
+
+Идентификатор исходника — **полный Git blob SHA** в конкретном immutable tree; `Bytes` — исходный размер Git blob, **не количество прочитанных байт**. `READ` = `NOT_READ_THIS_PASS`, `SEM` = `NOT_REVIEWED_THIS_PASS` для каждой строки; колонки статуса нельзя изменять без фактической проверки.
+
+| Путь | Этап | Bytes | Blob SHA | READ | SEM |
+| --- | ---: | ---: | --- | --- | --- |
+| **Этап 1 — Архитектура, auth и авторизация (49)** | | | | | |
+| `.env.example` | 1 | 98 | `91caeb78d06e3607dadb7fd10bfc039694c9fbd5` | NOT_READ | NOT_REVIEWED |
+| `.gitignore` | 1 | 217 | `c363c907bdae46191319e6918079447b9b025aff` | NOT_READ | NOT_REVIEWED |
+| `.node-version` | 1 | 8 | `df6ae3370f9f89272d88629c442cf554d6c1f9fb` | NOT_READ | NOT_REVIEWED |
+| `app/auth/auth-client.ts` | 1 | 1329 | `80e4d04f64e30787da1c748d5610c858ca0609ac` | NOT_READ | NOT_REVIEWED |
+| `app/auth/auth-controls.test.tsx` | 1 | 9626 | `fa32379e9a33739733c83ca31e71e2682069d00e` | NOT_READ | NOT_REVIEWED |
+| `app/auth/auth-controls.tsx` | 1 | 4938 | `8d6efeccec6c4349a091aa5f7a9613bcc9d92d18` | NOT_READ | NOT_REVIEWED |
+| `app/auth/auth.server.test.ts` | 1 | 1221 | `0a3356ab1e27bee137922143cf693f369a5aeef8` | NOT_READ | NOT_REVIEWED |
+| `app/auth/auth.server.ts` | 1 | 3766 | `8ecabbbead8b9fe3a7d282ba00759cb2aca35e5d` | NOT_READ | NOT_REVIEWED |
+| `app/auth/credential-path.ts` | 1 | 1255 | `7fc8015019f7b408e79be2d656612f706fab38fd` | NOT_READ | NOT_REVIEWED |
+| `app/auth/credential-view.test.tsx` | 1 | 9760 | `2f51618a0cde4ecb7573e38c442c6663fe43cb68` | NOT_READ | NOT_REVIEWED |
+| `app/auth/credential-view.tsx` | 1 | 4360 | `37de16bd08903c7116ad4bda4df04d95d30a50e4` | NOT_READ | NOT_REVIEWED |
+| `app/auth/request-context.ts` | 1 | 1380 | `f5ba6ea2de74cf3d61fb884465b81c4314c0bdcb` | NOT_READ | NOT_REVIEWED |
+| `app/auth/session-context.test.ts` | 1 | 3032 | `6e2e293c8bd1e7e550392a2be218d86ee2a2d8f1` | NOT_READ | NOT_REVIEWED |
+| `app/auth/session-context.ts` | 1 | 1208 | `5956058de743f0e55075ae1bfb9836f3fc72cb1e` | NOT_READ | NOT_REVIEWED |
+| `app/authorization/admin-view.test.tsx` | 1 | 5650 | `79c0caa45f99f84282cb33210968704ad6b7eeed` | NOT_READ | NOT_REVIEWED |
+| `app/authorization/admin-view.tsx` | 1 | 9988 | `ebe2e6d4767206097f21ceaaf6e4ad64a90ffd27` | NOT_READ | NOT_REVIEWED |
+| `app/authorization/catalog.ts` | 1 | 1684 | `84b1e5268838e996725eb9c027c420df20cd36dd` | NOT_READ | NOT_REVIEWED |
+| `app/authorization/request-context.ts` | 1 | 408 | `edb4265bb6044f7061d1b6631d0769107e91e8d5` | NOT_READ | NOT_REVIEWED |
+| `app/routes.ts` | 1 | 1473 | `24ac49aff9bbe60bf0cbd977172ba4e3e69c6c43` | NOT_READ | NOT_REVIEWED |
+| `app/routes/auth-api.test.ts` | 1 | 1220 | `96dfd548f2423b4a2eb012ddd9ac0e224077b352` | NOT_READ | NOT_REVIEWED |
+| `app/routes/auth-api.ts` | 1 | 375 | `4ab43ee9040ff63225a82048998d766b2b7a7375` | NOT_READ | NOT_REVIEWED |
+| `app/routes/authorization-admin.test.ts` | 1 | 6838 | `d0c50c66656b08e3784ededcbb7f9374fcd92cbc` | NOT_READ | NOT_REVIEWED |
+| `app/routes/authorization-admin.tsx` | 1 | 4664 | `22bab30f70caf435315affeb8fb44f7f480cd7dd` | NOT_READ | NOT_REVIEWED |
+| `app/routes/credential-sign-in.tsx` | 1 | 799 | `939a644fac4246157023220c2d084f7a5762b68c` | NOT_READ | NOT_REVIEWED |
+| `app/routes/credential-sign-up.tsx` | 1 | 799 | `92f37e93346742440a5d278e5aeca81aa92814cf` | NOT_READ | NOT_REVIEWED |
+| `db/authorization-repository.test.ts` | 1 | 8406 | `281d57296e5de33c74c862cd136947e823b6ed65` | NOT_READ | NOT_REVIEWED |
+| `db/authorization-repository.ts` | 1 | 15242 | `278a5bec6c967a3210a93bdb97f2621d592434cf` | NOT_READ | NOT_REVIEWED |
+| `db/authorization-service.ts` | 1 | 5275 | `843d8ab21efaa6332a2707bb922e77e74b859b06` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-authorization.test.ts` | 1 | 5441 | `d91fd99bfcd429a63aaa781e57fd98e8bf8a30ea` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-authorization.ts` | 1 | 3864 | `3271b9074bfb00c04b42af51c959ddb358a9b3db` | NOT_READ | NOT_REVIEWED |
+| `db/web-runtime-wiring.test.ts` | 1 | 1375 | `00af56fcb565935b4a6abdaf5bba58e6176aea27` | NOT_READ | NOT_REVIEWED |
+| `eslint.config.js` | 1 | 464 | `f4f8fe1104e7b02ab6368f7759d7a29db41c4195` | NOT_READ | NOT_REVIEWED |
+| `package.json` | 1 | 1889 | `f0e7429d23c7c25724293cdcd7ba370ca8a1fbf3` | NOT_READ | NOT_REVIEWED |
+| `pnpm-lock.yaml` | 1 | 184354 | `88ade74044c2590923eb519e12a75a059ccc53ff` | NOT_READ | NOT_REVIEWED |
+| `pnpm-workspace.yaml` | 1 | 212 | `fba2ee8c2be560e3b446fe2a778e14f94a7b24a1` | NOT_READ | NOT_REVIEWED |
+| `react-router.config.ts` | 1 | 253 | `722b4a8dc2d45d8e79a6dd7b6e12b504bfbd98ae` | NOT_READ | NOT_REVIEWED |
+| `tests/database/auth-runtime.test.ts` | 1 | 6234 | `abc23a6472733128b1c40727770a4e1529acc604` | NOT_READ | NOT_REVIEWED |
+| `tests/database/authorization-snapshot.test.ts` | 1 | 11941 | `8fcf008f3fe6b479fbcd1107cc19363209fd686e` | NOT_READ | NOT_REVIEWED |
+| `tests/database/forum-email-registration.test.ts` | 1 | 5407 | `13909a4296f228cc445bc639db0b5963977baf68` | NOT_READ | NOT_REVIEWED |
+| `tsconfig.cloudflare.json` | 1 | 622 | `991a73681ebaef8591941a66ef58c5c5bf51a85a` | NOT_READ | NOT_REVIEWED |
+| `tsconfig.json` | 1 | 274 | `d7ce9e49b09efb6c613e4c90e10854e33011f995` | NOT_READ | NOT_REVIEWED |
+| `tsconfig.node.json` | 1 | 3566 | `e5888460bf1ae5d82d0be85793810c01d873bffa` | NOT_READ | NOT_REVIEWED |
+| `vite.config.ts` | 1 | 294 | `6a5db4717ef1208b4417b0320e7edca26f54d111` | NOT_READ | NOT_REVIEWED |
+| `vitest.config.ts` | 1 | 243 | `b8b2fdec0c02f84406a8080e1b64210d321ff79c` | NOT_READ | NOT_REVIEWED |
+| `vitest.database.config.ts` | 1 | 192 | `223bc3c11c73c99235064dcef523caf095d22c1a` | NOT_READ | NOT_REVIEWED |
+| `workers/app.ts` | 1 | 3327 | `daf3268db5c397c8f6023bce6bd74a4fddbfbead` | NOT_READ | NOT_REVIEWED |
+| `workers/database-bindings.test.ts` | 1 | 3351 | `a4d421b00aa05ee7d6e3e55585cfe9ab7309e966` | NOT_READ | NOT_REVIEWED |
+| `workers/database-bindings.ts` | 1 | 1427 | `539f21dcaced85afe62a71e8814157c64f226722` | NOT_READ | NOT_REVIEWED |
+| `wrangler.jsonc` | 1 | 468 | `58b568003397b79310f9e68a890656ef6698076f` | NOT_READ | NOT_REVIEWED |
+| **Этап 2 — Форум и Help & Solutions (51)** | | | | | |
+| `app/forum/homepage.test.tsx` | 2 | 10608 | `c4b6454cc11d8ec1fd074f6312586714d2aaa6f1` | NOT_READ | NOT_REVIEWED |
+| `app/forum/homepage.ts` | 2 | 355 | `8aeececf9186a2297da91736d5543d8e7ef32d60` | NOT_READ | NOT_REVIEWED |
+| `app/forum/online-presence-heartbeat.test.tsx` | 2 | 2857 | `4eb2c97fda78703db1bf0fc5f75097d91d08ad56` | NOT_READ | NOT_REVIEWED |
+| `app/forum/online-presence-heartbeat.tsx` | 2 | 1909 | `36b395e3c8653faa402b445407af6649d9a0d655` | NOT_READ | NOT_REVIEWED |
+| `app/forum/paths.ts` | 2 | 2081 | `2a2e3ecdcc370dce0bcf2d5db8f54347f233b748` | NOT_READ | NOT_REVIEWED |
+| `app/forum/profile-view.test.tsx` | 2 | 3915 | `a0f5dcd17482e68f9e77e346d7dd2905c1582f6f` | NOT_READ | NOT_REVIEWED |
+| `app/forum/profile-view.tsx` | 2 | 4906 | `36f698f1b26b92dddb06d4035320af9acb15c3f3` | NOT_READ | NOT_REVIEWED |
+| `app/forum/profile.test.ts` | 2 | 1992 | `8a2384e4456afdc045cda0b1a7436e8f60c438f5` | NOT_READ | NOT_REVIEWED |
+| `app/forum/profile.ts` | 2 | 2001 | `bc64c954acef6440418aa348f981832d3defafa9` | NOT_READ | NOT_REVIEWED |
+| `app/forum/public-authz-degradation.test.ts` | 2 | 17237 | `1b2fd82287550b81348fa10ec5d0840b54be7fcf` | NOT_READ | NOT_REVIEWED |
+| `app/forum/public-read.test.tsx` | 2 | 151806 | `627f092a0f8624944b4513c1e8f4f5b329429d47` | NOT_READ | NOT_REVIEWED |
+| `app/forum/request-context.ts` | 2 | 893 | `7235d156accfd2c7c2285c6c7ade87ce3085080f` | NOT_READ | NOT_REVIEWED |
+| `app/forum/route-error.test.tsx` | 2 | 3421 | `1c55a6447047d27571b3450c74e2d1c2693ab061` | NOT_READ | NOT_REVIEWED |
+| `app/forum/under-development-view.tsx` | 2 | 1915 | `a62cde98a986fc8030ed90e91bcb2acedffbf1cf` | NOT_READ | NOT_REVIEWED |
+| `app/forum/under-development.ts` | 2 | 720 | `338f978181f424682bd7423b69589d216304f128` | NOT_READ | NOT_REVIEWED |
+| `app/forum/write-actions.test.ts` | 2 | 61105 | `82f0a37c6a816b47b803766cd86ea3492070668f` | NOT_READ | NOT_REVIEWED |
+| `app/i18next.d.ts` | 2 | 227 | `c78b3a135b5d12c1a9b145fa5ae23d6adebaee9c` | NOT_READ | NOT_REVIEWED |
+| `app/routes/api.ts` | 2 | 163 | `bd7e622de7ba82c34907d5d05c4823f11a8314c7` | NOT_READ | NOT_REVIEWED |
+| `app/routes/attention.tsx` | 2 | 8878 | `f19adc6605234fb23aa996c6f0e8542b2c1d52dc` | NOT_READ | NOT_REVIEWED |
+| `app/routes/category.tsx` | 2 | 7251 | `0440e8c25e271d2756c7490a93e6105f58e59ee5` | NOT_READ | NOT_REVIEWED |
+| `app/routes/home.tsx` | 2 | 1222 | `07369e7bcd3fbf1bf503ce29215f6717bf9c8b0d` | NOT_READ | NOT_REVIEWED |
+| `app/routes/not-found.test.ts` | 2 | 2345 | `83020013d5ce1177d13fe7cb2fb1818703090ed0` | NOT_READ | NOT_REVIEWED |
+| `app/routes/not-found.ts` | 2 | 153 | `9fdfe579c772b686cf225cb7c286125a3f9c9a96` | NOT_READ | NOT_REVIEWED |
+| `app/routes/notifications.test.ts` | 2 | 5932 | `e0832db9c136b525c1d48484cca5064ec1d9d646` | NOT_READ | NOT_REVIEWED |
+| `app/routes/notifications.tsx` | 2 | 2538 | `c9bb86b636342ae8ed5f182a0400272ea514d012` | NOT_READ | NOT_REVIEWED |
+| `app/routes/popular.tsx` | 2 | 1038 | `45f5e14aee4c4c3327a4113a6968c6c913d58874` | NOT_READ | NOT_REVIEWED |
+| `app/routes/post-edit.ts` | 2 | 1124 | `18073bfe1c1d0c9f3cf00c2299970adf020270ca` | NOT_READ | NOT_REVIEWED |
+| `app/routes/presence.test.ts` | 2 | 3117 | `fa5ad45e8103870d092a894f0d775624085b5798` | NOT_READ | NOT_REVIEWED |
+| `app/routes/presence.ts` | 2 | 1390 | `8af3bb8dfe11c5b8d2d66e0e4985bb53062b0524` | NOT_READ | NOT_REVIEWED |
+| `app/routes/profile.test.ts` | 2 | 5860 | `71f8c5df8e1ee2abf65c68d8988b363f2521637c` | NOT_READ | NOT_REVIEWED |
+| `app/routes/profile.tsx` | 2 | 4371 | `1b24549e014cf9b81d9e038a2bf060c4d8333adc` | NOT_READ | NOT_REVIEWED |
+| `app/routes/search.tsx` | 2 | 1106 | `46e6b383aac4b6e80d0aced14afee4bc749876a3` | NOT_READ | NOT_REVIEWED |
+| `app/routes/section.tsx` | 2 | 2446 | `898a89668bb9b709c9b3b7b3813b9ba3a04e95f0` | NOT_READ | NOT_REVIEWED |
+| `app/routes/tag.tsx` | 2 | 804 | `52dd9238ba49cfa54200f67f71b7a441093f88ce` | NOT_READ | NOT_REVIEWED |
+| `app/routes/tags.tsx` | 2 | 706 | `599e9ab815aa2d54c8d0e8af29321ee7a0e89c93` | NOT_READ | NOT_REVIEWED |
+| `app/routes/topic.tsx` | 2 | 8886 | `e91dfc92b229a3673a87c42331341bb4ecb21824` | NOT_READ | NOT_REVIEWED |
+| `app/routes/unanswered.tsx` | 2 | 900 | `49ed018b81276ab59145e54575a11f0839171fd3` | NOT_READ | NOT_REVIEWED |
+| `app/routes/under-development.tsx` | 2 | 465 | `18e687f9db70653747efa1b684889a89d270b871` | NOT_READ | NOT_REVIEWED |
+| `app/routes/unread.test.ts` | 2 | 1935 | `dbc7b478ce0f4b8bf9704b50b3b9c0be03842d89` | NOT_READ | NOT_REVIEWED |
+| `app/routes/unread.tsx` | 2 | 1196 | `855c7b64aae5f32627eb933e9848d98a6a2aaba7` | NOT_READ | NOT_REVIEWED |
+| `db/editor-draft-context.ts` | 2 | 1087 | `e1bc24eeec81dd1c15a865d79b8d189272710440` | NOT_READ | NOT_REVIEWED |
+| `db/forum-identifiers.ts` | 2 | 222 | `0dbe814c8cf2758551cca7102cc5525d58593044` | NOT_READ | NOT_REVIEWED |
+| `db/forum-write-policy.ts` | 2 | 404 | `9eede6e4dc0488a4a09737517cba7a4db2d4ae8b` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-forum.test.ts` | 2 | 5184 | `e7acface4256d740088dfc71238622dbe8d17982` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-registry.test.ts` | 2 | 4095 | `65411dddd635fbd8bfa916db7b75a4d267681351` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-registry.ts` | 2 | 2060 | `dd4ef47cf2abdac14f0f6028f0a5c488efd713e1` | NOT_READ | NOT_REVIEWED |
+| `tests/database/forum-help-attention.test.ts` | 2 | 12972 | `14aabe9844fe959383da121b72aebfbf678200c1` | NOT_READ | NOT_REVIEWED |
+| `tests/database/forum-online-presence.test.ts` | 2 | 4664 | `6fa80167bae6bd3eec3d3b8191904ce4e8b8751b` | NOT_READ | NOT_REVIEWED |
+| `tests/database/forum-profiles.test.ts` | 2 | 9415 | `7d92a1c5b8f9fcdfbaa8db31aaee0dbd74b476db` | NOT_READ | NOT_REVIEWED |
+| `tests/database/hyperdrive-registry.test.ts` | 2 | 809 | `464e1ecdc15fac0047d2637a09ce9ea9fc349683` | NOT_READ | NOT_REVIEWED |
+| `tests/database/stage4-core-e2e.test.ts` | 2 | 19396 | `125d9cbb7c6f9895aa23000fdd9d5c299855a0c9` | NOT_READ | NOT_REVIEWED |
+| **Этап 3 — Editor 2.0 и вложения (55)** | | | | | |
+| `app/forum/actions-attachment-publication.test.ts` | 3 | 3868 | `51c9c4fa4d04a7b8206ea6f846cd69a2a4eb49d4` | NOT_READ | NOT_REVIEWED |
+| `app/forum/actions.server.ts` | 3 | 24031 | `bc065366ffd0b867e6a368b53cb2ca637d5334db` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-container-validation.test.ts` | 3 | 10118 | `408b6826cfd9e6a70aa4ca7004cbcf3c84f67e1e` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-container-validation.ts` | 3 | 14948 | `34c8867195a60b4ed7e62c917ec8ba4635e070db` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-operation.test.tsx` | 3 | 11403 | `b4acfdd182bdce8958e6b8bf36e0f9466e42121c` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-presentation.css` | 3 | 572 | `ef4a30bb72b8c95b578b34040077e114cfa1e4fd` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-presentation.test.tsx` | 3 | 3281 | `991421f65c99de528002878cefa6e45cbac23733` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-presentation.tsx` | 3 | 1960 | `e3b88d9b02a5cbec7e830cb23cbda9d805d5d5f6` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-r2.test.ts` | 3 | 11335 | `89af168616293bfdd3d40c3af2bfbf8afc4729ab` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-r2.ts` | 3 | 11037 | `d65210b01844ea4526d8f5f3ba4cf0f05d7f0e73` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-request-context.ts` | 3 | 997 | `bc3f156073beeedf429f8d71f0c2477225e4d8b7` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-structural-validation.test.ts` | 3 | 5222 | `21c4699c1f43286885867ab22c2b298793743a84` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-structural-validation.ts` | 3 | 11263 | `5e44d0a0ed58f582a7fb46021740542100b9aa0b` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-validation.test.ts` | 3 | 11281 | `740e73763cd41d586e5c14da8257e84576c7a429` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-validation.ts` | 3 | 10809 | `3e68579e9a6847253ca67071267d2c8ea9dcac06` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-zip-validation.test.ts` | 3 | 9092 | `9eb3e819818214303bac192ecde60e9964c650ce` | NOT_READ | NOT_REVIEWED |
+| `app/forum/attachment-zip-validation.ts` | 3 | 14844 | `136fcef8950c80cb45510a4ddf1aaac1b49b3f7a` | NOT_READ | NOT_REVIEWED |
+| `app/forum/clipboard-markdown.test.ts` | 3 | 1715 | `f211f4f761d8fc53d286b2e5b68ee615ca301c3e` | NOT_READ | NOT_REVIEWED |
+| `app/forum/clipboard-markdown.ts` | 3 | 4898 | `0fde94be2e35397afd8d2f6713214182c8b16488` | NOT_READ | NOT_REVIEWED |
+| `app/forum/editor-attachments.test.tsx` | 3 | 15718 | `16c163af30b930d1b1520ff4a0e750a100456a35` | NOT_READ | NOT_REVIEWED |
+| `app/forum/editor-attachments.tsx` | 3 | 17221 | `f81134fb5226dee26ba671b4ae61dd325166e827` | NOT_READ | NOT_REVIEWED |
+| `app/forum/editor-document.test.ts` | 3 | 9606 | `f50f49a8dfbfea0c926bc5a612fc3ca2a7e331ff` | NOT_READ | NOT_REVIEWED |
+| `app/forum/editor-document.ts` | 3 | 20645 | `7febd89919a5a09557ba2842573edf19f0c222ef` | NOT_READ | NOT_REVIEWED |
+| `app/forum/editor-permission.server.ts` | 3 | 2174 | `c79473277252ea0ad7e90cbb38694a160a9c405b` | NOT_READ | NOT_REVIEWED |
+| `app/forum/markdown-editor.test.tsx` | 3 | 77601 | `7188044b19686a1a1a7b6b3123db7dcde6eacd12` | NOT_READ | NOT_REVIEWED |
+| `app/forum/markdown-editor.tsx` | 3 | 53916 | `13cfd96fee5a066772ed03015072ef9bef7c5699` | NOT_READ | NOT_REVIEWED |
+| `app/forum/markdown.test.tsx` | 3 | 28725 | `b655512367e7bd10acd9bb68feb77f192943a6b3` | NOT_READ | NOT_REVIEWED |
+| `app/forum/markdown.tsx` | 3 | 16862 | `ab52bcfc9449d1981e1e3b179be1d3f77ab99fbe` | NOT_READ | NOT_REVIEWED |
+| `app/forum/mentions.test.ts` | 3 | 2392 | `ff87c41a661a10ceff2c44f9aa5dc23cdd940815` | NOT_READ | NOT_REVIEWED |
+| `app/forum/mentions.ts` | 3 | 2249 | `c088c13082ce2be5105cea74a1fbf7f50e691f14` | NOT_READ | NOT_REVIEWED |
+| `app/forum/mutations.server.ts` | 3 | 7500 | `16a2db3c785f5f7429b099702cfb88eabcaf31b6` | NOT_READ | NOT_REVIEWED |
+| `app/forum/quote-markdown.ts` | 3 | 3886 | `c31eb2c342d510e25cd52a342b757e67fc5c9e89` | NOT_READ | NOT_REVIEWED |
+| `app/forum/quote-presentation.tsx` | 3 | 3621 | `f62ed07ec514783d65a2cdd4204073fb33a7f49f` | NOT_READ | NOT_REVIEWED |
+| `app/forum/technical-markdown.test.ts` | 3 | 4976 | `94f5f0bfac13730e5645de24543d4387c6da70d0` | NOT_READ | NOT_REVIEWED |
+| `app/forum/technical-markdown.ts` | 3 | 9425 | `12b938b7e0883df0f924bed8801751308fb66532` | NOT_READ | NOT_REVIEWED |
+| `app/forum/views.tsx` | 3 | 129096 | `c65846dd39cb478e4860a6df55c6e89a4eae8b05` | NOT_READ | NOT_REVIEWED |
+| `app/forum/visual-markdown-editor.tsx` | 3 | 28460 | `d4d9378cf52a53c2e7304f74a54cf3e46a3c944a` | NOT_READ | NOT_REVIEWED |
+| `app/markdown-syntax.ts` | 3 | 4133 | `b67e23638eda56c7aaa4808145deb9bbdb77accb` | NOT_READ | NOT_REVIEWED |
+| `app/routes/attachment-download.test.ts` | 3 | 5941 | `f72ce30d91ec423819e96d2a74db5f8405177f17` | NOT_READ | NOT_REVIEWED |
+| `app/routes/attachment-download.ts` | 3 | 3904 | `42f137acbe8e4584268a62a542f7bc753fc6110d` | NOT_READ | NOT_REVIEWED |
+| `app/routes/attachment-upload.test.ts` | 3 | 18664 | `f70852c80ff9f6a62df0285f17ff185ce147d946` | NOT_READ | NOT_REVIEWED |
+| `app/routes/attachment-upload.ts` | 3 | 9442 | `808d2a9ef866f2bbcb845b26d53f6430aef76d67` | NOT_READ | NOT_REVIEWED |
+| `app/routes/mentions.test.ts` | 3 | 2755 | `c16fb0894516c4d5a4fffec2c2d6abd47b34caf2` | NOT_READ | NOT_REVIEWED |
+| `app/routes/mentions.ts` | 3 | 1172 | `ac7025d12e9ab810d1e1c16772b192b0ce9308ff` | NOT_READ | NOT_REVIEWED |
+| `db/attachment-draft-generation.ts` | 3 | 2496 | `0461a182a05ff1714d49f6ee8a01b0f6fcd1bc4f` | NOT_READ | NOT_REVIEWED |
+| `db/forum-attachment-cleanup.ts` | 3 | 6368 | `2deaa921abc75259c9adaa204ba12f1b306012df` | NOT_READ | NOT_REVIEWED |
+| `db/forum-attachments.ts` | 3 | 11093 | `f8ab66e13bf24ba7701952988a426477365f903a` | NOT_READ | NOT_REVIEWED |
+| `db/forum-repository.ts` | 3 | 162943 | `cf1994d369658f7a8062526cb4787bec2728ea16` | NOT_READ | NOT_REVIEWED |
+| `db/forum-service.ts` | 3 | 17502 | `43f3947b69df1dbdf7506e2fa4da195cb6c3fe69` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-forum-attachments.ts` | 3 | 3614 | `17901fe291a7978c60f4b4df5c69a5bbc651a01c` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-forum.ts` | 3 | 14843 | `b6d37ab09092077991eb66ba8ca86f0530a8b23c` | NOT_READ | NOT_REVIEWED |
+| `tests/database/forum-attachment-publication.test.ts` | 3 | 23201 | `88724530783b8ebf703f0e887f919e2be78be056` | NOT_READ | NOT_REVIEWED |
+| `tests/database/forum-attachments.test.ts` | 3 | 51576 | `649eaf1330f24c536e30daf6dcd26185251ac8ec` | NOT_READ | NOT_REVIEWED |
+| `workers/attachment-storage.test.ts` | 3 | 2202 | `a15430749f97b047a45e4c6ba099ef8c1216516c` | NOT_READ | NOT_REVIEWED |
+| `workers/attachment-storage.ts` | 3 | 890 | `39ebce54acd34c9153f90657b0de6f73fab4acfa` | NOT_READ | NOT_REVIEWED |
+| **Этап 4 — Локализация и UI-ресурсы (44)** | | | | | |
+| `app/localization/bundles.test.ts` | 4 | 5185 | `9b27538df785cfa215a7f0bf1a141c9634e4c067` | NOT_READ | NOT_REVIEWED |
+| `app/localization/bundles.ts` | 4 | 9246 | `aee1fc6919dd4955b8e19082c3bfb1a0fd27465c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/catalog.ts` | 4 | 78225 | `502be03c0c1ec91867857b6ac77cc9e2386b048d` | NOT_READ | NOT_REVIEWED |
+| `app/localization/fingerprint.ts` | 4 | 1097 | `79785ec9471a055e0d7800cb2c72b4d7d446a59e` | NOT_READ | NOT_REVIEWED |
+| `app/localization/i18next-types.test.ts` | 4 | 676 | `702260e1e45e22c78b16ef33892d2cc71105474d` | NOT_READ | NOT_REVIEWED |
+| `app/localization/locale-navigation.tsx` | 4 | 947 | `1b52e57d1437b3c6cecb441141df4ee9503c0a75` | NOT_READ | NOT_REVIEWED |
+| `app/localization/locale-rules.test.ts` | 4 | 808 | `c5dc60f52ca795a076abd4cf33759d109c0ad09f` | NOT_READ | NOT_REVIEWED |
+| `app/localization/locale-rules.ts` | 4 | 1564 | `82bd00cc6fe7da1ca4758f56ea35669dbaa0c6b5` | NOT_READ | NOT_REVIEWED |
+| `app/localization/locale.ts` | 4 | 1995 | `be96abce310743ac56f960dbfd3e76a8e2d0d7ed` | NOT_READ | NOT_REVIEWED |
+| `app/localization/manual-fingerprints.ts` | 4 | 48920 | `d3d98732e3ac7eb562d0c18447d9de7907ed3e26` | NOT_READ | NOT_REVIEWED |
+| `app/localization/manual-packs.ts` | 4 | 958 | `2dd633130762cd857b9ea4c2fa1864e42b0eb421` | NOT_READ | NOT_REVIEWED |
+| `app/localization/manual-values.ts` | 4 | 71591 | `0ce5389fb16a69b19f3bbcd7300cc18e4f676c76` | NOT_READ | NOT_REVIEWED |
+| `app/localization/persistent-registry.test.ts` | 4 | 6368 | `117d6df3ea91b963ed5e65ac0308bd633b1c7304` | NOT_READ | NOT_REVIEWED |
+| `app/localization/persistent-registry.ts` | 4 | 9065 | `cbd69cd1dee1558bccbbbf25e40f29fabf9a0cbd` | NOT_READ | NOT_REVIEWED |
+| `app/localization/persistent-sources.test.ts` | 4 | 9987 | `3b0b3e34ca0328169360fa5201bbc5dfd34b0888` | NOT_READ | NOT_REVIEWED |
+| `app/localization/persistent-sources.ts` | 4 | 13011 | `8811c0d8499459d5d1657f0e6d6d8f525545d242` | NOT_READ | NOT_REVIEWED |
+| `app/localization/registry.test.ts` | 4 | 3669 | `1e84a8e3f92bdfa171f7d906707a7e6da8ea6a06` | NOT_READ | NOT_REVIEWED |
+| `app/localization/registry.ts` | 4 | 5628 | `25db393733cb84f906ac8361aac0f70e585be138` | NOT_READ | NOT_REVIEWED |
+| `app/localization/request-context.test.ts` | 4 | 2753 | `477ca0acdf349afa0ad2cd68efcfa260fbde29c4` | NOT_READ | NOT_REVIEWED |
+| `app/localization/request-context.ts` | 4 | 3519 | `9fb451bd79eb9db523a9b2cd7fae5000a756e195` | NOT_READ | NOT_REVIEWED |
+| `app/localization/resolver.test.ts` | 4 | 5433 | `85cf2c5552c318af93ce12d65ca1803c3d2f25bb` | NOT_READ | NOT_REVIEWED |
+| `app/localization/resolver.ts` | 4 | 4922 | `1fd749e3bb2110614997ee8cd96097f384b4e388` | NOT_READ | NOT_REVIEWED |
+| `app/localization/resource-loader-bundles.test.ts` | 4 | 5337 | `3c6b169bfa32dcfb905c5640a7b648b34c5336a9` | NOT_READ | NOT_REVIEWED |
+| `app/localization/resource-loader.ts` | 4 | 2769 | `0e84e076a877167394583708fd8aabb25998271c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/resources.test.ts` | 4 | 11626 | `9c0362717f93e72c0291d8201fae4f223e389ba0` | NOT_READ | NOT_REVIEWED |
+| `app/localization/runtime.ts` | 4 | 654 | `139c13d064bea4db50d7c678d1e0a88e51a658dc` | NOT_READ | NOT_REVIEWED |
+| `app/localization/sources.ts` | 4 | 6251 | `b38c0cc0aa1e60433d2faa06cdc339e1110b855a` | NOT_READ | NOT_REVIEWED |
+| `app/localization/ui-translation-service.test.ts` | 4 | 7841 | `1667739fa6a4980992e3489ae7b5a60139b5faa8` | NOT_READ | NOT_REVIEWED |
+| `app/localization/ui-translation-service.ts` | 4 | 6971 | `0902ad69712fb0d0429cda8c421744d305ce425f` | NOT_READ | NOT_REVIEWED |
+| `app/routes/locale-boundary.test.ts` | 4 | 6596 | `4a3eb7591cb2fad11d59add52b0d31dcd6123899` | NOT_READ | NOT_REVIEWED |
+| `app/routes/locale-boundary.tsx` | 4 | 6209 | `c156f4302543bb31988d53e8d03d0c4728faa4d2` | NOT_READ | NOT_REVIEWED |
+| `app/routes/locale-negotiation.test.ts` | 4 | 3355 | `800c32e49171c6ae352bdd0a8c676a69eb85b94f` | NOT_READ | NOT_REVIEWED |
+| `app/routes/locale-negotiation.ts` | 4 | 825 | `c22c8c48b85b4d88650da97b5c4e234acdbd32c6` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-ui-translations.test.ts` | 4 | 7638 | `89d7089a52fc6d11b893b8109afe321765bff92f` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-ui-translations.ts` | 4 | 5853 | `4daa28f2168b30273625d25880b05b32a402cc4d` | NOT_READ | NOT_REVIEWED |
+| `db/locale-repository.test.ts` | 4 | 7711 | `b16d030c3f8ff0b18b53055f87bd137da15b91d1` | NOT_READ | NOT_REVIEWED |
+| `db/locale-repository.ts` | 4 | 6999 | `7db3c6c4a116ab099032f5cabdeb60cbff26741c` | NOT_READ | NOT_REVIEWED |
+| `db/ui-translation-bundle-store.test.ts` | 4 | 1106 | `e1bd436439838c32f66e47c9a03823a823c161f8` | NOT_READ | NOT_REVIEWED |
+| `db/ui-translation-bundle-store.ts` | 4 | 6496 | `1d97a51aa93e679b884321c96c89f7e8fee1e632` | NOT_READ | NOT_REVIEWED |
+| `db/ui-translation-store.ts` | 4 | 1368 | `f0b63851dd577b7f98e3661fc819cbb2aa7318e5` | NOT_READ | NOT_REVIEWED |
+| `scripts/reconcile-ui-translation-bundles.ts` | 4 | 2246 | `a2671e15a2563d85eda62aaaa4cb6d55c14495c8` | NOT_READ | NOT_REVIEWED |
+| `tests/database/ui-translation-bundle-store.test.ts` | 4 | 10790 | `7b043dae0d50d96851daa2c601682ae4585cbc0f` | NOT_READ | NOT_REVIEWED |
+| `tests/database/ui-translation-storage.test.ts` | 4 | 7018 | `27eff4e275ec3b9d84fd6e3e2cf3c708d6fd1323` | NOT_READ | NOT_REVIEWED |
+| `tests/database/ui-translation-store.test.ts` | 4 | 3836 | `75ad2c6be244f0cd9192c3acb5c3086909c8a044` | NOT_READ | NOT_REVIEWED |
+| **Этап 5 — Контентные переводы и задачи (84)** | | | | | |
+| `app/forum/content-generation-controls.test.tsx` | 5 | 10766 | `7ac95048b7cabe00bf1553cb90bb2bc6f3c020cc` | NOT_READ | NOT_REVIEWED |
+| `app/forum/content-generation-controls.tsx` | 5 | 10904 | `5b990a6d4fcbba55a8888f8137be700706368438` | NOT_READ | NOT_REVIEWED |
+| `app/forum/content-generation-navigation.test.tsx` | 5 | 5043 | `df46ccf20d9491bac2e594de993f982457731f01` | NOT_READ | NOT_REVIEWED |
+| `app/forum/content-translation-view.tsx` | 5 | 4325 | `26b94ea342e84525d4ad2f502e125fa1e67428e9` | NOT_READ | NOT_REVIEWED |
+| `app/localization/cloudflare-m2m100-provider.test.ts` | 5 | 11252 | `9cba6c199b2934cda4667b4f582464191cb4bfb0` | NOT_READ | NOT_REVIEWED |
+| `app/localization/cloudflare-m2m100-provider.ts` | 5 | 8294 | `40341191723d74b0d5d6b83cd81acc6ba7befd2d` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-action.server.test.ts` | 5 | 7223 | `5faf279c19472b0d18a54958219409b24061f479` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-action.server.ts` | 5 | 7946 | `9fbf2b0c802f5d02027511661c23b0d0efb9b62b` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-policy.ts` | 5 | 73 | `b2bb5f97af84f7283ce1d0c2882e8fdc65cfbe68` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-response.ts` | 5 | 500 | `1e49cfc7440d127f1a24322313a29ea9dfa590de` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-status.ts` | 5 | 1208 | `ae9284284c548115729cb5044f2e1cdafb3dac87` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-view.test.ts` | 5 | 7119 | `9effcb28b64b5eda2305002053e63646fdab7b20` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-generation-view.ts` | 5 | 4857 | `9289ae5f0ea95a4715db9d648a6bd577bb6a1c74` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-markdown-translation.test.tsx` | 5 | 14955 | `e718a772f8b19f09db137372df8843e302bccfa5` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-markdown-translation.ts` | 5 | 18503 | `1c4da2d82a010a8736343789d48953dbcb96c83c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-post-body-execution.test.tsx` | 5 | 23749 | `ac7b8dcfaa0dd48a295e99db493d3b929552467d` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-post-body-execution.ts` | 5 | 10713 | `979c7ee135cd4d1ed43e1701f5e6348055af4c9a` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-post-body-planning.test.ts` | 5 | 17495 | `a733600c3155deb20f86752ebe81a461f47d9ebe` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-post-body-planning.ts` | 5 | 13414 | `7943d16d335e3b8d50811cc53524a518786e0fb6` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-post-body-publication.ts` | 5 | 3843 | `1e95ef03844478b374e99be9c4a068dc9bf54615` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-post-body-task-consumer.ts` | 5 | 8747 | `d359f5f5af8b6097bb3f13ef128e7fbaeb320edf` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-provider-allowance.test.ts` | 5 | 19899 | `11c3ed1c44db919815a4faa744f826a9bdd9ea8e` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-provider-allowance.ts` | 5 | 18992 | `0fa9cd1f4e96cd59c4df07daa1c6b894434096ec` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-request-budget.server.test.ts` | 5 | 6391 | `e35f68d81e16c1277af9bef6b189b7c64c46c74c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-request-budget.server.ts` | 5 | 10902 | `3dadbc22ad51e20f105b634acea366fd97303e78` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-source-locale.test.ts` | 5 | 9052 | `d71ae3e2f33070a1cdb9fc4cf5b2204a0afcaa0c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-source-locale.ts` | 5 | 12289 | `dd08cb68174c20951c1ee7a4c2b045d999af35fe` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-execution.test.ts` | 5 | 16725 | `1f15a2f861644ae2e8c2605d3d842de60d67f5da` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-execution.ts` | 5 | 6322 | `2d63665937d39f5e5d5526a203b0354495f5cfb3` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-planning.test.ts` | 5 | 14772 | `a26aabb070d6c58ecf5c7a158922a9bc9a5e40bc` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-planning.ts` | 5 | 12192 | `6d716399248b3cd85077dfe6a30ce5de7cc1465c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-presentation.test.ts` | 5 | 6941 | `f6bcb8a1de00de906df5dbc4afc2066cae65e232` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-presentation.ts` | 5 | 6844 | `4590ef6fe63aad9e279fe31bc5d9abb48d8d0113` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-provider.ts` | 5 | 3863 | `d18b555f328765a77e786e150eb9eb75175aca54` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-publication.ts` | 5 | 3581 | `10b32258f4a2caf3e3af48ada73ec3aecabbf12d` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation-task-consumer.ts` | 5 | 7355 | `f9bd062f01db9d15935f659e1297f0075ff07cc3` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation.test.ts` | 5 | 8397 | `68c89391c39b93b3812ae6e0262db1e78517e545` | NOT_READ | NOT_REVIEWED |
+| `app/localization/content-translation.ts` | 5 | 10304 | `757049ac07190a27371347af79256d3da86a4e30` | NOT_READ | NOT_REVIEWED |
+| `app/localization/tinyld-source-locale-detector.test.ts` | 5 | 10593 | `586341797988984d0fbe51f611f13978ccf7c38c` | NOT_READ | NOT_REVIEWED |
+| `app/localization/tinyld-source-locale-detector.ts` | 5 | 4733 | `a4062af632c70cc250b2dfe7f9dc7ec91abc93d4` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-execution.test.ts` | 5 | 15507 | `00881ab7f6428e43d527868aff352d015d1f61b7` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-execution.ts` | 5 | 5942 | `51c868eb361b3a8ed58eeef3316f345e4e8a2b60` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-failures.ts` | 5 | 972 | `49370084a797e852ff740c9b03b49356289bd380` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-provider-data-policy.test.ts` | 5 | 3146 | `a355bb8e3384bd657ed73f33155bf59c24301c2b` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-provider-data-policy.ts` | 5 | 3266 | `ea9c6952b0c704b7ffe7646f54e4784a904e2c4d` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-provider.test.ts` | 5 | 4236 | `f63a0a3666a229dfb80dccc797340dd421413159` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-provider.ts` | 5 | 7602 | `76d2e0107322549e1b3908f0915ae631cf41bdca` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-publication.test.ts` | 5 | 6401 | `28e29084c05cf515a4314b4da4d3a67cf9003191` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-publication.ts` | 5 | 2566 | `2d0fcbaaec1a5acaa2179ea1c6706165894dbb43` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-task-consumer.test.ts` | 5 | 6541 | `819fbc4157a805140b4ad7a37a2a218646ca518f` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-task-consumer.ts` | 5 | 6272 | `dadafc217999ba45083b9fab83f3724cff593a07` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-task-dispatch.test.ts` | 5 | 3008 | `f0eb89d573663544bbbec942391b7e4a37c62118` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-task-dispatch.ts` | 5 | 2331 | `741804bc1ff0162056e93e938e68d92a5f49ca76` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-task-reconciliation.test.ts` | 5 | 5305 | `743dd2ea8b433deec246a52833a2ae30125a9003` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-task-reconciliation.ts` | 5 | 4754 | `47da1ffdf70b2b522d0ffab6c0e7d754b8bfadd6` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-tasks.test.ts` | 5 | 4118 | `093650f4c4226592acfafaefd0f60431ad583666` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-tasks.ts` | 5 | 14111 | `036482076e20d41b502b3bc66d93c260fb0ab0e3` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-validation.test.ts` | 5 | 2529 | `043575a21523bb3b5b50873509bf09f1d0fc06fc` | NOT_READ | NOT_REVIEWED |
+| `app/localization/translation-validation.ts` | 5 | 5681 | `8cbc276f5daf5a0ca69f91a198263afd0cbb8b37` | NOT_READ | NOT_REVIEWED |
+| `db/content-post-body-execution-store.ts` | 5 | 14529 | `7361f4c7a33d83119a6018fe25b72ac9ac287016` | NOT_READ | NOT_REVIEWED |
+| `db/content-post-body-task-store.ts` | 5 | 19348 | `9c2156c22a8ca9a6d7f2c36963fcb970664f76c9` | NOT_READ | NOT_REVIEWED |
+| `db/content-request-budget-store.ts` | 5 | 11045 | `f6e3dd6657f8fdac215f186f8274e55974c206c5` | NOT_READ | NOT_REVIEWED |
+| `db/content-topic-title-execution-store.ts` | 5 | 13309 | `eeec8ece573af4839252c3a93bdd4601ef3aa03d` | NOT_READ | NOT_REVIEWED |
+| `db/content-topic-title-task-store.ts` | 5 | 18928 | `106d42139723f74a55cafe20dd44a95c938a3a22` | NOT_READ | NOT_REVIEWED |
+| `db/content-translation-store.test.ts` | 5 | 4927 | `7b6ea5b2eafc2479d93292b82d6b7db4bb7d449d` | NOT_READ | NOT_REVIEWED |
+| `db/content-translation-store.ts` | 5 | 20098 | `ce550317e44879f2d619e939048c34c5f9b0d2f0` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-content-generation-status.test.ts` | 5 | 4381 | `3183d019592d3207e65f3d26b82d02502847aae5` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-content-generation-status.ts` | 5 | 7775 | `a33350e4fd6cfea72efee9151e7a8d8707ccfcac` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-content-translations.test.ts` | 5 | 4620 | `a9b325b9bbb071bfdaf6502424e5e4454e8c3cbb` | NOT_READ | NOT_REVIEWED |
+| `db/hyperdrive-content-translations.ts` | 5 | 1837 | `17331a2ea04b405ae9a180484fd139e491a530a2` | NOT_READ | NOT_REVIEWED |
+| `db/translation-task-store.ts` | 5 | 68311 | `e2088fea0518a48be62d3c2a894912c9cd6dcafb` | NOT_READ | NOT_REVIEWED |
+| `db/ui-translation-publication-store.ts` | 5 | 7276 | `483113c216e7494ddc5c5713efed54a442033a93` | NOT_READ | NOT_REVIEWED |
+| `tests/database/content-generation-status.test.ts` | 5 | 9517 | `4af6ce69387fe8650160ab77f28128e2301b6d33` | NOT_READ | NOT_REVIEWED |
+| `tests/database/content-post-body-task-planning.test.ts` | 5 | 59436 | `179e12c7ecd14410f94880a02f627702278ca0ad` | NOT_READ | NOT_REVIEWED |
+| `tests/database/content-request-budget-store.test.ts` | 5 | 18423 | `a4f60566de541572ae6fcd4f0043a66382f2aee2` | NOT_READ | NOT_REVIEWED |
+| `tests/database/content-topic-title-execution.test.ts` | 5 | 36112 | `c86339149f1546670433a4106a485aa271e531fd` | NOT_READ | NOT_REVIEWED |
+| `tests/database/content-topic-title-task-planning.test.ts` | 5 | 28467 | `255da462a0c7d7687e0064e07fad4cc6175848bf` | NOT_READ | NOT_REVIEWED |
+| `tests/database/content-translation-store.test.ts` | 5 | 16445 | `f59791cc5b045b2a3a88fad8efe4527e07133427` | NOT_READ | NOT_REVIEWED |
+| `tests/database/source-locale-correction.test.ts` | 5 | 12892 | `d972ce884fc62894a2278567e2143970952e8c33` | NOT_READ | NOT_REVIEWED |
+| `tests/database/translation-generation-authorization.test.ts` | 5 | 4095 | `5b4ac1b8ed322c805b0b625bc55057a4bc8680a6` | NOT_READ | NOT_REVIEWED |
+| `tests/database/translation-task-generation-isolation.test.ts` | 5 | 10872 | `d50cdf519da0d3865c853df508af9c8d0a682ee4` | NOT_READ | NOT_REVIEWED |
+| `tests/database/translation-task-reconciliation.test.ts` | 5 | 13352 | `c8ac767f164fb0b90392d505bc5ce0299d02afe9` | NOT_READ | NOT_REVIEWED |
+| `tests/database/translation-task-store.test.ts` | 5 | 16959 | `486d97f7af0ae119880dff6e15a3586dafede3fa` | NOT_READ | NOT_REVIEWED |
+| `tests/database/ui-translation-publication-store.test.ts` | 5 | 19564 | `2e96f57bc857d5eb553e5ab3c995be9536e9434a` | NOT_READ | NOT_REVIEWED |
+| **Этап 6 — PostgreSQL, миграции и данные (109)** | | | | | |
+| `.github/production-schema-manifest.json` | 6 | 146399 | `330a35c2d23fc36780eaead0d33c4465de279c92` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/migration-history.mjs` | 6 | 3941 | `77e03a2acef0801656cfbf0d58d9f4ee3e5e4fdb` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/migration-history.test.mjs` | 6 | 2806 | `faa975927cf3c0f1fc8e48d5a1dcbae301b3c413` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-migration-contract.mjs` | 6 | 2193 | `c18bb68e7a3fb4084ca4d6ef5af12a2792a1639a` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-migration-contract.test.mjs` | 6 | 3518 | `70d6a22fac5b94903a4807513600417226ae34f6` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-schema-manifest.mjs` | 6 | 12217 | `f050830466058778f78b19fd8d0a0886fd52f453` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/runtime-privileges.mjs` | 6 | 19700 | `fcb0204cd0e2fcc03c0768740e0f32c201322f4c` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/runtime-privileges.test.mjs` | 6 | 16142 | `b51c2788a848ce7d638e369a8aed006cd9b3531e` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-migration-history.mjs` | 6 | 1399 | `cda0b9e4b263a1d46227e2e856561d5a3c1a1842` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-production-schema-manifest.mjs` | 6 | 1059 | `716f933d6b7148af7f1dc3f3680efc148197b356` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-runtime-privilege-probes.mjs` | 6 | 7294 | `7d6f745103acbedf46af6333ff4846239a153fb6` | NOT_READ | NOT_REVIEWED |
+| `db/postgres-deadlines.test.ts` | 6 | 4260 | `18e7f8d7a10113e4e65780d1e6888f0c5d19f094` | NOT_READ | NOT_REVIEWED |
+| `db/postgres-deadlines.ts` | 6 | 2932 | `e63b96fc3b15577398ba75be1c00bc90395be2a6` | NOT_READ | NOT_REVIEWED |
+| `db/schema.ts` | 6 | 64221 | `5c9474049873eaf10a435bdc5733336d284291fe` | NOT_READ | NOT_REVIEWED |
+| `drizzle.config.ts` | 6 | 357 | `b3886b12708c9074e867c4fced745d4a47fa7b3b` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0000_tan_johnny_storm.sql` | 6 | 1958 | `6224b0653caad183abc6fefee86522de6f7febb0` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0001_seed-locales.sql` | 6 | 614 | `02467c0b77af8efc3cb311e33ceb8d7762c96949` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0002_ui_translation_storage.sql` | 6 | 2973 | `8c5e1bf04f7eabfb73ecc2affe462081bb163721` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0003_gorgeous_donald_blake.sql` | 6 | 2269 | `80c0ce72d085df52ef460029210c9109de56359d` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0004_forum_domain_foundation.sql` | 6 | 6128 | `88617d21bf609e0575c2e24c97eadefd13302a90` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0005_calm_proemial_gods.sql` | 6 | 948 | `079502dae325c947bee93e99dd004397bc3c9843` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0006_loving_sentinels.sql` | 6 | 5390 | `0b12f77dc5c5a22d9be0b15ac740bc923d6351a8` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0007_durable_translation_tasks.sql` | 6 | 1741 | `f1de054e4ca24af8844f48efbb0eca1ce1dd27aa` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0008_translation_task_claim_lease.sql` | 6 | 1758 | `a374dd8ce4282ab1694ff69c9c5d84a98af1252e` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0009_translation_task_completion.sql` | 6 | 2123 | `a4146d9f96f9ce1c3f1c380352e7877dca229ca8` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0010_translation_task_generation_order.sql` | 6 | 2710 | `71a8f7f045ab777bb3487f4ee17fd02d3193ece2` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0011_persistent_translation_locale_invariant.sql` | 6 | 752 | `37a7e2f716a1e5e6e4b1a0c03e8493346bde4298` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0012_translation_task_retry_dlq.sql` | 6 | 4692 | `c60ae57b664422ba080295e29e9aab1baf4b5556` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0013_translation_task_reconciliation.sql` | 6 | 500 | `1f08f0ae3758e3bc6f48e3bacf5bf79b8a9ce8f9` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0014_content_translation_persistence.sql` | 6 | 5843 | `5ec64db56c2088559ff5ecf8b0470dc38d099420` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0015_content_topic_title_tasks.sql` | 6 | 7237 | `32be12a772d7434cadcaccefe699f27a8eb89a59` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0016_content_post_body_tasks.sql` | 6 | 6540 | `5d1bd1aa63b2a44cdb7ff549ab104b285661cd9d` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0017_content_translation_request_budget.sql` | 6 | 1907 | `4fa5a8a4cbed9c464880ce1d9e654983f5eef949` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0018_source_locale_correction_permissions.sql` | 6 | 948 | `6bfb7efe02fcad8b6829f16d97b0ce05d56ecbfa` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0019_content_provider_allowance_admission.sql` | 6 | 4758 | `95531486b91f867b294a364acae1cac44f57c020` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0020_translation_generation_permission.sql` | 6 | 822 | `55d8d98e1d41b014b9bd131d069be9cc4998b315` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0021_forum_tags.sql` | 6 | 1104 | `aa7af36ac4a31d551670d5866de87fd7893bfcac` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0022_forum_reply_relationships.sql` | 6 | 616 | `b6c97a10de23951fb5f2e0d6b46882758396e69c` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0023_forum_topic_read_states.sql` | 6 | 981 | `ac0b2db2d75ec5130219774e0eee0e00f00dc4e7` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0024_forum_reply_notifications.sql` | 6 | 1700 | `c4566a103cbd0f8a4454354d1e163baa3eca6f84` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0025_forum_topic_pins.sql` | 6 | 1539 | `9849dcb5ba2109231f1d83756b7d421aa10ebbd1` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0026_best_answer_independent_from_solved.sql` | 6 | 93 | `5bda93bde49c953fb951820da0eea33c8c790192` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0027_help_solutions_foundation.sql` | 6 | 245 | `6e4b7169e5e994ef021afa8775e72ccb6307a81d` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0028_help_solution_moderation.sql` | 6 | 1513 | `01086ae37cd4e3cefd0703bd877d05df5da3fb10` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0029_help_question_needs_details.sql` | 6 | 86 | `9d4fb9595cc2fcb0c9c9e81d2eb45bb6113e93b7` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0030_help_duplicate_workflow.sql` | 6 | 5263 | `1a351d4f3c5a8246f6a6d13adc822d31e0d98da2` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0031_help_user_moderation_signals.sql` | 6 | 5214 | `411ca83a89ada516d1948a3b3921a53f1f7ae580` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0032_forum_profiles.sql` | 6 | 876 | `006b4c28e713208a867b60f10a708f1073845732` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0033_forum_online_presence.sql` | 6 | 492 | `e50ffb614c93681ea73a679add9bda17340a8587` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0034_forum_editor_drafts.sql` | 6 | 739 | `63b14f7e49f3aa571b0d54a0c55a2a390ac164d5` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0035_forum_attachments_foundation.sql` | 6 | 2485 | `17ea683e720d2057ad5307cf8baa3a021804a077` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0036_forum_attachment_security_events.sql` | 6 | 943 | `288dd5bb04231c9779183b8b88b52a8aeb5251fe` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0037_forum_attachment_draft_generations.sql` | 6 | 999 | `3e4daa986649c5aa9e09b539c30486b4b3d3ed33` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0038_forum_attachment_cleanup_claims.sql` | 6 | 2205 | `1e31cc66cdb787735b14f31c0f44b74d42200d24` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0039_forum_publication_receipts.sql` | 6 | 865 | `f58922f08ed7cd673c344a05e1164bef31c9af5e` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0040_post_edit_history_permissions.sql` | 6 | 1181 | `5e68794e8b5fe64e1793f5d696e5636bea416de1` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0041_published_mentions.sql` | 6 | 276 | `43408faec4d5abbd3f1462295cec13fadda3c6d7` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0042_attachment_edit_snapshots.sql` | 6 | 808 | `d86b8d60453077dd45c3c8ac15920544c0bc5df5` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0043_attachment_security_read_permission.sql` | 6 | 976 | `c93590a31be4c3bfd275ac288c00c55c37b6ebc6` | NOT_READ | NOT_REVIEWED |
+| `drizzle/0044_attachment_draft_conflict_boundaries.sql` | 6 | 1698 | `913c528758336e0bb1b1cf2c33dde2507d975adf` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/_journal.json` | 6 | 7026 | `c5dd7c90aaba972813b4a547f8d00ba4582b3559` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0000_snapshot.json` | 6 | 4740 | `9739ca1e8afd56b0115a0aa0bd59be97f2373d99` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0001_snapshot.json` | 6 | 4740 | `1ae0bd2dda6e2422aafc8a002f40c2c3ccb1542c` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0002_snapshot.json` | 6 | 11912 | `020469aa1f1fe8728b4aa99ef4af34f84370e2d2` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0003_snapshot.json` | 6 | 21875 | `df5ebac7c65ffbaa7c88b8a8d8d6503b8635458c` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0004_snapshot.json` | 6 | 35915 | `eae5998fbeee5b7644363f1357a033950e2b3c49` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0005_snapshot.json` | 6 | 36738 | `1770b1064e181c4abf4f78c4480bff7bb1d961fe` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0006_snapshot.json` | 6 | 46248 | `be02dd39fb7404438bafcf2d90cbba3f382f4dc3` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0007_snapshot.json` | 6 | 50608 | `16ddc343c7a797cbc2051e157c17a9022ec02a1d` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0008_snapshot.json` | 6 | 52504 | `7b02b28ea56c8b15c5c10ad1ba319f129b61ed35` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0009_snapshot.json` | 6 | 53285 | `5b5837a3907c0ab1adc63c16e84c087fdc921773` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0010_snapshot.json` | 6 | 56923 | `05d6ba63f9e6c9927cd2809411c986fbd0dd298d` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0011_snapshot.json` | 6 | 57063 | `b65aac6e7dfa98f7b714ed7e14e1c575fefe4ce2` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0012_snapshot.json` | 6 | 60320 | `efdfdeb5cc1cf3efcae0f55a2cdf039c80eb2c57` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0013_snapshot.json` | 6 | 62584 | `9d8a02f88c2e27be1d22b2e5ac681a161aaab74f` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0014_snapshot.json` | 6 | 74213 | `946c6049c480a0f04a46704105f532996272318f` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0015_snapshot.json` | 6 | 81219 | `52d451b02a3899af5248c6f0435a6a3044b70034` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0016_snapshot.json` | 6 | 87353 | `e4f34e51da09dbf9c6da28d9455593b766ac8973` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0017_snapshot.json` | 6 | 91900 | `79529a7c47d265ae63c1c7a482e9a6cda204c87c` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0018_snapshot.json` | 6 | 91969 | `853d5f18b8d54bbee4ce6f32831f9ea0fb3326d1` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0019_snapshot.json` | 6 | 98950 | `d15560f7887c16c832e08d69360b1fd993071610` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0020_snapshot.json` | 6 | 98983 | `66ea5d87f1540d94e2df651d3a7c5c16c6e33ab7` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0021_snapshot.json` | 6 | 102104 | `c304cbf813e3e81f73ccaee3f5f2223b4737fa3a` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0022_snapshot.json` | 6 | 103349 | `a7a858f083b68add836a8aa01201c378b42ccc4d` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0023_snapshot.json` | 6 | 105786 | `4456f0d1a25d0d730aece8607599ddb472ee415b` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0024_snapshot.json` | 6 | 110629 | `b90827fb432b8ae46c8b45520321dd3acf8cfae9` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0025_snapshot.json` | 6 | 112856 | `2033e64579b4102e385bfb39b20e3f941aa2ce90` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0026_snapshot.json` | 6 | 112607 | `369d0e53072921d33276a9beaa9c85fb9e39fb8f` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0027_snapshot.json` | 6 | 112607 | `c7e4abdc8a4d526a2cb9112fa2012537909a8761` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0028_snapshot.json` | 6 | 114796 | `b574387fbfd9a380b146ccd685442aabcdda6c20` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0029_snapshot.json` | 6 | 114983 | `2be30b2a3ffe19833a5c2c8829619fc5b6d3a548` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0030_snapshot.json` | 6 | 126265 | `f378930f7a8db7df2bb91870859861fabfd45f08` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0031_snapshot.json` | 6 | 137536 | `2c81b2de71032d727e5da091c757a8696bdc2b54` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0032_snapshot.json` | 6 | 139731 | `9a1a225973aa94586f371ba9c8bf4c6b5706662b` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0033_snapshot.json` | 6 | 141228 | `e015e9d41a4356858481d81df9bc4ad0a6ab3280` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0034_snapshot.json` | 6 | 143934 | `2f8a38772af481764f46efa53412f0103b3adb8e` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0035_snapshot.json` | 6 | 151993 | `f6f816f19d63ebbd1f3e8b7317259769459f94c9` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0036_snapshot.json` | 6 | 155376 | `b64a9a0ab96c43f96343402bbf7eccba13b77e7a` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0037_snapshot.json` | 6 | 157461 | `d34ba14918d30c6990542136261411688d5969ce` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0038_snapshot.json` | 6 | 159344 | `128f8308ffc139d9b5a72b6e2bab89f28916ab50` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0039_snapshot.json` | 6 | 161169 | `44e9ac9cc0e242c716626805b995951a0a649bb6` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0040_snapshot.json` | 6 | 161387 | `58c0b0d097c937b5773973c247c948f1f6b64259` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0041_snapshot.json` | 6 | 161766 | `4b102cad8519a308f8710f1318cbfcefe12c27d4` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0042_snapshot.json` | 6 | 164085 | `6bfc7d3c3823b75c049b8be04fcd9044c45aa2ce` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0043_snapshot.json` | 6 | 164119 | `28a6668cb468ba2aff0ffb903d84eafd3f522154` | NOT_READ | NOT_REVIEWED |
+| `drizzle/meta/0044_snapshot.json` | 6 | 168455 | `3b3dbf4b6cffcd6f1ad84cfabe4891d1ceb689f7` | NOT_READ | NOT_REVIEWED |
+| `scripts/configure-localization-deadlines.sql` | 6 | 341 | `89a08b623a8b0037f8b4ae6acfd266e6f43762ac` | NOT_READ | NOT_REVIEWED |
+| `tests/database/migrations.test.ts` | 6 | 132016 | `1b6923993b6f165acd86e7816877fa2e4e620f60` | NOT_READ | NOT_REVIEWED |
+| `tests/production-migration-verifier.test.ts` | 6 | 1229 | `7f710be04fbac53693d5eb055d5a1a663f157256` | NOT_READ | NOT_REVIEWED |
+| **Этап 7 — UI/CSS/Preview, безопасность, CI и scripts (66)** | | | | | |
+| `.github/runtime-migration-evidence.json` | 7 | 252 | `9347ed5ed0b3689636cee5b468c10f37d89663b4` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/bootstrap-production-web-credential.mjs` | 7 | 19382 | `014f90d2813d65d0908e8ac94c5dbb945a2ac15d` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/bootstrap-production-web-credential.test.mjs` | 7 | 8649 | `26640e4472afcfb0573512712a33755febe38210` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/diagnose-production-web-credential.mjs` | 7 | 10041 | `afc67cd9dfe76f110862f2bdd7c667c90fe550ce` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/diagnose-production-web-credential.test.mjs` | 7 | 4835 | `ea790fcfa049a93e15d9a0c174c8988e377c66f4` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-privileges.mjs` | 7 | 17001 | `8e4a33448c3186872c7112d589ebe661f71aafcd` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-privileges.test.mjs` | 7 | 13361 | `a7afb49ac6fc7fd9ec4005c6956dc01b71230e89` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-web-credential-bootstrap-workflow.test.mjs` | 7 | 2086 | `a4b2d8a1a5a75d9766e0dc9fbb0a9dd5a7a6d220` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-web-credential-diagnostic-workflows.test.mjs` | 7 | 2948 | `0530441fc53fb75c54323d3f0b97c4e9b9cad831` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-web-credential-recovery-v2-workflows.test.mjs` | 7 | 3640 | `fdb1fd1acccda8c8fadcf0eaf17ee5c721d7e493` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-web-credential-recovery-workflow.test.mjs` | 7 | 2735 | `bda18d741e926903a96bea3592e1b5bb07b35eaf` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-worker-rollout.mjs` | 7 | 4666 | `009182db3ec42fd0801412a087f727edcdab2b2f` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/production-worker-rollout.test.mjs` | 7 | 8209 | `468dc6b2ea73a5c864389d1d6029ecbe962fd056` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/provision-production-web-relations.mjs` | 7 | 10654 | `1a8fd2a814cd4cdcaa1f642e33263fbfa1892bfc` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/provision-production-web-relations.test.mjs` | 7 | 9645 | `cc09f59c85c3d651d63a931431d7a131179533f5` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/recover-production-web-credential-v2.mjs` | 7 | 3133 | `cacbcf2e9c3dd190a548fcd1c1ee2c27876bb8f5` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/recover-production-web-credential.mjs` | 7 | 10567 | `99753ed6d1dc2033f01a3e8c242e892df95ceefc` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/recover-production-web-credential.test.mjs` | 7 | 10110 | `c8a8457aae839470b5bfbb48950e98db84bd8c0c` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/runtime-migration-evidence.mjs` | 7 | 2543 | `8d06ee99d82707f1aafd842986a856d353974f0a` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/runtime-migration-evidence.test.mjs` | 7 | 2601 | `cdb0c59e5d5763217a84562b67e2343d0909480c` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/validate-production-web-credential-input.mjs` | 7 | 6769 | `270d82b9a165e44e611bc6ade1bec6b29f69e7da` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/validate-production-web-credential-input.test.mjs` | 7 | 6024 | `121dab2956300fae23871b3f2de6bfebd9736acb` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-production-migration-identity.mjs` | 7 | 2010 | `04a5876f2ecb97abab4800f61594f986d404b3dd` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-production-migration-identity.test.mjs` | 7 | 1107 | `1a7af3f4524d73f2536ed5fb91f98be33d238bff` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-production-migration.mjs` | 7 | 8632 | `dbd523fb09db8d645fd5daeaeb750caef650589a` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-production-runtime-privileges.mjs` | 7 | 2099 | `46796604b57c290d6548a8c6f1129f4f8eb88a4c` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-recovery-v2-validation-run.mjs` | 7 | 2757 | `b85179af53b08620edcea22d0653334d4a5ecf44` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-recovery-v2-validation-run.test.mjs` | 7 | 2302 | `6965393134d3e7bca8347862f5d56829d5221442` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-runtime-migration-evidence.mjs` | 7 | 2092 | `dc4afe7bed8ff988537215f66ac958d1c76268c1` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-web-credential-bootstrap-probes.mjs` | 7 | 5391 | `95c8806f3edc61b6bc3fabbbde9e0b8e727b6ee8` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-web-credential-diagnostic-probes.mjs` | 7 | 4358 | `23164c0b0b290dcd329eb516209277ec660ba252` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-web-credential-recovery-probes.mjs` | 7 | 6272 | `a21e22b85b93047248d4aa1c984ea57cbb018009` | NOT_READ | NOT_REVIEWED |
+| `.github/scripts/verify-web-relation-provisioning-probes.mjs` | 7 | 5637 | `5754752544f26c883d6cf00efdf683e3f17a9e5e` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/ci.yml` | 7 | 5154 | `39fac246a79b689bcc9ddf682976fc07abaaf29c` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/codex-service-channel-bridge.yml` | 7 | 2478 | `a736f0aa6fece855bf6511878e7d25691d762dfb` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-db-identity.yml` | 7 | 1041 | `b611d137041e825e85aaa9dd7262ab901f22a89a` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-db-migrate.yml` | 7 | 2247 | `48c63ca6fedc845e48fe541e6e31e5a6ade30f44` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-runtime-privileges.yml` | 7 | 1177 | `6c06f3e934cc8d6161906e8e1dd2d56379f7d376` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-credential-bootstrap.yml` | 7 | 2082 | `3f1278765d941b6de76e090c95b450c40ff2a347` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-credential-input-validation.yml` | 7 | 1941 | `6589bce24c304c18469036fadde883cbee66d608` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-credential-preflight-diagnostic.yml` | 7 | 1388 | `7b5d52b4d40776c0a0b2fc4b6e9e6c322da4baed` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-credential-recovery-v2.yml` | 7 | 3871 | `60c5613f9d9ac7b2387e4ae4c0986fb440718ed5` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-credential-recovery.yml` | 7 | 2057 | `e51b64a3bf15367aed2e81144daf4900195daca8` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-credential-rollback-probe.yml` | 7 | 2102 | `ef2765ff5048eed8823393e0f334335ed5599529` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-web-relation-provision.yml` | 7 | 1465 | `538266b555ebc56e468c0bb88fbf1890f817c311` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/production-worker-rollout.yml` | 7 | 13105 | `28b5fe4bdbd34c7a64a08b6d154660509bfca4b8` | NOT_READ | NOT_REVIEWED |
+| `.github/workflows/ui-preview-pages.yml` | 7 | 1360 | `5f8b53f6ff450fda8acd74e5d925cfc8ac996fd4` | NOT_READ | NOT_REVIEWED |
+| `app/entry.client.tsx` | 7 | 276 | `487c480b952c5e8e67e428e268fd4dd39fe7d830` | NOT_READ | NOT_REVIEWED |
+| `app/entry.server.tsx` | 7 | 1217 | `22aa313b17eaec69014e61dffe945dd3a520ba3d` | NOT_READ | NOT_REVIEWED |
+| `app/forum/avatar.tsx` | 7 | 552 | `2ff52c5154e875ff2f4b27446f637ff95a0affeb` | NOT_READ | NOT_REVIEWED |
+| `app/forum/ui.test.tsx` | 7 | 7090 | `bcd8e15c1f489423964e31107ccb0e1305136a57` | NOT_READ | NOT_REVIEWED |
+| `app/forum/ui.tsx` | 7 | 15451 | `3544dac3df34363fac9f134a1c02eb785705d363` | NOT_READ | NOT_REVIEWED |
+| `app/root.tsx` | 7 | 1794 | `c1708e1ea80d15b72a74242130221daa1606717f` | NOT_READ | NOT_REVIEWED |
+| `app/server-logging.test.ts` | 7 | 1496 | `316bcd8b03537966c3030f01136209df78b9a793` | NOT_READ | NOT_REVIEWED |
+| `app/server-logging.ts` | 7 | 832 | `f37758fa554e05e68437ed46b8698eba032773be` | NOT_READ | NOT_REVIEWED |
+| `app/styles.css` | 7 | 209186 | `afb2a81864df73afa0cce97fe3f62827e3eed5cb` | NOT_READ | NOT_REVIEWED |
+| `app/theme.ts` | 7 | 571 | `c92403e2caefd52acb840266c412c21b3a06502b` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/index.html` | 7 | 368 | `1d0f882ba0f8359df1ebfff0bf70bb89c8207feb` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/main.tsx` | 7 | 954 | `13e035712164266235e15595b2665163f3c1ba80` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/preview-app.test.tsx` | 7 | 3226 | `332e6643b67fa18291774c5f8cbab8888f50ef83` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/preview-app.tsx` | 7 | 97495 | `f4f250fafa7640316eb8681c43178d509e08f682` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/preview-i18n.ts` | 7 | 2830 | `1762bc316506c26f9994ccb2a1a7daa3a850d8cc` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/preview.css` | 7 | 2281 | `b963280365b24c647672f483e6c1526eefa9f8e7` | NOT_READ | NOT_REVIEWED |
+| `app/ui-preview/vite.config.ts` | 7 | 188 | `96e75dcb150e9e08d464349c440c4c0b1b8b156d` | NOT_READ | NOT_REVIEWED |
+| `scripts/smoke-production-worker.sh` | 7 | 584 | `4663b1eb7af50db164fbd676fe663e2d37028845` | NOT_READ | NOT_REVIEWED |
+| `scripts/smoke-workers.sh` | 7 | 1471 | `22a4de1ffba5d0460def7bdb51f0c4aaf99757dc` | NOT_READ | NOT_REVIEWED |
+
+### Вне scope кода: только reference/assets
+
+| Путь | Классификация |
+| --- | --- |
+| `AGENTS.md` | REFERENCE_DOCUMENT |
+| `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md` | REFERENCE_DOCUMENT |
+| `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` | REFERENCE_DOCUMENT |
+| `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_HISTORY_old_22.9.26_1.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_HISTORY_old_22.9.26_2.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_22.9.26_1.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_22.9.26_2.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_22.9.26_3.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_22.9.26_4.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_22.9.26_5.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_22.9.26_6.md` | REFERENCE_DOCUMENT |
+| `doc_old/PROJECT_STATE_old_23.9.26_1.md` | REFERENCE_DOCUMENT |
+| `docs/auth/AUTHORIZATION.md` | REFERENCE_DOCUMENT |
+| `docs/database/HYPERDRIVE.md` | REFERENCE_DOCUMENT |
+| `docs/database/MIGRATIONS.md` | REFERENCE_DOCUMENT |
+| `docs/EDITOR.md` | REFERENCE_DOCUMENT |
+| `docs/translation/CONTENT_TRANSLATION.md` | REFERENCE_DOCUMENT |
+| `docs/translation/LOCALES.md` | REFERENCE_DOCUMENT |
+| `docs/translation/PROVIDERS_AND_JOBS.md` | REFERENCE_DOCUMENT |
+| `docs/translation/RESEARCH.md` | REFERENCE_DOCUMENT |
+| `docs/translation/STORAGE_AND_VERSIONING.md` | REFERENCE_DOCUMENT |
+| `docs/translation/UI_TRANSLATION.md` | REFERENCE_DOCUMENT |
+| `docs/UI_UX_PASS.md` | REFERENCE_DOCUMENT |
+| `PROJECT_HISTORY.md` | REFERENCE_DOCUMENT |
+| `PROJECT_STATE.md` | REFERENCE_DOCUMENT |
+| `PROJECT.md` | REFERENCE_DOCUMENT |
+| `README.md` | REFERENCE_DOCUMENT |
+| `ROADMAP.md` | REFERENCE_DOCUMENT |
+| `SCAFFOLD_PLAN.md` | REFERENCE_DOCUMENT |
+| `TRANSLATION_ARCHITECTURE.md` | REFERENCE_DOCUMENT |
+| `app/assets/vico-forum-logo-dark.webp` | NON_CODE_WEBP |
+| `app/assets/vico-forum-logo-light.webp` | NON_CODE_WEBP |
+
+### Контроль этапа 0
+
+| Следующий этап | Число файлов | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| --- | ---: | ---: | ---: |
+| 1 — Архитектура, auth и авторизация | 49 | 0 | 0 |
+| 2 — Форум и Help & Solutions | 51 | 0 | 0 |
+| 3 — Editor 2.0 и вложения | 55 | 0 | 0 |
+| 4 — Локализация и UI-ресурсы | 44 | 0 | 0 |
+| 5 — Контентные переводы и задачи | 84 | 0 | 0 |
+| 6 — PostgreSQL, миграции и данные | 109 | 0 | 0 |
+| 7 — UI/CSS/Preview, безопасность, CI и scripts | 66 | 0 | 0 |
+| **Итого** | **458** | **0** | **0** |
+
+Этап 0 **не означает** проверки хотя бы одного из 458 файлов по требуемой новой методике. Код не исправлялся, tests/PG/Worker/browser/CI не запускались, findings не опубликованы. **STOP после этапа 0**, следующий этап только по явной команде владельца.
+
+---
 **Единственный действующий план: объединённый аудит Vico Forum (2026-10-23).** Два прежних аудита объединены по прямой команде владельца. Все записи ниже новой секции — *исторический ledger*, а не два действующих параллельных плана. Первый обязательный проход — ПОВТОРНО проверить ранее просмотренное; только после его завершения приступать к ранее не проверенному. Никаких implementation changes и преждевременного формального объявления findings.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Лиры в рамках текущего служебного PR.
