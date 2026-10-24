@@ -47,62 +47,62 @@
 - **На новом проходе проверка ВСЕГО кода: FULL_EOF_READ = 0/458; SEMANTIC_REVIEWED = 0/458; cross-file scenario evidence = 0/458.** Считаются только действия ПОСЛЕ начала нового прохода. Исторические 400 scoped/58 full-read отметки не перенесены в новые PASS.
 - Следующий этап 1: только группа 1 ниже. Впоследствии при любом изменении `main` применить новое сравнение tree/sha и проверить затронутые механизмы.
 
-### Единый новый реестр кода (0/458)
+### Единый новый реестр кода (49/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
 
 Идентификатор исходника — **полный Git blob SHA** в конкретном immutable tree; `Bytes` — исходный размер Git blob, **не количество прочитанных байт**. `READ` = `NOT_READ_THIS_PASS`, `SEM` = `NOT_REVIEWED_THIS_PASS` для каждой строки; колонки статуса нельзя изменять без фактической проверки.
 
 | Путь | Этап | Bytes | Blob SHA | READ | SEM |
 | --- | ---: | ---: | --- | --- | --- |
 | **Этап 1 — Архитектура, auth и авторизация (49)** | | | | | |
-| `.env.example` | 1 | 98 | `91caeb78d06e3607dadb7fd10bfc039694c9fbd5` | NOT_READ | NOT_REVIEWED |
-| `.gitignore` | 1 | 217 | `c363c907bdae46191319e6918079447b9b025aff` | NOT_READ | NOT_REVIEWED |
-| `.node-version` | 1 | 8 | `df6ae3370f9f89272d88629c442cf554d6c1f9fb` | NOT_READ | NOT_REVIEWED |
-| `app/auth/auth-client.ts` | 1 | 1329 | `80e4d04f64e30787da1c748d5610c858ca0609ac` | NOT_READ | NOT_REVIEWED |
-| `app/auth/auth-controls.test.tsx` | 1 | 9626 | `fa32379e9a33739733c83ca31e71e2682069d00e` | NOT_READ | NOT_REVIEWED |
-| `app/auth/auth-controls.tsx` | 1 | 4938 | `8d6efeccec6c4349a091aa5f7a9613bcc9d92d18` | NOT_READ | NOT_REVIEWED |
-| `app/auth/auth.server.test.ts` | 1 | 1221 | `0a3356ab1e27bee137922143cf693f369a5aeef8` | NOT_READ | NOT_REVIEWED |
-| `app/auth/auth.server.ts` | 1 | 3766 | `8ecabbbead8b9fe3a7d282ba00759cb2aca35e5d` | NOT_READ | NOT_REVIEWED |
-| `app/auth/credential-path.ts` | 1 | 1255 | `7fc8015019f7b408e79be2d656612f706fab38fd` | NOT_READ | NOT_REVIEWED |
-| `app/auth/credential-view.test.tsx` | 1 | 9760 | `2f51618a0cde4ecb7573e38c442c6663fe43cb68` | NOT_READ | NOT_REVIEWED |
-| `app/auth/credential-view.tsx` | 1 | 4360 | `37de16bd08903c7116ad4bda4df04d95d30a50e4` | NOT_READ | NOT_REVIEWED |
-| `app/auth/request-context.ts` | 1 | 1380 | `f5ba6ea2de74cf3d61fb884465b81c4314c0bdcb` | NOT_READ | NOT_REVIEWED |
-| `app/auth/session-context.test.ts` | 1 | 3032 | `6e2e293c8bd1e7e550392a2be218d86ee2a2d8f1` | NOT_READ | NOT_REVIEWED |
-| `app/auth/session-context.ts` | 1 | 1208 | `5956058de743f0e55075ae1bfb9836f3fc72cb1e` | NOT_READ | NOT_REVIEWED |
-| `app/authorization/admin-view.test.tsx` | 1 | 5650 | `79c0caa45f99f84282cb33210968704ad6b7eeed` | NOT_READ | NOT_REVIEWED |
-| `app/authorization/admin-view.tsx` | 1 | 9988 | `ebe2e6d4767206097f21ceaaf6e4ad64a90ffd27` | NOT_READ | NOT_REVIEWED |
-| `app/authorization/catalog.ts` | 1 | 1684 | `84b1e5268838e996725eb9c027c420df20cd36dd` | NOT_READ | NOT_REVIEWED |
-| `app/authorization/request-context.ts` | 1 | 408 | `edb4265bb6044f7061d1b6631d0769107e91e8d5` | NOT_READ | NOT_REVIEWED |
-| `app/routes.ts` | 1 | 1473 | `24ac49aff9bbe60bf0cbd977172ba4e3e69c6c43` | NOT_READ | NOT_REVIEWED |
-| `app/routes/auth-api.test.ts` | 1 | 1220 | `96dfd548f2423b4a2eb012ddd9ac0e224077b352` | NOT_READ | NOT_REVIEWED |
-| `app/routes/auth-api.ts` | 1 | 375 | `4ab43ee9040ff63225a82048998d766b2b7a7375` | NOT_READ | NOT_REVIEWED |
-| `app/routes/authorization-admin.test.ts` | 1 | 6838 | `d0c50c66656b08e3784ededcbb7f9374fcd92cbc` | NOT_READ | NOT_REVIEWED |
-| `app/routes/authorization-admin.tsx` | 1 | 4664 | `22bab30f70caf435315affeb8fb44f7f480cd7dd` | NOT_READ | NOT_REVIEWED |
-| `app/routes/credential-sign-in.tsx` | 1 | 799 | `939a644fac4246157023220c2d084f7a5762b68c` | NOT_READ | NOT_REVIEWED |
-| `app/routes/credential-sign-up.tsx` | 1 | 799 | `92f37e93346742440a5d278e5aeca81aa92814cf` | NOT_READ | NOT_REVIEWED |
-| `db/authorization-repository.test.ts` | 1 | 8406 | `281d57296e5de33c74c862cd136947e823b6ed65` | NOT_READ | NOT_REVIEWED |
-| `db/authorization-repository.ts` | 1 | 15242 | `278a5bec6c967a3210a93bdb97f2621d592434cf` | NOT_READ | NOT_REVIEWED |
-| `db/authorization-service.ts` | 1 | 5275 | `843d8ab21efaa6332a2707bb922e77e74b859b06` | NOT_READ | NOT_REVIEWED |
-| `db/hyperdrive-authorization.test.ts` | 1 | 5441 | `d91fd99bfcd429a63aaa781e57fd98e8bf8a30ea` | NOT_READ | NOT_REVIEWED |
-| `db/hyperdrive-authorization.ts` | 1 | 3864 | `3271b9074bfb00c04b42af51c959ddb358a9b3db` | NOT_READ | NOT_REVIEWED |
-| `db/web-runtime-wiring.test.ts` | 1 | 1375 | `00af56fcb565935b4a6abdaf5bba58e6176aea27` | NOT_READ | NOT_REVIEWED |
-| `eslint.config.js` | 1 | 464 | `f4f8fe1104e7b02ab6368f7759d7a29db41c4195` | NOT_READ | NOT_REVIEWED |
-| `package.json` | 1 | 1889 | `f0e7429d23c7c25724293cdcd7ba370ca8a1fbf3` | NOT_READ | NOT_REVIEWED |
-| `pnpm-lock.yaml` | 1 | 184354 | `88ade74044c2590923eb519e12a75a059ccc53ff` | NOT_READ | NOT_REVIEWED |
-| `pnpm-workspace.yaml` | 1 | 212 | `fba2ee8c2be560e3b446fe2a778e14f94a7b24a1` | NOT_READ | NOT_REVIEWED |
-| `react-router.config.ts` | 1 | 253 | `722b4a8dc2d45d8e79a6dd7b6e12b504bfbd98ae` | NOT_READ | NOT_REVIEWED |
-| `tests/database/auth-runtime.test.ts` | 1 | 6234 | `abc23a6472733128b1c40727770a4e1529acc604` | NOT_READ | NOT_REVIEWED |
-| `tests/database/authorization-snapshot.test.ts` | 1 | 11941 | `8fcf008f3fe6b479fbcd1107cc19363209fd686e` | NOT_READ | NOT_REVIEWED |
-| `tests/database/forum-email-registration.test.ts` | 1 | 5407 | `13909a4296f228cc445bc639db0b5963977baf68` | NOT_READ | NOT_REVIEWED |
-| `tsconfig.cloudflare.json` | 1 | 622 | `991a73681ebaef8591941a66ef58c5c5bf51a85a` | NOT_READ | NOT_REVIEWED |
-| `tsconfig.json` | 1 | 274 | `d7ce9e49b09efb6c613e4c90e10854e33011f995` | NOT_READ | NOT_REVIEWED |
-| `tsconfig.node.json` | 1 | 3566 | `e5888460bf1ae5d82d0be85793810c01d873bffa` | NOT_READ | NOT_REVIEWED |
-| `vite.config.ts` | 1 | 294 | `6a5db4717ef1208b4417b0320e7edca26f54d111` | NOT_READ | NOT_REVIEWED |
-| `vitest.config.ts` | 1 | 243 | `b8b2fdec0c02f84406a8080e1b64210d321ff79c` | NOT_READ | NOT_REVIEWED |
-| `vitest.database.config.ts` | 1 | 192 | `223bc3c11c73c99235064dcef523caf095d22c1a` | NOT_READ | NOT_REVIEWED |
-| `workers/app.ts` | 1 | 3327 | `daf3268db5c397c8f6023bce6bd74a4fddbfbead` | NOT_READ | NOT_REVIEWED |
-| `workers/database-bindings.test.ts` | 1 | 3351 | `a4d421b00aa05ee7d6e3e55585cfe9ab7309e966` | NOT_READ | NOT_REVIEWED |
-| `workers/database-bindings.ts` | 1 | 1427 | `539f21dcaced85afe62a71e8814157c64f226722` | NOT_READ | NOT_REVIEWED |
-| `wrangler.jsonc` | 1 | 468 | `58b568003397b79310f9e68a890656ef6698076f` | NOT_READ | NOT_REVIEWED |
+| `.env.example` | 1 | 98 | `91caeb78d06e3607dadb7fd10bfc039694c9fbd5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.gitignore` | 1 | 217 | `c363c907bdae46191319e6918079447b9b025aff` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.node-version` | 1 | 8 | `df6ae3370f9f89272d88629c442cf554d6c1f9fb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/auth-client.ts` | 1 | 1329 | `80e4d04f64e30787da1c748d5610c858ca0609ac` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/auth-controls.test.tsx` | 1 | 9626 | `fa32379e9a33739733c83ca31e71e2682069d00e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/auth-controls.tsx` | 1 | 4938 | `8d6efeccec6c4349a091aa5f7a9613bcc9d92d18` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/auth.server.test.ts` | 1 | 1221 | `0a3356ab1e27bee137922143cf693f369a5aeef8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/auth.server.ts` | 1 | 3766 | `8ecabbbead8b9fe3a7d282ba00759cb2aca35e5d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/credential-path.ts` | 1 | 1255 | `7fc8015019f7b408e79be2d656612f706fab38fd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/credential-view.test.tsx` | 1 | 9760 | `2f51618a0cde4ecb7573e38c442c6663fe43cb68` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/credential-view.tsx` | 1 | 4360 | `37de16bd08903c7116ad4bda4df04d95d30a50e4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/request-context.ts` | 1 | 1380 | `f5ba6ea2de74cf3d61fb884465b81c4314c0bdcb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/session-context.test.ts` | 1 | 3032 | `6e2e293c8bd1e7e550392a2be218d86ee2a2d8f1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/auth/session-context.ts` | 1 | 1208 | `5956058de743f0e55075ae1bfb9836f3fc72cb1e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/authorization/admin-view.test.tsx` | 1 | 5650 | `79c0caa45f99f84282cb33210968704ad6b7eeed` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/authorization/admin-view.tsx` | 1 | 9988 | `ebe2e6d4767206097f21ceaaf6e4ad64a90ffd27` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/authorization/catalog.ts` | 1 | 1684 | `84b1e5268838e996725eb9c027c420df20cd36dd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/authorization/request-context.ts` | 1 | 408 | `edb4265bb6044f7061d1b6631d0769107e91e8d5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes.ts` | 1 | 1473 | `24ac49aff9bbe60bf0cbd977172ba4e3e69c6c43` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/auth-api.test.ts` | 1 | 1220 | `96dfd548f2423b4a2eb012ddd9ac0e224077b352` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/auth-api.ts` | 1 | 375 | `4ab43ee9040ff63225a82048998d766b2b7a7375` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/authorization-admin.test.ts` | 1 | 6838 | `d0c50c66656b08e3784ededcbb7f9374fcd92cbc` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/authorization-admin.tsx` | 1 | 4664 | `22bab30f70caf435315affeb8fb44f7f480cd7dd` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/credential-sign-in.tsx` | 1 | 799 | `939a644fac4246157023220c2d084f7a5762b68c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `app/routes/credential-sign-up.tsx` | 1 | 799 | `92f37e93346742440a5d278e5aeca81aa92814cf` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/authorization-repository.test.ts` | 1 | 8406 | `281d57296e5de33c74c862cd136947e823b6ed65` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/authorization-repository.ts` | 1 | 15242 | `278a5bec6c967a3210a93bdb97f2621d592434cf` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/authorization-service.ts` | 1 | 5275 | `843d8ab21efaa6332a2707bb922e77e74b859b06` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/hyperdrive-authorization.test.ts` | 1 | 5441 | `d91fd99bfcd429a63aaa781e57fd98e8bf8a30ea` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/hyperdrive-authorization.ts` | 1 | 3864 | `3271b9074bfb00c04b42af51c959ddb358a9b3db` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/web-runtime-wiring.test.ts` | 1 | 1375 | `00af56fcb565935b4a6abdaf5bba58e6176aea27` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `eslint.config.js` | 1 | 464 | `f4f8fe1104e7b02ab6368f7759d7a29db41c4195` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `package.json` | 1 | 1889 | `f0e7429d23c7c25724293cdcd7ba370ca8a1fbf3` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `pnpm-lock.yaml` | 1 | 184354 | `88ade74044c2590923eb519e12a75a059ccc53ff` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `pnpm-workspace.yaml` | 1 | 212 | `fba2ee8c2be560e3b446fe2a778e14f94a7b24a1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `react-router.config.ts` | 1 | 253 | `722b4a8dc2d45d8e79a6dd7b6e12b504bfbd98ae` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/auth-runtime.test.ts` | 1 | 6234 | `abc23a6472733128b1c40727770a4e1529acc604` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/authorization-snapshot.test.ts` | 1 | 11941 | `8fcf008f3fe6b479fbcd1107cc19363209fd686e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/forum-email-registration.test.ts` | 1 | 5407 | `13909a4296f228cc445bc639db0b5963977baf68` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tsconfig.cloudflare.json` | 1 | 622 | `991a73681ebaef8591941a66ef58c5c5bf51a85a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tsconfig.json` | 1 | 274 | `d7ce9e49b09efb6c613e4c90e10854e33011f995` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tsconfig.node.json` | 1 | 3566 | `e5888460bf1ae5d82d0be85793810c01d873bffa` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `vite.config.ts` | 1 | 294 | `6a5db4717ef1208b4417b0320e7edca26f54d111` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `vitest.config.ts` | 1 | 243 | `b8b2fdec0c02f84406a8080e1b64210d321ff79c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `vitest.database.config.ts` | 1 | 192 | `223bc3c11c73c99235064dcef523caf095d22c1a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `workers/app.ts` | 1 | 3327 | `daf3268db5c397c8f6023bce6bd74a4fddbfbead` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `workers/database-bindings.test.ts` | 1 | 3351 | `a4d421b00aa05ee7d6e3e55585cfe9ab7309e966` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `workers/database-bindings.ts` | 1 | 1427 | `539f21dcaced85afe62a71e8814157c64f226722` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `wrangler.jsonc` | 1 | 468 | `58b568003397b79310f9e68a890656ef6698076f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 2 — Форум и Help & Solutions (51)** | | | | | |
 | `app/forum/homepage.test.tsx` | 2 | 10608 | `c4b6454cc11d8ec1fd074f6312586714d2aaa6f1` | NOT_READ | NOT_REVIEWED |
 | `app/forum/homepage.ts` | 2 | 355 | `8aeececf9186a2297da91736d5543d8e7ef32d60` | NOT_READ | NOT_REVIEWED |
@@ -573,6 +573,25 @@
 Этап 0 **не означает** проверки хотя бы одного из 458 файлов по требуемой новой методике. Код не исправлялся, tests/PG/Worker/browser/CI не запускались, findings не опубликованы. **STOP после этапа 0**, следующий этап только по явной команде владельца.
 
 ---
+
+## ЭТАП 1 — АРХИТЕКТУРА, AUTHENTICATION И AUTHORIZATION (2026-10-24)
+
+**ЭТАП 1 ЗАВЕРШЁН В ПРЕДЕЛАХ СТАТИЧЕСКОГО КОДОВОГО ОБЪЁМА; ОБЩИЙ АУДИТ ОТКРЫТ.** Из GitHub `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c` целиком получены и прочитаны от начала до фактического конца **все 49/49 первично закреплённых за этапом 1 файлов**. `AGENTS.md` main полностью прочитан перед стартом. Основание зачёта — прочтение реальных исходников, тестовых assertion и проверки путей между ними, не исторические 400/58 отметок.
+
+**Файл за файлом:** 49 уникальных записей группы 1 (в таблице выше exact blob SHA и размер, все `FULL_EOF_READ / SEMANTIC_REVIEWED`), суммарно 340217 байт по Git tree. Из них 14 тестовых файлов, прочитанных целиком, **но ни один тест не запущен**. Crosscut source и source-of-truth от других групп использовались как контекст, их зачёт сюда НЕ переносится. Количество остальных неизменённых записей — **409 NOT_READ/NOT_REVIEWED**.
+
+**Содержательное покрытие этапа 1:**
+1. Worker request composition: локализованный и web PostgreSQL binding разделены и fail-closed; authentication и user context инициализируются до React Router; cookie headers из getSession добавляются к итоговому response; request-scoped forum/authz capabilities создаются заново на каждый запрос. Прочитаны `workers/app.ts`, `workers/database-bindings.ts`, `app/auth/*`, соответствующие unit/PG test source; реальное Cloudflare/PG поведение НЕ исполнялось.
+2. Авторизация: `PERMISSION_CATALOG`, grants, per-user allow/deny precedence, authoritative session user id, management loader/action + same-origin guard + runtime input validation, server side повторная проверка права внутри сериализованной `authz_mutation_lock` транзакции, недопущение последнего manager lockout; readManagementState/resolveUser snapshots `REPEATABLE READ READ ONLY`; typed forbidden/invalid/conflict/unavailable vs unexpected error propagation. Сопоставлено с полным действующим `docs/auth/AUTHORIZATION.md` как требованиями, а не как новым документационным аудитом. Проверены исходники негативных route/repository тестов и PG snapshot REM-10/REM-11 assertions без исполнения.
+3. Authentication: Better Auth 1.7.4, серверная нормализация имени регистрации, trusted proxy IP configurables, database-backed limiter, session forwarding/expiry, credential return-to validation, клиентские logout/revalidation и изменения заголовка на mounted route; HTTP и browser эффект в других вкладках НЕ воспроизводился. Рассмотрены sign-in/up, email registration tests, session context и UI state. Client preview state не авторизационная граница.
+4. Инструментарий: исходники `package.json`, Node/pnpm pins, React Router/Vite/Vitest/TypeScript/ESLint/Wrangler configs и script/CI invocation contracts. `pnpm-lock.yaml` 5409 строк (184354 chars) прочитан **последовательно весь до EOF**, оба отдельных YAML-документа. Структурно сопоставлены **15 runtime + 20 dev прямых dependency specifiers**, расхождений с `package.json` 0. В первом документе **9 package + 9 snapshot keys**, во втором **543 package + 543 snapshot keys**, unmatched key counts = 0. Это проверка локального контрактного формата, НЕ доказательство установки и правильности всех integrity hashes/пакетов. Самостоятельного build/lint/typecheck/CI не было.
+
+**Классификация:** новых подтверждённых текущим Stage дефектов исключительно из этапа 1 не заявлено. Старый owner-only класс stale in-memory header/session identity при смене аккаунта в другой вкладке по source остаётся для сквозной перепроверки; editor/action impact здесь отдельно НЕ закрыт. У mutation rollback cleanup есть сценарий, где secondary ROLLBACK error может заместить исходную ошибку, но actual current-Stage user consequence/trigger по коду этапа 1 не доказан; НЕ считать новым подтверждённым дефектом и НЕ предписывать изменение без полной цепи и релевантности Stage. В personal file записаны только границы и контроль покрытия; findings другой команде не публиковались.
+
+**Итог нового реестра:** 49/458 `FULL_EOF_READ`, 49/458 `SEMANTIC_REVIEWED`; 409/458 ещё не зачтены. Этап 1 закончен, общий полный статический аудит **НЕ завершён**. Ни project implementation, ни другие agent-файлы, ни общий service-channel не редактировались. **STOP:** дальнейший этап 2 (51 исходный файл форума и Help & Solutions) — только по явной команде владельца.
+
+---
+
 **Единственный действующий план: объединённый аудит Vico Forum (2026-10-23).** Два прежних аудита объединены по прямой команде владельца. Все записи ниже новой секции — *исторический ledger*, а не два действующих параллельных плана. Первый обязательный проход — ПОВТОРНО проверить ранее просмотренное; только после его завершения приступать к ранее не проверенному. Никаких implementation changes и преждевременного формального объявления findings.
 
 Этот файл используется для собственных рабочих результатов, выводов и технического контекста Лиры в рамках текущего служебного PR.
