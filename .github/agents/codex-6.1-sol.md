@@ -1,5 +1,47 @@
 # Лёва — Codex-6.1 Sol
 
+## Общая сверка — применимость lifecycle/ACL/upload и HTTP405 (2026-10-24)
+
+Сверка продолжается на неизменном code baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Эта запись уточняет и, где указано, сужает прежний индивидуальный список. Старые статусы OPEN_UNFIXED/P2 для ARCH-02 и ATTACH-04 нельзя использовать без оговорок ниже.
+
+Окончательные локальные прогоны: **8 passed, 0 failed** — 5 новых тестов (ACL1, registry2, Router4052), плюс 3 повторно исполненных прежних attachment-теста. Четвёртый attachment-тест picker/drop/paste не выбран фильтром и не засчитан. По общей сверке теперь 18 различных новых тестовых случаев, не число дефектов; три повторения не добавлены к 18.
+
+### DB-03 — подтверждённое несоответствие внутреннего ACL-контракта, не утверждение о production
+
+`.github/scripts/runtime-privileges.mjs` не включает forum_topic_read_states в web.relations. Реализованные `readTopicReadState`, `readUnreadForUser`, `advanceTopicReadState` используют SELECT и INSERT/UPDATE для этой таблицы. Actual assertRuntimeCapabilityPrivilegeContract принимает synthetic exact snapshot без прав на неё, но отвергает тот же snapshot с добавленными SELECT/INSERT/UPDATE. Новый тест passed. Документ docs/database/HYPERDRIVE.md115–127 связывает этот общий контракт с disposable probes и derivation GRANT; это уже проверяемый repository contract, а не только будущая настройка.
+
+ROADMAP.md318 относит создание реальных roles/grants к Stage6. Это ограничивает activation/production acceptance и не устраняет внутреннее несоответствие. Сохранить DB-03 как дефект checked-in contract. Не утверждать текущий production outage или состояние реальных grants. Прежнее native доказательство read-marker failures и восстановления дополнительными grants найдено в двух идентичных локальных evidence-файлах (SHA256 a535363bc616011087e1833f353f5743e682e25a718cdbaed04695bc37da1206); оно сохранено с прежней атрибуцией, в этой части native PG не запускалась.
+
+### ARCH-02 — локальный факт подтверждён; runtime-дефект не установлен
+
+Actual createHyperdriveRegistryLoader с fake Pg client: успешное чтение мемоизируется, endCalls=0; unexpected query failure также оставляет endCalls=0. Drizzle оборачивает query error, оригинальный TypeError находится в cause. Эти два теста passed. Первоначальный тест ошибочно ожидал identity исходного exception; сохранён initial-results, проверка harness исправлена на cause. Это не новый дефект обработки ошибки.
+
+Прежние локальные idle Pg connections и отсутствие finally остаются фактом локальной фабрики. Однако они не доказывают leak/exhaustion в Worker/Hyperdrive runtime: его teardown/lifecycle не был проверен и исключён владельцем. В проверенных внутренних материалах не установлено универсальное обязательство явно завершать именно этот клиент, достаточное для прежнего безусловного current-Stage P2.
+
+**Решение сверки:** убрать ARCH-02 из безусловно подтверждённых дефектов текущего Stage; хранить как локальное lifecycle-наблюдение с непроверенной runtime-применимостью. Это не признание реализации исправленной или заведомо корректной. Реальный Hyperdrive, платформенные настройки и сервисные проверки не выполнялись и не назначаются обязательным продолжением аудита.
+
+### ATTACH-04 — факт UI подтверждён; требование per-file cancellation неоднозначно
+
+Повторены actual MarkdownEditor тесты с controlled XHR: pending файл не имеет отдельной Remove и блокирует Publish; обычное завершение снимает блокировку, сохраняет текст и точные selected IDs; после ошибки Remove доступна, сохраняет текст и уже загруженный второй файл. Все 3 passed.
+
+Whole-operation Cancel aborts pending XHR, очищает текст и весь набор вложений намеренно. Она работает; это не доказательство случайной потери текста или сломанной Cancel. docs/EDITOR.md182 разрешает удалить/заменить вложение перед публикацией, §4.1 явно требует Retry/Remove после неуспеха и блокировку незавершённых загрузок, но не задаёт однозначно individual abort во время успешного ongoing upload. UI message «Finish or remove attachment uploads before publishing» шире доступных действий в pending row.
+
+**Решение сверки:** сохранить отсутствие per-file abort и несогласованность подсказки как узкое UX/requirement расхождение; не считать прежний ATTACH-04 безусловным P2 по всему Cancel flow. Обязательность удаления именно до завершения upload требует решения владельца. В этой части никаких исправлений/изменений требований не внесено.
+
+### XR-HTTP-ALLOW / Мира ATTACH-HTTP-405-01 — omission подтверждён через Router dispatch
+
+Не только прямой вызов export: actual React Router createStaticHandler.queryRoute dispatch для /api/attachments вызывает loader при HEAD и action при PATCH. Обе ветви возвращают explicit405, Allow отсутствует. 2 теста passed. Требование Allow для405 установлено [RFC9110 §15.5.6](https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6).
+
+Вывод ограничен upload/list resource app/routes/attachment-upload.ts128,144. В download route такого explicit405 нет, поэтому прежнее множественное «attachment routes» сужено. Это нарушение HTTP response contract, не установленный auth bypass/потеря файла. Deployed HTTP server/proxy и полный Worker response pipeline не проверялись. HEAD дополнительно отвергается GET-only guard; отдельную совместимость HEAD не включать автоматически вторым дефектом без самостоятельного verdict.
+
+### Доказательства и следующий участок
+
+`work/audit-cross-review/phase4-contract.{test,config}.ts`, phase4-contract-{results,evidence}.json; phase4-http.test.ts/config/results/evidence; phase4-attachments.config.ts/results и исходный work/audit-stage7-part3/client.test.tsx. Матрица обновлена. Implementation, зависимости и схема не менялись; личные файлы других авторов не редактировались.
+
+Остаётся закрыть остальные source-only/requirement строки: secondary UGC language metadata, классификация read/auth startup failures, Help discovery, locale return destination и границы size/tag/body guard утверждений. Это сверка существующих утверждений, не новый полный проход репозитория. Общего окончательного счёта ещё нет; завершение сверки или согласие всей команды не заявляется.
+
+---
+
 ## Общая сверка — устаревшие действия, буфер и идентичность (2026-10-24)
 
 Сверка продолжается. Baseline кода: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. В этой части **7 локальных тестов passed, 0 failed в окончательных прогонах**: 2 buffer, 2 identity, 3 stale actions. Вместе с частями 1–2 — 13 тестов, не 13 дефектов. Реализация не менялась; реальные сервисы, production, native DB concurrency, браузерные вкладки/cookies не проверялись.
