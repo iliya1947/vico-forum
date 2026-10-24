@@ -1,5 +1,41 @@
 # Лёва — Codex-6.1 Sol
 
+## Общая сверка — устаревшие действия, буфер и идентичность (2026-10-24)
+
+Сверка продолжается. Baseline кода: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. В этой части **7 локальных тестов passed, 0 failed в окончательных прогонах**: 2 buffer, 2 identity, 3 stale actions. Вместе с частями 1–2 — 13 тестов, не 13 дефектов. Реализация не менялась; реальные сервисы, production, native DB concurrency, браузерные вкладки/cookies не проверялись.
+
+### XR-STALE-SOLUTION / Мира HELP-MOD-01 — выбор нового объекта старым действием подтверждён локально
+
+В `app/forum/views.tsx:2515` формы markSolutionNeedsReview/markSolutionOutdated передают intent и, для outdated, причину, но не expected best-answer identity. `actions.server.ts:382–407` не требует identity; `ForumService.setHelpSolutionModeration` также не принимает её. В actual action → service → repository при текущем snapshot answer-B запрос старой формы, просмотренной при answer-A, создаёт UPDATE для answer-B и supersedes его pending signals. Причина, введённая для A, передаётся новому B без конфликта.
+
+Два теста используют actual action, service, repository и компиляцию Drizzle SQL; транзакция подставляет подготовленный текущий snapshot. Это подтверждает выбор объекта и отсутствие защиты от старой формы, но не выдаётся за native race reproduction или исполнение UPDATE настоящей БД. Оба intent относятся к одной причине, а не к двум новым независимым дефектам.
+
+### HELP-DUP-01 / HELP-01 — подтверждён дополнительный stale-remove вариант
+
+`views.tsx:2463` removeHelpDuplicate отправляет только intent. `actions.server.ts:345–351`, `ForumService.removeHelpDuplicate` и repository не требуют expected relationship identity. При snapshot relationship-B actual chain формирует снятие именно B и принятие его pending appeals, хотя старая форма относилась к A. Третий SQL-capture тест passed. Это расширяет доказательства для варианта remove; прежнее отдельное доказательство stale appeal не подменяется этим тестом. Native concurrency в данной части не проверялась.
+
+### XR-THROWN-ACTION-BUFFER / Лира F02 — условная потеря буфера воспроизведена
+
+Actual TopicRoute + loader + action + штатная ForumRouteError boundary, jsdom: после введения Unsaved private text синтетический unexpected TypeError в permission capability проходит через requireForumPermission/rethrow. TopicView размонтируется, форма и текст исчезают; writer не вызывался. Контроль с AuthorizationUnavailableError возвращает controlled503 и сохраняет тот же текст в mounted editor. Внутренний authorization adapter классифицирует известные infrastructure failures, но неизвестные исключения может rethrow; не заявляется, что обычная недоступность БД даёт этот unexpected path.
+
+`docs/EDITOR.md:271` обещает сохранение текста/вложений при сбое сервера/интернета. Подтверждён именно условный путь unexpected action exception и потеря текста в памяти. Не доказаны все сетевые ошибки, потеря вложений, конкретный production incident или частота возникновения. Обещание memory-only из §5 не отменяет проверку ошибки отправки: тест не выполняет пользовательскую навигацию/reload.
+
+Первый прогон: один тест прошёл, контроль остановился из-за сохранённого Advanced mode между тестами. Исправлена только изоляция harness (localStorage.clear); initial-results сохранён. Окончательный прогон: 2/2 passed. Ошибка harness не записана дефектом приложения.
+
+### XR-CROSS-TAB-IDENTITY / Лира F04 — рассогласование воспроизведено с подменой серверного контекста
+
+Actual HeaderAuthProvider, OnlinePresenceHeartbeat, presence action и topic reply action в jsdom; родительский loader/provider воспроизводит передачу cached identity. Сначала header=A и текст набран при A; затем серверный auth context переключён на B. Heartbeat реально вызывает presence action: recordOnlinePresence(B), HTTP204. На topic это не revalidates родительский loader: header остаётся A, текст сохранён. Отправка actual reply action вызывает writer с authorId=B и текстом, набранным при A. После успешной отправки обычная revalidation обновляет header=B, но writer уже получил текст.
+
+Контроль: если B не имеет forum.reply.create, writer не вызывается (403). Это **рассогласование отображаемой учётной записи и авторства отправляемого текста**, а не обход server authorization. Два теста passed. Реальная смена cookies в двух вкладках, полный locale loader, OAuth и сохранение записи настоящей БД не выполнялись; предпосылка смены server session задана в harness. Поэтому нельзя повышать доказательство до live two-tab reproduction.
+
+### Доказательства и оставшаяся работа
+
+Локальные файлы `work/audit-cross-review/phase3-{buffer,identity,stale}.test.*`, соответствующие config/results/evidence JSON и run logs. Они не загружены как implementation changes; опубликованы условия, наблюдения и ограничения. Матрица 119 исходных утверждений обновлена; финальное общее число уникальных дефектов ещё не объявляется. Чужие личные файлы не изменены; общего согласия авторов не заявляется.
+
+Следующий участок сверки: применимость lifecycle/ACL и отмены upload к текущему Stage; затем оставшиеся source-only/requirement вопросы матрицы. Идентификатор отклонённой загрузки остаётся вопросом требуемой корреляции, не установленным нарушением. К исправлениям и merge не переходить.
+
+---
+
 ## Общая сверка — ZIP, идентификаторы и generation policy (2026-10-24)
 
 Общая сверка продолжается. В этой части выполнены **4 локальных теста: 4 passed, 0 failed**. Код проекта не менялся; реальные сервисы/БД, браузер и stress-inputs не использовались.
