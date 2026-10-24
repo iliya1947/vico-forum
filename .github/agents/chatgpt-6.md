@@ -578,6 +578,14 @@
 ## ЭТАП 8 — СКВОЗНАЯ ПЕРЕПРОВЕРКА (2026-10-24)
 Шесть независимых source-supported current-Stage механизмов повторно сверены; детали owner-only в чате. Runtime не запускался.
 
+## GAP R9 — FORUM/EDITOR (2026-10-24)
+
+Подзадача закрытия доказательных пробелов: exact main `d72b27c`, AGENTS.md полностью перечитан. Источники прочитаны последовательными непересекающимися диапазонами до EOF и проверены по содержимому:
+- `app/forum/views.tsx` SHA `c65846dd`, 3080 строк: 1–390,391–780,781–1170,1171–1560,1561–1950,1951–2340,2341–2730,2731–3080. Home/Help/Attention/Topic, права, пустые состояния, апелляции, формы, submit/revalidation/rebase, quote, attachments.
+- `app/forum/public-read.test.tsx` SHA `627f092a`, 3315 строк: 1–390,391–810,811–1220,1221–1630,1631–2040,2041–2450,2451–2860,2861–3315; прочитаны реальные тела 59 `it` и assertions. Origin/per-kind permissions, private appeal, stale Attention case 409, Help filters, translation and attachment-only, editor successful submit lifecycle, handled 400, manual revalidate/rebase.
+- `app/forum/markdown-editor.test.tsx` SHA `7188044b`, 1630 строк: 1–400,401–800,801–1200,1201–1630; реальные тела 72 `it` (параметризация дополнительно). Source/selection/Undo/Redo, Simple/Advanced, RTL, clipboard, IME, focus, account prefs, publication, 60s no-autosave.
+Тесты изучены, НЕ ЗАПУСКАЛИСЬ. Нет прямого assertion auto-refresh после action 409, thrown 500 сохранности editor и A→B во второй вкладке; альтернативный Attention fence не закрывает topic-page stale appeal. Новых самостоятельных дефектов не установлено, шесть прежних source findings требуют отдельного учёта. Следующий gap: translation/DB large-file source+assertions; весь аудит OPEN. STOP.
+
 ## ЭТАП 9 — ФИНАЛЬНАЯ СВЕРКА (2026-10-24)
 Git tree 491 blobs; 458/458 уникальных code path/SHA/size совпали. В 458 строках статусы FULL_EOF_READ/SEMANTIC_REVIEWED, но нет требуемых per-file ranges и связей с тестами. Независимая доказательная проверка глубины 458/458 не закрыта; общий аудит OPEN. Этапы 8–9 проверены, STOP.
 
