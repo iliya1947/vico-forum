@@ -578,6 +578,26 @@
 ## ЭТАП 8 — СКВОЗНАЯ ПЕРЕПРОВЕРКА (2026-10-24)
 Шесть независимых source-supported current-Stage механизмов повторно сверены; детали owner-only в чате. Runtime не запускался.
 
+## GAP R9 — TRANSLATION/POSTGRESQL (2026-10-24)
+
+Завершено адресное закрытие доказательных пробелов переводов/PG на неизменном exact main `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; перед началом полностью перечитан `AGENTS.md` SHA `20acb921`. В актуальном 458-row code ledger все 10 exact path/SHA identity совпадают с полученным GitHub source; код фактически повторно прочитан до EOF **9545 строк / 10 файлов**, тесты изучены по телам и assertions, НЕ исполнялись.
+
+Диапазоны последовательного полного чтения (все включительно):
+- `db/translation-task-store.ts` 1757: 1–330, 331–660, 661–1000, 1001–1330, 1331–1757.
+- `tests/database/migrations.test.ts` 3109: 1–350, 351–725, 726–1100, 1101–1480, 1481–1880, 1881–2270, 2271–2660, 2661–3109.
+- `tests/database/content-post-body-task-planning.test.ts` 1638: 1–330, 331–670, 671–1000, 1001–1340, 1341–1638.
+- `db/schema.ts` 1574: 1–340, 341–700, 701–1060, 1061–1370, 1371–1574.
+- `db/content-post-body-task-store.ts` 510: 1–265, 266–510.
+- `db/content-post-body-execution-store.ts` 381: 1–381.
+- `app/localization/content-post-body-publication.ts` 109: 1–109.
+- `app/localization/content-post-body-execution.ts` 306: 1–306.
+- `drizzle/0019_content_provider_allowance_admission.sql` 77: 1–77.
+- `drizzle/0016_content_post_body_tasks.sql` 84: 1–84.
+
+Сквозные контракты: current revision/metadata → deterministic generation head FOR UPDATE → persistent per-global/requester request budget → task/metadata atomic insert → enqueue-after-commit → provider allowance admission/defer+claimToken/attempt leases → bounded protected Markdown segments → revision/current generation/source/translation preflight → transactional publication/result + terminal/retry reconciliation. Таблицы и constraints SQL/Drizzle cross-checked: exact revision FK, kind/namespace, task lifecycle, allowance state, owner/authorization/grants, immutable revision constraints. Test assertions: idempotent duplicate planning, current translation wins, concurrent limited budget, rollback of metadata & translation write failure, 3-way stale revision/generation/lease race, incomplete provider partial failure, claim re-acquisition, no partial publication, 45 migrations, forum and Help constraints, role lockout, concurrency+CAS, notification rollback. PostgreSQL 17 **не запускался**, Assertions просмотрены статически. Прежний двухавторский notification deadlock остаётся CONDITIONAL/NOT EXECUTED, не объявлен подтверждённой неисправностью. В этом блоке **новых независимых текущих дефектов не подтверждено**. Все findings owner-only до завершения полного аудита.
+
+Личный checkpoint; implementation/main/shared service-channel и файлы других агентов не изменены. **STOP ПОСЛЕ ПОДЗАДАЧИ**. Следующий gap-блок: CSS/Preview и оставшиеся непокрытые индивидуальными диапазонами записи; после него повторная финальная сверка. **ПОЛНЫЙ АУДИТ ОСТАЁТСЯ OPEN**.
+
 ## GAP R9 — FORUM/EDITOR (2026-10-24)
 
 Подзадача закрытия доказательных пробелов: exact main `d72b27c`, AGENTS.md полностью перечитан. Источники прочитаны последовательными непересекающимися диапазонами до EOF и проверены по содержимому:
