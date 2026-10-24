@@ -1,5 +1,39 @@
 # Лёва — Codex-6.1 Sol
 
+## Общая сверка — ZIP, идентификаторы и generation policy (2026-10-24)
+
+Общая сверка продолжается. В этой части выполнены **4 локальных теста: 4 passed, 0 failed**. Код проекта не менялся; реальные сервисы/БД, браузер и stress-inputs не использовались.
+
+### XR-ZIP-METADATA / Мира ATTACH-STRUCT-01 — узкий дефект подтверждён
+
+Базовый ZIP создан Python zipfile: один файл a.txt с пятью байтами hello; весь архив113байт. Контрпримеры меняют только header metadata:
+
+- Local compressed size=123, central и фактические данные=5, bit3 выключен. Actual validateZipAttachmentStructure возвращает true, actual storePrivateAttachmentStream с memory bucket возвращает stored.
+- В обоих headers выставлен bit3, local CRC/sizes=0; file data заканчивается непосредственно перед central directory, descriptor отсутствует. Тот же validator/finalizer принимает архив.
+- Контроли: исходный корректный ZIP принимается; несовпадающие local/central flags отклоняются.
+
+[PKWARE APPNOTE6.3.10](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT), раздел4.3.9.1, требует descriptor при bit3;4.4.8/4.4.9 определяют size fields. В данном fixture нет central-directory encryption и соответствующего исключения. Проверка не распаковывает архив и не доказывает обход антивируса, выполнение содержимого или сбой пользовательского extractor. Доказана конкретная неполнота structural acceptance. Metadata persistence и публичная публикация этим тестом не проверялись. Это отдельная причина от ATTACH-02/classic65535 ZIP.
+
+### XR-UI-POLICY / Мира I18N-UI-POLICY-01 — локальная несогласованность подтверждена
+
+`DatabaseMachineTranslationSource(..., v2)` отвергает approved machine row policy v1 и помечает key stale. Но `compileNamespaceBundle` + настоящий `verifyPersistedCompiledBundle` принимают bundle с этим текстом без policy identity. Настоящий `TranslationResourceLoader` на hit возвращает v1-текст и не вызывает raw source; на miss policy-aware source отбрасывает его. Контроль выполнен для fr/common/heading без local override.
+
+Требования: docs/translation/STORAGE_AND_VERSIONING.md81–96 и162–164 отделяют содержательное изменение generation policy и требуют current fingerprint/policy checks. Сама смена implementation detail не требует инвалидировать всё. В active locale-boundary raw source дополнительно создаётся без required-policy аргумента. Следовательно, проблема не ограничивается одним названием bundleVersion. Тест доказывает внутреннюю согласованность version/freshness boundary, а не реально выполненное переключение deployed policy или работу внешнего provider. Выбор реализации исправления в этой части не делался.
+
+### XR-SECURITY-ID / Мира ATTACH-SEC-01 — как технический дефект пока не установлен
+
+Server-derived attachment-v1 hash — намеренный идентификатор наблюдаемой подозрительной загрузки и dedup key. Настоящий rejection route: один input UUID и тот же контекст дают тот же ключ, другой UUID даёт другой ключ; asset row не создаётся; имя, owner, draft/context, типы, причина и размер сохраняются. Отдельное поле исходного client UUID отсутствует.
+
+docs/EDITOR.md238 требует пригодные модератору сведения и идентификатор файла, но не определяет, обязан ли это быть именно присланный UUID вместо устойчивого server-derived identity. Существующие тесты явно ожидают замену UUID хешем; это доказывает намерение, но не отменяет продуктового требования. Поэтому факт различия ID подтверждён, а нарушение контракта требует уточнения конкретной нужной корреляции. Не записывать этот пункт в общий подтверждённый список как потерю существующего asset: для отклонённого файла такой row может не быть.
+
+### Воспроизводимость и следующий шаг
+
+Локально сохранены phase2.test.ts, phase2-evidence.json, phase2-results.json и113-byte fixtures в work/audit-cross-review. Артефакты не добавлены в implementation; условия и результаты опубликованы здесь. Два ZIP-варианта, ID-route и policy-hit/miss составляют четыре разных теста.
+
+Матрица обновлена, окончательное общее число дефектов не пересчитано: остаются другие открытые расхождения. Далее — stale solution/duplicate actions и source-only сценарии thrown-action buffer/cross-tab identity, затем runtime/Stage applicability. Чужие личные отчёты не переписаны, согласие других авторов не заявляется.
+
+---
+
 ## Общая сверка аудитов — первый проход (2026-10-24)
 
 Владелец разрешил общую сверку и комментарии. Кодовый baseline d72b27ca762dd930f0e7ad614e5b00832a07ec0c; снимок четырёх личных файлов и service-channel — PR head19f6a3b. Это отдельный межаудиторский этап, не переписывание чужих индивидуальных заключений.
