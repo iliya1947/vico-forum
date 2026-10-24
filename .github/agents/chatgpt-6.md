@@ -1,5 +1,180 @@
 # Лира — ChatGPT-6
 
+## МЕЖАУДИТОРСКИЙ КАНОНИЧЕСКИЙ РЕЕСТР — ЛИРА / T3 (2026-10-24)
+
+**Статус:** дедупликация опубликованных отчётов выполнена для baseline `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; это **рабочий объединённый реестр с отдельными нерешёнными вопросами, НЕ утверждённое командой число дефектов и НЕ команда исправлять**. Никакие файлы реализации не изменены.
+
+### Методика и количественный результат
+
+- Первичные **119 строк заявлений/групп** четырех опубликованных отчетов — неодинаковая гранулярность; не суммировать 45+27+6+30 как дефекты, не считать старый `21386887` отчёт Мишани независимым.
+- Канонический **64 уникальных технических code-candidate groups**: 45 из подробного реестра Лёвы + **17** отдельных кандидатных групп из отчёта Миры (после дедупликации: `EDITOR-PUB-01` и `EDITOR-PUB-02` имеют **разные причины**, revalidation vs ошибочный localization copy; это 2 записи, а не 1) + 2 ранее уникальных класса Лиры `F02/F04`. `F06` остаётся измеренным дополнительным UI-проявлением семейства `M-M10`; stale appeal и stale remove — два подслучая `HELP-01/HELP-DUP-01`.
+- **60 групп C** — опубликованный source/local/PG/browser/injected-test материал поддерживает применимость к внутреннему текущему коду; C **не означает** production incident, согласованную severity, независимый повтор всех тестов Лирой или коллективный verdict. Множество C содержит как native reproductions, так и source-only условные цепи — их confidence строго различается по исходным доказательствам.
+- **4 группы Q** — `AUTH-LOCALE-RETURN-01`, `DISCOVERY-01`, `I18N-UGC-META-01`, `TAG-CARDINALITY-01` требуют точного product/DOM/domain-boundary решения, не включать без него в число *утверждённых* current-Stage defects. Для tags доказана запись большого числа уникальных строк в глобальный каталог, но не утверждён максимальный лимит и не измерен current failure threshold.
+- **2 preview-only** и **4 документационных противоречия** — отдельно, вне 64 технических групп.
+- `CONTENT-SIZE-01` (и историческое `M-M03`) — подтверждённый факт отсутствия max, **не самостоятельный дефект текущего Stage**; решение по source of truth и non-reproduced failure опубликовано Мирой в PR #236 comment 6388071305. `ATTACH-SEC-01` — source fact server-derived stable upload ID, требование хранить именно client UUID **не установлено**: `INSUFFICIENT`, вне подтверждённых 64. Generic forum pagination, section unread scope, Popular aggregation, real Stage6 services/rollout остаются future-only/observations.
+- **Уточнение `DB-03`:** native PostgreSQL роль, точно построенная из действующего `runtime-privileges.mjs` контракта, воспроизвела `42501` в действующих read/unread/mark paths; выдача точных SELECT/INSERT/UPDATE восстановила локальное поведение. Это **current internal runtime-permission contract mismatch**, не утверждение об используемой production role/Hyperdrive. Поэтому `DB-03` в группе C, а external ACL rollout по-прежнему вне scope. **Уточнение `ARCH-02`:** native/local non-cleanup факт и текущий код подтверждены, реальное внешнее истощение Hyperdrive нет.
+- Внешние реальные Cloudflare/Neon/Hyperdrive/R2/OAuth/Queue/backup/restore и production acceptance не запускались. Отличать исторические saved native proofs Лёвы, его новые 13 локальных cross-review test results, source-review Миры, статические выводы Лиры и отозванную независимость Мишани.
+
+### Канонический перечень code candidates
+
+Обозначения: **C** = supported current-code evidence с оговорками первоисточника, **Q** = открытая применимость/инвариант; число строк — инвентарь разных root-cause/пользовательских ошибок, а не список принятых на исправление. GitHub source anchors относятся к `main d72b27c`, детальное evidence/provenance/контроли — в файлах аудиторов и комментариях PR #236 T1, T2, а также фазах XR Лёвы.
+
+| № | Canonical ID | Статус | Проблема | Source anchor | Alias / provenance |
+|---:|---|---|---|---|---|
+| 1 | `ARCH-01` | C | Неожиданные ошибки записи маскируются под временную недоступность 503 | `evidence in Leva detailed record` | Mira DB-ERROR-01; Lira F03; Misha High1 |
+| 2 | `ARCH-02` | C | Загрузчик реестра локалей не завершает соединение после успешного чтения и части ошибок | `db/hyperdrive-registry.ts:39-53` | Leva initial code record |
+| 3 | `ARCH-03` | C | Ошибка завершения соединения подменяет успешный результат или исходную ошибку операции | `db/hyperdrive-forum.ts:130` | Leva initial code record |
+| 4 | `ATTACH-01` | C | Объект вложения без записи метаданных недоступен штатной очистке | `app/routes/attachment-upload.ts:237-247; db/forum-attachment-cleanup.ts:68-80` | Mira ATTACH-LIFECYCLE-01 |
+| 5 | `ATTACH-02` | C | Корректный обычный ZIP с 65535 записями ошибочно требует ZIP64 | `app/forum/attachment-zip-validation.ts:107-119` | Leva initial code record |
+| 6 | `ATTACH-03` | C | Корректный пустой TAR отклоняется на распознавании сигнатуры | `app/forum/attachment-validation.ts:81-85` | Leva initial code record |
+| 7 | `ATTACH-04` | C | Загружаемый файл нельзя удалить отдельно; до завершения загрузки публикация блокируется | `app/forum/editor-attachments.tsx:248-249; app/forum/editor-attachments.tsx:312-316` | Leva initial code record |
+| 8 | `AUTH-01` | C | Удаляющий cookie старой сессии перезаписывает cookie успешного нового входа | `app/auth/session-context.ts:29` | Mira AUTH-COOKIE-ORDER-01 |
+| 9 | `AUTH-02` | C | Назначение уже удалённой роли из старой формы завершается необработанной ошибкой 500 | `db/authorization-repository.ts:194; app/routes/authorization-admin.tsx:58` | Mira AUTHZ-01 (deleted-role branch only); PR236 stage3.1 |
+| 10 | `CORE-01` | C | Встречные одновременные ответы могут вызвать взаимную блокировку при записи уведомлений | `db/forum-repository.ts:3880; db/forum-repository.ts:734; app/forum/mutations.server.ts:110` | Lira R01 conditional → Leva native 40P01 |
+| 11 | `CORE-02` | C | Старое непрочитанное уведомление выпадает из последних 50 при сохранении общего счётчика | `db/forum-repository.ts:1361; db/forum-repository.ts:1389; app/routes/notifications.tsx:23; app/forum/views.tsx:357` | Mira NOTIFY-PAGING-01 |
+| 12 | `CORE-03` | C | Отметка прочитанного может опередить фактически отданный снимок сообщений | `app/routes/topic.tsx:35; app/routes/topic.tsx:92; app/forum/views.tsx:2282` | Leva initial code record |
+| 13 | `DB-01` | C | CHECK допускает неполные NULL-комбинации метаданных состояния allowance | `db/schema.ts:288; db/schema.ts:302; drizzle/0019_content_provider_allowance_admission.sql:43` | Leva initial code record |
+| 14 | `DB-02` | C | Верификатор схемы пропускает изменение предиката частичного индекса | `.github/scripts/production-schema-manifest.mjs:99; .github/scripts/production-schema-manifest.mjs:218` | Mira DB-MANIFEST-01 |
+| 15 | `DB-03` | C | Контракт прав web runtime не включает используемую таблицу отметок прочитанного | `.github/scripts/runtime-privileges.mjs:12; db/forum-repository.ts:1200; db/forum-repository.ts:1269; db/forum-repository.ts:1325; app/routes/topic.tsx:92; app/routes/section.tsx:25; app/routes/unread.tsx:21` | Leva initial code record |
+| 16 | `EDITOR-01` | C | Нормализация HTML-вставки схлопывает пустые строки внутри программного кода | `app/forum/clipboard-markdown.ts:98` | Leva initial code record |
+| 17 | `EDITOR-02` | C | Обычный текст ячеек таблицы превращается в Markdown-форматирование и ссылки | `app/forum/technical-markdown.ts:208-216; app/forum/clipboard-markdown.ts:44-56` | Separate from Mira LITERAL-TEXT |
+| 18 | `EDITOR-03` | C | Очистка форматирования части жирного текста повреждает невыделенный суффикс | `app/forum/editor-document.ts:432-437` | Leva initial code record |
+| 19 | `EDITOR-04` | C | Отказ преобразования сложной таблицы молча заменяется обычным текстом | `app/forum/markdown-editor.tsx:523-528` | Leva initial code record |
+| 20 | `EDITOR-05` | C | Find next не переносит выделение при уже открытом режиме записи | `app/forum/markdown-editor.tsx:630-641` | Leva initial code record |
+| 21 | `EDITOR-06` | C | Enter внутри форматированного текста в Простом режиме повреждает разделители | `app/forum/markdown-editor.tsx:651-653; app/forum/visual-markdown-editor.tsx:354-367` | Leva initial code record |
+| 22 | `EDITOR-07` | C | Отступ захватывает исключённую конечную строку и может повредить закрывающий fence | `app/forum/markdown-editor.tsx:570-583` | Leva initial code record |
+| 23 | `EDITOR-08` | C | Заблокированный редактор допускает изменение через Find/Replace или вставку | `app/forum/markdown-editor.tsx:1045-1051; replaceAllMatches at644-647` | Leva RES-EDITOR-01 as same disabled-editor mechanism |
+| 24 | `EDITOR-09` | C | Выделение получателей упоминаний расходится с отображением таблиц и спойлеров | `app/forum/mentions.ts:25-28; app/forum/markdown.tsx:355-395; db/forum-repository.ts:762-783` | Leva initial code record |
+| 25 | `EDITOR-10` | C | HTML-сущности в имени участника декодируются и меняют подпись упоминания | `app/forum/mentions.ts:17-20` | Leva initial code record |
+| 26 | `EDITOR-11` | C | Публикация обрезает граничные пробелы Markdown и может превратить код в обычный текст | `app/forum/actions.server.ts:161,503; shared helper app/forum/mutations.server.ts:70-72` | Leva initial code record |
+| 27 | `HELP-01` | C | Старая форма решения апелляции может примениться к новой апелляции | `app/forum/actions.server.ts:362-370; app/forum/views.tsx:2471-2477` | Mira HELP-DUP-01; Lira F05 (appeal + stale relationship removal subcases) |
+| 28 | `HELP-02` | C | Время начала транзакции может нарушить CHECK при снятии дубликата | `db/forum-repository.ts:3384-3393` | Leva initial code record |
+| 29 | `LOC-01` | C | Транспортная ошибка после COMMIT пропускает сверку результата записи локали | `db/locale-repository.ts:153-156` | Leva initial code record |
+| 30 | `LOC-02` | C | Неожиданная ошибка проверки compiled bundle может привести к удалению корректного bundle | `db/ui-translation-bundle-store.ts:149-176` | Leva initial code record |
+| 31 | `LOC-03` | C | Параметризованный i18next nesting проходит мимо проверки разрешённых токенов | `app/localization/translation-validation.ts:134-140` | Leva initial code record |
+| 32 | `LOC-04` | C | При загрузке истории показывается сообщение о восстановлении вложений | `app/forum/views.tsx:2861` | Mira I18N-COPY-01 |
+| 33 | `LOC-05` | C | Быстрое переключение политики A–B–A может потерять нужное поколение задачи | `db/translation-task-store.ts:464` | Leva initial code record |
+| 34 | `LOC-06` | C | Запрос генерации для сообщения только с вложением завершается ошибкой 500 | `app/localization/content-post-body-planning.ts:137; app/forum/actions.server.ts:264` | Leva initial code record |
+| 35 | `LOC-07` | C | Защита перевода не охватывает структуру собственных таблиц и спойлеров | `app/localization/content-markdown-translation.ts:98,147,199; app/forum/markdown.tsx:378` | Leva initial code record |
+| 36 | `LOC-08` | C | Перевод теряет явное направление абзаца либо ошибочно отклоняет экранированный текст | `app/localization/content-markdown-translation.ts:128,196; app/markdown-syntax.ts:94,100` | Leva initial code record |
+| 37 | `LOC-09` | C | Отклонённый перевод с завершённой задачей старой политики застревает в converging | `app/localization/content-generation-view.ts:77; db/hyperdrive-content-generation-status.ts:185` | Leva initial code record |
+| 38 | `SEC-01` | C | Неожиданные ошибки профиля передают неопубликованный текст и SQL-параметры логгеру | `app/entry.server.tsx:1; app/routes/profile.tsx:65; workers/app.ts:23; db/forum-repository.ts:520` | Lira R02 narrow logged-profile-exception subcase |
+| 39 | `RES-EDITOR-02` | C | Backspace в начале второго обычного абзаца не соединяет абзацы в Простом режиме | `app/forum/visual-markdown-editor.tsx; app/forum/markdown-editor.tsx` | Leva initial code record |
+| 40 | `RES-UI-01` | C | Меню дополнительных инструментов редактора расширяет страницу на 320 px | `app/styles.css; app/forum/markdown-editor.tsx` | Leva initial code record |
+| 41 | `RES-A11Y-01` | C | Редактируемое текстовое поле Простого режима не имеет доступного имени | `app/forum/visual-markdown-editor.tsx` | Leva initial code record |
+| 42 | `CODE-SEARCH-01` | C | После возврата назад поле поиска не соответствует адресу и результатам | `app/routes/search.tsx; app/forum/views.tsx` | Leva initial code record |
+| 43 | `CODE-HISTORY-01` | C | История правок расширяет узкую страницу вместо локального размещения текста | `app/forum/views.tsx; app/styles.css` | Leva initial code record |
+| 44 | `M-M07` | C | Английская шапка менеджера переполняется при ширине 320 px | `app/styles.css; app/forum/ui.tsx` | Misha Medium7 |
+| 45 | `M-M10` | C | У проверенного навигационного текста светлой темы недостаточный контраст | `app/styles.css:244–260` | Misha Medium10; Lira F06 separate submit control/color-pair under one contrast-palette family |
+| 46 | `AUTH-LINK-01` | C | Email signup without verification ↔ Google linking same email | `app/auth/auth.server.ts; app/auth/auth-client.ts; Better Auth 1.7.4` | Mira AUTH-LINK-01; PR236 stage3.2 |
+| 47 | `AUTH-SESSION-AVAIL-01` | C | Auth/session storage outage before normal Router boundary | `workers/app.ts; app/auth/auth.server.ts` | Mira AUTH-SESSION-AVAIL-01 |
+| 48 | `AUTH-LOCALE-RETURN-01` | Q | Locale-switch drops effective nested returnTo destination | `app/auth/credential-path.ts; app/auth/credential-view.tsx` | Mira AUTH-LOCALE-RETURN-01 |
+| 49 | `DISCOVERY-01` | Q | Hidden Help service-section identity in discovery metadata | `db/forum-repository.ts:1020–1051; app/routes/section.tsx` | Mira DISCOVERY-01 |
+| 50 | `HELP-MOD-01` | C | Stale solution moderation applies to newer best answer | `app/forum/views.tsx:2515–2555; app/forum/actions.server.ts:382–407` | Mira HELP-MOD-01; Leva XR-STALE-SOLUTION |
+| 51 | `LITERAL-TEXT-01` | C | Plain visual content treated as Markdown syntax/entities | `app/forum/clipboard-markdown.ts:6–16; app/forum/visual-markdown-editor.tsx:40–45` | Mira literal-text; Leva XR-LITERAL |
+| 52 | `EDITOR-PUB-01` | C | Failed 409 edit lacks normal loader refresh/rebase | `app/routes/topic.tsx; app/forum/views.tsx:2231–2247,2814–2855` | Mira EDITOR-PUB-01; Lira F01; Leva XR-EDIT-409 |
+| 53 | `EDITOR-PUB-02` | C | Published edit conflict displays solution-specific error text | `app/forum/views.tsx:2561; app/localization/catalog.ts:588; app/localization/manual-values.ts:548` | Mira EDITOR-PUB-02; Lira F01 copy subcase |
+| 54 | `MARKDOWN-SPOILER-01` | C | Repeated unmatched spoiler opening leads to quadratic scans | `app/forum/technical-markdown.ts; app/forum/markdown.tsx` | Mira MARKDOWN-SPOILER-01 |
+| 55 | `ATTACH-STRUCT-01` | C | ZIP inconsistent local metadata/data descriptor accepted | `app/forum/attachment-zip-validation.ts` | Mira ATTACH-STRUCT-01; Leva XR-ZIP-METADATA |
+| 56 | `ATTACH-HTTP-405-01` | C | Attachment 405 response omits Allow header in route branch | `app/routes/attachment-upload.ts; app/routes/attachment-download.ts` | Mira ATTACH-HTTP-405-01 |
+| 57 | `I18N-UI-POLICY-01` | C | Compiled UI bundle hit skips required generation policy validity | `db/ui-translation-bundle-store.ts; app/localization/persistent-sources.ts` | Mira I18N-UI-POLICY-01; Leva XR-UI-POLICY |
+| 58 | `I18N-UGC-META-01` | Q | Secondary UGC presentation lacks source lang/dir in selected cases | `app/forum/views.tsx; app/forum/markdown.tsx` | Mira I18N-UGC-META-01 |
+| 59 | `POST-EDIT-AVAIL-01` | C | Post-edit authorization/reader unavailable can reach generic 500 | `app/routes/post-edit.ts; app/forum/editor-permission.server.ts` | Mira POST-EDIT-AVAIL-01 |
+| 60 | `FORUM-READ-AVAIL-01` | C | Primary forum read availability fails to map into typed 503 | `app/routes/home.tsx; app/routes/section.tsx; db/hyperdrive-forum.ts` | Mira FORUM-READ-AVAIL-01 |
+| 61 | `NOTIFY-BODY-01` | C | Notification action reads form body before cheap auth/Origin rejection | `app/routes/notifications.tsx; app/forum/mutations.server.ts` | Mira NOTIFY-BODY-01 |
+| 62 | `TAG-CARDINALITY-01` | Q | Unbounded unique tag count per publication expands persistent public catalog | `app/forum/actions.server.ts:156–173; db/forum-service.ts:378–393; db/forum-repository.ts:624–637` | Mira TAG-CARDINALITY-01 |
+| 63 | `XR-THROWN-ACTION-BUFFER` | C | Unexpected action throw unmounts topic editor and in-memory content | `app/forum/mutations.server.ts:140–151; app/routes/topic.tsx:206–212; app/forum/ui.tsx:402–435` | Lira F02; Leva XR-THROWN-ACTION-BUFFER |
+| 64 | `XR-CROSS-TAB-IDENTITY` | C | Cached A identity, server B reply author on topic | `app/auth/auth-controls.tsx:20–44; app/forum/online-presence-heartbeat.tsx:15–39; app/forum/actions.server.ts:503–515` | Lira F04; Leva XR-CROSS-TAB-IDENTITY |
+
+### Preview и документация — НЕ включать в кодовый total
+
+| ID | Preview finding | Scope |
+|---|---|---|
+| `CODE-PREVIEW-01` | Сценарий подтверждения лучшего ответа открывается решённым и не показывает подтверждение | separate preview only, not production runtime |
+| `CODE-PREVIEW-02` | Вкладка Appeals (1) стенда показывает пустую очередь | separate preview only, not production runtime |
+
+| ID | Документальная проблема | SOT anchor |
+|---|---|---|
+| `DOC-01` | Текущие статусы и остаточные задачи в документации устарели | `PROJECT_STATE.md:209,1516,1923; docs/UI_UX_PASS.md` |
+| `DOC-02` | Документация отстаёт от фактического номера последней миграции | `PROJECT_STATE.md:1568; drizzle/meta/_journal.json (0044)` |
+| `DOC-03` | Документация противоречиво определяет видимость отметки Disputed | `docs/UI_UX_PASS.md:439,442; PROJECT_STATE.md:1253` |
+| `DOC-04` | Доступ к истории описан через роль и через effective permission противоречиво | `docs/EDITOR.md:285–287; docs/auth/AUTHORIZATION.md:51` |
+
+Мира `MIGRATION-SOT-01` и Лира `D01` → `DOC-02`; Лира `D02` и Мишаня `M-M01` → `DOC-04`; `DOC-03` — visibility contradiction, **не** доказанный privacy bypass.
+
+### Отдельная классификация исторических утверждений Мишани
+
+Old baseline `21386887`; `main` использует `d72b27c` с удалёнными text drafts/autosave. Мишаня не считается четвертым независимым голосом. `15 confirmed / 14 partially / 1 not confirmed` — проверки **исходных утверждений**, не 30 действующих defects. Основные привязки:
+
+| Исходное утверждение | Куда отнесено | Правило |
+|---|---|---|
+| `M-H01` | `ARCH-01` | Одно и то же mask-as-503; old baseline 21386887, не независимый голос |
+| `M-M01` | `DOC-04` | role/history contract |
+| `M-M03` | `CONTENT-SIZE-01` | policy-only, не current defect |
+| `M-M07` | `M-M07` | already in baseline 45 |
+| `M-M08` | FUTURE-ONLY | general pagination |
+| `M-M09` | FUTURE-ONLY | full-forum unread query scope |
+| `M-M10` | `M-M10` | already in baseline 45 |
+| `M-L02` | `DOC-01` PARTIAL | historic/stale documentation |
+| `M-L01` | NOT CONFIRMED | blanket statement contradicted by updated PROJECT_STATE |
+
+Остальные утверждения, проверенные Лёвой по current baseline; реальный факт конфигурации или качества сам по себе не есть текущий пользовательский дефект:
+
+| ID | Статус проверки утверждения | Ограничение вердикта |
+|---|---|---|
+| `M-M01` | CONFIRMED | DOCUMENTATION_CONFLICT_CONFIRMED_MEDIUM_NOT_ESTABLISHED |
+| `M-M02` | PARTIALLY_CONFIRMED | COUPLING_OBSERVATION_NOT_ESTABLISHED_DEFECT |
+| `M-M03` | PARTIALLY_CONFIRMED | LIMIT_POLICY_GAP_CONFIRMED_IMPACT_NOT_ESTABLISHED |
+| `M-M04` | PARTIALLY_CONFIRMED | MEDIUM_NOT_ESTABLISHED |
+| `M-M05` | PARTIALLY_CONFIRMED | MEDIUM_NOT_ESTABLISHED |
+| `M-M06` | CONFIRMED | TRIGGER_GAP_CONFIRMED_MEDIUM_NOT_ESTABLISHED |
+| `M-M08` | CONFIRMED | PAGINATION_ABSENCE_CONFIRMED_MEDIUM_IMPACT_NOT_MEASURED |
+| `M-M09` | CONFIRMED | QUERY_SCOPE_CONFIRMED_MEDIUM_IMPACT_NOT_MEASURED |
+| `M-M11` | PARTIALLY_CONFIRMED | HISTORICAL_ADVISORY_COUNTS_AND_REPO_GATE_ABSENCE_CONFIRMED_APP_MEDIUM_NOT_ESTABLISHED |
+| `M-L01` | NOT_CONFIRMED_ON_CURRENT_BASELINE | BLANKET_DOCUMENTATION_CLAIM_NOT_ESTABLISHED |
+| `M-L02` | PARTIALLY_CONFIRMED | HISTORICAL_UI_WORDING_AMBIGUOUS_ACCEPTANCE_REFERENCES_UNVERIFIED |
+| `M-L03` | PARTIALLY_CONFIRMED | SOURCE_SIZE_OBSERVATION_NOT_ESTABLISHED_DEFECT |
+| `M-L04` | CONFIRMED | TYPE_DEPENDENCY_CYCLE_ONLY_RUNTIME_IMPACT_NOT_ESTABLISHED |
+| `M-L05` | PARTIALLY_CONFIRMED | UNCONSUMED_EXPORT_NOT_DEAD_FUNCTION |
+| `M-L06` | PARTIALLY_CONFIRMED | SPECIFIC_APP_ONLY_RULES_CONFIRMED_DEFECT_NOT_ESTABLISHED |
+| `M-L07` | CONFIRMED | FK_ABSENCE_CONFIRMED_LIFECYCLE_DEFECT_NOT_ESTABLISHED |
+| `M-L08` | PARTIALLY_CONFIRMED | DEPRECATED_QUEUE_USAGE_CONFIRMED_COUNT_THREE_NOT_REPRODUCED |
+| `M-L09` | PARTIALLY_CONFIRMED | MANUAL_CLEANUP_CONFIRMED_RUNTIME_DEPENDENCE_OVERSTATED |
+| `M-L10` | CONFIRMED | COVERAGE_MEASUREMENT_ABSENCE_NOT_ESTABLISHED_FUNCTIONAL_DEFECT |
+| `M-L11` | CONFIRMED | TRACKED_LOADER_TEST_GAP_NO_AUTH_BYPASS_ESTABLISHED |
+| `M-L12` | PARTIALLY_CONFIRMED | ESLINT_BOUNDARY_GAP_CONFIRMED_FULL_TOOLCHAIN_NOT_TESTED |
+| `M-L13` | CONFIRMED | EXPLICIT_TIMEOUT_ABSENCE_NO_OBSERVED_HANG |
+| `M-L14` | CONFIRMED | HEADING_FACTS_CONFIRMED_NOT_AUTOMATIC_WCAG_VIOLATION |
+| `M-L15` | CONFIRMED | UNIGNORED_BUILD_OUTPUT_HYGIENE |
+| `M-L16` | CONFIRMED | WEB_ASSET_ABSENCE_NOT_ALL_MANDATORY_FEATURES |
+| `M-L17` | CONFIRMED | SOURCE_METADATA_ABSENCE_NO_SEARCH_IMPACT_MEASURED |
+| `M-L18` | PARTIALLY_CONFIRMED | CURRENT_ASSET_SIZES_AND_NO_BLOCKING_GATE_CONFIRMED_USER_PERFORMANCE_NOT_MEASURED |
+
+### Границы доказательств и неразрешённые решения
+
+1. `EDITOR-PUB-01`: router-controlled 409 сохраняет старый revision fence и отсутствие rebase. `EDITOR-PUB-02`: значение `forumWriteError_conflict` в `app/localization/catalog.ts:588` и RU/HE переводах относится к выбору solution. **Разные причины и разные корректировки**, поэтому две записи. Доказательства одного controlled409 могут переиспользоваться как scenario, но не как одна причина.
+2. `HELP-01` umbrella: stale appeal A→B и stale duplicate relationship R1→R2, отдельные target IDs в одной теме. `HELP-MOD-01` — stale best-answer A→B, отдельная механика. Лёва выполнил SQL-capture actual action/service/repository, без native race.
+3. `F02` и `F04` теперь подкреплены соответственно actual TopicRoute/ErrorBoundary jsdom и injected server session transition с heartbeat204/reply; **не** real multitab cookie/browser incident, не authentication bypass.
+4. `M-M10/F06`: две конкретные контрастные пары light palette, **не** одно CSS measurement и **не** два доказанных независимых root cause. `LITERAL-TEXT-01` prose helper отличается от `EDITOR-02` table-cell serializer и `EDITOR-10` mention label entity.
+5. `ATTACH-04`: публикационный barrier pending/upload error соответствует `docs/EDITOR.md`. Проблема — нет действия убрать именно pending file, сохранив текст и остальные attachments; выбирать обязательный способ исправления не следует.
+6. `ATTACH-STRUCT-01` — несогласованная metadata/descriptor ZIP; `ATTACH-02` — classic 65535 ZIP false rejection; не объединять.
+7. Временно Q: `AUTH-LOCALE-RETURN-01` — маршрутизатор query сохраняет, но nested destination может быть отвергнут при новой локали; `DISCOVERY-01` — service-section metadata из общих выдач при заблокированном прямом generic section route; `I18N-UGC-META-01` — нужны конкретные DOM nodes для нарушения известного source lang/dir; `TAG-CARDINALITY-01` — отсутствие count bound и persistent write доказано, отсутствует согласованный threshold/invariant для текущего Stage.
+8. `AUTH-LINK-01` после точной сверки Better Auth 1.7.4 в PR #236 stage3.2 **внутренний current code/config defect**. Реальный Google OAuth smoke по-прежнему исключён. Нельзя из аудита предписывать небезопасное снятие emailVerified gate.
+9. Ни одна C-запись не означает согласованного объёма исправления: сперва предметное подтверждение и принятие окончательной командной классификации. Несогласованность `docs/EDITOR.md` history role vs effective permission и `DOC-03` visibility — выбор владельца, не переписывать требования самовольно.
+
+### Ссылки на первичные материалы
+
+- [Лёва: 45 code groups, 2 preview, 4 docs, detailed JSON](agents/codex-6.1-sol.md)
+- [Мира: 27 current-listed + 1 SOT, 7 снятых](agents/chatgpt-5.6-sol.md)
+- [Мишаня: old baseline и отозванная независимость](agents/codex-5.6-sol.md)
+- Лира: ниже сохранён окончательный индивидуальный CODE-ONLY отчёт, `F01–F06 / D01,D02`.
+- PR #236 comments `6387795828` (first overlap), `6387897803` (semantic map), `6387938533` (AUTHZ), `6387984892` (AUTH-LINK), `6388071305` (size), `6387966614` (T1), `6388053794` (T2), `6388074314` (Лёва phase3). Source status remains provisional pending team consensus.
+
+**T3 done:** реестр завершён в личном файле Лиры; индивидуальные отчёты других агентов и реализация не изменялись. Остаток согласования — 4 Q и формальное принятие общей классификации. Никаких требований ко внешним сервисам или новых implementation задач этот реестр не утверждает.
+
+---
+
+
 ## ОКОНЧАТЕЛЬНЫЙ ИНДИВИДУАЛЬНЫЙ ОТЧЁТ ЛИРЫ — CODE-ONLY (2026-10-24)
 
 **СОБСТВЕННОЕ СВЕДЕНИЕ АУДИТА ЗАВЕРШЕНО.** Предварительное сопоставление чужих результатов ошибочно начато в предыдущем ответе до разрешения владельца и не считается согласованным этапом общей сверки; продолжение остановлено. Прямая команда владельца: прекратить бесконечные пересмотры полного кода, свести уже полученные результаты и отдельно дождаться разрешения на межагентное сопоставление. Эта финальная сводка имеет приоритет перед ниже расположенными историческими планами `OPEN / redo 434`; прежние чекпоинты сохраняются как журнал выполненной работы, а не новое обязательство прочесть все файлы снова.
