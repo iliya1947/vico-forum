@@ -47,7 +47,7 @@
 - **На новом проходе проверка ВСЕГО кода: FULL_EOF_READ = 0/458; SEMANTIC_REVIEWED = 0/458; cross-file scenario evidence = 0/458.** Считаются только действия ПОСЛЕ начала нового прохода. Исторические 400 scoped/58 full-read отметки не перенесены в новые PASS.
 - Следующий этап 1: только группа 1 ниже. Впоследствии при любом изменении `main` применить новое сравнение tree/sha и проверить затронутые механизмы.
 
-### Единый новый реестр кода (283/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
+### Единый новый реестр кода (392/458 FULL_EOF_READ + SEMANTIC_REVIEWED)
 
 Идентификатор исходника — **полный Git blob SHA** в конкретном immutable tree; `Bytes` — исходный размер Git blob, **не количество прочитанных байт**. `READ` = `NOT_READ_THIS_PASS`, `SEM` = `NOT_REVIEWED_THIS_PASS` для каждой строки; колонки статуса нельзя изменять без фактической проверки.
 
@@ -342,115 +342,115 @@
 | `tests/database/translation-task-store.test.ts` | 5 | 16959 | `486d97f7af0ae119880dff6e15a3586dafede3fa` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | `tests/database/ui-translation-publication-store.test.ts` | 5 | 19564 | `2e96f57bc857d5eb553e5ab3c995be9536e9434a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 6 — PostgreSQL, миграции и данные (109)** | | | | | |
-| `.github/production-schema-manifest.json` | 6 | 146399 | `330a35c2d23fc36780eaead0d33c4465de279c92` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/migration-history.mjs` | 6 | 3941 | `77e03a2acef0801656cfbf0d58d9f4ee3e5e4fdb` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/migration-history.test.mjs` | 6 | 2806 | `faa975927cf3c0f1fc8e48d5a1dcbae301b3c413` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-migration-contract.mjs` | 6 | 2193 | `c18bb68e7a3fb4084ca4d6ef5af12a2792a1639a` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-migration-contract.test.mjs` | 6 | 3518 | `70d6a22fac5b94903a4807513600417226ae34f6` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/production-schema-manifest.mjs` | 6 | 12217 | `f050830466058778f78b19fd8d0a0886fd52f453` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/runtime-privileges.mjs` | 6 | 19700 | `fcb0204cd0e2fcc03c0768740e0f32c201322f4c` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/runtime-privileges.test.mjs` | 6 | 16142 | `b51c2788a848ce7d638e369a8aed006cd9b3531e` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-migration-history.mjs` | 6 | 1399 | `cda0b9e4b263a1d46227e2e856561d5a3c1a1842` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-production-schema-manifest.mjs` | 6 | 1059 | `716f933d6b7148af7f1dc3f3680efc148197b356` | NOT_READ | NOT_REVIEWED |
-| `.github/scripts/verify-runtime-privilege-probes.mjs` | 6 | 7294 | `7d6f745103acbedf46af6333ff4846239a153fb6` | NOT_READ | NOT_REVIEWED |
-| `db/postgres-deadlines.test.ts` | 6 | 4260 | `18e7f8d7a10113e4e65780d1e6888f0c5d19f094` | NOT_READ | NOT_REVIEWED |
-| `db/postgres-deadlines.ts` | 6 | 2932 | `e63b96fc3b15577398ba75be1c00bc90395be2a6` | NOT_READ | NOT_REVIEWED |
-| `db/schema.ts` | 6 | 64221 | `5c9474049873eaf10a435bdc5733336d284291fe` | NOT_READ | NOT_REVIEWED |
-| `drizzle.config.ts` | 6 | 357 | `b3886b12708c9074e867c4fced745d4a47fa7b3b` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0000_tan_johnny_storm.sql` | 6 | 1958 | `6224b0653caad183abc6fefee86522de6f7febb0` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0001_seed-locales.sql` | 6 | 614 | `02467c0b77af8efc3cb311e33ceb8d7762c96949` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0002_ui_translation_storage.sql` | 6 | 2973 | `8c5e1bf04f7eabfb73ecc2affe462081bb163721` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0003_gorgeous_donald_blake.sql` | 6 | 2269 | `80c0ce72d085df52ef460029210c9109de56359d` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0004_forum_domain_foundation.sql` | 6 | 6128 | `88617d21bf609e0575c2e24c97eadefd13302a90` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0005_calm_proemial_gods.sql` | 6 | 948 | `079502dae325c947bee93e99dd004397bc3c9843` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0006_loving_sentinels.sql` | 6 | 5390 | `0b12f77dc5c5a22d9be0b15ac740bc923d6351a8` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0007_durable_translation_tasks.sql` | 6 | 1741 | `f1de054e4ca24af8844f48efbb0eca1ce1dd27aa` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0008_translation_task_claim_lease.sql` | 6 | 1758 | `a374dd8ce4282ab1694ff69c9c5d84a98af1252e` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0009_translation_task_completion.sql` | 6 | 2123 | `a4146d9f96f9ce1c3f1c380352e7877dca229ca8` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0010_translation_task_generation_order.sql` | 6 | 2710 | `71a8f7f045ab777bb3487f4ee17fd02d3193ece2` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0011_persistent_translation_locale_invariant.sql` | 6 | 752 | `37a7e2f716a1e5e6e4b1a0c03e8493346bde4298` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0012_translation_task_retry_dlq.sql` | 6 | 4692 | `c60ae57b664422ba080295e29e9aab1baf4b5556` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0013_translation_task_reconciliation.sql` | 6 | 500 | `1f08f0ae3758e3bc6f48e3bacf5bf79b8a9ce8f9` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0014_content_translation_persistence.sql` | 6 | 5843 | `5ec64db56c2088559ff5ecf8b0470dc38d099420` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0015_content_topic_title_tasks.sql` | 6 | 7237 | `32be12a772d7434cadcaccefe699f27a8eb89a59` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0016_content_post_body_tasks.sql` | 6 | 6540 | `5d1bd1aa63b2a44cdb7ff549ab104b285661cd9d` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0017_content_translation_request_budget.sql` | 6 | 1907 | `4fa5a8a4cbed9c464880ce1d9e654983f5eef949` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0018_source_locale_correction_permissions.sql` | 6 | 948 | `6bfb7efe02fcad8b6829f16d97b0ce05d56ecbfa` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0019_content_provider_allowance_admission.sql` | 6 | 4758 | `95531486b91f867b294a364acae1cac44f57c020` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0020_translation_generation_permission.sql` | 6 | 822 | `55d8d98e1d41b014b9bd131d069be9cc4998b315` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0021_forum_tags.sql` | 6 | 1104 | `aa7af36ac4a31d551670d5866de87fd7893bfcac` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0022_forum_reply_relationships.sql` | 6 | 616 | `b6c97a10de23951fb5f2e0d6b46882758396e69c` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0023_forum_topic_read_states.sql` | 6 | 981 | `ac0b2db2d75ec5130219774e0eee0e00f00dc4e7` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0024_forum_reply_notifications.sql` | 6 | 1700 | `c4566a103cbd0f8a4454354d1e163baa3eca6f84` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0025_forum_topic_pins.sql` | 6 | 1539 | `9849dcb5ba2109231f1d83756b7d421aa10ebbd1` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0026_best_answer_independent_from_solved.sql` | 6 | 93 | `5bda93bde49c953fb951820da0eea33c8c790192` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0027_help_solutions_foundation.sql` | 6 | 245 | `6e4b7169e5e994ef021afa8775e72ccb6307a81d` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0028_help_solution_moderation.sql` | 6 | 1513 | `01086ae37cd4e3cefd0703bd877d05df5da3fb10` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0029_help_question_needs_details.sql` | 6 | 86 | `9d4fb9595cc2fcb0c9c9e81d2eb45bb6113e93b7` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0030_help_duplicate_workflow.sql` | 6 | 5263 | `1a351d4f3c5a8246f6a6d13adc822d31e0d98da2` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0031_help_user_moderation_signals.sql` | 6 | 5214 | `411ca83a89ada516d1948a3b3921a53f1f7ae580` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0032_forum_profiles.sql` | 6 | 876 | `006b4c28e713208a867b60f10a708f1073845732` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0033_forum_online_presence.sql` | 6 | 492 | `e50ffb614c93681ea73a679add9bda17340a8587` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0034_forum_editor_drafts.sql` | 6 | 739 | `63b14f7e49f3aa571b0d54a0c55a2a390ac164d5` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0035_forum_attachments_foundation.sql` | 6 | 2485 | `17ea683e720d2057ad5307cf8baa3a021804a077` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0036_forum_attachment_security_events.sql` | 6 | 943 | `288dd5bb04231c9779183b8b88b52a8aeb5251fe` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0037_forum_attachment_draft_generations.sql` | 6 | 999 | `3e4daa986649c5aa9e09b539c30486b4b3d3ed33` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0038_forum_attachment_cleanup_claims.sql` | 6 | 2205 | `1e31cc66cdb787735b14f31c0f44b74d42200d24` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0039_forum_publication_receipts.sql` | 6 | 865 | `f58922f08ed7cd673c344a05e1164bef31c9af5e` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0040_post_edit_history_permissions.sql` | 6 | 1181 | `5e68794e8b5fe64e1793f5d696e5636bea416de1` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0041_published_mentions.sql` | 6 | 276 | `43408faec4d5abbd3f1462295cec13fadda3c6d7` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0042_attachment_edit_snapshots.sql` | 6 | 808 | `d86b8d60453077dd45c3c8ac15920544c0bc5df5` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0043_attachment_security_read_permission.sql` | 6 | 976 | `c93590a31be4c3bfd275ac288c00c55c37b6ebc6` | NOT_READ | NOT_REVIEWED |
-| `drizzle/0044_attachment_draft_conflict_boundaries.sql` | 6 | 1698 | `913c528758336e0bb1b1cf2c33dde2507d975adf` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/_journal.json` | 6 | 7026 | `c5dd7c90aaba972813b4a547f8d00ba4582b3559` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0000_snapshot.json` | 6 | 4740 | `9739ca1e8afd56b0115a0aa0bd59be97f2373d99` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0001_snapshot.json` | 6 | 4740 | `1ae0bd2dda6e2422aafc8a002f40c2c3ccb1542c` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0002_snapshot.json` | 6 | 11912 | `020469aa1f1fe8728b4aa99ef4af34f84370e2d2` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0003_snapshot.json` | 6 | 21875 | `df5ebac7c65ffbaa7c88b8a8d8d6503b8635458c` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0004_snapshot.json` | 6 | 35915 | `eae5998fbeee5b7644363f1357a033950e2b3c49` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0005_snapshot.json` | 6 | 36738 | `1770b1064e181c4abf4f78c4480bff7bb1d961fe` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0006_snapshot.json` | 6 | 46248 | `be02dd39fb7404438bafcf2d90cbba3f382f4dc3` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0007_snapshot.json` | 6 | 50608 | `16ddc343c7a797cbc2051e157c17a9022ec02a1d` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0008_snapshot.json` | 6 | 52504 | `7b02b28ea56c8b15c5c10ad1ba319f129b61ed35` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0009_snapshot.json` | 6 | 53285 | `5b5837a3907c0ab1adc63c16e84c087fdc921773` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0010_snapshot.json` | 6 | 56923 | `05d6ba63f9e6c9927cd2809411c986fbd0dd298d` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0011_snapshot.json` | 6 | 57063 | `b65aac6e7dfa98f7b714ed7e14e1c575fefe4ce2` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0012_snapshot.json` | 6 | 60320 | `efdfdeb5cc1cf3efcae0f55a2cdf039c80eb2c57` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0013_snapshot.json` | 6 | 62584 | `9d8a02f88c2e27be1d22b2e5ac681a161aaab74f` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0014_snapshot.json` | 6 | 74213 | `946c6049c480a0f04a46704105f532996272318f` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0015_snapshot.json` | 6 | 81219 | `52d451b02a3899af5248c6f0435a6a3044b70034` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0016_snapshot.json` | 6 | 87353 | `e4f34e51da09dbf9c6da28d9455593b766ac8973` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0017_snapshot.json` | 6 | 91900 | `79529a7c47d265ae63c1c7a482e9a6cda204c87c` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0018_snapshot.json` | 6 | 91969 | `853d5f18b8d54bbee4ce6f32831f9ea0fb3326d1` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0019_snapshot.json` | 6 | 98950 | `d15560f7887c16c832e08d69360b1fd993071610` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0020_snapshot.json` | 6 | 98983 | `66ea5d87f1540d94e2df651d3a7c5c16c6e33ab7` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0021_snapshot.json` | 6 | 102104 | `c304cbf813e3e81f73ccaee3f5f2223b4737fa3a` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0022_snapshot.json` | 6 | 103349 | `a7a858f083b68add836a8aa01201c378b42ccc4d` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0023_snapshot.json` | 6 | 105786 | `4456f0d1a25d0d730aece8607599ddb472ee415b` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0024_snapshot.json` | 6 | 110629 | `b90827fb432b8ae46c8b45520321dd3acf8cfae9` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0025_snapshot.json` | 6 | 112856 | `2033e64579b4102e385bfb39b20e3f941aa2ce90` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0026_snapshot.json` | 6 | 112607 | `369d0e53072921d33276a9beaa9c85fb9e39fb8f` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0027_snapshot.json` | 6 | 112607 | `c7e4abdc8a4d526a2cb9112fa2012537909a8761` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0028_snapshot.json` | 6 | 114796 | `b574387fbfd9a380b146ccd685442aabcdda6c20` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0029_snapshot.json` | 6 | 114983 | `2be30b2a3ffe19833a5c2c8829619fc5b6d3a548` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0030_snapshot.json` | 6 | 126265 | `f378930f7a8db7df2bb91870859861fabfd45f08` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0031_snapshot.json` | 6 | 137536 | `2c81b2de71032d727e5da091c757a8696bdc2b54` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0032_snapshot.json` | 6 | 139731 | `9a1a225973aa94586f371ba9c8bf4c6b5706662b` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0033_snapshot.json` | 6 | 141228 | `e015e9d41a4356858481d81df9bc4ad0a6ab3280` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0034_snapshot.json` | 6 | 143934 | `2f8a38772af481764f46efa53412f0103b3adb8e` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0035_snapshot.json` | 6 | 151993 | `f6f816f19d63ebbd1f3e8b7317259769459f94c9` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0036_snapshot.json` | 6 | 155376 | `b64a9a0ab96c43f96343402bbf7eccba13b77e7a` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0037_snapshot.json` | 6 | 157461 | `d34ba14918d30c6990542136261411688d5969ce` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0038_snapshot.json` | 6 | 159344 | `128f8308ffc139d9b5a72b6e2bab89f28916ab50` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0039_snapshot.json` | 6 | 161169 | `44e9ac9cc0e242c716626805b995951a0a649bb6` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0040_snapshot.json` | 6 | 161387 | `58c0b0d097c937b5773973c247c948f1f6b64259` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0041_snapshot.json` | 6 | 161766 | `4b102cad8519a308f8710f1318cbfcefe12c27d4` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0042_snapshot.json` | 6 | 164085 | `6bfc7d3c3823b75c049b8be04fcd9044c45aa2ce` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0043_snapshot.json` | 6 | 164119 | `28a6668cb468ba2aff0ffb903d84eafd3f522154` | NOT_READ | NOT_REVIEWED |
-| `drizzle/meta/0044_snapshot.json` | 6 | 168455 | `3b3dbf4b6cffcd6f1ad84cfabe4891d1ceb689f7` | NOT_READ | NOT_REVIEWED |
-| `scripts/configure-localization-deadlines.sql` | 6 | 341 | `89a08b623a8b0037f8b4ae6acfd266e6f43762ac` | NOT_READ | NOT_REVIEWED |
-| `tests/database/migrations.test.ts` | 6 | 132016 | `1b6923993b6f165acd86e7816877fa2e4e620f60` | NOT_READ | NOT_REVIEWED |
-| `tests/production-migration-verifier.test.ts` | 6 | 1229 | `7f710be04fbac53693d5eb055d5a1a663f157256` | NOT_READ | NOT_REVIEWED |
+| `.github/production-schema-manifest.json` | 6 | 146399 | `330a35c2d23fc36780eaead0d33c4465de279c92` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/migration-history.mjs` | 6 | 3941 | `77e03a2acef0801656cfbf0d58d9f4ee3e5e4fdb` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/migration-history.test.mjs` | 6 | 2806 | `faa975927cf3c0f1fc8e48d5a1dcbae301b3c413` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-migration-contract.mjs` | 6 | 2193 | `c18bb68e7a3fb4084ca4d6ef5af12a2792a1639a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-migration-contract.test.mjs` | 6 | 3518 | `70d6a22fac5b94903a4807513600417226ae34f6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/production-schema-manifest.mjs` | 6 | 12217 | `f050830466058778f78b19fd8d0a0886fd52f453` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/runtime-privileges.mjs` | 6 | 19700 | `fcb0204cd0e2fcc03c0768740e0f32c201322f4c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/runtime-privileges.test.mjs` | 6 | 16142 | `b51c2788a848ce7d638e369a8aed006cd9b3531e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-migration-history.mjs` | 6 | 1399 | `cda0b9e4b263a1d46227e2e856561d5a3c1a1842` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-production-schema-manifest.mjs` | 6 | 1059 | `716f933d6b7148af7f1dc3f3680efc148197b356` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `.github/scripts/verify-runtime-privilege-probes.mjs` | 6 | 7294 | `7d6f745103acbedf46af6333ff4846239a153fb6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/postgres-deadlines.test.ts` | 6 | 4260 | `18e7f8d7a10113e4e65780d1e6888f0c5d19f094` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/postgres-deadlines.ts` | 6 | 2932 | `e63b96fc3b15577398ba75be1c00bc90395be2a6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `db/schema.ts` | 6 | 64221 | `5c9474049873eaf10a435bdc5733336d284291fe` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle.config.ts` | 6 | 357 | `b3886b12708c9074e867c4fced745d4a47fa7b3b` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0000_tan_johnny_storm.sql` | 6 | 1958 | `6224b0653caad183abc6fefee86522de6f7febb0` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0001_seed-locales.sql` | 6 | 614 | `02467c0b77af8efc3cb311e33ceb8d7762c96949` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0002_ui_translation_storage.sql` | 6 | 2973 | `8c5e1bf04f7eabfb73ecc2affe462081bb163721` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0003_gorgeous_donald_blake.sql` | 6 | 2269 | `80c0ce72d085df52ef460029210c9109de56359d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0004_forum_domain_foundation.sql` | 6 | 6128 | `88617d21bf609e0575c2e24c97eadefd13302a90` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0005_calm_proemial_gods.sql` | 6 | 948 | `079502dae325c947bee93e99dd004397bc3c9843` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0006_loving_sentinels.sql` | 6 | 5390 | `0b12f77dc5c5a22d9be0b15ac740bc923d6351a8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0007_durable_translation_tasks.sql` | 6 | 1741 | `f1de054e4ca24af8844f48efbb0eca1ce1dd27aa` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0008_translation_task_claim_lease.sql` | 6 | 1758 | `a374dd8ce4282ab1694ff69c9c5d84a98af1252e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0009_translation_task_completion.sql` | 6 | 2123 | `a4146d9f96f9ce1c3f1c380352e7877dca229ca8` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0010_translation_task_generation_order.sql` | 6 | 2710 | `71a8f7f045ab777bb3487f4ee17fd02d3193ece2` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0011_persistent_translation_locale_invariant.sql` | 6 | 752 | `37a7e2f716a1e5e6e4b1a0c03e8493346bde4298` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0012_translation_task_retry_dlq.sql` | 6 | 4692 | `c60ae57b664422ba080295e29e9aab1baf4b5556` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0013_translation_task_reconciliation.sql` | 6 | 500 | `1f08f0ae3758e3bc6f48e3bacf5bf79b8a9ce8f9` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0014_content_translation_persistence.sql` | 6 | 5843 | `5ec64db56c2088559ff5ecf8b0470dc38d099420` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0015_content_topic_title_tasks.sql` | 6 | 7237 | `32be12a772d7434cadcaccefe699f27a8eb89a59` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0016_content_post_body_tasks.sql` | 6 | 6540 | `5d1bd1aa63b2a44cdb7ff549ab104b285661cd9d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0017_content_translation_request_budget.sql` | 6 | 1907 | `4fa5a8a4cbed9c464880ce1d9e654983f5eef949` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0018_source_locale_correction_permissions.sql` | 6 | 948 | `6bfb7efe02fcad8b6829f16d97b0ce05d56ecbfa` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0019_content_provider_allowance_admission.sql` | 6 | 4758 | `95531486b91f867b294a364acae1cac44f57c020` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0020_translation_generation_permission.sql` | 6 | 822 | `55d8d98e1d41b014b9bd131d069be9cc4998b315` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0021_forum_tags.sql` | 6 | 1104 | `aa7af36ac4a31d551670d5866de87fd7893bfcac` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0022_forum_reply_relationships.sql` | 6 | 616 | `b6c97a10de23951fb5f2e0d6b46882758396e69c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0023_forum_topic_read_states.sql` | 6 | 981 | `ac0b2db2d75ec5130219774e0eee0e00f00dc4e7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0024_forum_reply_notifications.sql` | 6 | 1700 | `c4566a103cbd0f8a4454354d1e163baa3eca6f84` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0025_forum_topic_pins.sql` | 6 | 1539 | `9849dcb5ba2109231f1d83756b7d421aa10ebbd1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0026_best_answer_independent_from_solved.sql` | 6 | 93 | `5bda93bde49c953fb951820da0eea33c8c790192` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0027_help_solutions_foundation.sql` | 6 | 245 | `6e4b7169e5e994ef021afa8775e72ccb6307a81d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0028_help_solution_moderation.sql` | 6 | 1513 | `01086ae37cd4e3cefd0703bd877d05df5da3fb10` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0029_help_question_needs_details.sql` | 6 | 86 | `9d4fb9595cc2fcb0c9c9e81d2eb45bb6113e93b7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0030_help_duplicate_workflow.sql` | 6 | 5263 | `1a351d4f3c5a8246f6a6d13adc822d31e0d98da2` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0031_help_user_moderation_signals.sql` | 6 | 5214 | `411ca83a89ada516d1948a3b3921a53f1f7ae580` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0032_forum_profiles.sql` | 6 | 876 | `006b4c28e713208a867b60f10a708f1073845732` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0033_forum_online_presence.sql` | 6 | 492 | `e50ffb614c93681ea73a679add9bda17340a8587` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0034_forum_editor_drafts.sql` | 6 | 739 | `63b14f7e49f3aa571b0d54a0c55a2a390ac164d5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0035_forum_attachments_foundation.sql` | 6 | 2485 | `17ea683e720d2057ad5307cf8baa3a021804a077` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0036_forum_attachment_security_events.sql` | 6 | 943 | `288dd5bb04231c9779183b8b88b52a8aeb5251fe` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0037_forum_attachment_draft_generations.sql` | 6 | 999 | `3e4daa986649c5aa9e09b539c30486b4b3d3ed33` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0038_forum_attachment_cleanup_claims.sql` | 6 | 2205 | `1e31cc66cdb787735b14f31c0f44b74d42200d24` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0039_forum_publication_receipts.sql` | 6 | 865 | `f58922f08ed7cd673c344a05e1164bef31c9af5e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0040_post_edit_history_permissions.sql` | 6 | 1181 | `5e68794e8b5fe64e1793f5d696e5636bea416de1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0041_published_mentions.sql` | 6 | 276 | `43408faec4d5abbd3f1462295cec13fadda3c6d7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0042_attachment_edit_snapshots.sql` | 6 | 808 | `d86b8d60453077dd45c3c8ac15920544c0bc5df5` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0043_attachment_security_read_permission.sql` | 6 | 976 | `c93590a31be4c3bfd275ac288c00c55c37b6ebc6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/0044_attachment_draft_conflict_boundaries.sql` | 6 | 1698 | `913c528758336e0bb1b1cf2c33dde2507d975adf` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/_journal.json` | 6 | 7026 | `c5dd7c90aaba972813b4a547f8d00ba4582b3559` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0000_snapshot.json` | 6 | 4740 | `9739ca1e8afd56b0115a0aa0bd59be97f2373d99` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0001_snapshot.json` | 6 | 4740 | `1ae0bd2dda6e2422aafc8a002f40c2c3ccb1542c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0002_snapshot.json` | 6 | 11912 | `020469aa1f1fe8728b4aa99ef4af34f84370e2d2` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0003_snapshot.json` | 6 | 21875 | `df5ebac7c65ffbaa7c88b8a8d8d6503b8635458c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0004_snapshot.json` | 6 | 35915 | `eae5998fbeee5b7644363f1357a033950e2b3c49` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0005_snapshot.json` | 6 | 36738 | `1770b1064e181c4abf4f78c4480bff7bb1d961fe` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0006_snapshot.json` | 6 | 46248 | `be02dd39fb7404438bafcf2d90cbba3f382f4dc3` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0007_snapshot.json` | 6 | 50608 | `16ddc343c7a797cbc2051e157c17a9022ec02a1d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0008_snapshot.json` | 6 | 52504 | `7b02b28ea56c8b15c5c10ad1ba319f129b61ed35` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0009_snapshot.json` | 6 | 53285 | `5b5837a3907c0ab1adc63c16e84c087fdc921773` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0010_snapshot.json` | 6 | 56923 | `05d6ba63f9e6c9927cd2809411c986fbd0dd298d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0011_snapshot.json` | 6 | 57063 | `b65aac6e7dfa98f7b714ed7e14e1c575fefe4ce2` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0012_snapshot.json` | 6 | 60320 | `efdfdeb5cc1cf3efcae0f55a2cdf039c80eb2c57` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0013_snapshot.json` | 6 | 62584 | `9d8a02f88c2e27be1d22b2e5ac681a161aaab74f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0014_snapshot.json` | 6 | 74213 | `946c6049c480a0f04a46704105f532996272318f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0015_snapshot.json` | 6 | 81219 | `52d451b02a3899af5248c6f0435a6a3044b70034` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0016_snapshot.json` | 6 | 87353 | `e4f34e51da09dbf9c6da28d9455593b766ac8973` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0017_snapshot.json` | 6 | 91900 | `79529a7c47d265ae63c1c7a482e9a6cda204c87c` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0018_snapshot.json` | 6 | 91969 | `853d5f18b8d54bbee4ce6f32831f9ea0fb3326d1` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0019_snapshot.json` | 6 | 98950 | `d15560f7887c16c832e08d69360b1fd993071610` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0020_snapshot.json` | 6 | 98983 | `66ea5d87f1540d94e2df651d3a7c5c16c6e33ab7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0021_snapshot.json` | 6 | 102104 | `c304cbf813e3e81f73ccaee3f5f2223b4737fa3a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0022_snapshot.json` | 6 | 103349 | `a7a858f083b68add836a8aa01201c378b42ccc4d` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0023_snapshot.json` | 6 | 105786 | `4456f0d1a25d0d730aece8607599ddb472ee415b` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0024_snapshot.json` | 6 | 110629 | `b90827fb432b8ae46c8b45520321dd3acf8cfae9` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0025_snapshot.json` | 6 | 112856 | `2033e64579b4102e385bfb39b20e3f941aa2ce90` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0026_snapshot.json` | 6 | 112607 | `369d0e53072921d33276a9beaa9c85fb9e39fb8f` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0027_snapshot.json` | 6 | 112607 | `c7e4abdc8a4d526a2cb9112fa2012537909a8761` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0028_snapshot.json` | 6 | 114796 | `b574387fbfd9a380b146ccd685442aabcdda6c20` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0029_snapshot.json` | 6 | 114983 | `2be30b2a3ffe19833a5c2c8829619fc5b6d3a548` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0030_snapshot.json` | 6 | 126265 | `f378930f7a8db7df2bb91870859861fabfd45f08` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0031_snapshot.json` | 6 | 137536 | `2c81b2de71032d727e5da091c757a8696bdc2b54` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0032_snapshot.json` | 6 | 139731 | `9a1a225973aa94586f371ba9c8bf4c6b5706662b` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0033_snapshot.json` | 6 | 141228 | `e015e9d41a4356858481d81df9bc4ad0a6ab3280` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0034_snapshot.json` | 6 | 143934 | `2f8a38772af481764f46efa53412f0103b3adb8e` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0035_snapshot.json` | 6 | 151993 | `f6f816f19d63ebbd1f3e8b7317259769459f94c9` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0036_snapshot.json` | 6 | 155376 | `b64a9a0ab96c43f96343402bbf7eccba13b77e7a` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0037_snapshot.json` | 6 | 157461 | `d34ba14918d30c6990542136261411688d5969ce` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0038_snapshot.json` | 6 | 159344 | `128f8308ffc139d9b5a72b6e2bab89f28916ab50` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0039_snapshot.json` | 6 | 161169 | `44e9ac9cc0e242c716626805b995951a0a649bb6` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0040_snapshot.json` | 6 | 161387 | `58c0b0d097c937b5773973c247c948f1f6b64259` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0041_snapshot.json` | 6 | 161766 | `4b102cad8519a308f8710f1318cbfcefe12c27d4` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0042_snapshot.json` | 6 | 164085 | `6bfc7d3c3823b75c049b8be04fcd9044c45aa2ce` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0043_snapshot.json` | 6 | 164119 | `28a6668cb468ba2aff0ffb903d84eafd3f522154` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `drizzle/meta/0044_snapshot.json` | 6 | 168455 | `3b3dbf4b6cffcd6f1ad84cfabe4891d1ceb689f7` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `scripts/configure-localization-deadlines.sql` | 6 | 341 | `89a08b623a8b0037f8b4ae6acfd266e6f43762ac` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/database/migrations.test.ts` | 6 | 132016 | `1b6923993b6f165acd86e7816877fa2e4e620f60` | FULL_EOF_READ | SEMANTIC_REVIEWED |
+| `tests/production-migration-verifier.test.ts` | 6 | 1229 | `7f710be04fbac53693d5eb055d5a1a663f157256` | FULL_EOF_READ | SEMANTIC_REVIEWED |
 | **Этап 7 — UI/CSS/Preview, безопасность, CI и scripts (66)** | | | | | |
 | `.github/runtime-migration-evidence.json` | 7 | 252 | `9347ed5ed0b3689636cee5b468c10f37d89663b4` | NOT_READ | NOT_REVIEWED |
 | `.github/scripts/bootstrap-production-web-credential.mjs` | 7 | 19382 | `014f90d2813d65d0908e8ac94c5dbb945a2ac15d` | NOT_READ | NOT_REVIEWED |
@@ -571,6 +571,20 @@
 | **Итого** | **458** | **0** | **0** |
 
 Этап 0 **не означает** проверки хотя бы одного из 458 файлов по требуемой новой методике. Код не исправлялся, tests/PG/Worker/browser/CI не запускались, findings не опубликованы. **STOP после этапа 0**, следующий этап только по явной команде владельца.
+
+---
+
+## ЭТАП 6 — POSTGRESQL, МИГРАЦИИ И ЖИЗНЕННЫЙ ЦИКЛ ДАННЫХ (2026-10-24)
+
+**ЭТАП 6 CODE-ONLY REVIEW ЗАВЕРШЁН; ВСЕГО РЕПОЗИТОРИЯ АУДИТ НЕ ЗАКРЫТ.** Полный `AGENTS.md` взят из актуального `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Immutable 491-blob Git tree полон; `109/109` назначений (4 988 166 Git bytes) имеют exact path/blob-SHA/size соответствие с реестром, расхождений 0. Все файлы реально получены и прочитаны от начала до EOF (для 45 JSON snapshots — полный parse и структурная семантическая сверка каждого снимка, сохранение всех 45 в цепочке). Анализ кода и тестовых assertions проведён только как static source review; никакого тестового прогона не было.
+
+**Состав stage:** `drizzle/0000–0044.sql` — 45 последовательных SQL-миграций (включая data seeds, FK и deferred constraints, typed checks/indexes, immutable revision trigger, authz grants, queue/lifecycle/lease/protection); `drizzle/meta/0000–0044_snapshot.json` — 45 JSON-снимков, у всех версии PostgreSQL/Drizzle согласованы и цепочка `prevId` непрерывна; `drizzle/meta/_journal.json` — 45 записей 0–44, строго монотонные timestamps, имена уникальны; `db/schema.ts`, `drizzle.config.ts`, SQL deadline config; скрипты миграционной неизменности, pre/post SQL migration ledger checks, проверок production schema и PostgreSQL role privileges; их тесты и `tests/database/migrations.test.ts` (3 109 строк). **6 test files** среди 109. В проверку вошли transactional isolation/serialization, conditional publication, cleanup gating, CAS ревизий, authz lockout, provenance, защита хранимых данных, rollback, locale registry, batch limits, index и cascade semantics.
+
+**Структурный cross-check:** последний Drizzle snapshot и `.github/production-schema-manifest.json` согласованы по **47 таблицам, 329 колонкам** и именам с учётом PostgreSQL 63-byte identifier truncation: манифест включает 47 PK, 64 FK (три вручную добавленных deferred FK), 115 CHECK, 35 индексов, 16 UNIQUE, 6 trigger-функций и 8 triggers. В manifest нет `PENDING` hashes, он указывает на `0044_attachment_draft_conflict_boundaries`, соответствующий последнему journal tag. Формально выявленные различия JSON object order между snapshot transitions 0031→0032 и 0041→0042 не являются семантическими различиями; новые дефекты этим не подтверждены. Точное равенство `snapshot/manifest` не заменяет проверки реального PostgreSQL `pg_catalog`.
+
+**Ограничения:** тесты PostgreSQL и node, CI, миграции, typecheck, приложение и внешние службы **не запускались**; история production, external deployment и provisioning остаются Stage 6 по *продуктовому* ROADMAP и не являются текущим code-review defect сами по себе. В пределах данного статического этапа новых подтверждённых current-Stage дефектов не обнаружено; исторические и сквозные гипотезы требуют отдельной проверки в аудитных этапах 7/8. Чужие рабочие файлы, код, миграции и общий канал комментариев не изменялись.
+
+**Счётчик code-only audit:** `392/458 FULL_EOF_READ + SEMANTIC_REVIEWED`; `66/458` ещё открыты (этап 7). **STOP после этапа 6**; переход к этапу 7 — только по явной команде владельца.
 
 ---
 
