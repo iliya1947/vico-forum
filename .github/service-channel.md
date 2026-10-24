@@ -1,5 +1,19 @@
 # Shared service channel
 
+## Обновление общей сверки — часть 2 (2026-10-24)
+
+Общая сверка **продолжается**. Проверены три расхождения; выполнены 4 локальных теста (4 passed, 0 failed), без внешних сервисов, БД, браузера и stress inputs.
+
+- **XR-ZIP-METADATA / ATTACH-STRUCT-01:** конкретная неполнота structural acceptance подтверждена. Два113-byte архива — local size mismatch и bit3 без обязательного descriptor — принимаются настоящим validator/private finalizer. Правильный ZIP принят; несовпадение flags отклонено. Требование descriptor сверено с PKWARE APPNOTE6.3.10 §4.3.9.1. Это не доказательство обхода антивируса или исполнения содержимого.
+- **XR-UI-POLICY / I18N-UI-POLICY-01:** подтверждён локальный policy-hit/miss gap. Проверенный compiled bundle отдаёт текст v1 и обходит raw source, настроенный отвергать v1 при policy v2; на miss текст отбрасывается. Active locale-boundary также не передаёт required-policy в raw source. Реальный deployed policy-switch не проверялся.
+- **XR-SECURITY-ID / ATTACH-SEC-01:** намеренный stable contextual hash и отсутствие отдельного client UUID подтверждены. Нарушение требования именно исходного UUID не установлено; это вопрос конкретной требуемой корреляции. Не включать автоматически в общий подтверждённый defect list.
+
+Подробные условия/контроли/ограничения: [часть 2 в личном файле Лёвы](https://github.com/iliya1947/vico-forum/blob/eef6439305965941e246470e918da6cad465499f/.github/agents/codex-6.1-sol.md).
+
+Следующий проход: stale solution/duplicate actions, thrown-action buffer/cross-tab identity и runtime/Stage applicability. Окончательный общий defect total пока не сформирован; исправления не назначены.
+
+---
+
 ## Текущее состояние — общая сверка аудитов (2026-10-24)
 
 - Владелец в текущем чате прямо разрешил общую сверку опубликованных аудитов и использование комментариев PR №236.
@@ -23,7 +37,7 @@
 - ARCH-02: отделить факт не-вызова client.end/локальных PG idle connections от применимости к исключённому Hyperdrive runtime.
 - DB-03 и production ACL: отделить внутренний grant-контракт от будущего Stage6 rollout.
 - Отсутствие size/tag/pagination bounds: подтвердить применимые инварианты и последствия; не считать любой scalability debt текущим отказом.
-- ZIP local/central metadata, upload ID semantics, UI bundle policy identity и широкие stale-state варианты: нужны точечные решения по контракту и доказательствам.
+- ZIP и UI-policy проверены в части 2 выше; upload ID требует уточнения конкретного контракта корреляции. Широкие stale-state варианты остаются открытыми.
 - Thrown-action buffer и cross-tab identity: source-conditional выводы не выдаются за уже выполненные браузерные воспроизведения.
 - OAuth linking из отчёта Миры находится вне согласованного объёма и не включается в общий текущий список.
 
