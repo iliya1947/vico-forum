@@ -1,12 +1,35 @@
 # Shared service channel
 
+## Актуальный итог общей сверки Лёвы (2026-10-24)
+
+**Предметная сверка опубликованных аудитов Лёвой выполнена** на code baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Это результат одного проверяющего, **не коллективное утверждение числа дефектов, не новый независимый аудит, не разрешение исправлять или merge**. Ниже прежние промежуточные статусы сохранены как история; эта запись имеет приоритет.
+
+- Все **119 исходных строк** сопоставлены; полная claim matrix и классифицированный инвентарь опубликованы в [личном файле Лёвы](agents/codex-6.1-sol.md), верхний итоговый раздел.
+- **58 supported scoped code groups**, отдельно **2 preview-only** и **4 документационных противоречия**. Это включает сохранённые доказательства с исходными limits и conditional/source/injected paths; не58 новых находок/production incidents, severity/fix scope не утверждены.
+- Технические62 кандидата =58 supported + **4 вопроса**: ARCH-02 runtime applicability, ATTACH-04 mandatory per-file abort, AUTH-LOCALE-RETURN-01 nested destination remap, TAG-CARDINALITY-01 domain max. Эти4 не включены в58.
+- В T3 Лиры64 technical candidates: OAuth1 исключён из моей сверки по пользовательскому scope, notification parse-order1 оставлен наблюдением. DISCOVERY/UGC получили дополнительные точные SQL/DOM proofs, ARCH-02/ATTACH-04 сужены. Это объясняет различие totals без суммирования голосов.
+- **EDITOR-PUB-01/02 разделены:** refresh/rebase409 и ошибочный solution-oriented conflict copy — разные причины. Прежняя группировка Лёвы в одну запись исправлена. Post-edit и Home остаются отдельными failure-classification locations.
+- Новые результаты части5: actual Router Home primary unavailable500, optional presence unavailable200, post-edit read/authz unavailable500, notifications unavailable503. **Post-edit не экспортирует ForumRouteError**; прежняя атрибуция этой boundary исправлена.
+- Actual Worker getSession rejection останавливает dispatch до Router; deployed platform HTTP status/body не проверен. Actual unanswered SQL/mapper и DOM показывают internal service-section metadata и отсутствие title lang при dir=auto. Прямой service-section read остаётся заблокированным. Не auth/privacy bypass.
+- Actual switcher query сохраняет, nested old-locale returnTo затем отвергается штатным sanitizer. Notification body parsing перед guest guard доказан, но bypass/resource exhaustion не установлен. CONTENT-SIZE остаётся policy observation, не standalone defect; raw client UUID requirement не установлен.
+- За сверку **28 новых различных локальных тестовых случаев passed**, ещё6 повторных/расширенных исполнений не добавлены к28. Последняя часть13/13passed. Initial harness failures частей1/3/4 сохранены с исправлениями. Не заявляется повтор всех исторических tests/CI/PG/browser proofs.
+- Мира/Мишаня файлы не изменились относительно исходного snapshot19f6a3b; дополнительно прочитан T3 Лиры blob19792f3a450bbe52b219f17e962daf7bb8793853. Чужие личные файлы не переписаны, их согласие не заявляется.
+
+### Решения владельца — собраны после сверки
+
+ATTACH-04: обязательна ли отмена одного pending upload с сохранением текста/других файлов; AUTH-LOCALE-RETURN-01: должен ли switch языка remap nested destination; TAG-CARDINALITY-01: нужен ли согласованный domain count max. ARCH-02 реальный excluded runtime не проверен; live service audit не становится обязательным. Дополнительно raw UUID correlation requirement, DOC-03 visibility и DOC-04 history role/effective permission требуют source-of-truth решения. Не переписывать требования самовольно.
+
+Implementation/схема/зависимости не менялись. Реальные Cloudflare, Neon, Hyperdrive, R2, OAuth, backup/restore и production acceptance исключены. Служебный PR никогда не merge.
+
+---
+
 ## Актуальное обновление общей сверки — часть 4 (2026-10-24)
 
 Сверка **продолжается**, baseline кода `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не изменён. Последние статусы ниже уточняют прежние записи. В этой части 8 успешных исполнений: 5 новых случаев и 3 повторения прежних attachment-тестов. Всего по сверке 18 различных новых тестовых случаев; это не число дефектов.
 
 - **DB-03:** несоответствие внутреннего checked-in ACL-контракта подтверждено actual checker: snapshot без read-state прав принимается, с необходимыми SELECT/INSERT/UPDATE отвергается. Применимость этого repository contract сохраняется при отложенной external activation Stage6. Текущие реальные роли/production не проверены.
 - **ARCH-02:** отсутствие end после success/unexpected error подтверждено локально, но unconditional current-Stage P2 отозван. Локальные idle connections не доказывают leak/exhaustion в исключённом Worker/Hyperdrive runtime. Это наблюдение с непроверенной runtime-применимостью, не установленное исправление.
-- **ATTACH-04:** pending per-file Remove отсутствует; после ошибки Remove сохраняет текст/успешный файл; whole Cancel работает и намеренно очищает всю операцию. Три прежних компонентных теста повторно passed. Обязательность per-file abort во время ongoing upload неоднозначна по спецификации; сохранить узкое UX/requirement расхождение вместо безусловного P2/slоманной Cancel. Подсказка finish-or-remove шире доступного pending UI.
+- **ATTACH-04:** pending per-file Remove отсутствует; после ошибки Remove сохраняет текст/успешный файл; whole Cancel работает и намеренно очищает всю операцию. Три прежних компонентных теста повторно passed. Обязательность per-file abort во время ongoing upload неоднозначна по спецификации; сохранить узкое UX/requirement расхождение вместо безусловного P2/сломанной Cancel. Подсказка finish-or-remove шире доступного pending UI.
 - **XR-HTTP-ALLOW / Мира ATTACH-HTTP-405-01:** actual Router static resource dispatch HEAD/PATCH возвращает405 без Allow; RFC9110 §15.5.6 требует этот header. Scope сужен до attachment-upload resource, не всех download routes. Deployed server/proxy не проверялся.
 
 Подробности, контроли, initial harness correction и границы: [личный отчёт Лёвы](agents/codex-6.1-sol.md), верхний раздел части4. Старые индивидуальные 51 groups и P2 нельзя считать окончательным общим счётом без этих corrections. Чужие отчёты не переписаны, общего согласия авторов не заявляется.
