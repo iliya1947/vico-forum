@@ -1,5 +1,1603 @@
 # Лёва — Codex-6.1 Sol
 
+## Итог моей общей сверки аудитов (2026-10-24)
+
+**Предметная сверка опубликованных отчётов выполнена на baseline d72b27c.** Это мой итог сравнения и проверки, не коллективное утверждение команды, не новый независимый аудит и не разрешение исправлять/merge. Вопросы требований ниже сохранены открытыми; они не скрывают незавершённые проверки. Новая версия implementation требует отдельной проверки.
+
+119 исходных утверждений сопоставлены. Итоговый инвентарь: **58 групп внутреннего кода с поддерживающими доказательствами, 2 preview и 4 документационных противоречия**; отдельно **4 технических вопроса применимости/требований**, OAuth исключён и notification parse-order оставлен наблюдением. Это не58 новых находок и не58 воспроизведённых production incidents. Условия и confidence различны: сохранённые native/browser proofs, source analysis, новые controlled tests. Severity и пакет исправлений не утверждены.
+
+По сравнению с T3 Лиры: из64 технических кандидатов OAuth1 исключён по scope, notification order1 не признан доказанным defect; ARCH-02/ATTACH-04 переведены в вопросы, DISCOVERY/UGC дополнительно проверены до конкретного SQL/DOM и поддержаны в узком scope. Получается62 технических кандидата =58 supported +4 questions. Preview/documents считаются отдельно. Разделение EDITOR-PUB-01/02 исправляет моё прежнее чрезмерное объединение: разные причины, две записи. Post-edit и Home оставлены отдельными местами классификации failure, без искусственного слияния по одинаковому500.
+
+28 новых различных локальных тестовых случаев passed за сверку; ещё6 исполнений — повторные/расширенные проверки старых случаев и не добавлены к28. Последняя часть13/13passed (10новых+3повторных). Initial harness failures частей1/3/4 сохранены и явно описаны; они не замаскированы под продуктовые дефекты. Полный CI, все исторические proof tests, native DB/browser/infrastructure acceptance заново не запускались. Проверяемый исходный код не менялся.
+
+### Разделённые решения
+
+- Поддержанные группы ниже сохраняют ограничения первичных доказательств. Условные failure/injected-session сценарии не повышены до реальных incidents; blind independence после чтения чужих результатов не восстановлена.
+- DB-03 — внутренний ACL-контракт, не проверка реальных grants. ARCH-02 — endCalls0 локально, реальная runtime-утечка не установлена. Не поручать исключённый live Hyperdrive как обязательное завершение аудита.
+- ATTACH-04 — отдельного abort pending file нет; whole Cancel работает. Обязательность per-file отмены во время ongoing upload требует решения владельца. До этого не включать безусловным P2.
+- AUTH-LOCALE-RETURN-01 — query сохраняется; nested old-locale destination отвергается sanitizer. Требование remap остаётся открытым; нельзя ослаблять redirect guard на основании этого наблюдения.
+- TAG-CARDINALITY-01 — max уникальных tags не согласован, count failure не доказан. CONTENT-SIZE-01 — отсутствие max не самостоятельный дефект. Это не отменяет отдельный static O(N²) spoiler finding.
+- ATTACH-SEC-01 — нужно ли сохранять raw client UUID отдельно от contextual server ID не установлено. Это дополнительный вопрос корреляции, вне4 технических кандидатов, не доказанная потеря существующего asset.
+- DOC-03 (Disputed visibility) и DOC-04 (history role vs effective permission) требуют выбора source of truth владельцем; требования не переписаны. Остальные doc/preview пункты отделены от runtime.
+
+### Полный классифицированный инвентарь
+
+S = поддержано в указанном scope; Q = требование/применимость, не confirmed count; O = наблюдение; X = исключено; P = preview; D = документация. Совпадение авторов не является доказательством. Детальное происхождение/контроли — предыдущий индивидуальный JSON, части1–5 и полная claim matrix ниже.
+
+| ID | Статус | Суть |
+|---|---|---|
+| `ARCH-01` | S | Неожиданные ошибки записи маскируются под временную недоступность 503 |
+| `ARCH-02` | Q | Загрузчик реестра локалей не завершает соединение после успешного чтения и части ошибок |
+| `ARCH-03` | S | Ошибка завершения соединения подменяет успешный результат или исходную ошибку операции |
+| `ATTACH-01` | S | Объект вложения без записи метаданных недоступен штатной очистке |
+| `ATTACH-02` | S | Корректный обычный ZIP с 65535 записями ошибочно требует ZIP64 |
+| `ATTACH-03` | S | Корректный пустой TAR отклоняется на распознавании сигнатуры |
+| `ATTACH-04` | Q | Загружаемый файл нельзя удалить отдельно; до завершения загрузки публикация блокируется |
+| `AUTH-01` | S | Удаляющий cookie старой сессии перезаписывает cookie успешного нового входа |
+| `AUTH-02` | S | Назначение уже удалённой роли из старой формы завершается необработанной ошибкой 500 |
+| `CORE-01` | S | Встречные одновременные ответы могут вызвать взаимную блокировку при записи уведомлений |
+| `CORE-02` | S | Старое непрочитанное уведомление выпадает из последних 50 при сохранении общего счётчика |
+| `CORE-03` | S | Отметка прочитанного может опередить фактически отданный снимок сообщений |
+| `DB-01` | S | CHECK допускает неполные NULL-комбинации метаданных состояния allowance |
+| `DB-02` | S | Верификатор схемы пропускает изменение предиката частичного индекса |
+| `DB-03` | S | Контракт прав web runtime не включает используемую таблицу отметок прочитанного |
+| `EDITOR-01` | S | Нормализация HTML-вставки схлопывает пустые строки внутри программного кода |
+| `EDITOR-02` | S | Обычный текст ячеек таблицы превращается в Markdown-форматирование и ссылки |
+| `EDITOR-03` | S | Очистка форматирования части жирного текста повреждает невыделенный суффикс |
+| `EDITOR-04` | S | Отказ преобразования сложной таблицы молча заменяется обычным текстом |
+| `EDITOR-05` | S | Find next не переносит выделение при уже открытом режиме записи |
+| `EDITOR-06` | S | Enter внутри форматированного текста в Простом режиме повреждает разделители |
+| `EDITOR-07` | S | Отступ захватывает исключённую конечную строку и может повредить закрывающий fence |
+| `EDITOR-08` | S | Заблокированный редактор допускает изменение через Find/Replace или вставку |
+| `EDITOR-09` | S | Выделение получателей упоминаний расходится с отображением таблиц и спойлеров |
+| `EDITOR-10` | S | HTML-сущности в имени участника декодируются и меняют подпись упоминания |
+| `EDITOR-11` | S | Публикация обрезает граничные пробелы Markdown и может превратить код в обычный текст |
+| `HELP-01` | S | Старая форма решения апелляции может примениться к новой апелляции |
+| `HELP-02` | S | Время начала транзакции может нарушить CHECK при снятии дубликата |
+| `LOC-01` | S | Транспортная ошибка после COMMIT пропускает сверку результата записи локали |
+| `LOC-02` | S | Неожиданная ошибка проверки compiled bundle может привести к удалению корректного bundle |
+| `LOC-03` | S | Параметризованный i18next nesting проходит мимо проверки разрешённых токенов |
+| `LOC-04` | S | При загрузке истории показывается сообщение о восстановлении вложений |
+| `LOC-05` | S | Быстрое переключение политики A–B–A может потерять нужное поколение задачи |
+| `LOC-06` | S | Запрос генерации для сообщения только с вложением завершается ошибкой 500 |
+| `LOC-07` | S | Защита перевода не охватывает структуру собственных таблиц и спойлеров |
+| `LOC-08` | S | Перевод теряет явное направление абзаца либо ошибочно отклоняет экранированный текст |
+| `LOC-09` | S | Отклонённый перевод с завершённой задачей старой политики застревает в converging |
+| `SEC-01` | S | Неожиданные ошибки профиля передают неопубликованный текст и SQL-параметры логгеру |
+| `RES-EDITOR-02` | S | Backspace в начале второго обычного абзаца не соединяет абзацы в Простом режиме |
+| `RES-UI-01` | S | Меню дополнительных инструментов редактора расширяет страницу на 320 px |
+| `RES-A11Y-01` | S | Редактируемое текстовое поле Простого режима не имеет доступного имени |
+| `CODE-SEARCH-01` | S | После возврата назад поле поиска не соответствует адресу и результатам |
+| `CODE-HISTORY-01` | S | История правок расширяет узкую страницу вместо локального размещения текста |
+| `M-M07` | S | Английская шапка менеджера переполняется при ширине 320 px |
+| `M-M10` | S | У проверенного навигационного текста светлой темы недостаточный контраст |
+| `AUTH-LINK-01` | X | Email signup without verification ↔ Google linking same email |
+| `AUTH-SESSION-AVAIL-01` | S | Auth/session storage outage before normal Router boundary |
+| `AUTH-LOCALE-RETURN-01` | Q | Locale-switch drops effective nested returnTo destination |
+| `DISCOVERY-01` | S | Hidden Help service-section identity in discovery metadata |
+| `HELP-MOD-01` | S | Stale solution moderation applies to newer best answer |
+| `LITERAL-TEXT-01` | S | Plain visual content treated as Markdown syntax/entities |
+| `EDITOR-PUB-01` | S | Failed 409 edit lacks normal loader refresh/rebase |
+| `EDITOR-PUB-02` | S | Published edit conflict displays solution-specific error text |
+| `MARKDOWN-SPOILER-01` | S | Repeated unmatched spoiler opening leads to quadratic scans |
+| `ATTACH-STRUCT-01` | S | ZIP inconsistent local metadata/data descriptor accepted |
+| `ATTACH-HTTP-405-01` | S | Attachment 405 response omits Allow header in route branch |
+| `I18N-UI-POLICY-01` | S | Compiled UI bundle hit skips required generation policy validity |
+| `I18N-UGC-META-01` | S | Secondary UGC presentation lacks source lang/dir in selected cases |
+| `POST-EDIT-AVAIL-01` | S | Post-edit authorization/reader unavailable can reach generic 500 |
+| `FORUM-READ-AVAIL-01` | S | Primary forum read availability fails to map into typed 503 |
+| `NOTIFY-BODY-01` | O | Notification action reads form body before cheap auth/Origin rejection |
+| `TAG-CARDINALITY-01` | Q | Unbounded unique tag count per publication expands persistent public catalog |
+| `XR-THROWN-ACTION-BUFFER` | S | Unexpected action throw unmounts topic editor and in-memory content |
+| `XR-CROSS-TAB-IDENTITY` | S | Cached A identity, server B reply author on topic |
+| `DOC-01` | D | Текущие статусы и остаточные задачи в документации устарели |
+| `DOC-02` | D | Документация отстаёт от фактического номера последней миграции |
+| `DOC-03` | D | Документация противоречиво определяет видимость отметки Disputed |
+| `DOC-04` | D | Доступ к истории описан через роль и через effective permission противоречиво |
+| `CODE-PREVIEW-01` | P | Сценарий подтверждения лучшего ответа открывается решённым и не показывает подтверждение |
+| `CODE-PREVIEW-02` | P | Вкладка Appeals (1) стенда показывает пустую очередь |
+
+### Полная привязка 119 исходных строк
+
+JSON ниже позволяет проверить, что исходная строка не потеряна, куда она отнесена, какие bounds сохранены и где исправлено grouping. Это матрица утверждений, а не119 дефектов. Локальные пути не выдаются за опубликованные raw proof artifacts: сами тесты/скриншоты остаются в workspace, опубликованы результаты, условия и ограничения.
+
+<details><summary>Claim matrix (119 rows)</summary>
+
+```json
+{
+  "status": "COMPARISON_COMPLETED_WITH_EXPLICIT_QUESTIONS_AND_LIMITS",
+  "codeBaseline": "d72b27ca762dd930f0e7ad614e5b00832a07ec0c",
+  "serviceSnapshot": "19f6a3ba78b2d2d57318ec2f4b35a40aa0a9dd25",
+  "sourceReports": {
+    "Мира": "27 claimed technical defects +1 SOT",
+    "Лира": "6 classes +2 docs +2 conditional risks",
+    "Мишаня": "30 historical statements, baseline21386887, not independent",
+    "Лёва": "51 groups, with provenance/limits; not blind independent"
+  },
+  "countRule": "Never add 27+6+30+51. Current table is claim-to-cause/evidence mapping, not consensus or a final defect total.",
+  "claimRows": 119,
+  "rows": [
+    {
+      "auditor": "Лёва",
+      "id": "ARCH-01",
+      "mapsTo": "ARCH-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "ARCH-02",
+      "mapsTo": "ARCH-02",
+      "crossReviewStatus": "LOCAL_LIFECYCLE_FACT_RUNTIME_DEFECT_UNESTABLISHED",
+      "decision": "Actual factory fake-client endCalls0 after success/unexpected error confirmed. Remove unconditional current-Stage defect status; excluded runtime lifecycle/leak not established.",
+      "evidence": [
+        "work/audit-cross-review/phase4-section.md"
+      ]
+    },
+    {
+      "auditor": "Лёва",
+      "id": "ARCH-03",
+      "mapsTo": "ARCH-03",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "ATTACH-01",
+      "mapsTo": "ATTACH-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "ATTACH-02",
+      "mapsTo": "ATTACH-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "ATTACH-03",
+      "mapsTo": "ATTACH-03",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "ATTACH-04",
+      "mapsTo": "ATTACH-04",
+      "crossReviewStatus": "CONFIRMED_UI_LIMITATION_REQUIREMENT_CONFLICT_NOT_UNCONDITIONAL_P2",
+      "decision": "Three prior component cases rerun passed. Pending per-file Remove absent; error Remove and whole Cancel work. Mandatory abort-during-upload unspecified; UX prompt broader than available controls.",
+      "evidence": [
+        "work/audit-cross-review/phase4-section.md"
+      ]
+    },
+    {
+      "auditor": "Лёва",
+      "id": "AUTH-01",
+      "mapsTo": "AUTH-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "AUTH-02",
+      "mapsTo": "AUTH-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CORE-01",
+      "mapsTo": "CORE-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CORE-02",
+      "mapsTo": "CORE-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CORE-03",
+      "mapsTo": "CORE-03",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DB-01",
+      "mapsTo": "DB-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DB-02",
+      "mapsTo": "DB-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DB-03",
+      "mapsTo": "DB-03",
+      "crossReviewStatus": "CONFIRMED_INTERNAL_CONTRACT_EXTERNAL_ACTIVATION_EXCLUDED",
+      "decision": "Actual ACL assertion accepts missing read-state grants and rejects required extras. Stage6 external roles not checked; checked-in contract mismatch retained. Prior native proof not rerun.",
+      "evidence": [
+        "work/audit-cross-review/phase4-section.md"
+      ]
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DOC-01",
+      "mapsTo": "DOC-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DOC-02",
+      "mapsTo": "DOC-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DOC-03",
+      "mapsTo": "DOC-03",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "DOC-04",
+      "mapsTo": "DOC-04",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-01",
+      "mapsTo": "EDITOR-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-02",
+      "mapsTo": "EDITOR-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-03",
+      "mapsTo": "EDITOR-03",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-04",
+      "mapsTo": "EDITOR-04",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-05",
+      "mapsTo": "EDITOR-05",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-06",
+      "mapsTo": "EDITOR-06",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-07",
+      "mapsTo": "EDITOR-07",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-08",
+      "mapsTo": "EDITOR-08",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-09",
+      "mapsTo": "EDITOR-09",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-10",
+      "mapsTo": "EDITOR-10",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "EDITOR-11",
+      "mapsTo": "EDITOR-11",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "HELP-01",
+      "mapsTo": "HELP-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "HELP-02",
+      "mapsTo": "HELP-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-01",
+      "mapsTo": "LOC-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-02",
+      "mapsTo": "LOC-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-03",
+      "mapsTo": "LOC-03",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-04",
+      "mapsTo": "LOC-04",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-05",
+      "mapsTo": "LOC-05",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-06",
+      "mapsTo": "LOC-06",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-07",
+      "mapsTo": "LOC-07",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-08",
+      "mapsTo": "LOC-08",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "LOC-09",
+      "mapsTo": "LOC-09",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "SEC-01",
+      "mapsTo": "SEC-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "RES-EDITOR-02",
+      "mapsTo": "RES-EDITOR-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "RES-UI-01",
+      "mapsTo": "RES-UI-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "RES-A11Y-01",
+      "mapsTo": "RES-A11Y-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CODE-PREVIEW-01",
+      "mapsTo": "CODE-PREVIEW-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CODE-PREVIEW-02",
+      "mapsTo": "CODE-PREVIEW-02",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CODE-SEARCH-01",
+      "mapsTo": "CODE-SEARCH-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "CODE-HISTORY-01",
+      "mapsTo": "CODE-HISTORY-01",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "M-M07",
+      "mapsTo": "M-M07",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лёва",
+      "id": "M-M10",
+      "mapsTo": "M-M10",
+      "crossReviewStatus": "RETAINED_SCOPED_EVIDENCE_NOT_FOUR_AUDITOR_CONSENSUS",
+      "decision": "Сохранены собственные/ранние доказательства с прежними границами; отсутствие пункта у других не означает опровержения.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "AUTHZ-01",
+      "mapsTo": "AUTH-02",
+      "crossReviewStatus": "PARTIAL_DUPLICATE",
+      "decision": "Удалённая роль совпадает с AUTH-02; более широкий missing-user вариант не подтверждён этим воспроизведением.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "AUTH-LINK-01",
+      "mapsTo": null,
+      "crossReviewStatus": "OUT_OF_SCOPE",
+      "decision": "Google linking относится к исключённому OAuth; не включать в общий текущий список.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "AUTH-SESSION-AVAIL-01",
+      "mapsTo": "XR-AUTH-STARTUP",
+      "crossReviewStatus": "REEXECUTED_WORKER_PREROUTER_FAILURE_WITH_FAKE_CAPABILITIES",
+      "decision": "Actual Worker session rejection prevents Router dispatch/Response; ordinary session handler200 control. No actual platform status/body or external service check.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "AUTH-COOKIE-ORDER-01",
+      "mapsTo": "AUTH-01",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Та же последовательность clearing/new cookie; дополнительные локальные доказательства уже есть.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "AUTH-LOCALE-RETURN-01",
+      "mapsTo": "XR-AUTH-LOCALE",
+      "crossReviewStatus": "REPRODUCED_DESTINATION_FALLBACK_REQUIREMENT_UNESTABLISHED",
+      "decision": "Actual switcher preserves query/nested old-locale destination; safe guard returns new locale root. Remapping requirement remains unsettled.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "DISCOVERY-01",
+      "mapsTo": "XR-HELP-DISCOVERY",
+      "crossReviewStatus": "CONFIRMED_GENERATED_SQL_AND_PRESENTATION_SCOPE",
+      "decision": "Actual query/mapper exposes service-section metadata in generic unanswered path; direct readSection remains blocked. docs UI_UX_PASS314–325 require hidden generic discovery; no privacy bypass.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "HELP-MOD-01",
+      "mapsTo": "XR-STALE-SOLUTION",
+      "crossReviewStatus": "CONFIRMED_TARGET_SELECTION_WITH_INJECTED_TRANSACTION",
+      "decision": "Actual action/service/repository selects answer-B for old intent; no expected answer identity. Two SQL-capture cases; no native concurrency.",
+      "evidence": [
+        "work/audit-cross-review/phase3-stale.test.ts",
+        "work/audit-cross-review/phase3-stale-evidence.json"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "HELP-DUP-01",
+      "mapsTo": "HELP-01",
+      "crossReviewStatus": "PARTIAL_DUPLICATE_PLUS_CONFIRMED_STALE_REMOVE_VARIANT",
+      "decision": "Existing stale appeal overlap retained; remove variant targets current relationship-B and its appeals, actual action/service/repository with injected snapshots.",
+      "evidence": [
+        "work/audit-cross-review/phase3-stale.test.ts",
+        "work/audit-cross-review/phase3-stale-evidence.json"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "LITERAL-TEXT",
+      "mapsTo": "XR-LITERAL",
+      "crossReviewStatus": "REPRODUCED_LOCAL_HELPER",
+      "decision": "escapeVisualMarkdownText и реальный published parser: --- становится thematicBreak, ~~literal~~ — delete, &copy; — ©. Не дублировать EDITOR-02 (таблицы) или EDITOR-10 (подпись mention).",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "EDITOR-PUB-01",
+      "mapsTo": "XR-EDIT-409",
+      "crossReviewStatus": "REPRODUCED_ACTUAL_LOCAL_ROUTE",
+      "decision": "Настоящие Topic route loader/view/action: после controlled409 загрузчик остаётся на одном вызове, fence r1, текст сохранён, rebase отсутствует; явная revalidation даёт второй вызов и кнопку.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "EDITOR-PUB-02",
+      "mapsTo": "XR-EDIT-CONFLICT-COPY",
+      "crossReviewStatus": "CONFIRMED_SEPARATE_COPY_CAUSE_ACTUAL_ROUTE",
+      "decision": "Correct earlier grouping: loader409/rebase and wrong conflict message key are independent causes. Actual edit409 repeats exact solution-oriented text; separate group.",
+      "evidence": [
+        "work/audit-cross-review/phase5-conflict-copy-evidence.json"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "CONTENT-SIZE-01",
+      "mapsTo": "XR-CONTENT-BOUNDS",
+      "crossReviewStatus": "POLICY_OBSERVATION_NOT_STANDALONE_CONFIRMED_DEFECT",
+      "decision": "No domain max fact retained; no agreed threshold/current failure established. Separate from statically established spoiler complexity.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "MARKDOWN-SPOILER-01",
+      "mapsTo": "XR-SPOILER-COMPLEXITY",
+      "crossReviewStatus": "STATIC_ALGORITHM_CORROBORATED_NO_STRESS",
+      "decision": "spoilerAt сканирует хвост и при отсутствии конца возвращает null; outer loop сдвигает i только на 1. Для N открывающих маркеров сумма проходов квадратична. Это отдельный статический вывод; остановленные ресурсные опыты не возобновлялись.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "ATTACH-LIFECYCLE-01",
+      "mapsTo": "ATTACH-01",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Тот же orphan object без достижимой metadata row и последующего claim очистки.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "ATTACH-STRUCT-01",
+      "mapsTo": "XR-ZIP-METADATA",
+      "crossReviewStatus": "REPRODUCED_BOUNDED_STRUCTURE_VALIDATION_GAP",
+      "decision": "Два113-byte ZIP: local compressed size123 при central/actual5 и bit3 с отсутствующим descriptor принимаются actual validator и private finalization. Base control accepted, one-sided flags mismatch rejected. No deep content/AV/publication failure claim. PKWARE APPNOTE6.3.10 sections4.3.9.1/4.4.8-9 confirm format requirement.",
+      "evidence": [],
+      "phase2Evidence": "phase2-evidence.json"
+    },
+    {
+      "auditor": "Мира",
+      "id": "ATTACH-SEC-01",
+      "mapsTo": "XR-SECURITY-ID",
+      "crossReviewStatus": "DERIVED_ID_INTENT_CONFIRMED_SPECIFIC_UUID_REQUIREMENT_UNESTABLISHED",
+      "decision": "Actual rejection route produces contextual stable attachment-v1 key; same retry same key, other inputId other key; no asset row. Filename/owner/context/draft/type/reason retained. Raw client UUID not separately retained. Tests confirm implementation intent, not specification sufficiency; no proven requirement to expose/persist raw UUID established.",
+      "evidence": [],
+      "phase2Evidence": "phase2-evidence.json"
+    },
+    {
+      "auditor": "Мира",
+      "id": "ATTACH-HTTP-405-01",
+      "mapsTo": "XR-HTTP-ALLOW",
+      "crossReviewStatus": "REPRODUCED_ROUTER_RESOURCE405_MISSING_ALLOW",
+      "decision": "Actual static resource dispatch HEAD→loader and PATCH→action returns405 without Allow; scoped to attachment-upload resource, no deployed server/proxy claim. RFC9110 section15.5.6.",
+      "evidence": [
+        "work/audit-cross-review/phase4-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "I18N-UI-POLICY-01",
+      "mapsTo": "XR-UI-POLICY",
+      "crossReviewStatus": "REPRODUCED_LOCAL_POLICY_CONSISTENCY_GAP",
+      "decision": "Bundle compiled/verified for v1 text accepted on hit, bypassing configured v2 raw source; miss drops v1 row. Spec requires current generation-policy checks. Runtime locale boundary currently also lacks required-policy parameter. No deployed policy-switch incident claimed.",
+      "evidence": [],
+      "phase2Evidence": "phase2-evidence.json"
+    },
+    {
+      "auditor": "Мира",
+      "id": "I18N-COPY-01",
+      "mapsTo": "LOC-04",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Тот же editorAttachmentRestoring в pending истории; не путать с CODE-HISTORY-01 overflow.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "I18N-UGC-META-01",
+      "mapsTo": "XR-UGC-META",
+      "crossReviewStatus": "CONFIRMED_SECONDARY_TITLE_LANGUAGE_METADATA_GAP",
+      "decision": "Actual unanswered SQL omits source_locale, route projection discards fixture metadata; DOM strong dir=auto, no lang, inherits English for Hebrew title. No blanket UGC/visual/screen-reader claim.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "DB-MANIFEST-01",
+      "mapsTo": "DB-02",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Тот же отсутствующий partial index predicate в parity manifest.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "DB-ERROR-01",
+      "mapsTo": "ARCH-01",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Та же catch-all503 ошибка, что Лира F03 и Миша High. High не установлен; не все request errors становятся503.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "POST-EDIT-AVAIL-01",
+      "mapsTo": "XR-POST-EDIT-503",
+      "crossReviewStatus": "REPRODUCED_ROUTER500_TYPED_UNAVAILABLE",
+      "decision": "Actual post-edit reader/authz typed failures become Router500. Correct previous boundary attribution: post-edit has no own ForumRouteError export.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "FORUM-READ-AVAIL-01",
+      "mapsTo": "XR-PUBLIC-503",
+      "crossReviewStatus": "REPRODUCED_ROUTER500_WITH_OPTIONAL200_AND_NOTIFICATION503_CONTROLS",
+      "decision": "Home primary unavailable yields Router500; optional presence unavailable retains200; notification typed unavailable maps503. No deployed response claimed.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "NOTIFY-BODY-01",
+      "mapsTo": "XR-NOTIFY-GUARD",
+      "crossReviewStatus": "OBSERVATION_NOT_ESTABLISHED_SECURITY_DEFECT",
+      "decision": "Small actual-action guest cases parse first, then401 or parsing400; writer0. No auth bypass/exhaustion/invariant failure established.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "NOTIFY-PAGING-01",
+      "mapsTo": "CORE-02",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Тот же latest50 inbox/all unread badge; старый post остаётся доступен другими путями.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мира",
+      "id": "TAG-CARDINALITY-01",
+      "mapsTo": "XR-TAG-BOUNDS",
+      "crossReviewStatus": "REQUIREMENT_QUESTION_NOT_CONFIRMED_CURRENT_DEFECT",
+      "decision": "Unique tag count is unbounded while individual names<=64 and deduplicated. No agreed count threshold or current failure established.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мира",
+      "id": "MIGRATION-SOT-01",
+      "mapsTo": "DOC-02",
+      "crossReviewStatus": "DUPLICATE_DOCUMENTATION",
+      "decision": "Та же разница0043/0044; отдельно от runtime дефектов.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "F01",
+      "mapsTo": "XR-EDIT-409",
+      "crossReviewStatus": "REPRODUCED_ACTUAL_LOCAL_ROUTE",
+      "decision": "F01 covers edit409 refresh plus separate wrong-copy cause; shared scenario does not merge distinct mechanisms.",
+      "evidence": [],
+      "alsoMapsTo": [
+        "XR-EDIT-CONFLICT-COPY"
+      ]
+    },
+    {
+      "auditor": "Лира",
+      "id": "F02",
+      "mapsTo": "XR-THROWN-ACTION-BUFFER",
+      "crossReviewStatus": "CONDITIONAL_BUFFER_LOSS_REPRODUCED_JSDOM",
+      "decision": "Unexpected permission exception replaces actual TopicView via actual route boundary; typed unavailable control keeps buffer. No universal network failure or production incident claim.",
+      "evidence": [
+        "work/audit-cross-review/phase3-buffer.test.tsx",
+        "work/audit-cross-review/phase3-buffer-evidence.json"
+      ]
+    },
+    {
+      "auditor": "Лира",
+      "id": "F03",
+      "mapsTo": "ARCH-01",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Тот же writer catch-all503.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "F04",
+      "mapsTo": "XR-CROSS-TAB-IDENTITY",
+      "crossReviewStatus": "IDENTITY_MISMATCH_REPRODUCED_INJECTED_SESSION",
+      "decision": "Actual heartbeat204 on topic leaves cached A; actual reply passes body to permitted B. Denied-B control does not write. No real two-tab/cookie/DB persistence reproduction.",
+      "evidence": [
+        "work/audit-cross-review/phase3-identity.test.tsx",
+        "work/audit-cross-review/phase3-identity-evidence.json"
+      ]
+    },
+    {
+      "auditor": "Лира",
+      "id": "F05",
+      "mapsTo": "HELP-01",
+      "crossReviewStatus": "DUPLICATE",
+      "decision": "Та же stale appeal identity; прежняя native race сильнее source-only доказательства.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "F06",
+      "mapsTo": "M-M10",
+      "crossReviewStatus": "RELATED_SAME_PALETTE_FAMILY",
+      "decision": "Белый текст submit на accent — дополнительное место; не тот же цветовой pair, что навигация. Не суммировать как новый класс без определения root cause.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "D01",
+      "mapsTo": "DOC-02",
+      "crossReviewStatus": "DUPLICATE_DOCUMENTATION",
+      "decision": "Migration0043/0044.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "D02",
+      "mapsTo": "DOC-04",
+      "crossReviewStatus": "DUPLICATE_DOCUMENTATION",
+      "decision": "History role-only vs effective permission.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "R01",
+      "mapsTo": "CORE-01",
+      "crossReviewStatus": "PRIOR_NATIVE_PROOF_RESOLVES_CONDITIONAL",
+      "decision": "У Лиры PG race не запускалась; прежнее native PG доказательство в реестре Лёвы найдено. Это не исполнение Лиры.",
+      "evidence": []
+    },
+    {
+      "auditor": "Лира",
+      "id": "R02",
+      "mapsTo": "SEC-01",
+      "crossReviewStatus": "PARTIAL_OVERLAP",
+      "decision": "Raw diagnostics риск шире; конкретный profile form/SQL leakage подтверждён прежним injected-DB-error доказательством. Не расширять на все handlers без проверки.",
+      "evidence": []
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-H01",
+      "mapsTo": "ARCH-01",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; HIGH_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Actual sectionAction through React Router createStaticHandler maps injected unexpected writer TypeError and schema-like Error(code=42703) into status503 actionData unavailable with errors=null; each writer called once. Classified storage outage has the same status/body.",
+          "controls": "Success redirects302; guest401/foreign-origin403 prevent write; domain errors400/403/404/409/429; source-locale correction wrapper preserves unexpected TypeError identity.",
+          "newTestReport": "/workspace/work/audit/repo/work/misha-verification-part1/results.json",
+          "bounds": [
+            "Session, permission resolver and writer are fakes; no real database, schema failure or service accessed.",
+            "No actual data loss, privilege impact or separate availability failure established. High priority is not justified by this reproduction alone.",
+            "Targeted source-test search found explicit unexpected-error coverage for correction/authorization/generation; absence of all possible equivalent tests across repository was not exhaustively established."
+          ],
+          "baseline": "Mutation wrapper unchanged between Misha baseline21386887 and currentd72b27ca."
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M01",
+      "mapsTo": "DOC-04",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; DOCUMENTATION_CONFLICT_CONFIRMED_MEDIUM_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "EDITOR.md285-286 restricts revision history to administrator/moderator roles and excludes ordinary users absolutely; AUTHORIZATION.md13-17,51 defines mutable grants/overrides and history.read as authoritative. Contradiction persists on current baseline.",
+          "code": "topicAction readPostHistory branch checks forum.post.history.read, without role-name restriction. topic loader derives history visibility from same permission. edit loader and attachment guard require editOwn plus authoritative ownership, not history.read.",
+          "testReport": "/workspace/work/audit/repo/work/misha-verification-part2/results.json",
+          "bounds": [
+            "Tests use actual post-edit loader and attachment authorization with fake session/reader/resolver: own+edit allowed, own+history only forbidden, foreign owner+edit forbidden; loader guest401 and missing404.",
+            "Revision-history action behavior inspected in source, not separately executed in this part. No authorization bypass established.",
+            "Do not silently rewrite requirements to resolve the two documents. This finding is a documentation conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M02",
+      "mapsTo": "M-M02",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; COUPLING_OBSERVATION_NOT_ESTABLISHED_DEFECT. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "App request contexts reference ForumReader from repository and ForumWriter from adapter; mutations use db-defined errors. Scoped AST graph has51 app->db module edges,10 explicitly type-only.",
+          "method": "AST static graph and targeted import review; modular-monolith contract read.",
+          "bounds": [
+            "No explicit prohibition found in inspected contract passages, not full re-audit of all architecture docs.",
+            "Imports/coupling alone do not prove functional defect, client bundle leak or necessity of refactor. Medium not established.",
+            "Server-side auth ORM/schema composition is expected wiring and not automatically counted as a defect."
+          ],
+          "graph": "/workspace/work/audit/repo/work/misha-verification-part3/graph.json",
+          "report": "/workspace/work/misha-verification/part3.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M03",
+      "mapsTo": "XR-CONTENT-BOUNDS",
+      "crossReviewStatus": "POLICY_OBSERVATION_NOT_STANDALONE_CONFIRMED_DEFECT",
+      "decision": "No domain max fact retained; no agreed threshold/current failure established. Separate from statically established spoiler complexity.",
+      "evidence": [
+        "work/audit-cross-review/phase5-section.md"
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M04",
+      "mapsTo": "M-M04",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; MEDIUM_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Prior own HTTP captures on identical current baseline show no Cache-Control or Vary on profile HTML/HEAD/single-fetch and authenticated notifications resource projection. Current entry, Worker wrapper and route source review show no global injection.",
+          "reusedOwnEvidence": [
+            "/workspace/work/audit/repo/work/audit-stage10-part5/http-evidence.json",
+            "/workspace/work/audit-stage0/stage10-part5.json"
+          ],
+          "bounds": [
+            "Prior captures reused, not counted as new test runs. Actual profile loader/component/root/SSR entry; manually assembled manifest includes synthetic root loader; locale parent absent.",
+            "Notifications loader projected as resource route, not full actual notifications document. No enumeration of every personalized SSR page completed in this part.",
+            "No cross-account cache disclosure established. Production cache/CDN/service behavior explicitly excluded.",
+            "Local route-specific no-store policies exist, including attachments/mentions/presence and selected locale redirects. Vary alone is not a universal substitute for private/no-store."
+          ]
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M05",
+      "mapsTo": "M-M05",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; MEDIUM_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Prior actual profile HTML response has only Content-Type:text/html; no X-Frame-Options or CSP frame-ancestors. Current entry/root/Worker/locale wrapper review and targeted production-source header search show no common application HTML anti-framing policy.",
+          "reusedOwnEvidence": [
+            "/workspace/work/audit/repo/work/audit-stage10-part5/http-evidence.json",
+            "/workspace/work/audit-stage0/stage10-part5.json"
+          ],
+          "bounds": [
+            "No browser framing/clickjacking flow tested in this verification part; no concrete dangerous framed action established.",
+            "Deployed proxy/platform headers not inspected and outside scope. No global assessment of every HTML endpoint or every possible security header.",
+            "Attachment responses have their own sandbox/nosniff policies; that does not establish a policy for HTML pages.",
+            "Absence of a hardening header is recorded as absence, not automatically a demonstrated exploitable vulnerability."
+          ]
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M06",
+      "mapsTo": "M-M06",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; TRIGGER_GAP_CONFIRMED_MEDIUM_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Primary ci.yml triggers only pull_request. Main push UI Preview workflow builds preview but does not repeat primary tests/database checks.",
+          "bounds": [
+            "Not equivalent to absence of every main check. PR merge-ref checks may test integration before merge.",
+            "Branch protections, org-required checks, merge queue settings and actual execution history not queried."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part4/ci-evidence.json",
+          "report": "/workspace/work/misha-verification/part4.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M07",
+      "mapsTo": "M-M07",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; EN_OVERFLOW_CONFIRMED_ORIGINAL_METRICS_AND_HE_NOT_REPRODUCED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "EN manager home fixture at320px documentWidth357; account content348/client302; screenshot shows clipped Sign out. HE320 has no reproduced overflow; at1280 neither document overflows.",
+          "bounds": [
+            "Original75pxEN/32pxHE not reproduced.",
+            "Fresh built UI Preview fake identity/data; no production auth flow or exhaustive names/fonts/state matrix."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part7/browser-evidence.json",
+          "report": "/workspace/work/misha-verification/part7.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M08",
+      "mapsTo": "M-M08",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; PAGINATION_ABSENCE_CONFIRMED_MEDIUM_IMPACT_NOT_MEASURED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "readSection2527 selects all topic rows in requested section, then tags. readTopicPage2574 selects all posts with revisions in requested topic, then metadata for their attachments. No page/cursor/limit/offset for these lists. Reader contracts accept ID only; actual loaders call these methods.",
+          "method": "Targeted static source and route/view flow review; no SQL executed.",
+          "bounds": [
+            "Attachment metadata is read, not file bytes. Other repository methods have bounds; no claim all queries unpaginated.",
+            "No latency, EXPLAIN, load or cost measurement. No severity Medium acceptance based on this inspection alone."
+          ],
+          "report": "/workspace/work/misha-verification/part3.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M09",
+      "mapsTo": "M-M09",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; QUERY_SCOPE_CONFIRMED_MEDIUM_IMPACT_NOT_MEASURED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Section loader passes only userId to readUnreadForUser then constructs section-only states in app. Repository query joins forum topics/posts and has no section predicate or pagination; uses grouping and array_agg for all unread topics. Internal reader delegates directly to repository.",
+          "testReport": "/workspace/work/audit/repo/work/misha-verification-part2/results.json",
+          "tests": "Real section loader with fake reader requests exactly(actor), receives inside/outside topics, returns only section state including read fallback. Guest does not call unread reader.",
+          "bounds": [
+            "No SQL executed or query plan measured in this part; repository query inspected statically.",
+            "No observed production latency, bill or service problem claimed. Actual cardinality/performance impact unmeasured.",
+            "Section route unchanged between old and current baseline; this issue is not removed by draft deletion."
+          ]
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M10",
+      "mapsTo": "M-M10",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; SELECTED_NORMAL_TEXT_WCAG_AA_CONTRAST_FAILURE. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Rendered navigation label Unanswered and HE counterpart at1280 use253,109,41 text over248,246,243 background,13.12px. Contrast2.6322:1 below4.5:1.",
+          "bounds": [
+            "Light theme and selected text only; logo excluded; not universal AA audit of all controls.",
+            "Shared components in fake preview, not full production runtime. Refinement-stage/merge policy not changed."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part7/contrast-evidence.json",
+          "report": "/workspace/work/misha-verification/part7.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-M11",
+      "mapsTo": "M-M11",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; HISTORICAL_ADVISORY_COUNTS_AND_REPO_GATE_ABSENCE_CONFIRMED_APP_MEDIUM_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Retained raw report25 records,8High13Moderate4Low, same lock hash as current. No configured audit/update gate or repository dependabot/renovate config found.",
+          "controls": "Exact dependency pins,frozen-lockfile,integrity present. Registry severity differs from application exploitability. Prior own stage10part4 condition review reused without rerunning probes.",
+          "bounds": [
+            "No fresh registry audit; no new dependency graph transmission or new auto-review rejection.",
+            "No organization/server-side updater settings inspected. No blanket lack of governance or25 reachable forum vulnerabilities established."
+          ],
+          "rawAudit": "/workspace/work/audit/repo/work/audit-stage10-part1/audit-all.json",
+          "rawAuditSha256": "47c4f1f881c661479764bc256bffbeda26e12dad2050f274d0e4456b6eba5fe1",
+          "lockSha256": "1a8108bb9eaa6f46b3339fedb9bef8d598e5199e8a7a7d833a2a9445959cfef3",
+          "priorOwnConditionAssessment": "/workspace/work/audit-stage0/stage10-part4-advisory-progress.json",
+          "report": "/workspace/work/misha-verification/part8.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L01",
+      "mapsTo": "M-L01",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: NOT_CONFIRMED_ON_CURRENT_BASELINE; BLANKET_DOCUMENTATION_CLAIM_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Current PROJECT_STATE23-61 explicitly separates current drafts removal from retained historical Editor snapshots; block added after source baseline. README links separate PROJECT_HISTORY.",
+          "bounds": [
+            "Targeted passages only, not whole-documentation clean bill.",
+            "Original report gives no exact counterexamples; retained dated history not automatically current requirements."
+          ],
+          "report": "/workspace/work/misha-verification/part6.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L02",
+      "mapsTo": "DOC-01",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; HISTORICAL_UI_WORDING_AMBIGUOUS_ACCEPTANCE_REFERENCES_UNVERIFIED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "UI_UX_PASS568 calls attachments/WYSIWYG future relative to old editor slice;645-646 describes future signup and Under development. Current editor and credential signup already implemented.",
+          "bounds": [
+            "Accumulated older slice/history context; misleading if read as current product status.",
+            "Exact obsolete acceptance/archive refs not identified or verified; old owner acceptance not declared invalid.",
+            "Drafts genuinely future after current removal."
+          ],
+          "report": "/workspace/work/misha-verification/part6.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L03",
+      "mapsTo": "M-L03",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; SOURCE_SIZE_OBSERVATION_NOT_ESTABLISHED_DEFECT. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Measured files large, per graph fileSizes. Excessiveness criterion and concrete defect not established.",
+          "sizes": [
+            {
+              "file": "db/forum-repository.ts",
+              "lines": 3915,
+              "bytes": 162943
+            },
+            {
+              "file": "app/forum/views.tsx",
+              "lines": 3079,
+              "bytes": 129096
+            },
+            {
+              "file": "app/styles.css",
+              "lines": 9643,
+              "bytes": 209186
+            }
+          ],
+          "bounds": [
+            "Source bytes, not compressed production bundle size.",
+            "No full manual read of these three files in this part. No architectural changes or automatic split justified from line count alone."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part3/graph.json"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L04",
+      "mapsTo": "M-L04",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; TYPE_DEPENDENCY_CYCLE_ONLY_RUNTIME_IMPACT_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "profile-view.tsx5 imports type ProfileActionData from routes/profile.tsx; route imports ProfileView as value. Only nontrivial SCC in scoped static graph.",
+          "method": "TypeScript AST SCC analysis plus transpileModule experiment with verbatimModuleSyntax; type import absent from emittedJS, component import retained.",
+          "bounds": [
+            "160 files; app/db/workers relative static imports/re-exports only; tests/declarations/ui-preview excluded. Dynamic imports, aliases, package imports and implicit uses not analyzed.",
+            "Removing explicit type-only edges yields no cycles in this graph; not universal absence of runtime cycles.",
+            "Compiler experiment not full typecheck/build or runtime execution. No initialization failure established."
+          ],
+          "graph": "/workspace/work/audit/repo/work/misha-verification-part3/graph.json",
+          "compilerEvidence": "/workspace/work/audit/repo/work/misha-verification-part3/type-erasure.json"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L05",
+      "mapsTo": "M-L05",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; UNCONSUMED_EXPORT_NOT_DEAD_FUNCTION. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "normalizeForumTags exported at forum-service364; tracked word search finds only definition and internal call379, no external consumer.",
+          "bounds": [
+            "Function needed internally; exported surface unused, not dead function.",
+            "No exhaustive export inventory or bundle-size benefit established; no removal proposed."
+          ],
+          "report": "/workspace/work/misha-verification/part6.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L06",
+      "mapsTo": "M-L06",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; SPECIFIC_APP_ONLY_RULES_CONFIRMED_DEFECT_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Tag normalized name max64 and slash exclusion enforced by normalizeForumTags but absent from forum_tags declared CHECK/migration0021. Concrete instances of app-only rules.",
+          "controls": "Posts have same-topic parent FK and parent-not-self CHECK. Empty-body CHECK removal is explicitly intentional in0039 for attachment-only publication.",
+          "bounds": [
+            "Original report does not identify exact constraints; cannot claim exhaustive match.",
+            "No demonstrated invalid write through user flow, no requirement all service rules must be DB-enforced.",
+            "Declared metadata and SQL read, no database execution."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part5/evidence.json",
+          "report": "/workspace/work/misha-verification/part5.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L07",
+      "mapsTo": "M-L07",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; FK_ABSENCE_CONFIRMED_LIFECYCLE_DEFECT_NOT_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Receipt schema and migration0039 have owner FK only, no topic/post FK. No later migration reference adds such FKs.",
+          "sourceFlow": "Writes receipt with fingerprint/IDs; replay validates fingerprint; topic/reply replay returns storedIDs before normal content checks.",
+          "bounds": [
+            "Deletion+replay not reproduced; no proven broken operation, orphan acceptance in liveDB or loss.",
+            "Adding cascade FK without lifecycle/idempotency contract not justified.",
+            "No actual PostgreSQL or external schema inspected."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part5/evidence.json",
+          "report": "/workspace/work/misha-verification/part5.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L08",
+      "mapsTo": "M-L08",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; DEPRECATED_QUEUE_USAGE_CONFIRMED_COUNT_THREE_NOT_REPRODUCED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Four direct Promise.all groups ofthree client.query on one client in two test files, four different test cases. Each is SELECT count assertions after tested operation.",
+          "groups": [
+            {
+              "file": "tests/database/content-post-body-task-planning.test.ts",
+              "line": 271,
+              "queryCalls": 3,
+              "testCall": "\"rechecks a serialized body translation before admission and rolls back planning metadata\"",
+              "queries": [
+                "\"select count(*)::int as count from content_translation_request_budget_counters\"",
+                "\"select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-post-body'\"",
+                "\"select count(*)::int as count from translation_tasks where translation_kind = 'content-post-body'\""
+              ]
+            },
+            {
+              "file": "tests/database/content-post-body-task-planning.test.ts",
+              "line": 693,
+              "queryCalls": 3,
+              "testCall": "\"rolls back body budget counters when task metadata insertion fails\"",
+              "queries": [
+                "\"select count(*)::int as count from content_translation_request_budget_counters\"",
+                "\"select count(*)::int as count from translation_tasks where translation_kind = 'content-post-body'\"",
+                "\"select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-post-body'\""
+              ]
+            },
+            {
+              "file": "tests/database/content-topic-title-task-planning.test.ts",
+              "line": 205,
+              "queryCalls": 3,
+              "testCall": "\"rechecks a serialized translation before admission and rolls back planning metadata\"",
+              "queries": [
+                "\"select count(*)::int as count from content_translation_request_budget_counters\"",
+                "\"select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-topic-title'\"",
+                "\"select count(*)::int as count from translation_tasks where translation_kind = 'content-topic-title'\""
+              ]
+            },
+            {
+              "file": "tests/database/content-topic-title-task-planning.test.ts",
+              "line": 597,
+              "queryCalls": 3,
+              "testCall": "\"rolls back both budget counters when task metadata insertion fails\"",
+              "queries": [
+                "\"select count(*)::int as count from content_translation_request_budget_counters\"",
+                "\"select count(*)::int as count from translation_tasks where translation_kind = 'content-topic-title'\"",
+                "\"select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-topic-title'\""
+              ]
+            }
+          ],
+          "baseline": "All four blocks also present in21386887; numerical discrepancy is not current baseline change.",
+          "driver": "Installed pg8.23.0 has non-pipeline query queue and deprecation notice for concurrent queued client.query usage, warning of removal inpg9. Driver source inspected, no protocol/database experiment.",
+          "bounds": [
+            "Original exactthree not identified, not verified. Narrow AST query is not exhaustive for aliases/callbacks/indirect calls.",
+            "No claim current pinned driver misexecutes SELECTs or concurrency transaction tests universally invalid.",
+            "Database tests not rerun; no new Vitest executions."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part5/evidence.json",
+          "report": "/workspace/work/misha-verification/part5.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L09",
+      "mapsTo": "M-L09",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; MANUAL_CLEANUP_CONFIRMED_RUNTIME_DEPENDENCE_OVERSTATED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Reconciliation script limited to localhost/127.0.0.1 disposable *_test DB; locked reverify/delete. Only production-source caller found is local script.",
+          "controls": "Adapter integrity failure becomes miss; loader compiles fallback in memory; successful conditional machine publication atomically writes namespace bundle.",
+          "bounds": [
+            "Does not establish all translations require manual cleanup.",
+            "Request path remains read-only; local-only cleanup explicitly accepted in current Stage5. No external automation assessed.",
+            "Five loader tests use fake sources/stores; no invalid realDB row/database test."
+          ],
+          "testReport": "/workspace/work/audit/repo/work/misha-verification-part6/results.json",
+          "report": "/workspace/work/misha-verification/part6.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L10",
+      "mapsTo": "M-L10",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; COVERAGE_MEASUREMENT_ABSENCE_NOT_ESTABLISHED_FUNCTIONAL_DEFECT. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Neither tracked Vitest configuration nor package scripts/primary workflow enables coverage reporting or threshold; no separate tracked coverage configuration found.",
+          "bounds": [
+            "No claim actual coverage low or existing tests inadequate from absence alone.",
+            "External env/config not inspected; no arbitrary threshold required."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part4/ci-evidence.json",
+          "report": "/workspace/work/misha-verification/part4.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L11",
+      "mapsTo": "M-L11",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; TRACKED_LOADER_TEST_GAP_NO_AUTH_BYPASS_ESTABLISHED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Tracked test/spec reference search across137 files finds route registration and attachment-upload tests, not direct post-edit loader execution.",
+          "bounds": [
+            "Five own direct loader tests already executed in part2 remain untracked audit scratch, not shipped suite. No rerun/recount here.",
+            "No claim missing auth guard; source checks session, existence, authoritative owner and editOwn.",
+            "Reference search not full manual read of137 test files."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part4/ci-evidence.json",
+          "ownPriorTestReport": "/workspace/work/audit/repo/work/misha-verification-part2/results.json",
+          "report": "/workspace/work/misha-verification/part4.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L12",
+      "mapsTo": "M-L12",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; ESLINT_BOUNDARY_GAP_CONFIRMED_FULL_TOOLCHAIN_NOT_TESTED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Merged browser/node/worker globals; effective ESLint config permits document/process/self in virtual app,db,workers TS paths with0 errors/warnings. Restricted globals/import rules absent.",
+          "bounds": [
+            "Partial scope: TypeScript configs read, but no dedicated TypeScript rejection/acceptance experiment or bundler test.",
+            "No conclusion all framework/server-only protections absent; no client secret/DB bundle leak claimed.",
+            "Probe text linted only; source not executed."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part4/lint-boundaries.json",
+          "report": "/workspace/work/misha-verification/part4.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L13",
+      "mapsTo": "M-L13",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; EXPLICIT_TIMEOUT_ABSENCE_NO_OBSERVED_HANG. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Main checks/database jobs have no job timeout-minutes or step timeouts.",
+          "bounds": [
+            "Platform default limits still apply, not infinite execution.",
+            "Actual runs, hangs, costs and suitable timeout duration not measured."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part4/ci-evidence.json",
+          "report": "/workspace/work/misha-verification/part4.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L14",
+      "mapsTo": "M-L14",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; HEADING_FACTS_CONFIRMED_NOT_AUTOMATIC_WCAG_VIOLATION. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Home has0h1 in all4browser loads; renderer explicitly supports h1 from Markdown.",
+          "bounds": [
+            "Multiple h1 topic document not built in this part; static capability checked.",
+            "No universal WCAG failure inferred from h1 count alone."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part7/browser-evidence.json",
+          "report": "/workspace/work/misha-verification/part7.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L15",
+      "mapsTo": "M-L15",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; UNIGNORED_BUILD_OUTPUT_HYGIENE. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Fresh UI Preview build succeeds and creates dist/ui-preview per config; git check-ignore says not ignored, git status ??dist/.",
+          "bounds": [
+            "Dist existed untracked before this part and was rebuilt, not deleted. Not tracked artifacts or secret leak."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part7/repository-evidence.json",
+          "report": "/workspace/work/misha-verification/part7.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L16",
+      "mapsTo": "M-L16",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; WEB_ASSET_ABSENCE_NOT_ALL_MANDATORY_FEATURES. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Tracked inventory and route/root review show no favicon,robots.txt,sitemap,web manifest.",
+          "bounds": [
+            "No external hosting/runtime content checked.",
+            "Preview robots meta noindex exists; not production robots.txt. PWA manifest and sitemap are not universal requirements."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part7/repository-evidence.json",
+          "report": "/workspace/work/misha-verification/part7.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L17",
+      "mapsTo": "M-L17",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: CONFIRMED; SOURCE_METADATA_ABSENCE_NO_SEARCH_IMPACT_MEASURED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Category/section/topic lack meta exports; root has Meta outlet but no default title/description/canonical; selected route/locale files lack dynamic metadata.",
+          "bounds": [
+            "Static source review; actual selected route SSR not run in this part, no indexing/traffic impact measured."
+          ],
+          "evidence": "/workspace/work/audit/repo/work/misha-verification-part7/repository-evidence.json",
+          "report": "/workspace/work/misha-verification/part7.md"
+        }
+      ]
+    },
+    {
+      "auditor": "Мишаня",
+      "id": "M-L18",
+      "mapsTo": "M-L18",
+      "crossReviewStatus": "HISTORICAL_STATEMENT_REUSE_WITH_CURRENT_BASELINE_VERIFICATION",
+      "decision": "Original baseline21386887, independence disclaimed. Prior d72b27c verification: PARTIALLY_CONFIRMED; CURRENT_ASSET_SIZES_AND_NO_BLOCKING_GATE_CONFIRMED_USER_PERFORMANCE_NOT_MEASURED. Statement is not automatically a new defect.",
+      "evidence": [
+        {
+          "fact": "Fresh production build plus previous part7 preview build. Home entry/root/locale/home static closure888944 bytes239706gzip; sharedviews272980/72539; previewJS941893/277241. No blocking bundle/performance gate in checked config/CI.",
+          "bounds": [
+            "Static closure excludes dynamic imports,manifestJS,HTML/hydration,images,headers/runtime requests. Not actual Network transfer.",
+            "Independent per-file gzip9,not deployed encoding.",
+            "Old Misha SSR/HE/hydration/initial measurements not reproduced or refuted on different baseline/method.",
+            "Vite chunk warning exists but not blockinggate; large relative to no agreed budget not automatically functional defect. No LCP/INP/target-network measurement."
+          ],
+          "metrics": "/workspace/work/audit/repo/work/misha-verification-part8/payload.json",
+          "report": "/workspace/work/misha-verification/part8.md"
+        }
+      ]
+    }
+  ],
+  "newExecutedChecks": {
+    "edit409": {
+      "passed": true,
+      "evidence": "edit-conflict-evidence.json",
+      "scope": "Actual local route/loader/view/action, controlled repo error; no browser/DB"
+    },
+    "literal": {
+      "passed": true,
+      "evidence": "literal-evidence.json",
+      "scope": "Actual escape helper/parser, tiny ordinary strings"
+    }
+  },
+  "openVerification": "Runtime applicability/Stage classification, broader stale-state variants, UI bundle policy, ZIP metadata contract, upload ID semantics, source-only throw/cross-tab scenarios; no whole-repository restart.",
+  "noImplementationChanges": true,
+  "servicesExcluded": true,
+  "phase2": {
+    "status": "THREE_SELECTED_DISPUTES_REVIEWED_TWO_TECHNICAL_GAPS_ONE_SPEC_QUESTION",
+    "testsPassed": 4,
+    "testsFailed": 0,
+    "realServicesUsed": false,
+    "stressProbes": false,
+    "officialZipReference": "https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT",
+    "formatSections": [
+      "4.3.9.1",
+      "4.4.8",
+      "4.4.9"
+    ],
+    "recordedAtUtc": "2026-10-24T18:27:34.237843+00:00"
+  },
+  "additionalCrossReviewInput": {
+    "author": "Лира",
+    "file": ".github/agents/chatgpt-6.md",
+    "sha": "19792f3a450bbe52b219f17e962daf7bb8793853",
+    "section": "T3",
+    "changesHandled": [
+      "separate edit copy cause",
+      "scope/external limitations",
+      "candidate vs defect counts"
+    ]
+  }
+}
+```
+</details>
+
+---
+
+## Общая сверка — завершающие предметные проверки (2026-10-24)
+
+Baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`, implementation не изменён. Окончательные прогоны этой части: **13 passed, 0 failed** — 10 новых случаев (read/order7, UI2, discovery1) и 3 повторных/расширенных (Worker2 и edit409 copy1). По сверке 28 различных новых случаев; повторения не добавлены к этому числу. Native DB/live services/реальные browser tabs/stress tests не выполнялись.
+
+### Availability и ошибки чтения
+
+Actual React Router static document query с injected capabilities:
+
+| Сценарий | Наблюдаемый Router status |
+|---|---:|
+| Home primary readHomepage → ForumStorageUnavailableError | 500 |
+| Home optional presence → тот же тип ошибки | 200, onlinePresence=null |
+| post-edit readPostLocation → ForumStorageUnavailableError | 500 |
+| post-edit permission check → AuthorizationUnavailableError | 500 |
+| notifications read → ForumStorageUnavailableError | 503 |
+
+Эти 5 тестов подтверждают конкретные различия классификации. **Поправка к прежней цепочке:** post-edit.ts не экспортирует ErrorBoundary, locale/root также не назначают ForumRouteError. Его500 подтверждён Router query, но нельзя утверждать, что он отрисовывает именно ForumRouteError. Home имеет собственную ForumRouteError. Deployed body/status и всю платформенную response pipeline не проверяли.
+
+Actual Worker fetch с fake factories повторно проверен в 2 случаях: нормальная session lookup допускает handler200; getSession rejection предотвращает Router handler и возвращение Response. Это conditional pre-router availability failure path; не заявляется конкретный Cloudflare HTTP500/503/body или реальный service incident. Actual auth runtime делает connect/getSession без локального availability response boundary; реальный OAuth не запускался.
+
+### Notification body guard — факт порядка, не доказанный security defect
+
+В actual action гость с малым синтетическим form body сначала проходит request.formData. Корректная форма затем получает401, ошибка parsing —400; writer ни разу не вызван. 2 теста passed. Это подтверждает порядок обработки, но не auth/Origin bypass, resource exhaustion или согласованный недостающий domain invariant. NOTIFY-BODY-01 переводится из списка безусловных defects в наблюдения; необходимость раннего cheap rejection не выдаётся за установленный пользовательский сбой.
+
+### Help discovery — конкретное несоответствие внутреннего представления
+
+Actual Drizzle readUnanswered SQL не исключает service section, выбирает его name/id и возвращает их в generic summary. Actual readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID) возвращает undefined без запроса — контроль. Fake Pg rows позволяют проверить mapper, но не заменяют исполнение WHERE в настоящей БД. Source WHERE=unsolved/HAVING one post не содержит скрытого section exclusion.
+
+Actual Unanswered route/view показывает Internal section в generic location. docs/UI_UX_PASS.md314–325 требует скрыть внутренний service section из generic discovery. Подтверждён именно metadata presentation gap; прямой generic section route не открыт, privacy/auth bypass не установлен.
+
+### Secondary UGC language metadata
+
+В actual unanswered SQL source_locale не выбирается; summary interface хранит title:string. Route projection отбрасывает даже дополнительный sourceLocale из reader fixture. Actual UnansweredRoute/View в jsdom для Hebrew title при English document создаёт strong dir=auto без lang, наследуется lang=en. DOM узел проверен, dir=auto не объявляется отсутствующим или небезопасным. docs/translation/LOCALES.md506–507 требует content-level lang/dir для mixed-language UGC; известная в revision source locale теряется до представления. Сохранить узкий дефект языковой метки этого secondary title path, без blanket вывода про все UGC, screen-reader behaviour или bidi visual failure.
+
+### Locale returnTo, size и tags
+
+Actual LanguageSwitcher при en→he сохраняет query целиком, включая returnTo=/en/topics/topic?editPost=p1#post-p1. Actual credentialReturnPath('he',...) намеренно отвергает путь другой локали и возвращает /he; same-locale контроль сохраняет весь исходный адрес. Тест passed. Потеря effective destination подтверждена, но необходимость remap вложенного пути требует product decision; нельзя отключать sanitizer или считать, что switcher удалил query.
+
+Отсутствие domain max для title/body и count max для unique tags сохранено как факт источников. normalizeForumTags ограничивает каждый tag64 и dedup keys, не число. Из отсутствия max не следует согласованный threshold или воспроизведённый current failure; CONTENT-SIZE-01/M-M03 не самостоятельный подтверждённый дефект. TAG-CARDINALITY-01 остаётся requirement/policy question. Static O(N²) unmatched-spoiler mechanism — отдельный подтверждённый алгоритмический пункт; ресурсные эксперименты не возобновлялись.
+
+### Актуальность внешних отчётов и независимость причин
+
+Файлы Миры и Мишани не изменились относительно исходного snapshot19f6a3b. Файл Лиры изменился: прочитан новый T3 верхний раздел целиком до его конца; новый blob19792f3a450bbe52b219f17e962daf7bb8793853. Учтён как дополнительная cross-review input, не новый независимый аудит.
+
+Согласен с аргументом T3 о разных причинах EDITOR-PUB-01 и EDITOR-PUB-02: loader/rebase409 и ошибочный forumWriteError_conflict copy исправляются независимо. Повторный actual Topic route/action409 сценарий дополнен assertion точного текста «That solution cannot be selected for this topic.» — passed. **Прежнее объединение двух причин в XR-EDIT-409 как одной записи исправлено:** теперь отдельный XR-EDIT-CONFLICT-COPY; общий сценарий теста не означает одну причину.
+
+AUTH-LINK-01 в T3 назван internal OAuth-related config finding. В моём реестре он остаётся исключённым по пользовательскому ограничению OAuth; доказательства OAuth не проверялись, дефект не опровергается и не переносится в объём молча. ARCH-02, ATTACH-04 и NOTIFY-BODY-01 имеют более узкие статусы части4/5, чем C в T3. DISCOVERY/UGC получили дополнительные точные source/DOM проверки, которых не было в прежнем Q. Подсчёт кандидатов T3 не является коллективным verdict.
+
+Доказательства: phase5-{read,ui,discovery,worker,conflict-copy} configs/results/evidence и соответствующие test files в work/audit-cross-review. Три Worker tests не выбраны фильтром и не засчитаны. Новых failed прогонов в части5 нет. Итоговая матрица публикуется отдельно ниже; чужие личные файлы не исправлены.
+
+---
+
 ## Общая сверка — применимость lifecycle/ACL/upload и HTTP405 (2026-10-24)
 
 Сверка продолжается на неизменном code baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Эта запись уточняет и, где указано, сужает прежний индивидуальный список. Старые статусы OPEN_UNFIXED/P2 для ARCH-02 и ATTACH-04 нельзя использовать без оговорок ниже.
