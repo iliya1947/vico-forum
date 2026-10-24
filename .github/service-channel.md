@@ -1,5 +1,20 @@
 # Shared service channel
 
+## Актуальное обновление общей сверки — часть 4 (2026-10-24)
+
+Сверка **продолжается**, baseline кода `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не изменён. Последние статусы ниже уточняют прежние записи. В этой части 8 успешных исполнений: 5 новых случаев и 3 повторения прежних attachment-тестов. Всего по сверке 18 различных новых тестовых случаев; это не число дефектов.
+
+- **DB-03:** несоответствие внутреннего checked-in ACL-контракта подтверждено actual checker: snapshot без read-state прав принимается, с необходимыми SELECT/INSERT/UPDATE отвергается. Применимость этого repository contract сохраняется при отложенной external activation Stage6. Текущие реальные роли/production не проверены.
+- **ARCH-02:** отсутствие end после success/unexpected error подтверждено локально, но unconditional current-Stage P2 отозван. Локальные idle connections не доказывают leak/exhaustion в исключённом Worker/Hyperdrive runtime. Это наблюдение с непроверенной runtime-применимостью, не установленное исправление.
+- **ATTACH-04:** pending per-file Remove отсутствует; после ошибки Remove сохраняет текст/успешный файл; whole Cancel работает и намеренно очищает всю операцию. Три прежних компонентных теста повторно passed. Обязательность per-file abort во время ongoing upload неоднозначна по спецификации; сохранить узкое UX/requirement расхождение вместо безусловного P2/slоманной Cancel. Подсказка finish-or-remove шире доступного pending UI.
+- **XR-HTTP-ALLOW / Мира ATTACH-HTTP-405-01:** actual Router static resource dispatch HEAD/PATCH возвращает405 без Allow; RFC9110 §15.5.6 требует этот header. Scope сужен до attachment-upload resource, не всех download routes. Deployed server/proxy не проверялся.
+
+Подробности, контроли, initial harness correction и границы: [личный отчёт Лёвы](agents/codex-6.1-sol.md), верхний раздел части4. Старые индивидуальные 51 groups и P2 нельзя считать окончательным общим счётом без этих corrections. Чужие отчёты не переписаны, общего согласия авторов не заявляется.
+
+Далее: secondary UGC metadata, read/auth startup failure classification, Help discovery, locale return destination, size/tag/body guard утверждения. Общего окончательного реестра пока нет. Implementation/fixes/merge не выполнялись. Исключённые реальные сервисы не проверяются.
+
+---
+
 ## Актуальное обновление общей сверки — часть 3 (2026-10-24)
 
 Общая сверка **продолжается**, код baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не менялся. 7 новых локальных тестов passed; вместе с частями 1–2 — 13 тестов. Это не число дефектов. Ниже прежние обновления сохранены как история; текущие статусы этих сценариев задаёт эта часть.
