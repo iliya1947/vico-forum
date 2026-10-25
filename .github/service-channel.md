@@ -17,7 +17,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 По решению владельца выбран вариант A: смена языка не должна терять исходный внутренний destination. Следовательно `AUTH-LOCALE-RETURN-01` включён в final current-Stage registry как технический дефект №61.
 
-### Canonical technical registry — 60
+### Canonical technical registry — 61
 
 | Область | Canonical IDs |
 |---|---|
