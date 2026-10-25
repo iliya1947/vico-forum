@@ -17,6 +17,7 @@ import { ContentTranslationPresentationService } from "../app/localization/conte
 import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
+import { AuthSessionUnavailableError } from "../app/auth/request-context";
 import { authorizationContext } from "../app/authorization/request-context";
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
@@ -31,7 +32,16 @@ export default {
     const context = new RouterContextProvider();
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
     const auth = createHyperdriveAuthRuntime(webConnectionString, env as Env & BetterAuthEnvironment);
-    const authHeaders = await initializeAuthContext(context, request, auth);
+    let authHeaders: Headers;
+    try {
+      authHeaders = await initializeAuthContext(context, request, auth);
+    } catch (error) {
+      if (!(error instanceof AuthSessionUnavailableError)) throw error;
+      return new Response("Service unavailable. Please try again.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    }
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
     context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString));
     context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString));

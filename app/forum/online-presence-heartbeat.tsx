@@ -19,10 +19,10 @@ export function OnlinePresenceHeartbeat() {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "intent=heartbeat",
+        body: `intent=heartbeat&expectedUserId=${encodeURIComponent(user.id)}`,
       }).then((response) => {
         if (stopped) return;
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 409) {
           // The header's cached identity can outlive a revoked session in another tab.
           stopped = true;
           window.clearInterval(timer);

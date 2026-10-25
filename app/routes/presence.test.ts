@@ -24,6 +24,12 @@ function ping(origin: string | null = "https://forum.test", body = "intent=heart
 }
 
 describe("authenticated online presence heartbeat", () => {
+  it("rejects a cached identity from another account without recording presence", async () => {
+    const env = setup("server-B");
+    const result = await action({ request: ping("https://forum.test", "intent=heartbeat&expectedUserId=visible-A"), context: env.context });
+    expect(result.status).toBe(409);
+    expect(env.recordOnlinePresence).not.toHaveBeenCalled();
+  });
   it("records only the session user regardless of user-supplied IDs", async () => {
     const env = setup("real-user");
     const result = await action({ request: ping(), context: env.context });

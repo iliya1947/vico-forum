@@ -20,6 +20,55 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Bounded correction — stale-identity Google linking (2026-10-25)
+
+Review пакета2 подтвердил `AUTH-LINK-STALE-IDENTITY-01`: кнопка на stale профиле A
+могла запустить связывание под текущей server session B. Теперь own-profile action
+передаёт profile ID в `x-vico-link-user` только как expectation. Existing Better Auth
+before-hook для `/link-social` разрешает authoritative session и отклоняет отсутствующую
+или несовпавшую expectation с `409` до OAuth state/account write; guest остаётся `401`.
+Штатный endpoint использует ту же проверенную request-local session. Signed state и
+provider/email verification/origin checks сохраняются; client не подменяет expectation
+на другой account и показывает существующий auth failure feedback.
+
+Новая native PostgreSQL regression проверяет stale A/B+GoogleB, missing expectation,
+normal A/A redirect→callback→persisted link, mismatched/unverified provider, guest,
+foreign Origin и сохранение target при смене cookie после выдачи state. Positive paths
+подтверждают один session lookup внутри link request. До исправления два regression cases
+возвращали `200` вместо `409`; после исправления весь набор проходит. Provider code exchange
+и user info синтетические, реальные Google credentials/calls не использовались.
+
+Локально прошли 997 application и 291 PostgreSQL tests, typecheck, lint (одно прежнее
+warning), application/UI-preview builds, migration-history guard и local built Worker smoke.
+Схема/миграции/dependencies и общая permission architecture не менялись. Exact-head CI и
+новый whole-PR review должны проверяться после публикации; прежние verdicts относятся к
+старому implementation head. External/production/visual acceptance не запускались.
+
+## Audit correction — auth/session/identity (2026-10-25)
+
+Второй ограниченный audit-пакет исправляет `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`,
+`AUTH-LOCALE-RETURN-01`, `AUTH-SESSION-AVAIL-01` и `XR-CROSS-TAB-IDENTITY`.
+Предварительные session cookies применяются перед окончательными endpoint cookies;
+назначение удалённой custom role возвращает controlled not-found без изменения assignment.
+Безопасный nested credential returnTo переносится на выбранный locale с сохранением query/hash;
+redirect sanitizer остаётся прежним.
+
+Google подключается явно из собственного профиля после password sign-in через штатный
+Better Auth `linkSocial`; совпадение unverified local email не разрешает implicit linking.
+Session storage outages классифицируются до потери исходной ошибки внутри Better Auth и
+дают safe no-store 503 до Router; unexpected ошибки не переводятся в unavailable.
+Editor account expectation отклоняет stale-account Publish/Save до записи, heartbeat
+обнаруживает смену пользователя и запускает loader revalidation. Application permissions,
+схема, миграции и pinned dependencies не изменены.
+DOC-04 согласован с permission-based доступом `forum.post.history.read` в `docs/EDITOR.md`.
+
+Локально прошли 995 application tests, 283 PostgreSQL tests, typecheck, lint (одно прежнее
+warning), обе сборки, migration-history/schema parity и local Workers smoke. Целевые
+регрессии cookie ordering и stale editor identity воспроизводят исходное поведение на baseline
+и проходят с исправлениями. Exact-head CI и независимый whole-PR review фиксируются отдельно
+после публикации; готовность к merge этим локальным результатом не заявляется.
+External Google/provider smoke, production rollout и visual acceptance не запускались.
+
 ## Audit correction — auth rate-limit concurrency (2026-10-25)
 
 Первый ограниченный пакет `AUTH-RATE-LIMIT-RACE-01` обновляет Better Auth и
@@ -37,8 +86,7 @@ auth-конфигурацию с малым test-only лимитом. Три к�
 Локально прошли 979 application tests, 281 PostgreSQL tests, lint (одно прежнее warning),
 typecheck, application/UI-preview builds, migration/schema/privilege probes и Workers smoke.
 Использованы pinned Node 24.21.0 и pnpm 12.3.4; frozen lockfile проверен.
-Exact-head CI фиксируется в implementation PR после запуска; независимый whole-PR review
-и merge не выполнены.
+Exact-head CI первого пакета прошёл; независимый review Миры завершён, PR #237 влит владельцем.
 Production/external rollout и visual acceptance не запускались. Остальные audit findings
 этим пакетом не исправляются.
 

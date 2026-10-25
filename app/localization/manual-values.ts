@@ -4,6 +4,8 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  authLinkGoogle: "Подключить Google",
+  authLinkGoogleHint: "Уже зарегистрированы с паролем? Сначала войдите с ним, затем подключите Google в своём профиле.",
   profileHeading: "Форумный профиль",
   profileEdit: "Редактировать профиль",
   profileJoined: "На форуме с",
@@ -575,6 +577,8 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  authLinkGoogle: "קישור Google",
+  authLinkGoogleHint: "כבר נרשמתם עם סיסמה? היכנסו איתה תחילה, ואז קשרו את Google מהפרופיל שלכם.",
   profileHeading: "פרופיל בפורום",
   profileEdit: "עריכת פרופיל",
   profileJoined: "תאריך הצטרפות",

@@ -1,6 +1,7 @@
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
+  editorIdentityGuard,
   mutationFailure,
   requireForumPermission,
   requiredFormText,
@@ -69,6 +70,8 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
   if (forbidden) return forbidden;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const changedIdentity = editorIdentityGuard(formData, context);
+  if (changedIdentity) return changedIdentity;
   const intent = requiredFormText(formData, "intent");
   const draft = helpQuestionDraft(formData);
 
@@ -157,6 +160,8 @@ export async function sectionAction({ request, params, context }: {
   if (forbidden) return forbidden;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const changedIdentity = editorIdentityGuard(formData, context);
+  if (changedIdentity) return changedIdentity;
   const title = requiredFormText(formData, "title");
   const body = requiredFormText(formData, "body") ?? "";
   if (!title) return mutationFailure("invalid", 400);
@@ -186,6 +191,8 @@ export async function topicAction({ request, params, context }: {
   if (denied) return denied;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const changedIdentity = editorIdentityGuard(formData, context);
+  if (changedIdentity) return changedIdentity;
   const intent = requiredFormText(formData, "intent") ?? "reply";
   if (intent === "pinTopic" || intent === "unpinTopic") {
     const forbidden = await requireForumPermission(context, "forum.topic.pin");

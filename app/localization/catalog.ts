@@ -16,6 +16,8 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    authLinkGoogle: message("authLinkGoogle", "Connect Google", "Explicitly link Google to the signed-in account from its own profile."),
+    authLinkGoogleHint: message("authLinkGoogleHint", "Already registered with a password? Sign in with it first, then connect Google from your profile.", "Safe linking guidance for an existing unverified local-email account."),
     profileHeading: message("profileHeading", "Forum profile", "Forum profile: profileHeading."),
     profileEdit: message("profileEdit", "Edit profile", "Forum profile: profileEdit."),
     profileJoined: message("profileJoined", "Joined", "Forum profile: profileJoined."),

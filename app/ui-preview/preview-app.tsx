@@ -946,7 +946,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       event.stopPropagation();
     };
     const stopAuth = (event: MouseEvent) => {
-      if ((event.target as Element | null)?.closest(".auth-controls button")) {
+      if ((event.target as Element | null)?.closest(".auth-controls button, .auth-google-link")) {
         event.preventDefault();
         event.stopPropagation();
       }

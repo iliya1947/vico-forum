@@ -932,6 +932,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       >
         {accountId && editorContextKey ? (
           <>
+            <input type="hidden" name="editorActorId" value={accountId} readOnly />
             <input type="hidden" name="editorOperationId" value={attachments.operationId} readOnly />
             <input type="hidden" name="editorAttachmentIds" value={JSON.stringify(attachments.selectedAttachmentIds)} readOnly />
             {initialPublishedRevisionId ? <input type="hidden" name="editorRetainedAttachmentIds"

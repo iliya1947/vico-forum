@@ -193,6 +193,9 @@ export class PostgresAuthorizationRepository {
 
   assignUserRole(actorId: string, userId: string, roleId: string) {
     return this.mutate(actorId, async (client) => {
+      if (!(await client.query("select 1 from authz_roles where id = $1 for key share", [roleId])).rowCount) {
+        throw new AuthorizationNotFoundError("role does not exist");
+      }
       await client.query(`insert into authz_user_roles (user_id, role_id) values ($1, $2)
         on conflict (user_id) do update set role_id = excluded.role_id, assigned_at = now()`, [userId, roleId]);
     });

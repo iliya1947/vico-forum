@@ -1539,6 +1539,9 @@ describe("PostgreSQL 17 locale migrations", () => {
       await service.assignUserRole("authz-admin", "authz-user", "builtin-user");
       await service.deleteCustomRole("authz-admin", custom.id);
       expect(await service.readRole(custom.id)).toBeUndefined();
+      await expect(service.assignUserRole("authz-admin", "authz-user", custom.id))
+        .rejects.toBeInstanceOf(AuthorizationNotFoundError);
+      expect((await service.resolveUser("authz-user")).role.id).toBe("builtin-user");
       await expect(service.renameCustomRole("authz-admin", "builtin-user", { displayName: "Member" }))
         .rejects.toBeDefined();
 

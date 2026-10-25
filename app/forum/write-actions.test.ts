@@ -260,6 +260,22 @@ describe("post edit and protected history action permissions", () => {
 });
 
 describe("forum write route actions", () => {
+  it.each(["reply", "editPost", "topic", "help"])("rejects a stale editor identity before %s writes", async (flow) => {
+    const database = writer();
+    const ctx = context(database, true, [...allForumPermissions, "forum.post.editOwn"]);
+    const fields = { editorActorId: "cached-user-A", body: "Composed by A", title: "Title", intent: flow,
+      postId: "post-one", expectedRevisionId: "revision-one",
+      editorOperationId: "77777777-7777-4777-8777-777777777777", editorAttachmentIds: "[]" };
+    const result = flow === "topic"
+      ? await sectionAction({ request: request("/en/sections/one", fields), params: { locale: "en", sectionId: "one" }, context: ctx })
+      : flow === "help"
+        ? await categoryAction({ request: request("/en/categories/help-solutions", { ...fields, intent: "createHelpQuestion" }), params: { locale: "en", categoryId: "help-solutions" }, context: ctx })
+        : await topicAction({ request: request("/en/topics/one", fields), params: { locale: "en", topicId: "one" }, context: ctx });
+    expect(result).toMatchObject({ data: { error: "conflict" }, init: { status: 409 } });
+    expect(database.createReply).not.toHaveBeenCalled();
+    expect(database.createTopic).not.toHaveBeenCalled();
+    expect(database.editPublishedPost).not.toHaveBeenCalled();
+  });
   it("pins and unpins only with the effective server permission", async () => {
     const allowed = writer();
     const pinResponse = await topicAction({

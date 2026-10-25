@@ -128,6 +128,7 @@ describe("MarkdownEditor", () => {
     });
     await userEvent.click(screen.getByRole("button", { name: "Publish" }));
     await waitFor(() => expect(submitted).toHaveBeenCalledTimes(1));
+    expect(submitted.mock.calls[0][0].get("editorActorId")).toBe("native-submit-owner");
     expect(submitted.mock.calls[0]![0].get("intent")).toBe("createHelpQuestion");
     expect(submitted.mock.calls[0]![0].get("body")).toBe("Body");
     expect(submitted.mock.calls[0]![0].get("editorDraftVersion")).toBeNull();

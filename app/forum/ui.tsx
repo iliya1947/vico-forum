@@ -5,6 +5,7 @@ import { forumAttentionPath, forumIndexPath, forumNotificationsPath, forumPopula
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
+import { credentialLocaleSearch } from "../auth/credential-path";
 import vicoForumLogoLight from "../assets/vico-forum-logo-light.webp";
 import vicoForumLogoDark from "../assets/vico-forum-logo-dark.webp";
 
@@ -107,7 +108,9 @@ export function LanguageSwitcher({ locale }: { locale: string }) {
     const segments = location.pathname.split("/");
     if (segments.length < 2) return;
     segments[1] = targetLocale;
-    navigate(`${segments.join("/")}${location.search}${location.hash}`);
+    const credentialPage = segments[2] === "sign-in" || segments[2] === "sign-up";
+    const search = credentialPage ? credentialLocaleSearch(locale, targetLocale, location.search) : location.search;
+    navigate(`${segments.join("/")}${search}${location.hash}`);
   };
 
   const compactCode = (current?.tag ?? locale).split("-")[0].toUpperCase();

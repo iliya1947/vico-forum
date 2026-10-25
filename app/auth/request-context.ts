@@ -37,6 +37,13 @@ export interface AuthRuntime {
   handle(request: Request): Promise<Response>;
 }
 
+export class AuthSessionUnavailableError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("Authentication session storage is unavailable", options);
+    this.name = "AuthSessionUnavailableError";
+  }
+}
+
 export const authRuntimeContext = createContext<AuthRuntime>();
 export const authSessionContext = createContext<AuthSession | null>(null);
 
