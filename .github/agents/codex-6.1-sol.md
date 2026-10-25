@@ -1,5 +1,50 @@
 # Лёва — Codex-6.1 Sol
 
+## PR239 — пакет 3 реализован; stable exact head и handoff (2026-10-25)
+
+Назначение: [6400908779](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400908779). Реализован только назначенный пакет3. Это работа автора реализации и его проверки; независимый whole-PR review ещё должен состояться.
+
+- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`.
+- Exact head `18c849c92eb597ccd39871914290cf6164fc209b`; base main `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Tree `315dae98367a489ad62771c4d9536f895b3ebde8` совпал с локальным commit `71f1f3ed0400729f54934845229b57e23610e0c5`.
+- 37 files /563 additions /44 deletions. Schema, migrations, dependencies unchanged.
+
+### Scope и причинные исправления
+
+| Canonical group | Реализация и подтверждение |
+|---|---|
+| ARCH-01 | [runForumMutation](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/forum/mutations.server.ts#L96) больше не превращает неизвестный writer fault в503. Обычный [PG writer](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/db/hyperdrive-forum.ts#L124) классифицирует установленные connection/query-timeout failures как typed storage unavailable; domain results сохраняются, TypeError/42703 проходят дальше. Два новых action controls были red до изменения, green после. |
+| ARCH-03 | Existing bestEffortDiscardClient применяется к writer/auth client и authorization pool. Cleanup не заменяет success/domain/availability/unexpected result. Native PG regressions подтверждают committed reply и404 после sync/async cleanup fault; реальные BetterAuth signup/session results сохраняются. Pool controls используют synthetic Pool/Client, без заявления native pool fault injection. |
+| POST-EDIT-AVAIL-01 | [Protected edit loader](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/routes/post-edit.ts#L8) отображает только typed storage/authz outage как503 и экспортирует ForumRouteError. Auth/ownership/permission checks сохранены. Loader controls + shared status-specific boundary tests; отдельный production outage не вызывался. |
+| FORUM-READ-AVAIL-01 | [forumReadLoader](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/forum/read-availability.server.ts#L5) применяется к10 primary routes (включая edit resume). Typed outage →503/no-store, TypeError/SQL schema fault остаются ошибками. Existing optional presence/read-state/authz degradation сохранена; explicit optional home control сохраняет200. |
+| SEC-01 | [Router handleError](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/entry.server.tsx#L48) вызывает [safe reporter](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/server-logging.ts#L32). Только allowlisted error kind/SQLSTATE и безопасные file-line frames; никакого message/cause payload/SQL/params. Full multiline message удаляется до разбора stack, чтобы private text с fake frame не попал в журнал. Native Chromium→Worker→PG profile failure:500, unpublished bio отсутствует в HTML и Worker log. |
+| XR-THROWN-ACTION-BUFFER | [client action](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/forum/editor-action.ts#L5) трёх authoring routes сохраняет mounted форму при server/transport fault с отдельным unexpected result500. Server faults продолжают бросаться и диагностироваться серверным Router. Redirects/aborted navigation не поглощаются. Actual topic loader/action component tests сохраняют тот же form/textarea; browser проверяет реальный network abort и retry. |
+| EDITOR-PUB-01 | [Edit conflict action](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/forum/actions.server.ts#L500) после known conflict читает текущий public post baseline, без loader revalidation, которая могла бы снять форму при повторном read fault. [TopicView recovery](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/forum/views.tsx#L2106) показывает current body/attachments и явный rebase; expected revision не меняется автоматически, text/Undo и local attachment intent остаются. Более новый loader snapshot supersedes старый409. Native PG stale revision и реальный browser r1→r2→rebase→save прошли. |
+| EDITOR-PUB-02 | [Edit-specific feedback](https://github.com/iliya1947/vico-forum/blob/18c849c92eb597ccd39871914290cf6164fc209b/app/forum/views.tsx#L2581) использует новый postEditConflict вместо solution-selection copy. EN/RU/HE values + reviewed fingerprints добавлены; solution action semantics сохранены. |
+
+Выбранные механизмы проверены по current source и actual error classes. Репозиторий editPublishedPost бросает ForumStateConflictError при stale revision; action работает с этим реальным классом. Новый server reply содержит только текущую публичную post revision, а не submitted buffer. При сбое conflict read форма остаётся открытой; более поздняя unsuccessful submission не откатывает уже refreshed baseline.
+
+### Проверки
+
+- Первые7 новых classification/cleanup controls воспроизвели исходные failures до реализации; существующие55 controls в том run прошли.
+- Полные local suites:1051 application tests PASS /296 PostgreSQL tests PASS.
+- После последней snapshot-refinement:22 targeted editor/profile/logging tests PASS; typecheck/lint/application/UI builds повторно PASS. Lint имеет только прежнее warning app/forum/ui.test.tsx:174.
+- Migration-history guard:0 new migrations, accepted history unchanged. Local built Worker smoke PASS.
+- Пять final Chromium cases через built Worker и отдельную native PG17 DB:409 refresh/rebase/save redirect; typed08006→503 + retained buffer/retry; unexpected42703→500 + retained buffer/retry; реальный transport abort + retained buffer/retry; unexpected profile SQL fault500 без private bio в HTML/log.
+- В browser повторные успешные redirects закрывали editor и сохраняли отправленный buffer в PG. Новый server-side error reporter был реально вызван на SQL faults.
+- PROJECT_STATE, docs/EDITOR.md и docs/auth/AUTHORIZATION.md обновлены только по относящемуся scope.
+- CI exact head: **[CI #40219758202](https://github.com/iliya1947/vico-forum/actions/runs/40219758202) SUCCESS; checks121248559346 и database121248559564 SUCCESS на exact head18c849c92eb597ccd39871914290cf6164fc209b**.
+
+### Границы и передача
+
+Loader outage tests используют typed capability errors; Worker/browser faults injected только в отдельной disposable PG17 DB. Внешние Cloudflare/Neon/Hyperdrive/R2/OAuth/backup-restore сервисы и production не проверялись/не менялись. Browser checks технические, не owner visual acceptance. Новые SOT assertions не объявляют whole-PR review или merge выполненными. Local Worker/Chromium и тестовый PG container остановлены.
+
+Мире: организовать whole-PR review **всего scope PR239** на exact head `18c849c92eb597ccd39871914290cf6164fc209b`; CI сам по себе не заменяет причинную проверку. Technical context опубликован здесь и в #236; пересказ владельцем не нужен. Лёва STOP после handoff. Пакет4+ не начинать.
+
+## Исторические записи до пакета3
+
+Статусы ниже относятся к указанным прежним heads/этапам; актуальный handoff находится выше.
+
 ## PR238 — bounded correction AUTH-LINK-STALE-IDENTITY-01 готова к новому review (2026-10-25)
 
 Назначение: [6400105733](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400105733). Исправлен только подтверждённый stale-visible/current identity boundary; пакет3 не начат.
