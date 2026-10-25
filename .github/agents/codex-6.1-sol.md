@@ -1,5 +1,40 @@
 # Лёва — Codex-6.1 Sol
 
+## Пакет 2 — auth/session/identity: реализация готова к review (2026-10-25)
+
+Поручение: [PR236 comment6398462662](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6398462662). В текущем чате владелец направил к PR236; выполнен только назначенный пакет2, без перехода к следующим.
+Implementation: [PR #238](https://github.com/iliya1947/vico-forum/pull/238), ветка `fix/auth-session-identity`.
+Stable exact head: `8866bd8bfb6f8121a5e181c88a9e542741040b64`.
+Base main после owner merge #237: `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
+Tree: `d536c1656821643540e87966f200aab902a3b170`, совпал с локально проверенным commit `196d03a3cfb4151f600ad05152371ff6406ea941`.
+34 файла, 412 additions/27 deletions. Схема, миграции и зависимости не изменены.
+
+### Причины и исправления
+
+- AUTH-01: preliminary getSession cleanup раньше добавлялся после нового endpoint cookie. Теперь chronological Set-Cookie order: lookup → final response. Настоящий Better Auth HTTP + PostgreSQL regression проходит expired-cookie → password login → subsequent authenticated session; на baseline main падает на потерянной сессии.
+- AUTH-02: stale custom role ID доходил до FK failure. В существующей serialized authz management transaction проверяется существование role с key-share lock; отсутствующая роль даёт AuthorizationNotFoundError, route mapping404 уже существует. Assignment не меняется. Native PostgreSQL regression red на baseline, green с исправлением.
+- AUTH-LOCALE-RETURN-01: LanguageSwitcher remap-ит nested returnTo только для credential pages и только после старого credentialReturnPath sanitizer. Query/hash и посторонние параметры сохранены; unsafe/cross-locale inputs остаются отвергнуты. Owner optionA соблюдён.
+- AUTH-LINK-01: защитный requireLocalEmailVerified gate сохранён. Добавлен штатный authenticated linkSocial Google из собственного профиля и credential-page guidance сначала войти паролем. Real Better Auth/PostgreSQL tests с synthetic provider ownership проверяют: implicit same-email/unverified local login не выдаёт сессию/связь; guest link401; другая local identity не может link; unverified provider не может link; authenticated owner + verified same-email Google успешно связываются, subsequent Google login возвращает исходный user ID. Production Google/provider verification не подменялась: fake существует только внутри test options. Static preview блокирует и новую auth action, чтобы не вызывать реальный API.
+- AUTH-SESSION-AVAIL-01: Better Auth1.7.7 getSession заменяет query failure cause-less APIError. Узкий request-local observer DB adapter сохраняет исходную ошибку только для session lookup; classifier обходит cause chain и принимает только известные transport/connection/query timeout failures. Worker возвращает safe no-store503 до Router; schema/programming/configuration failures остаются unexpected. Проверены actual Better Auth query failure, missing-schema negative и Worker boundary.
+- XR-CROSS-TAB-IDENTITY: mounted MarkdownEditor передаёт editorActorId как expectation, не authority. Несовпадение с session отклоняет четыре publication/edit paths409 до writer. Heartbeat отправляет expectedUserId; mismatch409 останавливает polling и запускает loader revalidation. Current session/permissions остаются единственным authority. Positive native submit проверяет реальное поле; server negative regressions red на main, green с исправлением.
+- DOC-04: docs/EDITOR.md согласован с effective forum.post.history.read; moderator/admin — default grants, custom grants/overrides не исключены. Новая permission architecture не вводилась.
+
+### Проверки и ограничения
+
+Pinned Node24.21.0/pnpm12.3.4. Полные 995 application и283 PostgreSQL tests PASS; финальный targeted editor/action/link run121 PASS. Typecheck, lint(одно прежнее warning ui.test.tsx:174), app/UI-preview builds, Drizzle metadata/generation parity, accepted-migration history, schema manifest47tables и local built Worker smoke PASS. Изолированные baseline controls: cookie1 failure, role1 failure, stale-editor4 failures ожидаемы; на implementation соответствующие проверки зелёные.
+
+Первый full DB run имел5 CLI harness failures из-за PATH системного pnpm; после pinned PATH остался один cold CLI10s timeout, targeted повтор12/12 и полный повтор283/283 прошли. Продуктовый код ради этих setup failures не менялся. Повторный lint после сборки зацепил generated dist; собственный build artifact вынесен из source tree, полный source lint прошёл. Локальный PostgreSQL контейнер и Worker preview после проверок остановлены/удалены.
+
+[CI #40202422836](https://github.com/iliya1947/vico-forum/actions/runs/40202422836): checks SUCCESS (job121196211898), database SUCCESS (job121196211728), exact head указан выше. Содержимое remote tree совпадает с локально проверенным. CI выполняет также privilege/provisioning/Worker gates.
+
+Независимый whole-PR review и merge #238 не выполнены и не заявляются. Findings этого пакета не считать закрытыми в main до принятия/merge. External Stage6, реальные Cloudflare/Neon/Hyperdrive/R2/OAuth/backup-restore, production rollout и owner visual acceptance не выполнялись. Auth UI проверен component tests; новой real-browser visual acceptance не заявляется.
+
+### Передача / STOP
+
+Мира: организовать независимую whole-PR проверку PR238 на stable head8866bd8bfb6f8121a5e181c88a9e542741040b64 в порядке актуального AGENTS.md; этот handoff описывает реализацию и её проверки, не заменяет независимый review. Разработчику достаточно подключить Миру к PR236, технический контекст уже здесь. Лёва STOP после пакета2.
+
+---
+
 ## AUTH-RATE-LIMIT-RACE-01 — первый implementation package (2026-10-25)
 
 Поручение владельца: PR236 comment6397600154; публикация и CI дополнительно прямо разрешены владельцем в текущем чате после остановки auto-review. Реализацию первого пакета выполняет Лёва; остальные пакеты не начаты.
