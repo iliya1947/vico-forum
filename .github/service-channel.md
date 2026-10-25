@@ -1,15 +1,24 @@
 # Shared service channel
 
-## Текущая реализация — пакет 1 AUTH-RATE-LIMIT-RACE-01 (2026-10-25)
+## Текущая реализация — пакет 2 auth/session/identity (2026-10-25)
 
-- По owner override [6397600154](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6397600154) первый пакет реализовал Лёва; прямое разрешение на публикацию и CI получено в его чате. Остальные пакеты не начаты.
-- Implementation [PR #237](https://github.com/iliya1947/vico-forum/pull/237), ветка `fix/auth-rate-limit-race-01`, stable head `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`, base `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
-- Better Auth и Drizzle adapter1.7.4→1.7.7. Пять файлов: package/lock, PostgreSQL regression, PROJECT_STATE, auth SOT version. Схема и auth product/storage/permission contracts сохранены; дополнительный runtime wrapper не вводился.
-- Регрессия actual HTTP handler + PostgreSQL17 с тремя ожидающими row lock admissions проверяет active/reset window. На1.7.4 оба случая red, на1.7.7 оба green; scoped counts,429/retry metadata и отдельный IP bucket проверены.
-- Локальные проверки:979 application и281 database tests; lint(1прежнееwarning),typecheck,обе сборки,frozen lock,migration/schema/privilege probes,local Workers smoke passed на Node24.21.0/pnpm12.3.4.
-- [CI #40195292682](https://github.com/iliya1947/vico-forum/actions/runs/40195292682) **SUCCESS**; jobs `checks` и `database` **SUCCESS** на указанном head. Дерево remote commit совпадает с локально проверенным.
-- Implementation готова к независимому whole-PR review; review/merge не выполнены. Finding не считать закрытым в main до принятия и merge. Следующий шаг: Мира организует проверку PR237; Лёва STOP на первом пакете.
-- Внешние сервисы, production deployment, visual acceptance и следующие10 пакетов не запускались. Служебный PR236 не merge.
+- Назначение Лёве: [6398462662](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6398462662). Выполнен только PR2 из принятого fix-plan; следующие пакеты не начаты.
+- [Implementation PR #238](https://github.com/iliya1947/vico-forum/pull/238), ветка `fix/auth-session-identity`; stable exact head `8866bd8bfb6f8121a5e181c88a9e542741040b64`, base main `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
+- Scope: `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`, `AUTH-LOCALE-RETURN-01`, `AUTH-SESSION-AVAIL-01`, `XR-CROSS-TAB-IDENTITY`; documentation sidecar `DOC-04`.
+- Подготовлены chronological cookie propagation, controlled missing-role assignment, safe nested credential returnTo locale remap, explicit authenticated same-email Google linking из собственного профиля с сохранением verification gates, narrow session-storage503 boundary и stale-editor identity expectation/revalidation. History docs следуют effective forum.post.history.read, moderator/admin — default grants.
+- Application permissions architecture, схема/миграции и pinned dependencies сохранены. Client expectation не выбирает actor; server session/current permissions authoritative. Owner locale optionA и negative unverified-email linking invariant соблюдены.
+- Локально PASS:995 application tests,283 PostgreSQL tests,121 final targeted regressions,typecheck,lint(1прежнееwarning),обе сборки,migration/Drizzle/schema parity,local built Worker smoke. Cookie/role/stale-editor baseline controls воспроизводят defects. Подробности и setup corrections — в личном файле Лёвы.
+- [CI #40202422836](https://github.com/iliya1947/vico-forum/actions/runs/40202422836) **SUCCESS**: checks121196211898 и database121196211728 **SUCCESS** на указанном head. Remote tree `d536c1656821643540e87966f200aab902a3b170` совпадает с локально проверенным.
+- Implementation готова к независимому whole-PR review; review/merge #238 ещё не выполнены. Следующий шаг: Мира организует проверку PR238 по актуальному AGENTS.md. Технический handoff опубликован в личном файле Лёвы и комментарии #236; разработчик только подключает Миру. Лёва STOP после пакета2.
+- Real Google/provider smoke, external Stage6/production rollout и visual acceptance не запускались. Служебный PR236 не merge.
+
+## Завершённый пакет 1 — AUTH-RATE-LIMIT-RACE-01
+
+- [PR #237](https://github.com/iliya1947/vico-forum/pull/237), implementation head `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`, tree `2071f624becacb49deeb1da9b8cd2b74f66b1f3f`.
+- Better Auth/Drizzle adapter1.7.4→1.7.7, deterministic PostgreSQL active/reset concurrency regressions. Schema/storage/permission contracts сохранены.
+- Local979app/281DB + checks passed; [CI #40195292682](https://github.com/iliya1947/vico-forum/actions/runs/40195292682) checks/database SUCCESS.
+- Мира whole-PR PASS опубликован в [6398160555](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6398160555). Её первоначальное назначение review Лире отменено; дополнительная независимая проверка не заявляется.
+- Владелец влил PR237; merge commit/current baseline пакета2 `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`. External deployment этим merge не заявляется.
 
 ## AUD-20261022 — итог общей сверки (2026-10-25)
 
