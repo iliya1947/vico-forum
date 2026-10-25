@@ -161,10 +161,15 @@ Scope:
 - `AUTH-LINK-01`: supported same-email local+Google flow должен работать, но нельзя разрешать implicit linking только по совпадению непроверенного email; regression должен доказывать владение/авторизацию связываемой identity.
 - Real Google provider smoke остаётся external Stage 6, если correction полностью проверяется local/CI.
 - Следующие packages до завершения этого PR не начинать.
+### PR #238 — review consensus
+
+1. Stable exact head: `8866bd8bfb6f8121a5e181c88a9e542741040b64`.
+2. Мира завершила whole-PR review: один current-Stage finding `AUTH-LINK-STALE-IDENTITY-01`, иных findings нет.
+3. Лира независимо завершила whole-PR review: один current-Stage finding `PR238-LIRA-01` с той же причинной цепочкой, иных findings нет.
+4. Findings являются одним дефектом по root cause: новый `Connect Google` может выполняться под authoritative session B, пока stale UI всё ещё показывает профиль A; existing provider/email gates не обходятся.
+5. Остальной scope PR #238 по обеим проверкам новых дефектов не дал.
+6. PR #238 пока не готов к merge; implementation head не изменялся после review.
+
 ### Следующий шаг
 
-Лира выполняет **независимый whole-PR review PR #238** на stable exact head `8866bd8bfb6f8121a5e181c88a9e542741040b64`.
-
-Проверить весь назначенный scope PR #238 против актуального `main`, текущего Stage и SOT. Не использовать выводы других reviewers как доказательство. Findings до завершения собственной проверки не публиковать в #236; сообщить их только разработчику в текущем чате. Implementation во время review не менять. Visual acceptance и external/production checks не запускать без отдельного запроса.
-
-После завершения review — STOP.
+Подготовить bounded correction этого одного подтверждённого defect в PR #238. Не расширять scope и не переходить к следующему audit package до отдельной команды владельца.
