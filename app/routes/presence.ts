@@ -16,6 +16,9 @@ export async function action({ request, context }: { request: Request; context: 
   let form: FormData;
   try { form = await request.formData(); } catch { throw new Response("Bad Request", { status: 400 }); }
   if (form.get("intent") !== "heartbeat") throw new Response("Bad Request", { status: 400 });
+  if (form.has("expectedUserId") && form.get("expectedUserId") !== session.user.id) {
+    return new Response(null, { status: 409, headers: { "Cache-Control": "no-store" } });
+  }
   try {
     await forumWriterForRequest(context).recordOnlinePresence(session.user.id);
     return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });

@@ -247,6 +247,29 @@ overrides.
 роль/permission показывается в UI, это server-resolved presentation data, а не доверенный
 client authorization token.
 
+### Local email and Google linking
+
+Email/password registration does not require email verification. A matching unverified
+local email is therefore insufficient evidence for implicit Google linking. Keep Better Auth's
+local-email verification gate and same-email/provider-verification checks enabled.
+An existing local user signs in with the password first, then explicitly connects Google
+from the own profile through Better Auth `linkSocial`. A guest or a different local identity
+cannot claim that account merely by supplying its email. External Google acceptance remains Stage 6.
+
+### Session and stale editor failures
+
+Pre-routing session cookies precede cookies from the final endpoint response, so an earlier
+expired-session cleanup cannot overwrite a successful login or logout. Session storage
+connection/transport/query-timeout failures are classified from the underlying adapter error,
+including when Better Auth replaces it with a generic API error. The Worker returns a safe,
+no-store `503` before Router dispatch; schema/programming/configuration failures propagate normally.
+
+Mounted editors submit their visible account ID only as a stale-form expectation. If it
+differs from the authoritative session, publication/edit returns `409` before writing; the
+submitted ID never selects the actor or grants permission. Presence heartbeats likewise detect
+a changed account and trigger loader revalidation. Server session and current effective
+permissions remain authoritative for every mutation.
+
 ## Stage 4E2 scope
 
 Stage 4E2 реализует этот authorization foundation, management UI, migration/integration tests,

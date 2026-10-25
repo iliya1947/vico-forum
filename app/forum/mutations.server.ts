@@ -76,6 +76,13 @@ export function forumMutationGuard(request: Request, context: RouterContextProvi
   if (!requireSameOrigin(request)) return mutationFailure("origin", 403);
 }
 
+/** A stale editor expectation is never used as authority to select the actor. */
+export function editorIdentityGuard(form: FormData, context: RouterContextProvider) {
+  if (form.has("editorActorId") && form.get("editorActorId") !== authSessionForRequest(context)?.user.id) {
+    return mutationFailure("conflict", 409);
+  }
+}
+
 export function sourceLocaleCorrectionMutationGuard(
   request: Request,
   context: RouterContextProvider,

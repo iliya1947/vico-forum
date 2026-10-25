@@ -32,7 +32,7 @@ describe("browser presence heartbeat", () => {
     const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
       expect(input).toBe("/en/presence");
       expect(init).toMatchObject({
-        method: "POST", credentials: "same-origin", body: "intent=heartbeat",
+        method: "POST", credentials: "same-origin", body: "intent=heartbeat&expectedUserId=member",
       });
       return new Response(null, { status: 204 });
     });
@@ -41,9 +41,9 @@ describe("browser presence heartbeat", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   });
 
-  it("stops heartbeat requests and revalidates session after a 401", async () => {
+  it.each([401, 409])("stops heartbeat requests and revalidates session after a %s", async (status) => {
     const loader = vi.fn(async () => null);
-    const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status: 401 }));
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status }));
     vi.stubGlobal("fetch", fetchMock);
     show({ id: "member", name: "Member" }, "en", loader);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));

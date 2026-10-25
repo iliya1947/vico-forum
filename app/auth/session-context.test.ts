@@ -29,6 +29,13 @@ function runtime(value: AuthSession | null, headers = new Headers()): AuthRuntim
 }
 
 describe("request-scoped auth session", () => {
+  it("applies earlier session cleanup before the endpoint's newly issued session", () => {
+    const stale = new Headers({ "Set-Cookie": "better-auth.session_token=; Max-Age=0; Path=/; HttpOnly" });
+    const issued = "better-auth.session_token=new-session; Path=/; HttpOnly";
+    const response = withAuthSessionCookies(new Response("ok", { headers: { "Set-Cookie": issued } }), stale);
+    expect(response.headers.getSetCookie()).toEqual([stale.get("Set-Cookie"), issued]);
+  });
+
   it("makes an authenticated Better Auth session available server-side", async () => {
     const context = new RouterContextProvider();
     const auth = runtime(authenticatedSession);

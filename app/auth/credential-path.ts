@@ -11,6 +11,18 @@ export function credentialPagePath(locale: string, mode: CredentialMode, returnT
   return `/${encodeURIComponent(locale)}/${mode}?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
+/** Remap only a destination already accepted by the old locale's redirect guard. */
+export function credentialLocaleSearch(locale: string, targetLocale: string, search: string): string {
+  const query = new URLSearchParams(search);
+  if (!query.has("returnTo")) return search;
+  const safe = credentialReturnPath(locale, query.get("returnTo"));
+  const oldRoot = `/${encodeURIComponent(locale)}`;
+  const newRoot = `/${encodeURIComponent(targetLocale)}`;
+  const remapped = `${newRoot}${safe.slice(oldRoot.length)}`;
+  query.set("returnTo", credentialReturnPath(targetLocale, remapped));
+  return `?${query}`;
+}
+
 /** Never follow an outside-origin or cross-locale redirect supplied by a client. */
 export function credentialReturnPath(locale: string, requested: string | null): string {
   const fallback = `/${encodeURIComponent(locale)}`;

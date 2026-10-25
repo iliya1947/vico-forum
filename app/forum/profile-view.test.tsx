@@ -41,6 +41,7 @@ describe("profile presentation", () => {
     expect(screen.getByRole("link", { name: /GitHub/ })).toHaveAttribute("href", "https://github.com/octocat");
     expect(screen.queryByRole("link", { name: /Website/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Edit profile" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
     expect(container.querySelector("script, .profile-avatar img")).toBeNull();
   });
   it("shows the owner edit link and only owner editable fields", () => {

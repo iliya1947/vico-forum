@@ -25,8 +25,12 @@ export function withAuthSessionCookies(response: Response, authHeaders: Headers)
   const setCookies = authHeaders.getSetCookie();
   if (setCookies.length === 0) return response;
 
+  const finalCookies = response.headers.getSetCookie();
   const headers = new Headers(response.headers);
+  headers.delete("Set-Cookie");
   for (const cookie of setCookies) headers.append("Set-Cookie", cookie);
+  // The endpoint runs after the lookup: its login/logout cookies must win.
+  for (const cookie of finalCookies) headers.append("Set-Cookie", cookie);
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,

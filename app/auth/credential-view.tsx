@@ -101,6 +101,7 @@ export function CredentialView({
           </Link>
         </div>
         <p className="credential-hint">{t("authEmailNoVerification")}</p>
+        <p className="credential-hint">{t("authLinkGoogleHint")}</p>
       </section>
     </ForumShell>
   );

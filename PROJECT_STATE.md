@@ -20,6 +20,31 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Audit correction — auth/session/identity (2026-10-25)
+
+Второй ограниченный audit-пакет исправляет `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`,
+`AUTH-LOCALE-RETURN-01`, `AUTH-SESSION-AVAIL-01` и `XR-CROSS-TAB-IDENTITY`.
+Предварительные session cookies применяются перед окончательными endpoint cookies;
+назначение удалённой custom role возвращает controlled not-found без изменения assignment.
+Безопасный nested credential returnTo переносится на выбранный locale с сохранением query/hash;
+redirect sanitizer остаётся прежним.
+
+Google подключается явно из собственного профиля после password sign-in через штатный
+Better Auth `linkSocial`; совпадение unverified local email не разрешает implicit linking.
+Session storage outages классифицируются до потери исходной ошибки внутри Better Auth и
+дают safe no-store 503 до Router; unexpected ошибки не переводятся в unavailable.
+Editor account expectation отклоняет stale-account Publish/Save до записи, heartbeat
+обнаруживает смену пользователя и запускает loader revalidation. Application permissions,
+схема, миграции и pinned dependencies не изменены.
+DOC-04 согласован с permission-based доступом `forum.post.history.read` в `docs/EDITOR.md`.
+
+Локально прошли 995 application tests, 283 PostgreSQL tests, typecheck, lint (одно прежнее
+warning), обе сборки, migration-history/schema parity и local Workers smoke. Целевые
+регрессии cookie ordering и stale editor identity воспроизводят исходное поведение на baseline
+и проходят с исправлениями. Exact-head CI и независимый whole-PR review фиксируются отдельно
+после публикации; готовность к merge этим локальным результатом не заявляется.
+External Google/provider smoke, production rollout и visual acceptance не запускались.
+
 ## Audit correction — auth rate-limit concurrency (2026-10-25)
 
 Первый ограниченный пакет `AUTH-RATE-LIMIT-RACE-01` обновляет Better Auth и
@@ -37,8 +62,7 @@ auth-конфигурацию с малым test-only лимитом. Три к�
 Локально прошли 979 application tests, 281 PostgreSQL tests, lint (одно прежнее warning),
 typecheck, application/UI-preview builds, migration/schema/privilege probes и Workers smoke.
 Использованы pinned Node 24.21.0 и pnpm 12.3.4; frozen lockfile проверен.
-Exact-head CI фиксируется в implementation PR после запуска; независимый whole-PR review
-и merge не выполнены.
+Exact-head CI первого пакета прошёл; независимый review Миры завершён, PR #237 влит владельцем.
 Production/external rollout и visual acceptance не запускались. Остальные audit findings
 этим пакетом не исправляются.
 
