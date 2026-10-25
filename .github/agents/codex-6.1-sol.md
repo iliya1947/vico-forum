@@ -1,5 +1,35 @@
 # Лёва — Codex-6.1 Sol
 
+## AUTH-RATE-LIMIT-RACE-01 — первый implementation package (2026-10-25)
+
+Поручение владельца: PR236 comment6397600154; публикация и CI дополнительно прямо разрешены владельцем в текущем чате после остановки auto-review. Реализацию первого пакета выполняет Лёва; остальные пакеты не начаты.
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/237
+Stable code/test/doc head: `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`.
+Baseline main: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+Tree: `2071f624becacb49deeb1da9b8cd2b74f66b1f3f`, совпадает с локально проверенным деревом.
+
+### Реализация
+
+- Пять файлов: package.json, pnpm-lock.yaml, tests/database/auth-rate-limit-concurrency.test.ts, PROJECT_STATE.md, docs/auth/AUTHORIZATION.md.
+- Better Auth и @better-auth/drizzle-adapter обновлены с1.7.4 до1.7.7, первого patched release GHSA-44jh-23m7-hpcf. Из lockfile обновлены связанные auth family/required fetch peer; unrelated resolver reordering удалён.
+- PostgreSQL/Drizzle и database-backed limits сохранены. Production config/auth/session/effective-permission semantics не изменялись. Новая схема/migration, custom rate-limit wrapper, внешнее хранилище не введены.
+- Native PostgreSQL17 regression использует actual Better Auth HTTP handler и production options с малым test-only rule: три admission UPDATE одновременно ждут блокировку одного row. После освобождения только оставшееся allowance получает200, остальные429. Проверены active window, expired-window reset, persisted count, positive retry metadata, JSON error content type и отдельный IP bucket.
+
+### Доказательства
+
+Контроль на baseline dependencies1.7.4: оба случая red — все3 concurrent requests прошли при allowance1/2. Тот же regression на1.7.7: оба green. Это bounded local concurrency test, не attack/stress production.
+
+Локально pinned Node24.21.0/pnpm12.3.4:979 application tests,281 PostgreSQL tests; lint(одно прежнее warning),typecheck,app/preview builds,frozen-lockfile,migration/schema/parity/privilege/provisioning probes и local Workers smoke passed. Первоначальные setup/lint harness issues исправлены до публикации; final validations success.
+
+CI: [GitHub Actions #40195292682](https://github.com/iliya1947/vico-forum/actions/runs/40195292682) — SUCCESS, checks и database SUCCESS на head4a445b1c31b7465007bf3f9ddc55c0cd62eda03b.
+
+### Передача / STOP
+
+Проверка относится только к указанному implementation head; независимый whole-PR review не выполнен и не заявляется. Merge не выполнялся. Реальные Cloudflare/Neon/Hyperdrive/R2/OAuth, production rollout,visual acceptance и следующие10 пакетов не запускались. Следующий шаг — Мира организует независимую whole-PR проверку PR237 по принятому процессу; технический контекст уже в служебном PR236. После отчёта Лёва останавливается на первом пакете.
+
+---
+
 ## Архитектурная сверка fix-plan — Лёва / FPLAN-T2 (2026-10-25)
 
 **Поручение:** [PR236 comment6397485409](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6397485409). Полностью сопоставлены три planning checkpoints Миры6396882503/6397022247/6397105809 и FPLAN-T1 Лиры6397337524 с двумя уже принятыми Мирой acceptance-уточнениями. Baseline planning/code: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
