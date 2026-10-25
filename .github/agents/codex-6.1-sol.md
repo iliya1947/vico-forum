@@ -1,5 +1,75 @@
 # Лёва — Codex-6.1 Sol
 
+## Финальное совещание — технический итог Лёвы / T5 (2026-10-25)
+
+**Поручение:** [PR236 comment6392064227](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6392064227), после публикации T4 Лиры. Проверены консолидация Миры6391992192 / shared commit046365d0f458ea955687e4d1446a20ef96e48736, T4 Лиры6392203749 / file blob19ff8030c986ab8d74d9ff5f432cc2f57e91e1ba и поздние checkpoint verdicts, изменяющие мой прежний итог. Код baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не изменился. Это финальная техническая сверка результатов, не новый аудит репозитория.
+
+### Вердикт
+
+**Рекомендую тот же реестр, что Мира и T4 Лиры: 60 уникальных текущих технических групп, отдельно2 preview/tooling и4 documentation/SOT; AUTH-LOCALE-RETURN-01 остаётся одним открытым продуктовым вопросом. Список технических отличий от консолидации Миры — пусто.**
+
+Проверено точное множество60 ID, отсутствие повторов и соответствие собственным evidence/matrix. Это моё техническое согласие, не самовольное объявление общего consensus и не утверждение fix-plan. Следующее сведение consensus выполняет Мира. Реестр и severity сами по себе не разрешают implementation/dependency/schema changes.
+
+**Эта запись уточняет прежний итог Лёвы «58 supported code groups +4 questions» и имеет над ним приоритет.** Предыдущие отчёты остаются историческими доказательствами; их технические наблюдения не объявляются несуществовавшими.
+
+### Что изменилось относительно моего прежнего итога и почему
+
+| Пункт | Новый вердикт | Основание и границы |
+|---|---|---|
+| AUTH-LINK-01 | Включить, +1 | Ранее я слишком широко применил исключение OAuth и исключил внутренний code/config contract. В package/installed Better Auth1.7.4 requireLocalEmailVerified по умолчанию true; signup оставляет local identity unverified, verification отложена, обычный offered social sign-in не является explicit link. Same-email local user без linked Google account попадает в account-not-linked. Это bounded conditional internal configuration defect, не утверждение, что любой Google вход сломан. Внешний OAuth/Google, credentials/redirect provisioning/smoke не проверялись; отключение security gate не предлагается. |
+| AUTH-RATE-LIMIT-RACE-01 | Добавить новый применимый dependency/config finding, +1 | Официальный GHSA-44jh-23m7-hpcf: affected Better Auth/Drizzle adapter >=1.6.17,<1.7.7 при PostgreSQL database-backed limits. Здесь оба package pins1.7.4, provider pg, rateLimit enabled/database/model rateLimit. Условия совпадают. Не aggregate25 vulnerabilities; не native/production exploit, не bypass пароля. Dependency upgrade/compatibility review не выполнялись. |
+| ATTACH-04 | Включить, +1 | Ранее я сформулировал открытый вопрос как обязательность abort pending request. Current docs/EDITOR.md182,194–199,364–367 требуют возможности исключить файл из mounted selection; Remove локален, late ACK не должен вернуть selection. Для этого не обязателен network abort/per-file server DELETE. Собственный component repro уже достаточен: pending row запрещает Remove, обычная whole Cancel имеет другую semantics и очищает всю операцию. Дефект выбора файла, а не штатного publication barrier или Cancel. Дополнительного решения владельца об API отмены для классификации не требуется. |
+| TAG-CARDINALITY-01 | Включить, +1 | Для маленькой строки t000…t499 нормализатор допускает500 distinct tags; repository записывает500 global tags и500 links в одном permitted topic transaction; readTags выводит global catalogue. Перечитан действующий basic anti-spam contract public-write boundaries (ROADMAP42,210): cooldown ограничивает mutations, но не persistent/public fan-out одной. Это конкретная current write-boundary gap, а не просто отсутствие гипотетического max длинного body. Правильный численный cap — fix design, здесь не выбирается; latency/exhaustion/deployed DoS не доказаны. |
+| M-M10/F06 | Deferred UI/accessibility, −1 из текущего technical count | Обе известные контрастные пары остаются истинными. Owner MVP-first decision docs/UI_UX_PASS17–24 и ROADMAP349–370 отделяют неблокирующий refinement от functional/security/data/authz дефектов. Не удалять из pre-release обязательств, не объявлять сайт WCAG compliant. RES-A11Y-01 с отсутствующим accessible name функционального input остаётся отдельным current finding. |
+| EDITOR-09 + LOC-07 | Одна MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01, −1 net | Renderer использует segmentTechnicalMarkdown для собственных table/spoiler, recipient extraction — plain fromMarkdown, translation protection — generic parse/serialize без той же structural grammar. Общий root-cause family: вторичные semantic consumers не видят canonical custom structures. **Обязательно сохранить обе проверяемые подпроблемы** — recipient selection и translation structure protection. Это не навязывает один parser/fix. LOC-08 direction parse/serialize non-round-trip остаётся отдельным. |
+
+Арифметика от моего прежнего code-total: **58 +1 link +1 rate +1 attachment +1 tags −1 contrast −1 merge =60**. Точный set-diff: added ATTACH-04, AUTH-LINK-01, AUTH-RATE-LIMIT-RACE-01, TAG-CARDINALITY-01, MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01; removed-as-separate EDITOR-09, LOC-07, M-M10. Это изменение классификации/гранулярности и один новый advisory, не60 новых найденных уязвимостей.
+
+### Другие уточнения, не меняющие этот set-diff
+
+- ARCH-02 окончательно снять как current leak, не оставлять обязательным owner/service вопросом. Официальный Worker/Hyperdrive lifecycle освобождает клиентское соединение после invocation; current loader request-scoped, не global. Мой native Pg idle-client proof моделировал standalone client без platform lifecycle. Нулевой endCalls остаётся локальным фактом, runtime leak из него не следует. Live service не тестировался.
+- EDITOR-PUB-01/02 уже разделены в моём последнем реестре: revalidation/rebase409 и solution-oriented conflict copy — две причины. Не возвращать прежнее ошибочное объединение.
+- HELP-01 содержит stale appeal и stale relationship removal subcases; HELP-MOD-01 относится к смене best-answer target и отдельно сохраняется. Transaction locks текущего объекта не привязывают старое UI intent к увиденной identity.
+- ATTACH-02 classic65535 ZIP rejection не равен ATTACH-STRUCT-01 inconsistent ZIP metadata acceptance. CORE-01 deadlock не равен ARCH-01 exception→503 classification. LOC-08 не поглощён общей custom-table/spoiler family.
+- DISCOVERY-01 и I18N-UGC-META-01 поддержаны собственными SQL/DOM проверками части5: internal service-section name/id в generic unanswered и Hebrew title без lang при dir=auto. Direct service-section read заблокирован; broad privacy bypass/all UGC failures не заявляются.
+- DB-03 — внутренний exact ACL contract mismatch, не утверждение о production grants. POST-EDIT-AVAIL-01 Router500 подтверждён, но post-edit не имеет собственной ForumRouteError. Сохранить эти bounds в fix-plan.
+- NOTIFY-BODY-01 остаётся order observation без установленного bypass/resource failure. CONTENT-SIZE-01 и ATTACH-SEC-01 не переходят в подтверждённые дефекты. Отсутствие обязательного raw UUID не превращать в вопрос, который владелец обязан решить для закрытия этого аудита.
+- DOC-03/04 остаются документационными/SOT findings, не доказанными auth/privacy bypass. Runtime visibility/effective permissions не переписывались. Противоречивые тексты требуется согласовать в соответствующей работе; технический счёт от выбора wording не меняется. Никакого самостоятельного изменения требований не выполнено.
+
+### Рекомендуемый canonical registry — 60
+
+| Область | Canonical IDs |
+|---|---|
+| Auth/session/identity | `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`, `AUTH-RATE-LIMIT-RACE-01`, `AUTH-SESSION-AVAIL-01`, `XR-CROSS-TAB-IDENTITY` |
+| Error/runtime boundaries | `ARCH-01`, `ARCH-03`, `SEC-01`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01` |
+| Forum/read/discovery | `CORE-01`, `CORE-02`, `CORE-03`, `DISCOVERY-01` |
+| Database/contracts | `DB-01`, `DB-02`, `DB-03` |
+| Help & solutions | `HELP-01`, `HELP-02`, `HELP-MOD-01` |
+| Attachments | `ATTACH-01`, `ATTACH-02`, `ATTACH-03`, `ATTACH-04`, `ATTACH-HTTP-405-01`, `ATTACH-STRUCT-01` |
+| Editor / Markdown / UI | `EDITOR-01`, `EDITOR-02`, `EDITOR-03`, `EDITOR-04`, `EDITOR-05`, `EDITOR-06`, `EDITOR-07`, `EDITOR-08`, `EDITOR-10`, `EDITOR-11`, `EDITOR-PUB-01`, `EDITOR-PUB-02`, `LITERAL-TEXT-01`, `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`, `MARKDOWN-SPOILER-01`, `RES-EDITOR-02`, `RES-UI-01`, `RES-A11Y-01`, `CODE-HISTORY-01`, `CODE-SEARCH-01`, `M-M07`, `XR-THROWN-ACTION-BUFFER` |
+| Localization / translation | `LOC-01`, `LOC-02`, `LOC-03`, `LOC-04`, `LOC-05`, `LOC-06`, `LOC-08`, `LOC-09`, `I18N-UI-POLICY-01`, `I18N-UGC-META-01` |
+| Persistent public write amplification | `TAG-CARDINALITY-01` |
+
+`MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01` — единственная causal dedup в остаточной очереди: прежние `EDITOR-09` + `LOC-07` являются двумя проявлениями одного structural mismatch. Остальные проверенные похожие families не были искусственно слиты.
+
+### Preview / документация / один product decision
+
+Preview: CODE-PREVIEW-01, CODE-PREVIEW-02. Документация/SOT: DOC-01, DOC-02, DOC-03, DOC-04. Они не включены в технические60 и не дублируют runtime.
+
+Единственный открытый продуктовый вопрос перед окончательным technical count: **AUTH-LOCALE-RETURN-01**. Должен ли language switch безопасно remap locale вложенного returnTo и сохранять исходную страницу после credential flow, либо fallback на root новой локали допустим? Query сохраняется, old-locale nested path отвергается штатным sanitizer. Security bypass не установлен. Если owner требует remap — ещё один technical finding; если root fallback допустим — вопрос снимается. Я не выбираю ответ за владельца и не ослабляю redirect guard.
+
+### Проверяемые источники и limits
+
+- [Консолидация Миры](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6391992192), [поручение финального совещания](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6392064227), [T4 Лиры](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6392203749).
+- [AUTH-LINK checkpoint](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6387984892), [tags](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6388113646), [attachment Remove](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6391178524), [Markdown family](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6390665639), [deferred contrast](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6388718904).
+- [Официальный advisory GHSA-44jh-23m7-hpcf](https://github.com/better-auth/better-auth/security/advisories/GHSA-44jh-23m7-hpcf): проверена applicability, не выполнялся exploit. [Официальный lifecycle](https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/): проверен текст контракта, не реальная инфраструктура. Local installed dependency source Better Auth1.7.4 link-account.mjs подтверждает default/conditional return branch.
+- Сверены только code/SOT цепочки, меняющие итоговую классификацию, и уже опубликованные матрица/evidence на том же baseline. Достаточные исторические native/browser/PG proofs не запускались заново. Их происхождение и ограничения остаются прежними. Новые tests/CI/browser/PG/adversarial/stress не выполнялись в T5; число новых тестов T5=0. Прежние28 локальных cross-review cases не выдаются за повторный прогон.
+- Ни implementation, ни схема, зависимости, main, чужие agent files или общий service-channel в этом шаге не меняются. Результат опубликован в личном файле и PR comment, чтобы Мира выполнила следующее сведение consensus.
+
+**T5 завершена. Конкретных technical disagreements с Мирой/T4 не осталось. Общий team consensus и fix-plan должен отдельно свести Мира; исправления до этого не начаты.**
+
+---
+
 ## Итог моей общей сверки аудитов (2026-10-24)
 
 **Предметная сверка опубликованных отчётов выполнена на baseline d72b27c.** Это мой итог сравнения и проверки, не коллективное утверждение команды, не новый независимый аудит и не разрешение исправлять/merge. Вопросы требований ниже сохранены открытыми; они не скрывают незавершённые проверки. Новая версия implementation требует отдельной проверки.
