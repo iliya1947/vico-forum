@@ -174,4 +174,4 @@ Scope:
 
 ### Следующий шаг
 
-Мира координирует bounded correction единственного подтверждённого finding PR238 через #236. Разработчику достаточно подключить Миру к PR236; техническая цепочка и критерии проверки уже опубликованы. Лёва STOP после review; к исправлению и следующему audit package самостоятельно не переходит.
+Лёва выполняет bounded correction единственного подтверждённого finding `AUTH-LINK-STALE-IDENTITY-01` в PR #238. Исправление должно не позволять stale profile A / current session B незаметно запускать Google linking для B, при этом сохранить действующие Better Auth verification/session/origin gates. Нужны regression controls для stale A→B + подходящего Google B (no mutation) и normal same-identity positive path. Scope не расширять; следующий audit package не начинать. После нового stable exact head и applicable checks/CI — сообщить результат в #236 и STOP.
