@@ -1,5 +1,52 @@
 # Лёва — Codex-6.1 Sol
 
+## PR238 — bounded correction AUTH-LINK-STALE-IDENTITY-01 готова к новому review (2026-10-25)
+
+Назначение: [6400105733](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400105733). Исправлен только подтверждённый stale-visible/current identity boundary; пакет3 не начат.
+
+- PR238 / branch `fix/auth-session-identity`.
+- New stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80`; parent reviewed head `8866bd8bfb6f8121a5e181c88a9e542741040b64`.
+- Base main `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
+- Tree `a644f588a0a4f3fe0ec1a567a4227c8f83f31a25` совпадает с локальным commit `763cee69c0f80de8f6650c1890081bca7d606e26`.
+- Correction:10files/192additions/16deletions. Schema/migrations/dependencies unchanged.
+
+### Выбранная минимальная граница
+
+Own-profile GoogleAccountLink передаёт именно profile.id (отображаемый аккаунт) как expectedUserId; auth-client посылает его в `x-vico-link-user` на том же linkSocial request. Это expectation, не authentication evidence.
+
+В существующий BetterAuth before-hook добавлен branch по нормализованному endpoint `/link-social`. Через public exported `getAuthoritativeSessionFromCtx` BetterAuth1.7.7 читается authoritative DB session; guest401, missing/mismatched expectation409/VICO_LINK_IDENTITY_CHANGED до state/account creation. Endpoint sessionMiddleware использует ту же request-local session, а штатный signed OAuth state фиксирует её target. Отдельный endpoint/wrapper/preflight request или новая session/permission architecture не введены. Registration hook сохранён в том же before middleware; его имя уточнено как betterAuthRequestHooks.
+
+Это закрывает разрыв между отдельной client preflight-проверкой и реальным link request. CallbackURL остаётся только адресом возврата. Existing same-email/provider-verification/origin gates не ослаблены. Client показывает прежний safe auth feedback и не подменяет expectation на currentB для автоматического retry.
+
+### Регрессии
+
+Новый tests/database/auth-link-identity.test.ts использует настоящий PostgreSQL17, Vico options, BetterAuth HTTP initiation, signed state и callback. Только внешний provider code-exchange/getUserInfo synthetic.8cases:
+
+1. stale expectedA/currentB + verified GoogleB →409, verification/state rows0 и Google links0.
+2. normal A/A + verified GoogleA → initiation200, callback302, persisted link.userIdA.
+3. A/A + GoogleB email mismatch → callback error, no link.
+4. A/A + unverified GoogleA → callback error, no link.
+5. guest →401, no state/link.
+6. missing expectation/currentB →409, no state/link.
+7. initiationA/A, browser cookie меняется наB перед callback → signed state сохраняет targetA, B не подхватывается.
+8. foreign Origin →403, no state/link.
+
+В positive initiation spy подтверждает ровно один internal findSession, то есть handler не переопределяет checked identity второй выборкой. В test options явно включены origin/CSRF checks: BetterAuth по умолчанию отключает origin check в test mode. Production config ради теста не менялась.
+
+До code correction исходные6cases дали4pass/2fail: stale и missing expectation возвращали200 вместо409. После correction весь targeted auth-native run11/11 (8новых+3legacy) и полный291/291 PG PASS. Существующие ID-token negative controls теперь передают правильную expectation для проверяемого пользователя и проверяют LINKING_DIFFERENT_EMAILS_NOT_ALLOWED/LINKING_NOT_ALLOWED; новый guard не маскирует эти проверки собственным409. SDK/component regressions проверяют передачу expected profile ID и отсутствие автоматического retry.
+
+### Проверки / handoff
+
+Полные997 application tests и291 PostgreSQL tests PASS. Typecheck, lint(одно прежнееwarning ui.test.tsx:174),app/UI-preview builds,migration-history guard и local built Worker smoke PASS. Во время разработки harness origin-control выявил test-mode skipOriginCheck; исправлена только конфигурация теста. Один TS optional-field index в новом тесте исправлен до финальных checks. Локальные Worker и disposable PG остановлены/удалены после проверок.
+
+**[CI40213325914](https://github.com/iliya1947/vico-forum/actions/runs/40213325914) SUCCESS:** checks121229042957 и database121229043132 SUCCESS на новом exact head. Remote tree совпал с локально проверенным. PR description, PROJECT_STATE и auth SOT обновлены.
+
+Предыдущие FINDING-verdicts относятся к8866bd8; новый stable head требует нового whole-PR review всего назначенного PR238 scope. Независимый review correction/merge не выполнены и не заявляются; исправление не считается принятым вmain. External Google/provider smoke, production rollout, visual acceptance и другие audit packages не запускались.
+
+**Следующий шаг — Мира организует новый whole-PR review PR238 через #236. Лёва STOP после correction.** Разработчик только подключает Миру; контекст передан здесь.
+
+---
+
 ## PR #238 — полный технический review автора: FINDING (2026-10-25)
 
 Назначение: [6399879967](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6399879967).
