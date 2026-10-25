@@ -1,22 +1,21 @@
 # Shared service channel
 
-## Текущая реализация — пакет3: подтверждённый defect recovery, review PASS Лиры отозван (2026-10-25)
+## Текущая реализация — terminal-upload correction готова к новому whole-PR review (2026-10-26)
 
-- Пакеты1–2 merged. Current main/base `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge.
-- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **final stable exact head `998715bbf0c531432673f027e5c260722e29b9ea`**.
-- Tree `2c43b9f682cdaa10e6808d4c59e6fff50ab5c862` совпал с локально проверенным. Whole PR43files/821 additions/63 deletions; correction13files/270 additions/31 deletions.
-- Whole scope: ARCH-01,ARCH-03,POST-EDIT-AVAIL-01,FORUM-READ-AVAIL-01,SEC-01,XR-THROWN-ACTION-BUFFER,EDITOR-PUB-01,EDITOR-PUB-02. Known/typed unavailable/unexpected classification, cleanup result precedence, typed primary-read503, safe Router diagnostics и mounted buffer preservation входят в исходный пакет.
-- Reviews старого head18c849c завершены; по [назначению6402172083](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6402172083) исправлены2 уникальных current defects: modified replay после committed edit/lost response и edit-specific copy для unrelated409 при открытом editor.
-- Modified receipt replay отличается subtype существующего domain conflict. Edit action возвращает current public baseline + completedOperationId. Explicit rebase создаёт fresh operation только вместо совпавшей completed operation; обычный stale revision сохраняет незавершённую operation/uploads.
-- Published upload retained ровно один раз, без private duplicate; Remove intent сохраняется. Другие uploads сохраняют File для Retry с новым asset ID; активные image destinations обновляются во всей in-memory истории без переписывания code/labels. Existing owner/context/operation gates сохранены. Повторный Edit той же mounted формы только фокусирует её и не сбрасывает pending recovery.
-- Copy определяется реальным edit result/guard context. Unrelated markSolved409 при mounted editor сохраняет solution feedback и buffer.
-- Local full1058app/298PG PASS; после final same-editor guard75 targeted UI tests,typecheck,lint(1прежнееwarning) и обе сборки PASS. Migration guard и local built Worker smoke PASS. Один первоначальный app timeout initial form1s исправлен только ожиданием fixture3s; isolated11 и повторный full1058 PASS.
-- Два новых Chromium→built Worker→native PG17 cases PASS: реальный committed edit/lost HTTP response→modified409→fresh operation→Save success; real stale markSolved409 при открытом editor с правильным feedback. Attachment/File ACK controls частично synthetic; external R2/provider/production/owner visual acceptance не заявляются.
-- **[Final exact-head CI #40228496459](https://github.com/iliya1947/vico-forum/actions/runs/40228496459): SUCCESS**, checks121274983746/database121274983601 SUCCESS на998715b. Старый CI40219758202 и reviews18c849c не заменяют этот head.
-- PROJECT_STATE и docs/EDITOR обновлены в основной correction; schema/migrations/dependencies unchanged. Test Worker/Chromium/PG container остановлены.
-- [Полный авторский correction handoff](https://github.com/iliya1947/vico-forum/blob/ed56bff20e1ca51e083672fedac9653d47c9a97f/.github/agents/codex-6.1-sol.md).
-- **Current-Stage defect `MIRA-PR239-998715-01` — подтверждён Мирой и независимо перепроверен Лирой по исходникам:** после server commit опубликованной правки и lost HTTP ACK новая загрузка, начатая до повторного Save, использует уже retired operation ID, получает `410 Gone` и создаёт blocking error entry. Save невозможно отправить; completed-replay conflict/rebase, создающий fresh operation, недостижим; Retry повторяет `410`. Удаление вложения теряет attachment intent. Требуется рабочий recovery с сохранением text/Undo/Redo и нового файла, плюс regression `commit→lost ACK→new upload before retry→recovery/Save`. [Исходный finding Миры](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6403596151), [независимое подтверждение в личном файле Лиры](https://github.com/iliya1947/vico-forum/blob/38ff673490ec70919e22b06f4a82d1a6d804fe41/.github/agents/chatgpt-6.md). **Прежний PASS Лиры отозван, PR239 не готов к merge.** Проверка Лиры — source-level, не собственный Chromium/PG runtime-run.
-- **Следующий шаг:** Мира координирует bounded correction подтверждённого дефекта в implementation PR239, его проверки и новый exact-head review cycle. Не считать CI предыдущего head доказательством исправления. Пакеты4–11 не начаты, PR236 никогда не merge.
+- Пакеты1–2 merged. Main/base `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge.
+- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **новый stable exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1`**, parent998715b.
+- Tree `5caf7582cb6358ff377c5443b6e24718f6e5cae5` совпал с локальным. Последняя correction7files/219 additions/12 deletions; whole PR43files/1030 additions/65 deletions.
+- Whole package3 scope: ARCH-01,ARCH-03,POST-EDIT-AVAIL-01,FORUM-READ-AVAIL-01,SEC-01,XR-THROWN-ACTION-BUFFER,EDITOR-PUB-01,EDITOR-PUB-02; обе прежние correction chains и новая MIRA-PR239-998715-01 входят в новый review.
+- По [назначению6404447575](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6404447575) Лёва самостоятельно воспроизвёл MIRA-PR239-998715-01 двумя UI regressions на998715b и исправил только этот defect.
+- Exact typed upload410 gone в published edit создаёт fresh operation до Retry: File и text/Undo/Redo остаются, Save продолжает ждать успешного upload. Retry становится рабочим независимо от прежней блокировки Save; stale409/rebase сохраняет уже fresh operation и dedup public/private refs.
+- Pending Files сохраняются для Retry, late ACK закрываются existing identity fence. Ordinary create/reply,прочие upload errors,ordinary stale recovery,Remove и idempotent replay не меняют семантику. Новых endpoints/schema/dependencies/server permission contracts нет.
+- Local1065 application/300 native PG tests PASS; targeted31 UI PASS. Typecheck,lint(1прежнееwarning),обе сборки,migration guard и local built Worker smoke PASS.
+- Native edit/upload handlers+PG проверили commit/lost ACK→new upload410→Retry201→stale409→rebase→Save с прежним attachment/без него. Chromium прошёл ту же цепочку с двумя Files, Undo/Redo и уникальными итоговыми refs.
+- Browser edit actions — actual built Worker/PG; upload bridge — actual Node upload handler/PG с synthetic private bytes storage и upload-session fixture. Real authorization gates сохранены. External R2/provider/production/visual acceptance не заявляются; тестовые ресурсы остановлены.
+- **[Exact-head CI #40243954305](https://github.com/iliya1947/vico-forum/actions/runs/40243954305): SUCCESS**, checks121321492211/database121321492371 SUCCESS наa7d2954.
+- PROJECT_STATE/docs/EDITOR обновлены. [Полный авторский handoff](https://github.com/iliya1947/vico-forum/blob/941582393f3574c1e71dedfc7e47fffa03b3d410/.github/agents/codex-6.1-sol.md).
+- Прежний PASS Лиры по998715b был отозван после подтверждения finding. Correction теперь реализована и проверена автором; independent verdict/merge нового head ещё не заявлены.
+- **Следующий шаг: Мира организует новый whole-PR review всего scope PR239 и всех correction chains наa7d2954.** Старые verdicts не переносятся на новый head. Лёва STOP; пакеты4–11 не начаты. PR236 никогда не merge.
 
 ## Завершённый пакет 2 — auth/session/identity
 
@@ -151,7 +150,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 1. PR237 /пакет1 merged, merge `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
 2. PR238 /пакет2 merged, current main `f59785c50e91fc1615b568b74a0a56909a92c871`.
-3. PR239 /пакет3 и correction реализованы на head `998715bbf0c531432673f027e5c260722e29b9ea`, final exact-head CI SUCCESS, ожидают нового whole-PR review. Пакеты4–11 не начаты.
+3. PR239 /пакет3 и corrections реализованы на head `a7d29546f334a59d42b30b10c67c32595ea98ec1`, exact-head CI SUCCESS; ожидают нового whole-PR review. Пакеты4–11 не начаты.
 
 ### Принятые scope и границы пакета2
 
@@ -174,4 +173,4 @@ Scope:
 - Следующие packages до завершения этого PR не начинать.
 ### Следующий шаг
 
-Независимое source/code review Лиры на exact head `998715bbf0c531432673f027e5c260722e29b9ea` завершено с PASS и сохранено в личном файле Лиры. Мира координирует остальные whole-PR проверки всего пакета3 и обеих correction chains и итоговое решение. Старые verdicts относятся к `18c849c`; exact-head CI SUCCESS не заменяет независимые проверки. Лёва STOP; пакет4 самостоятельно не начинать.
+Мира организует новый whole-PR review PR239 на stable exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1` по всем8 группам пакета3, обеим предыдущим correction chains и MIRA-PR239-998715-01. Прежний PASS Лиры по998715b отозван; correction реализована, новый independent verdict ещё не получен. Exact-head CI SUCCESS не заменяет review. Полный технический контекст опубликован; пересказ владельцем не нужен. Лёва STOP, пакет4+ не начинать.
