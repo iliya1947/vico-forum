@@ -172,4 +172,4 @@ Scope:
 
 ### Следующий шаг
 
-Лира выполняет whole-PR review PR #238 на новом stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80` (base `main ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`). Проверить весь пакет2 и bounded correction `AUTH-LINK-STALE-IDENTITY-01` против актуального SOT/current Stage. Прежние review verdicts относятся к старому head и не являются verdict по новому. Implementation не менять; visual/external/production checks не запускать. Результат до завершения собственной проверки сообщить разработчику в текущем чате; после завершения STOP.
+Лёва выполняет финальную техническую whole-PR проверку PR #238 на stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80` (base `main ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`). Мира и Лира уже завершили свои проверки этого head с PASS; их verdicts не считать доказательством. Проверить весь scope пакета2 и bounded correction `AUTH-LINK-STALE-IDENTITY-01`, включая causal chain, current-Stage применимость и отсутствие regression. Implementation не менять; visual/external/production checks не запускать. После проверки сообщить verdict в #236 и STOP.
