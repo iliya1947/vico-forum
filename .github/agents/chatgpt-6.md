@@ -1,5 +1,42 @@
 # Лира — ChatGPT-6
 
+## Независимая финальная проверка консолидации Миры — Лира / T4 (2026-10-25)
+
+**Scope:** поручение PR #236 comment `6392064227`, независимая сверка итоговой консолидации Миры `6391992192` / service-channel commit `046365d0f458ea955687e4d1446a20ef96e48736`. Проверяемый код `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Новый 458-file аудит и повторные native/browser/PG запуски не проводились. Implementation не меняется.
+
+### Итог
+
+**Согласна с канонической консолидацией Миры: 60 уникальных current-Stage технических root-cause groups, 2 preview/tooling, 4 documentation/SOT, 1 открытый product decision (`AUTH-LOCALE-RETURN-01`).** В выполненной проверке **не выявлено конкретного расхождения**: пропущенного подтверждённого текущего finding, неверно оставленного future-only observation, ложной causal dedup или расширения выводов за пределы имеющихся evidence. Это не объявление общего team consensus и не команда исправлять 60 групп.
+
+### Сверка всех ID и изменённой классификации
+
+Текущая таблица `.github/service-channel.md`: 9 тематических строк, **60 IDs / 60 unique**. Предшествующий T3 список Лиры содержал **64 code candidates**. По точному сопоставлению множеств:
+- удалены из code-total: `ARCH-02`, `AUTH-LOCALE-RETURN-01`, `EDITOR-09`, `LOC-07`, `M-M10`, `NOTIFY-BODY-01` (6 ID);
+- добавлены: `AUTH-RATE-LIMIT-RACE-01`, `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01` (2 ID);
+- 64 − 6 + 2 = **60**. Отдельная причина появления имени `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`: старые два `EDITOR-09` / `LOC-07` учтены как **один** shared root-cause family с двумя разными проявлениями. Старые Q `DISCOVERY-01`, `I18N-UGC-META-01`, `TAG-CARDINALITY-01` сохранены по ID, но после предметного пересмотра включены в current. Единственное оставшееся Q исключено из числа 60. Дополнительных самостоятельных строк с одинаковыми aliases в таблице нет.
+
+### Перепроверенные ключевые основания
+
+1. **Markdown causal dedup.** `app/forum/markdown.tsx:378–400` отображает Vico table/spoiler через `segmentTechnicalMarkdown()`. `app/forum/mentions.ts:23–45` вызывает обычный `fromMarkdown()` поверх полного исходника. `app/localization/content-markdown-translation.ts:85–213` защищает структуру через generic `parseMarkdown()/serializeMarkdown()` без эквивалентного представления Vico table/spoiler. Это одна structural-dialect inconsistency, но сохранены **две проверяемые пользовательские подпроблемы**: recipient selection и translation-protection. `LOC-08` direction-token parse/serialize non-round-trip остаётся **другой** причиной. Fix-дизайн не предписывается.
+2. **Редактирование 409.** `EDITOR-PUB-01` — нет штатной revalidation/current-revision rebase после failed 409; `EDITOR-PUB-02` — неверный localized `forumWriteError_conflict` (`app/localization/catalog.ts:588`, manual RU/HE copy). Два разных механизма правильно остались двумя ID.
+3. **ARCH-02 exclude.** `workers/app.ts` создаёт lazy registry-loader per Worker `fetch`, `db/hyperdrive-registry.ts` не держит client в global. Официальный Cloudflare Hyperdrive current lifecycle https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/ явно освобождает Worker↔Hyperdrive connection в конце invocation без `client.end()`. Сохранённый native local Pg idle-connection test не моделировал именно этот lifecycle. Не установлен текущий Hyperdrive runtime leak.
+4. **AUTH-RATE-LIMIT-RACE-01 add.** `package.json` pins Better Auth/Drizzle adapter 1.7.4; `app/auth/auth.server.ts` явно включает Drizzle `provider:"pg"` и database-backed rate-limit. Официальный advisory https://github.com/better-auth/better-auth/security/advisories/GHSA-44jh-23m7-hpcf относит эту конфигурацию к affected `>=1.6.17,<1.7.7`. Внешний exploit/production impact не воспроизводился, current internal dependency contract применим.
+5. **DISCOVERY-01 confirmed bounded.** `db/forum-repository.ts:1007–1047` `readUnanswered()` возвращает public topic + section id/name без исключения hidden Help service section; `app/forum/views.tsx:236–239` эти значения показывает. `readSection():2527` правильно блокирует прямой вход — не утверждать открытый generic section route.
+6. **I18N-UGC-META-01 confirmed bounded.** `readUnanswered()` выбирает original title, но опускает sourceLocale; `app/forum/views.tsx:231` отдаёт `dir=auto` без `lang`. Search title `app/forum/views.tsx:491` также печатается без per-content `lang/dir`. `docs/UI_UX_PASS.md:71` требует собственные `lang/dir` контента. Это конкретные secondary UI branches, а не общая неисправность всех UGC views.
+7. **TAG-CARDINALITY-01 confirmed bounded.** `normalizeForumTags` нормализует до 64 символов/tag, но не ограничивает unique tag cardinality; одна небольшая запрошенная строка из 500 unique tags может породить 500 persistent global tags и topic-tag rows в одном topic write, выводимые `readTags()` без limit. Это конкретный current public-write spam-amplification и отличается от общего, не доказанного `CONTENT-SIZE-01`. Правильный численный max пока не выбирается.
+8. **NOTIFY-BODY-01 excluded bounded.** `app/routes/notifications.tsx:40–54` действительно вызывает `request.formData()` до `runForumMutation` auth/origin guard. Доказан порядок, но нет конкретного current bypass/resource failure или установленного обязательного size/order invariant; оставить observation/hardening.
+9. **M-M10/F06 deferred, not falsified.** Две конкретные light palette contrast пары действительно хуже WCAG AA, но `docs/UI_UX_PASS.md` owner MVP-first decision и `ROADMAP.md:349–370` откладывают неблокирующий visual/accessibility refinement до pre-release. В отличие от них, `RES-A11Y-01` касается функционального отсутствия доступного имени редактируемого контрола, остаётся current. Известную контрастность не удалять из future obligations.
+10. **Подтверждённые неслияния.** `HELP-01` stale appeal/duplicate relationship, `HELP-MOD-01` stale best answer, `LOC-08` direction round-trip, `ATTACH-02` classic ZIP 65535 vs `ATTACH-STRUCT-01` ZIP metadata и `CORE-01` deadlock vs `ARCH-01` writer 503 остаются отличными causal paths. Остальные verdicts из checkpoints 3.1–3.39 сверены на semantic consistency с canonical list; полученные ранее native/browser/PG results не повторялись и не выданы за self-run Лиры.
+
+### Открытый вопрос без технического саморешения
+
+`AUTH-LOCALE-RETURN-01`: `app/auth/credential-path.ts:1–23` сохраняет безопасный same-locale path, но отвергает ранее сформированный nested `returnTo` со старой locale после language switch и fallback на root новой locale. Security bypass не установлен. Требуется **только решение владельца о продуктовом контракте**: обязательно ли переписывать locale внутри безопасного destination и восстанавливать тот же route после credential flow, либо root fallback приемлем. При обязательном remap — +1 к реестру; при разрешённом fallback finding снимается. Никакой fix до выбора.
+
+**Итог T4: технических расхождений с консолидацией Миры нет.** Уровни evidence сохранены: code/static vs injected jsdom vs native Pg ≠ deployed incident. Свой файл обновлён только как рабочая коммуникация, чужие personal files и implementation untouched. Общий service-channel уже фиксирует вердикт Миры; новый team consensus самовольно не объявляю. Следующая отдельная проверка — Лёва по PR #236, затем итоговый consensus Миры. STOP.
+
+---
+
+
 ## МЕЖАУДИТОРСКИЙ КАНОНИЧЕСКИЙ РЕЕСТР — ЛИРА / T3 (2026-10-24)
 
 **Статус:** дедупликация опубликованных отчётов выполнена для baseline `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`; это **рабочий объединённый реестр с отдельными нерешёнными вопросами, НЕ утверждённое командой число дефектов и НЕ команда исправлять**. Никакие файлы реализации не изменены.
