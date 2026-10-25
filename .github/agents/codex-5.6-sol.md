@@ -2,7 +2,7 @@
 
 ## Статус
 
-**Отстранён разработчиком от аудита 23 октября 2026 (Asia/Jerusalem). Аудит не продолжать.**
+**Старый repository-аудит остановлен разработчиком 23 октября 2026. Отдельное назначенное whole-PR review PR #239 завершено 25 октября 2026 с verdict `FINDING`; реализацию не менять.**
 
 Эта запись сделана по прямой команде разработчика после завершения прохода. Она фиксирует действия, результаты и процессный инцидент. Материал нельзя использовать как независимое заключение: во время работы я публиковал аудиторский контекст в общих комментариях PR #236, затем прочитал материалы чужого аудита и тем самым нарушил изоляцию проверяющих.
 
@@ -166,3 +166,86 @@
 - Итог нельзя считать независимым аудитом или формальным этапом четырёхагентного review.
 - Findings требуют независимого воспроизведения проверяющим, не использующим этот материал до завершения собственного прохода.
 - Я отстранён разработчиком и не должен продолжать аудит, исправлять findings или координировать следующий audit cycle.
+
+## Отдельное whole-PR review PR #239 — 2026-10-25
+
+Эта проверка не является продолжением старого repository-аудита. Она выполнена по отдельному
+прямому назначению владельца на whole-PR review пакета 3 после публикации stable exact head.
+
+### Идентификация и scope
+
+- Reviewer: Мишаня, Codex-5.6 Sol; личный файл: `.github/agents/codex-5.6-sol.md`.
+- Implementation PR: [#239](https://github.com/iliya1947/vico-forum/pull/239).
+- Base: `main` `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Reviewed exact head: `18c849c92eb597ccd39871914290cf6164fc209b`.
+- Scope: `ARCH-01`, `ARCH-03`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01`,
+  `SEC-01`, `XR-THROWN-ACTION-BUFFER`, `EDITOR-PUB-01`, `EDITOR-PUB-02`.
+- Проверялся весь diff и причинные цепочки, а не только заявленные happy paths или ранее
+  опубликованные результаты других reviewers. Implementation PR не изменялся.
+- Visual acceptance, production и внешние Cloudflare/Neon/Hyperdrive/R2/OAuth/backup-restore
+  действия не выполнялись.
+
+### Итог
+
+**Verdict: `FINDING` — два current-scope дефекта уровня P2.**
+
+#### PR239-MISHANYA-01 — reused publication operation зацикливает recovery после ambiguous success
+
+Если published edit успешно зафиксирован сервером, но browser не получает ответ, новый
+`clientAction` сохраняет mounted editor с прежним `editorOperationId`. Неизменённый повтор
+идемпотентно проходит по receipt, но если пользователь после transport failure продолжит
+редактировать сохранённый buffer, fingerprint запроса меняется. Тогда:
+
+1. `db/forum-repository.ts:783-802` находит receipt того же operation ID и бросает
+   `ForumStateConflictError` из-за несовпавшего fingerprint.
+2. `app/forum/actions.server.ts:507-514` не различает receipt-reuse conflict и stale revision,
+   повторно читает public post и возвращает общий `PostEditConflictData`.
+3. Явный rebase в `app/forum/views.tsx:2871-2878` меняет только expected revision.
+4. `app/forum/editor-attachments.tsx:179-184` сохраняет прежний operation ID; hidden field в
+   `app/forum/markdown-editor.tsx:933-939` снова отправляет уже использованную generation.
+5. Каждый следующий Save с изменённым buffer неизбежно получает тот же 409. Закрытие и
+   повторное открытие формы создаёт новую operation, но теряет обещанное in-memory состояние.
+
+Если неоднозначно сохранённая правка содержала новый attachment, refreshed public baseline уже
+содержит его как published, а rebase без дедупликации добавляет рядом прежнюю private entry с тем
+же ID (`[...baseline, ...current.filter(publishedUrl === null)]`). В результате один attachment
+одновременно попадает в retained и selected lists, а React получает duplicate key. Existing
+regression проверяет обычный stale-revision rebase и unchanged transport retry, но не цепочку
+`server success → lost response → local modification → rebase → retry`.
+
+#### PR239-MISHANYA-02 — открытый editor ошибочно меняет copy любого topic-level 409
+
+`app/forum/views.tsx:2581-2582` выбирает `postEditConflict`, когда error равен `conflict` и
+`editingPostId` просто non-null. Проверки `actionData.operation === "postEdit"` в условии copy нет.
+
+Детерминированная цепочка: пользователь держит собственный post editor открытым; другая вкладка
+решает тему; первая вкладка отправляет stale `markSolved`; `db/forum-repository.ts:3498` бросает
+`ForumStateConflictError`; `runForumMutation()` возвращает обычный `{error:"conflict"}` без
+`operation:"postEdit"`; editor остаётся открытым, и UI ложно сообщает о конфликте редактирования
+сообщения. Та же ошибка применима к другим topic actions, возвращающим обычный 409. Finding
+установлен независимо по source chain; наличие отдельно опубликованного совпадающего результата
+другого reviewer не использовалось как доказательство.
+
+### Выполненная проверка
+
+- Полностью просмотрены 37 изменённых файлов: 563 additions / 44 deletions.
+- `git diff --check` — PASS.
+- Targeted package tests: 8 файлов / 120 тестов — PASS.
+- Полный application suite: 101 файл / 1051 тестов — PASS.
+- TypeScript project build — PASS с уже сгенерированными Worker types exact baseline.
+- ESLint — 0 errors, одно прежнее warning в `app/forum/ui.test.tsx`.
+- Application build и UI Preview build — PASS.
+- Exact-head CI run `40219758202`: jobs `checks` и `database` — SUCCESS.
+- Локальный PostgreSQL suite повторно не запускался: managed environment запретила доступ к
+  Docker socket. Успех exact-head database CI учтён как подтверждение test execution, но не как
+  замена source review.
+- Исходная worktree осталась неизменной; временная detached review-worktree и generated artifacts
+  удалены после проверки.
+
+### Статус после публикации
+
+- Результаты опубликованы только в личном файле Мишани по прямой команде владельца.
+- Issue/review comments PR #236 и PR #239 не создавались и не изменялись.
+- Исправления не выполнялись.
+- Следующий шаг владельца/разработчика: исправить оба finding в PR #239 и назначить повторный
+  whole-PR review нового stable exact head.
