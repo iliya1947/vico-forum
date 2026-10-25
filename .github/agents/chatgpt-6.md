@@ -1,5 +1,43 @@
 # Лира — ChatGPT-6
 
+## PR #238 — повторная независимая whole-PR проверка / Лира (2026-10-25) — PASS
+
+**Публикация по прямому разрешению владельца в текущем чате**, после завершения проверки и сообщения verdict владельцу. Поручение Миры: [PR #236 comment 6400476967](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400476967). Implementation [PR #238](https://github.com/iliya1947/vico-forum/pull/238), **stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80`**, base `main ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`. Старые verdicts относятся к `8866bd8bfb6f8121a5e181c88a9e542741040b64` и не перенесены автоматически.
+
+### Вердикт
+
+**PASS — по проверенному whole-PR scope нового current-Stage дефекта не обнаружено.** Включены `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`, `AUTH-LOCALE-RETURN-01`, `AUTH-SESSION-AVAIL-01`, `XR-CROSS-TAB-IDENTITY`, `DOC-04` и bounded correction `AUTH-LINK-STALE-IDENTITY-01` (alias `PR238-LIRA-01`). Реализация не менялась; внешний Google/provider, visual/browser и production acceptance не проводились. Это independent code/contract/test review, не самостоятельное новое выполнение полного test-suite или E2E.
+
+### Correction `AUTH-LINK-STALE-IDENTITY-01` — закрыта в новом head
+
+- `app/forum/profile-view.tsx` передаёт `expectedUserId={profile.id}` в `GoogleAccountLink` только для own-profile action. `app/auth/google-account-link.tsx` передаёт эту же expectation в `linkGoogleAccount`.
+- `app/auth/auth-client.ts` начинает штатный Better Auth `linkSocial` с `x-vico-link-user` в заголовке **того же запроса**, который начинает OAuth linking, без отдельного preflight и без fallback/retry под другим user ID.
+- `app/auth/auth.server.ts`, `betterAuthRequestHooks.before` для `/link-social`: `getAuthoritativeSessionFromCtx(ctx)` извлекает request-local session. Guest отклоняется как 401; отсутствующая или несовпадающая expected identity отклоняется `APIError(CONFLICT)` до OAuth state/account write. Штатный linking endpoint использует ту же verified request-local session.
+- `tests/database/auth-link-identity.test.ts`: реальный Better Auth endpoint → OAuth state → callback и PostgreSQL writes с синтетическим provider exchange/userInfo. Negative stale A/current B+GoogleB: 409 без persisted state/link; позитив A/A: success и связь с A. Дополнительно: отсутствие expectation, guest, чужой email, unverified provider, foreign origin, изменение cookie между issuance/callback; проверяется отсутствие второго session resolution при нормальном initiation. `app/auth/auth-client.test.ts` и `app/auth/google-account-link.test.tsx` проверяют отправку expectation и bounded UI failure. Внешний Google и multi-tab browser execution не выполнялись — эти evidence boundaries сохраняются.
+- В прежнем head из-за отсутствия guard возникала identity-changing операция под account B при stale profile A. Новый один-request server fence устраняет этот causal path, не ослабляя verified-provider/email/origin checks и не делая client-supplied ID authoritative. По этому finding **PASS**.
+
+### Whole-PR scope checklist
+
+| ID | Result | Basis |
+| --- | --- | --- |
+| `AUTH-01` | PASS | Предварительные expired-cookie headers применяются перед новыми endpoint Set-Cookie; есть позитивный PostgreSQL cookie/session regression |
+| `AUTH-02` | PASS | Stale role ID проверяется внутри транзакции под `FOR KEY SHARE`, controlled not-found + отсутствие side effects; PostgreSQL regression |
+| `AUTH-LINK-01` | PASS | Явное authenticated linking из собственного профиля; local email same-email negative controls и новые session expectation checks |
+| `AUTH-LOCALE-RETURN-01` | PASS | Safe old-locale destination проверяется до remap; query/hash сохранены; external/cross-locale paths rejected |
+| `AUTH-SESSION-AVAIL-01` | PASS | Underlying PostgreSQL transport/timeout cause извлекается до Better Auth cause-less APIError; `AuthSessionUnavailableError` → safe no-store 503 до Router, unexpected faults не замаскированы |
+| `XR-CROSS-TAB-IDENTITY` | PASS | Stale editor `editorActorId` проверяется до forum write; presence 401/409 вызывает revalidation; newly added Google linking теперь тоже fenced |
+| `DOC-04` | PASS | `docs/EDITOR.md` соответствует effective permission `forum.post.history.read` и `docs/auth/AUTHORIZATION.md`, без role-exclusive privileges |
+| `AUTH-LINK-STALE-IDENTITY-01` | PASS | Verified request-local actor expectation; bounded correction и regressions описаны выше |
+
+**Exact-head CI:** [run 40213325914](https://github.com/iliya1947/vico-forum/actions/runs/40213325914), `checks=SUCCESS`, `database=SUCCESS`. Авторская реализационная проверка заявляет 997 application / 291 PostgreSQL tests PASS; **Лира не выполняла новый личный полный test-run**. Также не проводились real Google/provider, visual/browser, production tests; это остаётся вне данного review scope.
+
+**Область и ограничение вывода:** independent source trace / PR patch, test adequacy, current owner SOT и exact-head CI. Подтверждённых новых current defects не установлено; статус PASS не заменяет дальнейшие обязательные этапы согласованного цикла review/merge. `main`, implementation #238, чужие personal files и общая communication-запись не менялись.
+
+**Лира: повторный review завершён. STOP.** Следующий шаг координирует Мира через служебный PR, без пересказа scope или технического вывода владельцем.
+
+---
+
+
 ## PR #238 — whole-PR review / Лира (2026-10-25)
 
 **Источник поручения:** [PR #236 comment 6399278290](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6399278290). **Публикация разрешена владельцем в текущем чате.** Implementation [PR #238](https://github.com/iliya1947/vico-forum/pull/238), stable exact head `8866bd8bfb6f8121a5e181c88a9e542741040b64`, base `main ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`. Проверены все 34 изменённых файла и относящиеся source paths для AUTH-01, AUTH-02, AUTH-LINK-01, AUTH-LOCALE-RETURN-01, AUTH-SESSION-AVAIL-01, XR-CROSS-TAB-IDENTITY, DOC-04. External Google OAuth/production/browser не проверялись. Exact-head CI run `40202422836`: `checks` и `database` SUCCESS. Лично CI и полный тестовый набор не перезапускала.
