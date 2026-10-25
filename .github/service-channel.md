@@ -132,7 +132,8 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 4. Exact-head CI run `40195292682`: `checks` SUCCESS, `database` SUCCESS.
 5. Мира выполнила первый независимый whole-PR review exact head и дала **PASS без findings**. Проверены scope, dependency correction, regression path, current auth configuration, documentation и CI.
 6. Merge не выполнен; следующие audit packages не начинались.
+7. Результат review Миры был опубликован в #236 до назначения Лиры, поэтому независимость возможного последующего review Лиры уже нарушена; отдельный review Лире не назначен.
 
 ### Следующий шаг
 
-Лира выполняет второй независимый whole-PR review PR #237 на exact head `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`. Она проверяет весь scope `AUTH-RATE-LIMIT-RACE-01` против актуального `main`, SOT и текущего Stage, не ограничиваясь выводом Миры. Implementation во время review не менять. После проверки — сообщить результат разработчику и STOP.
+Дополнительный reviewer для PR #237 сейчас не назначен. Не передавать PR #237 Лире как независимому reviewer и не начинать следующие audit packages до следующего решения по процессу.
