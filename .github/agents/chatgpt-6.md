@@ -1,5 +1,41 @@
 # Лира — ChatGPT-6
 
+## PR #238 — whole-PR review / Лира (2026-10-25)
+
+**Источник поручения:** [PR #236 comment 6399278290](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6399278290). **Публикация разрешена владельцем в текущем чате.** Implementation [PR #238](https://github.com/iliya1947/vico-forum/pull/238), stable exact head `8866bd8bfb6f8121a5e181c88a9e542741040b64`, base `main ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`. Проверены все 34 изменённых файла и относящиеся source paths для AUTH-01, AUTH-02, AUTH-LINK-01, AUTH-LOCALE-RETURN-01, AUTH-SESSION-AVAIL-01, XR-CROSS-TAB-IDENTITY, DOC-04. External Google OAuth/production/browser не проверялись. Exact-head CI run `40202422836`: `checks` и `database` SUCCESS. Лично CI и полный тестовый набор не перезапускала.
+
+### Verdict: FINDING, не PASS
+
+**PR238-LIRA-01 — Google linkSocial запускается из устаревшего профиля A с актуальной сессией B; отсутствует ожидаемый-actor fence при account-link operation.** Current-Stage, функциональная корректность идентичности; значимость Medium (условный cross-tab сценарий), **не доказанный account takeover**. Это **новое проявление того же межвкладочного stale-identity класса**, что `XR-CROSS-TAB-IDENTITY`, в newly introduced sensitive account-link flow; не дополнительный независимый finding всего исходного audit backlog.
+
+**Прослеженный сценарий:**
+1. Вкладка 1 открыла `/en/users/A`. `app/routes/profile.tsx` отдаёт `isOwner=true`, `app/forum/profile-view.tsx` показывает `GoogleAccountLink callbackURL=/en/users/A`.
+2. Вкладка 2 выходит из A и входит в B. Вкладка 1 до обновления всё ещё имеет `HeaderAuthProvider.initialUser=A` и старый `ProfileView.isOwner=true`. Heartbeat `app/forum/online-presence-heartbeat.tsx` сравнивает `expectedUserId` с current session, но работает по видимости/периоду 60 с и **не является синхронным fence** перед нажатием.
+3. Кнопка `GoogleAccountLink.connect()` вызывает `linkGoogleAccount(callbackURL)` → `client.linkSocial({ provider:"google", callbackURL, errorCallbackURL })` (`app/auth/google-account-link.tsx`, `app/auth/auth-client.ts`). В запросе **не передаются expected local account ID A и не выполняется проверка до start-link**, в отличие от newly introduced `editorIdentityGuard` при forum writes.
+4. Better Auth `linkSocial` по [официальному Account Linking contract](https://better-auth.com/docs/concepts/users-accounts#manually-linking-accounts) привязывает провайдера к **текущему authenticated account**. Browser cookies в момент запроса относятся к B, а callback URL старого профиля A не является account selector. Если выбран Google account с email B и сработали штатные provider/email проверки, операция может успешно привязать Google к **B**, хотя интерфейс показывает владельцем A.
+5. Наблюдаемый результат при выполненных предпосылках: user-intent/profile identity A ≠ account B, изменённый связанный provider account — B. То, что для неподходящего Google email операция отклонится, не устраняет разрешённый B+Google-B сценарий.
+
+**Code/contract anchors:** `app/routes/profile.tsx` (isOwner по request session), `app/forum/profile-view.tsx` (новая кнопка), `app/auth/google-account-link.tsx` (отсутствие account expectation), `app/auth/auth-client.ts` (linkSocial), `app/auth/auth-controls.tsx` (cached provider state), `app/routes/locale-boundary.tsx` (initial authUser), `app/forum/online-presence-heartbeat.tsx` (async 409 revalidation), `app/routes/presence.ts` (409 only for presence), `app/forum/mutations.server.ts` (editorActorId guard не применяется к Better Auth linkSocial), `tests/database/auth-runtime.test.ts` (provider same-email/security checks), `docs/auth/AUTHORIZATION.md` (explicit linking only by owner).
+
+**Evidence status:** Установлены статически все application links, temporal window и documented authenticated-link semantic. В текущем review **не было нового end-to-end browser/Google OAuth reproduction с двумя вкладками**; не утверждать deployed incident или обход provider ownership/security gates. До исправления нужно подтвердить regression local/provider simulation с A→B session switch, включая positive control Google-B, и negative control чужого/неподтверждённого email. Это применимо к текущему пакету потому, что `GoogleAccountLink` добавлен в PR #238, а его связь с правильной user identity — часть уже принятого current-Stage auth/link contract.
+
+**Acceptance на исправление:** при старом отображаемом account A и actual session B операция связывания **не должна** применяться к B без явно подтверждённого намерения B; UI должен перейти к достоверной identity state, а существующие Better Auth same-email/verified-provider gates сохраняются. Не диктовать способ реализации, не расширять scope до Stage6/external OAuth. После изменений — новый exact-head whole-PR review cycle.
+
+### Остальные итоги
+
+- `AUTH-01`: pre-routing stale cookie предшествует endpoint issuance; negative/positive PostgreSQL regression есть.
+- `AUTH-02`: stale role ID теперь проверяется под row key-share lock с controlled not-found; соответствующий PostgreSQL regression есть.
+- `AUTH-LOCALE-RETURN-01`: безопасный nested `returnTo` переносится на выбранную locale без ослабления проверки внешнего origin.
+- `AUTH-SESSION-AVAIL-01`: session adapter failure перехватывается до потери underlying cause, классифицируется отдельно от unknown; Worker выдаёт no-store 503. Проверены границы classification и focused tests.
+- `XR-CROSS-TAB-IDENTITY`: editor submit `editorActorId` проверяется против авторитетной session до forum writes; presence revalidation предусмотрена, но не закрывает добавленный linkSocial surface.
+- `DOC-04`: `docs/EDITOR.md` исправлен на effective permission `forum.post.history.read`, соответствующий auth SOT и runtime permission semantics.
+- По остальным изменениям этого scope дополнительных **обоснованных current-Stage findings** в этой проверке не установлено. Green CI не заменяет проверку логики.
+
+**Implementation, main, чужие personal files и shared communication-файл не изменяла.** Итог опубликован здесь и в отдельном issue-comment #236 по прямому разрешению владельца. **STOP до отдельного нового поручения.**
+
+---
+
+
 ## Независимая проверка fix-plan Миры — Лира / FPLAN-T1 (2026-10-25)
 
 **Поручение:** PR #236 comment `6397258510`; review трёх comments Миры `6396882503`, `6397022247`, `6397105809`, без implementation и без нового аудита исходников. Кодовый baseline `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Канонический consensus: **61 current technical, 2 preview/tooling, 4 documentation/SOT**; оба owner decisions по `AUTH-LOCALE-RETURN-01` и `DOC-04` закрыты.
