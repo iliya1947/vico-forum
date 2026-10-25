@@ -1,25 +1,28 @@
 # Shared service channel
 
-## Текущая реализация — пакет 3 готов к whole-PR review (2026-10-25)
+## Текущая реализация — correction пакета3 готова к новому whole-PR review (2026-10-25)
 
-- Пакеты1–2 merged владельцем. Current main/base: `f59785c50e91fc1615b568b74a0a56909a92c871`.
-- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **stable exact head `18c849c92eb597ccd39871914290cf6164fc209b`**. Tree `315dae98367a489ad62771c4d9536f895b3ebde8` совпал с локально проверенным. 37 files/563 additions/44 deletions.
-- Назначенный scope: ARCH-01,ARCH-03,POST-EDIT-AVAIL-01,FORUM-READ-AVAIL-01,SEC-01,XR-THROWN-ACTION-BUFFER,EDITOR-PUB-01,EDITOR-PUB-02.
-- Typed dependency failures/domain errors/unexpected faults различаются; PG writer классифицирует outages; cleanup не подменяет итог операции. Primary reads и edit-resume typed503; optional degradation сохранена. Unexpected server faults бросаются и безопасно диагностируются без message/SQL/params/unpublished content.
-- Browser authoring actions сохраняют mounted формы после unexpected/transport failure с отдельным feedback. Edit409 читает current public post baseline в action, сохраняя buffer/attachment intent; пользователь явно выполняет rebase. Поздний loader snapshot supersedes старый409. EN/RU/HE edit-specific feedback добавлен.
-- Local1051 application/296 PG tests PASS; final targeted22 PASS после последней snapshot refinement. Typecheck,lint(1прежнееwarning),обе сборки,migration-history guard и built Worker smoke PASS.
-- Chromium→built Worker→native PG17: пять cases PASS — conflict/rebase/save redirect, typed503, unexpected SQL500, реальный transport abort/retry, profile SQL500 без private text в response/log. Test Worker/Chromium/PG container остановлены.
-- **[CI #40219758202](https://github.com/iliya1947/vico-forum/actions/runs/40219758202) SUCCESS**, checks121248559346/database121248559564 SUCCESS на exact head. PROJECT_STATE и относящиеся editor/authz SOT обновлены; schema/migrations/dependencies unchanged.
-- [Полный авторский handoff](https://github.com/iliya1947/vico-forum/blob/b7c11ee29699aaf560a67072ad5c10d1590205d7/.github/agents/codex-6.1-sol.md). Это implementation verification автора; независимый whole-PR verdict/merge ещё не заявляются.
-- Следующий шаг: **Мира организует whole-PR review всего scope PR239 на указанном head**. Лёва STOP после handoff. Пакеты4–11 не начаты.
-- Package4+, future hardening, owner visual acceptance, production/external service actions не выполнялись. Служебный PR236 никогда не merge.
+- Пакеты1–2 merged. Current main/base `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge.
+- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **final stable exact head `998715bbf0c531432673f027e5c260722e29b9ea`**.
+- Tree `2c43b9f682cdaa10e6808d4c59e6fff50ab5c862` совпал с локально проверенным. Whole PR43files/821 additions/63 deletions; correction13files/270 additions/31 deletions.
+- Whole scope: ARCH-01,ARCH-03,POST-EDIT-AVAIL-01,FORUM-READ-AVAIL-01,SEC-01,XR-THROWN-ACTION-BUFFER,EDITOR-PUB-01,EDITOR-PUB-02. Known/typed unavailable/unexpected classification, cleanup result precedence, typed primary-read503, safe Router diagnostics и mounted buffer preservation входят в исходный пакет.
+- Reviews старого head18c849c завершены; по [назначению6402172083](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6402172083) исправлены2 уникальных current defects: modified replay после committed edit/lost response и edit-specific copy для unrelated409 при открытом editor.
+- Modified receipt replay отличается subtype существующего domain conflict. Edit action возвращает current public baseline + completedOperationId. Explicit rebase создаёт fresh operation только вместо совпавшей completed operation; обычный stale revision сохраняет незавершённую operation/uploads.
+- Published upload retained ровно один раз, без private duplicate; Remove intent сохраняется. Другие uploads сохраняют File для Retry с новым asset ID; активные image destinations обновляются во всей in-memory истории без переписывания code/labels. Existing owner/context/operation gates сохранены. Повторный Edit той же mounted формы только фокусирует её и не сбрасывает pending recovery.
+- Copy определяется реальным edit result/guard context. Unrelated markSolved409 при mounted editor сохраняет solution feedback и buffer.
+- Local full1058app/298PG PASS; после final same-editor guard75 targeted UI tests,typecheck,lint(1прежнееwarning) и обе сборки PASS. Migration guard и local built Worker smoke PASS. Один первоначальный app timeout initial form1s исправлен только ожиданием fixture3s; isolated11 и повторный full1058 PASS.
+- Два новых Chromium→built Worker→native PG17 cases PASS: реальный committed edit/lost HTTP response→modified409→fresh operation→Save success; real stale markSolved409 при открытом editor с правильным feedback. Attachment/File ACK controls частично synthetic; external R2/provider/production/owner visual acceptance не заявляются.
+- **[Final exact-head CI #40228496459](https://github.com/iliya1947/vico-forum/actions/runs/40228496459): SUCCESS**, checks121274983746/database121274983601 SUCCESS на998715b. Старый CI40219758202 и reviews18c849c не заменяют этот head.
+- PROJECT_STATE и docs/EDITOR обновлены в основной correction; schema/migrations/dependencies unchanged. Test Worker/Chromium/PG container остановлены.
+- [Полный авторский correction handoff](https://github.com/iliya1947/vico-forum/blob/ed56bff20e1ca51e083672fedac9653d47c9a97f/.github/agents/codex-6.1-sol.md).
+- **Следующий шаг: Мира организует whole-PR review всего PR239 scope и обеих correction chains на финальном head.** Independent verdict/merge нового head ещё не заявлены. Лёва STOP; пакеты4–11 не начаты. Служебный PR236 никогда не merge.
 
 ## Завершённый пакет 2 — auth/session/identity
 
 - [PR #238](https://github.com/iliya1947/vico-forum/pull/238) merged владельцем; merge `f59785c50e91fc1615b568b74a0a56909a92c871`.
 - Final implementation head `3d6fe4d178d87e0697d531c962f784296f169d80`, включая AUTH-LINK-STALE-IDENTITY-01 correction (alias PR238-LIRA-01).
 - Независимые whole-PR проверки Миры и Лиры — без findings; [CI40213325914](https://github.com/iliya1947/vico-forum/actions/runs/40213325914) SUCCESS,997app/291PG PASS.
-- Финальная самопроверка автора Лёвы отменена владельцем ([6400838057](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400838057)); Мишаня по решению владельца в текущей работе не участвует.
+- Финальная самопроверка автора Лёвы отменена владельцем ([6400838057](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400838057)); В проверке PR238 Мишаня по тогдашнему решению владельца не участвовал; это исторический статус того пакета.
 - External Google/provider/production/visual acceptance этим merge не заявляются.
 
 ## Завершённый пакет 1 — AUTH-RATE-LIMIT-RACE-01
@@ -147,7 +150,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 1. PR237 /пакет1 merged, merge `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
 2. PR238 /пакет2 merged, current main `f59785c50e91fc1615b568b74a0a56909a92c871`.
-3. PR239 /пакет3 реализован на head `18c849c92eb597ccd39871914290cf6164fc209b`, exact-head CI SUCCESS, ожидает whole-PR review. Пакеты4–11 не начаты.
+3. PR239 /пакет3 и correction реализованы на head `998715bbf0c531432673f027e5c260722e29b9ea`, final exact-head CI SUCCESS, ожидают нового whole-PR review. Пакеты4–11 не начаты.
 
 ### Принятые scope и границы пакета2
 
@@ -170,4 +173,4 @@ Scope:
 - Следующие packages до завершения этого PR не начинать.
 ### Следующий шаг
 
-Мира организует whole-PR review PR #239 на stable exact head `18c849c92eb597ccd39871914290cf6164fc209b` по всем8 группам пакета3. Полный технический контекст опубликован в личном файле Лёвы; владельцу не нужно его пересказывать. Exact-head CI SUCCESS не заменяет whole-PR review. Лёва STOP; пакет4 самостоятельно не начинать.
+Мира организует новый whole-PR review PR #239 на stable exact head `998715bbf0c531432673f027e5c260722e29b9ea` по всем8 группам пакета3 и обоим correction chains. Старые verdicts относятся к18c849c. Полный технический контекст опубликован в личном файле Лёвы; владельцу не нужно его пересказывать. Exact-head CI SUCCESS не заменяет whole-PR review. Лёва STOP; пакет4 самостоятельно не начинать.
