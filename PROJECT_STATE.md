@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-21
+Последнее обновление: 2026-10-25
 
 ## Назначение
 
@@ -19,6 +19,28 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## Audit correction — auth rate-limit concurrency (2026-10-25)
+
+Первый ограниченный пакет `AUTH-RATE-LIMIT-RACE-01` обновляет Better Auth и
+`@better-auth/drizzle-adapter` с `1.7.4` до `1.7.7` — исправленной версии
+[GHSA-44jh-23m7-hpcf](https://github.com/better-auth/better-auth/security/advisories/GHSA-44jh-23m7-hpcf).
+Текущие PostgreSQL/Drizzle, database-backed rate-limit storage, trusted-IP boundary,
+authentication/session и dynamic application permissions сохраняются. Новая схема,
+миграции, альтернативное хранилище или собственный rate-limit wrapper не добавляются.
+
+Новая PostgreSQL-регрессия использует настоящий Better Auth HTTP handler и существующую
+auth-конфигурацию с малым test-only лимитом. Три конкурентных admission UPDATE ждут один
+удерживаемый row lock, затем проверяются HTTP200/429, сохранённый count, Retry-After и
+независимый IP bucket. Проверены действующее окно и reset истёкшего окна. На исходных
+зависимостях `1.7.4` оба случая воспроизводят превышение лимита; на `1.7.7` оба проходят.
+Локально прошли 979 application tests, 281 PostgreSQL tests, lint (одно прежнее warning),
+typecheck, application/UI-preview builds, migration/schema/privilege probes и Workers smoke.
+Использованы pinned Node 24.21.0 и pnpm 12.3.4; frozen lockfile проверен.
+Exact-head CI фиксируется в implementation PR после запуска; независимый whole-PR review
+и merge не выполнены.
+Production/external rollout и visual acceptance не запускались. Остальные audit findings
+этим пакетом не исправляются.
 
 ## Editor 2.0 — removal drafts/autosave (2026-10-20, PR #232)
 
@@ -1561,7 +1583,7 @@ Vico Forum находится в ранней pre-release разработке.
 - React Router `8.3.1` Framework Mode + SSR + TypeScript на Cloudflare Workers;
 - Node `24.21.0`, pnpm `12.3.4`, React `19.3.0`, Vite `8.2.2`;
 - PostgreSQL 17 + Drizzle ORM с append-only migration history;
-- Better Auth `1.7.4` + PostgreSQL Drizzle adapter;
+- Better Auth `1.7.7` + PostgreSQL Drizzle adapter `1.7.7`;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
