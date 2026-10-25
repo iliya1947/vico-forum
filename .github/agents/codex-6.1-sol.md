@@ -1,5 +1,75 @@
 # Лёва — Codex-6.1 Sol
 
+## Архитектурная сверка fix-plan — Лёва / FPLAN-T2 (2026-10-25)
+
+**Поручение:** [PR236 comment6397485409](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6397485409). Полностью сопоставлены три planning checkpoints Миры6396882503/6397022247/6397105809 и FPLAN-T1 Лиры6397337524 с двумя уже принятыми Мирой acceptance-уточнениями. Baseline planning/code: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+
+### Вердикт
+
+**ACCEPT — согласен с уточнённым планом из11 implementation PR.** Конкретных архитектурных расхождений, обязательного split/merge, пропусков или повторов finding IDs не обнаружил. Двух принятых уточнений Лиры достаточно; дополнительных обязательных изменений плана не предлагаю. Это архитектурное согласие с планированием, не разрешение начинать код/upgrade/deploy и не заявление, что дефекты исправлены.
+
+После зафиксированных owner decisions итог61 technical +2 preview +4 docs, открытых нормативных вопросов для этой проверки нет. Прежний мой60-count предшествовал решению по AUTH-LOCALE-RETURN-01. DOC-04 остаётся документационным, effective-permission model принята; новый technical authz defect из него не создаётся.
+
+### Механическая проверка покрытия Scope
+
+Проверен именно Scope каждого execution PR, а не случайные упоминания ID в пояснениях. Все61 technical IDs уникальны и точно совпадают с принятым реестром;2 preview и4 primary documentation assignments покрыты. Повторная conditional проверка DOC-02/03/04 в PR11 не считается второй реализацией или лишним finding.
+
+| PR | Technical | Preview | Основная documentation запись |
+|---|---:|---:|---|
+| 1 Dependency/rate-limit | 1 | 0 | — |
+| 2 Auth/session/identity | 6 | 0 | DOC-04 |
+| 3 Failure + edit recovery | 8 | 0 | — |
+| 4 DB + notifications/read-state | 6 | 0 | DOC-02 |
+| 5 Help + tags | 4 | 0 | DOC-03 |
+| 6 Attachments | 6 | 0 | — |
+| 7 Markdown semantics | 11 | 0 | — |
+| 8 Localization runtime | 9 | 0 | — |
+| 9 Search/discovery | 3 | 0 | — |
+| 10 Interaction/UI + preview | 7 | 2 | — |
+| 11 Documentation closeout | 0 | 0 | DOC-01; остаточная сверка sidecars |
+| Итого | 61 | 2 | 4 уникальных |
+
+### Causal/verification dependencies и порядок
+
+1. **PR1 перед PR2:** dependency/config correction изолирует version/compatibility risk; auth behavior проверяется на уже принятой версии. Изменения upstream не следует компенсировать application workaround поверх заменяемой версии. Следующий task всё равно должен начинаться от actual accepted main и проверять оставшийся symptom — план не требует воспроизводить уже устранённую зависимостью ошибку как дополнительную реализацию.
+2. **PR2 затем PR3:** auth identity/session contract становится принятым baseline для fault recovery. Pre-router auth startup failure относится к PR2, общий mutation/route classification и editor recovery — к PR3. Это разные места ответственности, а не два новых конкурирующих error frameworks. Требование сохранить authoritative identity не отменяется сохранением буфера в failed-action recovery.
+3. **PR3 вместе с edit409:** catch/rethrow/classification, безопасная observability и mounted-editor failure state имеют общий integration regression. Разносить исправление unexpected faults и buffer recovery так, чтобы промежуточный PR снова терял текст, оснований нет. При этом восемь causal findings не объявлены одной причиной; EDITOR-PUB-01/02 остаются двумя записями.
+4. **PR4:** DB-03 непосредственно нужен read-state paths; DB/schema/privilege и notifications/read-state проверяются в одном disposable PostgreSQL boundary. Migration/parity/constraint changes не смешаны с production ACL rollout. DB-01/DB-02 остаются самостоятельными regressions, даже если их можно проверить в том же пакете.
+5. **PR5:** четыре ограниченных current public-write/domain corrections можно проверить одним пакетом без redesign Help. Tag validation касается обычной и Help publication; критерий bounded write — общий, отсутствие нового численного cap в плане не делает его неполным. Выбор конкретной границы — implementation design, а не дополнительный feature scope. Не требуется связывать tags и stale Help intent одним root cause.
+6. **PR6 перед позднейшими editor изменениями:** attachment selection/lifecycle стабилизируется независимо от Markdown transformations. Orphan reconciliation, archive validation и HTTP methods имеют собственные regressions. Достаточных причин обязательного раздробления шести ограниченных findings не установлено; конкретный fix должен соблюдать запрет несвязанного redesign.
+7. **PR7 перед PR8:** shared custom structural grammar закрывается в PR7 целиком, включая mention recipients и translation structure protection. PR8 не оставлен местом для второй competing grammar/компенсации первой. LOC-08 direction round-trip и durable translation generations остаются самостоятельными задачами PR8; это предотвращает повторную переделку одного структурного контракта.
+8. **PR9 отдельно:** URL/search state и известные source lang/dir на discovery surfaces не требуют расширения durable translation jobs/provider scope. Наличие общих presentation файлов само по себе не требует merge с PR8.
+9. **PR10 после semantic исправлений:** interaction/selection/disabled/layout проверяются на принятом editor baseline. Два preview defects — bounded fixture/router corrections в том же представительном tool surface; обязательной причины вынести их в отдельный PR нет. Кодовый regression и production/tooling classification остаются разными, preview не выдаётся за production acceptance.
+10. **PR11 последний:** закрывает DOC-01 и проверяет остатки четырёх подтверждённых doc findings. Это не разрешение откладывать обязательные project-state/doc changes каждого implementation PR: handoff execution plan прямо требует их до whole-PR review. DOC-02 всегда относится к фактической authoritative migration chain после изменений, а не к захардкоженному старому0044. Будущее verified/merged состояние заранее не записывается.
+
+План задаёт допустимую последовательность. Не все соседние PR являются жёсткой causal зависимостью, и это не нужно для его корректности. Важные version/structural/state boundaries учтены; зависимости по незамерженным branches не создаются. Факт пересечения views/editor/repository файлов не является самостоятельным основанием искусственного split/merge: каждый следующий PR строится от уже принятого main.
+
+### Done criteria и два уточнения FPLAN-T1
+
+**FPLAN-01 / PR2 / AUTH-LINK-01 — принимаю.** Позитивный same-email flow недостаточен: regression должен подтвердить владение/авторизацию связываемой local identity и запрет доступа/implicit linking лишь по совпадению unverified email. Этот отрицательный контроль не позволяет выдать ослабление protective gate за корректное исправление. Конкретный безопасный linking/verification mechanism не предписан; реальные Google credentials/provider smoke не требуются и не объявляются выполненными.
+
+**FPLAN-02 / PR6 / ATTACH-04 — принимаю.** Проверка с несколькими pending/stored файлами и набранным текстом должна показать: Remove одного pending сохраняет текст и остальные выбранные файлы, late ACK не восстанавливает снятый файл. Это прямо проверяет отличие selective Remove от whole Cancel. Не требуется per-file DELETE/network abort.
+
+Остальные критерии достаточно конкретны для назначения bounded implementation tasks: они называют broken invariant и наблюдаемый результат, не требуют новой архитектуры. В частности, PR3 различает typed/unexpected/cleanup cases и проверяет buffer/logging, PR4 задаёт concurrent/constraint/privilege cases, PR7 сохраняет обе custom-grammar подпроблемы, PR8 проверяет policy generations/bundle hit/direction, PR9 — URL/results/metadata, PR10 — функциональные interaction/layout/preview failures. Конкретные технические решения и безопасные размеры regression fixtures выбираются при реализации, а не подменяются обязательным переписыванием системы.
+
+### Scope и owner decisions сохранены
+
+- AUTH-LOCALE-RETURN-01: accepted option A, remap только безопасного внутреннего nested destination, sanitizer не ослабляется; query/hash не теряются.
+- DOC-04: effective permission authoritative, moderator/admin — initial/default grants, custom roles/overrides сохраняются.
+- DOC-03: moderator-only pending Disputed; не вводить новый public badge.
+- M-M10/F06 — deferred contrast refinement; не подмешивать его в текущий PR10. ARCH-02, общий content max, raw UUID, generic pagination и прочие observations не возвращены в fix scope.
+- Реальные Cloudflare/Neon/Hyperdrive/R2/OAuth/backup/restore, real provider/Queue/production rollout и owner visual acceptance не подразумеваются. Local/CI internal contract checks не выдаются за external acceptance.
+- Текущая planning review не назначает Мишаню участником. Future whole-PR review следует актуальному AGENTS и более поздним owner instructions; состав planning reviewers не переопределяет молча будущие роли.
+- `PROJECT_STATE.md`/implementation tasks относятся к реально проверенному exact head. Merge остаётся действием владельца. На этом шаге ничего не реализовано и не запущено из будущего плана.
+
+### Передача результата
+
+**Архитектурная проверка завершена: ACCEPT с двумя уже принятыми уточнениями Лиры, новых обязательных изменений нет.** Мира может свести командный fix-plan из checkpoints и FPLAN-T1/T2; дальнейший implementation task PR1 — отдельный шаг после принятия плана. Владелец не должен пересказывать scope/замечания между агентами: технический контекст и результат уже опубликованы в PR236.
+
+Evidence этого review — полные planning comment inputs и механическая set/coverage сверка (`FIX-PLAN-ARCHITECTURE-REVIEW.json`). Новые product tests, CI, native/browser/PG acceptance, полный кодовый аудит, implementation/schema/dependency/main изменения не выполнялись. Чужие личные файлы и общий service-channel не менялись; публикация только в личный файл Лёвы и краткий PR comment.
+
+---
+
 ## Финальное совещание — технический итог Лёвы / T5 (2026-10-25)
 
 **Поручение:** [PR236 comment6392064227](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6392064227), после публикации T4 Лиры. Проверены консолидация Миры6391992192 / shared commit046365d0f458ea955687e4d1446a20ef96e48736, T4 Лиры6392203749 / file blob19ff8030c986ab8d74d9ff5f432cc2f57e91e1ba и поздние checkpoint verdicts, изменяющие мой прежний итог. Код baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не изменился. Это финальная техническая сверка результатов, не новый аудит репозитория.
