@@ -8,20 +8,20 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 ### Итоговая классификация
 
-1. **60 подтверждённых current-Stage technical root-cause groups.**
+1. **61 подтверждённый current-Stage technical root-cause group.**
 2. **2 подтверждённых current preview/tooling defects** — отдельно от production/runtime.
 3. **4 подтверждённых documentation/SOT defects** — отдельно от implementation.
-4. **1 незакрытый product-requirement question:** `AUTH-LOCALE-RETURN-01`.
+4. `AUTH-LOCALE-RETURN-01` закрыт решением владельца: при смене locale безопасный nested `returnTo` должен сохранять исходный destination с заменой старой locale на новую.
 5. `NOTIFY-BODY-01` оставлен **observation / guard-order hardening**, а не подтверждённый current defect: порядок body parse до auth/origin установлен, но самостоятельный current bypass/resource failure не установлен.
-6. Technical/documentation/preview **unchecked queue = 0**. Открыт не аудит finding, а одно нормативное решение владельца по `AUTH-LOCALE-RETURN-01`.
+6. Technical/documentation/preview **unchecked queue = 0**. Нормативных вопросов по итогам сверки больше не осталось.
 
-Если владелец требует сохранять nested destination при смене locale, `AUTH-LOCALE-RETURN-01` становится 61-м technical defect. Если safe fallback на root новой locale считается допустимым контрактом, finding снимается.
+По решению владельца выбран вариант A: смена языка не должна терять исходный внутренний destination. Следовательно `AUTH-LOCALE-RETURN-01` включён в final current-Stage registry как технический дефект №61.
 
 ### Canonical technical registry — 60
 
 | Область | Canonical IDs |
 |---|---|
-| Auth/session/identity | `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`, `AUTH-RATE-LIMIT-RACE-01`, `AUTH-SESSION-AVAIL-01`, `XR-CROSS-TAB-IDENTITY` |
+| Auth/session/identity | `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`, `AUTH-LOCALE-RETURN-01`, `AUTH-RATE-LIMIT-RACE-01`, `AUTH-SESSION-AVAIL-01`, `XR-CROSS-TAB-IDENTITY` |
 | Error/runtime boundaries | `ARCH-01`, `ARCH-03`, `SEC-01`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01` |
 | Forum/read/discovery | `CORE-01`, `CORE-02`, `CORE-03`, `DISCOVERY-01` |
 | Database/contracts | `DB-01`, `DB-02`, `DB-03` |
@@ -60,14 +60,12 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 7. Aggregate dependency-advisory count не считается одним defect. Отдельно подтверждён применимый `AUTH-RATE-LIMIT-RACE-01`.
 8. Stage 6 live Cloudflare/Neon/Hyperdrive/R2/OAuth/backup/restore acceptance остаётся вне этого audit verdict.
 
-### Открытый product decision
+### Owner decision — `AUTH-LOCALE-RETURN-01`
 
-`AUTH-LOCALE-RETURN-01`:
-
-1. Current locale switch сохраняет query, но nested `returnTo` со старым locale может быть отвергнут штатным safe redirect sanitizer и привести к root новой locale.
-2. Security bypass не установлен; ослаблять sanitizer нельзя.
-3. Нормативный вопрос только один: **обязан ли language switch переписать locale внутри безопасного nested destination и сохранить исходную страницу после последующего sign-in/sign-up?**
-4. Это решение принадлежит владельцу. До него finding не включён в 60 и не снят.
+1. Владелец выбрал вариант A: при смене языка безопасный внутренний nested `returnTo` должен сохранять исходную страницу, заменяя старую locale на новую.
+2. Safe redirect sanitizer ослаблять нельзя; remap применяется только после обычной проверки внутреннего destination.
+3. Текущий fallback на root новой locale при таком сценарии не соответствует принятому продуктовым контракту.
+4. `AUTH-LOCALE-RETURN-01` поэтому включён в final current-Stage technical registry.
 
 ### Provenance / limits
 
@@ -80,10 +78,10 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 ### Финальный consensus
 
 1. Лира T4: согласна с консолидацией Миры; список технических расхождений пуст.
-2. Лёва T5: рекомендует тот же registry `60 technical + 2 preview/tooling + 4 documentation/SOT`; технических расхождений нет.
-3. Поэтому этот registry считается согласованным командным итогом общей сверки.
-4. `AUTH-LOCALE-RETURN-01` остаётся единственным вопросом владельцу и не включён в число 60 до продуктового решения.
+2. Лёва T5: рекомендует тот же registry; технических расхождений нет.
+3. Владелец затем выбрал вариант A для `AUTH-LOCALE-RETURN-01`, поэтому final technical registry увеличен с 60 до 61.
+4. Итог общей сверки: **61 technical + 2 preview/tooling + 4 documentation/SOT**, открытых product questions нет.
 
 ### Следующий шаг
 
-После решения владельца по `AUTH-LOCALE-RETURN-01` сформировать fix-plan для окончательного current backlog. Implementation до утверждения плана не начинать.
+Сформировать fix-plan для окончательного current backlog `61 technical + 2 preview/tooling + 4 documentation/SOT`. Implementation до утверждения плана не начинать.
