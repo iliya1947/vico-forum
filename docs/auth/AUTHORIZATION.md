@@ -238,7 +238,7 @@ unauthenticated endpoint для bootstrap быть не должно. Real exter
 
 ## Better Auth boundary
 
-Better Auth `1.7.4` остаётся authentication/session provider. Better Auth Admin plugin не
+Better Auth `1.7.7` остаётся authentication/session provider. Better Auth Admin plugin не
 является source of truth для Vico application authorization: его user/session administration
 capabilities и code-configured role model не заменяют описанный здесь dynamic RBAC + per-user
 overrides.
