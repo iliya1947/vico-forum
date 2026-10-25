@@ -1,5 +1,16 @@
 # Shared service channel
 
+## Текущая реализация — пакет 3 failure semantics + published-edit recovery (2026-10-25)
+
+- PR #238 замержен владельцем; новый baseline `main f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Завершены пакеты 1–2 принятого 11-PR fix-plan; осталось 9 пакетов.
+- Следующая implementation-задача назначена Лёве и ограничена пакет3.
+- Scope: `ARCH-01`, `ARCH-03`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01`, `SEC-01`, `XR-THROWN-ACTION-BUFFER`, `EDITOR-PUB-01`, `EDITOR-PUB-02`.
+- Требуемый результат: known domain/dependency failures, unexpected faults и cleanup failures имеют корректную failure semantics; unexpected ошибки остаются диагностируемыми и не маскируются как controlled unavailable; published-edit failure/conflict не теряет in-memory editor text и имеет штатное recovery/rebase поведение.
+- Границы: не расширять scope до следующих audit packages, future hardening или redesign; visual acceptance, production/external actions не запускать без отдельного запроса.
+- После реализации нужен отдельный stable exact head, applicable tests/CI и новый review-cycle.
+
+
 ## Текущая реализация — пакет 2 auth/session/identity (2026-10-25)
 
 - PR238 включает шесть назначенных technical findings и DOC04. После review исходного head выполнена bounded correction `AUTH-LINK-STALE-IDENTITY-01` по назначению [6400105733](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400105733). `PR238-LIRA-01` — alias той же группы.
