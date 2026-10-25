@@ -90,6 +90,29 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 4. Current runtime и `docs/auth/AUTHORIZATION.md` соответствуют принятому контракту.
 5. Role-only формулировка в `docs/EDITOR.md` и связанный descriptor считаются устаревшей документацией и входят в `DOC-04`; изменения кода authorization для этого finding не требуются.
 
+### Утверждаемый fix-plan — 11 implementation PR
+
+1. Better Auth dependency/rate-limit — `AUTH-RATE-LIMIT-RACE-01`.
+2. Auth/session/identity — 6 technical + `DOC-04`.
+3. Failure semantics + published-edit recovery — 8 technical.
+4. Database contracts + notifications/read-state — 6 technical + `DOC-02`.
+5. Help lifecycle + tag amplification — 4 technical + `DOC-03`.
+6. Attachments — 6 technical.
+7. Editor/Markdown semantic correctness — 11 technical.
+8. Localization/translation runtime — 9 technical.
+9. Search/discovery content integrity — 3 technical.
+10. Editor interaction/UI + preview tooling — 7 technical + 2 preview.
+11. Documentation/current-state closeout — `DOC-01` и только оставшиеся passages из `DOC-02/03/04`.
+
+Полный execution plan с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**.
+
+Общие границы:
+- каждый PR bounded и строится от уже принятого актуального `main`;
+- implementation и whole-PR review разделены;
+- exact-head checks/review выполняются для каждого implementation PR отдельно;
+- owner visual acceptance и production/external rollout не запускаются автоматически;
+- deferred/future findings не возвращаются в current scope без нового основания.
+
 ### Следующий шаг
 
-Сформировать fix-plan окончательного backlog `61 technical + 2 preview/tooling + 4 documentation/SOT`. Открытых owner/product decisions по аудиту больше нет. Implementation до утверждения плана не начинать.
+После одобрения плана подготовить через #236 короткое implementation task только для **PR 1 — `AUTH-RATE-LIMIT-RACE-01`**. Саму реализацию до отдельной команды не начинать.
