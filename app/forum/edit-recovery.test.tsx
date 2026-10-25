@@ -110,6 +110,10 @@ describe("real topic action and mounted editor recovery", () => {
     await submit(state.router, form);
     expect(form.querySelector('[name="editorOperationId"]')).toHaveValue(old);
     expect(screen.getByText(String(canonicalEnglishCatalog.common.postEditConflict.source))).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    expect(form.querySelector('[name="expectedRevisionId"]')).toHaveValue("r1");
+    expect(form.querySelector('[name="editorOperationId"]')).toHaveValue(old);
     fireEvent.click(within(form).getByRole("button", { name: "Apply my edit to the current revision" }));
     const next = form.querySelector<HTMLInputElement>('[name="editorOperationId"]')!.value;
     expect(next).not.toBe(old);

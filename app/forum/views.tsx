@@ -2224,6 +2224,7 @@ export function TopicView({
   }, [location.search, topic.id, editablePostIds]);
 
   function openPostEditor(postId: string, revisionId: string) {
+    if (editingPostId === postId) { editEditorRef.current?.focus(); return; }
     setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
     setEditBaseRevisionId(revisionId);
     setEditReady(false);
