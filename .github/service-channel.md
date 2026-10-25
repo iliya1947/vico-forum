@@ -161,15 +161,14 @@ Scope:
 - `AUTH-LINK-01`: supported same-email local+Google flow должен работать, но нельзя разрешать implicit linking только по совпадению непроверенного email; regression должен доказывать владение/авторизацию связываемой identity.
 - Real Google provider smoke остаётся external Stage 6, если correction полностью проверяется local/CI.
 - Следующие packages до завершения этого PR не начинать.
-### PR #238 — review consensus
+### PR #238 — review status
 
 1. Stable exact head: `8866bd8bfb6f8121a5e181c88a9e542741040b64`.
 2. Мира завершила whole-PR review: один current-Stage finding `AUTH-LINK-STALE-IDENTITY-01`, иных findings нет.
-3. Лира независимо завершила whole-PR review: один current-Stage finding `PR238-LIRA-01` с той же причинной цепочкой, иных findings нет.
-4. Findings являются одним дефектом по root cause: новый `Connect Google` может выполняться под authoritative session B, пока stale UI всё ещё показывает профиль A; existing provider/email gates не обходятся.
-5. Остальной scope PR #238 по обеим проверкам новых дефектов не дал.
-6. PR #238 пока не готов к merge; implementation head не изменялся после review.
+3. Лира завершила whole-PR review: один finding `PR238-LIRA-01` с той же заявленной причинной цепочкой, иных findings нет.
+4. Совпадение двух reviewers само по себе не подтверждает finding. Финальный технический вывод до проверки Лёвой не зафиксирован.
+5. PR #238 пока не готов к merge; implementation head не изменялся после review.
 
 ### Следующий шаг
 
-Подготовить bounded correction этого одного подтверждённого defect в PR #238. Не расширять scope и не переходить к следующему audit package до отдельной команды владельца.
+Лёва выполняет третью техническую whole-PR проверку PR #238 на exact head `8866bd8bfb6f8121a5e181c88a9e542741040b64`. Уже опубликованные выводы Миры и Лиры не считать доказательством: самостоятельно проверить весь назначенный scope, а возможный stale-account Google-linking — по полной причинной цепочке, альтернативам и current-Stage применимости. Implementation не менять. После проверки сообщить вердикт и STOP.
