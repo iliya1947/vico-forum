@@ -1,5 +1,46 @@
 # Лира — ChatGPT-6
 
+## PR #239 — независимый whole-PR review / Лира (2026-10-25) — FINDING
+
+**Прямое разрешение на публикацию:** владелец в текущем чате после отчёта Лиры. Задача Миры: [PR #236, comment 6401638181](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6401638181). Implementation [PR #239](https://github.com/iliya1947/vico-forum/pull/239) на стабильном exact head `18c849c92eb597ccd39871914290cf6164fc209b`, base `main f59785c50e91fc1615b568b74a0a56909a92c871`. Код package 3 — 37 изменённых файлов, назначенный scope `ARCH-01`, `ARCH-03`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01`, `SEC-01`, `XR-THROWN-ACTION-BUFFER`, `EDITOR-PUB-01`, `EDITOR-PUB-02`; связанные code paths, test suites, current Stage/SOT.
+
+**Verdict: FINDING, не PASS.** Один bounded функциональный UI/localization defect current Stage в `EDITOR-PUB-02`; остальные 7 групп — без новых подтверждённых findings в выполненной code-based проверке. Это **не отдельный новый root-cause пункт общего 61-group audit**: непройденный acceptance одного из назначенных findings `EDITOR-PUB-02`.
+
+### PR239-LIRA-01 — выбор edit-specific conflict feedback по открытому editor state, а не по origin action
+
+**Root cause:** `app/forum/views.tsx:2581–2582` выбирает `postEditConflict` при `forumWriteError === "conflict" && editingPostId`. Но `editingPostId` — локальное состояние открытого поля редактирования; оно не определяет `intent` завершившегося route action. Non-edit action `markSolved` возвращает обычный `ForumMutationError {error:"conflict"}` без `operation:"postEdit"`.
+
+**Доказанный current-code path при достаточных правах (пользователь может и редактировать собственный post, и управлять решением темы):**
+1. В текущей вкладке тема ещё `!isSolved`, открыт редактор собственного post (`editingPostId` non-null) и доступна форма `markSolved` в admin topic tools: `app/forum/views.tsx:2444–2475`. Её видимость от edit state не зависит.
+2. В другой вкладке тему помечают solved. Текущая вкладка ещё содержит старые loader data и кнопку `markSolved`.
+3. Отправляется именно `intent=markSolved`, `app/forum/actions.server.ts:382–390` вызывает `writer.markTopicSolved`. Репозиторий проверяет `topic.isSolved` под row lock и выбрасывает `ForumStateConflictError("topic is already solved")` — `db/forum-repository.ts:3488–3499`.
+4. `runForumMutation` маппит `ForumStateConflictError` в `{error:"conflict"}`, status `409`, не `PostEditConflictData` (`app/forum/mutations.server.ts`). `editorClientAction` сохраняет controlled result без подмены.
+5. `TopicView` обрабатывает `actionData` как `forumWriteError` и, поскольку собственный редактор ещё открыт, печатает перевод ключа `postEditConflict`. Пользователь видит «Правка конфликтует с текущей версией сообщения или аккаунтом...» вместо сообщения о конфликте изменения статуса темы. Это ошибочный контекст реакции UI на action; server state/permissions и несохранённый editor text не меняются.
+
+**Отделение альтернатив:** это не shared 409 причина редактора, не ошибка PostgreSQL, не баг выбора server mutation; server correctly rejects stale solve. Возникает из выбранного presentation condition. Exact-head `app/forum/edit-recovery.test.tsx` тестирует failed `editPost`, где `editingPostId` и `intent=editPost` совпадают, но не покрывает параллельно открытый редактор и non-edit `409`.
+
+**Scope и приёмка:** выбирать edit-specific feedback исходя из реально завершившегося `postEdit` action, а не факта открытого редактора. Regression: редактор открыт + чужое разрешённое изменение темы генерирует non-edit 409 → показывается non-edit context; editPost 409 по-прежнему показывает `postEditConflict`, сохраняет text/attachment intent и rebase flow. Конкретный дизайн/способ реализации не предписывается.
+
+**Evidence limit:** исходники и причинная цепочка проверены непосредственно; этот cross-action UI сценарий лично не запускался в браузере и не подтверждён самостоятельным executable regression. Свидетельств из тестов автора достаточно для прочих scoped paths, но не для этого missing combination. Не утверждается production incident.
+
+### Другие проверки и limits
+
+- `ARCH-01`: ordinary writer known unavailable → typed 503, unexpected/schema faults thrown; controlled domain errors не смешаны.
+- `ARCH-03`: best-effort cleanup client/pool сохраняет первичный failure и успешный persisted result; app/native PG regressions прочитаны.
+- `POST-EDIT-AVAIL-01`: protected edit resume имеет typed 503 boundary и read/authorization tests.
+- `FORUM-READ-AVAIL-01`: primary read loaders typed 503, неожиданная ошибка остаётся thrown, optional presentation degradation сохраняется.
+- `SEC-01`: Router handleError только allowlisted errorKind/databaseCode/stack path metadata, без SQL/parameters/unpublished content; focused tests.
+- `XR-THROWN-ACTION-BUFFER`: editorClientAction сохраняет mounted form при unexpected server/transport faults; success redirects и cancel продолжают работать.
+- `EDITOR-PUB-01`: action получает актуальную public revision при stale edit409, explicit rebase не уничтожает local text/attachment intent, newer loader supersedes старую recovery. React Router tests и native PG stale edit path проверены.
+- `EDITOR-PUB-02`: incorrect alternative 409 feedback described above; edit409-specific EN/RU/HE strings сами по себе правильны.
+
+**CI exact-head:** [GitHub Actions 40219758202](https://github.com/iliya1947/vico-forum/actions/runs/40219758202) — `checks` SUCCESS, `database` SUCCESS. Автор сообщил 1051 application / 296 native PostgreSQL + focused tests, и пять Chromium→built Worker→PG cases PASS. **Лира их лично не перезапускала**; independent code and test review не следует выдавать за новый end-to-end run. Production, external APIs, visual acceptance не запускались. Implementation PR239, `main`, service-channel и чужие personal files не изменялись.
+
+**Review Лиры завершён; после публикации STOP.** Мира получает весь контекст через коммент #236 и координирует дальнейшую независимую проверку/исправление по регламенту, без технического пересказа со стороны владельца.
+
+---
+
+
 ## PR #238 — повторная независимая whole-PR проверка / Лира (2026-10-25) — PASS
 
 **Публикация по прямому разрешению владельца в текущем чате**, после завершения проверки и сообщения verdict владельцу. Поручение Миры: [PR #236 comment 6400476967](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400476967). Implementation [PR #238](https://github.com/iliya1947/vico-forum/pull/238), **stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80`**, base `main ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`. Старые verdicts относятся к `8866bd8bfb6f8121a5e181c88a9e542741040b64` и не перенесены автоматически.
