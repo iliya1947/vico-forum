@@ -29,7 +29,7 @@ export function ProfileView({ locale, profile, isOwner = false, editing = false,
         <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{profile.name}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
         {isOwner && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
-      {isOwner && !editing ? <GoogleAccountLink callbackURL={path} /> : null}
+      {isOwner && !editing ? <GoogleAccountLink callbackURL={path} expectedUserId={profile.id} /> : null}
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={profile.joinedAt}>{new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(profile.joinedAt))}</time></dd></div>
         <div><dt>{t("profileMessages")}</dt><dd>{new Intl.NumberFormat(locale).format(profile.messageCount)}</dd></div>

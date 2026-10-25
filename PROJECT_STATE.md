@@ -20,6 +20,30 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Bounded correction — stale-identity Google linking (2026-10-25)
+
+Review пакета2 подтвердил `AUTH-LINK-STALE-IDENTITY-01`: кнопка на stale профиле A
+могла запустить связывание под текущей server session B. Теперь own-profile action
+передаёт profile ID в `x-vico-link-user` только как expectation. Existing Better Auth
+before-hook для `/link-social` разрешает authoritative session и отклоняет отсутствующую
+или несовпавшую expectation с `409` до OAuth state/account write; guest остаётся `401`.
+Штатный endpoint использует ту же проверенную request-local session. Signed state и
+provider/email verification/origin checks сохраняются; client не подменяет expectation
+на другой account и показывает существующий auth failure feedback.
+
+Новая native PostgreSQL regression проверяет stale A/B+GoogleB, missing expectation,
+normal A/A redirect→callback→persisted link, mismatched/unverified provider, guest,
+foreign Origin и сохранение target при смене cookie после выдачи state. Positive paths
+подтверждают один session lookup внутри link request. До исправления два regression cases
+возвращали `200` вместо `409`; после исправления весь набор проходит. Provider code exchange
+и user info синтетические, реальные Google credentials/calls не использовались.
+
+Локально прошли 997 application и 291 PostgreSQL tests, typecheck, lint (одно прежнее
+warning), application/UI-preview builds, migration-history guard и local built Worker smoke.
+Схема/миграции/dependencies и общая permission architecture не менялись. Exact-head CI и
+новый whole-PR review должны проверяться после публикации; прежние verdicts относятся к
+старому implementation head. External/production/visual acceptance не запускались.
+
 ## Audit correction — auth/session/identity (2026-10-25)
 
 Второй ограниченный audit-пакет исправляет `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`,

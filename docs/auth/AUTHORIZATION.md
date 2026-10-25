@@ -256,6 +256,14 @@ An existing local user signs in with the password first, then explicitly connect
 from the own profile through Better Auth `linkSocial`. A guest or a different local identity
 cannot claim that account merely by supplying its email. External Google acceptance remains Stage 6.
 
+Link initiation sends the displayed profile ID in `x-vico-link-user` as an expectation,
+not authority. The `/link-social` before-hook resolves the authoritative session and rejects
+a missing/mismatched expectation with `409` before creating OAuth state or linking an account;
+guests remain `401`. The endpoint reuses that checked request-local session, and the existing
+signed OAuth state retains its target across the provider round trip. A conflict shows the
+existing auth failure feedback; the client never retries with a different account automatically.
+Provider/email verification and origin checks remain mandatory.
+
 ### Session and stale editor failures
 
 Pre-routing session cookies precede cookies from the final endpoint response, so an earlier

@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "better-auth/api";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { AuthSessionUnavailableError, type AuthRuntime, type AuthSession } from "./request-context";
@@ -30,8 +30,18 @@ export const betterAuthEmailPasswordOptions = {
   maxPasswordLength: 128,
 } as const;
 
-export const betterAuthRegistrationHooks: NonNullable<BetterAuthOptions["hooks"]> = {
+export const betterAuthRequestHooks: NonNullable<BetterAuthOptions["hooks"]> = {
   before: createAuthMiddleware(async (ctx) => {
+    if (ctx.path === "/link-social") {
+      // The endpoint reuses this request-local session when it creates OAuth state.
+      const current = await getAuthoritativeSessionFromCtx(ctx);
+      if (!current) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+      const expectedUserId = ctx.headers?.get("x-vico-link-user");
+      if (!expectedUserId || expectedUserId !== current.user.id) {
+        throw new APIError("CONFLICT", { code: "VICO_LINK_IDENTITY_CHANGED", message: "Account changed. Refresh before connecting Google." });
+      }
+      return;
+    }
     if (ctx.path !== "/sign-up/email") return;
     const suppliedName = ctx.body?.name;
     if (typeof suppliedName !== "string") {
@@ -66,7 +76,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
     }),
     user: { additionalFields: betterAuthUserAdditionalFields },
     emailAndPassword: betterAuthEmailPasswordOptions,
-    hooks: betterAuthRegistrationHooks,
+    hooks: betterAuthRequestHooks,
     socialProviders: {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,

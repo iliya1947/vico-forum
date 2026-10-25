@@ -114,9 +114,10 @@ describe("Better Auth PostgreSQL runtime", () => {
             iss: "https://accounts.google.com", jti: "test", family_name: "Owner", given_name: "Google", picture: "" } }),
       } },
     });
-    const call = (path: string, body: object, cookie?: string) => auth.handler(new Request(`${env.BETTER_AUTH_URL}/api/auth/${path}`, {
+    const call = (path: string, body: object, cookie?: string, expectedUserId?: string) => auth.handler(new Request(`${env.BETTER_AUTH_URL}/api/auth/${path}`, {
       method: "POST", headers: { "content-type": "application/json", Origin: env.BETTER_AUTH_URL,
-        "cf-connecting-ip": "203.0.113.41", ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(body),
+        "cf-connecting-ip": "203.0.113.41", ...(cookie ? { Cookie: cookie } : {}),
+        ...(expectedUserId ? { "x-vico-link-user": expectedUserId } : {}) }, body: JSON.stringify(body),
     }));
     const signup = await call("sign-up/email", { name: "Local owner", email, password: "integration-password-123" });
     expect(signup.status).toBe(200);
@@ -131,12 +132,17 @@ describe("Better Auth PostgreSQL runtime", () => {
     expect((await call("link-social", social)).status).toBe(401);
     // A different authenticated account cannot link this Google email either.
     const other = await call("sign-up/email", { name: "Other", email: "other-google@example.test", password: "integration-password-123" });
+    const otherUser = await other.json() as { user: { id: string } };
     const otherCookie = other.headers.getSetCookie().find((entry) => entry.includes("session_token="))!.split(";", 1)[0];
-    expect((await call("link-social", social, otherCookie)).ok).toBe(false);
+    const mismatchedEmail = await call("link-social", social, otherCookie, otherUser.user.id);
+    expect(mismatchedEmail.status).toBe(401);
+    expect((await mismatchedEmail.json() as { code: string }).code).toBe("LINKING_DIFFERENT_EMAILS_NOT_ALLOWED");
     providerVerified = false;
-    expect((await call("link-social", social, cookie)).ok).toBe(false);
+    const unverifiedProvider = await call("link-social", social, cookie, local.user.id);
+    expect(unverifiedProvider.status).toBe(401);
+    expect((await unverifiedProvider.json() as { code: string }).code).toBe("LINKING_NOT_ALLOWED");
     providerVerified = true;
-    expect((await call("link-social", social, cookie)).status).toBe(200);
+    expect((await call("link-social", social, cookie, local.user.id)).status).toBe(200);
     const signedIn = await call("sign-in/social", social);
     expect(signedIn.status).toBe(200);
     expect((await signedIn.json() as { user: { id: string } }).user.id).toBe(local.user.id);

@@ -2,9 +2,11 @@ import { createAuthClient } from "better-auth/react";
 
 const client = createAuthClient();
 
-export async function linkGoogleAccount(callbackURL: string): Promise<boolean> {
+export async function linkGoogleAccount(callbackURL: string, expectedUserId: string): Promise<boolean> {
   const { error } = await client.linkSocial({ provider: "google", callbackURL,
-    errorCallbackURL: `${callbackURL}?linkError=1` });
+    errorCallbackURL: `${callbackURL}?linkError=1` }, {
+    headers: { "x-vico-link-user": expectedUserId },
+  });
   return !error;
 }
 

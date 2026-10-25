@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 import { linkGoogleAccount } from "./auth-client";
 
 /** Explicit linking requires an authenticated local identity and provider ownership. */
-export function GoogleAccountLink({ callbackURL, link = linkGoogleAccount }: {
+export function GoogleAccountLink({ callbackURL, expectedUserId, link = linkGoogleAccount }: {
   callbackURL: string;
-  link?: (callbackURL: string) => Promise<boolean>;
+  expectedUserId: string;
+  link?: (callbackURL: string, expectedUserId: string) => Promise<boolean>;
 }) {
   const { t } = useTranslation("common");
   const [query] = useSearchParams();
@@ -16,7 +17,7 @@ export function GoogleAccountLink({ callbackURL, link = linkGoogleAccount }: {
     if (pending) return;
     setPending(true);
     setError(false);
-    try { setError(!await link(callbackURL)); }
+    try { setError(!await link(callbackURL, expectedUserId)); }
     catch { setError(true); }
     finally { setPending(false); }
   }

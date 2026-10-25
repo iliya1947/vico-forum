@@ -17,10 +17,10 @@ it("uses explicit authenticated linking with pending and safe error feedback", a
   let finish!: (result: boolean) => void;
   const link = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
   render(<I18nextProvider i18n={i18n}><MemoryRouter>
-    <GoogleAccountLink callbackURL="/en/users/owner" link={link} />
+    <GoogleAccountLink callbackURL="/en/users/owner" expectedUserId="owner" link={link} />
   </MemoryRouter></I18nextProvider>);
   fireEvent.click(screen.getByRole("button", { name: "Connect Google" }));
-  expect(link).toHaveBeenCalledExactlyOnceWith("/en/users/owner");
+  expect(link).toHaveBeenCalledExactlyOnceWith("/en/users/owner", "owner");
   expect(screen.getByRole("button")).toBeDisabled();
   finish(false);
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(String(canonicalEnglishCatalog.common.authError.source)));
