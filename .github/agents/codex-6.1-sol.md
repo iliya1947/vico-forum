@@ -1,5 +1,63 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #238 — полный технический review автора: FINDING (2026-10-25)
+
+Назначение: [6399879967](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6399879967).
+Exact head: `8866bd8bfb6f8121a5e181c88a9e542741040b64`; base `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
+Локальный commit196d03a имеет то же дерево `d536c1656821643540e87966f200aab902a3b170`, что опубликованный head; PR head повторно проверен и не менялся. Просмотрен весь diff34files и относящиеся execution paths/SOT.
+
+**Verdict: один подтверждённый current-Stage P2 defect; PASS/merge пока невозможны.** Это техническая самопроверка автора реализации, а не третий независимый аудит. Выводы Миры/Лиры были известны до проверки; их совпадение доказательством не использовалось.
+
+### AUTH-LINK-STALE-IDENTITY-01 — подтверждён собственной проверкой
+
+`PR238-LIRA-01` — alias того же finding, не второй дефект.
+
+Исходная цепочка:
+1. `app/routes/profile.tsx:24` вычисляет isOwner при sessionA; `app/forum/profile-view.tsx:32` оставляет ConnectGoogle на загруженном профилеA.
+2. После смены browser session наB старая вкладка до очередного heartbeat/revalidation может сохранять профильA. Presence interval60000 и visibility event — последующая eventual revalidation, не guard нажатия.
+3. `app/auth/google-account-link.tsx:19` вызывает link(callbackURL); `app/auth/auth-client.ts:6` передаёт provider+callbackURL+errorCallbackURL без expected visible actor. Auth API route направляет запрос напрямую в BetterAuth.
+4. В установленном BetterAuth1.7.7 `api/routes/account.mjs` linkSocial использует c.context.session и сохраняет link.userId/session.user.id + link.email в OAuth state. В `oauth2/state.mjs` callbackURL сохраняется отдельно как адрес возврата.
+5. `api/routes/callback.mjs` → linkOAuthAccount использует именно userId из state; profile ID из callbackURL не выбирает и не проверяет target identity.
+6. Поэтому sessionB + подходящий verified GoogleB создаёт связь уB и возвращает браузер на профильA. GoogleA при той же sessionB отклоняется штатной same-email проверкой.
+
+**Новая локальная проверка полного redirect/state/callback path:** настоящие BetterAuth1.7.7 HTTP handlers и production Vico options; только persistence заменён memory adapter, внешняя code-exchange/getUserInfo boundary — synthetic provider. Два controls выполнены, оба PASS как воспроизведение текущего поведения:
+
+| Видимый профиль / current session | Provider | Результат |
+|---|---|---|
+| A / B | verified GoogleA | link initiation200; callback302 с error; Google-связей0 |
+| A / B | verified GoogleB | link initiation200; callback302 на профильA; Google-связь записана с userIdB, неA |
+| A / guest | любой | link-social401 до state/link |
+
+В обоих provider cases guest401 проверяется отдельно. Синтетический провайдер возвращает уже подтверждённую identity; тест не отключает production verification policy и не утверждает реальную Google acceptance. Signed state, его cookie validation, настоящий callback handler, account email gates и target adapter write не заменялись. Native multi-tab/browser/Google/production E2E не выполнялся.
+
+Локальные artifacts: `/workspace/work/pr238-review/link-boundary.test.ts`, `link-results.json`, `link-boundary-evidence.json`. Реализация PR не менялась; review harness находится вне worktree.
+
+**Уточнение published finding:** это не захват аккаунта и не обход email/provider ownership. Отклонение GoogleA не опровергает defect: GoogleB соответствует текущей server identityB и проходит все штатные gates. CallbackURL профиляA, fresh sessionB и eventual heartbeat также не предотвращают операцию надB. Уже сформированный OAuth state фиксируетB; сам callback не переопределяет target через profile URL. Текущие PR integration tests проверяли B+GoogleA mismatch, но не этот B+GoogleB сценарий при stale UIA.
+
+**Требуемое исправленное поведение:** stale visibleA/currentB не должен незаметно инициировать/выполнить linking дляB. Нужна проверяемая привязка операции к отображаемой identity либо её осознанное обновление до запуска; одна предварительная client getSession проверка не доказывает отсутствие гонки между check и link request. Существующие provider/email/authentication/origin gates сохранить. Конкретный механизм этим review не предписывается. После correction проверить staleA/B+GoogleB deny/no mutation, нормальный same-identity link success и guest/mismatched-provider negatives.
+
+### Весь остальной назначенный scope
+
+| Scope | Проверка / технический итог |
+|---|---|
+| AUTH-01 | Chronological Set-Cookie lookup→endpoint сохраняет cache headers и завершающий session result; проверены expired-session/login, sliding refresh, request composition. Дополнительных findings нет. |
+| AUTH-02 | Role existence/key-share внутри существующей serialized authz management transaction; missing-role → typed404, assignment rollback; runtime role имеет необходимые SELECT/UPDATE. Lockout/effective permissions не ослаблены. Других findings нет. |
+| AUTH-LINK-01 | Explicit own-profile link поддерживает unverified local email без снятия implicit-link gate; same-email/provider ownership contracts сохранены. Блокер описан выше. |
+| AUTH-LOCALE-RETURN-01 | Только credential pages, старый sanitizer до remap + новый после; registered canonical target из navigation provider; query/hash сохраняются, unsafe/cross-locale destinations отвергаются. OwnerA соблюдён. Новых findings нет. |
+| AUTH-SESSION-AVAIL-01 | Request-local adapter observer сохраняет query cause до BetterAuth cause-less APIError; narrow cause-chain classifier и safe503 до Router. Unexpected/schema/config failures не становятся guest/permission denial. Дополнительных current defects не установлено. |
+| XR-CROSS-TAB-IDENTITY (editor) | Mounted editorActorId реально попадает в native FormData; четыре action paths сравнивают с request session до writer; expectation не authority. Heartbeat409 прекращает polling и revalidates. Других findings в назначенном editor path нет. |
+| DOC-04 | docs/EDITOR и auth SOT согласованы с effective forum.post.history.read, default grants/custom roles/overrides; role-name checks не добавлены. Findings нет. |
+
+Посмотрены также все сопутствующие изменения locale UI, manual values/fingerprints, preview auth-action suppression, PROJECT_STATE и тестов; новых несвязанных current defects не подтверждено. Известный исторический DOC01 не переоткрывался в этом PR.
+
+### Verification / STOP
+
+Свежий targeted run: **190 tests PASS** (auth, cookie/credential, editor/native submit, write actions, profile, presence, language UI, authorization route, Worker). Дополнительно2 local redirect/callback cases PASS. Полный995app/283PG прогон, сборки и guards — результаты предшествующей реализации на том же дереве, не новый review-run; native PostgreSQL suite в этом review не перезапускался. Exact-head [CI40202422836](https://github.com/iliya1947/vico-forum/actions/runs/40202422836) повторно проверен: SUCCESS. GreenCI не снимает найденный defect.
+
+Implementation/main не изменялись; tracked diff чист. External/production/visual acceptance не запускались. **STOP после review.** Мира координирует bounded correction этого одного finding; исправление и новый exact-head review — отдельный следующий этап, мной автоматически не начаты.
+
+---
+
 ## Пакет 2 — auth/session/identity: реализация готова к review (2026-10-25)
 
 Поручение: [PR236 comment6398462662](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6398462662). В текущем чате владелец направил к PR236; выполнен только назначенный пакет2, без перехода к следующим.
