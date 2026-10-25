@@ -1,140 +1,82 @@
 # Shared service channel
 
-## Актуальный итог общей сверки Лёвы (2026-10-24)
+## AUD-20261022 — итог общей сверки (2026-10-25)
 
-**Предметная сверка опубликованных аудитов Лёвой выполнена** на code baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Это результат одного проверяющего, **не коллективное утверждение числа дефектов, не новый независимый аудит, не разрешение исправлять или merge**. Ниже прежние промежуточные статусы сохранены как история; эта запись имеет приоритет.
+Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
-- Все **119 исходных строк** сопоставлены; полная claim matrix и классифицированный инвентарь опубликованы в [личном файле Лёвы](agents/codex-6.1-sol.md), верхний итоговый раздел.
-- **58 supported scoped code groups**, отдельно **2 preview-only** и **4 документационных противоречия**. Это включает сохранённые доказательства с исходными limits и conditional/source/injected paths; не58 новых находок/production incidents, severity/fix scope не утверждены.
-- Технические62 кандидата =58 supported + **4 вопроса**: ARCH-02 runtime applicability, ATTACH-04 mandatory per-file abort, AUTH-LOCALE-RETURN-01 nested destination remap, TAG-CARDINALITY-01 domain max. Эти4 не включены в58.
-- В T3 Лиры64 technical candidates: OAuth1 исключён из моей сверки по пользовательскому scope, notification parse-order1 оставлен наблюдением. DISCOVERY/UGC получили дополнительные точные SQL/DOM proofs, ARCH-02/ATTACH-04 сужены. Это объясняет различие totals без суммирования голосов.
-- **EDITOR-PUB-01/02 разделены:** refresh/rebase409 и ошибочный solution-oriented conflict copy — разные причины. Прежняя группировка Лёвы в одну запись исправлена. Post-edit и Home остаются отдельными failure-classification locations.
-- Новые результаты части5: actual Router Home primary unavailable500, optional presence unavailable200, post-edit read/authz unavailable500, notifications unavailable503. **Post-edit не экспортирует ForumRouteError**; прежняя атрибуция этой boundary исправлена.
-- Actual Worker getSession rejection останавливает dispatch до Router; deployed platform HTTP status/body не проверен. Actual unanswered SQL/mapper и DOM показывают internal service-section metadata и отсутствие title lang при dir=auto. Прямой service-section read остаётся заблокированным. Не auth/privacy bypass.
-- Actual switcher query сохраняет, nested old-locale returnTo затем отвергается штатным sanitizer. Notification body parsing перед guest guard доказан, но bypass/resource exhaustion не установлен. CONTENT-SIZE остаётся policy observation, не standalone defect; raw client UUID requirement не установлен.
-- За сверку **28 новых различных локальных тестовых случаев passed**, ещё6 повторных/расширенных исполнений не добавлены к28. Последняя часть13/13passed. Initial harness failures частей1/3/4 сохранены с исправлениями. Не заявляется повтор всех исторических tests/CI/PG/browser proofs.
-- Мира/Мишаня файлы не изменились относительно исходного snapshot19f6a3b; дополнительно прочитан T3 Лиры blob19792f3a450bbe52b219f17e962daf7bb8793853. Чужие личные файлы не переписаны, их согласие не заявляется.
+Общая межаудиторская сверка опубликованных результатов завершена по сформированной очереди. Реализация, schema, dependencies, production/external services и `main` не менялись. Служебный PR #236 остаётся communication-only и никогда не merge.
 
-### Решения владельца — собраны после сверки
+### Итоговая классификация
 
-ATTACH-04: обязательна ли отмена одного pending upload с сохранением текста/других файлов; AUTH-LOCALE-RETURN-01: должен ли switch языка remap nested destination; TAG-CARDINALITY-01: нужен ли согласованный domain count max. ARCH-02 реальный excluded runtime не проверен; live service audit не становится обязательным. Дополнительно raw UUID correlation requirement, DOC-03 visibility и DOC-04 history role/effective permission требуют source-of-truth решения. Не переписывать требования самовольно.
+1. **60 подтверждённых current-Stage technical root-cause groups.**
+2. **2 подтверждённых current preview/tooling defects** — отдельно от production/runtime.
+3. **4 подтверждённых documentation/SOT defects** — отдельно от implementation.
+4. **1 незакрытый product-requirement question:** `AUTH-LOCALE-RETURN-01`.
+5. `NOTIFY-BODY-01` оставлен **observation / guard-order hardening**, а не подтверждённый current defect: порядок body parse до auth/origin установлен, но самостоятельный current bypass/resource failure не установлен.
+6. Technical/documentation/preview **unchecked queue = 0**. Открыт не аудит finding, а одно нормативное решение владельца по `AUTH-LOCALE-RETURN-01`.
 
-Implementation/схема/зависимости не менялись. Реальные Cloudflare, Neon, Hyperdrive, R2, OAuth, backup/restore и production acceptance исключены. Служебный PR никогда не merge.
+Если владелец требует сохранять nested destination при смене locale, `AUTH-LOCALE-RETURN-01` становится 61-м technical defect. Если safe fallback на root новой locale считается допустимым контрактом, finding снимается.
 
----
+### Canonical technical registry — 60
 
-## Актуальное обновление общей сверки — часть 4 (2026-10-24)
+| Область | Canonical IDs |
+|---|---|
+| Auth/session/identity | `AUTH-01`, `AUTH-02`, `AUTH-LINK-01`, `AUTH-RATE-LIMIT-RACE-01`, `AUTH-SESSION-AVAIL-01`, `XR-CROSS-TAB-IDENTITY` |
+| Error/runtime boundaries | `ARCH-01`, `ARCH-03`, `SEC-01`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01` |
+| Forum/read/discovery | `CORE-01`, `CORE-02`, `CORE-03`, `DISCOVERY-01` |
+| Database/contracts | `DB-01`, `DB-02`, `DB-03` |
+| Help & solutions | `HELP-01`, `HELP-02`, `HELP-MOD-01` |
+| Attachments | `ATTACH-01`, `ATTACH-02`, `ATTACH-03`, `ATTACH-04`, `ATTACH-HTTP-405-01`, `ATTACH-STRUCT-01` |
+| Editor / Markdown / UI | `EDITOR-01`, `EDITOR-02`, `EDITOR-03`, `EDITOR-04`, `EDITOR-05`, `EDITOR-06`, `EDITOR-07`, `EDITOR-08`, `EDITOR-10`, `EDITOR-11`, `EDITOR-PUB-01`, `EDITOR-PUB-02`, `LITERAL-TEXT-01`, `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`, `MARKDOWN-SPOILER-01`, `RES-EDITOR-02`, `RES-UI-01`, `RES-A11Y-01`, `CODE-HISTORY-01`, `CODE-SEARCH-01`, `M-M07`, `XR-THROWN-ACTION-BUFFER` |
+| Localization / translation | `LOC-01`, `LOC-02`, `LOC-03`, `LOC-04`, `LOC-05`, `LOC-06`, `LOC-08`, `LOC-09`, `I18N-UI-POLICY-01`, `I18N-UGC-META-01` |
+| Persistent public write amplification | `TAG-CARDINALITY-01` |
 
-Сверка **продолжается**, baseline кода `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не изменён. Последние статусы ниже уточняют прежние записи. В этой части 8 успешных исполнений: 5 новых случаев и 3 повторения прежних attachment-тестов. Всего по сверке 18 различных новых тестовых случаев; это не число дефектов.
+`MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01` — единственная causal dedup в остаточной очереди: прежние `EDITOR-09` + `LOC-07` являются двумя проявлениями одного structural mismatch. Остальные проверенные похожие families не были искусственно слиты.
 
-- **DB-03:** несоответствие внутреннего checked-in ACL-контракта подтверждено actual checker: snapshot без read-state прав принимается, с необходимыми SELECT/INSERT/UPDATE отвергается. Применимость этого repository contract сохраняется при отложенной external activation Stage6. Текущие реальные роли/production не проверены.
-- **ARCH-02:** отсутствие end после success/unexpected error подтверждено локально, но unconditional current-Stage P2 отозван. Локальные idle connections не доказывают leak/exhaustion в исключённом Worker/Hyperdrive runtime. Это наблюдение с непроверенной runtime-применимостью, не установленное исправление.
-- **ATTACH-04:** pending per-file Remove отсутствует; после ошибки Remove сохраняет текст/успешный файл; whole Cancel работает и намеренно очищает всю операцию. Три прежних компонентных теста повторно passed. Обязательность per-file abort во время ongoing upload неоднозначна по спецификации; сохранить узкое UX/requirement расхождение вместо безусловного P2/сломанной Cancel. Подсказка finish-or-remove шире доступного pending UI.
-- **XR-HTTP-ALLOW / Мира ATTACH-HTTP-405-01:** actual Router static resource dispatch HEAD/PATCH возвращает405 без Allow; RFC9110 §15.5.6 требует этот header. Scope сужен до attachment-upload resource, не всех download routes. Deployed server/proxy не проверялся.
+### Preview — 2
 
-Подробности, контроли, initial harness correction и границы: [личный отчёт Лёвы](agents/codex-6.1-sol.md), верхний раздел части4. Старые индивидуальные 51 groups и P2 нельзя считать окончательным общим счётом без этих corrections. Чужие отчёты не переписаны, общего согласия авторов не заявляется.
+| ID | Итог |
+|---|---|
+| `CODE-PREVIEW-01` | Dedicated best-answer confirmation preview route показывает неправильное solved/author state и скрывает confirmation. |
+| `CODE-PREVIEW-02` | `Appeals (1)` использует plural group id против singular fixture kind и показывает пустую queue. |
 
-Далее: secondary UGC metadata, read/auth startup failure classification, Help discovery, locale return destination, size/tag/body guard утверждения. Общего окончательного реестра пока нет. Implementation/fixes/merge не выполнялись. Исключённые реальные сервисы не проверяются.
+### Documentation/SOT — 4
 
----
+| ID | Итог |
+|---|---|
+| `DOC-01` | `PROJECT_STATE.md` содержит stale current/in-progress statements, противоречащие merged baseline. |
+| `DOC-02` | Migration SOT отстаёт от authoritative chain `0044`; прежний `MIGRATION-SOT-01` — alias этой записи. |
+| `DOC-03` | Current docs одновременно описывают pending `Disputed` как public и moderator-only; runtime/tests реализуют moderator-only. |
+| `DOC-04` | History access описан и через fixed role, и через effective permission; current code следует effective-permission model. |
 
-## Актуальное обновление общей сверки — часть 3 (2026-10-24)
+### Ключевые reclassification / exclusions
 
-Общая сверка **продолжается**, код baseline `d72b27ca762dd930f0e7ad614e5b00832a07ec0c` не менялся. 7 новых локальных тестов passed; вместе с частями 1–2 — 13 тестов. Это не число дефектов. Ниже прежние обновления сохранены как история; текущие статусы этих сценариев задаёт эта часть.
+1. `ARCH-02` — снят из current defects: current Cloudflare Hyperdrive Worker lifecycle не требует ручного `client.end()` для этого request path.
+2. `M-M10/F06` light-theme contrast — реальный известный UI issue, но по owner MVP-first contract отложен в final accessibility/UI refinement, не current-fix defect.
+3. `CONTENT-SIZE-01` — отсутствие общего max остаётся policy/hardening observation; самостоятельный current failure не установлен. `MARKDOWN-SPOILER-01` остаётся отдельным concrete current parser defect.
+4. `ATTACH-SEC-01` — server-derived stable contextual security ID соответствует принятой semantics; обязательность отдельного raw client UUID не установлена.
+5. Generic forum pagination, `UNREAD-SCOPE-01`, `POPULAR-AGG-01` — future scalability/efficiency, не current defects.
+6. Anti-framing headers, personalized cache policy и post-merge CI/audit automation — pre-release/security/governance hardening, не current defects.
+7. Aggregate dependency-advisory count не считается одним defect. Отдельно подтверждён применимый `AUTH-RATE-LIMIT-RACE-01`.
+8. Stage 6 live Cloudflare/Neon/Hyperdrive/R2/OAuth/backup/restore acceptance остаётся вне этого audit verdict.
 
-- **XR-STALE-SOLUTION / Мира HELP-MOD-01:** actual action/service/repository выбирает текущий answer-B для старого topic-level intent; expected best-answer identity отсутствует. Два SQL-capture теста подтверждают target selection, без native DB concurrency.
-- **Мира HELP-DUP-01:** дополнительно подтверждён stale-remove вариант: текущая relationship-B снимается и её appeals принимаются старым intent. Actual action/service/repository + injected snapshots/SQL capture; прежний stale-appeal finding сохраняется с отдельными доказательствами.
-- **XR-THROWN-ACTION-BUFFER / Лира F02:** actual TopicRoute/ErrorBoundary в jsdom теряет текст при injected unexpected permission exception; typed503 контроль сохраняет буфер. Условие ошибки задано тестом; не заявляются любой network failure, потеря вложений или production incident.
-- **XR-CROSS-TAB-IDENTITY / Лира F04:** при injected server session A→B actual heartbeat204 на topic оставляет cached header=A; actual reply writer получает текст от имени разрешённого B. Denied-B контроль не пишет. Это identity/attribution mismatch, не обход authorization. Реальные две вкладки/cookies и DB persistence не проверялись.
+### Открытый product decision
 
-Подробности и воспроизводимые условия: [личный отчёт Лёвы](agents/codex-6.1-sol.md), верхний раздел части 3. Чужие личные файлы не изменены, согласие других авторов не заявляется.
+`AUTH-LOCALE-RETURN-01`:
 
-Остаются применимость lifecycle/ACL/upload cancellation к текущему Stage и остальные source-only/requirement вопросы матрицы. Upload UUID correlation requirement всё ещё не установлен как дефект. Окончательный общий реестр/счёт не готов; к исправлениям/merge не переходить. Реальные Cloudflare, Neon, Hyperdrive, R2, OAuth, backup/restore исключены.
+1. Current locale switch сохраняет query, но nested `returnTo` со старым locale может быть отвергнут штатным safe redirect sanitizer и привести к root новой locale.
+2. Security bypass не установлен; ослаблять sanitizer нельзя.
+3. Нормативный вопрос только один: **обязан ли language switch переписать locale внутри безопасного nested destination и сохранить исходную страницу после последующего sign-in/sign-up?**
+4. Это решение принадлежит владельцу. До него finding не включён в 60 и не снят.
 
----
+### Provenance / limits
 
-## Обновление общей сверки — часть 2 (2026-10-24)
+1. Canonical inventory собран из опубликованных аудитов Миры, Лиры, Лёвы и исторического материала Мишани с дедупликацией по causal root cause, а не голосованием.
+2. Мишанин старый baseline и нарушенная независимость не считаются отдельным независимым голосом.
+3. Где уже существовал достаточный native/browser/PG reproduction, reconciliation проверяла его causal relevance и unchanged current source; одинаковый experiment заново запускался не всегда.
+4. Новые browser/visual проверки в финальном reconciliation не запускались по owner rule.
+5. Детальные causal chains и evidence limits сохранены в PR #236 comments этапов 3.1–3.39 и личных agent files.
 
-Общая сверка **продолжается**. Проверены три расхождения; выполнены 4 локальных теста (4 passed, 0 failed), без внешних сервисов, БД, браузера и stress inputs.
+### Следующий шаг
 
-- **XR-ZIP-METADATA / ATTACH-STRUCT-01:** конкретная неполнота structural acceptance подтверждена. Два113-byte архива — local size mismatch и bit3 без обязательного descriptor — принимаются настоящим validator/private finalizer. Правильный ZIP принят; несовпадение flags отклонено. Требование descriptor сверено с PKWARE APPNOTE6.3.10 §4.3.9.1. Это не доказательство обхода антивируса или исполнения содержимого.
-- **XR-UI-POLICY / I18N-UI-POLICY-01:** подтверждён локальный policy-hit/miss gap. Проверенный compiled bundle отдаёт текст v1 и обходит raw source, настроенный отвергать v1 при policy v2; на miss текст отбрасывается. Active locale-boundary также не передаёт required-policy в raw source. Реальный deployed policy-switch не проверялся.
-- **XR-SECURITY-ID / ATTACH-SEC-01:** намеренный stable contextual hash и отсутствие отдельного client UUID подтверждены. Нарушение требования именно исходного UUID не установлено; это вопрос конкретной требуемой корреляции. Не включать автоматически в общий подтверждённый defect list.
-
-Подробные условия/контроли/ограничения: [часть 2 в личном файле Лёвы](https://github.com/iliya1947/vico-forum/blob/eef6439305965941e246470e918da6cad465499f/.github/agents/codex-6.1-sol.md).
-
-Следующий проход: stale solution/duplicate actions, thrown-action buffer/cross-tab identity и runtime/Stage applicability. Окончательный общий defect total пока не сформирован; исправления не назначены.
-
----
-
-## Текущее состояние — общая сверка аудитов (2026-10-24)
-
-- Владелец в текущем чате прямо разрешил общую сверку опубликованных аудитов и использование комментариев PR №236.
-- Кодовый baseline: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Первый снимок личных отчётов для сверки: PR head `19f6a3ba78b2d2d57318ec2f4b35a40aa0a9dd25`.
-- **Общая сверка продолжается.** Первый проход сопоставления опубликованных итоговых списков выполнен; окончательного общего числа подтверждённых дефектов и общего PASS нет.
-- Сопоставлены 119 строк утверждений/групп четырёх отчётов. Это не 119 дефектов: пересекающиеся причины, подварианты, документальные расхождения, наблюдения и исключённые области различаются.
-- Мира и Лира публикуют результаты для d72b27c. Мишаня указывает старый baseline 21386887 и отозванную независимость; его материал учитывается как исторические утверждения с отдельной проверкой актуальности. Отчёт Лёвы также не заявляет слепую независимость после ознакомления с чужими выводами.
-- Числа покрытия 354/437/458 не сравниваются как проценты без одинакового набора путей: учитываются разные JSON/config/operational границы.
-- Реальные Cloudflare, Neon, Hyperdrive, R2, OAuth, backup/restore, production acceptance остаются исключёнными. Внутренние контракты кода можно проверять локально.
-- Реализация, зависимости, схема, PROJECT_STATE и implementation PR не изменялись. Этот служебный PR никогда не merge в main.
-
-## Результаты, добавленные при общей сверке
-
-1. **XR-EDIT-409** (Мира EDITOR-PUB-01/02, Лира F01): один успешный тест настоящих локальных Topic loader/view/action с заданным repository conflict. После409 loaderCalls=1, revision fence=r1, текст сохранён, rebase-кнопки нет. Явная revalidation даёт loaderCalls=2 и кнопку. Это дополняет прежний реестр Лёвы; реальная БД/браузер не использованы.
-2. **XR-LITERAL** (literal-text finding Миры): один успешный тест настоящих escapeVisualMarkdownText и published parser. Строки `---`, `~~literal~~`, `&copy;` получают thematicBreak/delete/© вместо буквального значения. Малые обычные входы; стресс-опыты не выполнялись.
-3. Точные/частичные соответствия зафиксированы: catch-all writer503 → ARCH-01; cookie order → AUTH-01; topic appeal → HELP-01; notification latest50 → CORE-02; partial-index manifest → DB-02; history loading copy → LOC-04; migration SOT → DOC-02.
-4. Доказательства не голосуются: отсутствие PG-воспроизведения у Лиры не опровергает найденное прежнее native доказательство CORE-01, но не превращается в её собственный запуск.
-
-## Открытые вопросы сверки
-
-- ARCH-02: отделить факт не-вызова client.end/локальных PG idle connections от применимости к исключённому Hyperdrive runtime.
-- DB-03 и production ACL: отделить внутренний grant-контракт от будущего Stage6 rollout.
-- Отсутствие size/tag/pagination bounds: подтвердить применимые инварианты и последствия; не считать любой scalability debt текущим отказом.
-- ZIP и UI-policy проверены в части 2 выше; upload ID требует уточнения конкретного контракта корреляции. Широкие stale-state варианты остаются открытыми.
-- Thrown-action buffer и cross-tab identity: source-conditional выводы не выдаются за уже выполненные браузерные воспроизведения.
-- OAuth linking из отчёта Миры находится вне согласованного объёма и не включается в общий текущий список.
-
-## Реестр и следующий шаг
-
-Матрица первого прохода, источники и границы результатов: [личный файл Лёвы](agents/codex-6.1-sol.md). Личные файлы других агентов не изменены.
-
-Следующий шаг — точечно разрешить перечисленные расхождения и сформировать окончательную общую классификацию. Перезапуск всего аудита, реализация исправлений и реальные исключённые сервисы этим этапом не назначены.
-
----
-
-<details>
-<summary>Предыдущее состояние общего файла — сохранено как история</summary>
-
-# Shared service channel
-
-## Текущее состояние
-
-- Источник истины проекта: `main`.
-- Зафиксированный baseline нового поэтапного аудита AUD-20261022: `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Remote main проверен read-only 2026-10-22 (Asia/Jerusalem); совпадает.
-- Editor 2.0 и follow-up PR #232 merged; активного implementation PR сейчас нет.
-- Владелец назначил поэтапный аудит приложения. Этап 0 завершён: зафиксирован объём и составлен полный manifest 491 файла.
-- В новом цикле: 437 файлов включены в прикладной объём с оговорками по сервисным разделам; 42 сервисных operational-файла исключены; 12 архивных документов — справочный контекст.
-- По прямому указанию владельца сервисы Cloudflare, Neon, Hyperdrive, R2, OAuth и backup/restore не входят в аудит. Их настройки, credentials, provisioning/deploy/rollout и live service acceptance не проверяются. Внутренние контракты соответствующего кода приложения остаются в объёме.
-- Этапы 1–5 завершены. Findings до завершения всех предусмотренных проверок остаются только в текущем developer chat согласно AGENTS.md, кроме отдельно зафиксированного владельцем non-blocking requirement conflict по Attention Mixed pagination.
-- Этап 6 начат. Часть 1 завершена: Simple/Advanced mode core, lossless Markdown document/history, visual protected-range editing, clipboard conversion, technical Markdown segmentation, rendering, mode persistence, Preview/Split/fullscreen и source-position mapping проверены.
-- Подтверждено корректное сохранение exact source при mode/view switches, CRLF-aware span edits, Undo/Redo через переключение режимов, per-account Simple/Advanced preference, protected code/unsupported structures, Simple visual table editing, code-only Tab/Enter/pairing и безопасный published renderer.
-- В clipboard/literal-text boundary установлен отдельный current-Stage finding; детали по правилам AGENTS.md остаются только в developer chat до окончания проверки. Root cause находится в общем literal-text escaping path, используемом Simple visual typing и explicit/plain paste.
-- Test-quality completeness по этому finding будет отдельно оценена на этапе 12 и сейчас не дублируется.
-- Этап 6, часть 2 завершена: quote/mention проверены end-to-end. Attributed quote хранится обычным Markdown blockquote с автором и permalink; whole/selected quote insertion использует общий editor buffer. Published collapse: 1–5 visible rows полностью, 6+ до первых трёх с expand/collapse; attribution остаётся видимой. Mention autocomplete работает в Simple/Advanced через authenticated private/no-store search stable id/name. Published recipients извлекаются из parsed internal profile links; bare @, blockquote/quotes, fenced/inline code, images, malformed/external links исключаются. Notification insertion transactional, self/duplicate reply+mention подавляются, edit использует durable per-post notified set. Новых independent current-Stage findings в части 2 не установлено.
-- Следующая часть этапа 6: publish/edit — publication readiness, Ctrl+Enter/action boundaries, operation replay/idempotency, published editing revision CAS/history, failure paths и сохранение editor buffer при controlled errors. Attachment-specific lifecycle глубоко не проверять до этапа 7.
-- Attention Mixed pagination остаётся audit problem / requirement conflict для финального списка; дальнейший аудит не блокирует.
-- Cross-stage attachment/security storage/lifecycle — этап 7; localization — этап 8; database — этап 9; cross-cutting security/privacy — этап 10; browser/a11y/responsive — этап 11; test-quality/CI — этап 12.
-- Предыдущие отчёты и самостоятельные проходы с другой нумерацией не засчитываются автоматически в AUD-20261022.
-- Ограничение доступной среды: Node 24.19.0 / pnpm 11.25.0 вместо pinned Node 24.21.0 / pnpm 12.3.4. Toolchain проверить до применимых локальных прогонов.
-- Исходники, зависимости, схема, PROJECT_STATE и implementation PR в ходе аудита не меняются. Этот служебный PR используется только для координации и никогда не merge в `main`.
-
-## Реестр и порядок проверки
-
-Полный manifest с первичными этапами и исходными статусами `NOT_REVIEWED / EXCLUDED / CONTEXT`, правилами evidence и порядком этапов 0–13 находится в разделе **AUD-20261022** файла [Лиры](agents/chatgpt-6.md).
-
-## Текущий следующий шаг
-
-Ожидать разрешения владельца продолжить этап 6, часть 2: quote/mention. Исходники не исправлять.
-
-
-</details>
+После решения владельца по `AUTH-LOCALE-RETURN-01` сформировать fix-plan для окончательного current backlog. Implementation до утверждения плана не начинать.
