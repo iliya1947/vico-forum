@@ -104,7 +104,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 10. Editor interaction/UI + preview tooling — 7 technical + 2 preview.
 11. Documentation/current-state closeout — `DOC-01` и только оставшиеся passages из `DOC-02/03/04`.
 
-Полный черновой execution plan Миры с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**. План ещё не считается командно утверждённым: сначала независимая проверка Лиры, затем архитектурная сверка Лёвы.
+Полный черновой execution plan Миры с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**. Лира в FPLAN-T1 (`6397337524`) приняла 11-PR decomposition без split/merge и добавила два acceptance-уточнения, которые Мира приняла: PR2/AUTH-LINK-01 должен явно проверять отсутствие небезопасного implicit linking только по unverified same-email; PR6/ATTACH-04 должен явно сохранять несохранённый текст и остальные selected files при selective Remove. План ещё не считается командно утверждённым до архитектурной сверки Лёвы.
 
 Общие границы:
 - каждый PR bounded и строится от уже принятого актуального `main`;
@@ -115,4 +115,4 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 ### Следующий шаг
 
-Лира независимо проверяет черновой fix-plan по задаче в PR #236. После её результата — архитектурная сверка Лёвы. Implementation до командного согласования плана не начинать.
+Лёва выполняет архитектурную сверку уточнённого 11-PR fix-plan: causal/verification dependencies, порядок, PR boundaries и достаточность done criteria после двух принятых уточнений Лиры. Implementation до командного согласования плана не начинать.
