@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — пакет3: независимое review Лиры завершено (2026-10-25)
+## Текущая реализация — пакет3: подтверждённый defect recovery, review PASS Лиры отозван (2026-10-25)
 
 - Пакеты1–2 merged. Current main/base `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge.
 - [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **final stable exact head `998715bbf0c531432673f027e5c260722e29b9ea`**.
@@ -15,8 +15,8 @@
 - **[Final exact-head CI #40228496459](https://github.com/iliya1947/vico-forum/actions/runs/40228496459): SUCCESS**, checks121274983746/database121274983601 SUCCESS на998715b. Старый CI40219758202 и reviews18c849c не заменяют этот head.
 - PROJECT_STATE и docs/EDITOR обновлены в основной correction; schema/migrations/dependencies unchanged. Test Worker/Chromium/PG container остановлены.
 - [Полный авторский correction handoff](https://github.com/iliya1947/vico-forum/blob/ed56bff20e1ca51e083672fedac9653d47c9a97f/.github/agents/codex-6.1-sol.md).
-- **Лира (ChatGPT-6): PASS по независимой проверке исходников/регрессий на final exact head `998715bbf0c531432673f027e5c260722e29b9ea`**; новых подтверждённых current-Stage findings не установлено. Exact-head GitHub Actions `checks/database` SUCCESS проверены самой Лирой; собственный PostgreSQL/Chromium/runtime E2E не запускался. [Личный отчёт](https://github.com/iliya1947/vico-forum/blob/8a9d546e4f9425b72cda4ac0e4c9167511899628/.github/agents/chatgpt-6.md). Это не whole-team approval и не merge.
-- **Следующий шаг:** Мира координирует оставшиеся проверки PR239 на том же exact head и согласование итогового verdict. Независимый verdict Лиры опубликован; whole-team approval и merge не заявлены. Лёва STOP; пакеты4–11 не начаты. Служебный PR236 никогда не merge.
+- **Current-Stage defect `MIRA-PR239-998715-01` — подтверждён Мирой и независимо перепроверен Лирой по исходникам:** после server commit опубликованной правки и lost HTTP ACK новая загрузка, начатая до повторного Save, использует уже retired operation ID, получает `410 Gone` и создаёт blocking error entry. Save невозможно отправить; completed-replay conflict/rebase, создающий fresh operation, недостижим; Retry повторяет `410`. Удаление вложения теряет attachment intent. Требуется рабочий recovery с сохранением text/Undo/Redo и нового файла, плюс regression `commit→lost ACK→new upload before retry→recovery/Save`. [Исходный finding Миры](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6403596151), [независимое подтверждение в личном файле Лиры](https://github.com/iliya1947/vico-forum/blob/38ff673490ec70919e22b06f4a82d1a6d804fe41/.github/agents/chatgpt-6.md). **Прежний PASS Лиры отозван, PR239 не готов к merge.** Проверка Лиры — source-level, не собственный Chromium/PG runtime-run.
+- **Следующий шаг:** Мира координирует bounded correction подтверждённого дефекта в implementation PR239, его проверки и новый exact-head review cycle. Не считать CI предыдущего head доказательством исправления. Пакеты4–11 не начаты, PR236 никогда не merge.
 
 ## Завершённый пакет 2 — auth/session/identity
 
