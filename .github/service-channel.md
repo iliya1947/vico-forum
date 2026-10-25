@@ -124,6 +124,15 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 - owner visual acceptance и production/external rollout не запускаются автоматически;
 - deferred/future findings не возвращаются в current scope без нового основания.
 
+### Текущий implementation status — PR #237
+
+1. Лёва реализовал первый пакет `AUTH-RATE-LIMIT-RACE-01` в implementation PR #237.
+2. Stable exact head: `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`.
+3. Better Auth и `@better-auth/drizzle-adapter` обновлены `1.7.4 → 1.7.7`; добавлена PostgreSQL concurrency regression через реальный Vico `betterAuthOptions()`.
+4. Exact-head CI run `40195292682`: `checks` SUCCESS, `database` SUCCESS.
+5. Мира выполнила первый независимый whole-PR review exact head и дала **PASS без findings**. Проверены scope, dependency correction, regression path, current auth configuration, documentation и CI.
+6. Merge не выполнен; следующие audit packages не начинались.
+
 ### Следующий шаг
 
-По прямому решению владельца отдельная архитектурная сверка плана Лёвой отменена. Лёва получает implementation ownership первого пакета и сразу приступает к исправлению `AUTH-RATE-LIMIT-RACE-01` в отдельном implementation PR от актуального `main`. Он самостоятельно выбирает технически корректное решение в подтверждённых границах finding, проверяет актуальную официальную документацию используемой зависимости, добавляет применимые regression/tests и доводит PR до стабильного exact head. Остальные 10 пакетов пока не начинать.
+Лира выполняет второй независимый whole-PR review PR #237 на exact head `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`. Она проверяет весь scope `AUTH-RATE-LIMIT-RACE-01` против актуального `main`, SOT и текущего Stage, не ограничиваясь выводом Миры. Implementation во время review не менять. После проверки — сообщить результат разработчику и STOP.
