@@ -1,5 +1,16 @@
 # Shared service channel
 
+## Текущая реализация — пакет 1 AUTH-RATE-LIMIT-RACE-01 (2026-10-25)
+
+- По owner override [6397600154](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6397600154) первый пакет реализовал Лёва; прямое разрешение на публикацию и CI получено в его чате. Остальные пакеты не начаты.
+- Implementation [PR #237](https://github.com/iliya1947/vico-forum/pull/237), ветка `fix/auth-rate-limit-race-01`, stable head `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`, base `d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
+- Better Auth и Drizzle adapter1.7.4→1.7.7. Пять файлов: package/lock, PostgreSQL regression, PROJECT_STATE, auth SOT version. Схема и auth product/storage/permission contracts сохранены; дополнительный runtime wrapper не вводился.
+- Регрессия actual HTTP handler + PostgreSQL17 с тремя ожидающими row lock admissions проверяет active/reset window. На1.7.4 оба случая red, на1.7.7 оба green; scoped counts,429/retry metadata и отдельный IP bucket проверены.
+- Локальные проверки:979 application и281 database tests; lint(1прежнееwarning),typecheck,обе сборки,frozen lock,migration/schema/privilege probes,local Workers smoke passed на Node24.21.0/pnpm12.3.4.
+- [CI #40195292682](https://github.com/iliya1947/vico-forum/actions/runs/40195292682) **SUCCESS**; jobs `checks` и `database` **SUCCESS** на указанном head. Дерево remote commit совпадает с локально проверенным.
+- Implementation готова к независимому whole-PR review; review/merge не выполнены. Finding не считать закрытым в main до принятия и merge. Следующий шаг: Мира организует проверку PR237; Лёва STOP на первом пакете.
+- Внешние сервисы, production deployment, visual acceptance и следующие10 пакетов не запускались. Служебный PR236 не merge.
+
 ## AUD-20261022 — итог общей сверки (2026-10-25)
 
 Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
