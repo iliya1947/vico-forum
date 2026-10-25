@@ -1,5 +1,55 @@
 # Лёва — Codex-6.1 Sol
 
+## PR239 — bounded correction двух review defects; новый stable head (2026-10-25)
+
+Назначение [6402172083](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6402172083). Оба causal chains проверены самостоятельно и исправлены в том же PR239. Это реализация и проверки автора, не новый независимый whole-PR review.
+
+- Exact head `998715bbf0c531432673f027e5c260722e29b9ea`; base main `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Old reviewed head `18c849c92eb597ccd39871914290cf6164fc209b`; correction содержит два коммита (основная correction4cadbf8 + final mounted-editor guard998715b).
+- Tree `2c43b9f682cdaa10e6808d4c59e6fff50ab5c862` совпал с локальным `f1b01fb05b25eb652420e1d31e13e0c004a5abff`.
+- Correction diff:13 files/270 additions/31 deletions. Whole PR scope остаётся исходными8 группами пакета3; отдельная новая audit group не создаётся.
+
+### 1. Modified replay после committed edit с потерянным response
+
+Проверена реальная цепочка: successful edit записывает publication receipt и закрывает operation. Identical retry idempotent; modified fingerprint отклоняется до revision validation. Старая UI rebase меняла только revision, поэтому повторно использовала несовместимую operation. Red controls: native PostgreSQL/action tests с вложением и без него, плюс hook test fresh-operation/dedup; они воспроизвели исходный отказ/старый ID.
+
+Исправление:
+- publicationReceipt бросает ForumPublicationReplayConflictError — subtype прежнего ForumStateConflictError, без изменения schema/domain HTTP409 для других callers.
+- edit action только для этого subtype добавляет completedOperationId к existing current-public-post conflict response.
+- Explicit rebase заменяет именно совпавшую completed operation; ordinary stale-revision conflict сохраняет прежнюю незавершённую operation и её uploads.
+- Новая public selection исключает asset из private selection: уже committed upload retained ровно один раз. Remove отслеживается и до promotion, чтобы file не появлялся обратно.
+- Непопавшие в current public baseline uploads сохраняют исходный File в RAM для штатного Retry. Retry использует новый asset ID, поскольку existing server owner/context/operation gates запрещают присваивать old asset ID другой operation. Эти gates не ослаблены; нового endpoint/transfer API нет.
+- Активные image destinations меняют opaque ID в current/past/future in-memory history без нового Undo шага; code, escaped literals, labels и прочий source не переписываются. UUID имеют одинаковую длину, selection offsets сохраняются. Bytes/File не сохраняются в text cache.
+- Повторный Edit для той же mounted формы только фокусирует её, сохраняя pending recovery, expected revision и operation. При переходе к действительно новой форме completed expectation сбрасывается.
+
+### 2. Wrong edit feedback для unrelated topic-level409
+
+Red component test воспроизвёл реальный topicAction markSolved→ForumStateConflictError при открытом редакторе: прежний UI выбирал postEditConflict только по editingPostId.
+
+Теперь copy выбирается по фактическому result.operation=postEdit либо edit-specific stale-identity guard context. Наличие открытой формы не определяет intent. Positive controls проверяют настоящий edit conflict и stale-account edit guard; unrelated markSolved409 сохраняет solution feedback и тот же buffer без ложного rebase.
+
+### Новое evidence и проверки
+
+- 4 initial red controls:2 UI/hook и2 native PG/action cases. После correction green; совпадение reviewer conclusions не использовано вместо проверки.
+- Full local1058 application /298 native PostgreSQL tests PASS.
+- Первый concurrent app run:1057 PASS,1 initial-form timeout до injection tested error. Изолированные11 editor cases PASS; fixture ждёт initial form до3s вместо1s, повторный full1058 PASS. Product logic этим timeout не менялась.
+- После последнего same-mounted-editor guard:75 editor/public-read UI tests PASS; typecheck,lint(одно прежнее warning app/forum/ui.test.tsx:174) и обе сборки повторно PASS.
+- Migration-history guard и local built Worker smoke PASS; schema/migrations/dependencies unchanged.
+- Native PostgreSQL cases: committed edit→identical replay→modified409→fresh operation→successful second publication; variants with/without attachment, unique public refs и revision history.
+- Chromium→actual built Worker→native PG17: (1) intercept настоящий HTTP response после successful commit, abort его доставку, изменить retained buffer, получить409, explicit rebase/new operation и Save success; (2) mounted editor + real stale markSolved409, верный solution feedback и сохранный buffer. Оба PASS.
+- Hook File/ACK controls и source transformation controls синтетические. Новый full R2/provider upload E2E не заявляется. Внешние сервисы/production/owner visual acceptance не запускались; тестовые ресурсы остановлены.
+- PROJECT_STATE и docs/EDITOR обновлены в основной correction; необязательная дополнительная заметка последнего guard не публиковалась после automatic review rejection её повторной полной загрузки. Rejected document не передавался другим способом. Final guard и его regression опубликованы только двумя source files; blocker для implementation отсутствует.
+- Final exact-head CI: **[CI #40228496459](https://github.com/iliya1947/vico-forum/actions/runs/40228496459) SUCCESS; checks121274983746/database121274983601 SUCCESS на998715bbf0c531432673f027e5c260722e29b9ea.**.
+
+### Handoff
+
+Мире: новый whole-PR review **всего PR239 scope (8 групп) и обоих correction chains** на `998715bbf0c531432673f027e5c260722e29b9ea`. Прежние verdicts относятся к18c849c и не заменяют проверку финального head. Технический контекст готов; владельцу не нужно его пересказывать. Лёва STOP после публикации handoff, пакет4+ не начинать.
+
+
+## Предыдущие implementation heads и handoffs — исторический контекст
+
+Ниже сохранены прежние результаты; актуальный head и handoff находятся выше.
+
 ## PR239 — пакет 3 реализован; stable exact head и handoff (2026-10-25)
 
 Назначение: [6400908779](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400908779). Реализован только назначенный пакет3. Это работа автора реализации и его проверки; независимый whole-PR review ещё должен состояться.
