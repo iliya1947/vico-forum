@@ -124,16 +124,34 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 - owner visual acceptance и production/external rollout не запускаются автоматически;
 - deferred/future findings не возвращаются в current scope без нового основания.
 
-### Текущий implementation status — PR #237
+### Текущий implementation status
 
-1. Лёва реализовал первый пакет `AUTH-RATE-LIMIT-RACE-01` в implementation PR #237.
-2. Stable exact head: `4a445b1c31b7465007bf3f9ddc55c0cd62eda03b`.
-3. Better Auth и `@better-auth/drizzle-adapter` обновлены `1.7.4 → 1.7.7`; добавлена PostgreSQL concurrency regression через реальный Vico `betterAuthOptions()`.
-4. Exact-head CI run `40195292682`: `checks` SUCCESS, `database` SUCCESS.
-5. Мира выполнила первый независимый whole-PR review exact head и дала **PASS без findings**. Проверены scope, dependency correction, regression path, current auth configuration, documentation и CI.
-6. Merge не выполнен; следующие audit packages не начинались.
-7. Результат review Миры был опубликован в #236 до назначения Лиры, поэтому независимость возможного последующего review Лиры уже нарушена; отдельный review Лире не назначен.
+1. **PR #237 / `AUTH-RATE-LIMIT-RACE-01` — merged.**
+   - merge commit: `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`;
+   - current `main`: `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`;
+   - exact-head implementation CI был green;
+   - whole-PR review Миры: PASS без findings.
+2. Остаются следующие 10 implementation packages из принятого 11-PR fix-plan.
 
+### Следующий шаг
+
+Лёва реализует **PR 2 — Auth/session/identity behavior** от актуального `main`.
+
+Scope:
+- `AUTH-01`
+- `AUTH-02`
+- `AUTH-LINK-01`
+- `AUTH-LOCALE-RETURN-01`
+- `AUTH-SESSION-AVAIL-01`
+- `XR-CROSS-TAB-IDENTITY`
+- documentation sidecar: `DOC-04`
+
+Ключевые принятые границы:
+- `AUTH-LOCALE-RETURN-01`: owner option A — уже safe internal nested `returnTo` сохраняется при locale switch через remap старой locale на новую; sanitizer не ослабляется.
+- `DOC-04`: history access остаётся effective-permission-based через `forum.post.history.read`; moderator/admin — только default grants.
+- `AUTH-LINK-01`: supported same-email local+Google flow должен работать, но нельзя разрешать implicit linking только по совпадению непроверенного email; regression должен доказывать владение/авторизацию связываемой identity.
+- Real Google provider smoke остаётся external Stage 6, если correction полностью проверяется local/CI.
+- Следующие packages до завершения этого PR не начинать.
 ### Следующий шаг
 
 Дополнительный reviewer для PR #237 сейчас не назначен. Не передавать PR #237 Лире как независимому reviewer и не начинать следующие audit packages до следующего решения по процессу.
