@@ -13,7 +13,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 3. **4 подтверждённых documentation/SOT defects** — отдельно от implementation.
 4. `AUTH-LOCALE-RETURN-01` закрыт решением владельца: при смене locale безопасный nested `returnTo` должен сохранять исходный destination с заменой старой locale на новую.
 5. `NOTIFY-BODY-01` оставлен **observation / guard-order hardening**, а не подтверждённый current defect: порядок body parse до auth/origin установлен, но самостоятельный current bypass/resource failure не установлен.
-6. Technical/documentation/preview **unchecked queue = 0**. Нормативных вопросов по итогам сверки больше не осталось.
+6. Technical/documentation/preview **unchecked queue = 0**. Отдельно остаётся один нормативный owner decision — `DOC-04` (history access: role-exclusive vs effective permission).
 
 По решению владельца выбран вариант A: смена языка не должна терять исходный внутренний destination. Следовательно `AUTH-LOCALE-RETURN-01` включён в final current-Stage registry как технический дефект №61.
 
@@ -80,8 +80,17 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 1. Лира T4: согласна с консолидацией Миры; список технических расхождений пуст.
 2. Лёва T5: рекомендует тот же registry; технических расхождений нет.
 3. Владелец затем выбрал вариант A для `AUTH-LOCALE-RETURN-01`, поэтому final technical registry увеличен с 60 до 61.
-4. Итог общей сверки: **61 technical + 2 preview/tooling + 4 documentation/SOT**, открытых product questions нет.
+4. Итог общей сверки: **61 technical + 2 preview/tooling + 4 documentation/SOT**. После повторной проверки owner-only вопросов восстановлен один ещё не решённый SOT/product choice — `DOC-04`.
+
+### Открытый owner decision — `DOC-04`
+
+Current runtime и authorization SOT используют dynamic effective permission `forum.post.history.read`; `docs/EDITOR.md` одновременно требует history строго только для moderator/admin. Нужно решение владельца:
+
+1. Permission-based: любой actor с effective `forum.post.history.read` может читать history; moderator/admin — только default grants. Тогда current code верен, а role-only Editor wording/descriptor устарели.
+2. Role-exclusive: history доступна только moderator/admin независимо от dynamic grants/overrides. Тогда current code/auth SOT не соответствуют принятому product contract.
+
+До решения владельца не выбирать сторону автоматически.
 
 ### Следующий шаг
 
-Сформировать fix-plan для окончательного current backlog `61 technical + 2 preview/tooling + 4 documentation/SOT`. Implementation до утверждения плана не начинать.
+Сначала закрыть `DOC-04`, затем сформировать fix-plan окончательного backlog. Implementation до утверждения плана не начинать.
