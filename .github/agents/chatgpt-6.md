@@ -1,5 +1,51 @@
 # Лира — ChatGPT-6
 
+## Независимая проверка fix-plan Миры — Лира / FPLAN-T1 (2026-10-25)
+
+**Поручение:** PR #236 comment `6397258510`; review трёх comments Миры `6396882503`, `6397022247`, `6397105809`, без implementation и без нового аудита исходников. Кодовый baseline `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Канонический consensus: **61 current technical, 2 preview/tooling, 4 documentation/SOT**; оба owner decisions по `AUTH-LOCALE-RETURN-01` и `DOC-04` закрыты.
+
+### Вердикт
+
+**11 предложенных PR по scope/dependency/order приемлемы; обязательного split/merge не выявлено. Требуются два узких уточнения done criteria**, чтобы фикс не прошёл acceptance с сохранением исходного дефекта или созданием запрещённого security regression. Эти уточнения не изменяют состав 11 PR, не вводят новый architecture/implementation mandate и не требуют от владельца нового product decision.
+
+### Coverage — проверено точно по ID
+
+В итоговом execution plan `6397105809` все scope-и выделены отдельно от acceptance-текста и сопоставлены с текущим `.github/service-channel.md`:
+- 11 PR: технические группы по PR1–10 `1+6+8+6+4+6+11+9+3+7 = 61`; 61 из 61 canonical technical IDs, **61 unique, 0 omissions, 0 duplicate technical assignments**.
+- Preview: `CODE-PREVIEW-01` + `CODE-PREVIEW-02` оба ровно в PR10.
+- Documentation: `DOC-04` sidecar PR2; `DOC-02` sidecar PR4; `DOC-03` sidecar PR5; `DOC-01` PR11. PR11 условно повторно проверяет оставшиеся stale references `DOC-02/03/04`, **не является дополнительным исполнением уже закрытых документальных defects**.
+- Ни одна excluded/deferred observation (`ARCH-02`, `M-M10/F06`, `CONTENT-SIZE-01`, `ATTACH-SEC-01`, generic pagination, future service acceptance) не подмешана в implementation scope.
+
+### Два точных замечания к acceptance criteria
+
+**FPLAN-01 — PR2 / `AUTH-LINK-01`: критерий безопасной проверки владения аккаунтом.**
+
+- **Сейчас:** PR2 требует работоспособный same-email email+Google flow, regression каждого auth finding и сохранение authoritative server identity. Однако отдельного acceptance-инварианта, исключающего небезопасное implicit account linking, нет.
+- **Почему это важно:** проверка `AUTH-LINK-01` в PR236 checkpoint 3.2 зафиксировала Better Auth `requireLocalEmailVerified=true` как pre-account-hijacking protection. Простое снятие этой защиты может устранить symptom `account not linked`, **но допустить linking к чужой заранее созданной unverified local identity**. Проверка успешного sign-in alone не выявит security regression.
+- **Предлагаемая поправка:** в PR2 done criteria добавить: *при урегулировании same-email local/social accounts требуется доказанная идентичность/владение связываемым local account; совпадение непроверенного email само по себе не разрешает доступ к нему, а негативный pre-account-hijack/linking scenario остаётся запрещённым*. Конкретный auth flow, verification mechanism, API и UI выбрать на реализации, **не** диктовать способ заранее. Не требовать real Google integration smoke для internal code scenario.
+
+**FPLAN-02 — PR6 / `ATTACH-04`: сохранность остальных выбранных файлов и несохранённого текста при selective pending Remove.**
+
+- **Сейчас:** PR6 acceptance #3 требует `Remove` pending upload из selection и #4 защищает от позднего ACK. Явно не проверено, что действие удаляет **только конкретный файл** и сохраняет текущий несохранённый буфер, остальные pending/stored attachments и их selection.
+- **Почему это важно:** current `app/forum/editor-attachments.tsx` блокирует `remove(entry)` при `uploading`; альтернативный whole-operation Cancel имеет другую семантику. `docs/EDITOR.md:182,194–199,364–372` фиксирует selective local Remove, возможность продолжать редактуру во время upload и запрет потери текста/других attachment refs. Исправление лишь путём общего Cancel формально сделало бы кнопку доступной, но не устранило бы исходный сценарий.
+- **Предлагаемая поправка:** в PR6 done criteria добавить один regression: *при двух или более выбранных файлах и набранном несохранённом тексте Remove одного pending файла сохраняет остальные файлы, их состояния и текст; late ACK удалённого файла selection не восстанавливает*. Не требовать per-file network abort/DELETE и не задавать внутренний способ хранения.
+
+### Порядок/границы/прочие критерии
+
+1. **PR1 перед PR2** технически обоснован: изменяемая pinned Better Auth/Drizzle dependency должна быть принята до app-level linking/session regression. PR2 применяет owner locale option A и effective-permission `DOC-04` без изменения sanitizer/role semantics.
+2. **PR3** правильно соединяет unexpected-error classification/observability с published-edit `409` recovery: правка thrown-action boundary не должна уничтожить editor buffer. `ARCH-01` catch-503 и `XR-THROWN-ACTION-BUFFER` — разные ошибки, но общая интеграционная проверка необходима.
+3. **PR4** связывает read-state `DB-03` privilege и `CORE-01/02/03` transaction/concurrency с disposable PG verification. `DB-01/02` имеют независимые причины, но схожую schema/native verification boundary; принудительно дробить пакет только по этому признаку не нужно.
+4. **PR5** объединяет Help domain writes и tag fan-out как ограниченный public write-domain scope, без ложного causal merger. `DOC-03` остаётся sidecar. **PR6** scope отдельный и покрывает storage/client lifecycle/archive/header.
+5. **PR7 до PR8** сохраняет нужную зависимость Vico custom Markdown grammar → translation protection/runtime. `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01` учитывается один раз, с двумя обязательными проверками (mention and translation); `LOC-08` — отдельный direction round-trip.
+6. **PR9** Search/Unanswered UI lang/dir и visibility раздельно от durable translation jobs. **PR10** functional editor interaction/accessible-name/overflow + preview fixture defects допустимо объединены общей UI/preview verification boundary, но Preview не доказательство production behavior. Наличие broken preview сценариев до PR10 не означает, что предыдущие PR можно тестировать только на них.
+7. **PR11** документация идёт после confirmed merges, но `PROJECT_STATE.md` в каждом implementation PR обновляется по актуальным фактам одновременно с реализацией согласно `AGENTS.md`; PR11 не подменяет это требование и не открывает полный document audit. CI/whole-PR review/exact head/owner acceptance применяются как актуальные gates; не инициировать owner visual/external verification без команды.
+8. **Декомпозиция:** необходимость менять число/границы 11 PR не подтверждена. Отдельные standalone Preview/tag/schema PR дали бы больше процессных циклов без доказанной межпакетной блокировки; слияние PR7/PR8 затёрло бы независимые translation runtime defects. План не навязывает конкретную архитектуру; FPLAN-01/02 — только result-oriented acceptance invariants.
+
+**Окончательное заключение FPLAN-T1:** **ACCEPT WITH TWO TARGETED ACCEPTANCE CLARIFICATIONS**, не архитектурный STOP. Все 67 finding groups учтены, owners' decisions и deferred scope сохранены; code/main/other agent files не менялись. После фиксации этих двух уточнений план готов для технической сверки Лёвы в PR #236. До неё и отдельного approval implementation не запускать.
+
+---
+
+
 ## Независимая финальная проверка консолидации Миры — Лира / T4 (2026-10-25)
 
 **Scope:** поручение PR #236 comment `6392064227`, независимая сверка итоговой консолидации Миры `6391992192` / service-channel commit `046365d0f458ea955687e4d1446a20ef96e48736`. Проверяемый код `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`. Новый 458-file аудит и повторные native/browser/PG запуски не проводились. Implementation не меняется.
