@@ -20,6 +20,36 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Пакет 3 — failure semantics и восстановление опубликованной правки (2026-10-25)
+
+Ordinary forum mutations преобразуют в controlled responses только известные domain errors
+и typed storage unavailability. PostgreSQL writer классифицирует connection/query-timeout
+failures на границе адаптера; SQL/schema/programming faults проходят в error handling.
+Primary forum read loaders и protected edit-resume отображают typed dependency outages как
+`503`, сохраняя прежнюю optional-presentation degradation и неожиданные faults как ошибки.
+Cleanup PostgreSQL client/pool не подменяет уже полученный success или исходный отказ.
+
+Router `handleError` пишет только allowlisted error kind, известный SQLSTATE и безопасные
+ссылки на файлы/строки stack; message, cause payload, SQL/params и unpublished content не
+передаются в журнал. Browser client actions трёх authoring routes оставляют mounted editor
+после server/transport fault с отдельным unexpected feedback и статусом `500`; успешные
+redirects сохраняются. Серверная ошибка продолжает бросаться и диагностироваться на сервере.
+
+При конфликте published edit action повторно читает текущую public revision нужного
+сообщения. Открытая форма показывает её, сохраняет локальный text/attachment intent и старую
+expected revision до явного rebase. Более свежий loader snapshot имеет приоритет над старым
+conflict response. Сбой conflict refresh также оставляет форму открытой. Edit conflict copy
+отделена от solution-selection copy; новые сообщения включены в EN/RU/HE manual packs.
+
+Локально прошли 1051 application и 296 PostgreSQL tests; последующая дополнительная проверка
+нового loader snapshot прошла в целевом editor regression. Typecheck, lint (одно прежнее
+warning), application/UI-preview builds и migration-history guard проходят. Exact-head CI
+и whole-PR review проверяются после публикации. Local built Worker smoke и пять Chromium
+проверок через Worker/PostgreSQL прошли: stale conflict/rebase/save redirect, typed `503`,
+unexpected SQL `500`, transport failure/retry и profile fault без unpublished text в response/logs.
+Schema/migrations/dependencies не менялись;
+пакет4, visual acceptance, production и внешние сервисы не запускались.
+
 ## Bounded correction — stale-identity Google linking (2026-10-25)
 
 Review пакета2 подтвердил `AUTH-LINK-STALE-IDENTITY-01`: кнопка на stale профиле A

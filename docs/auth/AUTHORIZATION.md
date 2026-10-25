@@ -201,6 +201,10 @@ next-request freshness и не разрешает long-lived authoritative permi
   silently скрывать в presentation path или автоматически превращать в controlled `503`;
   они должны проходить в обычный application error handling/observability.
 
+Закрытие request-local PostgreSQL client/pool выполняется best-effort: cleanup failure
+не заменяет определённый resolution/mutation result или исходную ошибку. Ошибка самой
+операции продолжает классифицироваться по правилам выше.
+
 Optional presentation state не является authorization boundary: protected action независимо
 разрешает актуальный effective permission перед mutation. Catch-all suppression произвольных
 PermissionResolver errors не входит в authorization contract.

@@ -2,6 +2,7 @@ import type { Client } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import {
   createHyperdriveForumReader,
+  createHyperdriveForumWriter,
   ForumStorageUnavailableError,
 } from "./hyperdrive-forum";
 
@@ -149,5 +150,23 @@ describe("Hyperdrive forum reader availability boundary", () => {
       expect(error).toBeInstanceOf(ForumStorageUnavailableError);
       expect((error as Error & { cause?: unknown }).cause).toBe(failure);
     }
+  });
+});
+
+ describe("Hyperdrive writer result and cleanup", () => {
+  it.each([true, false])("preserves a domain failure when cleanup throws=%s", async (cleanupThrows) => {
+    const { ForumEntityNotFoundError } = await import("./forum-repository");
+    const dbClient = client({ cleanupThrows, cleanupError: new Error("cleanup") });
+    const writer = createHyperdriveForumWriter("postgresql://example.invalid/db", () => dbClient);
+    await expect(writer.markTopicSolved({ topicId: "missing", actorId: "user", scope: "any" }))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(dbClient.end).toHaveBeenCalledOnce();
+  });
+  it("classifies an ordinary writer outage before the mutation boundary", async () => {
+    const writer = createHyperdriveForumWriter("postgresql://example.invalid/db", () => client({
+      connectError: Object.assign(new Error("refused"), { code: "ECONNREFUSED" }),
+    }));
+    await expect(writer.createReply({ topicId: "topic", authorId: "user", body: "body" }))
+      .rejects.toBeInstanceOf(ForumStorageUnavailableError);
   });
 });

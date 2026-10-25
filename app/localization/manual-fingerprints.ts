@@ -8,6 +8,8 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  forumWriteError_unexpected: "1faa421142d7ef4d5b4b3aff1fba78aa4460b3679e8eac26268e488e9d470628",
+  postEditConflict: "889f7a33e4618f9bc8631e60c7e55dcf11f6fa750d0bcdaa18c73acf8610485c",
   authLinkGoogle: "f76b1b3f666c22c6db8b082ad61af25b8e6d18ae0d3574edbd90ee186b6e362b",
   authLinkGoogleHint: "3c3a39acb3857f521faa6c3e92ac60b676d7492faf93aed922bf2f0450c8071b",
   editorAttachmentOpenOriginal: "c2f4b39b9a0b732d2007d5f1f3e4aaec5ddd4610944ffae000d583a71a43a649",

@@ -54,7 +54,7 @@ export function isPostgresStatementTimeout(error: unknown): boolean {
   return findError(error, ({ code, message }) => isStatementTimeoutShape(code, message));
 }
 
-export function bestEffortDiscardClient(client: Client): void {
+export function bestEffortDiscardClient(client: Pick<Client, "end"> | Pick<Pool, "end">): void {
   try {
     void Promise.resolve(client.end()).catch(() => undefined);
   } catch {

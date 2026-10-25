@@ -110,6 +110,17 @@ describe("Hyperdrive authorization availability boundary", () => {
     await expect(programmingCapability.readManagementState()).rejects.toBe(programmingFailure);
   });
 
+  it.each([true, false])("preserves successful resolution when cleanup throws=%s", async (synchronous) => {
+    const pool = successfulResolutionPool();
+    pool.end = vi.fn(() => {
+      if (synchronous) throw new Error("cleanup");
+      return Promise.reject(new Error("cleanup"));
+    }) as never;
+    const capability = createHyperdriveAuthorization("postgresql://example.invalid/db", () => pool);
+    await expect(capability.forUser("user-1").has("forum.topic.create")).resolves.toBe(true);
+    await expect(capability.resolveUser("user-1")).resolves.toMatchObject({ effectivePermissions: ["forum.topic.create"] });
+  });
+
   it("reuses one request-scoped resolution promise and a new capability resolves afresh", async () => {
     const factory = vi.fn(() => successfulResolutionPool());
     const capability = createHyperdriveAuthorization("postgresql://example.invalid/db", factory);

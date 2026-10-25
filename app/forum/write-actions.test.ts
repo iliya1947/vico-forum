@@ -1124,6 +1124,18 @@ describe("forum write route actions", () => {
     expect(crossOrigin.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
   });
 
+  it.each([
+    new TypeError("unexpected writer bug"),
+    Object.assign(new Error("missing column"), { code: "42703" }),
+  ])("propagates unexpected ordinary mutation failures", async (failure) => {
+    const writes = writer();
+    writes.createTopic.mockRejectedValueOnce(failure);
+    await expect(sectionAction({
+      request: request("/en/sections/section-1", { title: "A title", body: "A body" }),
+      params: { locale: "en", sectionId: "section-1" }, context: context(writes),
+    })).rejects.toBe(failure);
+  });
+
   it("maps only classified correction storage outages and propagates unexpected writer failures", async () => {
     const unavailable = writer();
     unavailable.correctTopicTitleSourceLocale.mockRejectedValueOnce(new ForumStorageUnavailableError());

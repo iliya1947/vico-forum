@@ -1,3 +1,4 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { forumReaderForRequest } from "../forum/request-context";
@@ -9,7 +10,7 @@ export function meta() {
   return [{ title: "Vico Forum" }];
 }
 
-export async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
+export const loader = forumReadLoader(async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
   const reader = forumReaderForRequest(context);
   const [categories, onlinePresence] = await Promise.all([
     reader.readHomepage(),
@@ -20,7 +21,7 @@ export async function loader({ params, context }: { params: { locale?: string };
     }),
   ]);
   return { locale: params.locale ?? "en", categories: categories satisfies HomepageCategoryOverview[], onlinePresence };
-}
+});
 
 export default function Home() {
   const data = useLoaderData<typeof loader>();

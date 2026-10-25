@@ -15,7 +15,7 @@ import { authorizationForRequest } from "../authorization/request-context";
 import type { PermissionKey } from "../authorization/catalog";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
-export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" }
+export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" | "unexpected" }
 
 export interface HelpQuestionDraft {
   title: string;
@@ -42,7 +42,7 @@ export type HelpSimilarQuestionsActionData = {
 export type HelpQuestionActionData = ForumMutationError | HelpSimilarQuestionsActionData;
 
 export interface SourceLocaleCorrectionMutationError {
-  error: Exclude<ForumMutationError["error"], "rateLimited">;
+  error: Exclude<ForumMutationError["error"], "rateLimited" | "unexpected">;
   operation: "sourceLocaleCorrection";
 }
 
@@ -108,13 +108,14 @@ export async function runForumMutation<T>(
     if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError) return mutationFailure("forbidden", 403);
-    if (error instanceof ForumStateConflictError) return mutationFailure("conflict", 409);
+    if (error instanceof ForumStateConflictError || error instanceof ConcurrentRevisionError) return mutationFailure("conflict", 409);
     if (error instanceof ForumWriteRateLimitError) {
       return mutationFailure("rateLimited", 429, {
         "Retry-After": String(Math.max(1, Math.ceil(error.retryAfterMs / 1_000))),
       });
     }
-    return mutationFailure("unavailable", 503);
+    if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
+    throw error;
   }
 }
 
@@ -184,4 +185,10 @@ export async function solutionScope(context: RouterContextProvider) {
     }
     throw error;
   }
+}
+
+export interface PostEditConflictData {
+  operation: "postEdit";
+  error: "conflict";
+  post: import("../../db/forum-repository").ForumTopicPage["posts"][number];
 }

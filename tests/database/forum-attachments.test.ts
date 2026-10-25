@@ -5,7 +5,7 @@ import { RouterContextProvider } from "react-router";
 import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
 import { sectionAction, helpSolutionsCategoryAction, topicAction } from "../../app/forum/actions.server";
 import { forumReaderContext, forumWriterContext } from "../../app/forum/request-context";
-import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { authorizationContext } from "../../app/authorization/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
@@ -645,6 +645,48 @@ describe("live action → writer/service → PostgreSQL attachment publication",
   function responseStatus(value: unknown) {
     return value instanceof Response ? value.status : (value as { init?: { status?: number } }).init?.status;
   }
+
+  it.each([true, false])("preserves a committed reply and a domain failure when cleanup throws=%s", async (synchronous) => {
+    const cleanup: Promise<void>[] = [];
+    const writer = createHyperdriveForumWriter(databaseUrl, () => {
+      const connection = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+      const end = connection.end.bind(connection);
+      vi.spyOn(connection, "end").mockImplementation((() => {
+        cleanup.push(end());
+        if (synchronous) throw new Error("synthetic cleanup failure");
+        return Promise.reject(new Error("synthetic cleanup failure"));
+      }) as never);
+      return connection;
+    }, { cooldownMs: 0, now: () => new Date() });
+    try {
+      const result = await writer.createReply({ topicId: "attachment-topic", authorId: ownerId, body: "Committed despite cleanup" });
+      expect((await client.query("select id from forum_posts where id=$1", [result.postId])).rowCount).toBe(1);
+      const ctx = realContext(); ctx.set(forumWriterContext, writer);
+      const response = await topicAction({ request: publishRequest("/en/topics/missing", "reply", crypto.randomUUID(), 1, [], "Missing target"),
+        params: { locale: "en", topicId: "missing" }, context: ctx });
+      expect(responseStatus(response)).toBe(404);
+    } finally { await Promise.all(cleanup); }
+  });
+
+  it("refreshes a real stale published edit after PostgreSQL rejects its old revision", async () => {
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Conflict recovery", sourceLocale: "en" },
+      initialPost: { id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Current publication", sourceLocale: "en" } },
+    });
+    const ctx = realContext();
+    ctx.set(forumReaderContext, createHyperdriveForumReader(databaseUrl,
+      () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` })));
+    const req = publishRequest(`/en/topics/${topicId}`, "editPost", crypto.randomUUID(), 1, [], "Unsaved private edit");
+    const form = await req.formData(); form.set("postId", postId); form.set("expectedRevisionId", "stale-r0");
+    const response = await topicAction({ request: new Request(req.url, { method: "POST", headers: { Origin: "https://forum.test" }, body: form }),
+      params: { locale: "en", topicId }, context: ctx });
+    expect(response).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit", error: "conflict", post: { id: postId, body: { id: revisionId } } } });
+    expect(JSON.stringify(response)).not.toContain("Unsaved private edit");
+    expect((await client.query("select current_revision_id from forum_posts where id=$1", [postId])).rows[0].current_revision_id).toBe(revisionId);
+  });
 
   it.each(["section-topic", "help-question", "reply"] as const)(
     "publishes one stored attachment through live %s action and writer",

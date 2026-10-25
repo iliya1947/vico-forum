@@ -1,10 +1,11 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { redirect, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { forumReaderForRequest } from "../forum/request-context";
 import { forumTopicPath } from "../forum/paths";
 
-export async function loader({ params, context }: {
+export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string; postId?: string }; context: RouterContextProvider;
 }) {
   const session = authSessionForRequest(context);
@@ -18,4 +19,6 @@ export async function loader({ params, context }: {
   }
   return redirect(forumTopicPath(params.locale ?? "en", post.topicId)
     + "?editPost=" + encodeURIComponent(postId) + "#post-" + encodeURIComponent(postId));
-}
+});
+
+export { ForumRouteError as ErrorBoundary } from "../forum/ui";
