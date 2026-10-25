@@ -1,6 +1,32 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
-## PR #239, пакет 3 — повторная независимая проверка implementation head (2026-10-25)
+## PR #239 — уточнение вердикта по exact head `998715bbf0c531432673f027e5c260722e29b9ea` (2026-10-25)
+
+**ИТОГОВЫЙ СТАТУС ЛИРЫ: FINDING, прежний PASS ОТОЗВАН.** После исходной whole-PR проверки Мира независимо выявила новый сценарий `MIRA-PR239-998715-01` и отдельно поручила Лире перепроверить только эту цепочку: [назначение и исходная диагностика](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6403596151). Лира проследила путь самостоятельно на том же exact implementation head. **Один подтверждённый current-Stage defect** в recovery опубликованной правки. Это уточнение к ранее опубликованному PASS, а не новый полный whole-PR review и не отдельный второй дефект.
+
+### MIRA-PR239-998715-01 — подтверждение Лиры: новый upload блокирует recovery после потерянного Save response
+
+**Сценарий:** сервер успел закоммитить редактирование опубликованного post и retire publication operation, но клиент не получил ответ. Пользователь, сохраняя открытый editor и его in-memory text, добавляет новый файл до повторного Save.
+
+**Прослеженная причинная цепочка:**
+1. `db/forum-repository.ts` в успешной publication transaction вызывает `finishPublishedDraft`, который через `retireAttachmentDraftGeneration` сохраняет terminal marker для старого `editorOperationId`. Отсутствие HTTP ACK само по себе не меняет ID в mounted editor.
+2. `app/forum/editor-attachments.tsx`: `startUpload()` берёт `draftId`/headers из текущего hook; на этой стадии они всё ещё относятся к завершённой operation.
+3. `db/forum-attachments.ts`: `createDraftAttachment()` после scope lock вызывает `resolveAttachmentDraftGeneration()`; `db/attachment-draft-generation.ts` обнаруживает terminal marker и бросает `ForumAttachmentDraftConflictError("gone")`. `app/routes/attachment-upload.ts` возвращает HTTP `410`.
+4. `useEditorAttachments` сохраняет upload как error entry. Любой `status !== "stored"` задаёт `hasUnsettled=true` и `blocking=true`; `app/forum/markdown-editor.tsx` выставляет `publicationReady=false`. `TopicView` отключает Save по `!editReady`; submit handler редактора также защищает от обхода кнопки.
+5. Новый operation ID для completed replay создаётся только в `rebasePublishedAttachments(completedOperationId)` после получения `completedOperationId` из `editPost 409`. Но из-за upload error штатный повторный Save не выполняется, и этот конфликт/явный rebase недостижим.
+6. `retry(entry)` сохраняет старые operation/attachment IDs, если `entry.draftId === draftId` (что и происходит до rebase), поэтому повторяет `410`.
+
+**Альтернативные пути:** автоматического переключения на fresh operation после `410` нет; простая revalidation публичной страницы сама ID не сбрасывает; кнопка явного rebase отображается только после conflict action, до которого нет доступа. Remove устраняет блокировку Save, но теряет выбранный новый attachment; Cancel/закрытие редактора также не сохраняет полный in-memory intent. Это обходы, не штатное восстановление.
+
+**Текущее требование:** recovery после ambiguous committed edit должен оставаться достижимым, сохраняя текущий text/Undo/Redo и выбранные файлы. Пользователь должен иметь возможность завершить публикацию с новым вложением через корректную свежую operation без потери attachment intent; способ реализации оставлен исполнителю. Нужна целевая regression `commit→lost ACK→new upload before retry→successful recovery/Save`.
+
+**Классификация:** подтверждённый функциональный дефект текущего Stage в пределах correction chain пакета 3; **PR #239 пока не готов к merge**. Других новых findings данной точечной проверкой не установлено.
+
+**Граница доказательности:** source-level causal trace текущего exact head; Лира лично не запускала Chromium или PostgreSQL для этого сценария. Весь прежний отчёт ниже сохраняется как исторический результат и **не может читаться как действующий PASS**. Implementation PR #239 и main не изменялись. Передача дальнейших действий — через Миру в PR #236. **STOP.**
+
+---
+
+## Архив: PR #239, пакет 3 — первоначальный PASS (отозван уточнением выше)
 
 **Результат: PASS по проверке исходников и представленных regression-материалов; новых подтверждённых current-Stage defects не установлено.**
 
