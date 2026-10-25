@@ -1,5 +1,52 @@
 # Лёва — Codex-6.1 Sol
 
+## PR239 — MIRA-PR239-998715-01 реализован; новый head (2026-10-26)
+
+Назначение [6404447575](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6404447575). Проверена собственная causal chain на998715b; implementation изменён только по этому defect. Это авторская implementation verification, не whole-PR review нового head.
+
+- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), final exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1`.
+- Parent reviewed head `998715bbf0c531432673f027e5c260722e29b9ea`; base main `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Tree `5caf7582cb6358ff377c5443b6e24718f6e5cae5` совпал с локальным commit `a37703469714f6f83d0acfc47bff99af85df366d`.
+- New correction7 files/219 additions/12 deletions; whole PR43 files/1030 additions/65 deletions.
+
+### Причина и выбранная граница
+
+После commit/lost ACK операция закрыта, но mounted form её ещё использует. Новый upload получает настоящий410 gone; error-entry блокирует Save, поэтому прежний modified-replay409/rebase не достигается. Retry повторял terminal operation. Две новые UI regressions воспроизвели это на исходном998715b, остальные24 controls того run прошли.
+
+Исправление только в uploader опубликованной правки:
+- MarkdownEditor передаёт внутренний publishedEdit flag из фактического publicationIntent=editPost.
+- Только точный server response HTTP410 + error=gone переводит uploader на fresh operation до следующего Retry. Это подтверждение terminal operation, не догадка из transport/503/прочих ошибок.
+- Исходный File, выбранные строки, text/Undo/Redo остаются. Save по-прежнему блокируется незавершённым upload; обычный Retry теперь работает под fresh operation/asset ID.
+- Другие pending uploads прерываются с сохранением File для Retry; старые ACK подавляются existing identity fence.
+- Последующий Save со старой revision штатно получает stale409. Explicit rebase берёт current public baseline, сохраняет уже fresh operation, переносит committed asset в retained один раз. Непубличные uploads от старой operation сохраняются для Retry.
+- Ordinary create/reply flows,409/503 и410 без точного gone не меняют retry identity. Ordinary stale revision, completed-receipt rebase,Remove и identical publication replay сохраняются.
+- Новый recovery endpoint/preflight/auto-publication не добавлен. Server owner/context/permission/operation checks не менялись.
+
+Source anchors: [rollover и обычный rebase](https://github.com/iliya1947/vico-forum/blob/a7d29546f334a59d42b30b10c67c32595ea98ec1/app/forum/editor-attachments.tsx#L181), [terminal upload boundary](https://github.com/iliya1947/vico-forum/blob/a7d29546f334a59d42b30b10c67c32595ea98ec1/app/forum/editor-attachments.tsx#L244), [edit-only wiring](https://github.com/iliya1947/vico-forum/blob/a7d29546f334a59d42b30b10c67c32595ea98ec1/app/forum/markdown-editor.tsx#L265).
+
+### Проверки и limits
+
+- Local full1065 application /300 native PostgreSQL tests PASS.
+- New targeted UI suite31 PASS; включает full mounted editor chain, Undo/Redo, exact File preservation, ordinary retry identity controls, concurrent Files/late ACK и committed asset dedup при обычном rebase.
+- Native PG tests используют настоящие edit/upload handlers и проверяют commit/lost ACK→upload410→fresh Retry201→stale409→rebase→Save success с прежним attachment и без него. История ровно3 revisions, итоговые refs без дублей.
+- Typecheck,lint(одно прежнееwarning app/forum/ui.test.tsx:174),application/UI-preview builds,migration-history guard и local built Worker smoke PASS.
+- Chromium прошёл ту же цепочку с prior.txt и new-file.txt, реальной потерей HTTP response после commit, Undo/Redo, fresh Retry,409/rebase и успешным Save. Итоговые PG refs — ровно два разных выбранных asset.
+- Edit requests шли в actual built Worker/native PG. Upload requests мостом направлялись в настоящий Node upload handler/native PG; private bytes storage и upload-session fixture синтетические, real authorization gates сохранены. Это не external R2/provider acceptance и не полный Worker/R2 upload E2E.
+- Server410 здесь корректен: исправлена недостижимость client recovery, а не ослаблен отказ terminal operation.
+- Test Worker/Chromium/PG container остановлены. Schema,migrations,dependencies и public HTTP contracts unchanged; PROJECT_STATE и docs/EDITOR обновлены.
+- Exact-head CI: **[CI #40243954305](https://github.com/iliya1947/vico-forum/actions/runs/40243954305) SUCCESS; checks121321492211/database121321492371 SUCCESS наa7d29546f334a59d42b30b10c67c32595ea98ec1.**.
+
+Первоначальный automatic review отклонил публикацию большого PROJECT_STATE. Read-only checks установили: #236/#239 — один public repository; remote/base blob SHA совпадает; новый diff не содержит infrastructure secrets. После этих проверок повтор через тот же GitHub tool принят. Перенос в другой destination/обход отклонения не применялся; publication blocker отсутствует.
+
+### Передача
+
+Мире: организовать новый whole-PR review **всего8-group package3 scope, предыдущих correction chains и MIRA-PR239-998715-01** на `a7d29546f334a59d42b30b10c67c32595ea98ec1`. Старые PASS/FINDING относятся к прежним heads и не являются verdict по этому head. Технический контекст готов; владельцу не нужно его пересказывать. Автор не объявляет новый independent PASS или merge. Лёва STOP; пакет4+ не начинать.
+
+
+## Предыдущие heads и handoffs — исторический контекст
+
+Их verdicts/evidence относятся к указанным прежним heads; текущий handoff находится выше.
+
 ## PR239 — bounded correction двух review defects; новый stable head (2026-10-25)
 
 Назначение [6402172083](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6402172083). Оба causal chains проверены самостоятельно и исправлены в том же PR239. Это реализация и проверки автора, не новый независимый whole-PR review.
