@@ -1,28 +1,26 @@
 # Shared service channel
 
-## Текущая реализация — пакет 3 failure semantics + published-edit recovery (2026-10-25)
+## Текущая реализация — пакет 3 готов к whole-PR review (2026-10-25)
 
-- PR #238 замержен владельцем; новый baseline `main f59785c50e91fc1615b568b74a0a56909a92c871`.
-- Завершены пакеты 1–2 принятого 11-PR fix-plan; осталось 9 пакетов.
-- Следующая implementation-задача назначена Лёве и ограничена пакет3.
-- Scope: `ARCH-01`, `ARCH-03`, `POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01`, `SEC-01`, `XR-THROWN-ACTION-BUFFER`, `EDITOR-PUB-01`, `EDITOR-PUB-02`.
-- Требуемый результат: known domain/dependency failures, unexpected faults и cleanup failures имеют корректную failure semantics; unexpected ошибки остаются диагностируемыми и не маскируются как controlled unavailable; published-edit failure/conflict не теряет in-memory editor text и имеет штатное recovery/rebase поведение.
-- Границы: не расширять scope до следующих audit packages, future hardening или redesign; visual acceptance, production/external actions не запускать без отдельного запроса.
-- После реализации нужен отдельный stable exact head, applicable tests/CI и новый review-cycle.
+- Пакеты1–2 merged владельцем. Current main/base: `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **stable exact head `18c849c92eb597ccd39871914290cf6164fc209b`**. Tree `315dae98367a489ad62771c4d9536f895b3ebde8` совпал с локально проверенным. 37 files/563 additions/44 deletions.
+- Назначенный scope: ARCH-01,ARCH-03,POST-EDIT-AVAIL-01,FORUM-READ-AVAIL-01,SEC-01,XR-THROWN-ACTION-BUFFER,EDITOR-PUB-01,EDITOR-PUB-02.
+- Typed dependency failures/domain errors/unexpected faults различаются; PG writer классифицирует outages; cleanup не подменяет итог операции. Primary reads и edit-resume typed503; optional degradation сохранена. Unexpected server faults бросаются и безопасно диагностируются без message/SQL/params/unpublished content.
+- Browser authoring actions сохраняют mounted формы после unexpected/transport failure с отдельным feedback. Edit409 читает current public post baseline в action, сохраняя buffer/attachment intent; пользователь явно выполняет rebase. Поздний loader snapshot supersedes старый409. EN/RU/HE edit-specific feedback добавлен.
+- Local1051 application/296 PG tests PASS; final targeted22 PASS после последней snapshot refinement. Typecheck,lint(1прежнееwarning),обе сборки,migration-history guard и built Worker smoke PASS.
+- Chromium→built Worker→native PG17: пять cases PASS — conflict/rebase/save redirect, typed503, unexpected SQL500, реальный transport abort/retry, profile SQL500 без private text в response/log. Test Worker/Chromium/PG container остановлены.
+- **[CI #40219758202](https://github.com/iliya1947/vico-forum/actions/runs/40219758202) SUCCESS**, checks121248559346/database121248559564 SUCCESS на exact head. PROJECT_STATE и относящиеся editor/authz SOT обновлены; schema/migrations/dependencies unchanged.
+- [Полный авторский handoff](https://github.com/iliya1947/vico-forum/blob/b7c11ee29699aaf560a67072ad5c10d1590205d7/.github/agents/codex-6.1-sol.md). Это implementation verification автора; независимый whole-PR verdict/merge ещё не заявляются.
+- Следующий шаг: **Мира организует whole-PR review всего scope PR239 на указанном head**. Лёва STOP после handoff. Пакеты4–11 не начаты.
+- Package4+, future hardening, owner visual acceptance, production/external service actions не выполнялись. Служебный PR236 никогда не merge.
 
+## Завершённый пакет 2 — auth/session/identity
 
-## Текущая реализация — пакет 2 auth/session/identity (2026-10-25)
-
-- PR238 включает шесть назначенных technical findings и DOC04. После review исходного head выполнена bounded correction `AUTH-LINK-STALE-IDENTITY-01` по назначению [6400105733](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400105733). `PR238-LIRA-01` — alias той же группы.
-- [PR #238](https://github.com/iliya1947/vico-forum/pull/238), branch `fix/auth-session-identity`; **new stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80`**, parent reviewed head `8866bd8bfb6f8121a5e181c88a9e542741040b64`; base main `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
-- Scope whole PR: AUTH01,AUTH02,AUTH-LINK01,AUTH-LOCALE-RETURN01,AUTH-SESSION-AVAIL01,XR-CROSS-TAB-IDENTITY,DOC04. Correction не расширяет этот scope.
-- Own-profile action передаёт profile.id в `x-vico-link-user` только как expectation. Existing BetterAuth before-hook `/link-social` читает authoritative session и возвращает409 при missing/mismatch до OAuth state/account creation; guest401. Штатный endpoint использует ту же session; signed state фиксирует проверенный target. Client не retry-ит под другим account. Provider/email verification и origin gates сохранены.
-- Новые PostgreSQL regressions: staleA/currentB+GoogleB no state/link, missing expectation, normal link, mismatched/unverified provider, guest, foreignOrigin, session change after issued state. Positive paths проверяют один session lookup внутри link request. Два guard controls red на8866bd8, весь новый набор green после correction; прежние negative controls явно проверяют свои ownership/verification error codes.
-- Свежие local проверки: **997 application /291 PostgreSQL tests PASS**, typecheck,lint(1прежнееwarning),app/UI-preview builds,migration-history guard,local built Worker smoke PASS. Schema/dependencies/общая permission architecture не менялись.
-- **[CI #40213325914](https://github.com/iliya1947/vico-forum/actions/runs/40213325914) SUCCESS:** checks121229042957 и database121229043132 SUCCESS на новом head. Tree `a644f588a0a4f3fe0ec1a567a4227c8f83f31a25` совпадает с локально проверенным.
-- **Готово к новому whole-PR review, не к merge.** Прежние FINDING-verdicts относятся к8866bd8. Correction не объявляется принятой/закрытой вmain до review и merge.
-- Следующий шаг: Мира организует новый whole-PR review всего PR238 scope по актуальному AGENTS.md. Лёва STOP после correction; пакет3 и остальные9 пакетов не начаты.
-- Real Google/provider smoke, external Stage6/production/visual acceptance не запускались. Служебный PR236 не merge.
+- [PR #238](https://github.com/iliya1947/vico-forum/pull/238) merged владельцем; merge `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Final implementation head `3d6fe4d178d87e0697d531c962f784296f169d80`, включая AUTH-LINK-STALE-IDENTITY-01 correction (alias PR238-LIRA-01).
+- Независимые whole-PR проверки Миры и Лиры — без findings; [CI40213325914](https://github.com/iliya1947/vico-forum/actions/runs/40213325914) SUCCESS,997app/291PG PASS.
+- Финальная самопроверка автора Лёвы отменена владельцем ([6400838057](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6400838057)); Мишаня по решению владельца в текущей работе не участвует.
+- External Google/provider/production/visual acceptance этим merge не заявляются.
 
 ## Завершённый пакет 1 — AUTH-RATE-LIMIT-RACE-01
 
@@ -122,7 +120,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 4. Current runtime и `docs/auth/AUTHORIZATION.md` соответствуют принятому контракту.
 5. Role-only формулировка в `docs/EDITOR.md` и связанный descriptor считаются устаревшей документацией и входят в `DOC-04`; изменения кода authorization для этого finding не требуются.
 
-### Черновой fix-plan Миры — 11 proposed implementation PR
+### Принятый fix-plan — 11 implementation PR
 
 1. Better Auth dependency/rate-limit — `AUTH-RATE-LIMIT-RACE-01`.
 2. Auth/session/identity — 6 technical + `DOC-04`.
@@ -136,7 +134,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 10. Editor interaction/UI + preview tooling — 7 technical + 2 preview.
 11. Documentation/current-state closeout — `DOC-01` и только оставшиеся passages из `DOC-02/03/04`.
 
-Полный черновой execution plan Миры с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**. Лира в FPLAN-T1 (`6397337524`) приняла 11-PR decomposition без split/merge и добавила два acceptance-уточнения, которые Мира приняла: PR2/AUTH-LINK-01 должен явно проверять отсутствие небезопасного implicit linking только по unverified same-email; PR6/ATTACH-04 должен явно сохранять несохранённый текст и остальные selected files при selective Remove. План ещё не считается командно утверждённым до архитектурной сверки Лёвы.
+Полный execution plan Миры с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**. Лира в FPLAN-T1 (`6397337524`) приняла 11-PR decomposition без split/merge и добавила два acceptance-уточнения, которые Мира приняла: PR2/AUTH-LINK-01 должен явно проверять отсутствие небезопасного implicit linking только по unverified same-email; PR6/ATTACH-04 должен явно сохранять несохранённый текст и остальные selected files при selective Remove. План принят; текущая implementation-последовательность следует ему.
 
 Общие границы:
 - каждый PR bounded и строится от уже принятого актуального `main`;
@@ -147,12 +145,9 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 ### Текущий implementation status
 
-1. **PR #237 / `AUTH-RATE-LIMIT-RACE-01` — merged.**
-   - merge commit: `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`;
-   - current `main`: `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`;
-   - exact-head implementation CI был green;
-   - whole-PR review Миры: PASS без findings.
-2. Пакет2 и bounded correction реализованы в PR238, но ещё не приняты: новый stable head ожидает whole-PR review. Последующие9 пакетов не начаты.
+1. PR237 /пакет1 merged, merge `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
+2. PR238 /пакет2 merged, current main `f59785c50e91fc1615b568b74a0a56909a92c871`.
+3. PR239 /пакет3 реализован на head `18c849c92eb597ccd39871914290cf6164fc209b`, exact-head CI SUCCESS, ожидает whole-PR review. Пакеты4–11 не начаты.
 
 ### Принятые scope и границы пакета2
 
@@ -173,14 +168,6 @@ Scope:
 - `AUTH-LINK-01`: supported same-email local+Google flow должен работать, но нельзя разрешать implicit linking только по совпадению непроверенного email; regression должен доказывать владение/авторизацию связываемой identity.
 - Real Google provider smoke остаётся external Stage 6, если correction полностью проверяется local/CI.
 - Следующие packages до завершения этого PR не начинать.
-### PR #238 — correction / review status
-
-1. На исходном head8866bd8 Мира и Лира сообщили один finding; техническая самопроверка автора Лёвы подтвердила причинную цепочку собственными source/experimental checks. Это не три независимых аудита. Canonical finding AUTH-LINK-STALE-IDENTITY-01, alias PR238-LIRA-01.
-2. Назначенная bounded correction завершена на новом head `3d6fe4d178d87e0697d531c962f784296f169d80`; новые native PostgreSQL controls и полные997app/291PG suites PASS. CI40213325914 checks/database SUCCESS.
-3. Same-request expected-user gate с authoritative session действует до OAuth state; совпадение email не используется вместо authentication/verification. При staleA/B связьB не создаётся; normal link и прежние provider/origin gates работают.
-4. Новый head требует whole-PR проверки всего исходного scope, не только correction. Прежние review-verdicts и CI40202422836 относятся к старому head и не заменяют этот цикл.
-5. Подробности реализации и proof limits — личный файл Лёвы и новый handoff comment #236. Independent review correction/merge ещё не выполнены. Следующие packages/external/visual gates не запускались.
-
 ### Следующий шаг
 
-PR #238 на stable exact head `3d6fe4d178d87e0697d531c962f784296f169d80` прошёл независимые whole-PR проверки Миры и Лиры без findings; exact-head CI `40213325914` SUCCESS. Мишаня по прямому решению владельца в текущей работе не участвует. Повторная финальная проверка Лёвой не требуется: он автор implementation/correction, а независимые reviewers новых дефектов не нашли. PR #238 готов к решению владельца о merge.
+Мира организует whole-PR review PR #239 на stable exact head `18c849c92eb597ccd39871914290cf6164fc209b` по всем8 группам пакета3. Полный технический контекст опубликован в личном файле Лёвы; владельцу не нужно его пересказывать. Exact-head CI SUCCESS не заменяет whole-PR review. Лёва STOP; пакет4 самостоятельно не начинать.
