@@ -28,6 +28,7 @@ interface Props {
     ownerId: string | null;
     contextKey?: string;
     disabled: boolean;
+    publishedEdit?: boolean;
     publishedAttachments?: readonly {
         id: string;
         url: string;
@@ -130,7 +131,7 @@ function likelySecretFile(name: string): boolean {
     const lower = name.trim().toLowerCase();
     return lower === ".env" || lower.startsWith(".env.");
 }
-export function useEditorAttachments({ ownerId, contextKey, disabled, publishedAttachments = [], insertImage, removeImage, replaceImage }: Props) {
+export function useEditorAttachments({ ownerId, contextKey, disabled, publishedEdit = false, publishedAttachments = [], insertImage, removeImage, replaceImage }: Props) {
     const { t, i18n } = useTranslation("common");
     const [draftId, setOperationId] = useState("");
     const [entries, setEntries] = useState<UploadEntry[]>([]);
@@ -177,22 +178,24 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
         setEntries((current) => current.map((entry) => entry.id === id ? update(entry) : entry));
     }
     function reset() { removedPublishedIds.current.clear(); setOperationId(crypto.randomUUID()); setEntries(initialEntries()); setPublicationWarning(false); }
+    function freshOperation() {
+        const next = crypto.randomUUID();
+        identityRef.current = JSON.stringify([ownerId, contextKey, next]);
+        for (const request of requestsRef.current.values()) request.abort();
+        requestsRef.current.clear();
+        setOperationId(next);
+        return next;
+    }
     function rebasePublishedAttachments(completedOperationId?: string) {
         if (!initialized) return false;
         const publishedIds = new Set(publishedAttachments.map(file => file.id));
         const baseline = initialEntries().filter(entry => !removedPublishedIds.current.has(entry.id));
         const restart = !!completedOperationId && completedOperationId === draftId;
-        if (restart) {
-            const nextOperation = crypto.randomUUID();
-            identityRef.current = JSON.stringify([ownerId, contextKey, nextOperation]);
-            for (const request of requestsRef.current.values()) request.abort();
-            requestsRef.current.clear();
-            setOperationId(nextOperation);
-        }
+        const operation = restart ? freshOperation() : draftId;
         // An ACK-lost upload can already be published. It is retained exactly once.
         // Other uploads from a completed operation keep their File for explicit Retry.
         setEntries(current => [...baseline, ...current.filter(entry => entry.publishedUrl === null && !publishedIds.has(entry.id))
-            .map(entry => restart ? { ...entry, status: "error" as const, progress: null, error: "unavailable" } : entry)]);
+            .map(entry => entry.draftId !== operation ? { ...entry, status: "error" as const, progress: null, error: "unavailable" } : entry)]);
         return true;
     }
     function cancel() {
@@ -238,6 +241,13 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
             }
             setEntry(stableId, (current) => ({ ...current, status: "error", progress: null,
                 error: typeof payload?.reason === "string" ? payload.reason : typeof payload?.error === "string" ? payload.error : "unavailable" }));
+            if (publishedEdit && request.status === 410 && payload?.error === "gone") {
+                // A lost Save ACK can retire the operation before this new upload.
+                // Retry must be usable even while the failed file blocks Save.
+                freshOperation();
+                setEntries(current => current.map(entry => entry.status === "uploading"
+                    ? { ...entry, status: "error", progress: null, error: "gone" } : entry));
+            }
         };
         const failure = () => { requestsRef.current.delete(stableId); if (active())
             setEntry(stableId, (current) => ({ ...current, status: "error", progress: null, error: "unavailable" })); };

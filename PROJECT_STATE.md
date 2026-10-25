@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-25
+Последнее обновление: 2026-10-26
 
 ## Назначение
 
@@ -19,6 +19,27 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## Пакет 3 — terminal upload до повторного Save (2026-10-26)
+
+Подтверждён MIRA-PR239-998715-01: после committed edit/lost ACK новый upload получает410
+от завершённой operation и блокирует Save раньше доступного409/rebase recovery. Published-edit
+uploader теперь меняет operation при точном typed ответе410 gone. Выбранные Files и
+text/Undo/Redo остаются в mounted editor; обычный Retry отправляет файл с fresh operation/asset
+IDs. Retry становится доступным независимо от блокировки Save. Последующий stale409/rebase
+обновляет public baseline без повторной смены fresh operation и без дублирования старого asset.
+Оставшиеся private uploads из прежней operation сохраняют File для Retry. Поздние ACK
+подавляются прежней identity boundary. Другие authoring flows и другие upload errors не
+меняют retry identity. Новых endpoints, schema, dependencies или server permission contracts нет.
+
+Две initial UI regressions воспроизвели дефект на998715b; после исправления local1065
+application/300 PostgreSQL tests PASS, typecheck,lint(одно прежнееwarning),обе сборки,
+migration-history guard и local built Worker smoke PASS. Chromium проверил actual built
+Worker edit actions + native PostgreSQL с upload bridge к настоящему Node upload handler:
+commit/lost response → new upload410 → Retry201 → stale409 → rebase → Save success,
+с сохранением Undo/Redo и двух выбранных файлов без дублирования. Bytes storage и upload
+session context в bridge синтетические; external R2/provider/production/visual acceptance
+не заявляются. Новый exact-head CI и whole-PR review проверяются после публикации.
 
 ## Пакет 3 — bounded correction published-edit recovery (2026-10-25)
 

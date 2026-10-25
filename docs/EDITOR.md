@@ -180,6 +180,11 @@ baseline; до этого expected revision не продвигается. Те�
 uploads сохраняют File в памяти и доступны через штатный Retry с новыми operation/asset IDs;
 активные image destinations обновляются во всей in-memory истории без изменения остального
 source. Обычный stale-revision conflict не меняет незавершённую operation.
+Если новый upload опубликованной правки возвращает typed410 gone до повторного Save,
+operation меняется уже на этом ответе: выбранный File остаётся доступным через обычный Retry,
+даже пока незавершённое вложение блокирует Save. Затем штатный stale409/rebase обновляет
+public baseline, сохраняя свежую operation и исключая уже опубликованные private duplicates.
+Другие upload errors и обычные create/reply flows не получают этой смены operation.
 
 Нет local/server text cache, 60-second autosave, межвкладочного/межустройственного
 восстановления, выбора версий черновика, «Моих черновиков» и draft discovery.

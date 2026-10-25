@@ -702,6 +702,55 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     expect((await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId))).toHaveLength(3);
   });
 
+  it.each([false, true])("recovers a new upload before retrying a lost-ACK edit; prior attachment=%s", async (withPriorAttachment) => {
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Upload before recovery", sourceLocale: "en" },
+      initialPost: { id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Initial", sourceLocale: "en" } },
+    });
+    const ctx = realContext(), contextKey = `post:${postId}:edit`;
+    const reader = createHyperdriveForumReader(databaseUrl,
+      () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` }));
+    ctx.set(forumReaderContext, reader);
+    ctx.set(forumAttachmentStoreContext, store as never);
+    ctx.set(privateAttachmentBucketContext, {
+      async put(_key, stream) { return { size: (await new Response(stream).arrayBuffer()).byteLength }; },
+      async get() { return null; }, async delete() {},
+    });
+    const save = (op: string, expectedRevisionId: string, body: string, attachmentIds: string[], retained: string[]) => {
+      const form = new FormData();
+      for (const [key, value] of Object.entries({ intent: "editPost", postId, expectedRevisionId, body,
+        editorOperationId: op, editorAttachmentIds: JSON.stringify(attachmentIds), editorRetainedAttachmentIds: JSON.stringify(retained) })) form.set(key, value);
+      return topicAction({ params: { locale: "en", topicId }, context: ctx,
+        request: new Request(`https://forum.test/en/topics/${topicId}`, { method: "POST", headers: { Origin: "https://forum.test" }, body: form }) });
+    };
+    const old = crypto.randomUUID();
+    const a = withPriorAttachment ? await store.createDraftAttachment(upload(contextKey, old)) : null;
+    const prior = a ? [a.id] : [];
+    expect(responseStatus(await save(old, revisionId, "Committed, ACK lost", prior, []))).toBe(302);
+    const uploadFile = (op: string, id: string) => uploadAction({ context: ctx, request: new Request("https://forum.test/api/attachments", {
+      method: "POST", headers: { Origin: "https://forum.test", "Content-Type": "text/plain", "X-Vico-Attachment-Id": id,
+        "X-Vico-Attachment-Name": "later.txt", "X-Vico-Attachment-Size": "11", "X-Vico-Editor-Context": encodeURIComponent(contextKey),
+        "X-Vico-Operation-Id": op }, body: "later bytes",
+    }) });
+    const gone = await uploadFile(old, crypto.randomUUID());
+    expect(gone.status).toBe(410);
+    expect(await gone.json()).toEqual({ error: "gone" });
+    const fresh = crypto.randomUUID(), b = crypto.randomUUID();
+    expect((await uploadFile(fresh, b)).status).toBe(201);
+    const stale = await save(fresh, revisionId, "Current retained buffer", [...prior, b], []);
+    expect(stale).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit" } });
+    expect(stale).not.toHaveProperty("data.completedOperationId");
+    const baseline = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(responseStatus(await save(fresh, baseline.body.id, "Current retained buffer", [b], prior))).toBe(302);
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(after.body.originalContent).toBe("Current retained buffer");
+    expect((after.attachments ?? []).map((file) => file.id).sort()).toEqual([...prior, b].sort());
+    expect(await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId)).toHaveLength(3);
+  });
+
   it("refreshes a real stale published edit after PostgreSQL rejects its old revision", async () => {
     const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
     await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({

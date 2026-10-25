@@ -262,6 +262,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       ownerId: accountId,
       contextKey: accountId ? editorContextKey : undefined,
       disabled: disabled || publicationPending,
+      publishedEdit: publicationIntent === "editPost",
       publishedAttachments: existingInlineAttachments,
       insertImage,
       removeImage,

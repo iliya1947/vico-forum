@@ -18,6 +18,22 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 
+class UploadRequest {
+  static all: UploadRequest[] = [];
+  headers = new Map<string, string>();
+  upload = {}; status = 0; responseText = ""; body: unknown;
+  onload?: () => void; onabort?: () => void;
+  constructor() { UploadRequest.all.push(this); }
+  open() {}
+  setRequestHeader(name: string, value: string) { this.headers.set(name, value); }
+  send(body: unknown) { this.body = body; }
+  abort() { this.onabort?.(); }
+  async complete(status: number, payload: unknown) {
+    this.status = status; this.responseText = JSON.stringify(payload);
+    await act(async () => { this.onload?.(); });
+  }
+}
+
 const routers: ReturnType<typeof createMemoryRouter>[] = [];
 afterEach(() => { cleanup(); routers.splice(0).forEach((router) => router.dispose()); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const revision = (id: string, originalContent: string) => ({ id, originalContent, sourceLocale: "en" });
@@ -102,6 +118,55 @@ describe("real topic action and mounted editor recovery", () => {
     expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Apply my edit to the current revision" })).not.toBeInTheDocument();
   });
+  it("recovers commit/lost ACK/new upload before retry without losing text, history or File", async () => {
+    const state = setup(); const { form, field } = await editBuffer();
+    UploadRequest.all = []; vi.stubGlobal("XMLHttpRequest", UploadRequest);
+    const originalOperation = form.querySelector<HTMLInputElement>('[name="editorOperationId"]')!.value;
+    state.editPublishedPost.mockImplementationOnce(async () => {
+      state.readTopicPage.mockResolvedValue({ ...initialTopic, posts: [{ ...post, body: revision("r2", "Unsaved private edit") }] });
+      throw new TypeError("response lost after commit");
+    });
+    await submit(state.router, form);
+    fireEvent.change(field, { target: { value: "Changed after lost ACK" } });
+    const file = new File(["file retained"], "new-file.txt", { type: "text/plain" });
+    fireEvent.change(within(form).getByLabelText("Attach"), { target: { files: [file] } });
+    const first = UploadRequest.all.at(-1)!;
+    await first.complete(410, { error: "gone" });
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    const nextOperation = form.querySelector<HTMLInputElement>('[name="editorOperationId"]')!.value;
+    expect(nextOperation).not.toBe(originalOperation);
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true });
+    expect(field).toHaveValue("Unsaved private edit");
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true, shiftKey: true });
+    expect(field).toHaveValue("Changed after lost ACK");
+    fireEvent.click(within(form).getByRole("button", { name: "Retry" }));
+    const retried = UploadRequest.all.at(-1)!;
+    expect(retried.body).toBe(file);
+    expect(retried.headers.get("X-Vico-Operation-Id")).toBe(nextOperation);
+    const attachmentId = retried.headers.get("X-Vico-Attachment-Id")!;
+    await retried.complete(201, { outcome: "stored", attachment: { id: attachmentId, fileName: file.name,
+      detectedType: "text", responseMime: "text/plain", byteSize: file.size, verificationStatus: "type-checked" } });
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+    state.editPublishedPost.mockRejectedValueOnce(new ForumStateConflictError());
+    await submit(state.router, form);
+    fireEvent.click(within(form).getByRole("button", { name: "Apply my edit to the current revision" }));
+    expect(form.querySelector('[name="expectedRevisionId"]')).toHaveValue("r2");
+    expect(form.querySelector('[name="editorOperationId"]')).toHaveValue(nextOperation);
+    expect(field).toHaveValue("Changed after lost ACK");
+    let finishSave!: () => void;
+    const saved = new Promise<void>((resolve) => { finishSave = resolve; });
+    state.editPublishedPost.mockImplementationOnce(async () => {
+      await saved;
+      state.readTopicPage.mockResolvedValue({ ...initialTopic, posts: [{ ...post, body: revision("r3", "Changed after lost ACK") }] });
+    });
+    fireEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(state.router.state.navigation.state).toBe("submitting"));
+    await act(async () => { finishSave(); });
+    expect(state.editPublishedPost).toHaveBeenLastCalledWith(expect.objectContaining({ draftId: nextOperation,
+      expectedRevisionId: "r2", body: "Changed after lost ACK", attachmentIds: [attachmentId] }));
+    await waitFor(() => expect(form.isConnected).toBe(false));
+  });
+
   it("restarts only a completed edit operation when accepting a conflict baseline", async () => {
     const state = setup(); const { form, field } = await editBuffer();
     const old = form.querySelector<HTMLInputElement>('[name="editorOperationId"]')!.value;
