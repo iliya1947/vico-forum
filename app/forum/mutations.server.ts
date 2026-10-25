@@ -15,7 +15,7 @@ import { authorizationForRequest } from "../authorization/request-context";
 import type { PermissionKey } from "../authorization/catalog";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
-export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" | "unexpected" }
+export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" | "unexpected" }
 
 export interface HelpQuestionDraft {
   title: string;
@@ -79,7 +79,9 @@ export function forumMutationGuard(request: Request, context: RouterContextProvi
 /** A stale editor expectation is never used as authority to select the actor. */
 export function editorIdentityGuard(form: FormData, context: RouterContextProvider) {
   if (form.has("editorActorId") && form.get("editorActorId") !== authSessionForRequest(context)?.user.id) {
-    return mutationFailure("conflict", 409);
+    return data<ForumMutationError>({ error: "conflict",
+      ...(form.get("intent") === "editPost" ? { intent: "editPost" as const } : {}),
+    }, { status: 409 });
   }
 }
 
@@ -191,4 +193,5 @@ export interface PostEditConflictData {
   operation: "postEdit";
   error: "conflict";
   post: import("../../db/forum-repository").ForumTopicPage["posts"][number];
+  completedOperationId?: string;
 }

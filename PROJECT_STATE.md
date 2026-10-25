@@ -20,6 +20,34 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Пакет 3 — bounded correction published-edit recovery (2026-10-25)
+
+Проверка выявила два текущих дефекта реализации: modified replay после уже committed edit
+повторно использовал завершённую publication operation, а открытый editor менял feedback
+чужого topic-level409 на сообщение о правке. Repository теперь различает modified receipt
+replay отдельным subtype существующего domain conflict. Edit action возвращает current
+public baseline и ID завершённой operation; явный rebase меняет только эту завершённую
+operation на новую. Обычный stale revision сохраняет незавершённую operation и её uploads.
+
+Уже опубликованный после потерянного ACK asset становится retained ровно один раз; Remove
+intent сохраняется. Не попавший в current public baseline upload сохраняет исходный File
+в памяти для Retry в новой operation с новым asset ID. Активные image destinations во всём
+in-memory Undo/Redo history получают этот ID без изменения текста, code spans или labels.
+Серверные owner/context/operation gates не ослаблены. Edit-specific409 copy выбирается по
+фактическому action result/guard context, а не по наличию открытой формы.
+
+Native PG regressions проверяют committed edit → identical replay → modified409 → fresh
+operation → успешное сохранение с вложением и без него. Две Chromium проверки через built
+Worker/PostgreSQL прошли: реальная потеря ответа после commit и восстановление изменённого
+buffer; stale markSolved409 при mounted editor с сохранением текста и solution feedback.
+Полные local suites:1058 application и298 PostgreSQL tests PASS; typecheck, lint(одно прежнее
+warning), обе сборки, migration-history guard и local built Worker smoke PASS. Один первый
+app run не дождался initial mounted editor за1s; изолированные11 cases прошли, ожидание
+готовности формы в fixture увеличено до3s, повторный полный1058 suite прошёл. Product logic
+из-за этого timeout не менялась.
+Schema/migrations/dependencies не менялись; новый exact-head CI и whole-PR review должны
+проверяться после публикации correction. Пакет4 и внешние/production/visual actions не начаты.
+
 ## Пакет 3 — failure semantics и восстановление опубликованной правки (2026-10-25)
 
 Ordinary forum mutations преобразуют в controlled responses только известные domain errors

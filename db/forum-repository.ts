@@ -447,6 +447,7 @@ export class ConcurrentRevisionError extends Error {}
 export class ForumEntityNotFoundError extends Error {}
 export class ForumAuthorizationError extends Error {}
 export class ForumStateConflictError extends Error {}
+export class ForumPublicationReplayConflictError extends ForumStateConflictError {}
 export type SolutionManagementScope = "own" | "any";
 
 async function publicationFingerprint(input: unknown): Promise<string> {
@@ -797,7 +798,7 @@ export class DrizzleForumRepository {
       eq(forumPublicationReceipts.draftId, draft.draftId),
     )).limit(1);
     if (receipt && receipt.fingerprint !== fingerprint) {
-      throw new ForumStateConflictError("published draft generation cannot be reused for a different request");
+      throw new ForumPublicationReplayConflictError("published draft generation cannot be reused for a different request");
     }
     return receipt ?? null;
   }

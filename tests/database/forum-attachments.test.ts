@@ -668,6 +668,40 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     } finally { await Promise.all(cleanup); }
   });
 
+  it.each([false, true])("recovers a modified replay after committed edit with attachment=%s", async (withAttachment) => {
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Ambiguous edit", sourceLocale: "en" },
+      initialPost: { id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Before", sourceLocale: "en" } },
+    });
+    const ctx = realContext();
+    const reader = createHyperdriveForumReader(databaseUrl,
+      () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` }));
+    ctx.set(forumReaderContext, reader);
+    const op = crypto.randomUUID();
+    const uploaded = withAttachment ? await store.createDraftAttachment(upload(`post:${postId}:edit`, op)) : null;
+    const save = (draftId: string, revision: string, body: string, selected: string[], retained: string[]) => {
+      const form = new FormData();
+      for (const [key, value] of Object.entries({ intent: "editPost", postId, expectedRevisionId: revision, body,
+        editorOperationId: draftId, editorAttachmentIds: JSON.stringify(selected), editorRetainedAttachmentIds: JSON.stringify(retained) })) form.set(key, value);
+      return topicAction({ params: { locale: "en", topicId }, context: ctx,
+        request: new Request(`https://forum.test/en/topics/${topicId}`, { method: "POST", headers: { Origin: "https://forum.test" }, body: form }) });
+    };
+    const selected = uploaded ? [uploaded.id] : [];
+    expect(responseStatus(await save(op, revisionId, "Committed but response lost", selected, []))).toBe(302);
+    expect(responseStatus(await save(op, revisionId, "Committed but response lost", selected, []))).toBe(302);
+    const conflict = await save(op, revisionId, "New unsaved buffer", selected, []);
+    expect(conflict).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit", completedOperationId: op } });
+    const current = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(responseStatus(await save(crypto.randomUUID(), current.body.id, "New unsaved buffer", [], selected))).toBe(302);
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(after.body.originalContent).toBe("New unsaved buffer");
+    expect((after.attachments ?? []).map((file) => file.id)).toEqual(selected);
+    expect((await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId))).toHaveLength(3);
+  });
+
   it("refreshes a real stale published edit after PostgreSQL rejects its old revision", async () => {
     const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
     await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({

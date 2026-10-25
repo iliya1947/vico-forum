@@ -2104,7 +2104,7 @@ export function TopicView({
   actionData?: TopicViewActionData;
 }) {
   const [editRecovery, setEditRecovery] = useState<{
-    topicId: string; loaderRevisionId: string; post: PostEditConflictData["post"];
+    topicId: string; loaderRevisionId: string; post: PostEditConflictData["post"]; completedOperationId?: string;
   } | null>(null);
   const recoveredActionRef = useRef<PostEditConflictData | null>(null);
   useEffect(() => {
@@ -2112,7 +2112,7 @@ export function TopicView({
       || recoveredActionRef.current === actionData) return;
     recoveredActionRef.current = actionData;
     const baseline = loadedTopic.posts.find((post) => post.id === actionData.post.id);
-    if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post });
+    if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
   }, [actionData, loadedTopic]);
   // A new loader snapshot supersedes recovery data; later failed submissions do not.
   const recoveredPost = editRecovery?.topicId === loadedTopic.id
@@ -2224,12 +2224,14 @@ export function TopicView({
   }, [location.search, topic.id, editablePostIds]);
 
   function openPostEditor(postId: string, revisionId: string) {
+    setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
     setEditBaseRevisionId(revisionId);
     setEditReady(false);
     setEditingPostId(postId);
   }
 
   function closePostEditor() {
+    setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
     editEditorRef.current?.cancelOperation();
     setEditingPostId(null);
     setEditBaseRevisionId(null);
@@ -2310,6 +2312,8 @@ export function TopicView({
     );
   }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
 
+  const completedEditOperationId = editRecovery?.topicId === topic.id && editRecovery.post.id === editingPostId
+    ? editRecovery.completedOperationId : undefined;
   const isEditSubmitting = navigation.state !== "idle"
     && (navigation.formData?.get("intent") === "editPost"
       || (navigation.state === "loading" && editPublicationRef.current !== null));
@@ -2578,7 +2582,9 @@ export function TopicView({
         </div>
 
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
-        {forumWriteError && <p className="topic-page-alert" role="alert">{t(forumWriteError === "conflict" && editingPostId
+        {forumWriteError && <p className="topic-page-alert" role="alert">{t(forumWriteError === "conflict" && actionData && (
+          ("operation" in actionData && actionData.operation === "postEdit")
+          || ("intent" in actionData && actionData.intent === "editPost"))
           ? "postEditConflict" : `forumWriteError_${forumWriteError}`)}</p>}
 
         {topic.duplicateOf ? (
@@ -2860,7 +2866,7 @@ export function TopicView({
                           actions={<>
                             <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>{t("postEditCancel")}</button>
                             <button type="submit" name="intent" value="editPost"
-                              disabled={!editReady || isEditSubmitting || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
+                              disabled={!editReady || isEditSubmitting || !!completedEditOperationId || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
                           </>}
                           disabled={isEditSubmitting}
                           existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
@@ -2868,12 +2874,13 @@ export function TopicView({
                             url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
                           }))}
                         />
-                        {editBaseRevisionId !== post.body.id ? (
+                        {editBaseRevisionId !== post.body.id || completedEditOperationId ? (
                           <div className="topic-page-alert" role="alert">
                             <p>{t(editBaseRevisionId ? "postEditRevisionChanged" : "postEditRevisionUnknown")}</p>
                             <button type="button" disabled={isEditSubmitting} onClick={() => {
-                              if (editEditorRef.current?.rebasePublishedAttachments()) {
+                              if (editEditorRef.current?.rebasePublishedAttachments(completedEditOperationId)) {
                                 setEditBaseRevisionId(post.body.id);
+                                setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
                               }
                             }}>{t("postEditAcceptCurrentRevision")}</button>
                           </div>

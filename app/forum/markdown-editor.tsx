@@ -20,11 +20,13 @@ import {
   longestBacktickRun,
   recordEditorEdit,
   removeAttachmentImages,
+  replaceAttachmentImageId,
   redoEditorEdit,
   rememberEditorSelection,
   sourceOffsetToTextareaOffset,
   setParagraphDirection,
   type ParagraphDirection,
+  type EditorHistory,
   textareaMarkdown,
   textareaOffsetToSourceOffset,
   undoEditorEdit,
@@ -45,7 +47,7 @@ import { useEditorAttachments } from "./editor-attachments";
 export interface MarkdownEditorHandle {
   focus: () => void;
   cancelOperation: () => void;
-  rebasePublishedAttachments: () => boolean;
+  rebasePublishedAttachments: (completedOperationId?: string) => boolean;
   insertText: (text: string) => void;
 }
 
@@ -248,6 +250,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       setValue(next);
     }
 
+    function replaceImage(oldId: string, newId: string) {
+      const rewrite = (snapshot: EditorHistory["current"]) => ({ ...snapshot,
+        markdown: replaceAttachmentImageId(snapshot.markdown, oldId, newId) });
+      const history = historyRef.current;
+      historyRef.current = { current: rewrite(history.current), past: history.past.map(rewrite), future: history.future.map(rewrite) };
+      setValue(historyRef.current.current.markdown);
+    }
+
     const attachments = useEditorAttachments({
       ownerId: accountId,
       contextKey: accountId ? editorContextKey : undefined,
@@ -255,6 +265,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       publishedAttachments: existingInlineAttachments,
       insertImage,
       removeImage,
+      replaceImage,
     });
 
     const hasPublishContent = value.trim().length > 0 || attachments.selectedAttachmentIds.length + attachments.retainedAttachmentIds.length > 0;

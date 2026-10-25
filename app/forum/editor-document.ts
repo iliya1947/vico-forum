@@ -82,6 +82,37 @@ export function removeAttachmentImages(markdown: string, attachmentId: string): 
 }
 
 
+/** Re-key only active image destinations (including reference definitions), never code/labels. */
+export function replaceAttachmentImageId(markdown: string, oldId: string, newId: string): string {
+  if (!/^[0-9a-f-]{36}$/iu.test(oldId) || !/^[0-9a-f-]{36}$/iu.test(newId)) return markdown;
+  const root = parseForumMarkdown(markdown) as PositionedNode;
+  const oldUrl = "vico-attachment:" + oldId;
+  const ranges: EditorSelection[] = [];
+  const pattern = new RegExp(String.raw`\](?:\(\s*|:\s*)<?(${oldUrl})(?=[\s>)])`, "gu");
+  function visit(node: PositionedNode) {
+    if ((node.type === "image" || node.type === "definition") && node.url === oldUrl) {
+      const start = node.position?.start.offset, end = node.position?.end.offset;
+      if (start !== undefined && end !== undefined) {
+        const raw = markdown.slice(start, end);
+        for (const match of raw.matchAll(pattern)) {
+          const before = raw.slice(0, match.index);
+          if ((before.match(/\\+$/u)?.[0].length ?? 0) % 2) continue;
+          const offset = match.index + match[0].indexOf(oldUrl);
+          ranges.push({ start: start + offset, end: start + offset + oldUrl.length });
+          break;
+        }
+      }
+    }
+    node.children?.forEach(visit);
+  }
+  visit(root);
+  for (const { start, end } of ranges.sort((a, b) => b.start - a.start)) {
+    markdown = markdown.slice(0, start) + "vico-attachment:" + newId + markdown.slice(end);
+  }
+  return markdown;
+}
+
+
 export type ParagraphDirection = "auto" | "ltr" | "rtl";
 
 /**

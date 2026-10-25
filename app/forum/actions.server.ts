@@ -1,4 +1,4 @@
-import { ConcurrentRevisionError, ForumStateConflictError } from "../../db/forum-repository";
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -511,7 +511,9 @@ export async function topicAction({ request, params, context }: {
         const current = await forumReaderForRequest(context).readTopicPage(topicId);
         const post = current?.posts.find((post) => post.id === postId && post.authorId === actorId);
         if (!post) return mutationFailure("notFound", 404);
-        return data<PostEditConflictData>({ operation: "postEdit", error: "conflict", post }, { status: 409 });
+        return data<PostEditConflictData>({ operation: "postEdit", error: "conflict", post,
+          ...(error instanceof ForumPublicationReplayConflictError ? { completedOperationId: draftFence.draftId } : {}),
+        }, { status: 409 });
       }
       return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });

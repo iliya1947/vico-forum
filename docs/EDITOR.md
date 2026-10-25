@@ -173,6 +173,14 @@ baseline; до этого expected revision не продвигается. Те�
 остаются в памяти. Ошибка повторного чтения не закрывает форму. Более свежие loader данные
 заменяют прежний conflict baseline, не меняя набранный текст автоматически.
 
+Если предыдущий Save успел завершиться на сервере, но его ответ потерян, идентичный retry
+остаётся idempotent. Изменённый retry получает явный completed-operation conflict: rebase
+создаёт новую publication operation, сохраняя текущий text/Undo/Redo и Remove intent.
+Уже опубликованные uploads становятся retained без дублирования private selection. Другие
+uploads сохраняют File в памяти и доступны через штатный Retry с новыми operation/asset IDs;
+активные image destinations обновляются во всей in-memory истории без изменения остального
+source. Обычный stale-revision conflict не меняет незавершённую operation.
+
 Нет local/server text cache, 60-second autosave, межвкладочного/межустройственного
 восстановления, выбора версий черновика, «Моих черновиков» и draft discovery.
 Настройки интерфейса редактора (§9) сохраняются отдельно от содержимого сообщения.

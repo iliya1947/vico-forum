@@ -15,7 +15,7 @@ import { localeRegistry } from "../localization/registry";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { ForumStateConflictError } from "../../db/forum-repository";
+import { ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 
 const routers: ReturnType<typeof createMemoryRouter>[] = [];
@@ -43,12 +43,13 @@ function setup() {
   context.set(registryLoaderContext, async () => ({ registry: localeRegistry, semanticIdentity: "test", health: { status: "healthy" } }));
   context.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch: async () => ({ translations: [] }) }));
   const readTopicPage = vi.fn(async () => structuredClone(initialTopic));
-  const has = vi.fn(async (permission: string) => ["forum.post.editOwn", "forum.reply.create"].includes(permission));
-  const editPublishedPost = vi.fn<(_input: { body: string; expectedRevisionId: string }) => Promise<void>>(async () => {});
+  const has = vi.fn(async (permission: string) => ["forum.post.editOwn", "forum.reply.create", "forum.solution.manageOwn"].includes(permission));
+  const editPublishedPost = vi.fn<(_input: { body: string; expectedRevisionId: string; draftId: string }) => Promise<void>>(async () => {});
+  const markTopicSolved = vi.fn(async () => { throw new ForumStateConflictError(); });
   const createReply = vi.fn(async () => ({ postId: "new" }));
   context.set(forumReaderContext, { readTopicPage, readTopicReadState: async () => null } as never);
   context.set(authorizationContext, { forUser: () => ({ has }) } as never);
-  context.set(forumWriterContext, { editPublishedPost, createReply } as never);
+  context.set(forumWriterContext, { editPublishedPost, createReply, markTopicSolved } as never);
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ attachments: [] }), { headers: { "Content-Type": "application/json" } })));
   const router = createMemoryRouter([{ path: "/:locale/topics/:topicId", Component: TopicRoute, ErrorBoundary,
     loader: (args) => loader({ ...args, context }),
@@ -58,10 +59,10 @@ function setup() {
   }], { initialEntries: ["/en/topics/topic?editPost=p1"] });
   routers.push(router);
   render(<I18nextProvider i18n={i18n()}><HeaderAuthProvider initialUser={{ id: "owner", name: "Owner" }}><RouterProvider router={router} /></HeaderAuthProvider></I18nextProvider>);
-  return { context, router, readTopicPage, has, editPublishedPost, createReply };
+  return { context, router, readTopicPage, has, editPublishedPost, createReply, markTopicSolved };
 }
 async function editBuffer() {
-  const form = await screen.findByRole("form", { name: "Edit published message" });
+  const form = await screen.findByRole("form", { name: "Edit published message" }, { timeout: 3_000 });
   fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
   const field = form.querySelector("textarea")!;
   fireEvent.change(field, { target: { value: "Unsaved private edit" } });
@@ -89,6 +90,42 @@ describe("real topic action and mounted editor recovery", () => {
     expect(screen.getByText(kind.includes("unavailable")
       ? "Your message could not be saved. Please try again."
       : "An unexpected error prevented saving. Your text remains in this editor. Please try again.")).toBeVisible();
+  });
+  it("keeps solution feedback for an unrelated 409 while the post editor stays open", async () => {
+    const state = setup(); const { form, field } = await editBuffer();
+    await submit(state.router, form, "markSolved");
+    expect(state.markTopicSolved).toHaveBeenCalledOnce();
+    expect(state.editPublishedPost).not.toHaveBeenCalled();
+    expect(screen.getByText("That solution cannot be selected for this topic.")).toBeVisible();
+    expect(screen.queryByText(String(canonicalEnglishCatalog.common.postEditConflict.source))).not.toBeInTheDocument();
+    expect(field).toHaveValue("Unsaved private edit");
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Apply my edit to the current revision" })).not.toBeInTheDocument();
+  });
+  it("restarts only a completed edit operation when accepting a conflict baseline", async () => {
+    const state = setup(); const { form, field } = await editBuffer();
+    const old = form.querySelector<HTMLInputElement>('[name="editorOperationId"]')!.value;
+    state.readTopicPage.mockResolvedValue({ ...initialTopic, posts: [{ ...post, body: revision("r2", "Already committed") }] });
+    state.editPublishedPost.mockRejectedValueOnce(new ForumPublicationReplayConflictError());
+    await submit(state.router, form);
+    expect(form.querySelector('[name="editorOperationId"]')).toHaveValue(old);
+    expect(screen.getByText(String(canonicalEnglishCatalog.common.postEditConflict.source))).toBeVisible();
+    fireEvent.click(within(form).getByRole("button", { name: "Apply my edit to the current revision" }));
+    const next = form.querySelector<HTMLInputElement>('[name="editorOperationId"]')!.value;
+    expect(next).not.toBe(old);
+    expect(form.querySelector('[name="expectedRevisionId"]')).toHaveValue("r2");
+    expect(field).toHaveValue("Unsaved private edit");
+    state.editPublishedPost.mockRejectedValueOnce(new ForumStorageUnavailableError());
+    await submit(state.router, form);
+    expect(state.editPublishedPost).toHaveBeenLastCalledWith(expect.objectContaining({ draftId: next, body: "Unsaved private edit", expectedRevisionId: "r2" }));
+  });
+  it("keeps edit-specific feedback for the actual stale-account edit guard", async () => {
+    const state = setup(); const { form, field } = await editBuffer();
+    state.context.set(authSessionContext, { user: { id: "different" } } as never);
+    await submit(state.router, form);
+    expect(screen.getByText(String(canonicalEnglishCatalog.common.postEditConflict.source))).toBeVisible();
+    expect(state.editPublishedPost).not.toHaveBeenCalled();
+    expect(field).toHaveValue("Unsaved private edit");
   });
   it("refreshes a stale published revision, explicitly rebases, and retries with the same buffer", async () => {
     const state = setup(); const { form, field } = await editBuffer();
