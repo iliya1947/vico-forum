@@ -90,7 +90,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 4. Current runtime и `docs/auth/AUTHORIZATION.md` соответствуют принятому контракту.
 5. Role-only формулировка в `docs/EDITOR.md` и связанный descriptor считаются устаревшей документацией и входят в `DOC-04`; изменения кода authorization для этого finding не требуются.
 
-### Утверждаемый fix-plan — 11 implementation PR
+### Черновой fix-plan Миры — 11 proposed implementation PR
 
 1. Better Auth dependency/rate-limit — `AUTH-RATE-LIMIT-RACE-01`.
 2. Auth/session/identity — 6 technical + `DOC-04`.
@@ -104,7 +104,7 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 10. Editor interaction/UI + preview tooling — 7 technical + 2 preview.
 11. Documentation/current-state closeout — `DOC-01` и только оставшиеся passages из `DOC-02/03/04`.
 
-Полный execution plan с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**.
+Полный черновой execution plan Миры с required result и done criteria опубликован в PR #236 comment `6397105809`. Coverage: **61/61 technical + 2/2 preview + 4/4 docs**. План ещё не считается командно утверждённым: сначала независимая проверка Лиры, затем архитектурная сверка Лёвы.
 
 Общие границы:
 - каждый PR bounded и строится от уже принятого актуального `main`;
@@ -115,4 +115,4 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 ### Следующий шаг
 
-После одобрения плана подготовить через #236 короткое implementation task только для **PR 1 — `AUTH-RATE-LIMIT-RACE-01`**. Саму реализацию до отдельной команды не начинать.
+Лира независимо проверяет черновой fix-plan по задаче в PR #236. После её результата — архитектурная сверка Лёвы. Implementation до командного согласования плана не начинать.
