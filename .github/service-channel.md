@@ -9,7 +9,7 @@
 - Application permissions architecture, схема/миграции и pinned dependencies сохранены. Client expectation не выбирает actor; server session/current permissions authoritative. Owner locale optionA и negative unverified-email linking invariant соблюдены.
 - Локально PASS:995 application tests,283 PostgreSQL tests,121 final targeted regressions,typecheck,lint(1прежнееwarning),обе сборки,migration/Drizzle/schema parity,local built Worker smoke. Cookie/role/stale-editor baseline controls воспроизводят defects. Подробности и setup corrections — в личном файле Лёвы.
 - [CI #40202422836](https://github.com/iliya1947/vico-forum/actions/runs/40202422836) **SUCCESS**: checks121196211898 и database121196211728 **SUCCESS** на указанном head. Remote tree `d536c1656821643540e87966f200aab902a3b170` совпадает с локально проверенным.
-- Implementation готова к независимому whole-PR review; review/merge #238 ещё не выполнены. Следующий шаг: Мира организует проверку PR238 по актуальному AGENTS.md. Технический handoff опубликован в личном файле Лёвы и комментарии #236; разработчик только подключает Миру. Лёва STOP после пакета2.
+- Whole-PR review завершён Мирой и Лирой; техническая самопроверка автора Лёвы подтвердила один current-Stage P2 defect `AUTH-LINK-STALE-IDENTITY-01` (alias `PR238-LIRA-01`). PASS/merge пока невозможны; implementation head не изменён. Следующий шаг — координация Мирой bounded correction, без перехода к пакету3.
 - Real Google/provider smoke, external Stage6/production rollout и visual acceptance не запускались. Служебный PR236 не merge.
 
 ## Завершённый пакет 1 — AUTH-RATE-LIMIT-RACE-01
@@ -140,11 +140,11 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
    - current `main`: `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`;
    - exact-head implementation CI был green;
    - whole-PR review Миры: PASS без findings.
-2. Остаются следующие 10 implementation packages из принятого 11-PR fix-plan.
+2. Пакет2 реализован в PR238, но не принят: один подтверждённый review defect требует correction. Последующие9 пакетов не начаты.
 
-### Следующий шаг
+### Назначение пакета2 — реализация выполнена, review завершён с finding
 
-Лёва реализует **PR 2 — Auth/session/identity behavior** от актуального `main`.
+Лёва реализовал **PR 2 — Auth/session/identity behavior** в PR238 от актуального `main`. Ниже сохранены его принятый scope и границы.
 
 Scope:
 - `AUTH-01`
@@ -163,12 +163,15 @@ Scope:
 - Следующие packages до завершения этого PR не начинать.
 ### PR #238 — review status
 
-1. Stable exact head: `8866bd8bfb6f8121a5e181c88a9e542741040b64`.
-2. Мира завершила whole-PR review: один current-Stage finding `AUTH-LINK-STALE-IDENTITY-01`, иных findings нет.
-3. Лира завершила whole-PR review: один finding `PR238-LIRA-01` с той же заявленной причинной цепочкой, иных findings нет.
-4. Совпадение двух reviewers само по себе не подтверждает finding. Финальный технический вывод до проверки Лёвой не зафиксирован.
-5. PR #238 пока не готов к merge; implementation head не изменялся после review.
+1. Stable exact head: `8866bd8bfb6f8121a5e181c88a9e542741040b64`; base `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
+2. Мира и Лира завершили whole-PR reviews: по одному finding с одной причинной цепочкой. Лёва выполнил полный технический review собственного implementation, не независимый аудит.
+3. **Подтверждён один current-Stage P2 defect AUTH-LINK-STALE-IDENTITY-01; PR238-LIRA-01 — alias, не отдельная группа.** Подтверждение основано на source trace и новых локальных экспериментах, не на совпадении verdicts.
+4. При stale profileA/current sessionB штатный link-social сохраняет targetB в OAuth state. Verified GoogleB проходит существующие gates, callback создаёт связь уB и возвращает на профильA. Контроль GoogleA отклоняется. Guest401 также проверен. CallbackURL — адрес возврата, не target-identity guard.
+5. Новый experimental evidence: реальные BetterAuth1.7.7 initiation/state/callback HTTP handlers, memory adapter и synthetic external code-exchange/getUserInfo;2cases PASS. Реального Google/browser multi-tab/production E2E не было. Это identity-intent defect, не account takeover и не обход email/provider ownership.
+6. По остальному назначенному scope дополнительных current findings не найдено. Свежий review targeted190tests PASS; CI40202422836 SUCCESS повторно проверен. Предшествующие995app/283PG — implementation evidence, не новый независимый прогон.
+7. **PR238 не готов к merge.** Нужен bounded correction stale-visible/current identity boundary при запуске Google linking, сохраняя verification/origin/session gates, затем проверки нового exact head. Implementation во время review не изменён.
+8. Подробный отчёт и evidence limits — личный файл Лёвы; исправление не начато. Служебный PR236 не merge; external/visual gates не запускались.
 
 ### Следующий шаг
 
-Лёва выполняет третью техническую whole-PR проверку PR #238 на exact head `8866bd8bfb6f8121a5e181c88a9e542741040b64`. Уже опубликованные выводы Миры и Лиры не считать доказательством: самостоятельно проверить весь назначенный scope, а возможный stale-account Google-linking — по полной причинной цепочке, альтернативам и current-Stage применимости. Implementation не менять. После проверки сообщить вердикт и STOP.
+Мира координирует bounded correction единственного подтверждённого finding PR238 через #236. Разработчику достаточно подключить Миру к PR236; техническая цепочка и критерии проверки уже опубликованы. Лёва STOP после review; к исправлению и следующему audit package самостоятельно не переходит.
