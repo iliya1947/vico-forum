@@ -225,6 +225,22 @@ describe("remaining archive/container structural validation", () => {
     expect(await validateTarStructure(source(truncated))).toBe(false);
   });
 
+  it("accepts empty TAR zero end blocks but rejects nonzero trailing data", async () => {
+    expect(await validateTarStructure(source(new Uint8Array(1024)))).toBe(true);
+    expect(await validateTarStructure(source(new Uint8Array(10_240)))).toBe(true);
+    expect(await validateTarStructure(source(new Uint8Array(512)))).toBe(false);
+
+    const malformed = new Uint8Array(1536);
+    malformed[1024] = 1;
+    expect(await validateTarStructure(source(malformed))).toBe(false);
+
+    const padded = new Uint8Array(1024 + 65_536 + 512);
+    padded[padded.length - 1] = 1;
+    const reads: Array<{ offset: number; length: number }> = [];
+    expect(await validateTarStructure(source(padded, reads))).toBe(false);
+    expect(Math.max(...reads.map(({ length }) => length))).toBeLessThanOrEqual(65_536);
+  });
+
   it("validates CFB header, FAT directory chain and root entry for legacy Office containers", async () => {
     expect(await validateOleStructure(source(cfb(3)))).toBe(true);
     expect(await validateOleStructure(source(cfb(4)))).toBe(true);

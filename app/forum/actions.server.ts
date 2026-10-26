@@ -355,27 +355,33 @@ export async function topicAction({ request, params, context }: {
   if (intent === "removeHelpDuplicate") {
     const forbidden = await requireForumPermission(context, "forum.helpDuplicate.manage");
     if (forbidden) return forbidden;
+    const expectedRelationshipId = requiredFormText(formData, "expectedRelationshipId");
+    if (!expectedRelationshipId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.removeHelpDuplicate({ topicId, actorId });
+      await writer.removeHelpDuplicate({ topicId, actorId, expectedRelationshipId });
       return redirect(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "appealHelpDuplicate") {
     const explanation = requiredFormText(formData, "explanation");
-    if (!explanation) return mutationFailure("invalid", 400);
+    const expectedRelationshipId = requiredFormText(formData, "expectedRelationshipId");
+    if (!explanation || !expectedRelationshipId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.appealHelpDuplicate({ topicId, actorId, explanation });
+      await writer.appealHelpDuplicate({ topicId, actorId, explanation, expectedRelationshipId });
       return redirect(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "acceptHelpDuplicateAppeal" || intent === "rejectHelpDuplicateAppeal") {
     const forbidden = await requireForumPermission(context, "forum.helpDuplicate.manage");
     if (forbidden) return forbidden;
+    const expectedAppealId = requiredFormText(formData, "expectedAppealId");
+    if (!expectedAppealId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.resolveHelpDuplicateAppeal({
         topicId,
         actorId,
         resolution: intent === "acceptHelpDuplicateAppeal" ? "accepted" : "rejected",
+        expectedAppealId,
       });
       return redirect(forumTopicPath(locale, topicId));
     });
@@ -395,6 +401,8 @@ export async function topicAction({ request, params, context }: {
   ) {
     const forbidden = await requireForumPermission(context, "forum.solution.manageAny");
     if (forbidden) return forbidden;
+    const expectedBestAnswerPostId = requiredFormText(formData, "expectedBestAnswerPostId");
+    if (!expectedBestAnswerPostId) return mutationFailure("invalid", 400);
     const outdatedReason = intent === "markSolutionOutdated"
       ? requiredFormText(formData, "outdatedReason")
       : undefined;
@@ -411,6 +419,7 @@ export async function topicAction({ request, params, context }: {
             : null,
         outdatedReason: outdatedReason ?? null,
         actorId,
+        expectedBestAnswerPostId,
       });
       return redirect(forumTopicPath(locale, topicId));
     });

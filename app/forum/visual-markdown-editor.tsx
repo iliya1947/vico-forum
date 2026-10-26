@@ -3,7 +3,7 @@ import { parseForumMarkdown } from "../markdown-syntax";
 import { useTranslation } from "react-i18next";
 import { includeVisualWhitespace, type EditorSelection } from "./editor-document";
 import { ForumMarkdown, ForumInlineImage } from "./markdown";
-import { segmentTechnicalMarkdown, encodeTableCell, type MarkdownTable } from "./technical-markdown";
+import { segmentTechnicalMarkdown, encodeTableCell, decodeTableCell, type MarkdownTable } from "./technical-markdown";
 import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
 
 const visualSpellcheckContext = createContext(true);
@@ -503,7 +503,7 @@ function VisualTable({
 }) {
   const { t } = useTranslation("common");
   const cells = (cell: MarkdownTable["headers"][number], key: number, heading: boolean) => {
-    const value = cell.text.replace(/\\([|\\])/gu, "$1");
+    const value = decodeTableCell(cell.text);
     const edit = <input
       aria-label={t(heading ? "editorTableHeader" : "editorTableCell")}
       dir="auto"

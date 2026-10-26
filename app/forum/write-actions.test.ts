@@ -700,6 +700,7 @@ describe("forum write route actions", () => {
         scope: "own",
         status: "outdated",
         outdatedReason: "forged reason",
+        expectedBestAnswerPostId: "answer-1",
       }),
       params: { locale: "en", topicId: "help-1" },
       context: context(manager, true, ["forum.solution.manageAny"]),
@@ -709,6 +710,7 @@ describe("forum write route actions", () => {
       status: "needs-review",
       outdatedReason: null,
       actorId: "session-user",
+      expectedBestAnswerPostId: "answer-1",
     });
     if (!(needsReview instanceof Response)) throw new Error("expected moderation redirect");
     expect(needsReview.headers.get("Location")).toBe("/en/topics/help-1");
@@ -717,6 +719,7 @@ describe("forum write route actions", () => {
       request: request("/ru/topics/help-1", {
         intent: "markSolutionOutdated",
         outdatedReason: "  Old workaround is no longer safe.  ",
+        expectedBestAnswerPostId: "answer-1",
       }),
       params: { locale: "ru", topicId: "help-1" },
       context: context(manager, true, ["forum.solution.manageAny"]),
@@ -726,12 +729,16 @@ describe("forum write route actions", () => {
       status: "outdated",
       outdatedReason: "Old workaround is no longer safe.",
       actorId: "session-user",
+      expectedBestAnswerPostId: "answer-1",
     });
     if (!(outdated instanceof Response)) throw new Error("expected outdated redirect");
     expect(outdated.headers.get("Location")).toBe("/ru/topics/help-1");
 
     const clear = await topicAction({
-      request: request("/he/topics/help-1", { intent: "clearSolutionModeration" }),
+      request: request("/he/topics/help-1", {
+        intent: "clearSolutionModeration",
+        expectedBestAnswerPostId: "answer-1",
+      }),
       params: { locale: "he", topicId: "help-1" },
       context: context(manager, true, ["forum.solution.manageAny"]),
     });
@@ -740,6 +747,7 @@ describe("forum write route actions", () => {
       status: null,
       outdatedReason: null,
       actorId: "session-user",
+      expectedBestAnswerPostId: "answer-1",
     });
     if (!(clear instanceof Response)) throw new Error("expected clear redirect");
     expect(clear.headers.get("Location")).toBe("/he/topics/help-1");
@@ -755,7 +763,10 @@ describe("forum write route actions", () => {
 
     const missingReason = writer();
     const invalid = await topicAction({
-      request: request("/en/topics/help-1", { intent: "markSolutionOutdated" }),
+      request: request("/en/topics/help-1", {
+        intent: "markSolutionOutdated",
+        expectedBestAnswerPostId: "answer-1",
+      }),
       params: { locale: "en", topicId: "help-1" },
       context: context(missingReason, true, ["forum.solution.manageAny"]),
     });
@@ -915,6 +926,7 @@ describe("forum write route actions", () => {
       request: request("/ru/topics/help-duplicate", {
         intent: "appealHelpDuplicate",
         explanation: "  Причина отличается.  ",
+        expectedRelationshipId: "observed-relation-r1",
         role: "admin",
       }),
       params: { locale: "ru", topicId: "help-duplicate" },
@@ -924,9 +936,39 @@ describe("forum write route actions", () => {
       topicId: "help-duplicate",
       actorId: "session-user",
       explanation: "Причина отличается.",
+      expectedRelationshipId: "observed-relation-r1",
     });
     if (!(appealed instanceof Response)) throw new Error("expected appeal redirect");
     expect(appealed.headers.get("Location")).toBe("/ru/topics/help-duplicate");
+
+    const missingIdentity = writer();
+    const missingIdentityResponse = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "appealHelpDuplicate", explanation: "A real dispute",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(missingIdentity, true, []),
+    });
+    expect(missingIdentityResponse).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
+    expect(missingIdentity.appealHelpDuplicate).not.toHaveBeenCalled();
+
+    const staleWriter = writer();
+    staleWriter.appealHelpDuplicate.mockRejectedValueOnce(
+      new ForumStateConflictError("duplicate relationship is no longer the expected relationship"),
+    );
+    const staleResponse = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "appealHelpDuplicate", explanation: "Dispute of R1",
+        expectedRelationshipId: "observed-relation-r1",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(staleWriter, true, []),
+    });
+    expect(staleResponse).toMatchObject({ data: { error: "conflict" }, init: { status: 409 } });
+    expect(staleWriter.appealHelpDuplicate).toHaveBeenCalledWith({
+      topicId: "help-duplicate", actorId: "session-user", explanation: "Dispute of R1",
+      expectedRelationshipId: "observed-relation-r1",
+    });
 
     const invalidAppeal = writer();
     const invalidResponse = await topicAction({
@@ -942,7 +984,10 @@ describe("forum write route actions", () => {
 
     const reviewer = writer();
     await topicAction({
-      request: request("/he/topics/help-duplicate", { intent: "acceptHelpDuplicateAppeal" }),
+      request: request("/he/topics/help-duplicate", {
+        intent: "acceptHelpDuplicateAppeal",
+        expectedAppealId: "appeal-1",
+      }),
       params: { locale: "he", topicId: "help-duplicate" },
       context: context(reviewer, true, ["forum.helpDuplicate.manage"]),
     });
@@ -950,10 +995,14 @@ describe("forum write route actions", () => {
       topicId: "help-duplicate",
       actorId: "session-user",
       resolution: "accepted",
+      expectedAppealId: "appeal-1",
     });
 
     await topicAction({
-      request: request("/he/topics/help-duplicate", { intent: "rejectHelpDuplicateAppeal" }),
+      request: request("/he/topics/help-duplicate", {
+        intent: "rejectHelpDuplicateAppeal",
+        expectedAppealId: "appeal-2",
+      }),
       params: { locale: "he", topicId: "help-duplicate" },
       context: context(reviewer, true, ["forum.helpDuplicate.manage"]),
     });
@@ -961,16 +1010,21 @@ describe("forum write route actions", () => {
       topicId: "help-duplicate",
       actorId: "session-user",
       resolution: "rejected",
+      expectedAppealId: "appeal-2",
     });
 
     const removed = await topicAction({
-      request: request("/en/topics/help-duplicate", { intent: "removeHelpDuplicate" }),
+      request: request("/en/topics/help-duplicate", {
+        intent: "removeHelpDuplicate",
+        expectedRelationshipId: "relationship-1",
+      }),
       params: { locale: "en", topicId: "help-duplicate" },
       context: context(reviewer, true, ["forum.helpDuplicate.manage"]),
     });
     expect(reviewer.removeHelpDuplicate).toHaveBeenCalledWith({
       topicId: "help-duplicate",
       actorId: "session-user",
+      expectedRelationshipId: "relationship-1",
     });
     if (!(removed instanceof Response)) throw new Error("expected remove redirect");
   });

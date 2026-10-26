@@ -58,6 +58,29 @@ describe("Editor 2.0 server-side attachment type gate", () => {
     expect(inspect("legacy.doc", payload([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])).accepted).toBe(true);
   });
 
+  it("recognizes valid nonzero empty TAR end markers without accepting unsupported signatures", () => {
+    const emptyTar = new Uint8Array(1024);
+    expect(detectAttachmentContent(emptyTar)).toBe("tar");
+    expect(inspect("empty.tar", emptyTar, "application/x-tar")).toMatchObject({
+      accepted: true, detected: "tar", responseMime: "application/x-tar",
+    });
+
+    // Two complete end blocks are required. A single zero block is not a TAR signature.
+    expect(detectAttachmentContent(new Uint8Array(512))).toBe("unknown");
+    expect(inspect("short.tar", new Uint8Array(512), "application/x-tar")).toMatchObject({
+      accepted: false, detected: "unknown", reason: "signature-mismatch",
+    });
+    expect(inspect("empty.zip", emptyTar, "application/zip")).toMatchObject({
+      accepted: false, reason: "signature-mismatch",
+    });
+    expect(inspect("empty.tar", emptyTar, "application/zip")).toMatchObject({
+      accepted: false, reason: "mime-mismatch",
+    });
+    expect(inspect("zero.txt", emptyTar, "text/plain")).toMatchObject({
+      accepted: false, reason: "signature-mismatch",
+    });
+  });
+
   it.each([
     ["actual.exe", [0x50, 0x4b, 0x03, 0x04], "forbidden-extension"],
     ["program.dll", [0x50, 0x4b, 0x03, 0x04], "forbidden-extension"],

@@ -1,4 +1,4 @@
-import { RouterContextProvider } from "react-router";
+import { RouterContextProvider, createStaticHandler } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
@@ -165,6 +165,41 @@ describe("private attachment upload API", () => {
     const paths = routes.map((route) => route.path);
     expect(paths.indexOf("api/attachments")).toBeGreaterThanOrEqual(0);
     expect(paths.indexOf("api/attachments")).toBeLessThan(paths.indexOf("api/*"));
+  });
+
+  it("routes HEAD/PATCH/PUT/OPTIONS to 405 with only real resource methods in Allow", async () => {
+    const route = routes.find((entry) => entry.path === "api/attachments");
+    if (!route?.path) throw new Error("attachment resource is not registered");
+    const env = setup();
+    const handler = createStaticHandler([{
+      path: route.path,
+      loader: ({ request }) => loader({ request, context: env.ctx }),
+      action: ({ request }) => action({ request, context: env.ctx }),
+    }]);
+
+    for (const method of ["HEAD", "PATCH", "PUT", "OPTIONS"] as const) {
+      const result = await handler.queryRoute(new Request("https://forum.test/api/attachments", { method }));
+      expect(result).toBeInstanceOf(Response);
+      const response = result as Response;
+      expect(response.status).toBe(405);
+      expect(response.headers.get("Allow")).toBe("GET, POST, DELETE");
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    }
+
+    // The same router dispatch still admits supported methods.
+    const get = await handler.queryRoute(scopedRequest("GET")) as Response;
+    expect(get.status).toBe(200);
+    expect(get.headers.has("Allow")).toBe(false);
+
+    const del = await handler.queryRoute(scopedRequest("DELETE")) as Response;
+    expect(del.status).toBe(200);
+    expect(env.cancelOperation).toHaveBeenCalledWith("real-user", contextKey, draftId);
+
+    const post = await handler.queryRoute(request(new TextEncoder().encode("notes"))) as Response;
+    expect(post.status).toBe(201);
+    expect(post.headers.has("Allow")).toBe(false);
+    expect(env.createDraftAttachment).toHaveBeenCalledOnce();
   });
 
   it("restores draft attachments through loader without exposing private storage keys", async () => {

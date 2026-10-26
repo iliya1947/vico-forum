@@ -34,6 +34,73 @@ fetcher, history-specific статус при загрузке и отображ
 менялись. Проверки CI фиксируются отдельно в implementation PR; самостоятельный
 whole-PR review, merge и external/production/owner visual acceptance не заявляются.
 
+## Batch L1 — fixes 1–5/5 (2026-10-26)
+
+В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:
+два завершающих 512-byte zero blocks без `ustar` header распознаются при
+первичной проверке типа как TAR. Полная structural validation после приватной
+загрузки требует, чтобы оставшееся содержимое пустого TAR было zero padding;
+несоответствующая сигнатура, повреждённый архив и неверный MIME отвергаются.
+Добавлены focused type, structural и private R2 upload regressions.
+
+Вторым последовательным fix `ATTACH-04` разрешён локальный Remove uploading/
+pending файла из mounted editor selection без отмены всей operation и без per-file
+DELETE/abort. При Remove активный запрос помечается как игнорируемый для
+progress/success/error/terminal-410 callbacks, но продолжает обычный server
+upload/cleanup lifecycle; removed ID не может повторно появиться в selection.
+Другие pending/stored файлы, unsaved text и operation identity сохраняются.
+Focused mounted MarkdownEditor regression проверяет 3 файла + unsaved text,
+поздние success/error события и сохранение выбора остальных; отдельный
+published-edit regression проверяет, что late `410 gone` снятого файла не
+перезапускает operation. Whole Cancel сохраняет прежнюю отдельную semantics.
+
+Третий последовательный fix `ATTACH-HTTP-405-01` унифицирует ответ
+`405 Method Not Allowed` attachment-upload resource: для неподдерживаемых
+`HEAD`/`PATCH`/`PUT`/`OPTIONS` возвращается `Allow: GET, POST, DELETE` с
+сохранением прежнего `Cache-Control: no-store` и `nosniff`. Supported GET
+selection, POST upload и whole-operation DELETE cancel не меняются.
+Добавлена regression через React Router resource dispatch по фактическому
+route registry; direct handler-level тесты существующей upload semantics сохранены.
+
+Четвёртый последовательный fix `EDITOR-01` сохраняет точные последовательности
+пустых строк внутри fenced code при HTML-paste из `<pre>`, ограничивая прежнее
+сворачивание трёх и более переносов обычным prose вне code. Generated fence
+остаётся длиннее любого backtick-run содержимого; focused converter/Markdown AST
+regressions проверяют сохранность кода и нормализацию соседнего prose.
+
+Пятый последовательный fix `EDITOR-02` сохраняет таблицы, импортируемые из
+TSV и безопасного HTML, как literal cell values: символы Markdown-разметки
+экранируются при генерации Markdown table, но исходный пользовательский
+Markdown вне конверсии не меняется. Простой редактор показывает и редактирует
+исходные буквальные значения без накопления escape-символов. Existing
+pipe/backslash/newline preservation и отказ от неподдерживаемых сложных
+таблиц сохраняются. Focused regressions покрывают source, визуальную форму и
+опубликованный Markdown rendering.
+
+В draft batch L1 выполнены все пять fixes: `ATTACH-03`, `ATTACH-04`,
+`ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` (5/5).
+Implementation выполнена, exact-head CI и независимый whole-PR review/
+принятие ещё проверяются отдельно.
+Production/external/owner visual actions не выполнялись.
+
+## Пакет 5 — Help lifecycle и ограничение тегов (2026-10-26)
+
+Correction package закрывает `HELP-01`, `HELP-02`, `HELP-MOD-01`,
+`TAG-CARDINALITY-01` и документальный sidecar `DOC-03`. Формы удаления duplicate
+relationship, решения appeal и модерации решения передают identity увиденной сущности.
+Repository повторно проверяет эту identity под topic/relationship lock, поэтому устаревшее
+действие не применяется к новой relationship, appeal или заменённому best answer.
+Авторская форма апелляции передаёт observed relationship ID; после удаления R1 и создания R2
+старое заявление отклоняется, а актуальное связывается только с текущей relationship.
+
+Removal/resolution timestamps вычисляются через `statement_timestamp()` после ожидания
+блокировок и не могут оказаться раньше более новой `confirmed_at` / `created_at`.
+Публичная запись темы принимает не более 10 уникальных непустых тегов после NFKC-нормализации,
+trim, whitespace collapse и case-insensitive deduplication; превышение отклоняется до любых
+topic/tag writes. Pending `Disputed` badge однозначно остаётся moderator-only в списках и на
+странице темы, тогда как автор видит собственное pending-appeal сообщение без этого badge.
+Application и disposable PostgreSQL regressions фиксируют эти контракты.
+
 ## Пакет 4 — database, notifications и read-state (2026-10-26)
 
 Correction package закрывает `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02` и `CORE-03`.
@@ -1441,8 +1508,8 @@ Vico Forum находится в ранней pre-release разработке.
   сериализуются транзакционно. Новая code-backed capability `forum.helpDuplicate.manage`
   выдаётся initial built-in moderator/admin и защищает authoritative confirm/remove/resolve;
   обычный author подтверждённого duplicate-вопроса может отдельно подать appeal с обязательным
-  explanation. Pending appeal не снимает authoritative duplicate status: на topic page публично
-  видна нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
+  explanation. Pending appeal не снимает authoritative duplicate status: `Disputed` badge видят
+  только moderation actors; explanation доступен только author duplicate и actor с
   duplicate-management capability. Reject сохраняет relation; accept или manual removal снимает
   active duplicate relation. В штатном workflow подтверждённый duplicate и собственное решение
   взаимоисключаемы: question с `isSolved=true` или выбранным best answer нельзя подтвердить как

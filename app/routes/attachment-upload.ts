@@ -29,6 +29,14 @@ const json = (payload: unknown, status = 200): Response => Response.json(payload
   },
 });
 
+// Supported route methods: GET reads the temporary selection; POST uploads;
+// DELETE without an asset ID cancels the complete operation.
+function methodNotAllowed(): Response {
+  const response = json({ error: "method" }, 405);
+  response.headers.set("Allow", "GET, POST, DELETE");
+  return response;
+}
+
 function decodedHeader(request: Request, name: string, maxLength: number): string | null {
   if (!request.headers.has(name)) return null;
   const encoded = request.headers.get(name) ?? "";
@@ -125,7 +133,7 @@ function attachmentStoreFailure(error: unknown): Response | null {
 }
 
 export async function loader({ request, context }: { request: Request; context: RouterContextProvider }) {
-  if (request.method !== "GET") return json({ error: "method" }, 405);
+  if (request.method !== "GET") return methodNotAllowed();
   const scope = await requestScope(request, context, false);
   if ("response" in scope) return scope.response;
   try {
@@ -141,7 +149,7 @@ export async function loader({ request, context }: { request: Request; context: 
 }
 
 export async function action({ request, context }: { request: Request; context: RouterContextProvider }) {
-  if (!["POST", "DELETE"].includes(request.method)) return json({ error: "method" }, 405);
+  if (!["POST", "DELETE"].includes(request.method)) return methodNotAllowed();
   const scope = await requestScope(request, context, true);
   if ("response" in scope) return scope.response;
   const store = attachmentStoreForRequest(context);
@@ -150,7 +158,7 @@ export async function action({ request, context }: { request: Request; context: 
     try { await store.cancelOperation(scope.userId, scope.contextKey, scope.draftId); return json({outcome: "cancelled"}); }
     catch (error) { const response = attachmentStoreFailure(error); if (response) return response; throw error; }
   }
-  if (request.method === "DELETE") return json({ error: "method" }, 405);
+  if (request.method === "DELETE") return methodNotAllowed();
 
   const attachmentId = request.headers.get("X-Vico-Attachment-Id")?.trim() ?? "";
   const fileName = decodedHeader(request, "X-Vico-Attachment-Name", 4096);

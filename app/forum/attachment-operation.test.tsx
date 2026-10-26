@@ -187,6 +187,27 @@ describe("in-memory attachment operation", () => {
         expect(current.selectedAttachmentIds).toEqual([attachmentId]);
         expect(fetch).not.toHaveBeenCalled();
     });
+    it("does not restart a published-edit operation for a removed pending upload's late 410", async () => {
+        renderHarness({ publishedEdit: true });
+        const removed = attach(), kept = attach();
+        const operation = current.operationId;
+        expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(2);
+        fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]!);
+        expect(removed.aborted).toBe(false);
+        expect(current.blocking).toBe(true);
+        expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(1);
+
+        await removed.complete(410, { error: "gone" });
+        expect(current.operationId).toBe(operation);
+        expect(kept.aborted).toBe(false);
+        expect(current.blocking).toBe(true);
+
+        const id = kept.headers.get("X-Vico-Attachment-Id")!;
+        await kept.complete(201, { ...stored(), attachment: { ...stored().attachment, id } });
+        expect(current.blocking).toBe(false);
+        expect(current.selectedAttachmentIds).toEqual([id]);
+        expect(fetch).not.toHaveBeenCalled();
+    });
     it("makes a new operation available to Retry after a terminal upload in a published edit", async () => {
         renderHarness({ publishedEdit: true });
         const old = current.operationId, request = attach();

@@ -144,6 +144,9 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedE
     const identityRef = useRef(identity);
     identityRef.current = identity;
     const requestsRef = useRef(new Map<string, XMLHttpRequest>());
+    // Removed in-flight requests may still finish on the server, but their callbacks
+    // must not affect the mounted selection or published-edit operation.
+    const ignoredRequestsRef = useRef(new WeakSet<XMLHttpRequest>());
     const previousScope = useRef(JSON.stringify([ownerId, contextKey]));
     const removedPublishedIds = useRef(new Set<string>());
     const headers = { "X-Vico-Editor-Context": encoded(contextKey ?? ""), "X-Vico-Operation-Id": draftId };
@@ -225,7 +228,8 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedE
             callbacksRef.current.insertImage(stableId, namedFile.name);
         const request = new XMLHttpRequest();
         requestsRef.current.set(stableId, request);
-        const active = () => identityRef.current === identityAtStart;
+        const active = () => identityRef.current === identityAtStart
+            && !ignoredRequestsRef.current.has(request);
         request.upload.onprogress = (event) => {
             if (active() && event.lengthComputable)
                 setEntry(stableId, (current) => ({ ...current, progress: Math.round(event.loaded / event.total * 100) }));
@@ -275,7 +279,9 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedE
         startUpload(entry.file, nextId, true);
     }
     function remove(entry: UploadEntry) {
-        if (disabled || entry.status === "uploading") return;
+        if (disabled) return;
+        const request = requestsRef.current.get(entry.id);
+        if (request) ignoredRequestsRef.current.add(request);
         removedPublishedIds.current.add(entry.id);
         // The private server pool is retained until operation completion/cleanup.
         // Late upload ACKs only update existing entries, so cannot reselect this ID.
@@ -338,9 +344,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedE
                 {entry.status === "error" ? (<button type="button" disabled={disabled} onClick={() => retry(entry)}>
                     {t("editorAttachmentRetry")}
                   </button>) : null}
-                {entry.status !== "uploading"
-                    && entry.status !== "selecting"
-                    && entry.status !== "removing" ? (<button type="button" disabled={disabled} onClick={() => void remove(entry)}>
+                {entry.status !== "removing" ? (<button type="button" disabled={disabled} onClick={() => void remove(entry)}>
                       {t("editorAttachmentRemove")}
                     </button>) : null}
               </div>

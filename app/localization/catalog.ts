@@ -189,7 +189,7 @@ export const canonicalEnglishCatalog = {
     helpSolutionsSolutionsEmpty: message("helpSolutionsSolutionsEmpty", "There are no solved questions yet.", "Empty state for the solved Help & solutions question list."),
     helpSolutionNeedsReview: message("helpSolutionNeedsReview", "Needs review", "Status label for a solved Help & solutions question whose solution should be reviewed."),
     helpDuplicateBadge: message("helpDuplicateBadge", "Duplicate", "Status label for a Help & solutions question confirmed as a duplicate."),
-    helpDuplicateDisputed: message("helpDuplicateDisputed", "Disputed", "Public neutral marker while a confirmed duplicate relationship has a pending author appeal."),
+    helpDuplicateDisputed: message("helpDuplicateDisputed", "Disputed", "Moderator-only status label while a confirmed duplicate relationship has a pending author appeal."),
     helpDuplicateOf: message("helpDuplicateOf", "Duplicate of", "Text introducing the canonical original question for a confirmed duplicate."),
     helpDuplicateOriginalIdLabel: message("helpDuplicateOriginalIdLabel", "Original question ID", "Manager label for the canonical original Help question identifier."),
     helpDuplicateConfirm: message("helpDuplicateConfirm", "Confirm duplicate", "Manager action that confirms a Help question as a duplicate."),
