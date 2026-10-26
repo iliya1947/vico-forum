@@ -33,11 +33,11 @@ export interface ForumWriter {
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null; draftId?: string; attachmentIds?: string[] }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
-  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string }): Promise<void>;
+  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string; expectedBestAnswerPostId: string }): Promise<void>;
   confirmHelpDuplicate(input: { topicId: string; originalTopicId: string; actorId: string }): Promise<void>;
-  removeHelpDuplicate(input: { topicId: string; actorId: string }): Promise<void>;
+  removeHelpDuplicate(input: { topicId: string; actorId: string; expectedRelationshipId: string }): Promise<void>;
   appealHelpDuplicate(input: { topicId: string; actorId: string; explanation: string }): Promise<void>;
-  resolveHelpDuplicateAppeal(input: { topicId: string; actorId: string; resolution: HelpDuplicateAppealResolution; expectedAppealId?: string }): Promise<void>;
+  resolveHelpDuplicateAppeal(input: { topicId: string; actorId: string; resolution: HelpDuplicateAppealResolution; expectedAppealId: string }): Promise<void>;
   createHelpSignal(input: { kind: HelpSignalKind; topicId: string; actorId: string; explanation?: string | null; proposedOriginalTopicId?: string | null }): Promise<{ id: string }>;
   withdrawHelpSignal(input: { signalId: string; topicId: string; actorId: string }): Promise<void>;
   resolveHelpSignal(input: { signalId: string; actorId: string; resolution: HelpSignalResolution }): Promise<HelpSignalStatus>;
@@ -208,14 +208,14 @@ export function createHyperdriveForumWriter(
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
-    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null, actorId }) => writeCorrection(async (forum) => {
-      await forum.setHelpSolutionModeration(topicId, status, outdatedReason, actorId);
+    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null, actorId, expectedBestAnswerPostId }) => writeCorrection(async (forum) => {
+      await forum.setHelpSolutionModeration(topicId, status, outdatedReason, actorId, expectedBestAnswerPostId);
     }),
     confirmHelpDuplicate: ({ topicId, originalTopicId, actorId }) => writeCorrection(async (forum) => {
       await forum.confirmHelpDuplicate(topicId, originalTopicId, actorId);
     }),
-    removeHelpDuplicate: ({ topicId, actorId }) => writeCorrection(async (forum) => {
-      await forum.removeHelpDuplicate(topicId, actorId);
+    removeHelpDuplicate: ({ topicId, actorId, expectedRelationshipId }) => writeCorrection(async (forum) => {
+      await forum.removeHelpDuplicate(topicId, actorId, expectedRelationshipId);
     }),
     appealHelpDuplicate: ({ topicId, actorId, explanation }) => writeCorrection(async (forum) => {
       await forum.appealHelpDuplicate(topicId, actorId, explanation);

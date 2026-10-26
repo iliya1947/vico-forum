@@ -182,7 +182,9 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 
   return {
     locale: resolvedLocale.translationLocale,
-    topic,
+    topic: !canManageHelpDuplicate && topic.duplicateRelationshipId
+      ? { ...topic, duplicateRelationshipId: null }
+      : topic,
     titlePresentation,
     postPresentations,
     generationUnits,

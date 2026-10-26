@@ -45,6 +45,18 @@ if (
 
 const client = new Client({ connectionString: databaseUrl });
 
+async function waitForDatabaseLock(applicationName: string): Promise<void> {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const waiting = await client.query(
+      "select 1 from pg_stat_activity where application_name = $1 and wait_event_type = 'Lock'",
+      [applicationName],
+    );
+    if (waiting.rowCount) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`timed out waiting for ${applicationName} to block on a database lock`);
+}
+
 beforeAll(async () => {
   await client.connect();
   await client.query("drop schema if exists drizzle cascade; drop schema public cascade; create schema public");
@@ -161,6 +173,35 @@ describe("PostgreSQL 17 locale migrations", () => {
     await insertForumAuthor("help-foundation-waiting", "help-foundation-waiting@example.test", null);
     await insertForumAuthor("help-foundation-replier-2", "help-foundation-replier-2@example.test", null);
     try {
+      expect(() => forum.createTopicWithInitialPost({
+        id: "help-tag-overflow",
+        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        authorId: "help-foundation-author",
+        titleRevision: {
+          id: "help-tag-overflow-title",
+          originalContent: "Tag overflow",
+          sourceLocale: "en",
+        },
+        tags: Array.from({ length: 11 }, (_, index) => ({
+          key: `overflow-${index}`,
+          name: `Overflow ${index}`,
+        })),
+        initialPost: {
+          id: "help-tag-overflow-post",
+          topicId: "help-tag-overflow",
+          authorId: "help-foundation-author",
+          bodyRevision: {
+            id: "help-tag-overflow-body",
+            originalContent: "This write must be rejected before persistence.",
+            sourceLocale: "en",
+          },
+        },
+      })).toThrow("at most 10 unique tags");
+      expect(await repository.readTopic("help-tag-overflow")).toBeUndefined();
+      expect((await client.query(
+        "select count(*)::int as count from forum_tags where key like 'overflow-%'",
+      )).rows[0]?.count).toBe(0);
+
       await forum.createTopicWithInitialPost({
         id: "help-foundation-topic",
         sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -291,7 +332,9 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
 
-      await forum.setHelpSolutionModeration("help-foundation-topic", "needs-review", null, "help-foundation-author");
+      await forum.setHelpSolutionModeration(
+        "help-foundation-topic", "needs-review", null, "help-foundation-author", "help-foundation-answer",
+      );
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "needs-review",
         solutionOutdatedReason: null,
@@ -321,6 +364,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         "outdated",
         "  The provider removed   this API.  ",
         "help-foundation-author",
+        "help-foundation-answer",
       );
       expect(await repository.readHelpSolutionsNeedsAttention({}, {
         signalKinds: ["needs-review"],
@@ -332,7 +376,9 @@ describe("PostgreSQL 17 locale migrations", () => {
         solutionOutdatedReasonKind: null,
       });
       expect(() =>
-        forum.setHelpSolutionModeration("help-foundation-topic", "outdated", "   ", "help-foundation-author"),
+        forum.setHelpSolutionModeration(
+          "help-foundation-topic", "outdated", "   ", "help-foundation-author", "help-foundation-answer",
+        ),
       ).toThrow(InvalidForumContentError);
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
@@ -340,7 +386,9 @@ describe("PostgreSQL 17 locale migrations", () => {
         solutionOutdatedReasonKind: null,
       });
 
-      await forum.setHelpSolutionModeration("help-foundation-topic", null, null, "help-foundation-author");
+      await forum.setHelpSolutionModeration(
+        "help-foundation-topic", null, null, "help-foundation-author", "help-foundation-answer",
+      );
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: null,
         solutionOutdatedReason: null,
@@ -363,6 +411,13 @@ describe("PostgreSQL 17 locale migrations", () => {
         "help-foundation-answer-2",
         "help-foundation-author",
       );
+      await expect(forum.setHelpSolutionModeration(
+        "help-foundation-topic",
+        "needs-review",
+        null,
+        "help-foundation-author",
+        "help-foundation-answer",
+      )).rejects.toThrow("best answer is no longer the expected moderation target");
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
         solutionOutdatedReason: null,
@@ -448,7 +503,9 @@ describe("PostgreSQL 17 locale migrations", () => {
         appeals: true,
       }))?.questions).toHaveLength(0);
       await expect(
-        forum.setHelpSolutionModeration("help-foundation-no-replies", "needs-review", null, "help-foundation-author"),
+        forum.setHelpSolutionModeration(
+          "help-foundation-no-replies", "needs-review", null, "help-foundation-author", "missing-answer",
+        ),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       await expectDatabaseCode(
         client.query(
@@ -489,10 +546,14 @@ describe("PostgreSQL 17 locale migrations", () => {
         "help-foundation-topic",
         "help-foundation-replier",
       );
-      expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
+      const initialDuplicate = await repository.readTopicPage("help-foundation-no-replies");
+      expect(initialDuplicate).toMatchObject({
         duplicateOf: { id: "help-foundation-topic", title: "Help foundation question" },
         duplicateDisputed: false,
       });
+      if (!initialDuplicate?.duplicateOf) throw new Error("expected initial duplicate relationship");
+      if (!initialDuplicate.duplicateRelationshipId) throw new Error("expected initial relationship id");
+      const initialRelationshipId = initialDuplicate.duplicateRelationshipId;
       expect(await repository.readHelpSolutionsAll()).toMatchObject({
         questions: expect.arrayContaining([
           expect.objectContaining({
@@ -568,10 +629,13 @@ describe("PostgreSQL 17 locale migrations", () => {
         ),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
 
+      const rejectedAppeal = await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies");
+      if (!rejectedAppeal) throw new Error("expected pending duplicate appeal");
       await forum.resolveHelpDuplicateAppeal(
         "help-foundation-no-replies",
         "help-foundation-replier",
         "rejected",
+        rejectedAppeal.id,
       );
       expect(await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies")).toBeUndefined();
       expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
@@ -584,11 +648,49 @@ describe("PostgreSQL 17 locale migrations", () => {
         "help-foundation-waiting",
         "The accepted dispute removes the relationship.",
       );
-      await forum.resolveHelpDuplicateAppeal(
+      const acceptedAppeal = await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies");
+      if (!acceptedAppeal) throw new Error("expected pending duplicate appeal");
+      await expect(forum.resolveHelpDuplicateAppeal(
         "help-foundation-no-replies",
         "help-foundation-replier",
         "accepted",
-      );
+        rejectedAppeal.id,
+      )).rejects.toThrow("expected pending appeal");
+      expect(await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies"))
+        .toMatchObject({ id: acceptedAppeal.id });
+      const appealBlocker = new Client({ connectionString: databaseUrl });
+      const appealWaitPool = new Pool({
+        connectionString: databaseUrl,
+        max: 1,
+        application_name: "package5-appeal-waiter",
+      });
+      await appealBlocker.connect();
+      try {
+        await appealBlocker.query("begin");
+        await appealBlocker.query(
+          "select id from forum_topics where id = 'help-foundation-no-replies' for update",
+        );
+        const waitingResolution = new ForumService(new DrizzleForumRepository(
+          drizzle(appealWaitPool),
+          { cooldownMs: 0, now: () => new Date() },
+        )).resolveHelpDuplicateAppeal(
+          "help-foundation-no-replies",
+          "help-foundation-replier",
+          "accepted",
+          acceptedAppeal.id,
+        );
+        await waitForDatabaseLock("package5-appeal-waiter");
+        await appealBlocker.query(
+          "update forum_help_duplicate_appeals set created_at = clock_timestamp() where id = $1",
+          [acceptedAppeal.id],
+        );
+        await appealBlocker.query("commit");
+        await expect(waitingResolution).resolves.toBeUndefined();
+      } finally {
+        await appealBlocker.query("rollback").catch(() => undefined);
+        await appealBlocker.end();
+        await appealWaitPool.end();
+      }
       expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
         duplicateOf: null,
         duplicateDisputed: false,
@@ -604,7 +706,50 @@ describe("PostgreSQL 17 locale migrations", () => {
         "help-foundation-waiting",
         "Manual removal should resolve this pending dispute.",
       );
-      await forum.removeHelpDuplicate("help-foundation-no-replies", "help-foundation-replier");
+      const removableDuplicate = await repository.readTopicPage("help-foundation-no-replies");
+      if (!removableDuplicate?.duplicateOf || !removableDuplicate.duplicateRelationshipId) {
+        throw new Error("expected active duplicate relationship");
+      }
+      expect(removableDuplicate.duplicateRelationshipId).not.toBe(initialRelationshipId);
+      await expect(forum.removeHelpDuplicate(
+        "help-foundation-no-replies",
+        "help-foundation-replier",
+        initialRelationshipId,
+      )).rejects.toThrow("expected relationship");
+      expect(await repository.readTopicPage("help-foundation-no-replies"))
+        .toMatchObject({ duplicateRelationshipId: removableDuplicate.duplicateRelationshipId });
+      const removalBlocker = new Client({ connectionString: databaseUrl });
+      const removalWaitPool = new Pool({
+        connectionString: databaseUrl,
+        max: 1,
+        application_name: "package5-removal-waiter",
+      });
+      await removalBlocker.connect();
+      try {
+        await removalBlocker.query("begin");
+        await removalBlocker.query(
+          "select id from forum_topics where id = 'help-foundation-no-replies' for update",
+        );
+        const waitingRemoval = new ForumService(new DrizzleForumRepository(
+          drizzle(removalWaitPool),
+          { cooldownMs: 0, now: () => new Date() },
+        )).removeHelpDuplicate(
+          "help-foundation-no-replies",
+          "help-foundation-replier",
+          removableDuplicate.duplicateRelationshipId,
+        );
+        await waitForDatabaseLock("package5-removal-waiter");
+        await removalBlocker.query(
+          "update forum_help_duplicate_relationships set confirmed_at = clock_timestamp() where id = $1",
+          [removableDuplicate.duplicateRelationshipId],
+        );
+        await removalBlocker.query("commit");
+        await expect(waitingRemoval).resolves.toBeUndefined();
+      } finally {
+        await removalBlocker.query("rollback").catch(() => undefined);
+        await removalBlocker.end();
+        await removalWaitPool.end();
+      }
       expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
         duplicateOf: null,
         duplicateDisputed: false,
@@ -697,6 +842,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         "needs-review",
         null,
         "help-filter-replier",
+        reviewAnswer,
       );
 
       const outdatedAnswer = await addAnswer("help-filter-outdated");
@@ -707,6 +853,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         "outdated",
         "The documented API is no longer available.",
         "help-filter-replier",
+        outdatedAnswer,
       );
 
       await forum.confirmHelpDuplicate(
@@ -1276,6 +1423,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           "needs-review",
           null,
           "solution-moderation-regular-author",
+          "solution-moderation-regular-post",
         ),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       expect(await repository.readTopic("solution-moderation-regular-topic")).toMatchObject({

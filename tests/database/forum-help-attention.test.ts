@@ -238,7 +238,7 @@ describe("Help moderator attention queue", () => {
     });
     await forum.selectBestAnswer("review", "review-answer", "author");
     await forum.markTopicSolved("review", "author");
-    await forum.setHelpSolutionModeration("review", "needs-review", null, "manager");
+    await forum.setHelpSolutionModeration("review", "needs-review", null, "manager", "review-answer");
 
     const queue = await forum.readHelpAttentionCases("needs-review", all);
     expect(queue.cases).toContainEqual(expect.objectContaining({

@@ -242,9 +242,10 @@ export class ForumService {
     return this.repository.confirmHelpDuplicate(topicId, originalTopicId, actorId);
   }
 
-  removeHelpDuplicate(topicId: string, actorId: string) {
+  removeHelpDuplicate(topicId: string, actorId: string, expectedRelationshipId: string) {
     validateEntity(topicId, actorId);
-    return this.repository.removeHelpDuplicate(topicId, actorId);
+    requireText(expectedRelationshipId, "expected relationship id");
+    return this.repository.removeHelpDuplicate(topicId, actorId, expectedRelationshipId);
   }
 
   appealHelpDuplicate(topicId: string, actorId: string, explanation: string) {
@@ -265,10 +266,10 @@ export class ForumService {
     topicId: string,
     actorId: string,
     resolution: HelpDuplicateAppealResolution,
-    expectedAppealId?: string,
+    expectedAppealId: string,
   ) {
     validateEntity(topicId, actorId);
-    if (expectedAppealId !== undefined) requireText(expectedAppealId, "expected appeal id");
+    requireText(expectedAppealId, "expected appeal id");
     if (resolution !== "accepted" && resolution !== "rejected") {
       throw new InvalidForumContentError("duplicate appeal resolution is invalid");
     }
@@ -339,9 +340,11 @@ export class ForumService {
     status: HelpSolutionModerationStatus | null,
     outdatedReason: string | null = null,
     actorId: string,
+    expectedBestAnswerPostId: string,
   ) {
     requireText(topicId, "topic id");
     requireText(actorId, "actor id");
+    requireText(expectedBestAnswerPostId, "expected best answer post id");
     if (status !== null && status !== "needs-review" && status !== "outdated") {
       throw new InvalidForumContentError("help solution moderation status is invalid");
     }
@@ -357,9 +360,17 @@ export class ForumService {
         );
       }
     }
-    return this.repository.setHelpSolutionModeration(topicId, status, normalizedReason, actorId);
+    return this.repository.setHelpSolutionModeration(
+      topicId,
+      status,
+      normalizedReason,
+      actorId,
+      expectedBestAnswerPostId,
+    );
   }
 }
+
+export const FORUM_TOPIC_TAG_MAX_COUNT = 10;
 
 export function normalizeForumTags(values: readonly string[]): ForumTag[] {
   const byKey = new Map<string, ForumTag>();
@@ -370,7 +381,14 @@ export function normalizeForumTags(values: readonly string[]): ForumTag[] {
       throw new InvalidForumContentError("tag must be at most 64 characters and must not contain '/'");
     }
     const key = name.toLocaleLowerCase("en-US");
-    if (!byKey.has(key)) byKey.set(key, { key, name });
+    if (!byKey.has(key)) {
+      byKey.set(key, { key, name });
+      if (byKey.size > FORUM_TOPIC_TAG_MAX_COUNT) {
+        throw new InvalidForumContentError(
+          `topic must have at most ${FORUM_TOPIC_TAG_MAX_COUNT} unique tags`,
+        );
+      }
+    }
   }
   return [...byKey.values()];
 }
