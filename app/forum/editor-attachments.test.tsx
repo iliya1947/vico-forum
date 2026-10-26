@@ -162,7 +162,7 @@ describe("editor attachment UI", () => {
     expect(first.method).toBe("POST");
     expect(first.url).toBe("/api/attachments");
     expect(first.headers.get("X-Vico-Attachment-Id")).toBe(attachmentId);
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove" })).toBeEnabled();
 
     first.progress(3, 6);
     expect(screen.getByText("Uploading… 50%")).toBeInTheDocument();
