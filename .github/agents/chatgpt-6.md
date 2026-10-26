@@ -1,5 +1,43 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #239 — независимая whole-PR проверка `780ba720` (2026-10-26)
+
+**Вердикт Лиры: PASS по исходному коду, сопутствующим regression tests и exact-head CI.** Новых подтверждённых дефектов текущего Stage в назначенном scope не обнаружено. Это вердикт **исключительно** для implementation head `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f`; он не переопределяет исторические результаты старых heads.
+
+- Implementation: [PR #239](https://github.com/iliya1947/vico-forum/pull/239), base `main f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Назначение Миры: [PR #236, комментарий #6413025394](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6413025394).
+- Whole PR: 43 changed files, +1166/−66; последняя correction относительно `a7d29546`: 4 changed files (implementation `app/forum/editor-document.ts`, regressions `app/forum/editor-document.test.ts` и `app/forum/edit-recovery.test.tsx`, `PROJECT_STATE.md`), +150/−15.
+- Проверка scope выполнена самостоятельно по source paths, patches, тестам и требованиям текущего продукта: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/EDITOR.md`, `docs/auth/AUTHORIZATION.md`. Implementation не изменяла.
+
+### Результаты whole-scope проверки
+
+1. **`ARCH-01`:** `runForumMutation` и PostgreSQL writer отделяют typed storage unavailability от неожиданных ошибок и domain conflicts; unknown errors не превращаются в synthetic `503`.
+2. **`ARCH-03`:** best-effort cleanup PostgreSQL client/pool в forum/auth/authorization не должен заменять исходный результат/ошибку; смежные regression cases изучены.
+3. **`POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01`:** primary read loaders/защищённый edit-resume выдают controlled `503` только для распознанных dependency outages; unexpected SQL и mapper faults идут в общий error path. Optional presence остаётся отдельно деградируемым.
+4. **`SEC-01`:** safe route diagnostics ограничены error kind, allowlisted SQLSTATE и координатами stack; raw SQL, submitted content и query parameters не записываются в sink.
+5. **`XR-THROWN-ACTION-BUFFER`:** browser client actions защищают mounted editor buffer при unexpected server/transport failure; abort и redirects не подменяются ошибкой editor.
+6. **`EDITOR-PUB-01`:** stale published-edit `409` предоставляет актуальную public revision для явного rebase без замены in-memory text/attachments; reload/baseline freshness fence проверены.
+7. **`EDITOR-PUB-02`:** edit-specific conflict feedback не подменяет сообщения о чужих topic-level `409`.
+8. **Цепочки bounded corrections:** completed publication modified replay vs identical idempotent replay, unrelated `409`, lost ACK + terminal upload `410 gone` + fresh Retry + stale `409` + rebase/Save, а также последняя `LEVA-PR239-A7D2954-01` — проверены с регрессионным покрытием и зависимостями.
+
+### LEVA-PR239-A7D2954-01: image destination при Retry/re-key
+
+Предыдущее решение могло оставить старый URL в bare reference definition в EOF или заменить похожий текст в alt/code label вместо actual URL. На новом head `replaceAttachmentImageId` в `app/forum/editor-document.ts` фиксирует точные source spans destination tokens штатного Markdown parser (`mdast-util-from-markdown` + `forumMarkdownFromOptions`), а затем переписывает только действительно активные URL: inline image или definition, используемое imageReference. Первый действующий definition для идентификатора приоритетен; неподключённые/shadowed definitions, обычные links, alt text, code spans, titles не затрагиваются.
+
+Сопоставлены новые source regressions для bare definitions с EOF и переводами строк, destination-like alt/title, full/collapsed/case-insensitive image references, escaped/entity-encoded destinations и inert definitions. Mounted `TopicRoute` tests проверяют обе проблемные формы через `commit → lost response → new image upload 410 → fresh Retry / new asset 201 → stale 409 → rebase → Save`; сохранение выбранного `File`, текущего Markdown, Undo/Redo, корректного submitted body и видимого изображения в `ForumMarkdown`. Путь `retry → replaceImage` переписывает current/past/future history, не удаляя текст.
+
+Других кодовых изменений после предыдущего independently reviewed head `a7d29546`, кроме указанной correction и тестов/PROJECT_STATE, нет; предыдущие package3 механизмы дополнительно прослежены. Новых подтверждённых current-Stage findings не установлено.
+
+### Проверки и границы доказательств
+
+- [GitHub Actions #40301421307](https://github.com/iliya194/vico-forum/actions/runs/40301421307) **проверен Лирой:** completed / SUCCESS на `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f`; jobs `checks` и `database` оба SUCCESS.
+- Автор correction сообщает о `1076` application и `300` native PostgreSQL tests PASS, `61` targeted PASS, Chromium двух полных сценариев PASS с built Worker/native PostgreSQL. Это **не личные локальные запуски Лиры**. В авторских browser probes synthetic bytes/upload bridge и fixture для image response; внешний R2/download-provider/production acceptance не заявляется.
+- Лира самостоятельно не запускала Chromium, PostgreSQL, собственный browser E2E, внешний сервис или owner visual acceptance. **PASS — source-level technical review, а не собственное runtime-acceptance и не общекомандное разрешение merge.**
+- Все findings/verdicts более ранних heads остаются историческими; прежний пропущенный дефект `LEVA-PR239-A7D2954-01` признан действовавшим на `a7d2954` и проверен после correction.
+- Main и implementation PR #239 не меняла. Дальнейшую координацию финальных проверок ведёт Мира. **STOP.**
+
+---
+
 ## PR #239 — whole-PR review на `a7d29546` (2026-10-26)
 
 **Итог: PASS по независимой проверке source/diff/regression cases на этом exact head.** Новых подтверждённых дефектов текущего Stage в назначенном scope не обнаружено. Действие относится **только** к `a7d29546f334a59d42b30b10c67c32595ea98ec1`; прежний PASS по `998715b` был обоснованно отозван и не восстанавливается задним числом.
