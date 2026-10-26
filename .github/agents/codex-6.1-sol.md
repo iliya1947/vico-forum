@@ -1,5 +1,55 @@
 # Лёва — Codex-6.1 Sol
 
+## PR243 — independent whole-PR review by Leva
+
+Date: 2026-10-26 (Asia/Jerusalem).
+Assignment: https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6425662329
+Supersedes the PR244 part of assignment6425483005: PR244 was NOT reviewed.
+
+Verdict: PASS. No confirmed current-Stage defect found in the assigned whole-PR scope.
+Exact head: d5f992602fcc78276155a63aa14f56b931dd7656
+Base: 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a
+Tree: d6a30dd6522a6cabce87dee23b998ff11dfa7e0f
+18 changed files;404 additions/18 deletions. Implementation was not edited.
+
+### Scope and original finding coverage
+
+Reviewed all18 changed files, affected callers and renderer/write boundaries against current docs/EDITOR.md, ROADMAP current-Stage boundary, PROJECT_STATE and original canonical findings. This review did not rely on another reviewer's verdict.
+
+ATTACH-03: canonical reconciliation6391178524, with implementation assignment6421152256. Existing TAR support requires valid nonzero empty archives. Content detection now recognizes two512-byte zero end markers; post-storage structural validation requires the entire empty archive to be zero padding and block-aligned. Header-bearing archives retain existing validation. Type/MIME/extension gates remain. Stream-to-private-object finalization rejects malformed trailing content and removes rejected objects. Existing size/length/error handling is retained. This closes the canonical empty-TAR subcase without claiming all attachment findings closed.
+
+ATTACH-04: canonical6391178524 and assignment6421809155 require local pending Remove, keeping text/other selected files, with late ACK suppression; no per-file network abort/DELETE required. Reviewed UI button gating, remove handler, per-request WeakSet, all progress/load/error/abort callbacks, published-edit410 operation restart, blocking/selected IDs, whole-operation Cancel and image removal callback. Removed callbacks return before terminal handling. Existing mounted regressions exercise unsaved text plus three files, kept stored/pending files, late success/error/progress, and removed published-edit410 without restarting the kept operation. Local Remove changes selection only and leaves ordinary private lifecycle intact.
+
+ATTACH-HTTP-405-01: canonical6388141755 and assignment6422256497 concern real router dispatch and Allow. Reviewed actual route registration and both exports. Unsupported HEAD is handled by loader and PATCH/PUT/OPTIONS by action, using405 with Allow: GET, POST, DELETE plus no-store/nosniff. Tests invoke createStaticHandler.queryRoute using configured resource path and actual exports; successful GET200/POST201/DELETE200 remain tested. Existing per-file DELETE stays405. Supported permission/origin/write paths are unchanged.
+
+EDITOR-01: canonical6390856951 and assignment6422608436 concern global newline collapse corrupting successful HTML pre conversion. Generated fences protect code from prose compaction. Fence length remains greater than any code backtick run. Existing regressions verify exact parser code value, embedded backticks and adjacent prose. Independently checked flat, blockquote, unordered-list and ordered-list HTML pre examples with four consecutive newlines: all preserve parsed code value. Nested containers prefix blank lines with quote/list markers, so the prose newline compactor does not collapse those code lines. Other clipboard fallback behavior was not claimed fixed.
+
+EDITOR-02: canonical reconciliation6389485203; assignment6423361282. Reviewed spreadsheet/HTML table conversion through serializeTable/encodeTableCell, Simple decode/edit and actual ForumTable ReactMarkdown rendering. All ASCII punctuation is escaped as literal; generated separator rules remain raw structural Markdown. Editing decodes supported escapes and re-encodes once; addTableDimension preserves existing cell source escapes verbatim. Existing regressions cover TSV/HTML output, parser segmentation, rendered literal strong/link syntax, backslash/pipe/newline, mounted paste/edit. Independently checked21 cell values through source->decode->real ForumMarkdown SSR and again after adding a column, including entities, links/images/code/strike syntax, escaped pipe/backslash combinations, Unicode and punctuation. All preserved literal text with no generated strong/link/image/code elements. Authored ordinary Markdown rendering and unrelated serializers were unchanged; wider LITERAL-TEXT-01/EDITOR-10 findings remain separate.
+
+PROJECT_STATE describes implementation branch progress, does not predeclare independent acceptance. No schema, migration, dependency, authorization or external service changes are in this PR. No uncovered canonical subcase or additional confirmed current-Stage defect was identified.
+
+### Verification personally performed
+
+- pnpm test:101 files/1090 tests PASS (144.42seconds).
+- pnpm typecheck: exit0. Wrangler emitted a log-directory diagnostic for inaccessible default user config path; generated types/router types/TypeScript completed. No tracked generated file changes.
+- pnpm lint: exit0, zero errors, one existing unused-disable warning in app/forum/ui.test.tsx:174.
+- pnpm build: PASS.
+- pnpm ui-preview:build: PASS.
+- git diff --check: PASS; tracked worktree clean throughout review.
+- Independent probe:4 HTML code container cases;21 literal-table render/decode/dimension cases;12 actual chunked upload/finalization TAR controls (257-byte input chunks, sizes512/1024/1536/4096/10240/67584, validzero and nonzero-tail variants). All assertions PASS. Storage is a controlled in-memory PrivateAttachmentBucket, not external R2. Initial probe incorrectly expected a storage DELETE for an invalid signature rejected before any object was written; corrected the probe invariant to require zero retained rejected objects. No implementation correction was required. SSR probe used actual ForumMarkdown with no initialized i18next provider; literal text cases do not depend on translated controls.
+- Independently fetched exact-head CI40375402307: completed SUCCESS. Checks121756983540/database121756983160 SUCCESS, including CI database/runtime/Worker checks. These are CI observations, NOT personally rerun local PostgreSQL/Worker smoke.
+
+Evidence: /workspace/work/pr243-review-probe.mts and .log; pr243-tests.log, pr243-typecheck.log, pr243-lint.log, pr243-build.log, pr243-preview-build.log.
+
+### Limits and handoff
+
+No local PostgreSQL, browser/Chromium, visual acceptance, production or external-provider test was run. Mounted regressions use jsdom/FakeXMLHttpRequest; extra rendering uses SSR; object bytes use an in-memory adapter. None is represented as live-service E2E. No merge authorization or whole-team synthesis is claimed. PR241 correction belongs to Lira; PR244 review was expressly canceled for this assignment.
+
+Review complete. Published by the owner's explicit «Публикуй» instruction after the result was reported in the current chat. No review findings were disclosed to other reviewers during this assignment. Leva STOP.
+
+
+---
+
 ## PR241 — adjudication Лёвы: A CONFIRMED; B CONFIRMED
 
 Date:2026-10-26,Asia/Jerusalem. Assignment:[6420951578](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6420951578).
