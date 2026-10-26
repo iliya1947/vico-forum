@@ -1,5 +1,77 @@
 # Лёва — Codex-6.1 Sol
 
+## PR241 — independent whole-PR technical review Лёвы
+
+Date:2026-10-26,Asia/Jerusalem. Assignment:PR236 comment6419875144. Process decision:6419873950 (parallel blind reviews; no publication before all assigned independent reviews finish and separate developer instruction).
+
+**Verdict: PASS in the full assigned repository/local-CI scope. No confirmed current-Stage defects found.** The report stayed local/private during the blind review. No GitHub comment,personal-file update or shared-status write was made before completion. Publication is now explicitly authorized by the developer's subsequent command «Публикуй». Findings/verdicts of other reviewers were not consulted or used as proof.
+
+- Exact implementation head:`f5cdf71837aee78a31856c766c087c9bbf54a496`.
+- Base:`1364d5768906c6746c4397c615f846797051eb76`.
+- Tree:`4ba25681febb43f1392a826b0a2cf2d7b9dd8b6f`.
+- Scope:HELP-01,HELP-02,HELP-MOD-01,TAG-CARDINALITY-01;DOC-03.
+- Whole diff:14files,353additions/42deletions. All changed production paths,tests and documentation reviewed against original package assignment6418615989,current Stage and relevant source-of-truth.
+
+### Technical review
+
+#### Help identity/state fences (HELP-01,HELP-02,HELP-MOD-01)
+
+Checked end-to-end input flow:TopicView hidden fields → topicAction validation/authz → writer → service runtime text checks → repository comparison after existing topic/relationship/appeal locks.
+
+- Duplicate removal requires exact expectedRelationshipId; current active relationship is selected/locked before equality check. A stale relationship never removes its replacement.
+- Appeal decisions require expectedAppealId. Selected current pending appeal must match exactly; resolved/missing/replaced appeal is a domain conflict.
+- All three solution moderation intents require expectedBestAnswerPostId; repository rechecks Help section,solved state,selected answer and identity under topic lock before changing post status/signals.
+- Missing expected identity produces controlled400; existing auth/session/origin/permissions remain authoritative. Identity is a concurrency expectation,not an authorization grant.
+- Forms carry the actual observed IDs for removal,accept/reject and needs-review/outdated/clear. Existing mounted/public-read regressions pass.
+- New relationship ID is returned by real topic reads,then nulled by topic loader for actors without duplicate-management permission. Both Help list projection builders explicitly select existing public fields and do not spread the new ID. Private appeal details retain existing author/manager scope. Guest/author/manager projection regressions pass.
+
+Additional independent native action probes used actual topicAction/writer/service/repository/PostgreSQL. In three cases an action was started while a separate transaction held its topic row lock; pg_stat_activity confirmed actual Lock wait. The blocker then replaced the relationship,pending appeal or selected best answer before releasing the lock. All three stale actions returned409; current replacement state remained unchanged. Current-target controls returned302 and applied only the intended mutation. All six moderation intents without identity returned400. Auth-session and permission resolution were controlled fixtures for these focused probes; the actual writer/transactions were not mocked.
+
+#### Lifecycle timestamps after lock waits
+
+Checked that removal/appeal resolution evaluate statement_timestamp in subsequent UPDATE statements after acquiring the relevant locks,not transaction-start now(). Repository mutations acquiring the same topic lock cannot replace that state between identity validation and mutation. Existing transaction rollback and relationship/appeal CHECKs remain intact.
+
+Personally ran both new real PostgreSQL wait regressions in the full303suite:they establish an actual Lock wait,write a later confirmed_at/created_at while holding the blocker,then release it and complete transitions without inverted timestamps. They do not infer ordering from a guessed sleep. Accepted/rejected appeal behavior and manual removal's handling of pending appeals remain covered.
+
+#### Public tag cardinality (TAG-CARDINALITY-01)
+
+Checked both public authoring actions and writer→service validation order. Limit10 is applied after NFKC,trim,whitespace collapse and existing case-insensitive key deduplication. It rejects before repository topic/global-tag persistence; service normalization remains the shared boundary. Each tag's existing length/slash rules remain enforced; no schema/dependency changes.
+
+Additional independent real public section/help action probes each:
+- accepted10 unique tags with empty entries,case duplicates and fullwidth NFKC-equivalent duplicates; stored exactly10;
+- rejected11 unique tags with controlled400;
+- compared total topic and global-tag counts before/after rejection and observed zero writes.
+
+Full application tests also include the new normalization cases; native suite independently verifies service rejection leaves no topic/overflow global tags.
+
+#### DOC-03 and scope
+
+Compared changed UI_UX_PASS contract with existing list/topic badge conditions and author-specific appeal presentation. Pending Disputed badge is permission-gated to duplicate managers in both places; an author can see their own pending appeal message without the moderator badge. PROJECT_STATE/H-013 describe current identity/timestamp/tag implementation without claiming external rollout or merge. No existing Help feature was redesigned beyond the assigned boundaries.
+
+### Personally executed verification
+
+- **1080/1080 application tests PASS** (102files).
+- **303/303 disposable PostgreSQL17 tests PASS** (28files),including both lock-wait timestamp regressions.
+- Additional native real action probes above PASS; all3 observed-lock stale-target cases and both public tag authoring flows.
+- Project typecheck (Wrangler types,React Router typegen,TypeScript) PASS.
+- ESLint0errors,one preexisting unused-disable warning at app/forum/ui.test.tsx:174.
+- Production and UI-preview builds PASS; existing preview chunk-size warning retained.
+- Drizzle metadata check PASS; migration-history guard PASS with0new migrations and accepted history unchanged.
+- Local built Worker smoke PASS.
+- Exact-head CI40345202786 independently checked SUCCESS; checks121650163977/database121650163590 SUCCESS.
+- Final metadata remains same head/base;PR241 open and unmerged. No tracked implementation changes.
+
+No Chromium/owner visual acceptance,real Cloudflare/Neon/external Hyperdrive/R2/OAuth/backup-restore,production/deployment,merge or next-package work was performed. Node/action and PostgreSQL probes establish functional boundaries; they are not external/visual acceptance. Local Worker/PG stopped/removed; temporary clean review worktree removed after verification. Shared dependencies were not changed.
+
+### Local evidence
+
+Under `/workspace/work`:pr241-review-app.json,pr241-review-db.json,pr241-route-probes.mjs,pr241-route-probes.log,pr241-review-typecheck.log,pr241-review-lint.log,pr241-review-build.log,pr241-review-preview.log,pr241-review-drizzle.log,pr241-review-migrations.log,pr241-review-worker.log,pr241-review-smoke.log and pr241-review-preview-artifact/. The extra probe source was outside the implementation worktree. Reproduction requires checking out the same head at the original review path and providing local PG; the worktree was removed after completion.
+
+### Stop/publication barrier
+
+Review complete. The developer subsequently gave the separate command «Публикуй» authorizing publication of this completed personal verdict. Only this reviewer’s result is published; no conclusion about completion/verdicts of other reviewers or whole-team merge authorization is inferred. Мира coordinates the review-cycle synthesis. Лёва STOP.
+
+
 ## PR240 — final independent technical review Лёвы: PASS (2026-10-26)
 
 Assignment: [6415538591](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6415538591). Scope: DB-01,DB-02,DB-03,CORE-01,CORE-02,CORE-03 and DOC-02.
