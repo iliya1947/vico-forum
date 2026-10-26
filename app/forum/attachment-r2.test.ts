@@ -167,6 +167,28 @@ describe("private R2 attachment write contract", () => {
     expect(store.delete).not.toHaveBeenCalled();
   });
 
+  it("stores an empty TAR and rejects a zero-marked archive with trailing nonzero data", async () => {
+    const validStore = bucket();
+    const archive = new Uint8Array(10_240);
+    const valid = await storePrivateAttachment(validStore, file("empty.tar", archive, "application/x-tar"));
+    expect(valid).toMatchObject({
+      outcome: "stored", bytes: archive.length,
+      inspection: { accepted: true, detected: "tar", responseMime: "application/x-tar" },
+    });
+    expect(validStore.get).toHaveBeenCalled();
+    expect(validStore.delete).not.toHaveBeenCalled();
+
+    const invalidStore = bucket();
+    const malformed = new Uint8Array(1536);
+    malformed[1024] = 1;
+    const invalid = await storePrivateAttachment(invalidStore, file("malformed.tar", malformed, "application/x-tar"));
+    expect(invalid).toMatchObject({
+      outcome: "rejected",
+      inspection: { detected: "tar", reason: "invalid-structure", suspicious: true },
+    });
+    expect(invalidStore.delete).toHaveBeenCalledOnce();
+  });
+
   it("uses the filename semantic when finalizing ZIP-backed Office packages", async () => {
     const store = bucket();
     const result = await storePrivateAttachment(store, file(
