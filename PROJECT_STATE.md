@@ -20,6 +20,20 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LOC-04 — корректный loading copy истории сообщений (2026-10-26)
+
+В отдельной implementation-ветке от `main` исправлено смешение состояний загрузки:
+приватный post-history UI больше не использует attachment-specific сообщение
+`editorAttachmentRestoring`. В каталоге UI появился отдельный
+`postHistoryLoading` с English source и согласованными локальными RU/HE
+переводами и source fingerprints; прежний текст восстановления вложений не менялся.
+
+Регрессионный UI-тест проверяет pending `readPostHistory` action через React Router
+fetcher, history-specific статус при загрузке и отображение ревизии после ответа.
+Права просмотра истории, загрузка данных, вложения и locale-runtime semantics не
+менялись. Проверки CI фиксируются отдельно в implementation PR; самостоятельный
+whole-PR review, merge и external/production/owner visual acceptance не заявляются.
+
 ## Batch L1 — fixes 1–5/5 (2026-10-26)
 
 В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:

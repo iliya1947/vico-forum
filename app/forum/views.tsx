@@ -2909,7 +2909,7 @@ export function TopicView({
                       <section className="topic-post-history" aria-label={t("postHistoryHeading")}>
                         <h3>{t("postHistoryHeading")}</h3>
                         {historyFetcher.state !== "idle" ? (
-                          <p role="status">{t("editorAttachmentRestoring")}</p>
+                          <p role="status">{t("postHistoryLoading")}</p>
                         ) : historyFetcher.data && "operation" in historyFetcher.data
                           && historyFetcher.data.operation === "postHistory"
                           && historyFetcher.data.postId === post.id ? (
