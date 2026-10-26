@@ -1,5 +1,39 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #240 — независимая whole-PR проверка пакета 4 на `ec954ac5` (2026-10-26)
+
+**Вердикт Лиры: PASS по независимо просмотренным исходникам, миграционным контрактам и регрессионным тестам.** В заданном current-Stage scope новых подтверждённых дефектов не установлено. Вердикт относится только к стабильному implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`.
+
+- Implementation: [PR #240](https://github.com/iliya1947/vico-forum/pull/240).
+- Base: `main 8f56479890f63000149354820a6b5162bb9de492`.
+- Назначение: [PR #236 comment #6414799836](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6414799836).
+- Scope: `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02`, `CORE-03`, documentation sidecar `DOC-02`.
+- Whole diff: **18 файлов**, +5532/−15 (включая большой Drizzle migration snapshot); изучены все per-file patches, затронутые runtime пути и relevant regression tests. Это проверка ограниченного package 4, не новая полная ревизия всего форума.
+
+### Сверка шести causal chains
+
+1. **DB-01 — allowance metadata с частичным NULL.** Прежняя `CHECK`-ветка могла дать SQL UNKNOWN вместо FALSE. `db/schema.ts` и append-only `drizzle/0045_audit_database_notifications_read_state.sql` требуют `allowance_state`, `allowance_generation`, `allowance_attempt` не `NULL` в активной ветви, сохраняя ограничения на leasing/admitted/deferred и inactive-null shape. Сверены `0045_snapshot.json`, migration journal и PostgreSQL regressions трёх NULL-вариантов с ожидаемым `23514`.
+
+2. **DB-02 — drift частичных индексов.** `.github/scripts/production-schema-manifest.mjs` читает `pg_index.indpred` и `pg_get_expr`, включает `predicateSha256` в structural index manifest, null для обычного индекса. Manifest `.github/production-schema-manifest.json` фиксирует predicate hashes для partial indexes; unit regression меняет predicate и ожидает rejection manifest comparator. CI включает новый тестовый файл.
+
+3. **DB-03 — runtime права на read-state relation.** В web runtime privilege contract добавлены `SELECT`, `INSERT`, `UPDATE` для `forum_topic_read_states`, соответствующие читающей и записывающей сторонам `readTopicReadState`/`advanceTopicReadState`; правило отражено в `docs/database/HYPERDRIVE.md`. Сверены тесты capability contract и author-reported PostgreSQL positive/negative privileges.
+
+4. **CORE-01 — crossed concurrent replies.** В `enforceForumWriteCooldown` mutex на строке Better Auth user переключён с `FOR UPDATE` на `FOR NO KEY UPDATE`, сохранив per-author serialization, но сняв конфликт с recipient `KEY SHARE` при FK-check в двух встречных reply transactions. Новая native PostgreSQL regression запускает параллельные replies на двух соединениях после обоих author locks и требует создания обеих notifications; остальная writer transaction/receipt/notifications chain рассмотрена.
+
+5. **CORE-02 — unreachable older unread из-за LIMIT 50.** `readReplyNotifications` сортирует сначала `read_at IS NULL`, затем `createdAt DESC, id DESC`, оставляя limit=50; individual `markReplyNotificationRead` и `countUnreadReplyNotifications` остаются прежними. Старое unread за первой пятидесяткой появляется по мере прочтения новых. PostgreSQL regression с 51 уведомлением проверяет достижимость последнего unread и снижение total badge count до нуля. UI `NotificationsView` и route action с redirect рассмотрены; самостоятельная pagination не вводилась и текущим критерием не требуется.
+
+6. **CORE-03 — marker не впереди доставленного topic snapshot.** `TopicView` формирует `deliveredLatestPostId` из последнего `topic.posts`, полученного `readTopicPage`, а не из отдельного `readTopicReadState().latestPostId`, который мог увидеть concurrent append. `markTopicRead` передаёт именно доставленный post ID; repository `advanceTopicReadState` сохраняет монотонное продвижение. React route regression подставляет более новый state cursor, чем доставленные posts, и проверяет фактически отправленный `postId`.
+
+### DOC-02 и evidence limits
+
+- `docs/EDITOR.md`, `docs/database/HYPERDRIVE.md`, `PROJECT_STATE.md`, `PROJECT_HISTORY.md` синхронизированы с новой append-only `0045`, отменённой старой draft snapshot proposal и актуальными DB/read-state контрактами. Прежние миграции не изменены. Нет обнаруженного current-Stage несоответствия между проверенными файлами.
+- [Exact-head CI #40311315111](https://github.com/iliya194/vico-forum/actions/runs/40311315111) **лично сверена Лирой**: `head_sha=ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`, status `completed`, conclusion `success`; jobs `checks` и `database` SUCCESS.
+- Автор сообщает **1077 application и 303 disposable PostgreSQL tests PASS**, schema parity 47 public tables, runtime privilege probes, TypeScript, lint (0 errors/1 existing warning), application/UI Preview builds, migration guard. Эти локальные runs **не выполнялись Лирой**. Chromium, внешняя инфраструктура и visual acceptance также не выполнялись Лирой.
+- Положительный code-review verdict не доказывает отсутствие неизвестных дефектов и сам по себе не означает согласованный командный review или разрешение merge.
+- PR #240, `main` и файлы других агентов не меняла. Заключение передано разработчику в чате и, после его явного разрешения, опубликовано в личном файле PR #236. **STOP.**
+
+---
+
 ## PR #239 — независимая whole-PR проверка `780ba720` (2026-10-26)
 
 **Вердикт Лиры: PASS по исходному коду, сопутствующим regression tests и exact-head CI.** Новых подтверждённых дефектов текущего Stage в назначенном scope не обнаружено. Это вердикт **исключительно** для implementation head `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f`; он не переопределяет исторические результаты старых heads.
