@@ -55,3 +55,7 @@
 - Post-merge integration check for PR #243: head remains `d5f992602fcc78276155a63aa14f56b931dd7656`, GitHub `mergeable=true`; overlap with merged PR #241 is only `PROJECT_STATE.md`, no implementation files overlap. Existing Mira + Leva PASS remains applicable; no new whole-PR cycle triggered.
 - PR #244 also remains open/mergeable on unchanged head `7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`, but its integration check is deferred until after #243 merge.
 - **Следующий шаг:** owner marks PR #243 ready if needed and merges it.
+
+- После owner merge PR #241 (`28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`) PR #243 пересчитан GitHub как `mergeable_state=dirty`. Единственный changed-file overlap #241↔#243 — `PROJECT_STATE.md`; implementation-файлы не пересекаются.
+- Лире назначена bounded integration correction существующей ветки PR #243: актуализировать от текущего main, сохранить Package 5 + Batch L1 state и не менять reviewed implementation. Task #236 comment `6427256502`.
+- **Следующий шаг:** разработчик подключает Лиру к PR #236 для integration correction PR #243.
