@@ -86,3 +86,10 @@
 - Remaining implementation plan resumes from accepted `main`. Lira's next unresolved queue item is `EDITOR-04`; the natural next 5-fix Lira batch after completed Batch L1 and separately completed LOC-04 is `EDITOR-04`, `EDITOR-10`, `LITERAL-TEXT-01`, `LOC-03`, `LOC-06` if owner keeps 5-fix batching. Leva's next heavy package remains L6: `ATTACH-01`, `ATTACH-02`, `ATTACH-STRUCT-01`.
 - No new implementation branch is started yet: current owner permission for the prior independent exception was consumed by LOC-04; new branch creation requires fresh explicit owner authorization.
 - **Следующий шаг:** owner authorizes which new implementation branch starts from current main.
+
+
+- Owner requested two parallel implementation assignments from current main `bff130db5fb245e3a9ad3391fad54a2fe81aac88`.
+- Лира: Batch L2 established as `EDITOR-04`, `EDITOR-10`, `LITERAL-TEXT-01`, `LOC-03`, `LOC-06`; current handoff executes only step 1 `EDITOR-04` and STOP. Task #236 comment `6428906267`.
+- Лёва: L6 coherent package `ATTACH-01` + `ATTACH-02` + `ATTACH-STRUCT-01`. Task #236 comment `6428907339`.
+- Both assignments preserve owner branch gate: no new branch without separate authorization; use a safely suitable existing implementation branch if available, otherwise report blocker and STOP.
+- **Следующий шаг:** developer connects Лира and Лёва to PR #236 in parallel.
