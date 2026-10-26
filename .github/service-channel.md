@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — пакет 4: финальная независимая проверка Лёвы PASS (2026-10-26)
+## Текущая реализация — пакет 4: review cycle завершён, PR #240 merge-ready (2026-10-26)
 
 - Baseline: `main 8f56479890f63000149354820a6b5162bb9de492`, после merge PR #239.
 - Package 4 — **Database contracts + notifications/read-state**, scope: `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02`, `CORE-03`; documentation sidecar `DOC-02`. Implementation [PR #240](https://github.com/iliya1947/vico-forum/pull/240), stable exact head **`ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`**, base `8f56479890f63000149354820a6b5162bb9de492`; PR открыт, mergeable.
@@ -11,7 +11,8 @@
 - По назначению6415538591 Лёва завершил независимую final whole-PR technical проверку **всех6 causal groups и DOC-02 на ec954ac55a140c5cee7cb66b5b7d6ca4537b9480: PASS**, подтверждённых current-Stage defects не найдено. Implementation/main не менялись. [Полный личный отчёт Лёвы](https://github.com/iliya1947/vico-forum/blob/5ba3c1bc5c54b5eef8926aa91f6c371a0360f2f8/.github/agents/codex-6.1-sol.md).
 - Лёва лично запустил1077app/303nativePG PASS, script regressions,schema parity47tables,runtime privilege positive/negative probes,typegen/tsc,lint(1existingwarning),обе сборки,Drizzle metadata,migration guard1new и built Worker smoke. Дополнительные native probes:3072 NULL-combinations (7valid/3065rejected); реальный partial-index predicate FALSE/removal detected; actual limited-role read-state insert/upsert и negative42501;116notifications (61unread/55read) через настоящий loader/action —2bounded loads,61open,final count0. CI40311315111/checks121532906638/database121532906942 независимо сверены SUCCESS.
 - Локальные Worker/PG и временная review-worktree удалены/остановлены; новый Chromium/owner visual/external acceptance не заявляется. Первоначальный manifest-command был не исполнен из-за auto-approval usage limit; после продолжения сессии тот же command PASS, незакрытого блокера нет.
-- **Следующий шаг:** Мира учитывает final independent PASS Лёвы на ec954ac5 и координирует итог review cycle/решение владельца по PR #240. Этот личный verdict сам по себе не выполняет merge и не объявляет external/visual gates пройденными. Лёва STOP. Пакеты5–11 не начаты; production/external/owner visual actions не выполнялись. PR236 — только communication, никогда не merge.
+- Итоговый review cycle зафиксирован в comment `6418460341`: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review отменён и отдельным independent verdict не считается. Confirmed current-Stage defects на stable exact head не осталось.
+- **Статус:** PR #240 готов к owner merge. Visual acceptance и production/external actions этим verdict не заявляются. Пакеты5–11 не начаты. PR236 — только communication, никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
