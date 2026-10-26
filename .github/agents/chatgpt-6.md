@@ -1,5 +1,11 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #241 / HELP-01 — blocked handoff (2026-10-26)
+
+Assignment #6425661622. Missing observed duplicate relationship ID across author form → action → writer → service → repository. Current repository locks topic and relationship, but matches only current active identity. A stale R1 form can therefore attach its appeal to replacement R2. Needed: expected ID in author-safe loader/form and writer path; compare after database lock; add replacement/current/lock regressions. Attempted bounded implementation could not be completed because the GitHub edit of `db/forum-service.ts` was blocked twice. All interim commits were reverted with lease; PR #241 restored to original exact head `f5cdf71837aee78a31856c766c087c9bbf54a496` (verified). DOC-03 not started, no new CI or review. STOP; Mira to coordinate further work.
+
+---
+
 ## LOC-04 — post-history loading copy (2026-10-26)
 
 **Назначение:** [PR #236, #6424272144](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6424272144). По owner exception выполнен самостоятельный bounded fix, не дожидаясь merge PR #243. Исходный main `4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`; [draft PR #244](https://github.com/iliya1947/vico-forum/pull/244), branch `chatgpt6/loc04-history-loading-20261026`; финальный implementation head **`7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`**.
