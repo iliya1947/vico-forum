@@ -1,5 +1,47 @@
 # Лёва — Codex-6.1 Sol
 
+## PR244 — independent whole-PR review by Leva
+
+Date: 2026-10-26, Asia/Jerusalem.
+Assignment: direct owner instruction in current chat, «Проверь #244». This renews the previously canceled PR244 review scope; no other implementation task is implied.
+
+Verdict: PASS. No confirmed current-Stage defect found in the complete LOC-04 PR.
+Exact head: 7c750ba8bfa0d0efc9d6046395a97d033c64d6a5
+Base: 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a
+Tree: dbda7b45f92f4b3e3c06869887201c6b33512abb
+6 changed files;62 additions/1 deletion. Implementation was not edited.
+
+### Original task and complete coverage
+
+Implementation assignment6424272144 requires history-specific loading copy, preserving attachment copy and other localization/runtime semantics. Canonical LOC-04 / I18N-COPY-01 mapping appears in reconciliation6387795828 and6387897803: pending post-history uses attachment-restoring text. Compared the complete six-file diff with that causal chain, current docs/EDITOR.md effective-history-permission contract, TRANSLATION_ARCHITECTURE.md local/manual freshness and fallback contracts, and surrounding current TopicView/action/resource code. No other reviewer's conclusions were used.
+
+- app/forum/views.tsx:2899 changes only the history-fetcher pending message key to postHistoryLoading. Existing role=status, permission gate, historyPostId/current-post guard, pending/idle/error/revisions branches and data fetching remain unchanged. readPostHistory action still checks effective forum.post.history.read, validates post ID, returns protected revisions or typed failure. No authorization/attachment changes.
+- app/localization/catalog.ts:407 adds one ordinary common message with source “Loading edit history…” and protected-revisions loading description, no placeholders. The existing attachment-restoring descriptor is byte-for-byte unchanged.
+- app/localization/manual-values.ts adds appropriate Russian/Hebrew loading-history text; app/localization/manual-fingerprints.ts adds the reviewed fingerprint for the exact source semantics. This is a new key, not an unjustified regeneration of old translations. Both complete packs remain fresh.
+- app/forum/public-read.test.tsx mounts actual TopicRoute through createMemoryRouter/RouterProvider, clicks Edit history, checks the submitted intent/post ID, deliberately holds a deferred action response, observes loading role=status/history copy and absence of attachment copy, resolves postHistory revisions and checks revision content plus status disappearance. It verifies actual pending UI rather than only calling a label helper. Existing tests cover history/edit visibility and associated permission presentation. Data/action fixtures are controlled; this is not live DB/auth E2E.
+- PROJECT_STATE.md scopes the correction to an implementation branch and correctly records copy/key/test changes; it does not predeclare CI, independent review or merge acceptance.
+
+No uncovered canonical subcase, independent current-Stage defect or regression in this PR was identified. Existing wider localization/backlog findings are not claimed fixed and were not added to this narrow scope.
+
+### Verification personally performed
+
+- Four existing suites: app/forum/public-read.test.tsx, app/localization/resources.test.ts, app/localization/resource-loader-bundles.test.ts, app/localization/bundles.test.ts. All100 tests PASS,16.65seconds. Includes new mounted pending-history regression, existing permission/presentation behavior, full reviewed-pack completeness/currentness and resource/bundle handling.
+- ESLint on all five changed TS/TSX files: exit0, no warnings/errors.
+- Independent native localization probe computes sourceFingerprint(postHistoryLoading) and verifies exact45f26d22cf537dbc34b316a306b1e151e2f312f42f4f81b33023f1dca9155105. Runs actual LocalTranslationSource/CanonicalEnglishSource -> TranslationResourceLoader -> createTranslationRuntime for EN/RU/HE, verifies exact history-specific strings and no stale key; then injects a stale fingerprint separately for RU/HE and observes the English history fallback. All five locale scenarios and fingerprint assertions PASS. Attachment string remains distinct.
+- git diff --check PASS; tracked implementation worktree clean.
+- Independently fetched CI40380768112 on exact head: SUCCESS, checks121776038928/database121776039411 SUCCESS, including CI lint/typecheck/test/build/UI-preview/migration/schema/DB/Worker steps. These are GitHub CI observations; no claim of personally running those full suites locally.
+
+Evidence: /workspace/work/pr244-focused-tests.log, pr244-lint.log, pr244-localization-probe.mts and pr244-localization-probe.log.
+
+### Limits and handoff
+
+No new tests or changes to implementation, schema, dependencies, permissions or runtime contracts. Focused local tests plus complete source/canonical comparison are appropriate to this six-file copy/key correction; full application/typecheck/build/PG/Worker checks were verified in exact-head CI and not unnecessarily rerun locally. No browser/Chromium, owner visual acceptance, live service, production or external rollout was performed. No merge authorization or whole-team synthesis is claimed.
+
+Published after the owner's explicit «Публикуй» instruction following the completed review in the current chat. PR243/PR241 implementation untouched. Isolated worktree removed after review. Leva STOP.
+
+
+---
+
 ## PR243 — independent whole-PR review by Leva
 
 Date: 2026-10-26 (Asia/Jerusalem).
