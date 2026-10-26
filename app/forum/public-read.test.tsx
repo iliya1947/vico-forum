@@ -1411,7 +1411,11 @@ describe("Help & solutions modes and authoring", () => {
     const duplicateTopic = {
       ...helpTopic,
       bestAnswerPostId: null,
-      duplicateOf: { id: "help-original", title: "Canonical original question" },
+      duplicateOf: {
+        id: "help-original",
+        title: "Canonical original question",
+      },
+      duplicateRelationshipId: "duplicate-relation-1",
       duplicateDisputed: true,
     };
     const pendingAppeal = {
@@ -1433,6 +1437,7 @@ describe("Help & solutions modes and authoring", () => {
       context: guestContext,
     });
     expect(guestReadAppeal).not.toHaveBeenCalled();
+    expect(guestData.topic.duplicateRelationshipId).toBeNull();
     const guestView = renderRoute(
       TopicRoute,
       guestData,
@@ -1469,6 +1474,7 @@ describe("Help & solutions modes and authoring", () => {
       context: authorContext,
     });
     expect(authorReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    expect(authorData.topic.duplicateRelationshipId).toBeNull();
     const authorView = renderRoute(
       TopicRoute,
       authorData,
@@ -1508,6 +1514,7 @@ describe("Help & solutions modes and authoring", () => {
     });
     expect(managerReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
     expect(managerData.canManageHelpDuplicate).toBe(true);
+    expect(managerData.topic.duplicateRelationshipId).toBe("duplicate-relation-1");
     expect(managerData.canReply).toBe(true);
     const managerView = renderRoute(
       TopicRoute,
@@ -1526,6 +1533,12 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
+    expect(document.querySelector<HTMLInputElement>(
+      'input[name="expectedRelationshipId"]',
+    )).toHaveValue("duplicate-relation-1");
+    expect(document.querySelectorAll<HTMLInputElement>(
+      'input[name="expectedAppealId"][value="appeal-1"]',
+    )).toHaveLength(2);
     managerView.unmount();
 
     const degradedAuthorContext = context("en", "ltr");
@@ -1561,6 +1574,52 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit dispute" })).not.toBeInTheDocument();
     degradedAuthorView.unmount();
+  });
+
+  it("submits the observed duplicate relationship from the author form without disclosing it to guests", async () => {
+    const duplicateTopic = {
+      ...helpTopic,
+      bestAnswerPostId: null,
+      duplicateOf: { id: "help-original", title: "Original question" },
+      duplicateRelationshipId: "observed-relationship-r1",
+      duplicateDisputed: false,
+    };
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader, readTopicPage: async () => duplicateTopic,
+    });
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id }, context: guestContext,
+    });
+    expect(guestData.topic.duplicateRelationshipId).toBeNull();
+    expect(guestData.appealExpectedRelationshipId).toBeNull();
+    const guestView = renderRoute(
+      TopicRoute, guestData, forumTopicPath("en", duplicateTopic.id), "en", "ltr",
+    );
+    expect(document.querySelector(".help-duplicate-appeal-form")).toBeNull();
+    guestView.unmount();
+
+    const authorContext = context("en", "ltr");
+    authorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "author-appeal-session", token: "author-appeal-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    authorContext.set(authorizationContext, {
+      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => false) }),
+    } as never);
+    authorContext.set(forumReaderContext, {
+      ...reader, readTopicPage: async () => duplicateTopic,
+    });
+    const authorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id }, context: authorContext,
+    });
+    expect(authorData.topic.duplicateRelationshipId).toBeNull();
+    expect(authorData.appealExpectedRelationshipId).toBe("observed-relationship-r1");
+    renderRoute(TopicRoute, authorData, forumTopicPath("en", duplicateTopic.id), "en", "ltr");
+    expect(await screen.findByRole("button", { name: "Submit dispute" })).toBeVisible();
+    expect(document.querySelector<HTMLInputElement>(
+      '.help-duplicate-appeal-form input[name="expectedRelationshipId"]',
+    )).toHaveValue("observed-relationship-r1");
   });
 
   it("duplicate-only permission does not expose an empty admin panel on ordinary topics", async () => {
@@ -1900,6 +1959,9 @@ describe("Help & solutions modes and authoring", () => {
     );
 
     fireEvent.click(await screen.findByText("Admin panel"));
+    expect(document.querySelectorAll<HTMLInputElement>(
+      'input[name="expectedBestAnswerPostId"][value="help-answer"]',
+    )).toHaveLength(3);
     const reason = screen.getByRole("textbox", { name: "Reason the solution is outdated" });
     expect(reason).toHaveValue("Persisted old reason.");
     fireEvent.change(reason, { target: { value: "Unsaved stale reason." } });

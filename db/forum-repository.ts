@@ -333,6 +333,7 @@ export interface ForumTopicPage extends ForumTopic {
   createdAt: Date;
   needsDetails: boolean;
   duplicateOf: ForumHelpDuplicateReference | null;
+  duplicateRelationshipId?: string | null;
   duplicateDisputed: boolean;
   authorName: string;
   isPinned: boolean;
@@ -2288,13 +2289,18 @@ export class DrizzleForumRepository {
 
   private async readHelpDuplicatePresentations(
     topicIds: readonly string[],
-  ): Promise<Map<string, { duplicateOf: ForumHelpDuplicateReference; duplicateDisputed: boolean }>> {
+  ): Promise<Map<string, {
+    duplicateOf: ForumHelpDuplicateReference;
+    duplicateRelationshipId: string;
+    duplicateDisputed: boolean;
+  }>> {
     if (topicIds.length === 0) return new Map();
     const originalTopic = alias(forumTopics, "help_duplicate_original_topic");
     const originalTitle = alias(forumTopicTitleRevisions, "help_duplicate_original_title");
     const pendingAppeal = alias(forumHelpDuplicateAppeals, "help_duplicate_pending_appeal");
     const rows = await this.database
       .select({
+        relationshipId: forumHelpDuplicateRelationships.id,
         duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
         originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
         originalTitle: originalTitle.originalContent,
@@ -2319,6 +2325,7 @@ export class DrizzleForumRepository {
       row.duplicateTopicId,
       {
         duplicateOf: { id: row.originalTopicId, title: row.originalTitle },
+        duplicateRelationshipId: row.relationshipId,
         duplicateDisputed: row.pendingAppealId !== null,
       },
     ]));
@@ -2641,6 +2648,7 @@ export class DrizzleForumRepository {
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
       needsDetails: topic.needsDetails,
       duplicateOf: duplicatePresentation?.duplicateOf ?? null,
+      duplicateRelationshipId: duplicatePresentation?.duplicateRelationshipId ?? null,
       duplicateDisputed: duplicatePresentation?.duplicateDisputed ?? false,
       isPinned: topic.isPinned,
       createdAt: topic.createdAt,
@@ -3238,6 +3246,7 @@ export class DrizzleForumRepository {
     status: HelpSolutionModerationStatus | null,
     outdatedReason: string | null,
     actorId: string,
+    expectedBestAnswerPostId: string,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
@@ -3258,6 +3267,9 @@ export class DrizzleForumRepository {
       }
       if (!topic.bestAnswerPostId) {
         throw new ForumStateConflictError("solution moderation requires a selected best answer");
+      }
+      if (topic.bestAnswerPostId !== expectedBestAnswerPostId) {
+        throw new ForumStateConflictError("best answer is no longer the expected moderation target");
       }
       await tx.update(forumPosts)
         .set({
@@ -3367,7 +3379,7 @@ export class DrizzleForumRepository {
     });
   }
 
-  async removeHelpDuplicate(topicId: string, actorId: string): Promise<void> {
+  async removeHelpDuplicate(topicId: string, actorId: string, expectedRelationshipId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
@@ -3387,8 +3399,11 @@ export class DrizzleForumRepository {
         ))
         .for("update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
+      if (relationship.id !== expectedRelationshipId) {
+        throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
+      }
 
-      const resolvedAt = sql`now()`;
+      const resolvedAt = sql`statement_timestamp()`;
       await tx.update(forumHelpDuplicateAppeals)
         .set({ status: "accepted", resolvedByUserId: actorId, resolvedAt })
         .where(and(
@@ -3401,7 +3416,7 @@ export class DrizzleForumRepository {
     });
   }
 
-  async appealHelpDuplicate(topicId: string, actorId: string, explanation: string): Promise<void> {
+  async appealHelpDuplicate(topicId: string, actorId: string, explanation: string, expectedRelationshipId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId, authorId: forumTopics.authorId })
@@ -3424,6 +3439,9 @@ export class DrizzleForumRepository {
         ))
         .for("update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
+      if (relationship.id !== expectedRelationshipId) {
+        throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
+      }
       const [pending] = await tx
         .select({ id: forumHelpDuplicateAppeals.id })
         .from(forumHelpDuplicateAppeals)
@@ -3447,7 +3465,7 @@ export class DrizzleForumRepository {
     topicId: string,
     actorId: string,
     resolution: HelpDuplicateAppealResolution,
-    expectedAppealId?: string,
+    expectedAppealId: string,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
@@ -3476,11 +3494,11 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateAppeals.status, "pending"),
         ))
         .for("update");
-      if (!appeal || (expectedAppealId && appeal.id !== expectedAppealId)) {
+      if (!appeal || appeal.id !== expectedAppealId) {
         throw new ForumStateConflictError("duplicate appeal is no longer the expected pending appeal");
       }
 
-      const resolvedAt = sql`now()`;
+      const resolvedAt = sql`statement_timestamp()`;
       await tx.update(forumHelpDuplicateAppeals)
         .set({ status: resolution, resolvedByUserId: actorId, resolvedAt })
         .where(eq(forumHelpDuplicateAppeals.id, appeal.id));

@@ -2070,6 +2070,7 @@ export function TopicView({
   canManageHelpDuplicate = false,
   pendingDuplicateAppeal = null,
   isTopicAuthor = false,
+  appealExpectedRelationshipId = null,
   canCorrectTitleSourceLocale,
   canCorrectAnySourceLocale = false,
   canManagePin,
@@ -2096,6 +2097,7 @@ export function TopicView({
     createdAt: string;
   } | null;
   isTopicAuthor?: boolean;
+  appealExpectedRelationshipId?: string | null;
   canCorrectTitleSourceLocale: boolean;
   canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
@@ -2490,6 +2492,11 @@ export function TopicView({
                     <>
                       <Form method="post" className="topic-admin-form help-duplicate-admin-form">
                         <input type="hidden" name="intent" value="removeHelpDuplicate" />
+                        <input
+                          type="hidden"
+                          name="expectedRelationshipId"
+                          value={topic.duplicateRelationshipId ?? ""}
+                        />
                         <button type="submit">{t("helpDuplicateRemove")}</button>
                       </Form>
                       {pendingDuplicateAppeal ? (
@@ -2498,10 +2505,12 @@ export function TopicView({
                           <div className="help-duplicate-appeal-review-actions">
                             <Form method="post" className="topic-admin-form">
                               <input type="hidden" name="intent" value="acceptHelpDuplicateAppeal" />
+                              <input type="hidden" name="expectedAppealId" value={pendingDuplicateAppeal.id} />
                               <button type="submit">{t("helpDuplicateAppealAccept")}</button>
                             </Form>
                             <Form method="post" className="topic-admin-form">
                               <input type="hidden" name="intent" value="rejectHelpDuplicateAppeal" />
+                              <input type="hidden" name="expectedAppealId" value={pendingDuplicateAppeal.id} />
                               <button type="submit">{t("helpDuplicateAppealReject")}</button>
                             </Form>
                           </div>
@@ -2543,6 +2552,7 @@ export function TopicView({
                     {currentSolutionModerationStatus !== "needs-review" ? (
                       <Form method="post" className="solution-form topic-admin-form">
                         <input type="hidden" name="intent" value="markSolutionNeedsReview" />
+                        <input type="hidden" name="expectedBestAnswerPostId" value={topic.bestAnswerPostId ?? ""} />
                         <button type="submit">{t("helpSolutionMarkNeedsReview")}</button>
                       </Form>
                     ) : null}
@@ -2557,6 +2567,7 @@ export function TopicView({
                       className="solution-form topic-admin-form"
                     >
                       <input type="hidden" name="intent" value="markSolutionOutdated" />
+                      <input type="hidden" name="expectedBestAnswerPostId" value={topic.bestAnswerPostId ?? ""} />
                       <label>
                         {t("helpSolutionOutdatedReasonInput")}
                         <textarea
@@ -2573,6 +2584,7 @@ export function TopicView({
                     {currentSolutionModerationStatus ? (
                       <Form method="post" className="solution-form topic-admin-form">
                         <input type="hidden" name="intent" value="clearSolutionModeration" />
+                        <input type="hidden" name="expectedBestAnswerPostId" value={topic.bestAnswerPostId ?? ""} />
                         <button type="submit">{t("helpSolutionClearModeration")}</button>
                       </Form>
                     ) : null}
@@ -2623,6 +2635,7 @@ export function TopicView({
               ) : (
                 <Form method="post" className="help-duplicate-appeal-form">
                   <input type="hidden" name="intent" value="appealHelpDuplicate" />
+                  <input type="hidden" name="expectedRelationshipId" value={appealExpectedRelationshipId ?? ""} />
                   <label>
                     {t("helpDuplicateAppealExplanationLabel")}
                     <textarea name="explanation" required maxLength={1000} rows={3} />
