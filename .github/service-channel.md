@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — пакет 5: PR #241 disputed findings awaiting Leva adjudication (2026-10-26)
+## Текущая реализация — PR #241 paused; Lira batch L1 started (2026-10-26)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
 - Review cycle package 4 завершён: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review не считался отдельным independent verdict. Confirmed current-Stage defects не осталось. Exact-head CI `40311315111` SUCCESS.
@@ -19,7 +19,10 @@
 - Comment `6420883610` преждевременно обозначил disputed findings Миры как confirmed. Этот статус отменён: при verdicts Мира CHANGES REQUIRED / Лира PASS / Лёва PASS общий verdict **не установлен** до отдельной technical adjudication расхождений.
 - Два disputed findings переданы Лёве на adjudication в #236 comment `6420951578`: (A) `HELP-01` stale author appeal creation; (B) classification/boundary оставшегося public-`Disputed` wording по `DOC-03`.
 - `HELP-02`, `HELP-MOD-01`, `TAG-CARDINALITY-01` не спорны; exact-head CI `40345202786` SUCCESS; PR241 head остаётся `f5cdf71837aee78a31856c766c087c9bbf54a496`.
-- **Следующий шаг:** разработчик подключает Лёву к PR #236 для adjudication. До verdict Лёвы correction scope и merge readiness не устанавливаются. Production/external/owner visual actions не выполнялись. PR236 — только communication, никогда не merge.
+- Codex временно недоступны по лимиту; PR #241 остаётся неизменным и ждёт adjudication Лёвы по comment `6420951578`.
+- Owner разрешил параллельно перейти к задачам Лиры. Batch L1 строится от актуального `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a` и будет одним implementation PR на 5 последовательных fixes: `ATTACH-03`, `ATTACH-04`, `ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02`.
+- Лире назначен только fix 1/5 `ATTACH-03` в #236 comment `6421152256`; после него она STOP и ждёт следующую задачу в тот же implementation PR.
+- **Следующий шаг:** разработчик подключает Лиру к PR #236. Production/external/owner visual actions не выполнялись. PR236 — только communication, никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
