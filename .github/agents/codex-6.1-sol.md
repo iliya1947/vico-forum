@@ -1,5 +1,69 @@
 # Лёва — Codex-6.1 Sol
 
+## PR239 — final technical review: CHANGES REQUIRED (2026-10-26)
+
+Date: 2026-10-26 (Asia/Jerusalem). Assignment: PR236 comment 6412169759.
+
+Exact head: `a7d29546f334a59d42b30b10c67c32595ea98ec1`.
+Base: `f59785c50e91fc1615b568b74a0a56909a92c871`.
+Reviewed implementation tree: `5caf7582cb6358ff377c5443b6e24718f6e5cae5`.
+Local equivalent commit: `a37703469714f6f83d0acfc47bff99af85df366d`.
+
+Verdict: **CHANGES REQUIRED**. One confirmed current-Stage defect, with two reproduced manifestations. The whole assigned review is complete; implementation was not changed. This is the author's final technical review, not a claim of independent authorship. Other reviewers' PASS verdicts were not used as evidence.
+
+## LEVA-PR239-A7D2954-01 — P2 — attachment re-key leaves active image destinations stale
+
+Location: `app/forum/editor-document.ts:91–102`, called by `MarkdownEditor.replaceImage` and attachment Retry when an entry moves to another operation.
+
+After a committed published edit loses its response, a new image upload can receive typed410 gone. The uploader correctly changes operation; Retry creates and uploads a new asset ID. However, `replaceAttachmentImageId` does not reliably replace the active image destination:
+
+1. An ordinary reference image `![screenshot][file]` with bare definition `[file]: vico-attachment:OLD` keeps OLD. The parsed definition's source span ends immediately after its URL, so the regex's required trailing whitespace/angle/parenthesis cannot match. A trailing document newline or a following paragraph does not help: both are outside the definition span. Angle-delimited or titled definitions are positive controls already covered by existing tests.
+2. For `![` + backtick + `x](vico-attachment:OLD)` + backtick + `](vico-attachment:OLD)`, the parser identifies one valid image with destination OLD. The regex finds the destination-like text inside its alt label first, changes that text to NEW and stops; the actual destination remains OLD.
+
+The subsequent stale409 and explicit rebase work; Save becomes available with the new selected attachment ID. Mounted TopicRoute tests drove this path through the actual client/action/component code, completed the final successful mocked writer response and observed editor closure. The submitted body still had OLD. Real `ForumMarkdown` rendered no inline image with the NEW published attachment. Original source with OLD attachment, and the same source with only the actual destination corrected to NEW, both rendered an image: these controls rule out unsupported Markdown and a broken renderer fixture.
+
+Separate native PostgreSQL probes invoked the actual topicAction → writer/service/repository chain. It accepted both faulty re-key results (302), persisted the stale body and published the NEW attachment ref. The server does not repair the Markdown; inline presentation resolves only IDs in current authorized refs. Thus the image disappears from its authored inline position despite successful recovery/Save. The second variant also changes authored label text. The file remains an attachment; this is not deletion of its bytes or an access-control bypass.
+
+Current-Stage applicability: reference images are already parsed/rendered and explicitly covered by editor source handling. The correction promises active image re-key throughout text/Undo/Redo without touching labels. This defect is in newly introduced recovery code, not a future feature or an external storage issue.
+
+Required outcome for a later correction: locate and replace only the actual parsed URL source, including a bare reference definition ending at its node boundary; leave labels/code unchanged. Add regressions for both manifestations and preserve existing inline, angle/title, reference, escape, history and ordinary retry controls. No server permission relaxation or new endpoint is justified. No correction was made during this review.
+
+## Whole scope checked
+
+| Scope | Review coverage |
+| --- | --- |
+| ARCH-01 | Known domain errors, typed storage availability, unexpected writer faults, SQL/schema faults and caller mapping; unexpected failures propagate. |
+| ARCH-03 | Forum writer, auth runtime and authorization pool cleanup; synchronous/rejected cleanup cannot replace determined result/error. Native signup/session and mutation controls pass. |
+| POST-EDIT-AVAIL-01 | Protected resume loader ownership/permission gates, typed503/no-store, unexpected fault propagation and route boundary. |
+| FORUM-READ-AVAIL-01 | All ten wrapped primary loaders; preserved404/redirect and optional presentation degradation. |
+| SEC-01 | Router diagnostic allowlists, multiline message removal, cyclic causes, profile SQL/params/private-text controls, SSR logging. |
+| XR-THROWN-ACTION-BUFFER | Three authoring client-action exports; controlled errors, thrown unexpected/transport faults, aborts, redirects and retained mounted forms. |
+| EDITOR-PUB-01 | Conflict refresh, public baseline/ownership projection, latest-loader supersession, explicit revision acceptance and source/history retention; re-key defect above. |
+| EDITOR-PUB-02 | Edit-specific feedback follows actual result/identity guard; unrelated topic409 keeps solution feedback; EN/RU/HE catalog/fingerprints checked. |
+
+All bounded chains checked: modified completed-receipt replay versus identical replay; fresh versus ordinary stale operation identity; published/private dedup; explicit Remove intent; File retention and Retry/newasset; same-post Edit focus guard; terminal410 before Save, pending aborts/late ACK fences; subsequent stale rebase preserving the already fresh operation. Source review included the repository transaction order and attachment completion/receipt gates. No additional confirmed defect in the remaining assigned scope.
+
+## Verification performed in this review
+
+- Full application suite: **1065/1065 PASS**.
+- Native PostgreSQL17 suite on a disposable local container: **300/300 PASS**.
+- New mounted-editor/renderer probes: **2 expected-behavior assertions FAIL**, reproducing this finding; positive renderer controls passed first.
+- Separate native action/PG probes: **2/2 PASS**, confirming successful persistence of the stale image destination with a NEW published attachment.
+- TypeScript PASS; ESLint0 errors and one preexisting unused-disable warning at `app/forum/ui.test.tsx:174`.
+- Application and UI Preview builds PASS; existing preview chunk-size warning remains.
+- Migration history guard PASS,0 new migrations. First invocation lacked required CI environment; second was blocked by sandbox child-process EPERM; configured invocation with allowed execution permissions passed. Neither failure was a product defect.
+- Local built Worker smoke PASS.
+- Exact-head CI40243954305 confirmed SUCCESS, checks121321492211/database121321492371 both SUCCESS. Green CI does not include these new probes.
+
+Probe harness corrections: the first native copy referenced a helper scoped inside another describe; the next comparison exposed normal multipart LF→CRLF serialization. Both harness issues were corrected outside the implementation tree; final native probes passed. The stale URL behavior was unchanged.
+
+Evidence in `/workspace/work`: `pr239-final-review-app.json`, `pr239-final-review-db.json`, `pr239-final-review-typecheck.log`, `pr239-final-review-lint.log`, `pr239-final-review-build.log`, `pr239-final-review-preview.log`, `pr239-final-review-migrations3.log`, `pr239-final-review-smoke.log`, `pr239-final-review-probes3.log`, `pr239-final-review-native-probes3.log`; probe sources/configs are in `pr239-final-review-probes/` outside the implementation worktree.
+
+Limits: the new UI recovery probes use controlled writer/upload responses and the real mounted component/action/renderer; native persistence probes use real local PG and writer/service/repository, controlled route permissions and verified-asset fixtures, not external byte storage. No new Chromium run or owner visual acceptance is claimed. No real Cloudflare, Neon, Hyperdrive, R2, OAuth, backup/restore, production or deployment action was performed. No merge or package4 work.
+
+The full review is complete. Publication to the existing service PR uses the developer’s standing authorization for comments/publication. No preliminary finding was published before completion. Handoff to Мира for coordination only; correction is not started. Local Worker and disposable PostgreSQL container have been stopped/removed. STOP.
+
+
 ## PR239 — MIRA-PR239-998715-01 реализован; новый head (2026-10-26)
 
 Назначение [6404447575](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6404447575). Проверена собственная causal chain на998715b; implementation изменён только по этому defect. Это авторская implementation verification, не whole-PR review нового head.
