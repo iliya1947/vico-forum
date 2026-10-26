@@ -1,5 +1,15 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #244 — integration-only LOC-04 after merged #241/#243 (2026-10-26)
+
+- Assignment [#6428231373](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428231373). Old independently reviewed head `7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`, main after PR241+243 `9ceead2a035c95c47c15573db039f43aca0739ce`. New exact head **`9643f6cb433c432a93b3aa7ce07c9533f7f2f00f`** in original PR244 branch `chatgpt6/loc04-history-loading-20261026`. True two-parent merge commit: parents [old reviewed LOC-04 head, current main].
+- Recovered old LOC-04 patch and independently inspected all six paths. State file: exactly original 14-line LOC-04 block prepended before Batch L1 in full current main PROJECT_STATE; removing LOC04 block gives byte-exact main. Public UI regression: exactly original 43-line mounted test inserted into current main `app/forum/public-read.test.tsx` without touching Package5 cases. `views.tsx`: exact single t-key replacement for pending post history only. Canonical descriptor, reviewed source fingerprint and RU/HE values: exact original additions. For each path, applying only original edit to current main retains all other bytes. `manual-values.ts` resulting blob SHA **identical to original LOC-04 head**.
+- Compared original PR244 diff against old base with new PR244 diff against main: **exact same six paths, same per-file +/- stats, and exact same added/removed lines (Git patches; all 6 matched)**. No product logic or LOC04 contract change, and no external schema/dependency change. All current main BatchL1/Package5 implementation retained.
+- Final PR244 head verified; GitHub `mergeable=true`, `mergeable_state=clean`, base `9ceead2a035c95c47c15573db039f43aca0739ce`.
+- [Exact-head CI #40408705757](https://github.com/iliya1947/vico-forum/actions/runs/40408705757) **SUCCESS**, both checks/database jobs SUCCESS; 1095 application tests/102 files PASS, 304 native PG tests/28 files PASS; typecheck, lint (0 errors, 1 prior warning), both builds, migration/schema/Workers CI guards succeed. No own local PostgreSQL, browser, external/production or owner visual. Result is handoff only; Lira did not self-review or merge. STOP.
+
+---
+
 ## PR #243 — integration-only merge after PR #241 (2026-10-26)
 
 Assignment [#6427256502](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6427256502). Merged main commit `28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`; original independently reviewed PR #243 head `d5f992602fcc78276155a63aa14f56b931dd7656`. New exact head **`e2255f484705c147828ec0d5837c4d255d9e58c6`**, existing branch `chatgpt6/batch-l1-20261026`.
