@@ -225,7 +225,8 @@ export function serializeTable(
   const row = (cells: readonly string[]) => "| " + cells.map(encodeTableCell).join(" | ") + " |";
   const rules = headers.map((_, i) => align[i] === "center" ? ":---:"
     : align[i] === "left" ? ":---" : align[i] === "right" ? "---:" : "---");
-  return [row(headers), row(rules), ...rows.map(row)].join("\n");
+  // Separator markers are generated Markdown structure, not literal cell content.
+  return [row(headers), "| " + rules.join(" | ") + " |", ...rows.map(row)].join("\n");
 }
 
 export function addTableDimension(
