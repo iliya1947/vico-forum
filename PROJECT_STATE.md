@@ -20,7 +20,7 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## Batch L1 — fixes 1–4/5 (2026-10-26)
+## Batch L1 — fixes 1–5/5 (2026-10-26)
 
 В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:
 два завершающих 512-byte zero blocks без `ustar` header распознаются при
@@ -54,9 +54,19 @@ route registry; direct handler-level тесты существующей upload 
 остаётся длиннее любого backtick-run содержимого; focused converter/Markdown AST
 regressions проверяют сохранность кода и нормализацию соседнего prose.
 
-В draft batch L1 выполнены четыре fixes: `ATTACH-03`, `ATTACH-04`,
-`ATTACH-HTTP-405-01`, `EDITOR-01` (4/5). `EDITOR-02` ещё не начат.
-Whole-PR independent review и принятие batch L1 ещё не выполнялись.
+Пятый последовательный fix `EDITOR-02` сохраняет таблицы, импортируемые из
+TSV и безопасного HTML, как literal cell values: символы Markdown-разметки
+экранируются при генерации Markdown table, но исходный пользовательский
+Markdown вне конверсии не меняется. Простой редактор показывает и редактирует
+исходные буквальные значения без накопления escape-символов. Existing
+pipe/backslash/newline preservation и отказ от неподдерживаемых сложных
+таблиц сохраняются. Focused regressions покрывают source, визуальную форму и
+опубликованный Markdown rendering.
+
+В draft batch L1 выполнены все пять fixes: `ATTACH-03`, `ATTACH-04`,
+`ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` (5/5).
+Implementation выполнена, exact-head CI и независимый whole-PR review/
+принятие ещё проверяются отдельно.
 Production/external/owner visual actions не выполнялись.
 
 ## Пакет 4 — database, notifications и read-state (2026-10-26)
