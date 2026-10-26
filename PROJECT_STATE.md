@@ -20,6 +20,27 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Пакет 3 — точная замена image destination при recovery (2026-10-26)
+
+Подтверждён LEVA-PR239-A7D2954-01: Retry менял attachment ID, но regex мог оставить
+старый destination в bare reference definition либо изменить похожую строку в label.
+Замена теперь использует точные source spans destination tokens существующего
+Markdown-парсера с той же grammar. Обновляются только inline images и действующие
+definitions, используемые image references; labels, titles, code, обычные ссылки,
+неиспользуемые и перекрытые definitions сохраняются. Text/Undo/Redo и attachment
+operation/selection продолжают использовать прежний recovery lifecycle.
+
+До исправления девять новых source regressions воспроизвели ошибку. После correction
+local1076 application/300 native PostgreSQL tests PASS; targeted61 PASS. TypeScript,
+lint(одно прежнееwarning), обе сборки и migration-history guard PASS. Chromium проверил
+оба варианта: actual built Worker edit actions/native PG, commit/lost response →
+upload410 → Retry201 → stale409/rebase → Save; сохранённый body и inline image используют
+новый ID, label и Undo/Redo сохранены. Upload bridge использует настоящий Node handler/PG,
+контролируемую upload session и synthetic byte storage; image response — local fixture.
+Это не download-handler/R2 E2E, production или owner visual acceptance.
+Новых dependencies, schema/migrations, endpoints или permission changes нет.
+Новый exact-head CI и whole-PR review проверяются после публикации correction.
+
 ## Пакет 3 — terminal upload до повторного Save (2026-10-26)
 
 Подтверждён MIRA-PR239-998715-01: после committed edit/lost ACK новый upload получает410

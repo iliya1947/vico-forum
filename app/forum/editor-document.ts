@@ -1,4 +1,5 @@
-import { parseForumMarkdown } from "../markdown-syntax";
+import { fromMarkdown, type Handle } from "mdast-util-from-markdown";
+import { forumMarkdownFromOptions, parseForumMarkdown } from "../markdown-syntax";
 
 /**
  * The exact Markdown string is authoritative. Parsed nodes are only a read-only
@@ -85,27 +86,43 @@ export function removeAttachmentImages(markdown: string, attachmentId: string): 
 /** Re-key only active image destinations (including reference definitions), never code/labels. */
 export function replaceAttachmentImageId(markdown: string, oldId: string, newId: string): string {
   if (!/^[0-9a-f-]{36}$/iu.test(oldId) || !/^[0-9a-f-]{36}$/iu.test(newId)) return markdown;
-  const root = parseForumMarkdown(markdown) as PositionedNode;
+  const destinations = new WeakMap<object, EditorSelection>();
+  // Keep the parser's normal destination buffering/decoding, recording its exact
+  // source token instead of searching labels/titles for destination-like text.
+  const captureDestination: Handle = function (token) {
+    const node = this.stack.at(-1);
+    if (node?.type === "image" || node?.type === "definition") {
+      destinations.set(node, { start: token.start.offset, end: token.end.offset });
+    }
+    return this.buffer();
+  };
+  const root = fromMarkdown(markdown, {
+    ...forumMarkdownFromOptions,
+    mdastExtensions: [...(forumMarkdownFromOptions.mdastExtensions ?? []), {
+      enter: { resourceDestinationString: captureDestination, definitionDestinationString: captureDestination },
+    }],
+  });
   const oldUrl = "vico-attachment:" + oldId;
   const ranges: EditorSelection[] = [];
-  const pattern = new RegExp(String.raw`\](?:\(\s*|:\s*)<?(${oldUrl})(?=[\s>)])`, "gu");
+  const definitions = new Map<string, PositionedNode>();
+  const referencedImages = new Set<string>();
   function visit(node: PositionedNode) {
-    if ((node.type === "image" || node.type === "definition") && node.url === oldUrl) {
-      const start = node.position?.start.offset, end = node.position?.end.offset;
-      if (start !== undefined && end !== undefined) {
-        const raw = markdown.slice(start, end);
-        for (const match of raw.matchAll(pattern)) {
-          const before = raw.slice(0, match.index);
-          if ((before.match(/\\+$/u)?.[0].length ?? 0) % 2) continue;
-          const offset = match.index + match[0].indexOf(oldUrl);
-          ranges.push({ start: start + offset, end: start + offset + oldUrl.length });
-          break;
-        }
-      }
+    if (node.type === "definition" && node.identifier && !definitions.has(node.identifier)) {
+      definitions.set(node.identifier, node);
+    }
+    if (node.type === "imageReference" && node.identifier) referencedImages.add(node.identifier);
+    if (node.type === "image" && node.url === oldUrl) {
+      const range = destinations.get(node);
+      if (range) ranges.push(range);
     }
     node.children?.forEach(visit);
   }
   visit(root);
+  for (const identifier of referencedImages) {
+    const definition = definitions.get(identifier);
+    const range = definition?.url === oldUrl ? destinations.get(definition) : undefined;
+    if (range) ranges.push(range);
+  }
   for (const { start, end } of ranges.sort((a, b) => b.start - a.start)) {
     markdown = markdown.slice(0, start) + "vico-attachment:" + newId + markdown.slice(end);
   }

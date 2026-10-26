@@ -17,6 +17,7 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumMarkdown, ForumInlineAttachmentProvider } from "./markdown";
 
 class UploadRequest {
   static all: UploadRequest[] = [];
@@ -90,6 +91,72 @@ async function submit(router: ReturnType<typeof createMemoryRouter>, form: HTMLF
   await act(async () => { await router.navigate("/en/topics/topic?editPost=p1", { formMethod: "post", formData: fields }); });
 }
 describe("real topic action and mounted editor recovery", () => {
+  it.each(["bare-reference", "destination-like-label"])("keeps the inline image and history through terminal recovery: %s", async (variant) => {
+    const state = setup(); const { form, field } = await editBuffer();
+    UploadRequest.all = []; vi.stubGlobal("XMLHttpRequest", UploadRequest);
+    state.editPublishedPost.mockImplementationOnce(async () => {
+      state.readTopicPage.mockResolvedValue({ ...initialTopic, posts: [{ ...post, body: revision("r2", "Committed before lost ACK") }] });
+      throw new TypeError("response lost after commit");
+    });
+    await submit(state.router, form);
+    const file = new File(["verified image fixture"], "image.png", { type: "image/png" });
+    fireEvent.change(within(form).getByLabelText("Attach"), { target: { files: [file] } });
+    const upload = UploadRequest.all.at(-1)!, old = upload.headers.get("X-Vico-Attachment-Id")!;
+    const oldUrl = "vico-attachment:" + old;
+    const source = variant === "bare-reference" ? `![screenshot][file]\n\n[file]: ${oldUrl}`
+      : "![`x](" + oldUrl + ")`](" + oldUrl + ")";
+    fireEvent.change(field, { target: { value: source } });
+    fireEvent.change(field, { target: { value: source + "\n\nExtra note" } });
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true });
+    expect(field).toHaveValue(source);
+    await upload.complete(410, { error: "gone" });
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+    fireEvent.click(within(form).getByRole("button", { name: "Retry" }));
+    const retry = UploadRequest.all.at(-1)!, next = retry.headers.get("X-Vico-Attachment-Id")!;
+    expect(retry.body).toBe(file);
+    expect(next).not.toBe(old);
+    const destinationAt = source.lastIndexOf(oldUrl);
+    const expected = source.slice(0, destinationAt) + "vico-attachment:" + next + source.slice(destinationAt + oldUrl.length);
+    expect(field).toHaveValue(expected);
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true, shiftKey: true });
+    expect(field).toHaveValue(expected + "\n\nExtra note");
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true });
+    expect(field).toHaveValue(expected);
+    await retry.complete(201, { outcome: "stored", attachment: { id: next, fileName: file.name,
+      detectedType: "png", responseMime: "image/png", byteSize: file.size, verificationStatus: "type-checked" } });
+    state.editPublishedPost.mockRejectedValueOnce(new ForumStateConflictError());
+    await submit(state.router, form);
+    fireEvent.click(within(form).getByRole("button", { name: "Apply my edit to the current revision" }));
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled());
+    let finish!: () => void;
+    const completed = new Promise<void>((resolve) => { finish = resolve; });
+    state.editPublishedPost.mockImplementationOnce(async (input) => {
+      await completed;
+      state.readTopicPage.mockResolvedValue({ ...initialTopic, posts: [{ ...post, body: revision("r3", input.body),
+        attachments: [{ id: next, fileName: file.name, byteSize: file.size, detectedType: "png" }] }] } as never);
+    });
+    fireEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(state.router.state.navigation.state).toBe("submitting"));
+    await act(async () => { finish(); });
+    await waitFor(() => expect(form.isConnected).toBe(false));
+    expect(state.editPublishedPost).toHaveBeenLastCalledWith(expect.objectContaining({
+      body: expected, attachmentIds: [next], expectedRevisionId: "r2",
+    }));
+    // Both authored forms are supported before recovery; after Save the same
+    // real renderer must resolve the new selected ref at the inline position.
+    const before = render(<I18nextProvider i18n={i18n()}><div data-testid="image-before">
+      <ForumInlineAttachmentProvider attachments={[{ id: old, fileName: file.name, byteSize: file.size, detectedType: "png", url: "/file?post=p1" }]}>
+        <ForumMarkdown>{source}</ForumMarkdown>
+      </ForumInlineAttachmentProvider></div></I18nextProvider>);
+    expect(within(before.getByTestId("image-before")).getByRole("img")).toBeInTheDocument();
+    before.unmount();
+    const after = render(<I18nextProvider i18n={i18n()}><div data-testid="image-after">
+      <ForumInlineAttachmentProvider attachments={[{ id: next, fileName: file.name, byteSize: file.size, detectedType: "png", url: "/file?post=p1" }]}>
+        <ForumMarkdown>{expected}</ForumMarkdown>
+      </ForumInlineAttachmentProvider></div></I18nextProvider>);
+    expect(within(after.getByTestId("image-after")).getByRole("img")).toBeInTheDocument();
+  });
+
   it.each(["authorization-unavailable", "unexpected-authorization", "storage-unavailable", "unexpected-writer", "transport"])("retains edit text after %s", async (kind) => {
     const state = setup(); const { form, field } = await editBuffer();
     if (kind === "authorization-unavailable") state.has.mockRejectedValue(new AuthorizationUnavailableError());
