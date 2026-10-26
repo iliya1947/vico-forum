@@ -364,9 +364,10 @@ export async function topicAction({ request, params, context }: {
   }
   if (intent === "appealHelpDuplicate") {
     const explanation = requiredFormText(formData, "explanation");
-    if (!explanation) return mutationFailure("invalid", 400);
+    const expectedRelationshipId = requiredFormText(formData, "expectedRelationshipId");
+    if (!explanation || !expectedRelationshipId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.appealHelpDuplicate({ topicId, actorId, explanation });
+      await writer.appealHelpDuplicate({ topicId, actorId, explanation, expectedRelationshipId });
       return redirect(forumTopicPath(locale, topicId));
     });
   }

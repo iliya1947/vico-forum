@@ -2070,6 +2070,7 @@ export function TopicView({
   canManageHelpDuplicate = false,
   pendingDuplicateAppeal = null,
   isTopicAuthor = false,
+  appealExpectedRelationshipId = null,
   canCorrectTitleSourceLocale,
   canCorrectAnySourceLocale = false,
   canManagePin,
@@ -2096,6 +2097,7 @@ export function TopicView({
     createdAt: string;
   } | null;
   isTopicAuthor?: boolean;
+  appealExpectedRelationshipId?: string | null;
   canCorrectTitleSourceLocale: boolean;
   canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
@@ -2633,6 +2635,7 @@ export function TopicView({
               ) : (
                 <Form method="post" className="help-duplicate-appeal-form">
                   <input type="hidden" name="intent" value="appealHelpDuplicate" />
+                  <input type="hidden" name="expectedRelationshipId" value={appealExpectedRelationshipId ?? ""} />
                   <label>
                     {t("helpDuplicateAppealExplanationLabel")}
                     <textarea name="explanation" required maxLength={1000} rows={3} />

@@ -926,6 +926,7 @@ describe("forum write route actions", () => {
       request: request("/ru/topics/help-duplicate", {
         intent: "appealHelpDuplicate",
         explanation: "  Причина отличается.  ",
+        expectedRelationshipId: "observed-relation-r1",
         role: "admin",
       }),
       params: { locale: "ru", topicId: "help-duplicate" },
@@ -935,9 +936,39 @@ describe("forum write route actions", () => {
       topicId: "help-duplicate",
       actorId: "session-user",
       explanation: "Причина отличается.",
+      expectedRelationshipId: "observed-relation-r1",
     });
     if (!(appealed instanceof Response)) throw new Error("expected appeal redirect");
     expect(appealed.headers.get("Location")).toBe("/ru/topics/help-duplicate");
+
+    const missingIdentity = writer();
+    const missingIdentityResponse = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "appealHelpDuplicate", explanation: "A real dispute",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(missingIdentity, true, []),
+    });
+    expect(missingIdentityResponse).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
+    expect(missingIdentity.appealHelpDuplicate).not.toHaveBeenCalled();
+
+    const staleWriter = writer();
+    staleWriter.appealHelpDuplicate.mockRejectedValueOnce(
+      new ForumStateConflictError("duplicate relationship is no longer the expected relationship"),
+    );
+    const staleResponse = await topicAction({
+      request: request("/en/topics/help-duplicate", {
+        intent: "appealHelpDuplicate", explanation: "Dispute of R1",
+        expectedRelationshipId: "observed-relation-r1",
+      }),
+      params: { locale: "en", topicId: "help-duplicate" },
+      context: context(staleWriter, true, []),
+    });
+    expect(staleResponse).toMatchObject({ data: { error: "conflict" }, init: { status: 409 } });
+    expect(staleWriter.appealHelpDuplicate).toHaveBeenCalledWith({
+      topicId: "help-duplicate", actorId: "session-user", explanation: "Dispute of R1",
+      expectedRelationshipId: "observed-relation-r1",
+    });
 
     const invalidAppeal = writer();
     const invalidResponse = await topicAction({

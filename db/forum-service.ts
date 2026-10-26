@@ -248,8 +248,9 @@ export class ForumService {
     return this.repository.removeHelpDuplicate(topicId, actorId, expectedRelationshipId);
   }
 
-  appealHelpDuplicate(topicId: string, actorId: string, explanation: string) {
+  appealHelpDuplicate(topicId: string, actorId: string, explanation: string, expectedRelationshipId: string) {
     validateEntity(topicId, actorId);
+    requireText(expectedRelationshipId, "expected relationship id");
     const normalizedExplanation = explanation.normalize("NFKC").trim().replace(/\s+/gu, " ");
     if (
       !normalizedExplanation
@@ -259,7 +260,7 @@ export class ForumService {
         `duplicate appeal explanation must be between 1 and ${HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH} characters`,
       );
     }
-    return this.repository.appealHelpDuplicate(topicId, actorId, normalizedExplanation);
+    return this.repository.appealHelpDuplicate(topicId, actorId, normalizedExplanation, expectedRelationshipId);
   }
 
   resolveHelpDuplicateAppeal(

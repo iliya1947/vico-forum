@@ -3416,7 +3416,7 @@ export class DrizzleForumRepository {
     });
   }
 
-  async appealHelpDuplicate(topicId: string, actorId: string, explanation: string): Promise<void> {
+  async appealHelpDuplicate(topicId: string, actorId: string, explanation: string, expectedRelationshipId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId, authorId: forumTopics.authorId })
@@ -3439,6 +3439,9 @@ export class DrizzleForumRepository {
         ))
         .for("update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
+      if (relationship.id !== expectedRelationshipId) {
+        throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
+      }
       const [pending] = await tx
         .select({ id: forumHelpDuplicateAppeals.id })
         .from(forumHelpDuplicateAppeals)
