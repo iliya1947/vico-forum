@@ -80,3 +80,9 @@
 - Exact-head CI `40408705757` SUCCESS (`checks`, `database`); GitHub `mergeable=true`, `mergeable_state=clean`.
 - Новый whole-PR cycle не требуется: это integration-only merge, reviewed LOC-04 semantics сохранены; предыдущие Mira + Leva PASS остаются применимыми.
 - **Следующий шаг:** owner merge PR #244.
+
+
+- PR #244 merged by owner into `main` as `bff130db5fb245e3a9ad3391fad54a2fe81aac88`. PR #241/#243/#244 are all merged; their review/integration cycles are closed.
+- Remaining implementation plan resumes from accepted `main`. Lira's next unresolved queue item is `EDITOR-04`; the natural next 5-fix Lira batch after completed Batch L1 and separately completed LOC-04 is `EDITOR-04`, `EDITOR-10`, `LITERAL-TEXT-01`, `LOC-03`, `LOC-06` if owner keeps 5-fix batching. Leva's next heavy package remains L6: `ATTACH-01`, `ATTACH-02`, `ATTACH-STRUCT-01`.
+- No new implementation branch is started yet: current owner permission for the prior independent exception was consumed by LOC-04; new branch creation requires fresh explicit owner authorization.
+- **Следующий шаг:** owner authorizes which new implementation branch starts from current main.
