@@ -29,9 +29,20 @@
 несоответствующая сигнатура, повреждённый архив и неверный MIME отвергаются.
 Добавлены focused type, structural и private R2 upload regressions.
 
-Это только `ATTACH-03` в первой последовательности L1 из пяти fixes.
-`ATTACH-04`, `ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` ещё не начаты;
-whole-PR independent review и принятие batch L1 ещё не выполнялись.
+Вторым последовательным fix `ATTACH-04` разрешён локальный Remove uploading/
+pending файла из mounted editor selection без отмены всей operation и без per-file
+DELETE/abort. При Remove активный запрос помечается как игнорируемый для
+progress/success/error/terminal-410 callbacks, но продолжает обычный server
+upload/cleanup lifecycle; removed ID не может повторно появиться в selection.
+Другие pending/stored файлы, unsaved text и operation identity сохраняются.
+Focused mounted MarkdownEditor regression проверяет 3 файла + unsaved text,
+поздние success/error события и сохранение выбора остальных; отдельный
+published-edit regression проверяет, что late `410 gone` снятого файла не
+перезапускает operation. Whole Cancel сохраняет прежнюю отдельную semantics.
+
+Завершены только fixes `ATTACH-03` и `ATTACH-04` (2/5) в draft batch L1.
+`ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` ещё не начаты.
+Whole-PR independent review и принятие batch L1 ещё не выполнялись.
 Production/external/owner visual actions не выполнялись.
 
 ## Пакет 4 — database, notifications и read-state (2026-10-26)
