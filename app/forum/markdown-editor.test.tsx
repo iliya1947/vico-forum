@@ -1213,10 +1213,10 @@ describe("MarkdownEditor", () => {
     const inputs = screen.getAllByRole("textbox", { name: "Table cell" });
     expect(inputs[0]).toHaveValue("**literal**");
     expect(inputs[1]).toHaveValue("[shown](https://example.org)");
-    expect(screen.getByLabelText("Body")).toHaveValue(expect.stringContaining("\\*\\*literal\\*\\*"));
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\*\\*literal\\*\\*");
     fireEvent.change(inputs[0]!, { target: { value: "**literal** | x\\y" } });
     expect(inputs[0]).toHaveValue("**literal** | x\\y");
-    expect(screen.getByLabelText("Body")).toHaveValue(expect.stringContaining("\\*\\*literal\\*\\* \\| x\\\\y"));
+    expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("\\*\\*literal\\*\\* \\| x\\\\y");
   });
 
   it("maps multiline paste across split DOM text nodes to exact Markdown positions", () => {
