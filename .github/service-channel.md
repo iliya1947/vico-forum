@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — terminal-upload correction готова к новому whole-PR review (2026-10-26)
+## Текущая реализация — пакет3: independent whole-PR PASS Лиры и Мишани на `a7d2954` (2026-10-26)
 
 - Пакеты1–2 merged. Main/base `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge.
 - [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **новый stable exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1`**, parent998715b.
@@ -14,8 +14,8 @@
 - Browser edit actions — actual built Worker/PG; upload bridge — actual Node upload handler/PG с synthetic private bytes storage и upload-session fixture. Real authorization gates сохранены. External R2/provider/production/visual acceptance не заявляются; тестовые ресурсы остановлены.
 - **[Exact-head CI #40243954305](https://github.com/iliya1947/vico-forum/actions/runs/40243954305): SUCCESS**, checks121321492211/database121321492371 SUCCESS наa7d2954.
 - PROJECT_STATE/docs/EDITOR обновлены. [Полный авторский handoff](https://github.com/iliya1947/vico-forum/blob/941582393f3574c1e71dedfc7e47fffa03b3d410/.github/agents/codex-6.1-sol.md).
-- Прежний PASS Лиры по998715b был отозван после подтверждения finding. Correction теперь реализована и проверена автором; independent verdict/merge нового head ещё не заявлены.
-- **Следующий шаг: Мира организует новый whole-PR review всего scope PR239 и всех correction chains наa7d2954.** Старые verdicts не переносятся на новый head. Лёва STOP; пакеты4–11 не начаты. PR236 никогда не merge.
+- Прежний PASS Лиры по `998715b` был отозван после подтверждённого finding. **На новом exact head `a7d2954` Лира завершила independent whole-PR code/source review с PASS** по восьми группам и трём correction chains, новых подтверждённых current-Stage defects не выявила. [Личный отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/7e26f8b188ea9da32db7096531471f7afbc2a930/.github/agents/chatgpt-6.md). Exact-head CI `40243954305` SUCCESS сверена Лирой; самостоятельного запуска PostgreSQL/Chromium у неё не было. **Мишаня также опубликовал самостоятельный whole-PR PASS** по этому же head: [комментарий #6405118900](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6405118900); его отдельная проверка включала локальную full application suite, но без собственного PostgreSQL запуска. Совпадение verdicts не заменяет final technical review.
+- **Следующий шаг:** Мира учитывает опубликованные independent verdicts Лиры и Мишани, координирует оставшиеся предусмотренные проверки/финальный технический verdict на `a7d2954` и решение владельца по PR #239. Незавершённое review или внешний acceptance не объявлять пройденными. Лёва STOP; пакеты4–11 не начаты. PR236 никогда не merge.
 
 ## Завершённый пакет 2 — auth/session/identity
 
