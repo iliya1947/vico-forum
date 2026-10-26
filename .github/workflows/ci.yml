@@ -27,6 +27,7 @@ jobs:
           node --test .github/scripts/migration-history.test.mjs
           node --test .github/scripts/production-privileges.test.mjs
           node --test .github/scripts/runtime-privileges.test.mjs
+          node --test .github/scripts/production-schema-manifest.test.mjs
           node --test .github/scripts/provision-production-web-relations.test.mjs
           node --test .github/scripts/bootstrap-production-web-credential.test.mjs
           node --test .github/scripts/production-web-credential-bootstrap-workflow.test.mjs

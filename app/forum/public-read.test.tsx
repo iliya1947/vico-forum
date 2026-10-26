@@ -2737,6 +2737,39 @@ describe("published attachment caller integration", () => {
 });
 
 describe("forum read states", () => {
+  it("marks only the latest post present in the delivered topic snapshot", async () => {
+    const delivered = { ...topic, posts: [topic.posts[0]!] };
+    const submitted: string[] = [];
+    const routeData = topicRenderData(delivered, {
+      topicReadState: {
+        topicId: delivered.id,
+        state: "unread",
+        lastReadPostId: null,
+        firstUnreadPostId: delivered.posts[0]!.id,
+        // A concurrent read-state query observed a post not present in `delivered`.
+        latestPostId: "concurrent-post-not-delivered",
+      },
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => routeData,
+      action: async ({ request }) => {
+        const form = await request.formData();
+        submitted.push(String(form.get("postId")));
+        return data({ ok: true });
+      },
+    }], { initialEntries: ["/en/topics/typed-api"] });
+
+    render(<div lang="en" dir="ltr"><I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={null}><RouterProvider router={router} /></HeaderAuthProvider>
+    </I18nextProvider></div>);
+
+    await waitFor(() => expect(submitted).toEqual([delivered.posts[0]!.id]));
+    expect(submitted).not.toContain("concurrent-post-not-delivered");
+  });
+
   it("targets direct replies, exposes parent/child anchors, and quotes only selected message text", async () => {
     const seed = topic.posts[0]!;
     const question = {

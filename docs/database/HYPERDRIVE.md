@@ -63,6 +63,9 @@ forum_categories, forum_sections
 forum_topics, forum_posts
   SELECT, INSERT, UPDATE
 
+forum_topic_read_states
+  SELECT, INSERT, UPDATE
+
 forum_help_duplicate_relationships, forum_help_duplicate_appeals, forum_help_signals
   SELECT, INSERT, UPDATE
 
@@ -88,7 +91,8 @@ authz_mutation_lock
   SELECT, UPDATE
 ```
 
-`user.UPDATE` также нужен существующему forum cooldown mutex через `SELECT ... FOR UPDATE`.
+`user.UPDATE` также нужен существующему forum cooldown mutex через
+`SELECT ... FOR NO KEY UPDATE`.
 При текущем Worker composition content generation остаётся disabled, поэтому web capability
 намеренно **не** получает direct grants на `authz_permissions`, translation task/generation-head
 tables, request-budget counters либо UI localization tables.

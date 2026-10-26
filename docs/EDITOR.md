@@ -408,7 +408,8 @@ Drafts and autosave остаётся в `Under development` как возмож�
 - Existing merged schema с историческими `draft_id` именами используется только для
   temporary refs, completion markers и publication receipts. Text draft repository,
   endpoints и recovery runtime отсутствуют; legacy text rows не читаются/не импортируются.
-  Migrations 0034–0044 не переписываются; draft snapshot migration 0045 в пакет не входит.
+  Migrations 0034–0044 не переписываются; ранее предложенная draft snapshot migration была
+  удалена и не является текущей `0045_audit_database_notifications_read_state`.
 - Private R2 выдаётся через controlled download с актуальной ref проверкой. Raster inline,
   source preview как инертный текст, остальные файлы скачиваются. Размер и тип проверяются
   streaming boundary; FixedLengthStream сохраняется для Workers R2. Антивирус не имитируется.

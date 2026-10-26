@@ -68,7 +68,41 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("45");
+    expect(applied.rows[0]?.count).toBe("46");
+  });
+
+  it("rejects partial NULL allowance occurrence metadata", async () => {
+    const columns = ["allowance_state", "allowance_generation", "allowance_attempt"] as const;
+    for (const [index, nullableColumn] of columns.entries()) {
+      const values = {
+        allowance_state: "leasing",
+        allowance_generation: 1,
+        allowance_attempt: 1,
+      } as Record<(typeof columns)[number], string | number | null>;
+      values[nullableColumn] = null;
+      await expectDatabaseCode(client.query(
+        `insert into translation_tasks
+          (id, task_identity, translation_kind, source_namespace, source_key,
+           source_fingerprint, target_locale, generation_policy_version, generation,
+           allowance_state, allowance_generation, allowance_attempt,
+           allowance_claim_token, allowance_lease_expires_at, allowance_updated_at)
+         values
+          ($1, $2, 'content-post-body', 'post-body', $3,
+           $4, 'ru', 'audit-v1', 1,
+           $5, $6, $7,
+           $8, statement_timestamp() + interval '1 minute', statement_timestamp())`,
+        [
+          `00000000-0000-4000-8000-00000000010${index}`,
+          String(index + 1).repeat(64),
+          `allowance-null-${nullableColumn}`,
+          String(index + 4).repeat(64),
+          values.allowance_state,
+          values.allowance_generation,
+          values.allowance_attempt,
+          `00000000-0000-4000-8000-00000000020${index}`,
+        ],
+      ), "23514");
+    }
   });
 
   it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
@@ -2345,6 +2379,175 @@ describe("PostgreSQL 17 locale migrations", () => {
       await client.query(
         `delete from "user" where id in ('notify-owner', 'notify-parent', 'notify-actor')`,
       );
+    }
+  });
+
+  it("keeps unread notifications reachable beyond the bounded newest-50 inbox", async () => {
+    await insertForumAuthor("notify-page-recipient", "notify-page-recipient@example.test", null);
+    await insertForumAuthor("notify-page-actor", "notify-page-actor@example.test", null);
+    await client.query("begin");
+    try {
+      await client.query("set constraints all deferred");
+      await client.query(`
+        insert into forum_topics
+          (id, section_id, author_id, current_title_revision_id, created_at)
+        values
+          ('notify-page-topic', 'typescript', 'notify-page-actor', 'notify-page-title', '2026-10-04T00:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_topic_title_revisions
+          (id, topic_id, author_id, original_content, source_locale, created_at)
+        values
+          ('notify-page-title', 'notify-page-topic', 'notify-page-actor', 'Notification paging', 'en', '2026-10-04T00:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_posts
+          (id, topic_id, author_id, current_revision_id, created_at)
+        select
+          'notify-page-post-' || lpad(value::text, 2, '0'),
+          'notify-page-topic',
+          'notify-page-actor',
+          'notify-page-body-' || lpad(value::text, 2, '0'),
+          '2026-10-04T00:00:00Z'::timestamptz + value * interval '1 second'
+        from generate_series(1, 51) as value
+      `);
+      await client.query(`
+        insert into forum_post_revisions
+          (id, post_id, author_id, original_content, source_locale, created_at)
+        select
+          'notify-page-body-' || lpad(value::text, 2, '0'),
+          'notify-page-post-' || lpad(value::text, 2, '0'),
+          'notify-page-actor',
+          'Notification ' || value,
+          'en',
+          '2026-10-04T00:00:00Z'::timestamptz + value * interval '1 second'
+        from generate_series(1, 51) as value
+      `);
+      await client.query(`
+        insert into forum_reply_notifications
+          (id, recipient_user_id, actor_user_id, topic_id, post_id, created_at)
+        select
+          'notify-page-notification-' || lpad(value::text, 2, '0'),
+          'notify-page-recipient',
+          'notify-page-actor',
+          'notify-page-topic',
+          'notify-page-post-' || lpad(value::text, 2, '0'),
+          '2026-10-04T00:00:00Z'::timestamptz + value * interval '1 second'
+        from generate_series(1, 51) as value
+      `);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+
+    const repository = new DrizzleForumRepository(drizzle(client));
+    try {
+      const firstPage = await repository.readReplyNotifications("notify-page-recipient");
+      expect(firstPage).toHaveLength(50);
+      expect(firstPage.every(({ readAt }) => readAt === null)).toBe(true);
+      expect(firstPage.some(({ postId }) => postId === "notify-page-post-01")).toBe(false);
+      for (const notification of firstPage) {
+        await repository.markReplyNotificationRead("notify-page-recipient", notification.id);
+      }
+
+      const nextPage = await repository.readReplyNotifications("notify-page-recipient");
+      expect(nextPage[0]).toMatchObject({ postId: "notify-page-post-01", readAt: null });
+      await repository.markReplyNotificationRead("notify-page-recipient", nextPage[0]!.id);
+      expect(await repository.countUnreadReplyNotifications("notify-page-recipient")).toBe(0);
+    } finally {
+      await client.query("delete from forum_topics where id = 'notify-page-topic'");
+      await client.query(`delete from "user" where id in ('notify-page-recipient', 'notify-page-actor')`);
+    }
+  });
+
+  it("does not deadlock crossed concurrent replies while preserving the per-author mutex", async () => {
+    await insertForumAuthor("cross-reply-a", "cross-reply-a@example.test", null);
+    await insertForumAuthor("cross-reply-b", "cross-reply-b@example.test", null);
+    await client.query("begin");
+    try {
+      await client.query("set constraints all deferred");
+      await client.query(`
+        insert into forum_topics
+          (id, section_id, author_id, current_title_revision_id, created_at)
+        values
+          ('cross-topic-a', 'typescript', 'cross-reply-a', 'cross-title-a', '2026-10-04T01:00:00Z'),
+          ('cross-topic-b', 'typescript', 'cross-reply-b', 'cross-title-b', '2026-10-04T01:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_topic_title_revisions
+          (id, topic_id, author_id, original_content, source_locale, created_at)
+        values
+          ('cross-title-a', 'cross-topic-a', 'cross-reply-a', 'Topic A', 'en', '2026-10-04T01:00:00Z'),
+          ('cross-title-b', 'cross-topic-b', 'cross-reply-b', 'Topic B', 'en', '2026-10-04T01:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_posts
+          (id, topic_id, author_id, current_revision_id, created_at)
+        values
+          ('cross-root-a', 'cross-topic-a', 'cross-reply-a', 'cross-root-body-a', '2026-10-04T01:00:00Z'),
+          ('cross-root-b', 'cross-topic-b', 'cross-reply-b', 'cross-root-body-b', '2026-10-04T01:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_post_revisions
+          (id, post_id, author_id, original_content, source_locale, created_at)
+        values
+          ('cross-root-body-a', 'cross-root-a', 'cross-reply-a', 'Root A', 'en', '2026-10-04T01:00:00Z'),
+          ('cross-root-body-b', 'cross-root-b', 'cross-reply-b', 'Root B', 'en', '2026-10-04T01:00:00Z')
+      `);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+
+    const firstClient = new Client({ connectionString: databaseUrl });
+    const secondClient = new Client({ connectionString: databaseUrl });
+    await Promise.all([firstClient.connect(), secondClient.connect()]);
+    let synchronized = 0;
+    let release!: () => void;
+    const bothAuthorLocks = new Promise<void>((resolve) => { release = resolve; });
+    const gateAuthorLock = (connection: Client) => {
+      const query = connection.query.bind(connection);
+      connection.query = (async (...args: unknown[]) => {
+        const result: unknown = await Reflect.apply(query, connection, args);
+        const statement = typeof args[0] === "string" ? args[0] : String((args[0] as { text?: unknown })?.text ?? "");
+        if (/from\s+"user"[\s\S]+for\s+(?:no\s+key\s+)?update/iu.test(statement)) {
+          synchronized += 1;
+          if (synchronized === 2) release();
+          await bothAuthorLocks;
+        }
+        return result;
+      }) as Client["query"];
+    };
+    gateAuthorLock(firstClient);
+    gateAuthorLock(secondClient);
+    const policy = { cooldownMs: 0, now: () => new Date("2026-10-04T02:00:00Z") };
+    const firstForum = new ForumService(new DrizzleForumRepository(drizzle(firstClient), policy));
+    const secondForum = new ForumService(new DrizzleForumRepository(drizzle(secondClient), policy));
+
+    try {
+      await Promise.all([
+        firstForum.createPost({
+          id: "cross-reply-post-a", topicId: "cross-topic-b", authorId: "cross-reply-a",
+          parentPostId: "cross-root-b",
+          bodyRevision: { id: "cross-reply-body-a", originalContent: "A replies to B", sourceLocale: "en" },
+        }),
+        secondForum.createPost({
+          id: "cross-reply-post-b", topicId: "cross-topic-a", authorId: "cross-reply-b",
+          parentPostId: "cross-root-a",
+          bodyRevision: { id: "cross-reply-body-b", originalContent: "B replies to A", sourceLocale: "en" },
+        }),
+      ]);
+      expect(synchronized).toBe(2);
+      expect((await client.query<{ count: number }>(
+        `select count(*)::int as count from forum_reply_notifications
+         where post_id in ('cross-reply-post-a', 'cross-reply-post-b')`,
+      )).rows[0]?.count).toBe(2);
+    } finally {
+      await Promise.all([firstClient.end(), secondClient.end()]);
+      await client.query("delete from forum_topics where id in ('cross-topic-a', 'cross-topic-b')");
+      await client.query(`delete from "user" where id in ('cross-reply-a', 'cross-reply-b')`);
     }
   });
 

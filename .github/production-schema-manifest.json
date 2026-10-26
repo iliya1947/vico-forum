@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0044_attachment_draft_conflict_boundaries",
+  "targetMigration": "0045_audit_database_notifications_read_state",
   "tables": {
     "account": {
       "columns": [
@@ -1737,7 +1737,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": "e30b7393d8275a22b24ae598f3a49e69195cf6e267ddb0619fed49298df6d656"
         },
         {
           "name": "forum_help_duplicate_appeals_relationship_created_idx",
@@ -1905,7 +1906,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": "6e92151d5ab7a0dfd2c2be49c4a7a46b95d110f8366d4c779735983fa44b85bc"
         },
         {
           "name": "forum_help_duplicate_relationships_active_original_idx",
@@ -2143,7 +2145,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": "d518538a49e9812acfe4799fc48ff654291481c35ba6a5def51539ad05026554"
         },
         {
           "name": "forum_help_signals_pending_needs_details_submitter_idx",
@@ -2160,7 +2163,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": "7476b06f473b2a46e647938be4ca30a0ac7d700bb5035cbfe303f1172078aa27"
         },
         {
           "name": "forum_help_signals_pending_review_idx",
@@ -2214,7 +2218,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": "9e037a6f8d74f9954d8dac96d59c7427bf8eefccc830c5e59b391f93bb9059fd"
         },
         {
           "name": "forum_help_signals_submitter_created_idx",
@@ -4653,7 +4658,7 @@
             "max_attempts",
             "translation_kind"
           ],
-          "definitionSha256": "316946ea4d41bc70ee4123c7a3636d5308ed770a603e38e2da54795a04d35340"
+          "definitionSha256": "faad29675be669c1fb301be0895c46839d941e49d57c76da518bfbc53355cdea"
         },
         {
           "name": "translation_tasks_attempt_count_check",
