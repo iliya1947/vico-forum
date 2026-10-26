@@ -205,8 +205,19 @@ export function segmentTechnicalMarkdown(source: string): TechnicalSegment[] {
   return result.length ? result : [{ kind: "prose", span: { start: 0, end: source.length }, source }];
 }
 
+// Spreadsheet and visual table cells are literal input, not authored Markdown.
+// CommonMark permits backslash escaping any ASCII punctuation character.
+const tableLiteralPunctuation = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/gu;
+const escapedTableLiteralPunctuation = /\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/gu;
+
 export function encodeTableCell(text: string): string {
+  return text.replace(/\r?\n/gu, " ").replace(tableLiteralPunctuation, "\\export function encodeTableCell(text: string): string {
   return text.replace(/\\/gu, "\\\\").replace(/\|/gu, "\\|").replace(/\r?\n/gu, " ");
+}");
+}
+
+export function decodeTableCell(text: string): string {
+  return text.replace(escapedTableLiteralPunctuation, "$1");
 }
 
 export function serializeTable(
