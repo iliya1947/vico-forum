@@ -1,5 +1,24 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## Batch L1 / EDITOR-02 (5/5) — implementation завершена 2026-10-26
+
+**Назначение:** [#6423361282](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6423361282). Реализация: [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243), branch `chatgpt6/batch-l1-20261026`, base `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`. Исходный head fix5 `18633574e416102f71d702ea868116813ea53d11`; финальный implementation exact head **`d5f992602fcc78276155a63aa14f56b931dd7656`**.
+
+### Root cause / изменение
+- `serializeTable` для TSV и HTML конвертирует входные значения ячеек в Markdown. Прежний `encodeTableCell` экранировал только backslash/pipe и newline; поэтому `**literal**`, `[shown](url)`, тильды и entities повторно интерпретировались `ForumTable` через ReactMarkdown.
+- `technical-markdown.ts`: literal cell encoder экранирует backslash-escapable ASCII punctuation CommonMark после существующей newline normalisation; generated structural row separator `---` остаётся неизменённым. `decodeTableCell` восстанавливает text в Simple table input. Исходный Markdown, введённый вручную, не меняется.
+- `visual-markdown-editor.tsx`: input отображает литералы без escape-символов и вновь сериализует их при явной правке.
+- Добавлены regressions: `technical-markdown.test.ts`, `markdown.test.tsx`, `markdown-editor.test.tsx`. Проверены TSV/HTML literal rendering, exact values, pipe/backslash/newline, редактирование в mounted Simple editor; прежний manual rich Markdown table rendering test остаётся без изменения.
+- `PROJECT_STATE.md` обновлён до 5/5, PR description — implementation complete.
+
+### CI и ограничения
+- Initial [CI #40374663915](https://github.com/iliya194/vico-forum/actions/runs/40374663915): `database` SUCCESS, `checks` FAILED из-за ошибки fix5 при экранировании generated `---` separator; исправлена структура, не за счёт ослабления тестов.
+- Next [CI #40375017118](https://github.com/iliya194/vico-forum/actions/runs/40375017118): `database` SUCCESS, `checks` FAILED только на unsupported `toHaveValue(expect.stringContaining())` в новом regression; source/renderer tests прошли, assertion исправлен без изменения production code.
+- **Final exact-head [CI #40375402307](https://github.com/iliya1947/vico-forum/actions/runs/40375402307): completed SUCCESS, `checks` SUCCESS, `database` SUCCESS** на `d5f992602fcc78276155a63aa14f56b931dd7656`. Лично сверено через GitHub CI. Own local Chromium/Worker/PG и external R2/production/owner visual не запускались.
+- Batch L1 все пять локальных fixes реализованы и CI-verified, но это не independent whole-PR review. PR #243 остаётся draft, merge не выполнялся. PR #241 не изменён. **STOP:** следующий этап — координация whole-PR review Мирой.
+
+---
+
 ## Batch L1 / EDITOR-01 (4/5) — 2026-10-26
 
 Исправление HTML-вставки пустых строк кода реализовано в [PR #243](https://github.com/iliya1947/vico-forum/pull/243). Code head: `18633574e416102f71d702ea868116813ea53d11`.
