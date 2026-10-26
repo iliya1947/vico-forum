@@ -329,6 +329,7 @@ export const reviewedCommonFingerprints = {
   postEditedAt: "cb3044668796f1cd11fc935574c325a6b2181c41f7988a835374aa40472bf222",
   postHistory: "d1ed20bc01d5d72e636c9cface19b1bb6403a446e2f8840290dc3e94a6090ad3",
   postHistoryHeading: "097f7bde1befcdf0814457130ae214e827f1b7b17bb07baa0231b3f836f2c16d",
+  postHistoryLoading: "45f26d22cf537dbc34b316a306b1e151e2f312f42f4f81b33023f1dca9155105",
   postHistoryUnavailable: "5b83db504c80847d0ee54e8eeec8f4427a77412e226bcf9190c942efd6820647",
   postRevisionBy: "f3cb374a7d1e41ce311357736dab9f43286e153d674299ded7cd5b8e13c9de1b",
   postNumber: "a772a2ce36c44b7a28670ff16b63e55c05e12e92dc54f4779c705b69a8f706ae",
