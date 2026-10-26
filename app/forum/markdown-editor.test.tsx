@@ -1196,6 +1196,29 @@ describe("MarkdownEditor", () => {
     expect(document.querySelector(".markdown-editor-visual-table")).not.toBeNull();
   });
 
+  it("keeps spreadsheet Markdown-like cells literal when pasted and edited in Simple mode", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, leaf.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? "Label\tValue\n**literal**\t[shown](https://example.org)" : "" } });
+
+    const inputs = screen.getAllByRole("textbox", { name: "Table cell" });
+    expect(inputs[0]).toHaveValue("**literal**");
+    expect(inputs[1]).toHaveValue("[shown](https://example.org)");
+    expect(screen.getByLabelText("Body")).toHaveValue(expect.stringContaining("\\*\\*literal\\*\\*"));
+    fireEvent.change(inputs[0]!, { target: { value: "**literal** | x\\y" } });
+    expect(inputs[0]).toHaveValue("**literal** | x\\y");
+    expect(screen.getByLabelText("Body")).toHaveValue(expect.stringContaining("\\*\\*literal\\*\\* \\| x\\\\y"));
+  });
+
   it("maps multiline paste across split DOM text nodes to exact Markdown positions", () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Alpha" /></>);
     const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
