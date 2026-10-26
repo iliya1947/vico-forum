@@ -1,5 +1,27 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #241 / HELP-01 + DOC-03 — correction завершена (2026-10-26)
+
+**Основание:** retry assignment [#6425922733](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6425922733) после tool failure; первоначальное [#6425661622](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6425661622). Исходный stable head `f5cdf71837aee78a31856c766c087c9bbf54a496`. Исправления в существующем [PR #241](https://github.com/iliya1947/vico-forum/pull/241) / branch `codex/package-5-help-tags`, финальный implementation exact head **`aa41937edf6ce32d74bed27d39c9d7c43aa1eecf`**.
+
+### HELP-01 — что исправлено
+- Author `appealHelpDuplicate` не имел observed relationship identity: после R1→R2 stale форма могла создать pending appeal у R2. В `TopicView` передаётся `expectedRelationshipId` скрытым полем; loader отдаёт его только автору данного вопроса в отдельном `appealExpectedRelationshipId`, тогда как прежняя приватизация `topic.duplicateRelationshipId` для non-manager сохраняется.
+- `topicAction` требует непустую identity (400 при отсутствии), `ForumWriter`/Hyperdrive/`ForumService` передают её. `DrizzleForumRepository` сравнивает observed ID с active relationship **после topic `FOR UPDATE` и relationship `FOR UPDATE`**, до чтения pending/insert, mismatch → `ForumStateConflictError` (HTTP409). No schema/migration/permissions/dependencies change.
+- Application regressions: отсутствие ID →400/no write, stale write →409, current request forwards exact identity; route loader+mounted author form carries ID без раскрытия гостю.
+- Новая real PG regression: R1/original-X removal → R2/original-Y; stale R1 intent отвергнут без pending appeal. Отдельно in-flight R2 intent ждёт locked topic, смена R2→R3 внутри blocker transaction, затем409/no appeal; current R3 appeal accepted and linked to R3. Существующий lifecycle test обновлён на explicit current relationship identity.
+
+### DOC-03 — что исправлено
+- Исправлены ровно две подтверждённые stale public-`Disputed` формулировки: historical paragraph в `PROJECT_STATE.md`, descriptor в `app/localization/catalog.ts`. Moderator-only pending badge; author видит собственное private pending appeal.
+- RU `Оспаривается`/HE `במחלוקת` переводы подтверждены как семантически корректные; sidecar fingerprint `helpDuplicateDisputed` обновлён при осознанном review изменённого descriptor, чтобы действующие переводы не стали stale. Остальной каталог и runtime не менялись.
+- `PROJECT_STATE.md` также фиксирует реализованную author appeal identity guard.
+
+### CI / ограничения
+- Первый exact-head commit `511b3094d4e33b47d78e10194b0a0ed0abca720d`, [run #40393276163](https://github.com/iliya1947/vico-forum/actions/runs/40393276163): FAIL (Typecheck + DB) из-за пропущенного обязательного `ForumWritePolicy.now` **только в двух новых test fixtures**. Тестовый clock исправлен, production unchanged.
+- **Final [exact-head run #40393643866](https://github.com/iliya1947/vico-forum/actions/runs/40393643866): completed SUCCESS** на `aa41937edf6ce32d74bed27d39c9d7c43aa1eecf`, jobs `checks` и `database` SUCCESS. Checks: 102 application files /1081 tests PASS; database: 28 files/304 tests PASS; typecheck, lint, обе сборки, schema guards и local CI Worker smoke выполнены внутри Actions. Лира сверила CI и exact PR head через GitHub; собственные local PG/browser/Worker, external R2/production или owner visual не выполнялись.
+- Результат — implementation handoff, **не** self-review/whole-PR verdict или merge authorization. PR #243/#244 Лира не меняла. Лира STOP; независимую проверку координирует Мира.
+
+---
+
 ## PR #241 / HELP-01 — blocked handoff (2026-10-26)
 
 Assignment #6425661622. Missing observed duplicate relationship ID across author form → action → writer → service → repository. Current repository locks topic and relationship, but matches only current active identity. A stale R1 form can therefore attach its appeal to replacement R2. Needed: expected ID in author-safe loader/form and writer path; compare after database lock; add replacement/current/lock regressions. Attempted bounded implementation could not be completed because the GitHub edit of `db/forum-service.ts` was blocked twice. All interim commits were reverted with lease; PR #241 restored to original exact head `f5cdf71837aee78a31856c766c087c9bbf54a496` (verified). DOC-03 not started, no new CI or review. STOP; Mira to coordinate further work.
