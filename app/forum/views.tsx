@@ -32,6 +32,7 @@ import type { ContentGenerationUnitView } from "../localization/content-generati
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import type {
   ForumMutationError,
+  PostEditConflictData,
   HelpQuestionActionData,
   HelpSimilarQuestionsActionData,
   SourceLocaleCorrectionMutationError,
@@ -2008,6 +2009,7 @@ type PostHistoryActionData =
   | ForumMutationError;
 
 export type TopicViewActionData =
+  | PostEditConflictData
   | ForumMutationError
   | SourceLocaleCorrectionMutationError
   | ContentGenerationActionResponse;
@@ -2055,7 +2057,7 @@ function MessagePermalinkControl({
 
 export function TopicView({
   locale,
-  topic,
+  topic: loadedTopic,
   titlePresentation,
   postPresentations,
   generationUnits,
@@ -2101,6 +2103,24 @@ export function TopicView({
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
 }) {
+  const [editRecovery, setEditRecovery] = useState<{
+    topicId: string; loaderRevisionId: string; post: PostEditConflictData["post"]; completedOperationId?: string;
+  } | null>(null);
+  const recoveredActionRef = useRef<PostEditConflictData | null>(null);
+  useEffect(() => {
+    if (!actionData || !("operation" in actionData) || actionData.operation !== "postEdit"
+      || recoveredActionRef.current === actionData) return;
+    recoveredActionRef.current = actionData;
+    const baseline = loadedTopic.posts.find((post) => post.id === actionData.post.id);
+    if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
+  }, [actionData, loadedTopic]);
+  // A new loader snapshot supersedes recovery data; later failed submissions do not.
+  const recoveredPost = editRecovery?.topicId === loadedTopic.id
+    && loadedTopic.posts.some((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
+    ? editRecovery.post : null;
+  const topic = recoveredPost ? {
+    ...loadedTopic, posts: loadedTopic.posts.map((post) => post.id === recoveredPost.id ? recoveredPost : post),
+  } : loadedTopic;
   const generationByContentId = new Map(generationUnits.map((unit) => [unit.contentId, unit]));
   const titleGenerationUnit = generationByContentId.get(topic.id);
   const presentedPosts = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
@@ -2109,7 +2129,7 @@ export function TopicView({
     && actionData.operation === "sourceLocaleCorrection"
     ? actionData.error
     : null;
-  const forumWriteError = actionData && !("operation" in actionData)
+  const forumWriteError = actionData && (!("operation" in actionData) || actionData.operation === "postEdit")
     ? actionData.error
     : null;
   const canParticipate = canReply && !topic.duplicateOf;
@@ -2204,12 +2224,15 @@ export function TopicView({
   }, [location.search, topic.id, editablePostIds]);
 
   function openPostEditor(postId: string, revisionId: string) {
+    if (editingPostId === postId) { editEditorRef.current?.focus(); return; }
+    setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
     setEditBaseRevisionId(revisionId);
     setEditReady(false);
     setEditingPostId(postId);
   }
 
   function closePostEditor() {
+    setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
     editEditorRef.current?.cancelOperation();
     setEditingPostId(null);
     setEditBaseRevisionId(null);
@@ -2290,6 +2313,8 @@ export function TopicView({
     );
   }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
 
+  const completedEditOperationId = editRecovery?.topicId === topic.id && editRecovery.post.id === editingPostId
+    ? editRecovery.completedOperationId : undefined;
   const isEditSubmitting = navigation.state !== "idle"
     && (navigation.formData?.get("intent") === "editPost"
       || (navigation.state === "loading" && editPublicationRef.current !== null));
@@ -2558,7 +2583,10 @@ export function TopicView({
         </div>
 
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
-        {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
+        {forumWriteError && <p className="topic-page-alert" role="alert">{t(forumWriteError === "conflict" && actionData && (
+          ("operation" in actionData && actionData.operation === "postEdit")
+          || ("intent" in actionData && actionData.intent === "editPost"))
+          ? "postEditConflict" : `forumWriteError_${forumWriteError}`)}</p>}
 
         {topic.duplicateOf ? (
           <section className="help-duplicate-notice" aria-label={t("helpDuplicateBadge")}>
@@ -2801,7 +2829,13 @@ export function TopicView({
                         ...attachment,
                         url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
                       }))}>
-                        <PostBodyContent presentation={postPresentation} />
+                        <PostBodyContent presentation={recoveredPost?.id === post.id ? {
+                          ...postPresentation, selected: "original", content: post.body.originalContent,
+                          originalContent: post.body.originalContent,
+                          contentLocale: post.body.sourceLocale === "und" ? undefined : post.body.sourceLocale,
+                          originalLocale: post.body.sourceLocale === "und" ? undefined : post.body.sourceLocale,
+                          contentDirection: "auto", originalDirection: "auto",
+                        } : postPresentation} />
                       </ForumInlineAttachmentProvider>
                     </div>
 
@@ -2833,7 +2867,7 @@ export function TopicView({
                           actions={<>
                             <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>{t("postEditCancel")}</button>
                             <button type="submit" name="intent" value="editPost"
-                              disabled={!editReady || isEditSubmitting || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
+                              disabled={!editReady || isEditSubmitting || !!completedEditOperationId || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
                           </>}
                           disabled={isEditSubmitting}
                           existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
@@ -2841,12 +2875,13 @@ export function TopicView({
                             url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
                           }))}
                         />
-                        {editBaseRevisionId !== post.body.id ? (
+                        {editBaseRevisionId !== post.body.id || completedEditOperationId ? (
                           <div className="topic-page-alert" role="alert">
                             <p>{t(editBaseRevisionId ? "postEditRevisionChanged" : "postEditRevisionUnknown")}</p>
                             <button type="button" disabled={isEditSubmitting} onClick={() => {
-                              if (editEditorRef.current?.rebasePublishedAttachments()) {
+                              if (editEditorRef.current?.rebasePublishedAttachments(completedEditOperationId)) {
                                 setEditBaseRevisionId(post.body.id);
+                                setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
                               }
                             }}>{t("postEditAcceptCurrentRevision")}</button>
                           </div>

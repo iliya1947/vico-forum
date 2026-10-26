@@ -99,6 +99,30 @@ describe("Better Auth PostgreSQL runtime", () => {
       .rejects.not.toBeInstanceOf(AuthSessionUnavailableError);
   });
 
+  it.each([true, false])("preserves a real signup/session result when cleanup throws=%s", async (synchronous) => {
+    const cleanup: Promise<void>[] = [];
+    const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => {
+      const connection = authClient(); const end = connection.end.bind(connection);
+      vi.spyOn(connection, "end").mockImplementation((() => {
+        cleanup.push(end());
+        if (synchronous) throw new Error("synthetic cleanup failure");
+        return Promise.reject(new Error("synthetic cleanup failure"));
+      }) as never);
+      return connection;
+    });
+    try {
+      const email = `cleanup-${synchronous}@example.test`;
+      const response = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+        method: "POST", headers: { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.56" },
+        body: JSON.stringify({ name: "Cleanup", email, password: "integration-password-123" }),
+      }));
+      expect(response.status).toBe(200);
+      const cookie = response.headers.getSetCookie().find((entry) => entry.includes("session_token="))!.split(";", 1)[0];
+      expect((await runtime.getSession(new Headers({ Cookie: cookie }))).session?.user.email).toBe(email);
+      expect((await client.query('select count(*)::int as count from "user" where email=$1', [email])).rows[0].count).toBe(1);
+    } finally { await Promise.all(cleanup); }
+  });
+
   it("requires local authentication before linking a same-email Google identity", async () => {
     const email = "local-google@example.test";
     let providerVerified = true;

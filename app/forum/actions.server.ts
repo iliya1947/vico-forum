@@ -1,3 +1,4 @@
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -11,6 +12,7 @@ import {
   sourceLocaleCorrectionFailure,
   sourceLocaleCorrectionScope,
   type HelpQuestionDraft,
+  type PostEditConflictData,
   type HelpSimilarQuestionsActionData,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
@@ -496,11 +498,23 @@ export async function topicAction({ request, params, context }: {
     if (!postId || !expectedRevisionId || typeof body !== "string"
       || !draftFence || !attachmentIds || retainedAttachmentIds === null) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.editPublishedPost({
-        topicId, postId, actorId, expectedRevisionId, body,
-        draftId: draftFence.draftId, attachmentIds,
-        ...(retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds }),
-      });
+      try {
+        await writer.editPublishedPost({
+          topicId, postId, actorId, expectedRevisionId, body,
+          draftId: draftFence.draftId, attachmentIds,
+          ...(retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds }),
+        });
+      } catch (error) {
+        if (!(error instanceof ConcurrentRevisionError) && !(error instanceof ForumStateConflictError)) throw error;
+        // Refresh only the conflicted public baseline. A failing refresh remains action
+        // data/a client action failure, so the mounted editor is never replaced by a loader boundary.
+        const current = await forumReaderForRequest(context).readTopicPage(topicId);
+        const post = current?.posts.find((post) => post.id === postId && post.authorId === actorId);
+        if (!post) return mutationFailure("notFound", 404);
+        return data<PostEditConflictData>({ operation: "postEdit", error: "conflict", post,
+          ...(error instanceof ForumPublicationReplayConflictError ? { completedOperationId: draftFence.draftId } : {}),
+        }, { status: 409 });
+      }
       return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });
   }

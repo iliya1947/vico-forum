@@ -1,3 +1,4 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
@@ -8,7 +9,7 @@ export function meta() {
   return [{ title: "Popular · Vico Forum" }];
 }
 
-export async function loader({ params, context }: {
+export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string };
   context: RouterContextProvider;
 }) {
@@ -28,7 +29,7 @@ export async function loader({ params, context }: {
       "30d": present(popular["30d"]),
     },
   };
-}
+});
 
 export default function PopularRoute() {
   const data = useLoaderData<typeof loader>();

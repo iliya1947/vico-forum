@@ -12,7 +12,7 @@ import {
   user,
   verification,
 } from "../../db/schema";
-import { createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
+import { bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../localization/persistent-registry";
 
 export interface BetterAuthEnvironment {
@@ -135,7 +135,7 @@ export function createHyperdriveAuthRuntime(
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
       throw databaseError ?? error;
     } finally {
-      await client.end();
+      bestEffortDiscardClient(client);
     }
   }
 

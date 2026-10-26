@@ -1,3 +1,4 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -36,7 +37,7 @@ function readHelpFilters(searchParams: URLSearchParams): ForumHelpSolutionsFilte
   };
 }
 
-export async function loader({ request, params, context }: {
+export const loader = forumReadLoader(async function loader({ request, params, context }: {
   request?: Request;
   params: { locale?: string; categoryId?: string };
   context: RouterContextProvider;
@@ -154,7 +155,7 @@ export async function loader({ request, params, context }: {
       })),
     },
   };
-}
+});
 
 export default function CategoryRoute() {
   const data = useLoaderData<typeof loader>();
@@ -179,3 +180,5 @@ export default function CategoryRoute() {
 }
 
 export const ErrorBoundary = ForumRouteError;
+
+export { editorClientAction as clientAction } from "../forum/editor-action";

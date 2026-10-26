@@ -28,6 +28,7 @@ interface Props {
     ownerId: string | null;
     contextKey?: string;
     disabled: boolean;
+    publishedEdit?: boolean;
     publishedAttachments?: readonly {
         id: string;
         url: string;
@@ -37,6 +38,7 @@ interface Props {
     }[];
     insertImage(id: string, name: string): void;
     removeImage(id: string): void;
+    replaceImage?(oldId: string, newId: string): void;
 }
 function encoded(value: string): string {
     return encodeURIComponent(value);
@@ -129,15 +131,15 @@ function likelySecretFile(name: string): boolean {
     const lower = name.trim().toLowerCase();
     return lower === ".env" || lower.startsWith(".env.");
 }
-export function useEditorAttachments({ ownerId, contextKey, disabled, publishedAttachments = [], insertImage, removeImage }: Props) {
+export function useEditorAttachments({ ownerId, contextKey, disabled, publishedEdit = false, publishedAttachments = [], insertImage, removeImage, replaceImage }: Props) {
     const { t, i18n } = useTranslation("common");
     const [draftId, setOperationId] = useState("");
     const [entries, setEntries] = useState<UploadEntry[]>([]);
     const [publicationWarning, setPublicationWarning] = useState(false);
     const entriesRef = useRef(entries);
     entriesRef.current = entries;
-    const callbacksRef = useRef({ insertImage, removeImage });
-    callbacksRef.current = { insertImage, removeImage };
+    const callbacksRef = useRef({ insertImage, removeImage, replaceImage });
+    callbacksRef.current = { insertImage, removeImage, replaceImage };
     const identity = JSON.stringify([ownerId, contextKey, draftId]);
     const identityRef = useRef(identity);
     identityRef.current = identity;
@@ -176,11 +178,24 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
         setEntries((current) => current.map((entry) => entry.id === id ? update(entry) : entry));
     }
     function reset() { removedPublishedIds.current.clear(); setOperationId(crypto.randomUUID()); setEntries(initialEntries()); setPublicationWarning(false); }
-    function rebasePublishedAttachments() {
+    function freshOperation() {
+        const next = crypto.randomUUID();
+        identityRef.current = JSON.stringify([ownerId, contextKey, next]);
+        for (const request of requestsRef.current.values()) request.abort();
+        requestsRef.current.clear();
+        setOperationId(next);
+        return next;
+    }
+    function rebasePublishedAttachments(completedOperationId?: string) {
         if (!initialized) return false;
+        const publishedIds = new Set(publishedAttachments.map(file => file.id));
         const baseline = initialEntries().filter(entry => !removedPublishedIds.current.has(entry.id));
-        // Preserve only explicit local intent, never infer Remove from an old baseline.
-        setEntries(current => [...baseline, ...current.filter(entry => entry.publishedUrl === null)]);
+        const restart = !!completedOperationId && completedOperationId === draftId;
+        const operation = restart ? freshOperation() : draftId;
+        // An ACK-lost upload can already be published. It is retained exactly once.
+        // Other uploads from a completed operation keep their File for explicit Retry.
+        setEntries(current => [...baseline, ...current.filter(entry => entry.publishedUrl === null && !publishedIds.has(entry.id))
+            .map(entry => entry.draftId !== operation ? { ...entry, status: "error" as const, progress: null, error: "unavailable" } : entry)]);
         return true;
     }
     function cancel() {
@@ -221,11 +236,18 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
                 return;
             const payload = parseJson(request.responseText), attachment = storedAttachment(payload?.attachment);
             if (request.status === 201 && payload?.outcome === "stored" && attachment) {
-                setEntry(stableId, () => restoredEntry(attachment, draftId));
+                setEntry(stableId, () => ({ ...restoredEntry(attachment, draftId), file: namedFile }));
                 return;
             }
             setEntry(stableId, (current) => ({ ...current, status: "error", progress: null,
                 error: typeof payload?.reason === "string" ? payload.reason : typeof payload?.error === "string" ? payload.error : "unavailable" }));
+            if (publishedEdit && request.status === 410 && payload?.error === "gone") {
+                // A lost Save ACK can retire the operation before this new upload.
+                // Retry must be usable even while the failed file blocks Save.
+                freshOperation();
+                setEntries(current => current.map(entry => entry.status === "uploading"
+                    ? { ...entry, status: "error", progress: null, error: "gone" } : entry));
+            }
         };
         const failure = () => { requestsRef.current.delete(stableId); if (active())
             setEntry(stableId, (current) => ({ ...current, status: "error", progress: null, error: "unavailable" })); };
@@ -243,11 +265,18 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedA
     }
     function addFiles(files: FileList | readonly File[]) { for (const file of Array.from(files))
         startUpload(file); }
-    function retry(entry: UploadEntry) { if (entry.file)
-        startUpload(entry.file, entry.id, true); }
+    function retry(entry: UploadEntry) {
+        if (!entry.file) return;
+        if (entry.draftId === draftId) { startUpload(entry.file, entry.id, true); return; }
+        // A different operation cannot claim the previous operation's asset ID.
+        const nextId = crypto.randomUUID();
+        setEntries(current => current.map(item => item.id === entry.id ? { ...item, id: nextId } : item));
+        callbacksRef.current.replaceImage?.(entry.id, nextId);
+        startUpload(entry.file, nextId, true);
+    }
     function remove(entry: UploadEntry) {
         if (disabled || entry.status === "uploading") return;
-        if (entry.publishedUrl !== null) removedPublishedIds.current.add(entry.id);
+        removedPublishedIds.current.add(entry.id);
         // The private server pool is retained until operation completion/cleanup.
         // Late upload ACKs only update existing entries, so cannot reselect this ID.
         callbacksRef.current.removeImage(entry.id);

@@ -81,9 +81,11 @@ class FakeXMLHttpRequest {
 }
 const contextKey = "topic:operation-test:reply";
 const attachmentId = "23b93562-0550-4eef-88af-f951d6ea6138";
+const replaceImage = vi.fn();
 let current: ReturnType<typeof useEditorAttachments>;
-function Harness({ owner = "alice", published = [] }: {
+function Harness({ owner = "alice", published = [], publishedEdit = false }: {
     owner?: string;
+    publishedEdit?: boolean;
     published?: Array<{
         id: string;
         url: string;
@@ -92,7 +94,7 @@ function Harness({ owner = "alice", published = [] }: {
         detectedType: string;
     }>;
 }) {
-    current = useEditorAttachments({ ownerId: owner, contextKey, disabled: false, publishedAttachments: published, insertImage: () => { }, removeImage: () => { } });
+    current = useEditorAttachments({ ownerId: owner, contextKey, disabled: false, ...{ publishedEdit }, publishedAttachments: published, insertImage: () => { }, removeImage: () => { }, replaceImage });
     return <>{current.element}<button onClick={() => current.cancel()}>Cancel</button></>;
 }
 function renderHarness(props: Parameters<typeof Harness>[0] = {}) {
@@ -100,7 +102,7 @@ function renderHarness(props: Parameters<typeof Harness>[0] = {}) {
 }
 function stored() { return { outcome: "stored", attachment: { id: attachmentId, fileName: "notes.txt", detectedType: "text", responseMime: "text/plain", byteSize: 5, verificationStatus: "type-checked" } }; }
 function attach() { fireEvent.change(screen.getByLabelText("Attach"), { target: { files: [new File(["hello"], "notes.txt", { type: "text/plain" })] } }); return FakeXMLHttpRequest.instances.at(-1)!; }
-beforeEach(() => { FakeXMLHttpRequest.instances = []; vi.stubGlobal("XMLHttpRequest", FakeXMLHttpRequest); vi.stubGlobal("fetch", vi.fn(async () => Response.json({ outcome: "removed" }))); });
+beforeEach(() => { replaceImage.mockClear(); FakeXMLHttpRequest.instances = []; vi.stubGlobal("XMLHttpRequest", FakeXMLHttpRequest); vi.stubGlobal("fetch", vi.fn(async () => Response.json({ outcome: "removed" }))); });
 afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 describe("in-memory attachment operation", () => {
     it("needs no text head or restore GET and selects only acknowledged uploads", async () => {
@@ -184,6 +186,102 @@ describe("in-memory attachment operation", () => {
         await failed.complete(201,{outcome:"stored",attachment:{...stored().attachment,id:failed.headers.get("X-Vico-Attachment-Id")}});
         expect(current.selectedAttachmentIds).toEqual([attachmentId]);
         expect(fetch).not.toHaveBeenCalled();
+    });
+    it("makes a new operation available to Retry after a terminal upload in a published edit", async () => {
+        renderHarness({ publishedEdit: true });
+        const old = current.operationId, request = attach();
+        await request.complete(410, { error: "gone" });
+        expect(current.blocking).toBe(true);
+        expect(current.operationId).not.toBe(old);
+        fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+        const retry = FakeXMLHttpRequest.instances.at(-1)!;
+        expect(retry.headers.get("X-Vico-Operation-Id")).toBe(current.operationId);
+        expect(retry.headers.get("X-Vico-Attachment-Id")).not.toBe(request.headers.get("X-Vico-Attachment-Id"));
+        expect(retry.body).toBe(request.body);
+        const id = retry.headers.get("X-Vico-Attachment-Id")!;
+        await retry.complete(201, { ...stored(), attachment: { ...stored().attachment, id } });
+        expect(current.blocking).toBe(false);
+        expect(current.selectedAttachmentIds).toEqual([id]);
+    });
+
+    it.each([
+        [false, 410, "gone"], [true, 503, "unavailable"], [true, 409, "conflict"], [true, 410, "unavailable"],
+    ] as const)("keeps ordinary retry identity: edit=%s status=%s reason=%s", async (publishedEdit, status, error) => {
+        renderHarness({ publishedEdit }); const old = current.operationId, request = attach();
+        await request.complete(status, { error });
+        expect(current.operationId).toBe(old);
+        fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+        const retry = FakeXMLHttpRequest.instances.at(-1)!;
+        expect(retry.headers.get("X-Vico-Operation-Id")).toBe(old);
+        expect(retry.headers.get("X-Vico-Attachment-Id")).toBe(request.headers.get("X-Vico-Attachment-Id"));
+    });
+    it("retains concurrent Files across gone and deduplicates a previously committed upload on ordinary rebase", async () => {
+        const view = renderHarness({ publishedEdit: true });
+        await attach().complete(201, stored());
+        const gone = attach(), pending = attach();
+        await gone.complete(410, { error: "gone" });
+        const next = current.operationId;
+        expect(pending.aborted).toBe(true);
+        expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(2);
+        await pending.complete(201, { ...stored(), attachment: { ...stored().attachment, id: pending.headers.get("X-Vico-Attachment-Id") } });
+        const selected: string[] = [];
+        for (const file of [gone, pending]) {
+            fireEvent.click(screen.getAllByRole("button", { name: "Retry" })[0]!);
+            const retry = FakeXMLHttpRequest.instances.at(-1)!, id = retry.headers.get("X-Vico-Attachment-Id")!;
+            expect(retry.body).toBe(file.body);
+            expect(retry.headers.get("X-Vico-Operation-Id")).toBe(next);
+            selected.push(id);
+            await retry.complete(201, { ...stored(), attachment: { ...stored().attachment, id } });
+        }
+        view.rerender(<I18nextProvider i18n={runtime()}><Harness publishedEdit published={[{ id: attachmentId,
+            fileName: "notes.txt", byteSize: 5, detectedType: "text", url: "/file?post=p" }]}/></I18nextProvider>);
+        act(() => { current.rebasePublishedAttachments(); });
+        expect(current.operationId).toBe(next);
+        expect(current.retainedAttachmentIds).toEqual([attachmentId]);
+        expect(current.selectedAttachmentIds).toEqual(selected.sort());
+        expect(current.blocking).toBe(false);
+    });
+
+    it("restarts a completed publication operation and promotes its now-published upload exactly once", async () => {
+        const view = renderHarness();
+        await attach().complete(201, stored());
+        const completed = current.operationId;
+        view.rerender(<I18nextProvider i18n={runtime()}><Harness published={[{ id: attachmentId,
+            fileName: "notes.txt", byteSize: 5, detectedType: "text", url: "/file?post=p" }]}/></I18nextProvider>);
+        act(() => { (current.rebasePublishedAttachments as (completed?: string) => boolean)(completed); });
+        expect(current.operationId).not.toBe(completed);
+        expect(current.retainedAttachmentIds).toEqual([attachmentId]);
+        expect(current.selectedAttachmentIds).toEqual([]);
+        expect(screen.getAllByText("notes.txt")).toHaveLength(1);
+    });
+
+    it("retains an upload File for Retry under a fresh operation and asset ID", async () => {
+        renderHarness(); const original = attach(); await original.complete(201, stored());
+        const completed = current.operationId;
+        act(() => { current.rebasePublishedAttachments(completed); });
+        expect(current.operationId).not.toBe(completed);
+        expect(current.blocking).toBe(true);
+        fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+        const retried = FakeXMLHttpRequest.instances.at(-1)!;
+        const newId = retried.headers.get("X-Vico-Attachment-Id")!;
+        expect(newId).not.toBe(attachmentId);
+        expect(retried.headers.get("X-Vico-Operation-Id")).toBe(current.operationId);
+        expect(retried.body).toBe(original.body);
+        expect(replaceImage).toHaveBeenCalledExactlyOnceWith(attachmentId, newId);
+        await retried.complete(201, { ...stored(), attachment: { ...stored().attachment, id: newId } });
+        expect(current.blocking).toBe(false);
+        expect(current.selectedAttachmentIds).toEqual([newId]);
+    });
+    it("keeps Remove intent when an ambiguous private upload becomes published", async () => {
+        const view = renderHarness(); await attach().complete(201, stored());
+        const completed = current.operationId;
+        fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+        view.rerender(<I18nextProvider i18n={runtime()}><Harness published={[{ id: attachmentId,
+            fileName: "notes.txt", byteSize: 5, detectedType: "text", url: "/file?post=p" }]}/></I18nextProvider>);
+        act(() => { current.rebasePublishedAttachments(completed); });
+        expect(current.retainedAttachmentIds).toEqual([]);
+        expect(current.selectedAttachmentIds).toEqual([]);
+        expect(current.operationId).not.toBe(completed);
     });
     it.each([false,true])("rebase preserves local Remove=%s and a private upload across repeated published revisions",async(removeA)=>{
         const a={id:"23b93562-0550-4eef-88af-f951d6ea6139",url:"/file?post=p",fileName:"A.txt",byteSize:5,detectedType:"text"};

@@ -1,3 +1,4 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -18,6 +19,7 @@ import { ContentGenerationStatusStorageUnavailableError } from "../localization/
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type {
   ForumMutationError,
+  PostEditConflictData,
   SourceLocaleCorrectionMutationError,
 } from "../forum/mutations.server";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
@@ -29,7 +31,7 @@ import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 
 export { topicAction as action } from "../forum/actions.server";
 
-export async function loader({ params, context }: {
+export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string; topicId?: string };
   context: RouterContextProvider;
 }) {
@@ -200,12 +202,14 @@ export async function loader({ params, context }: {
     canReadPostHistory,
     topicReadState,
   };
-}
+});
 
 export default function TopicRoute() {
   const data = useLoaderData<typeof loader>();
-  const actionData = useActionData<ForumMutationError | SourceLocaleCorrectionMutationError | ContentGenerationActionResponse>();
+  const actionData = useActionData<PostEditConflictData | ForumMutationError | SourceLocaleCorrectionMutationError | ContentGenerationActionResponse>();
   return <TopicView {...data} actionData={actionData} />;
 }
 
 export const ErrorBoundary = ForumRouteError;
+
+export { editorClientAction as clientAction } from "../forum/editor-action";

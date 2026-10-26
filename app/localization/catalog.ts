@@ -583,6 +583,8 @@ export const canonicalEnglishCatalog = {
     sourceLocaleCorrectionError_notFound: message("sourceLocaleCorrectionError_notFound", "The content to correct no longer exists.", "Missing source-language correction target."),
     sourceLocaleCorrectionError_conflict: message("sourceLocaleCorrectionError_conflict", "The content changed before the source language could be corrected. Reload and try again.", "Stale source-language correction."),
     sourceLocaleCorrectionError_unavailable: message("sourceLocaleCorrectionError_unavailable", "The source language could not be corrected. Please try again later.", "Temporary source-language correction storage failure."),
+    postEditConflict: message("postEditConflict", "Your edit conflicts with the current message or account. Your text remains in this editor. Review the current message before saving again.", "Published-edit conflict feedback; preserve the open editor buffer."),
+    forumWriteError_unexpected: message("forumWriteError_unexpected", "An unexpected error prevented saving. Your text remains in this editor. Please try again.", "Unexpected authoring action failure, distinct from temporary dependency unavailability."),
     forumWriteError_invalid: message("forumWriteError_invalid", "Enter all required fields.", "Forum mutation validation error."),
     forumWriteError_unauthenticated: message("forumWriteError_unauthenticated", "Sign in to continue.", "Forum mutation authentication error."),
     forumWriteError_origin: message("forumWriteError_origin", "This request could not be verified.", "Forum mutation origin error."),

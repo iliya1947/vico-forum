@@ -5,7 +5,7 @@ import { RouterContextProvider } from "react-router";
 import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
 import { sectionAction, helpSolutionsCategoryAction, topicAction } from "../../app/forum/actions.server";
 import { forumReaderContext, forumWriterContext } from "../../app/forum/request-context";
-import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { authorizationContext } from "../../app/authorization/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
@@ -645,6 +645,131 @@ describe("live action → writer/service → PostgreSQL attachment publication",
   function responseStatus(value: unknown) {
     return value instanceof Response ? value.status : (value as { init?: { status?: number } }).init?.status;
   }
+
+  it.each([true, false])("preserves a committed reply and a domain failure when cleanup throws=%s", async (synchronous) => {
+    const cleanup: Promise<void>[] = [];
+    const writer = createHyperdriveForumWriter(databaseUrl, () => {
+      const connection = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+      const end = connection.end.bind(connection);
+      vi.spyOn(connection, "end").mockImplementation((() => {
+        cleanup.push(end());
+        if (synchronous) throw new Error("synthetic cleanup failure");
+        return Promise.reject(new Error("synthetic cleanup failure"));
+      }) as never);
+      return connection;
+    }, { cooldownMs: 0, now: () => new Date() });
+    try {
+      const result = await writer.createReply({ topicId: "attachment-topic", authorId: ownerId, body: "Committed despite cleanup" });
+      expect((await client.query("select id from forum_posts where id=$1", [result.postId])).rowCount).toBe(1);
+      const ctx = realContext(); ctx.set(forumWriterContext, writer);
+      const response = await topicAction({ request: publishRequest("/en/topics/missing", "reply", crypto.randomUUID(), 1, [], "Missing target"),
+        params: { locale: "en", topicId: "missing" }, context: ctx });
+      expect(responseStatus(response)).toBe(404);
+    } finally { await Promise.all(cleanup); }
+  });
+
+  it.each([false, true])("recovers a modified replay after committed edit with attachment=%s", async (withAttachment) => {
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Ambiguous edit", sourceLocale: "en" },
+      initialPost: { id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Before", sourceLocale: "en" } },
+    });
+    const ctx = realContext();
+    const reader = createHyperdriveForumReader(databaseUrl,
+      () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` }));
+    ctx.set(forumReaderContext, reader);
+    const op = crypto.randomUUID();
+    const uploaded = withAttachment ? await store.createDraftAttachment(upload(`post:${postId}:edit`, op)) : null;
+    const save = (draftId: string, revision: string, body: string, selected: string[], retained: string[]) => {
+      const form = new FormData();
+      for (const [key, value] of Object.entries({ intent: "editPost", postId, expectedRevisionId: revision, body,
+        editorOperationId: draftId, editorAttachmentIds: JSON.stringify(selected), editorRetainedAttachmentIds: JSON.stringify(retained) })) form.set(key, value);
+      return topicAction({ params: { locale: "en", topicId }, context: ctx,
+        request: new Request(`https://forum.test/en/topics/${topicId}`, { method: "POST", headers: { Origin: "https://forum.test" }, body: form }) });
+    };
+    const selected = uploaded ? [uploaded.id] : [];
+    expect(responseStatus(await save(op, revisionId, "Committed but response lost", selected, []))).toBe(302);
+    expect(responseStatus(await save(op, revisionId, "Committed but response lost", selected, []))).toBe(302);
+    const conflict = await save(op, revisionId, "New unsaved buffer", selected, []);
+    expect(conflict).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit", completedOperationId: op } });
+    const current = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(responseStatus(await save(crypto.randomUUID(), current.body.id, "New unsaved buffer", [], selected))).toBe(302);
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(after.body.originalContent).toBe("New unsaved buffer");
+    expect((after.attachments ?? []).map((file) => file.id)).toEqual(selected);
+    expect((await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId))).toHaveLength(3);
+  });
+
+  it.each([false, true])("recovers a new upload before retrying a lost-ACK edit; prior attachment=%s", async (withPriorAttachment) => {
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Upload before recovery", sourceLocale: "en" },
+      initialPost: { id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Initial", sourceLocale: "en" } },
+    });
+    const ctx = realContext(), contextKey = `post:${postId}:edit`;
+    const reader = createHyperdriveForumReader(databaseUrl,
+      () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` }));
+    ctx.set(forumReaderContext, reader);
+    ctx.set(forumAttachmentStoreContext, store as never);
+    ctx.set(privateAttachmentBucketContext, {
+      async put(_key, stream) { return { size: (await new Response(stream).arrayBuffer()).byteLength }; },
+      async get() { return null; }, async delete() {},
+    });
+    const save = (op: string, expectedRevisionId: string, body: string, attachmentIds: string[], retained: string[]) => {
+      const form = new FormData();
+      for (const [key, value] of Object.entries({ intent: "editPost", postId, expectedRevisionId, body,
+        editorOperationId: op, editorAttachmentIds: JSON.stringify(attachmentIds), editorRetainedAttachmentIds: JSON.stringify(retained) })) form.set(key, value);
+      return topicAction({ params: { locale: "en", topicId }, context: ctx,
+        request: new Request(`https://forum.test/en/topics/${topicId}`, { method: "POST", headers: { Origin: "https://forum.test" }, body: form }) });
+    };
+    const old = crypto.randomUUID();
+    const a = withPriorAttachment ? await store.createDraftAttachment(upload(contextKey, old)) : null;
+    const prior = a ? [a.id] : [];
+    expect(responseStatus(await save(old, revisionId, "Committed, ACK lost", prior, []))).toBe(302);
+    const uploadFile = (op: string, id: string) => uploadAction({ context: ctx, request: new Request("https://forum.test/api/attachments", {
+      method: "POST", headers: { Origin: "https://forum.test", "Content-Type": "text/plain", "X-Vico-Attachment-Id": id,
+        "X-Vico-Attachment-Name": "later.txt", "X-Vico-Attachment-Size": "11", "X-Vico-Editor-Context": encodeURIComponent(contextKey),
+        "X-Vico-Operation-Id": op }, body: "later bytes",
+    }) });
+    const gone = await uploadFile(old, crypto.randomUUID());
+    expect(gone.status).toBe(410);
+    expect(await gone.json()).toEqual({ error: "gone" });
+    const fresh = crypto.randomUUID(), b = crypto.randomUUID();
+    expect((await uploadFile(fresh, b)).status).toBe(201);
+    const stale = await save(fresh, revisionId, "Current retained buffer", [...prior, b], []);
+    expect(stale).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit" } });
+    expect(stale).not.toHaveProperty("data.completedOperationId");
+    const baseline = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(responseStatus(await save(fresh, baseline.body.id, "Current retained buffer", [b], prior))).toBe(302);
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    expect(after.body.originalContent).toBe("Current retained buffer");
+    expect((after.attachments ?? []).map((file) => file.id).sort()).toEqual([...prior, b].sort());
+    expect(await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId)).toHaveLength(3);
+  });
+
+  it("refreshes a real stale published edit after PostgreSQL rejects its old revision", async () => {
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Conflict recovery", sourceLocale: "en" },
+      initialPost: { id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Current publication", sourceLocale: "en" } },
+    });
+    const ctx = realContext();
+    ctx.set(forumReaderContext, createHyperdriveForumReader(databaseUrl,
+      () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` })));
+    const req = publishRequest(`/en/topics/${topicId}`, "editPost", crypto.randomUUID(), 1, [], "Unsaved private edit");
+    const form = await req.formData(); form.set("postId", postId); form.set("expectedRevisionId", "stale-r0");
+    const response = await topicAction({ request: new Request(req.url, { method: "POST", headers: { Origin: "https://forum.test" }, body: form }),
+      params: { locale: "en", topicId }, context: ctx });
+    expect(response).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit", error: "conflict", post: { id: postId, body: { id: revisionId } } } });
+    expect(JSON.stringify(response)).not.toContain("Unsaved private edit");
+    expect((await client.query("select current_revision_id from forum_posts where id=$1", [postId])).rows[0].current_revision_id).toBe(revisionId);
+  });
 
   it.each(["section-topic", "help-question", "reply"] as const)(
     "publishes one stored attachment through live %s action and writer",

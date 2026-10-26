@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-25
+Последнее обновление: 2026-10-26
 
 ## Назначение
 
@@ -19,6 +19,106 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## Пакет 3 — точная замена image destination при recovery (2026-10-26)
+
+Подтверждён LEVA-PR239-A7D2954-01: Retry менял attachment ID, но regex мог оставить
+старый destination в bare reference definition либо изменить похожую строку в label.
+Замена теперь использует точные source spans destination tokens существующего
+Markdown-парсера с той же grammar. Обновляются только inline images и действующие
+definitions, используемые image references; labels, titles, code, обычные ссылки,
+неиспользуемые и перекрытые definitions сохраняются. Text/Undo/Redo и attachment
+operation/selection продолжают использовать прежний recovery lifecycle.
+
+До исправления девять новых source regressions воспроизвели ошибку. После correction
+local1076 application/300 native PostgreSQL tests PASS; targeted61 PASS. TypeScript,
+lint(одно прежнееwarning), обе сборки и migration-history guard PASS. Chromium проверил
+оба варианта: actual built Worker edit actions/native PG, commit/lost response →
+upload410 → Retry201 → stale409/rebase → Save; сохранённый body и inline image используют
+новый ID, label и Undo/Redo сохранены. Upload bridge использует настоящий Node handler/PG,
+контролируемую upload session и synthetic byte storage; image response — local fixture.
+Это не download-handler/R2 E2E, production или owner visual acceptance.
+Новых dependencies, schema/migrations, endpoints или permission changes нет.
+Новый exact-head CI и whole-PR review проверяются после публикации correction.
+
+## Пакет 3 — terminal upload до повторного Save (2026-10-26)
+
+Подтверждён MIRA-PR239-998715-01: после committed edit/lost ACK новый upload получает410
+от завершённой operation и блокирует Save раньше доступного409/rebase recovery. Published-edit
+uploader теперь меняет operation при точном typed ответе410 gone. Выбранные Files и
+text/Undo/Redo остаются в mounted editor; обычный Retry отправляет файл с fresh operation/asset
+IDs. Retry становится доступным независимо от блокировки Save. Последующий stale409/rebase
+обновляет public baseline без повторной смены fresh operation и без дублирования старого asset.
+Оставшиеся private uploads из прежней operation сохраняют File для Retry. Поздние ACK
+подавляются прежней identity boundary. Другие authoring flows и другие upload errors не
+меняют retry identity. Новых endpoints, schema, dependencies или server permission contracts нет.
+
+Две initial UI regressions воспроизвели дефект на998715b; после исправления local1065
+application/300 PostgreSQL tests PASS, typecheck,lint(одно прежнееwarning),обе сборки,
+migration-history guard и local built Worker smoke PASS. Chromium проверил actual built
+Worker edit actions + native PostgreSQL с upload bridge к настоящему Node upload handler:
+commit/lost response → new upload410 → Retry201 → stale409 → rebase → Save success,
+с сохранением Undo/Redo и двух выбранных файлов без дублирования. Bytes storage и upload
+session context в bridge синтетические; external R2/provider/production/visual acceptance
+не заявляются. Новый exact-head CI и whole-PR review проверяются после публикации.
+
+## Пакет 3 — bounded correction published-edit recovery (2026-10-25)
+
+Проверка выявила два текущих дефекта реализации: modified replay после уже committed edit
+повторно использовал завершённую publication operation, а открытый editor менял feedback
+чужого topic-level409 на сообщение о правке. Repository теперь различает modified receipt
+replay отдельным subtype существующего domain conflict. Edit action возвращает current
+public baseline и ID завершённой operation; явный rebase меняет только эту завершённую
+operation на новую. Обычный stale revision сохраняет незавершённую operation и её uploads.
+
+Уже опубликованный после потерянного ACK asset становится retained ровно один раз; Remove
+intent сохраняется. Не попавший в current public baseline upload сохраняет исходный File
+в памяти для Retry в новой operation с новым asset ID. Активные image destinations во всём
+in-memory Undo/Redo history получают этот ID без изменения текста, code spans или labels.
+Серверные owner/context/operation gates не ослаблены. Edit-specific409 copy выбирается по
+фактическому action result/guard context, а не по наличию открытой формы.
+
+Native PG regressions проверяют committed edit → identical replay → modified409 → fresh
+operation → успешное сохранение с вложением и без него. Две Chromium проверки через built
+Worker/PostgreSQL прошли: реальная потеря ответа после commit и восстановление изменённого
+buffer; stale markSolved409 при mounted editor с сохранением текста и solution feedback.
+Полные local suites:1058 application и298 PostgreSQL tests PASS; typecheck, lint(одно прежнее
+warning), обе сборки, migration-history guard и local built Worker smoke PASS. Один первый
+app run не дождался initial mounted editor за1s; изолированные11 cases прошли, ожидание
+готовности формы в fixture увеличено до3s, повторный полный1058 suite прошёл. Product logic
+из-за этого timeout не менялась.
+Schema/migrations/dependencies не менялись; новый exact-head CI и whole-PR review должны
+проверяться после публикации correction. Пакет4 и внешние/production/visual actions не начаты.
+
+## Пакет 3 — failure semantics и восстановление опубликованной правки (2026-10-25)
+
+Ordinary forum mutations преобразуют в controlled responses только известные domain errors
+и typed storage unavailability. PostgreSQL writer классифицирует connection/query-timeout
+failures на границе адаптера; SQL/schema/programming faults проходят в error handling.
+Primary forum read loaders и protected edit-resume отображают typed dependency outages как
+`503`, сохраняя прежнюю optional-presentation degradation и неожиданные faults как ошибки.
+Cleanup PostgreSQL client/pool не подменяет уже полученный success или исходный отказ.
+
+Router `handleError` пишет только allowlisted error kind, известный SQLSTATE и безопасные
+ссылки на файлы/строки stack; message, cause payload, SQL/params и unpublished content не
+передаются в журнал. Browser client actions трёх authoring routes оставляют mounted editor
+после server/transport fault с отдельным unexpected feedback и статусом `500`; успешные
+redirects сохраняются. Серверная ошибка продолжает бросаться и диагностироваться на сервере.
+
+При конфликте published edit action повторно читает текущую public revision нужного
+сообщения. Открытая форма показывает её, сохраняет локальный text/attachment intent и старую
+expected revision до явного rebase. Более свежий loader snapshot имеет приоритет над старым
+conflict response. Сбой conflict refresh также оставляет форму открытой. Edit conflict copy
+отделена от solution-selection copy; новые сообщения включены в EN/RU/HE manual packs.
+
+Локально прошли 1051 application и 296 PostgreSQL tests; последующая дополнительная проверка
+нового loader snapshot прошла в целевом editor regression. Typecheck, lint (одно прежнее
+warning), application/UI-preview builds и migration-history guard проходят. Exact-head CI
+и whole-PR review проверяются после публикации. Local built Worker smoke и пять Chromium
+проверок через Worker/PostgreSQL прошли: stale conflict/rebase/save redirect, typed `503`,
+unexpected SQL `500`, transport failure/retry и profile fault без unpublished text в response/logs.
+Schema/migrations/dependencies не менялись;
+пакет4, visual acceptance, production и внешние сервисы не запускались.
 
 ## Bounded correction — stale-identity Google linking (2026-10-25)
 

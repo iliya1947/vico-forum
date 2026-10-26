@@ -1,3 +1,4 @@
+import { handleError } from "../entry.server";
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
@@ -82,4 +83,25 @@ describe("profile route", () => {
     expect(status(await action({ request: new Request("https://forum.test/en/users/owner", { method: "POST", headers: { Origin: "https://forum.test" }, body: "broken" }), params, context: env.context }))).toBe(400);
     expect(env.updateProfile).not.toHaveBeenCalled();
   });
+});
+
+it("reports an unexpected profile SQL fault without logging the submitted text or query params", async () => {
+  const env = setup();
+  const secret = "Unpublished bio 8f3dcf";
+  const cause = Object.assign(new Error("column missing " + secret), { code: "42703", parameters: [secret] });
+  const failure = Object.assign(new Error("Failed query: update user set bio=$1 params: " + secret, { cause }), {
+    query: "update user set bio=$1", params: [secret],
+    stack: "Error: Failed query: update user set bio=$1 params: " + secret + "\n    at updateProfile (/workspace/db/forum-repository.ts:123:45)",
+  });
+  env.updateProfile.mockRejectedValue(failure);
+  const req = request({ bio: secret });
+  const sink = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await expect(action({ request: req, params, context: env.context })).rejects.toBe(failure);
+    handleError(failure, { request: req, context: env.context, params });
+    expect(sink).toHaveBeenCalledOnce();
+    const logged = String(sink.mock.calls[0]![0]);
+    expect(JSON.parse(logged)).toEqual({ event: "route_error", errorKind: "error", databaseCode: "42703", frames: ["db/forum-repository.ts:123:45"] });
+    for (const value of [secret, "update user", "parameters", "params"]) expect(logged).not.toContain(value);
+  } finally { sink.mockRestore(); }
 });

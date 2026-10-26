@@ -1,7 +1,7 @@
-import type { EntryContext, RouterContextProvider } from "react-router";
+import type { EntryContext, HandleErrorFunction, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
 import { renderToReadableStream } from "react-dom/server";
-import { reportSsrStreamError } from "./server-logging";
+import { reportRouteError, reportSsrStreamError } from "./server-logging";
 
 export const streamTimeout = 5_000;
 
@@ -44,3 +44,7 @@ export default async function handleRequest(
     status: responseStatusCode,
   });
 }
+
+export const handleError: HandleErrorFunction = (error, { request }) => {
+  if (!request.signal.aborted) reportRouteError(error);
+};

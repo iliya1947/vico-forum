@@ -1,3 +1,4 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -11,7 +12,7 @@ import { SectionView } from "../forum/views";
 
 export { sectionAction as action } from "../forum/actions.server";
 
-export async function loader({ params, context }: {
+export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string; sectionId?: string };
   context: RouterContextProvider;
 }) {
@@ -40,7 +41,7 @@ export async function loader({ params, context }: {
     }
   }
   return { locale: params.locale ?? "en", section, canCreateTopic, topicReadStates };
-}
+});
 
 export default function SectionRoute() {
   const data = useLoaderData<typeof loader>();
@@ -49,3 +50,5 @@ export default function SectionRoute() {
 }
 
 export const ErrorBoundary = ForumRouteError;
+
+export { editorClientAction as clientAction } from "../forum/editor-action";

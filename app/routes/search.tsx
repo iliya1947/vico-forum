@@ -1,3 +1,4 @@
+import { forumReadLoader } from "../forum/read-availability.server";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
@@ -8,7 +9,7 @@ export function meta() {
   return [{ title: "Search · Vico Forum" }];
 }
 
-export async function loader({ request, params, context }: {
+export const loader = forumReadLoader(async function loader({ request, params, context }: {
   request: Request;
   params: { locale?: string };
   context: RouterContextProvider;
@@ -26,7 +27,7 @@ export async function loader({ request, params, context }: {
       ? await forumReaderForRequest(context).search(query)
       : [],
   };
-}
+});
 
 export default function SearchRoute() {
   const data = useLoaderData<typeof loader>();

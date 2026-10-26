@@ -164,6 +164,28 @@
 buffer. Reload/navigation не восстанавливают неопубликованный текст; повторное
 открытие правки загружает опубликованную revision.
 
+В authoring routes browser action сохраняет mounted форму при неожиданной серверной или
+transport-ошибке и показывает отдельный failure feedback. Неожиданный server fault остаётся
+`500` и проходит безопасную серверную диагностику; typed unavailable остаётся `503`.
+После stale published-edit Save (`409`) action читает актуальную public revision и вложения
+того же сообщения. Пользователь видит обновлённую публикацию и явно принимает её как новый
+baseline; до этого expected revision не продвигается. Текущий text/Undo и attachment intent
+остаются в памяти. Ошибка повторного чтения не закрывает форму. Более свежие loader данные
+заменяют прежний conflict baseline, не меняя набранный текст автоматически.
+
+Если предыдущий Save успел завершиться на сервере, но его ответ потерян, идентичный retry
+остаётся idempotent. Изменённый retry получает явный completed-operation conflict: rebase
+создаёт новую publication operation, сохраняя текущий text/Undo/Redo и Remove intent.
+Уже опубликованные uploads становятся retained без дублирования private selection. Другие
+uploads сохраняют File в памяти и доступны через штатный Retry с новыми operation/asset IDs;
+активные image destinations обновляются во всей in-memory истории без изменения остального
+source. Обычный stale-revision conflict не меняет незавершённую operation.
+Если новый upload опубликованной правки возвращает typed410 gone до повторного Save,
+operation меняется уже на этом ответе: выбранный File остаётся доступным через обычный Retry,
+даже пока незавершённое вложение блокирует Save. Затем штатный stale409/rebase обновляет
+public baseline, сохраняя свежую operation и исключая уже опубликованные private duplicates.
+Другие upload errors и обычные create/reply flows не получают этой смены operation.
+
 Нет local/server text cache, 60-second autosave, межвкладочного/межустройственного
 восстановления, выбора версий черновика, «Моих черновиков» и draft discovery.
 Настройки интерфейса редактора (§9) сохраняются отдельно от содержимого сообщения.

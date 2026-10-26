@@ -126,8 +126,11 @@ export function createHyperdriveForumWriter(
     try {
       await client.connect();
       return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy)));
+    } catch (error) {
+      if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
+      throw error;
     } finally {
-      await client.end();
+      bestEffortDiscardClient(client);
     }
   }
 

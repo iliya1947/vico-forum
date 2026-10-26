@@ -8,6 +8,7 @@ import {
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import {
   createWebPool,
+  bestEffortDiscardClient,
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
@@ -29,7 +30,7 @@ export function createHyperdriveAuthorization(
       try {
         return await operation(new AuthorizationService(new PostgresAuthorizationRepository(pool)));
       } finally {
-        await pool.end();
+        bestEffortDiscardClient(pool);
       }
     });
 
@@ -43,7 +44,7 @@ export function createHyperdriveAuthorization(
             try {
               return await new PostgresAuthorizationRepository(pool).resolveUser(userId);
             } finally {
-              await pool.end();
+              bestEffortDiscardClient(pool);
             }
           });
           cache.set(userId, value);

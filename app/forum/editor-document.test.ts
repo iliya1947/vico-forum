@@ -3,7 +3,7 @@ import {
   applyTextareaEdit, clearInlineMarkdownFormatting, createEditorHistory, editableCodeRanges,
   editableVisualTextRanges, editVisualText,
   recordEditorEdit, redoEditorEdit, setParagraphDirection, sourceOffsetToTextareaOffset, textareaMarkdown,
-  removeAttachmentImages,
+  removeAttachmentImages, replaceAttachmentImageId,
   textareaOffsetToSourceOffset, undoEditorEdit,
 } from "./editor-document";
 
@@ -14,6 +14,47 @@ describe("Editor 2.0 lossless document foundation", () => {
     const untouched = `\`\`\`md\r\n${image}\r\n\`\`\`\r\n\r\n\`${image}\`\r\n\r\n\\${image}`;
     const source = `${image}\r\n\r\n${untouched}\r\n\r\n![reference][file]\r\n\r\n[file]: vico-attachment:${id}\r\n`;
     expect(removeAttachmentImages(source, id)).toBe(`\r\n\r\n${untouched}\r\n\r\n\r\n\r\n[file]: vico-attachment:${id}\r\n`);
+  });
+
+  it("re-keys active attachment destinations without rewriting code, labels or escaped images", () => {
+    const old = "23b93562-0550-4eef-88af-f951d6ea6138", next = "23b93562-0550-4eef-88af-f951d6ea6139";
+    const url = `vico-attachment:${old}`;
+    const active = `![${url}](${url} "title")`;
+    const reference = `![ref][file]\r\n\r\n[file]: <${url}> "caption"`;
+    const inert = "`" + active + "`\r\n\r\n\\" + active + "\r\n\r\n```md\n" + active + "\n```";
+    const source = active + "\r\n\r\n" + reference + "\r\n\r\n" + inert;
+    expect(replaceAttachmentImageId(source, old, next)).toBe(
+      `![${url}](vico-attachment:${next} "title")\r\n\r\n![ref][file]\r\n\r\n[file]: <vico-attachment:${next}> "caption"\r\n\r\n` + inert);
+  });
+
+  it.each(["", "\n", "\r\n\r\nFollowing text"])("re-keys a bare reference definition with suffix %j", (suffix) => {
+    const old = "23b93562-0550-4eef-88af-f951d6ea6138", next = "23b93562-0550-4eef-88af-f951d6ea6139";
+    const source = `![caption][file]\n\n[file]: vico-attachment:${old}${suffix}`;
+    expect(replaceAttachmentImageId(source, old, next)).toBe(
+      `![caption][file]\n\n[file]: vico-attachment:${next}${suffix}`);
+  });
+
+  it("re-keys the actual destination when image labels and titles contain destination-like text", () => {
+    const old = "23b93562-0550-4eef-88af-f951d6ea6138", next = "23b93562-0550-4eef-88af-f951d6ea6139";
+    const label = "`x](vico-attachment:" + old + ")`";
+    const title = ` "also ](vico-attachment:${old})"`;
+    expect(replaceAttachmentImageId(`![${label}](vico-attachment:${old}${title})`, old, next))
+      .toBe(`![${label}](vico-attachment:${next}${title})`);
+  });
+
+  it.each(["![file][]", "![file]", "![caption][FiLe]"])("re-keys the active reference form %s without changing other definitions", (image) => {
+    const old = "23b93562-0550-4eef-88af-f951d6ea6138", next = "23b93562-0550-4eef-88af-f951d6ea6139";
+    const url = `vico-attachment:${old}`;
+    const untouched = `\n\n[file]: ${url}\n\n[link](<${url}>)\n\n[link-only][other]\n\n[other]: ${url}\n\n[unused]: ${url}`;
+    const source = image + `\n\n[file]: ${url}` + untouched;
+    expect(replaceAttachmentImageId(source, old, next)).toBe(image + `\n\n[file]: vico-attachment:${next}` + untouched);
+  });
+
+  it.each(["vico&#45;attachment:", "vico\\-attachment:"])("re-keys decoded active destinations written as %s", (scheme) => {
+    const old = "23b93562-0550-4eef-88af-f951d6ea6138", next = "23b93562-0550-4eef-88af-f951d6ea6139";
+    const source = `> ![caption](<${scheme}${old}>)\r\n>\r\n> ![reference][file]\r\n>\r\n> [file]: ${scheme}${old}`;
+    expect(replaceAttachmentImageId(source, old, next)).toBe(
+      `> ![caption](<vico-attachment:${next}>)\r\n>\r\n> ![reference][file]\r\n>\r\n> [file]: vico-attachment:${next}`);
   });
 
   it("persists a single paragraph's direction without touching other source spans", () => {
