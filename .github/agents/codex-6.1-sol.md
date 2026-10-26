@@ -1,5 +1,48 @@
 # Лёва — Codex-6.1 Sol
 
+## PR239 — LEVA-PR239-A7D2954-01 correction (2026-10-26)
+
+Assignment: [PR236 comment6412640448](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6412640448). The assigned correction is implemented; this is author implementation verification, not a new whole-PR independent PASS.
+
+- PR239 exact head: `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f`.
+- Parent: `a7d29546f334a59d42b30b10c67c32595ea98ec1`.
+- Base main: `f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Tree: `d7c7a678bced5507f86215b80453e405e9b466a6`, identical to locally tested commit `18d125eec524f3220bd846533589b3248da07848`.
+- Bounded correction:4files,150 additions/15 deletions. Whole PR:43files,1166 additions/66 deletions.
+
+### Diagnosis and implementation
+
+The previous regex searched an entire image/definition span. A bare definition's URL ends at the span boundary, so its required trailing delimiter never matched. A destination-like string in an alt code span could be selected before the actual URL. Adding EOF to the regex alone would leave the second defect and valid escaped/entity-written URL forms unresolved.
+
+`replaceAttachmentImageId` now records exact destination token offsets through the existing `mdast-util-from-markdown`2.0.3 compiler extension API. The installed official README/TypeScript declarations and current parser implementation were inspected before use. The handler retains normal `CompileContext.buffer()` behavior; existing default exit handlers still decode and assign node URLs. The same existing forum Markdown grammar is used, without changing global parsing/rendering or adding dependencies.
+
+Only matching image URL spans and the first effective definitions used by actual image references are changed. Labels, code spans/fences, titles, escaped image literals, ordinary links, unused definitions and duplicate shadowed definitions remain unchanged. Replacement uses source spans in descending order, preserving untouched source/line endings. Bare/full/collapsed/shortcut references, case-normalized identifiers, angle/title forms, entity/escape destinations and nested blockquote positions are covered. Definitions shared with active image references necessarily remain the source for those references; no duplicate definition is introduced.
+
+The existing MarkdownEditor history mapping applies this corrected function to current/past/future snapshots. Uploader operation transitions, File retention, selected/retained IDs, Remove, domain receipts and permissions remain unchanged. No server recovery endpoint or permission relaxation was added.
+
+### Verification
+
+- Before implementation:9 new source regressions failed on the previous head,19 controls passed. The final review had already reproduced both complete UI failure chains on that head.
+- After implementation:61 targeted tests PASS (editor-document, edit-recovery, attachment-operation).
+- Full application:1076/1076 PASS; native local PostgreSQL17:300/300 PASS.
+- New mounted TopicRoute tests drive committed/lost response → upload410 → fresh Retry/newasset → stale409 → explicit rebase → successful Save/editor close for both reference and label variants. Exact submitted body/selection are checked; current/past/future history and the same File survive. Positive real-renderer controls and final inline-image rendering pass.
+- TypeScript PASS; lint0errors and one preexisting unused-disable warning at app/forum/ui.test.tsx:174.
+- Application and UI-preview builds PASS; existing preview chunk-size warning remains. Migration-history guard PASS,0new migrations; local built Worker smoke PASS.
+- Chromium:both variants PASS through actual built Worker edit actions/native PostgreSQL, real response loss after commit, actual Node upload handler returning410/201, stale409/rebase and final Save. Database body and unique published ref use the new asset; label remains exact; Undo/Redo and final inline `<img>` source/visibility pass.
+- Browser boundary:upload session is a controlled fixture, authorization/store gates use actual native adapters; private byte storage is synthetic. Image delivery uses a controlled PNG response fixture to isolate inline-position rendering. This is not download-handler/R2/provider E2E or owner visual acceptance. Production/external services were not accessed.
+- First browser run reached final save and persisted the correct body/ref, then a harness selector for a nonexistent class reported0 images. The selector was corrected to the existing `[data-message-body]`; both full scenarios then passed. No product change was made for that harness issue.
+- Local Worker and disposable PostgreSQL container stopped/removed. No new schema/migrations/dependencies/endpoints or permission contracts. Package4+ not started.
+- CI: **[Exact-head CI40301421307](https://github.com/iliya1947/vico-forum/actions/runs/40301421307) SUCCESS; checks121499966129/database121499965589 SUCCESS on780ba720**.
+
+Evidence: `/workspace/work/pr239-rekey-red.json`, `pr239-rekey-targeted.log`, `pr239-rekey-app.json`, `pr239-rekey-db.json`, `pr239-rekey-types.log`, `pr239-rekey-lint.log`, `pr239-rekey-build.log`, `pr239-rekey-preview.log`, `pr239-rekey-migrations.log`, `pr239-rekey-smoke.log`, `pr239-rekey-browser-results.json`, `pr239-rekey-browser2.log`; browser/bridge scripts are outside the implementation worktree. Tracked regression tests are included in PR239.
+
+Publication:automatic review initially rejected uploading full PROJECT_STATE due to infrastructure content. Read-only comparison proved the complete previous payload exactly equals the already-public parent blob `b451e090e86bca6ace8d87caf35329f69536ba1e`; all existing bytes stay unchanged, only the scoped21-line correction note is added. Same-repository correction authorization and the AGENTS project-state requirement were shown. The same GitHub blob tool then accepted the upload; no alternate destination/channel or bypass was used. All four blobs and final tree matched local hashes. No publication blocker remains.
+
+### Handoff
+
+Мире: coordinate a new whole-PR review cycle on780ba720 for all8 package3 groups, all prior bounded chains and this source-destination correction. Previous findings/PASS verdicts apply to earlier heads, not the new implementation. No new independent PASS or merge readiness is asserted by the author. PR236 is communication-only and must never merge. Лёва STOP after handoff.
+
+
 ## PR239 — final technical review: CHANGES REQUIRED (2026-10-26)
 
 Date: 2026-10-26 (Asia/Jerusalem). Assignment: PR236 comment 6412169759.
