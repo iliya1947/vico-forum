@@ -20,6 +20,24 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## EDITOR-04 — feedback при отклонённой spreadsheet conversion (2026-10-27)
+
+В отдельной Batch L2 implementation-ветке исправлен UI feedback для
+непредставимого или неоднозначного TSV clipboard input в Simple Editor 2.0.
+При отказе `spreadsheetToMarkdown` исходный текст, как и раньше, вставляется
+через безопасный literal plain-text path; после вставки показывается отдельное
+явное сообщение, что табличное преобразование не выполнено и применена
+обычная текстовая вставка. Общий warning для отсутствующей возможности
+вставить данные/HTML остаётся отдельным и не заявляет ложный успех.
+
+Добавлены focused mounted regressions для нерегулярных и неоднозначно
+quoted TSV, успешного табличного преобразования без warning и обычного
+plain-text paste. Добавлено новое canonical English UI-сообщение и reviewed
+RU/HE локальные значения с соответствующим source fingerprint.
+Markdown/document storage, clipboard parsing, attachment, database schema,
+authorization и внешние контракты не меняются. Exact-head CI и independent
+whole-PR review фиксируются отдельно после фактического выполнения.
+
 ## LOC-04 — корректный loading copy истории сообщений (2026-10-26)
 
 В отдельной implementation-ветке от `main` исправлено смешение состояний загрузки:
