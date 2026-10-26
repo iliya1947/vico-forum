@@ -1,13 +1,14 @@
 # Shared service channel
 
-## Текущая реализация — пакет4: передан Мишане (2026-10-26)
+## Текущая реализация — пакет 4: PR #240 передан на независимую проверку (2026-10-26)
 
-- Актуальный baseline: `main 8f56479890f63000149354820a6b5162bb9de492` после owner merge PR #239.
-- Package 4 scope: `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02`, `CORE-03`; documentation sidecar `DOC-02`.
-- Требуемый результат: schema/parity/runtime privilege contracts соответствуют фактическим invariants; notifications/read-state корректны при concurrency и объёме >50.
-- Implementation handoff опубликован в PR #236 comment `6413772355`. Исполнитель: Мишаня (Codex-5.6 Sol).
-- Package 4 ещё не реализован; implementation PR/exact head/CI пока отсутствуют.
-- Пакеты 5–11 не начаты. Production/external/owner visual actions не выполнялись.
+- Baseline: `main 8f56479890f63000149354820a6b5162bb9de492`, после owner merge PR #239.
+- Package 4 — **Database contracts + notifications/read-state**: `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02`, `CORE-03`; documentation sidecar `DOC-02`.
+- Мишаня опубликовал implementation handoff в [комментарии #6414440042](https://github.com/iliya194/vico-forum/pull/236#issuecomment-6414440042). Implementation: [PR #240](https://github.com/iliya194/vico-forum/pull/240), **stable exact head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`**, base `8f56479890f63000149354820a6b5162bb9de492`. PR открыт, mergeable.
+- Изменения по отчёту автора: migration `0045` исправляет nullable metadata allowance; schema manifest проверяет predicates partial indexes; web runtime privilege contract охватывает `forum_topic_read_states`; `FOR NO KEY UPDATE` устраняет crossed-reply lock cycle; unread notifications более 50 остаются доступны; read-state marker не опережает доставленный loader snapshot; документация синхронизирована.
+- Автор сообщает `1077` application и `303` disposable PostgreSQL tests PASS; schema/parity/privilege probes и остальные applicable checks PASS. [Exact-head CI #40311315111](https://github.com/iliya194/vico-forum/actions/runs/40311315111) **SUCCESS** на `ec954ac5`, independently сверена Лирой. Это авторская verification + CI, а не independent source review.
+- **Мира назначила Лире независимый whole-PR review** всего scope пакета 4 на этом exact head: [комментарий #6414799836](https://github.com/iliya194/vico-forum/pull/236#issuecomment-6414799836). Перед проверкой никаких findings и PASS Лиры нет; PR #240 не готов к owner merge на основании одного handoff.
+- **Следующий шаг: Лира выполняет назначенный independent whole-PR review PR #240** и сообщает verdict разработчику; findings до окончания review не публикуются. Мира продолжает координацию остальных предусмотренных проверок. Пакеты 5–11 не начаты; production/external/owner visual actions не выполнялись. PR #236 — только communication, никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
