@@ -1,5 +1,23 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## Batch L1 / ATTACH-03 — fix 1/5 завершён (2026-10-26)
+
+**Implementation**: [Draft PR #243](https://github.com/iliya194/vico-forum/pull/243), branch `chatgpt6/batch-l1-20261026`. Baseline `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`; exact implementation head `ecafe086ec5e769c54ee152a368397ea2d45c613`. Назначение: [PR #236 comment #6421152256](https://github.com/iliya194/vico-forum/pull/236#issuecomment-6421152256).
+
+**Scope: только `ATTACH-03`.** Валидный пустой ненулевой TAR без `ustar` header не проходил prefix detection: только два 512-byte zero end-of-archive blocks, therefore `unknown/signature-mismatch` при поддерживаемом `.tar`. Устранён дефект:
+- `app/forum/attachment-validation.ts`: `detectAttachmentContent` распознаёт два полных 512-byte zero blocks как TAR, сохраняя приоритет forbidden/executable signatures, проверки filename extension, MIME, size и structural validation.
+- `app/forum/attachment-container-validation.ts`: для пустого TAR проверяются все trailing zero bytes ограниченными ranged reads (не более 64 KiB за запрос), а не только первые два нулевых блока; nonzero trailing bytes отвергаются. Для non-empty TAR существующий path не изменён.
+- `app/forum/attachment-validation.test.ts`: valid 1024-byte zero TAR; one block rejection; unsupported extension/MIME mismatch.
+- `app/forum/attachment-container-validation.test.ts`: valid 1024/10240-byte empty archives, rejected truncated/poisoned padding and bounded ranged reads.
+- `app/forum/attachment-r2.test.ts`: private R2 adapter accepts valid empty 10240-byte TAR and deletes poisoned archive after `invalid-structure`.
+- `PROJECT_STATE.md`: зафиксирован только текущий ATTACH-03 и незавершённость batch L1.
+
+**Проверки:** [exact-head CI #40360530171](https://github.com/iliya1947/vico-forum/actions/runs/40360530171) `completed / success` на `ecafe086ec5e769c54ee152a368397ea2d45c613`; jobs **`checks` PASS**, **`database` PASS**. CI лично сверена через GitHub. Локальные tests не запускала: работа сделана через GitHub connector, собственного checkout/Test Runner нет. Не выдаю CI за independent review или owner acceptance.
+
+**Ограничения и STOP:** PR #243 — **draft**, implementation-incomplete. `ATTACH-04`, `ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` не начинались. Review cycle и merge до выполнения всех пяти fixes не запускать. PR #241 не изменяла; real R2, production, owner visual не использовала. Следующий fix только по отдельному назначению Миры. **STOP.**
+
+---
+
 ## PR #241 — independent whole-PR review пакета 5 на `f5cdf718` (2026-10-26)
 
 **Вердикт Лиры: PASS по независимой проверке исходного кода, diff и регрессионного покрытия.** Новых подтверждённых дефектов текущего Stage в назначенном scope не обнаружено. Этот verdict не является командным consensus или разрешением merge. Публикация сделана **по прямой команде разработчика**; на момент проверки служебных записей завершение параллельной проверки Лёвы не было опубликовано, и результаты других reviewers в основание вердикта Лиры не принимались.
