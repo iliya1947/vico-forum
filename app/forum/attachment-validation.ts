@@ -78,7 +78,10 @@ export function detectAttachmentContent(
     || has(bytes, 0, [0x50, 0x4b, 0x07, 0x08])) return "zip";
   if (has(bytes, 0, [0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c])) return "7z";
   if (has(bytes, 0, [0x1f, 0x8b])) return "gzip";
-  if (ascii(bytes, 257, "ustar")) return "tar";
+  // Empty TAR archives contain two 512-byte zero end markers, with no ustar header.
+  // The separate TAR structural validator verifies the complete object after storage.
+  if (ascii(bytes, 257, "ustar")
+    || (bytes.length >= 1024 && bytes.subarray(0, 1024).every((byte) => byte === 0))) return "tar";
   if (has(bytes, 0, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return "ole";
   if (bytes.length === 0) return "unknown";
   for (const byte of bytes) {
