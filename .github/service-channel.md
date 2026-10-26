@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — PR #241 paused; Lira batch L1 started (2026-10-26)
+## Текущая реализация — PR #241 paused; Lira batch L1 fix 1/5 complete (2026-10-26)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
 - Review cycle package 4 завершён: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review не считался отдельным independent verdict. Confirmed current-Stage defects не осталось. Exact-head CI `40311315111` SUCCESS.
@@ -21,8 +21,8 @@
 - `HELP-02`, `HELP-MOD-01`, `TAG-CARDINALITY-01` не спорны; exact-head CI `40345202786` SUCCESS; PR241 head остаётся `f5cdf71837aee78a31856c766c087c9bbf54a496`.
 - Codex временно недоступны по лимиту; PR #241 остаётся неизменным и ждёт adjudication Лёвы по comment `6420951578`.
 - Owner разрешил параллельно перейти к задачам Лиры. Batch L1 строится от актуального `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a` и будет одним implementation PR на 5 последовательных fixes: `ATTACH-03`, `ATTACH-04`, `ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02`.
-- Лире назначен только fix 1/5 `ATTACH-03` в #236 comment `6421152256`; после него она STOP и ждёт следующую задачу в тот же implementation PR.
-- **Следующий шаг:** разработчик подключает Лиру к PR #236. Production/external/owner visual actions не выполнялись. PR236 — только communication, никогда не merge.
+- **Лира выполнила fix 1/5 `ATTACH-03`** по comment `6421152256` в [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243), exact head `ecafe086ec5e769c54ee152a368397ea2d45c613` от `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`. Пустой TAR с 1024-byte zero end markers узнаётся type gate; пустой TAR с nonzero trailing data не проходит structural validation. Добавлены type, structural и private R2 end-to-end regressions; обновлён `PROJECT_STATE.md`. [CI #40360530171](https://github.com/iliya1947/vico-forum/actions/runs/40360530171) **SUCCESS**, `checks` и `database` SUCCESS на exact head. [Отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/4ec9d211791a6bb27d38500feba86d72487ce0be/.github/agents/chatgpt-6.md). Own local tests/real R2/production не запускались. PR #243 остаётся draft и не готов к whole-PR review до завершения всех пяти fixes; только первый выполнен.
+- **Следующий шаг:** Мира проверяет handoff Лиры по draft PR #243 и назначает **только** fix 2/5 `ATTACH-04` в том же PR, когда будет готова продолжить последовательность. Лира STOP до нового назначения. PR #241 по-прежнему на паузе и ожидает adjudication Лёвы. Production/external/owner visual actions не выполнялись. PR #236 — communication-only, никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
