@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая координация — PR #241 merged; PR #243 integrated clean; PR #244 reviewed PASS (2026-10-26)
+## Текущая координация — PR #241/#243 merged; PR #244 LOC-04 integrated clean (2026-10-26)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
 - Review cycle package 4 завершён: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review не считался отдельным independent verdict. Confirmed current-Stage defects не осталось. Exact-head CI `40311315111` SUCCESS.
@@ -71,4 +71,6 @@
 - PR #243 merged by owner into `main` as `9ceead2a035c95c47c15573db039f43aca0739ce`.
 - Post-merge PR #244 check: unchanged reviewed head `7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`, GitHub `mergeable=false` / `mergeable_state=dirty`. Overlap with changes now in main: `PROJECT_STATE.md`, `app/forum/public-read.test.tsx`, `app/forum/views.tsx`, `app/localization/catalog.ts`, `app/localization/manual-fingerprints.ts`; `manual-values.ts` remains non-overlapping.
 - Лире назначена bounded integration correction existing PR #244 preserving current main + reviewed LOC-04 diff; task #236 comment `6428231373`.
-- **Следующий шаг:** разработчик подключает Лиру к PR #236 для integration correction PR #244.
+- **Лира завершила integration-only correction existing PR #244** после owner merge #241/#243 по assignment [#6428231373](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428231373). Новый exact head **`9643f6cb433c432a93b3aa7ce07c9533f7f2f00f`**, two-parent merge reviewed LOC04 `7c750ba8bfa0d0efc9d6046395a97d033c64d6a5` + current main `9ceead2a035c95c47c15573db039f43aca0739ce`. Full main state/code Package5+BatchL1 preserved; six LOC04 changed-file Git patches against new main have **exactly same added/deleted lines** as original independently reviewed PR244 diff. No new product logic or changed contract. State: main complete + original 14-line LOC04 block; app mounted history test +43 lines, history-specific view key, descriptor, reviewed fingerprint and RU/HE values restored exactly.
+- GitHub PR #244 `mergeable=true`, **`mergeable_state=clean`**, current base `9ceead2a`. [Final exact-head CI #40408705757](https://github.com/iliya1947/vico-forum/actions/runs/40408705757) **SUCCESS**: `checks` SUCCESS (1095 app tests/102 files, typecheck, lint 0 errors/1 existing warning, builds/schema checks), `database` SUCCESS (304 native PostgreSQL tests/28 files). [Handoff #6428372882](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428372882), [личный отчёт](https://github.com/iliya1947/vico-forum/blob/98ea16d093771dfed270b3ff777e740838ad6f76/.github/agents/chatgpt-6.md). Лира STOP; self-review/merge не выполняла.
+- **Следующий шаг:** Мира проверяет integration-only invariants PR #244 и готовность к owner merge. При сохранении reviewed LOC-04 code/contract прежние Mira+Leva PASS остаются применимыми; новый whole-PR cycle без изменений implementation/requirements не нужен. Owner выполняет merge после проверки координатора; PR #236 — communication-only.
