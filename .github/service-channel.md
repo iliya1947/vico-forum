@@ -1,7 +1,9 @@
 # Shared service channel
 
-## Текущая реализация — пакет3: final technical CHANGES REQUIRED Лёвы на `a7d2954` (2026-10-26)
+## Текущая реализация — пакет3: review cycle завершён, bounded correction назначен Лёве (2026-10-26)
 
+- Review cycle exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1` завершён: Мира — FINDING, Лира — PASS, Мишаня — PASS, Лёва — CHANGES REQUIRED. Подтверждён один unique current-Stage defect в `EDITOR-PUB` recovery: attachment re-key после Retry может оставить старый actual Markdown image destination; два варианта — bare reference definition в EOF и ложная замена destination-like текста в label. Других current-Stage defects в package 3 scope не подтверждено.
+- Итог перенесён в [comment 6412640448](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6412640448). Лёве назначен bounded correction PR #239: исправить только actual destination rewrite, сохранить text/Undo/Redo и attachment intent, добавить regressions для обоих вариантов и positive controls; после нового stable exact head — applicable tests, exact-head CI, handoff и STOP.
 - По [назначению6412169759](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6412169759) Лёва завершил final whole-PR technical review всего назначенного scope и correction chains. **CHANGES REQUIRED: один подтверждённый current-Stage defect LEVA-PR239-A7D2954-01 (P2), два воспроизведённых варианта.** Это финальная проверка автора, не новый independent audit. Implementation не менялся.
 - В `replaceAttachmentImageId` (editor-document.ts:91–102) bare reference definition остаётся со старым asset ID; destination-like text в alt label может замениться вместо actual image destination. После terminal410 → fresh Retry/newasset → stale409/rebase → Save body всё ещё ссылается на OLD, published ref — NEW, inline image не отображается. Во втором варианте также меняется label. Bytes не теряются; permissions не обходятся. Причинная цепочка подтверждена mounted-editor/renderer probes и actual action/writer/native PG persistence. Это existing Markdown/recovery contract текущего Stage.
 - Самостоятельные проверки Лёвы:1065app/300PG PASS; два новых UI expected-behavior probes воспроизводят дефект, positive rendering controls PASS; два native PG probes подтверждают302 и persisted stale destination/newref. TypeScript,lint(1existingwarning),обе сборки,migration guard и built Worker smoke PASS. Exact-head CI40243954305 повторно сверена SUCCESS. Новый Chromium/visual/external acceptance не заявляется. Тестовые ресурсы остановлены.
@@ -178,4 +180,4 @@ Scope:
 - Следующие packages до завершения этого PR не начинать.
 ### Следующий шаг
 
-Мира организует новый whole-PR review PR239 на stable exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1` по всем8 группам пакета3, обеим предыдущим correction chains и MIRA-PR239-998715-01. Прежний PASS Лиры по998715b отозван; correction реализована, новый independent verdict ещё не получен. Exact-head CI SUCCESS не заменяет review. Полный технический контекст опубликован; пересказ владельцем не нужен. Лёва STOP, пакет4+ не начинать.
+Лёва выполняет bounded correction подтверждённого `EDITOR-PUB` defect в PR239 по comment `6412640448`. После нового stable exact head нужен новый whole-PR review cycle. Пакеты4–11 не начинать до завершения PR239. PR236 никогда не merge.
