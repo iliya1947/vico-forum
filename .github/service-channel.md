@@ -105,3 +105,12 @@
 - **Следующий шаг по L6:** Мира начинает coordinator whole-PR проверку PR #245 на stable exact head `f673c90`, затем назначаются независимые reviewers по актуальному owner-designated процессу. Лёва как author не выполняет whole-PR review собственной реализации. Merge остаётся за владельцем; #236 communication-only.
 
 - **PR #246 EDITOR-04 implementation complete (Лира, 2026-10-27):** owner-authorized Batch L2 branch `chatgpt6/batch-l2-20261027`, baseline `main bff130db5fb245e3a9ad3391fad54a2fe81aac88`; Draft PR [#246](https://github.com/iliya1947/vico-forum/pull/246), stable exact head **`4196c36539e71b881f4ced4e1ef8e224acb3ea44`**. Failed TSV→table conversion retains original escaped plain-text paste and now explicitly notifies user of fallback; generic unsuccessful-paste warning remains separate. Focused mounted regressions cover declined nonrectangular/quoted TSV + notification and successful TSV/ordinary plain paste controls; EN/RU/HE copy, reviewed fingerprint, PROJECT_STATE synchronized. First CI head `98287cb` failed typecheck from stale setter name, corrected. [Final exact-head CI #40417475881](https://github.com/iliya194/vico-forum/actions/runs/40417475881) **SUCCESS**: `checks` SUCCESS (1097 application tests / 102 files, lint/typecheck/builds/schema guards) and `database` SUCCESS. Лира лично Chromium/PG не запускала; whole-PR self-review, owner acceptance, external/production и merge не выполнялись. [Личный отчёт](https://github.com/iliya1947/vico-forum/blob/f93b1c88c3422bb07114035d587954f39fd8b552/.github/agents/chatgpt-6.md). **Следующий шаг для EDITOR-04:** Мира начинает coordinator whole-PR проверку PR #246 на exact head; другие Batch L2 fixes пока не начаты. Лира STOP.
+
+
+- Owner clarified current independent-review matrix:
+  1. PR #246 (author Лира) — independent reviewer: Лёва.
+  2. PR #245 (author Лёва) — independent reviewers: Лира + Мишаня.
+- Existing neutral assignments remain: Лира→#245 comment `6429594005`; Лёва→#246 comment `6429594867`.
+- Added neutral Мишаня→#245 whole-PR review task: #236 comment `6429745639`.
+- Review findings/verdicts remain out of shared service state until all intended independent reviews complete.
+- **Следующий шаг:** developer connects Мишаня to PR #236 for independent review of PR #245.
