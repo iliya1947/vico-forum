@@ -25,9 +25,11 @@ function normalizeClipboardProse(source: string): string {
   let end = 0;
   let normalized = "";
   for (const match of source.matchAll(fence)) {
-    normalized += compact(source.slice(end, match.index));
+    const start = match.index;
+    if (start === undefined) continue;
+    normalized += compact(source.slice(end, start));
     normalized += match[0];
-    end = match.index + match[0].length;
+    end = start + match[0].length;
   }
   return (normalized + compact(source.slice(end))).trim();
 }
