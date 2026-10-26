@@ -360,3 +360,16 @@ Batch 4/5; EDITOR-02 не начат. PR243 draft, whole-PR review и merge не
 - Прямого изменения `main` или implementation PR #239 Лира не выполняла.
 
 **Вердикт:** PASS независимого code review в указанных границах. Review завершён; решение о дальнейшей координации/merge не принимаю. **STOP.**
+
+
+## EDITOR-04 — Batch L2 step 1/5 implementation (2026-10-27)
+
+Owner authorized creation of implementation branch `chatgpt6/batch-l2-20261027` from `main bff130db5fb245e3a9ad3391fad54a2fe81aac88`. Original assignment: #236 comment `6428906267`. Draft implementation PR [#246](https://github.com/iliya1947/vico-forum/pull/246), **exact implementation head `4196c36539e71b881f4ced4e1ef8e224acb3ea44`** (base `bff130db5fb245e3a9ad3391fad54a2fe81aac88`). Only `EDITOR-04` implemented.
+
+**Cause and change.** `pasteSpreadsheet` previously called `replaceSourceRange(range, clipboardPlainToMarkdown(text))` when `spreadsheetToMarkdown` declined ambiguous/nonrectangular TSV. This safely preserved clipboard text, but `replaceSourceRange` clears generic paste-warning state. No feedback explained that table conversion was declined. Now a single typed `pasteNotice` distinguishes `fallback` (conversion declined, lossless literal text inserted) from `error` (cannot perform paste). The fallback notice is set *after* source replacement. Successful table conversion and ordinary plain paste continue clearing stale notices; no converter/serializer semantics changed. Introduced canonical `editorPastePlainFallback` and manually reviewed RU/HE values with corresponding source fingerprint; existing HTML/no-selection error warning remains separate.
+
+**Regression coverage.** Mounted `MarkdownEditor` checks assert that nonrectangular TSV and ambiguous quoted TSV remain original escaped-literal Markdown, do not become a visual table and render the explicit fallback alert. Successful rectangular TSV produces a visual Markdown table without alert; ordinary plain paste produces no conversion alert. `PROJECT_STATE.md` updated. Changed six files: `app/forum/markdown-editor.tsx`, `app/forum/markdown-editor.test.tsx`, `app/localization/catalog.ts`, `app/localization/manual-values.ts`, `app/localization/manual-fingerprints.ts`, `PROJECT_STATE.md`. No schema/migration/dependencies, authz, attachment, translation-runtime or unrelated Batch L2 changes.
+
+**CI.** First head `98287cb`, run [#40417262762](https://github.com/iliya1947/vico-forum/actions/runs/40417262762): `checks` FAILED solely at TypeScript because one callback still referenced old `setPasteWarning`; `database` SUCCESS. Corrected the remaining reference; **final exact-head [CI #40417475881](https://github.com/iliya194/vico-forum/actions/runs/40417475881) SUCCESS**, `checks` job `121903280125` and `database` job `121903279852` both SUCCESS. `checks`: 1097 application tests / 102 files PASS, lint 0 errors / 1 pre-existing warning, typecheck, both builds and schema guards successful. Native PostgreSQL CI succeeded; PostgreSQL/Chromium not run personally. No owner visual acceptance, browser E2E, external/production action or whole-PR self-review performed.
+
+**Status:** implementation step 1/5 complete and Draft PR #246 handed off for Mira's coordinator verification and subsequent independent review as appropriate. `EDITOR-10`, `LITERAL-TEXT-01`, `LOC-03`, `LOC-06` not started. **STOP**.
