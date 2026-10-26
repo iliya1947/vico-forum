@@ -1,6 +1,11 @@
 # Shared service channel
 
-## Текущая реализация — пакет3: independent whole-PR PASS Лиры и Мишани на `a7d2954` (2026-10-26)
+## Текущая реализация — пакет3: final technical CHANGES REQUIRED Лёвы на `a7d2954` (2026-10-26)
+
+- По [назначению6412169759](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6412169759) Лёва завершил final whole-PR technical review всего назначенного scope и correction chains. **CHANGES REQUIRED: один подтверждённый current-Stage defect LEVA-PR239-A7D2954-01 (P2), два воспроизведённых варианта.** Это финальная проверка автора, не новый independent audit. Implementation не менялся.
+- В `replaceAttachmentImageId` (editor-document.ts:91–102) bare reference definition остаётся со старым asset ID; destination-like text в alt label может замениться вместо actual image destination. После terminal410 → fresh Retry/newasset → stale409/rebase → Save body всё ещё ссылается на OLD, published ref — NEW, inline image не отображается. Во втором варианте также меняется label. Bytes не теряются; permissions не обходятся. Причинная цепочка подтверждена mounted-editor/renderer probes и actual action/writer/native PG persistence. Это existing Markdown/recovery contract текущего Stage.
+- Самостоятельные проверки Лёвы:1065app/300PG PASS; два новых UI expected-behavior probes воспроизводят дефект, positive rendering controls PASS; два native PG probes подтверждают302 и persisted stale destination/newref. TypeScript,lint(1existingwarning),обе сборки,migration guard и built Worker smoke PASS. Exact-head CI40243954305 повторно сверена SUCCESS. Новый Chromium/visual/external acceptance не заявляется. Тестовые ресурсы остановлены.
+- [Полный final technical report Лёвы](https://github.com/iliya1947/vico-forum/blob/5666a6a9f57245fe2ef7e8ab167888e451aedd17/.github/agents/codex-6.1-sol.md). Других подтверждённых дефектов в оставшемся assigned scope не найдено. Старые PASS Лиры/Мишани сохраняют своё авторство и не означают разрешение merge при новом подтверждённом finding.
 
 - Пакеты1–2 merged. Main/base `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge.
 - [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **новый stable exact head `a7d29546f334a59d42b30b10c67c32595ea98ec1`**, parent998715b.
@@ -15,7 +20,7 @@
 - **[Exact-head CI #40243954305](https://github.com/iliya1947/vico-forum/actions/runs/40243954305): SUCCESS**, checks121321492211/database121321492371 SUCCESS наa7d2954.
 - PROJECT_STATE/docs/EDITOR обновлены. [Полный авторский handoff](https://github.com/iliya1947/vico-forum/blob/941582393f3574c1e71dedfc7e47fffa03b3d410/.github/agents/codex-6.1-sol.md).
 - Прежний PASS Лиры по `998715b` был отозван после подтверждённого finding. **На новом exact head `a7d2954` Лира завершила independent whole-PR code/source review с PASS** по восьми группам и трём correction chains, новых подтверждённых current-Stage defects не выявила. [Личный отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/7e26f8b188ea9da32db7096531471f7afbc2a930/.github/agents/chatgpt-6.md). Exact-head CI `40243954305` SUCCESS сверена Лирой; самостоятельного запуска PostgreSQL/Chromium у неё не было. **Мишаня также опубликовал самостоятельный whole-PR PASS** по этому же head: [комментарий #6405118900](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6405118900); его отдельная проверка включала локальную full application suite, но без собственного PostgreSQL запуска. Совпадение verdicts не заменяет final technical review.
-- **Следующий шаг:** Мира учитывает опубликованные independent verdicts Лиры и Мишани, координирует оставшиеся предусмотренные проверки/финальный технический verdict на `a7d2954` и решение владельца по PR #239. Незавершённое review или внешний acceptance не объявлять пройденными. Лёва STOP; пакеты4–11 не начаты. PR236 никогда не merge.
+- **Следующий шаг:** Мира рассматривает LEVA-PR239-A7D2954-01 и координирует bounded correction/review cycle PR #239. Исправление не начато и не назначено этим отчётом. До закрытия finding общий merge-ready verdict отсутствует. Лёва STOP; пакеты4–11 не начаты. PR236 никогда не merge.
 
 ## Завершённый пакет 2 — auth/session/identity
 
