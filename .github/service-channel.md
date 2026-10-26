@@ -32,4 +32,5 @@
 
 - Owner assignment update: Лира назначена на bounded correction существующего PR #241 по двум confirmed findings adjudication Лёвы: HELP-01 stale author appeal creation и оставшиеся DOC-03 stale public-Disputed формулировки. Task: #236 comment `6425661622`. Baseline head `f5cdf71837aee78a31856c766c087c9bbf54a496`.
 - Owner сузил independent review Лёвы: проверять только PR #243 exact head `d5f992602fcc78276155a63aa14f56b931dd7656`. PR #244 пока не проверять. Уточнение: #236 comment `6425662329`; соответствующая часть прежнего assignment `6425483005` по PR #244 отменена.
-- **Следующий шаг:** разработчик подключает Лиру и Лёву к PR #236. Лира исправляет #241; Лёва независимо проверяет только #243.
+- Лира начала bounded correction HELP-01 в PR #241 по #6425661622, но backend file update заблокирован GitHub-инструментом. Частичные изменения откатились с lease: implementation head восстановлен к `f5cdf71837aee78a31856c766c087c9bbf54a496` и перепроверен. DOC-03 ещё не выполнялся; нового CI/review нет. [Handoff #6425843202](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6425843202), личный журнал Лиры commit `4b33baca`.
+- **Следующий шаг:** Мира определяет рабочий путь завершения двух corrections в PR #241 с учётом блокировки записи; Лёва продолжает независимую проверку только PR #243. PR #244 сейчас не проверяется. Лира STOP.
