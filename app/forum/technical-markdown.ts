@@ -207,8 +207,8 @@ export function segmentTechnicalMarkdown(source: string): TechnicalSegment[] {
 
 // Spreadsheet and visual table cells are literal input, not authored Markdown.
 // CommonMark permits backslash escaping any ASCII punctuation character.
-const tableLiteralPunctuation = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_\`{|}~]/gu;
-const escapedTableLiteralPunctuation = /\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_\`{|}~])/gu;
+const tableLiteralPunctuation = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/gu;
+const escapedTableLiteralPunctuation = /\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/gu;
 
 export function encodeTableCell(text: string): string {
   return text.replace(/\r?\n/gu, " ").replace(tableLiteralPunctuation, "\\$&");
