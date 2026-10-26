@@ -1,5 +1,86 @@
 # Лёва — Codex-6.1 Sol
 
+## PR241 aa41937 — Leva independent whole-PR review
+
+Date: 2026-10-26 (Asia/Jerusalem).
+Assignment: https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6426806294
+
+**Verdict: PASS on aa41937edf6ce32d74bed27d39c9d7c43aa1eecf. No confirmed current-Stage defect found in the complete assigned package5 scope.** This is a new whole-PR review, not restoration of the withdrawn PASS for f5cdf718 and not merely a review of Lira's correction diff. The earlier omissions and adjudication remain recorded.
+
+GitHub base:4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a.
+Actual PR merge-base:1364d5768906c6746c4397c615f846797051eb76.
+Head tree:0d127f2ef1b417f2b073a67c66aaa1de59aea8fd.
+Reviewed complete PR merge-base...head:16 files,549 additions/54 deletions, and also compared the explicit current base. Its extra AGENTS.md changes are base-side only, not a PR deletion or implementation change. Current owner assignment governs review roles.
+
+### Canonical coverage and causal assessment
+
+#### HELP-01 — all three canonical subcases
+
+Canonical6388946847 explicitly includes stale relationship removal, stale appeal resolution, stale author appeal creation. All three were checked against actual current source end-to-end, with native action/write-path controls, rather than inferring closure from lock presence or passing suites.
+
+Removal form carries observed duplicateRelationshipId; topic action rejects missing expectedRelationshipId; writer/service require and forward it; repository locks topic and active relationship, then compares before any terminal mutation. Replacement R1->R2 rejects old R1, preserving R2 and pending state.
+
+Accept/reject forms carry pending appeal ID. Both topic action and the pre-existing Attention route pass expectedAppealId. It is mandatory throughout service/writer/repository; repository locks topic/relationship/pending appeal and rejects a different current ID before updating appeal/relationship. Native replacement while waiting rejects old appealA and leaves new pendingB. Current reject works. Existing database tests cover current accepted resolution/removal and the Attention pathway.
+
+Author creation is now fenced separately: loader gives the topic author appealExpectedRelationshipId from the same topic presentation, even without moderation permission; generic topic.duplicateRelationshipId stays null for non-managers and guests get no author field ID. The form submits the observed identity. Action, writer, service and repository pass/check it. Ownership, Help section, active relationship and no-pending checks remain. The authoritative ID comparison runs after topic/relationship locks and before appeal insertion.
+
+Personally reran the previously failed causal sequence through actual topicAction->real writer->ForumService->DrizzleForumRepository->PostgreSQL: missing expected ID400; R1 removed/no replacement409; R1->R2 stale form409/no appeal; wrong owner403; request already blocked on topic lock while R2->R3 replacement commits409/no appeal; matching currentR3 creates intended pending appeal302; second pending appeal409. An observed pg_stat_activity Lock event confirms the concurrency boundary was exercised. The previous stale-create finding is closed on this head.
+
+#### HELP-MOD-01 — all three moderation intents
+
+Canonical6389030386 includes needs-review/outdated/clear for a replaced best answer. Each form submits expectedBestAnswerPostId; action rejects absence; service/writer propagate; repository reads/compares under topic lock before post update or signal supersession. Best-answer replacement itself uses the same topic serialization boundary.
+
+Independent real-action probes replaced A->B during an observed lock wait: stale needs-review409/newB untouched. Then all three stale intents, including outdated with old reason and clear while B has a new moderation status, return409 and preserve B. Current needs-review/outdated/clear work with302 and intended stored state. Existing revalidation textarea reset remains intact; identity fencing supplements it.
+
+#### HELP-02 — both lifecycle mutation paths
+
+Canonical6391531526 covers manual relationship removal and accepted/rejected appeal resolution using transaction-start time after lock waits. Both terminal timestamp expressions now use statement_timestamp() in updates executed after topic/relationship/appeal locking. Each terminal update statement obtains fresh time; no JavaScript/transaction-start timestamp is reused. Schema lifecycle checks remain.
+
+Personally executed native PostgreSQL suite, including tests that observe actual lock waiting, advance relationship.confirmed_at or appeal.created_at after the waiting transaction starts, commit the blocker and require waiting removal/resolution to succeed under the original CHECK constraints. No new schema/migration workaround. Pending-appeal terminal update during manual removal also uses the same post-lock SQL statement-time expression.
+
+#### TAG-CARDINALITY-01 — both public topic flows
+
+Canonical6388113646 concerns durable write fan-out of one ordinary topic publication, not arbitrary corpus scale or body-size policy. normalizeForumTags caps at10 unique nonempty names after NFKC/trim/whitespace collapse/en-US case deduplication. Existing per-tag length/slash validation remains. Both service createTopic and createTopicWithInitialPost normalize before entering repository; public section/Help writer uses this service boundary. Direct repository is not the public input boundary.
+
+Independent real action->writer->PG probe for sectionAction and helpSolutionsCategoryAction:10 unique plus empty/case/NFKC duplicates returns302 and persists10tags;11unique returns400 with unchanged topic and global-tag counts. Native regression separately checks overflow creates neither a topic nor global tags. No per-write cooldown or downstream list limit was misrepresented as the cardinality guard.
+
+#### DOC-03 — all three canonical locations
+
+Canonical6391770817 explicitly names UI_UX_PASS, PROJECT_STATE and catalog metadata. Checked all three on this head, not only edited UI_UX_PASS:
+
+- UI_UX_PASS:pending badge moderator-only in lists/topic; author own pending message distinguished.
+- PROJECT_STATE:older public assertion corrected to moderation-only; later accepted contract and new package note agree.
+- catalog:helpDuplicateDisputed description now Moderator-only; source remains Disputed.
+
+Verified actual list/topic visibility guards and existing guest/author/manager mounted regression. New author relationship expectation does not grant management authority or make generic list IDs public. Independently computed new descriptor fingerprint27f9d069cb3b7de40dac264b83180fa8df8fd83af306b4cdcb5a7ca241738f8d; checked reviewed literal and LocalTranslationSource RU/HE packs remain current and return the existing translations. No metadata staleness introduced. This closes the second adjudicated finding; no runtime visibility defect is claimed.
+
+### Complete diff and regression assessment
+
+Reviewed all16 changed files, including all test changes, PROJECT_HISTORY H-013 and PROJECT_STATE statements. Policy-clock correction is test-only. No schema, migration, dependency or authorization redesign. Current Help/source-of-truth boundaries and original implementation handoff6418615989 were compared. No remaining canonical subcase, new current-Stage regression or future-only concern requiring correction was identified. Unrelated backlog is not claimed closed.
+
+### Personally executed verification
+
+- Full application suite:102 files/1081 tests PASS,177.96seconds.
+- Full disposable PostgreSQL17 suite:28 files/304 tests PASS,91.49seconds, including new stale-create sequential/lock-wait case and lifecycle timestamp tests.
+- Additional native action probes:four observed replacement lock waits (remove,resolve,best-answer,author create), all expected HTTP/domain responses and persisted-state assertions PASS; both public tag paths PASS as described.
+- Independent DOC-03 fingerprint/manual-pack probe PASS for RU/HE.
+- pnpm typecheck PASS.
+- pnpm lint PASS;0errors/1existing unused-disable warning in ui.test.tsx:174.
+- pnpm build and pnpm ui-preview:build PASS.
+- pnpm db:check PASS;git diff --check PASS. No drizzle/schema/dependency diff.
+- Exact-head GitHub CI40393643866 independently fetched:SUCCESS;checks121820842407/database121820843041 SUCCESS. CI Worker/runtime/privilege guards are CI evidence, not personally rerun local Worker smoke.
+
+Evidence under /workspace/work/:pr241-new-app.log,pr241-new-db.log,pr241-new-typecheck.log,pr241-new-lint.log,pr241-new-build.log,pr241-new-preview.log,pr241-new-metadata.log,pr241-new-route-probes.mjs/.log,pr241-new-doc-probe.mts/.log. Native probes adapt my earlier independent harness to the current mandatory-ID contract and extend it with stale author creation/current/negative/ownership/lock controls; all assertions were rerun on this exact head.
+
+### Limits and handoff
+
+Auth session/permission context in extra route probes is controlled; actual ownership validation, action, writer, service, repository and transactions use real local PostgreSQL. Mounted UI uses jsdom and fixtures. No Chromium/browser, owner visual acceptance, external Cloudflare/Neon/Hyperdrive/R2/OAuth/backup/restore, production or deployment checks were performed. No implementation or main changes. Local PostgreSQL container stopped/removed and isolated worktree removed after completion.
+
+This is a personal independent technical verdict for aa41937 only, not a whole-team synthesis or merge authorization. Lira participated in correction and is not counted as an independent reviewer. Published after the owner's explicit «Публикуй» instruction following the completed review in this chat. Leva STOP.
+
+
+---
+
 ## PR244 — independent whole-PR review by Leva
 
 Date: 2026-10-26, Asia/Jerusalem.
