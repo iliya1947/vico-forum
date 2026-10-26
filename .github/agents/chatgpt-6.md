@@ -1,5 +1,44 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #239 — whole-PR review на `a7d29546` (2026-10-26)
+
+**Итог: PASS по независимой проверке source/diff/regression cases на этом exact head.** Новых подтверждённых дефектов текущего Stage в назначенном scope не обнаружено. Действие относится **только** к `a7d29546f334a59d42b30b10c67c32595ea98ec1`; прежний PASS по `998715b` был обоснованно отозван и не восстанавливается задним числом.
+
+- Implementation: [PR #239](https://github.com/iliya1947/vico-forum/pull/239).
+- Exact implementation head: `a7d29546f334a59d42b30b10c67c32595ea98ec1`.
+- Base: `main f59785c50e91fc1615b568b74a0a56909a92c871`.
+- Назначение: [PR #236, комментарий #6404891780](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6404891780).
+- Нынешний whole diff: 43 changed files; последняя correction: 7 files / 219 additions / 12 deletions, parent `998715bbf0c531432673f027e5c260722e29b9ea`.
+- Сопоставлены весь перечень изменений PR, соответствующие patches, source paths и regression tests с package3 и `docs/EDITOR.md`, `docs/auth/AUTHORIZATION.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`.
+
+### Полный package3 scope
+
+1. **`ARCH-01`:** `runForumMutation` различает known domain/typed unavailable и unexpected fault; unexpected writer/programming error не маскируется как controlled storage outage. Writer adapter повторно выбрасывает unknown faults.
+2. **`ARCH-03`:** `bestEffortDiscardClient` применяется в PostgreSQL reader/writer, Better Auth и authorization; rejected/synchronously throwing cleanup не заменяет уже определённый result или исходное исключение.
+3. **`POST-EDIT-AVAIL-01`, `FORUM-READ-AVAIL-01`:** primary forum reads/post-edit loader превращают только typed `ForumStorageUnavailableError`/`AuthorizationUnavailableError` в no-store 503; остальные errors propagate; optional online-presence path продолжает degrade отдельно.
+4. **`SEC-01`:** `reportRouteError` использует safe exception kind, allowlisted SQLSTATE и локальные stack coordinates; raw messages, query parameters, unpublished text и SQL не передаются в sink.
+5. **`XR-THROWN-ACTION-BUFFER`:** `editorClientAction` преобразует thrown transport/server faults в action error `unexpected` (500), удерживая mounted browser editor; redirects и aborted navigation не перехватываются.
+6. **`EDITOR-PUB-01`:** при edit conflict сервер перечитывает актуальную public revision; UI показывает её отдельно от текущего in-memory buffer, сохраняет исходный expected revision до explicit rebase; более новый loader state вытесняет stale recovery snapshot.
+7. **`EDITOR-PUB-02`:** `postEditConflict` показывается только для реального edit result или edit identity guard, а не любого 409 при открытом редакторе.
+
+### Три correction chains
+
+- **Committed edit / lost response / modified publication replay:** repository различает `ForumPublicationReplayConflictError`, action возвращает `completedOperationId`; explicit rebase меняет завершённую operation на свежую. Повторный идентичный replay остаётся идемпотентным.
+- **Unrelated topic-level 409:** markSolved/solution feedback не подменяется edit-specific copy; mounted editor buffer остаётся.
+- **`MIRA-PR239-998715-01`:** typed upload `410 {error:"gone"}` в published-edit flow вызывает `freshOperation()` до Retry. Failed и параллельные upload entries сохраняют `File`, становятся retryable; Retry переопределяет asset ID в другой operation и, для активных изображений, обновляет их destinations во всей history. Save остаётся заблокирован до завершения uploads, но теперь Retry снимает блокировку без удаления файла. Последующий ordinary stale `409` делает baseline rebase **без ещё одной смены** fresh operation; committed public attachment retained однажды, private duplicate убран, Remove intent сохраняется. Late ACK подавляется identity fence. Не-published edit и другие ошибки загрузки не вызывают ротации.
+- Перепроверены новые cases в `app/forum/attachment-operation.test.tsx`, `app/forum/edit-recovery.test.tsx`, `tests/database/forum-attachments.test.ts`, плюс регрессии previous corrections и других scoped paths.
+
+### Доказательства и ограничения
+
+- GitHub Actions [exact-head run #40243954305](https://github.com/iliya194/vico-forum/actions/runs/40243954305) **самостоятельно сверена Лирой:** `head_sha=a7d29546f334a59d42b30b10c67c32595ea98ec1`; `status=completed`, `conclusion=success`.
+- Автор реализации сообщает `1065` application, `300` native PostgreSQL PASS, targeted `31` UI, typecheck, lint, builds, local Worker/PG and Chromium scenario PASS. Это **не личные запуски Лиры**.
+- Отдельная проверка Мишани [#6405118900](https://github.com/iliya194/vico-forum/pull/236#issuecomment-6405118900) опубликована позже; совпадение с ней не служило основанием собственного вердикта Лиры.
+- Лира **не запускала лично** Chromium/browser E2E, PostgreSQL suite, external R2/provider/production, owner visual acceptance. Для browser upload bridge автор применял synthetic byte storage; реальную external интеграцию этот PASS не подтверждает.
+- Это code review в рамках package3, не полная новая проверка всего форума. PASS Лиры **не означает** whole-team approval, merge authorization или отсутствие любых гипотетических дефектов.
+- Implementation PR #239, `main`, чужие personal files не изменяла. Итог передан в служебный PR #236 по разрешению владельца; дальнейшую координацию ведёт Мира. **STOP.**
+
+---
+
 ## PR #239 — уточнение вердикта по exact head `998715bbf0c531432673f027e5c260722e29b9ea` (2026-10-25)
 
 **ИТОГОВЫЙ СТАТУС ЛИРЫ: FINDING, прежний PASS ОТОЗВАН.** После исходной whole-PR проверки Мира независимо выявила новый сценарий `MIRA-PR239-998715-01` и отдельно поручила Лире перепроверить только эту цепочку: [назначение и исходная диагностика](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6403596151). Лира проследила путь самостоятельно на том же exact implementation head. **Один подтверждённый current-Stage defect** в recovery опубликованной правки. Это уточнение к ранее опубликованному PASS, а не новый полный whole-PR review и не отдельный второй дефект.
