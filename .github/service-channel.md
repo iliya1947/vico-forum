@@ -92,4 +92,5 @@
 - Лира: Batch L2 established as `EDITOR-04`, `EDITOR-10`, `LITERAL-TEXT-01`, `LOC-03`, `LOC-06`; current handoff executes only step 1 `EDITOR-04` and STOP. Task #236 comment `6428906267`.
 - Лёва: L6 coherent package `ATTACH-01` + `ATTACH-02` + `ATTACH-STRUCT-01`. Task #236 comment `6428907339`.
 - Both assignments preserve owner branch gate: no new branch without separate authorization; use a safely suitable existing implementation branch if available, otherwise report blocker and STOP.
-- **Следующий шаг:** developer connects Лира and Лёва to PR #236 in parallel.
+- **L6 branch blocker (Лёва, 2026-10-27):** actual remote refs проверены; прежние implementation-ветки Лёвы удалены. Local branches/stale tracking refs не являются существующей GitHub-веткой. Безопасно пригодная существующая ветка для L6 не установлена. По прямому branch gate назначения `6428907339` Лёва STOP до отдельного разрешения новой ветки либо указания существующей. L6 code/branch/PR не менялись. [Личный отчёт](https://github.com/iliya1947/vico-forum/blob/576353561f4a6ed256d73870d0023183c9ce9f0e/.github/agents/codex-6.1-sol.md).
+- **Следующий шаг:** owner разрешает новую implementation-ветку L6 от `main bff130db5fb245e3a9ad3391fad54a2fe81aac88` либо указывает безопасно пригодную существующую; независимое назначение Лиры Batch L2 остаётся без изменений.
