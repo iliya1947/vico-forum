@@ -167,6 +167,7 @@ export async function storePrivateAttachmentStream(
   bucket: PrivateAttachmentBucket,
   upload: PrivateAttachmentUpload,
   maxBytes = DEFAULT_ATTACHMENT_MAX_BYTES,
+  beforeWrite?: (objectKey: string) => Promise<void>,
 ): Promise<AttachmentStoreResult> {
   const sampleSize = Number.isSafeInteger(upload.size) && upload.size > 0 && upload.size <= maxBytes
     ? Math.min(upload.size, ATTACHMENT_SNIFF_BYTES)
@@ -257,6 +258,9 @@ export async function storePrivateAttachmentStream(
     });
 
     const objectKey = "private/" + crypto.randomUUID();
+    // Journal admission precedes PUT, so every possibly written object remains
+    // discoverable even if storage or subsequent metadata commit loses its ACK.
+    await beforeWrite?.(objectKey);
     let stored: { size: number } | null;
     try {
       stored = await bucket.put(objectKey, content, {

@@ -44,6 +44,7 @@ const migrations = [
   "0042_attachment_edit_snapshots",
   "0043_attachment_security_read_permission",
   "0044_attachment_draft_conflict_boundaries",
+  "0046_attachment_upload_object_journal",
 ];
 
 const ownerId = "attachment-owner";
@@ -946,6 +947,86 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
   const row = async (id: string) => (await client.query<{
     cleanup_status: string; cleanup_claim_token: string | null;
   }>("select cleanup_status, cleanup_claim_token from forum_attachments where id=$1", [id])).rows[0];
+
+  it("journals before PUT and cleans a real metadata rollback without losing a committed upload", async () => {
+    const contextKey = await contextFixture(), generation = crypto.randomUUID();
+    const id = crypto.randomUUID(), objects = new Map<string, Uint8Array>();
+    const bucket = {
+      async put(key: string, body: ReadableStream<Uint8Array>) {
+        expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1", [key])).rowCount).toBe(1);
+        const bytes = new Uint8Array(await new Response(body).arrayBuffer());
+        objects.set(key, bytes); return { size: bytes.length };
+      },
+      async get() { return null; },
+      delete: vi.fn(async (key: string) => { objects.delete(key); }),
+    };
+    let loseAck = false;
+    const context = new RouterContextProvider();
+    context.set(authSessionContext, { user: { id: ownerId } } as AuthSession);
+    context.set(forumReaderContext, { readSection: async () => ({ id: "section" }) } as never);
+    context.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
+    context.set(privateAttachmentBucketContext, bucket);
+    context.set(forumAttachmentStoreContext, {
+      recordUploadObject: (key: string) => store.recordUploadObject(key),
+      async createDraftAttachment(input: CreateDraftAttachmentInput) {
+        const result = await store.createDraftAttachment(input);
+        if (loseAck) { loseAck = false; throw new ForumAttachmentStorageUnavailableError(); }
+        return result;
+      },
+    } as never);
+    const post = () => uploadAction({ context, request: new Request("https://forum.test/api/attachments", {
+      method: "POST", headers: { Origin: "https://forum.test", "Content-Type": "text/plain",
+        "X-Vico-Attachment-Id": id, "X-Vico-Attachment-Name": "notes.txt", "X-Vico-Attachment-Size": "5",
+        "X-Vico-Editor-Context": encodeURIComponent(contextKey), "X-Vico-Operation-Id": generation }, body: "hello",
+    }) });
+    await client.query(`create function reject_l6_metadata() returns trigger language plpgsql as $$
+      begin raise exception 'metadata rollback'; end $$`);
+    await client.query("create trigger reject_l6_metadata before insert on forum_attachments for each row execute function reject_l6_metadata()");
+    try { await expect(post()).rejects.toThrow(); }
+    finally {
+      await client.query("drop trigger reject_l6_metadata on forum_attachments");
+      await client.query("drop function reject_l6_metadata()");
+    }
+    expect(objects.size).toBe(1);
+    expect((await client.query("select 1 from forum_attachments where id=$1", [id])).rowCount).toBe(0);
+    await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours'");
+    await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect(objects.size).toBe(0);
+
+    loseAck = true;
+    expect((await post()).status).toBe(503);
+    const committed = await store.readDraftAttachment(ownerId, contextKey, generation, id);
+    expect(committed).not.toBeNull();
+    await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours'");
+    await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect(objects.has(committed!.objectKey)).toBe(true);
+    // A retry's redundant object is also journaled if best-effort DELETE fails.
+    bucket.delete.mockRejectedValueOnce(new Error("delete unavailable"));
+    expect((await post()).status).toBe(201);
+    expect(objects.size).toBe(2);
+    await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours'");
+    await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect([...objects.keys()]).toEqual([committed!.objectKey]);
+    await store.cancelOperation(ownerId, contextKey, generation);
+  });
+
+  it("retains failed orphan-delete claims and fences late metadata admission", async () => {
+    const context = await contextFixture(), generation = crypto.randomUUID();
+    const input = { ...upload(context, generation), requireUploadRecord: true };
+    await store.recordUploadObject(input.objectKey);
+    await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours' where object_key=$1", [input.objectKey]);
+    const bucket = { delete: vi.fn(async () => { throw new Error("lost delete ACK"); }) };
+    await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect(bucket.delete).toHaveBeenCalledWith(input.objectKey);
+    expect((await client.query("select claim_token from forum_attachment_upload_objects where object_key=$1", [input.objectKey])).rows[0].claim_token).toBeTruthy();
+    await expect(store.createDraftAttachment(input)).rejects.toBeInstanceOf(InvalidForumAttachmentError);
+    await client.query("update forum_attachment_upload_objects set claimed_at=now()-interval '10 minutes' where object_key=$1", [input.objectKey]);
+    const success = { delete: vi.fn(async () => {}) };
+    await new ForumAttachmentCleanup(drizzle(client), success).runOnce();
+    expect(success.delete).toHaveBeenCalledWith(input.objectKey);
+    expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1", [input.objectKey])).rowCount).toBe(0);
+    await expect(store.createDraftAttachment(input)).rejects.toBeInstanceOf(InvalidForumAttachmentError);
+  });
 
   it("preserves valid immediate uploads before the first text save and deletes only detached old assets", async () => {
     const { asset, context, generation } = await makeOrphan();

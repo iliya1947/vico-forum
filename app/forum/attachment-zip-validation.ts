@@ -28,6 +28,8 @@ type ZipDirectory = {
 
 type CentralEntry = {
   name: Uint8Array;
+  crc: number;
+  zip64: boolean;
   flags: number;
   method: number;
   compressedSize: number;
@@ -104,17 +106,16 @@ async function findDirectory(source: AttachmentRandomAccessSource): Promise<ZipD
     const directoryOffset = u32(tail, index + 16);
     if (disk !== 0 || directoryDisk !== 0) return null;
 
-    const needsZip64 = entriesOnDisk === 0xffff || entries === 0xffff
-      || directorySize === 0xffffffff || directoryOffset === 0xffffffff;
-    if (!needsZip64) {
-      const directoryEnd = directoryOffset + directorySize;
-      if (!Number.isSafeInteger(directoryEnd)
-        || entriesOnDisk !== entries || directoryEnd !== eocdOffset) return null;
+    // 65,535 is also a valid classic count. A complete classic directory ends
+    // at EOCD; do not mistake signature-like bytes in its comment for a locator.
+    const directoryEnd = directoryOffset + directorySize;
+    if (directorySize !== 0xffffffff && directoryOffset !== 0xffffffff
+      && Number.isSafeInteger(directoryEnd) && entriesOnDisk === entries
+      && directoryEnd === eocdOffset) {
       return { entries, offset: directoryOffset, size: directorySize };
     }
-
     const locatorOffset = eocdOffset - 20;
-    const locator = await readExact(source, locatorOffset, 20);
+    const locator = locatorOffset >= 0 ? await readExact(source, locatorOffset, 20) : null;
     if (!locator || !hasSignature(locator, 0, ZIP_SIGNATURE.zip64Locator)
       || u32(locator, 4) !== 0 || u32(locator, 16) !== 1) return null;
     const zip64Offset = u64Safe(locator, 8);
@@ -137,6 +138,10 @@ async function findDirectory(source: AttachmentRandomAccessSource): Promise<ZipD
     if (entriesOnDisk64 === null || entries64 === null || directorySize64 === null
       || directoryOffset64 === null || directoryEnd64 === null
       || !Number.isSafeInteger(directoryEnd64) || entriesOnDisk64 !== entries64
+      || (entriesOnDisk !== 0xffff && entriesOnDisk !== entriesOnDisk64)
+      || (entries !== 0xffff && entries !== entries64)
+      || (directorySize !== 0xffffffff && directorySize !== directorySize64)
+      || (directoryOffset !== 0xffffffff && directoryOffset !== directoryOffset64)
       || directoryEnd64 !== zip64Offset) return null;
     return { entries: entries64, offset: directoryOffset64, size: directorySize64 };
   }
@@ -207,6 +212,22 @@ function resolveZip64Central(
   return null;
 }
 
+function zip64Extra(extra: Uint8Array): boolean | null {
+  let cursor = 0;
+  let found = false;
+  while (cursor < extra.length) {
+    if (cursor + 4 > extra.length) return null;
+    const length = u16(extra, cursor + 2);
+    if (cursor + 4 + length > extra.length) return null;
+    if (u16(extra, cursor) === 1) {
+      if (found) return null;
+      found = true;
+    }
+    cursor += 4 + length;
+  }
+  return found;
+}
+
 async function readCentralEntry(
   source: AttachmentRandomAccessSource,
   offset: number,
@@ -225,6 +246,8 @@ async function readCentralEntry(
   if (!variable) return null;
   const name = variable.subarray(0, nameLength);
   const extra = variable.subarray(nameLength, nameLength + extraLength);
+  const zip64 = zip64Extra(extra);
+  if (zip64 === null) return null;
   const resolved = resolveZip64Central(
     extra,
     u32(fixed, 20),
@@ -236,6 +259,8 @@ async function readCentralEntry(
   return {
     entry: {
       name,
+      crc: u32(fixed, 16),
+      zip64,
       flags: u16(fixed, 8),
       method: u16(fixed, 10),
       compressedSize: resolved.compressedSize,
@@ -264,7 +289,43 @@ async function localHeaderMatches(
   }
   const name = await readExact(source, entry.localOffset + LOCAL_FILE_HEADER_BYTES, nameLength);
   if (!name || !equalBytes(name, entry.name)) return null;
+  const extra = await readExact(source, entry.localOffset + LOCAL_FILE_HEADER_BYTES + nameLength, extraLength);
+  if (!extra || zip64Extra(extra) === null) return null;
+  const local = resolveZip64Central(extra, u32(fixed, 18), u32(fixed, 22), 0, 0);
+  if (!local) return null;
+  if ((entry.flags & 8) === 0) {
+    if (u32(fixed, 14) !== entry.crc || local.compressedSize !== entry.compressedSize
+      || local.uncompressedSize !== entry.uncompressedSize) return null;
+  } else {
+    // Streaming headers may leave unknown fields zero. Any supplied value must
+    // agree with the authoritative central record; the descriptor is mandatory.
+    if ((u32(fixed, 14) !== 0 && u32(fixed, 14) !== entry.crc)
+      || (local.compressedSize !== 0 && local.compressedSize !== entry.compressedSize)
+      || (local.uncompressedSize !== 0 && local.uncompressedSize !== entry.uncompressedSize)
+      || !await descriptorMatches(source, dataEnd, directoryOffset, entry,
+        entry.zip64 || zip64Extra(extra) === true)) return null;
+  }
   return { dataOffset: end, extraLength };
+}
+
+async function descriptorMatches(
+  source: AttachmentRandomAccessSource, offset: number, limit: number,
+  entry: CentralEntry, zip64: boolean,
+): Promise<boolean> {
+  const length = zip64 ? 20 : 12;
+  // CRC may itself equal the optional signature, so try both interpretations.
+  for (const signature of [false, true]) {
+    const size = length + (signature ? 4 : 0);
+    if (offset + size > limit) continue;
+    const bytes = await readExact(source, offset, size);
+    if (!bytes || (signature && !hasSignature(bytes, 0, 0x08074b50))) continue;
+    const start = signature ? 4 : 0;
+    const compressed = zip64 ? u64Safe(bytes, start + 4) : u32(bytes, start + 4);
+    const uncompressed = zip64 ? u64Safe(bytes, start + 12) : u32(bytes, start + 8);
+    if (u32(bytes, start) === entry.crc && compressed === entry.compressedSize
+      && uncompressed === entry.uncompressedSize) return true;
+  }
+  return false;
 }
 
 function requiredPackageName(semantic: ZipAttachmentSemantic, name: Uint8Array): boolean {

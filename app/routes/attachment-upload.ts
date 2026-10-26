@@ -187,12 +187,14 @@ export async function action({ request, context }: { request: Request; context: 
   try {
     result = await storePrivateAttachmentStream(bucket, {
       fileName, declaredMime, size, body: request.body,
-    });
+    }, undefined, (objectKey) => store.recordUploadObject(objectKey));
   } catch (error) {
     if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
       return json({ error: "invalid" }, 400);
     }
     if (error instanceof AttachmentStorageError) return json({ error: "unavailable" }, 503);
+    const failure = attachmentStoreFailure(error);
+    if (failure) return failure;
     throw error;
   }
 
@@ -241,6 +243,7 @@ export async function action({ request, context }: { request: Request; context: 
       responseMime: result.inspection.responseMime,
       byteSize: result.bytes,
       verificationStatus: result.inspection.scanStatus,
+      requireUploadRecord: true,
     });
     if (attachment.objectKey !== result.objectKey) {
       await bucket.delete(result.objectKey).catch(() => {});

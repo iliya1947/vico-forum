@@ -41,6 +41,47 @@ export class ForumAttachmentCleanup {
     private readonly clock: () => Date = () => new Date(),
   ) {}
 
+  private async cleanupUploadObjects(batchSize: number) {
+    const counts = { claimed: 0, deleted: 0, failed: 0 };
+    for (let i = 0; i < batchSize; i++) {
+      const token = crypto.randomUUID();
+      const now = this.clock();
+      const item = await this.db.transaction(async (tx) => {
+        const rows = await tx.execute(sql<{ object_key: string }>`
+          select object_key from forum_attachment_upload_objects
+          where created_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_GRACE_MS)}
+            and (claim_token is null or claimed_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_CLAIM_LEASE_MS)})
+          order by created_at, object_key limit 1 for update skip locked
+        `);
+        const row = rows.rows[0];
+        if (!row) return null;
+        if (typeof row.object_key !== "string") throw new Error("invalid upload-object cleanup row");
+        // Metadata admission takes the same object-record lock. If it committed
+        // (even with a lost ACK), the ordinary reference-aware asset cleanup owns it.
+        const registered = await tx.execute(sql`select 1 from forum_attachments where object_key=${row.object_key}`);
+        if (registered.rows.length) {
+          await tx.execute(sql`delete from forum_attachment_upload_objects where object_key=${row.object_key}`);
+          return { key: row.object_key, registered: true };
+        }
+        await tx.execute(sql`update forum_attachment_upload_objects set claim_token=${token}, claimed_at=${now}
+          where object_key=${row.object_key}`);
+        return { key: row.object_key, registered: false };
+      });
+      if (!item) break;
+      if (item.registered) continue;
+      counts.claimed++;
+      try {
+        await this.storage.delete(item.key);
+        await this.db.execute(sql`delete from forum_attachment_upload_objects
+          where object_key=${item.key} and claim_token=${token}`);
+        counts.deleted++;
+      } catch {
+        counts.failed++;
+      }
+    }
+    return counts;
+  }
+
   private async pruneStaleRefs(batchSize: number): Promise<number> {
     const expiry = new Date(this.clock().getTime() - ATTACHMENT_OPERATION_IDLE_MS);
     const candidates = await this.db.execute(sql<StaleRef>`
@@ -112,10 +153,11 @@ export class ForumAttachmentCleanup {
       throw new RangeError("invalid attachment cleanup batch size");
     }
     const prunedRefs = await this.pruneStaleRefs(batchSize);
-    let claimed = 0;
-    let deleted = 0;
-    let failed = 0;
-    for (let i = 0; i < batchSize; i++) {
+    const uploads = await this.cleanupUploadObjects(batchSize);
+    let claimed = uploads.claimed;
+    let deleted = uploads.deleted;
+    let failed = uploads.failed;
+    for (let i = 0; i < batchSize - uploads.claimed; i++) {
       const item = await this.claimOne();
       if (!item) break;
       claimed++;

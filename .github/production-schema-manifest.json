@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0045_audit_database_notifications_read_state",
+  "targetMigration": "0046_attachment_upload_object_journal",
   "tables": {
     "account": {
       "columns": [
@@ -5411,6 +5411,69 @@
       ],
       "checks": [],
       "indexes": []
+    },
+    "forum_attachment_upload_objects": {
+      "columns": [
+        {
+          "name": "object_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "claim_token",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_upload_objects_pkey",
+          "columns": [
+            "object_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_attachment_upload_objects_claim_check",
+          "columns": [
+            "claim_token",
+            "claimed_at"
+          ],
+          "definitionSha256": "0e28e6fb95b42e4003fde807296b3f4dc8de005a2de66d1b1d4a68f25bf1067c"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_attachment_upload_objects_cleanup_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
     }
   },
   "triggerFunctions": [

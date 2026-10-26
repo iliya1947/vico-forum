@@ -16,6 +16,7 @@ import {
 } from "./forum-attachments";
 
 export interface ForumAttachmentStore {
+  recordUploadObject(objectKey: string): Promise<void>;
   cancelOperation(ownerId: string, contextKey: string, operationId: string): Promise<void>;
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
   readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
@@ -73,6 +74,7 @@ export function createHyperdriveForumAttachmentStore(
   }
 
   return {
+    recordUploadObject: (key) => apply((store) => store.recordUploadObject(key)),
     cancelOperation: (ownerId, contextKey, operationId) => apply((store) => store.cancelOperation(ownerId, contextKey, operationId)),
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
     readPublishedAttachment: (postId, attachmentId) => apply((store) => store.readPublishedAttachment(postId, attachmentId)),

@@ -2,6 +2,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
+  forumAttachmentUploadObjects,
   forumAttachments,
   forumAttachmentSecurityEvents,
   forumPostAttachments,
@@ -41,6 +42,7 @@ export interface CreateDraftAttachmentInput {
   byteSize: number;
   verificationStatus: "type-checked";
   expectedVersion?: number;
+  requireUploadRecord?: boolean;
 }
 
 export interface RecordAttachmentSecurityEventInput {
@@ -131,12 +133,23 @@ function toMetadata(row: typeof forumAttachments.$inferSelect): ForumAttachmentM
 export class DrizzleForumAttachments {
   constructor(private readonly db: NodePgDatabase) {}
 
+  async recordUploadObject(objectKey: string): Promise<void> {
+    if (!privateObjectKey.test(objectKey)) throw new InvalidForumAttachmentError();
+    // Unknown commit outcome is safe: the caller must not PUT until this succeeds.
+    await this.db.insert(forumAttachmentUploadObjects).values({ objectKey });
+  }
+
   async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
     const createdAt = new Date();
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, input.ownerId, input.contextKey);
       const draftId = await resolveAttachmentDraftGeneration(tx, input.ownerId, input.contextKey, input.draftId);
+      if (input.requireUploadRecord) {
+        const [record] = await tx.select().from(forumAttachmentUploadObjects)
+          .where(eq(forumAttachmentUploadObjects.objectKey, input.objectKey)).for("update");
+        if (!record || record.claimToken !== null) throw new InvalidForumAttachmentError();
+      }
       const [created] = await tx.insert(forumAttachments).values({
         id: input.id,
         ownerId: input.ownerId,

@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-26
+Последнее обновление: 2026-10-27
 
 ## Назначение
 
@@ -19,6 +19,30 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## L6 — attachment object journal и ZIP integrity (2026-10-27)
+
+В implementation-ветке L6 закрывается storage/metadata gap: перед private PUT сервер
+фиксирует случайный object key в `forum_attachment_upload_objects` (forward migration
+`0046_attachment_upload_object_journal`). Если admission не подтверждён, bytes не записываются.
+Metadata admission блокирует ту же запись журнала и не принимает object, уже claimed cleanup.
+После неизвестного результата metadata commit journal остаётся: существующий bounded
+`ForumAttachmentCleanup` сверяет authoritative asset по key, сохраняет registered object и
+удаляет только unregistered object после прежнего one-hour grace. Неудачный DELETE оставляет
+claim для повторения после lease. Журнал также покрывает неудачный best-effort DELETE
+redundant stable-ID retry и storage/structural failures. Нового публичного endpoint,
+text-draft persistence, scheduler или внешнего storage rollout нет.
+
+ZIP finalizer различает classic count 65,535 и настоящий ZIP64 locator; размеры/offsets,
+которым нужен ZIP64, без него не принимаются. Local CRC/sizes/flags сверяются с central
+metadata; bit 3 требует согласованный data descriptor непосредственно за compressed data.
+Поддерживаются signed/unsigned classic и ZIP64 descriptors, включая CRC, совпадающий с
+optional signature. Проверки по-прежнему bounded random-access, без распаковки и AV-обещаний.
+Merged TAR/pending Remove/405 behavior не меняется.
+
+Добавлены boundary и failure-chain regressions; фактические CI/checks и independent review
+фиксируются отдельно после выполнения. Implementation ещё не принята и не merged;
+production/external/owner visual actions не выполнялись.
 
 ## LOC-04 — корректный loading copy истории сообщений (2026-10-26)
 
@@ -1832,7 +1856,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0045`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0046`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

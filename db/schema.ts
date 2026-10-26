@@ -916,6 +916,20 @@ export const forumPosts = pgTable(
 );
 
 
+// Written before private bytes, independently of metadata/publication commit.
+export const forumAttachmentUploadObjects = pgTable("forum_attachment_upload_objects", {
+  objectKey: text("object_key").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  claimToken: text("claim_token"),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+}, (table) => [
+  index("forum_attachment_upload_objects_cleanup_idx").on(table.createdAt),
+  check("forum_attachment_upload_objects_claim_check", sql`
+    (${table.claimToken} is null and ${table.claimedAt} is null)
+    or (${table.claimToken} is not null and ${table.claimedAt} is not null)
+  `),
+]);
+
 export const forumAttachments = pgTable(
   "forum_attachments",
   {

@@ -65,6 +65,20 @@ function emptyZip(): Uint8Array {
   ]);
 }
 
+function singleEntryZip(): Uint8Array {
+  const bytes = new Uint8Array(101), view = new DataView(bytes.buffer);
+  view.setUint32(0, 0x04034b50, true);
+  view.setUint32(18, 1, true); view.setUint32(22, 1, true); view.setUint16(26, 1, true);
+  bytes[30] = 97; bytes[31] = 120;
+  view.setUint32(32, 0x02014b50, true);
+  view.setUint32(52, 1, true); view.setUint32(56, 1, true); view.setUint16(60, 1, true);
+  bytes[78] = 97;
+  view.setUint32(79, 0x06054b50, true);
+  view.setUint16(87, 1, true); view.setUint16(89, 1, true);
+  view.setUint32(91, 47, true); view.setUint32(95, 32, true);
+  return bytes;
+}
+
 function minimalGif(): Uint8Array {
   return Uint8Array.from([
     0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
@@ -74,6 +88,23 @@ function minimalGif(): Uint8Array {
 }
 
 describe("private R2 attachment write contract", () => {
+  it("finalizes ZIP metadata after private write and deletes CRC/descriptor mismatches", async () => {
+    for (const kind of ["valid", "crc", "missing-descriptor"] as const) {
+      const bytes = singleEntryZip(), store = bucket();
+      if (kind === "crc") bytes[14] = 1;
+      if (kind === "missing-descriptor") { bytes[6] = 8; bytes[40] = 8; }
+      const result = await storePrivateAttachment(store, file("one.zip", bytes, "application/zip"));
+      expect(store.put).toHaveBeenCalledOnce();
+      expect(store.get).toHaveBeenCalled();
+      if (kind === "valid") {
+        expect(result.outcome).toBe("stored");
+        expect(store.delete).not.toHaveBeenCalled();
+      } else {
+        expect(result).toMatchObject({ outcome: "rejected", inspection: { reason: "invalid-structure" } });
+        expect(store.delete).toHaveBeenCalledOnce();
+      }
+    }
+  });
   it("streams accepted content to an unguessable private key without exposing active content MIME", async () => {
     const store = bucket();
     const content = new TextEncoder().encode("<html><script>danger</script></html>");

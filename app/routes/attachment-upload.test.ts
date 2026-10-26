@@ -67,7 +67,9 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const cancelOperation = vi.fn(async () => {});
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
+  const recordUploadObject = vi.fn(async (key: string) => { void key; });
   ctx.set(forumAttachmentStoreContext, {
+    recordUploadObject,
     createDraftAttachment,
     recordSecurityEvent,
     readSecurityAttachmentEvents,
@@ -79,7 +81,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
-    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent,
+    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject,
     listDraftAttachments, cancelOperation, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
@@ -144,6 +146,13 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
+  it("does not write bytes if durable object admission fails", async () => {
+    const env = setup();
+    env.recordUploadObject.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    expect((await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx })).status).toBe(503);
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
 
   it.each([["real-user", 201], ["other", 403], [null, 404]] as const)(
     "uses edit permission plus authoritative post ownership for post-edit files (%s)", async (authorId, status) => {

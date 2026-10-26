@@ -22,6 +22,7 @@ export const runtimeCapabilityContracts = Object.freeze({
       forum_attachment_draft_generations: Object.freeze(["INSERT", "SELECT"]),
       forum_attachment_edit_snapshots: Object.freeze(["INSERT", "SELECT"]),
       forum_attachment_security_events: Object.freeze(["INSERT", "SELECT"]),
+      forum_attachment_upload_objects: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
       forum_attachments: Object.freeze(["INSERT", "SELECT"]),
       forum_post_attachments: Object.freeze(["DELETE", "INSERT", "SELECT"]),
       forum_categories: Object.freeze(["SELECT"]),
