@@ -1,13 +1,22 @@
 # Shared service channel
 
-## Текущая реализация — пакет3: review cycle PASS, готов к owner merge (2026-10-26)
+## Текущая реализация — пакет4: передан Мишане (2026-10-26)
+
+- Актуальный baseline: `main 8f56479890f63000149354820a6b5162bb9de492` после owner merge PR #239.
+- Package 4 scope: `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02`, `CORE-03`; documentation sidecar `DOC-02`.
+- Требуемый результат: schema/parity/runtime privilege contracts соответствуют фактическим invariants; notifications/read-state корректны при concurrency и объёме >50.
+- Implementation handoff опубликован в PR #236 comment `6413772355`. Исполнитель: Мишаня (Codex-5.6 Sol).
+- Package 4 ещё не реализован; implementation PR/exact head/CI пока отсутствуют.
+- Пакеты 5–11 не начаты. Production/external/owner visual actions не выполнялись.
+
+## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
 - Final review cycle exact head `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f` завершён: Мира — PASS, Лира — PASS, Мишаня — PASS. Лёва — автор последней bounded correction; повторный self-review отменён и в independent verdict не считается.
 - Проверены все 8 групп package3 и все bounded correction chains, включая `LEVA-PR239-A7D2954-01`. Новых подтверждённых current-Stage defects не найдено.
 - Exact-head CI `40301421307` — SUCCESS. PR239 open и mergeable; итог опубликован в [comment 6413609303](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6413609303).
-- Статус: PR239 готов к owner merge. Visual acceptance и production/external actions этим verdict не заявляются.
+- PR239 merged владельцем; merge commit/current main: `8f56479890f63000149354820a6b5162bb9de492`. Visual acceptance и production/external actions этим merge не заявляются.
 
-- Пакеты1–2 merged. Base main `f59785c50e91fc1615b568b74a0a56909a92c871`; пакет3 не merge. [PR #239](https://github.com/iliya1947/vico-forum/pull/239), branch `fix/failure-semantics-edit-recovery`; **stable exact head `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f`**, parenta7d2954, tree`d7c7a678bced5507f86215b80453e405e9b466a6` совпадает с локально проверенным.
+- Пакеты1–3 merged. [PR #239](https://github.com/iliya1947/vico-forum/pull/239) merged из stable exact head `780ba72043d4edb227c299f0f7e0cc9ab15c0f0f` в main merge commit `8f56479890f63000149354820a6b5162bb9de492`.
 - По [назначению6412640448](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6412640448) Лёва реализовал bounded correction LEVA-PR239-A7D2954-01. Прежний цикл наa7d2954 завершился Мира FINDING/Лира PASS/Мишаня PASS/Лёва CHANGES REQUIRED; verdicts относятся к прежнему head.
 - `replaceAttachmentImageId` использует exact destination token spans существующего Markdown parser вместо regex по всему image/definition. Bare reference EOF и destination-like label теперь меняют только actual active URL. Labels,titles,code,ordinary links,unused/shadowed definitions сохраняются. Существующий mapping current/past/future сохраняет Undo/Redo; attachment operation/File/selection/Remove и server gates не менялись. Новых schema/migrations/dependencies/endpoints/permissions нет.
 - Correction4files/150additions/15deletions; whole PR43files/1166additions/66deletions. PROJECT_STATE обновлён. Local1076app/300nativePG PASS; targeted61 PASS. Девять новых source cases воспроизвели дефект до исправления. TypeScript,lint(1existingwarning),обе сборки,migration-history guard0new и local built Worker smoke PASS.
@@ -149,7 +158,8 @@ Baseline кода: `main d72b27ca762dd930f0e7ad614e5b00832a07ec0c`.
 
 1. PR237 /пакет1 merged, merge `ab4d29e8853b216d4aef6c22f1fc373fed8ebf0d`.
 2. PR238 /пакет2 merged, current main `f59785c50e91fc1615b568b74a0a56909a92c871`.
-3. PR239 /пакет3 и corrections реализованы на head `a7d29546f334a59d42b30b10c67c32595ea98ec1`, exact-head CI SUCCESS; ожидают нового whole-PR review. Пакеты4–11 не начаты.
+3. PR239 / пакет3 merged; current main `8f56479890f63000149354820a6b5162bb9de492`.
+4. Package4 передан Мишане; implementation ещё не завершён. Пакеты5–11 не начаты.
 
 ### Принятые scope и границы пакета2
 
@@ -172,4 +182,4 @@ Scope:
 - Следующие packages до завершения этого PR не начинать.
 ### Следующий шаг
 
-Owner merge PR239. После merge актуализировать baseline и переходить к package4 по принятому 11-PR plan. PR236 никогда не merge.
+Мишаня реализует package4 от current main `8f56479890f63000149354820a6b5162bb9de492` по handoff в #236. После его handoff — проверить stable exact head и начать предусмотренный review cycle. PR236 никогда не merge.
