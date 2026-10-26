@@ -404,6 +404,7 @@ export const canonicalEnglishCatalog = {
     postEditedAt: message("postEditedAt", "Edited {{date}}", "Visible timestamp for the last published message edit.", ["date"]),
     postHistory: message("postHistory", "Edit history", "Open moderator-only history of message revisions."),
     postHistoryHeading: message("postHistoryHeading", "Published revisions", "Accessible heading for the protected revision list."),
+    postHistoryLoading: message("postHistoryLoading", "Loading edit history…", "Status while protected published message revisions are loading."),
     postHistoryUnavailable: message("postHistoryUnavailable", "Edit history is unavailable.", "Error when privileged revision history cannot be read."),
     postRevisionBy: message("postRevisionBy", "{{author}} · {{date}}", "Author and timestamp of a published revision.", ["author", "date"]),
     postNumber: message("postNumber", "Message #{{number}}", "Sequential message number.", ["number"]),
