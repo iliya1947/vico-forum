@@ -1,5 +1,60 @@
 # Лёва — Codex-6.1 Sol
 
+## PR240 — final independent technical review Лёвы: PASS (2026-10-26)
+
+Assignment: [6415538591](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6415538591). Scope: DB-01,DB-02,DB-03,CORE-01,CORE-02,CORE-03 and DOC-02.
+
+Exact head: `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`.
+Base: `8f56479890f63000149354820a6b5162bb9de492`.
+Tree: `ecfd455e50df0fb4242f0c8541e15e03804df3c0`.
+18 changed files,5532 additions/15 deletions; most additions are the generated migration snapshot.
+
+**Verdict: PASS in the entire assigned repository/local-CI scope. No confirmed current-Stage defects found.** This is an independent technical review of Мишаня's implementation. His handoff and other reviewers' PASS verdicts were not used as proof. PR240/main were not modified or merged; no implementation correction was started.
+
+### Scope and causal checks
+
+| Group | Independently checked result |
+| --- | --- |
+| DB-01 | Explicit non-NULL state/generation/attempt guards close SQL CHECK's UNKNOWN acceptance in the active branch; all-null inactive branch remains valid. Forward0045,Drizzle schema and snapshot agree. Native exhaustive matrix across all10 metadata presence bits for leasing/admitted/deferred:3072 combinations,7 valid forms accepted,3065 invalid forms rejected by the intended allowance-shape constraint. Valid admitted reservation optionality is preserved. |
+| DB-02 | Actual `pg_get_expr(indpred,indrelid,false)` feeds SHA-256 in the snapshot; null ordinary predicates normalize consistently. Full manifest parity matches all47 public tables. Additional rollback-only native probes changed a real partial unique index predicate to FALSE and removed its predicate: both structural drifts were rejected; restored database matched again. |
+| DB-03 | Web contract includes exactly SELECT/INSERT/UPDATE on forum_topic_read_states, with no new DELETE/grantable/owner capability. Existing full native runtime positive/negative probes passed. Additional limited-role repository calls inserted/read/upserted a real marker; revoking UPDATE caused actual operation to fail42501. Local role/data mutations were rolled back. |
+| CORE-01 | Source transaction and FK-lock order inspected; NO KEY UPDATE remains mutually conflicting for same-author writers, while compatible with recipient FK KEY SHARE. Personally ran real synchronized crossed-reply regression and existing genuinely concurrent same-author cooldown regression as part of the full native suite: both replies succeed with2 notifications; same-author competing writes yield1success/1rate-limit and no partial publication. |
+| CORE-02 | Unread-first before deterministic created_at/id ordering keeps bounded output while making old unread reachable. Original >50 PG regression passed. Additional real notifications loader/action→writer/repository/PG probe seeded116 rows (61unread,55read history), all equal creation timestamps:61 unread opened exactly once across2 bounded50-row loads, final unread0. Actual action redirects and loader readAt projections were checked. |
+| CORE-03 | Marker derives from chronological delivered topic.posts, not a separately queried newer read-state cursor. ReadTopicPage ordering, TopicView best-answer display reordering, action target validation and monotonic repository upsert were inspected. Mounted route regression with a concurrent unseen latest cursor passed; full app suite covers related read-state behavior. No requirement to mark unpublished/undelivered concurrent posts is introduced. |
+| DOC-02 | PROJECT_STATE current migration history, H-012, web ACL/mutex documentation and Editor historical draft-migration caveat agree with authoritative0000–0045 chain. External accepted evidence is still separately bounded through0020; no external rollout is asserted. |
+
+Generated0045 snapshot was compared structurally with0044: apart from id/prevId, only the allowance-shape check changed. Journal is append-only with1new migration; accepted SQL/snapshots were not rewritten. New schema-manifest regression is included in CI. The PR stays within the assigned six causal groups and documentation sidecar.
+
+### Personally executed verification
+
+- Full application: **1077/1077 PASS** (101files).
+- Full disposable PostgreSQL17: **303/303 PASS** (28files), including synchronized locking, constraints, migrations and unread reachability.
+- Schema/runtime/migration script regression files PASS.
+- Production schema manifest parity PASS for47 public tables.
+- Runtime privilege positive/negative native probes PASS.
+- Independent extra probes described above PASS:3072 NULL combinations, real predicate drift controls, actual limited-role read-state operations,116-row route/action inbox flow.
+- React Router type generation + Wrangler type generation + TypeScript PASS; ESLint0errors/1preexisting unused-disable warning at app/forum/ui.test.tsx:174.
+- Application and UI-preview builds PASS; existing preview chunk-size warning remains.
+- Drizzle metadata check PASS; migration-history guard PASS (1new migration, accepted history unchanged).
+- Local built Worker smoke PASS.
+- Exact-head [CI40311315111](https://github.com/iliya1947/vico-forum/actions/runs/40311315111) independently verified SUCCESS; checks121532906638/database121532906942 SUCCESS.
+- Final PR metadata still points to ec954ac5/base8f564798, open and unmerged. No tracked implementation changes in the isolated review worktree.
+
+### Harness/environment notes and limits
+
+The initial direct tsc command in a fresh checkout lacked ignored Worker-generated declarations. Running the project's Wrangler types step resolved this; final tsc passed. An extra predicate probe initially assumed a nonunique partial index existed; all current partial indexes are unique. It was corrected to select an actual unique index and clear its data inside the rollback-only probe before rebuilding it, isolating predicate drift. A direct Node route import initially failed on a Vite .webp asset; a narrow inert CSS/image module loader enabled route-only execution without changing production code or route handlers. These were harness issues, not product findings.
+
+An automatic-approval usage-limit failure prevented one initial manifest command from executing. After the user renewed the session and asked to continue, the same command ran successfully. No approval bypass or unresolved blocker remains.
+
+No Chromium/owner visual acceptance is claimed in this review: the changed UI contract is covered by mounted Router tests and the surrounding SQL/action paths by native probes. No real Cloudflare,Neon,external Hyperdrive,R2,OAuth,backup/restore,production/deployment action was performed. Only disposable local PG,local Worker and repository checks were used. Local Worker and PG container stopped/removed after verification. Package5+ was not started. PR236 remains communication-only and must never merge.
+
+Evidence retained under `/workspace/work`: pr240-review-app.json,pr240-review-db.json,pr240-review-scripts.log,pr240-review-manifest.log,pr240-review-privileges.log,pr240-independent-probes2.log,pr240-notification-route-probe2.log,pr240-review-typegen.log,pr240-review-worker-types.log,pr240-review-typecheck2.log,pr240-review-lint.log,pr240-review-build.log,pr240-review-preview.log,pr240-review-migrations.log,pr240-review-drizzle.log,pr240-review-smoke.log. Additional probe sources are outside the implementation checkout: pr240-independent-probes.mjs,pr240-notification-route-probe.mjs,pr240-probe-assets.mjs.
+
+### Handoff
+
+Мире: account for this final independent technical PASS on ec954ac5 and coordinate the package4 review-cycle outcome/owner decision. This personal verdict does not merge PR240 or claim external/visual acceptance. Лёва STOP.
+
+
 ## PR239 — LEVA-PR239-A7D2954-01 correction (2026-10-26)
 
 Assignment: [PR236 comment6412640448](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6412640448). The assigned correction is implemented; this is author implementation verification, not a new whole-PR independent PASS.
