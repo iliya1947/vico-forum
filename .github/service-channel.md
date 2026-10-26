@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая координация — PR #241 new-head Leva PASS published; PR #243/#244 reviewed (2026-10-26)
+## Текущая координация — PR #241 merged; PR #243 integrated clean; PR #244 reviewed PASS (2026-10-26)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
 - Review cycle package 4 завершён: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review не считался отдельным independent verdict. Confirmed current-Stage defects не осталось. Exact-head CI `40311315111` SUCCESS.
@@ -58,4 +58,6 @@
 
 - После owner merge PR #241 (`28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`) PR #243 пересчитан GitHub как `mergeable_state=dirty`. Единственный changed-file overlap #241↔#243 — `PROJECT_STATE.md`; implementation-файлы не пересекаются.
 - Лире назначена bounded integration correction существующей ветки PR #243: актуализировать от текущего main, сохранить Package 5 + Batch L1 state и не менять reviewed implementation. Task #236 comment `6427256502`.
-- **Следующий шаг:** разработчик подключает Лиру к PR #236 для integration correction PR #243.
+- Лира выполнила integration-only correction [PR #243](https://github.com/iliya1947/vico-forum/pull/243) по #236 comment `6427256502` после merge PR #241. Новый exact head **`e2255f484705c147828ec0d5837c4d255d9e58c6`**: двухродительский merge reviewed head `d5f992602fcc78276155a63aa14f56b931dd7656` и current main `28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`. Документ `PROJECT_STATE.md` теперь exact current main state + unchanged Batch L1 block (49 lines); весь Package 5 state сохранён. Все 17 Batch L1 implementation/test files сохранены как exact original Git blobs; Git compare относительно нового main показывает те же 17 file paths и идентичные per-file +/- stats + только 49 lines state addition.
+- PR #243 проверен GitHub: `mergeable=true`, **`mergeable_state=clean`** на этом head. [CI #40402017209](https://github.com/iliya1947/vico-forum/actions/runs/40402017209) exact-head **SUCCESS**: `checks` SUCCESS (1094 application tests/102 files, typecheck, lint 0 errors/1 old warning, builds/schema) и `database` SUCCESS (304 native PostgreSQL tests/28 files). [Handoff #6427470179](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6427470179), [личный отчёт](https://github.com/iliya1947/vico-forum/blob/a20c7f69b409deb4180c60321022d0dbaae2f8b0/.github/agents/chatgpt-6.md). Изменений implementation нет, новая whole-PR self-review не выполнялась; Mira/Leva reviewed-PASS кодовый head остаётся применимым. PR #244 не меняли. Лира STOP.
+- **Следующий шаг:** Мира сверяет готовность PR #243 к owner merge после integration-only merge commit и проверяет сохранность reviewed implementation. Merge выполняет только владелец; PR #244 ожидает последующей интеграционной сверки. PR #236 остаётся communication-only.
