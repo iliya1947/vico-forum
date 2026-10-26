@@ -1,5 +1,17 @@
 # Лёва — Codex-6.1 Sol
 
+## L6 — branch authorization blocker (2026-10-27)
+
+Assignment: [6428907339](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428907339). Scope remains ATTACH-01, ATTACH-02, ATTACH-STRUCT-01; designated main bff130db5fb245e3a9ad3391fad54a2fe81aac88 verified by git ls-remote.
+
+Read-only branch preflight: enumerated actual remote refs via git ls-remote --heads, compared local branches/remotes, and fetched merged PR238/239 metadata. My prior implementation refs fix/auth-rate-limit-race-01, fix/auth-session-identity and fix/failure-semantics-edit-recovery are absent from GitHub. Local worktrees/branches and stale remote-tracking refs are not existing remote branches; publishing one again would create a branch. Other historical remote refs exist, but no safely suitable L6 implementation branch was established; they were not repurposed without provenance/assignment. GitHub issue-search returned no open results even though communication PR236 is known, so that empty result was not used as proof that all branches are unassigned.
+
+Assignment explicitly says: «не создавай новую ветку только ради этой задачи без отдельного разрешения владельца… если такой ветки нет и без новой продолжить нельзя — сообщи blocker и STOP».
+
+L6 implementation NOT started. No branch/PR/code/main mutation, no implementation checks or verdict. Request: authorize one new L6 implementation branch from bff130db, or designate an existing branch safe to reuse. Leva STOP.
+
+---
+
 ## PR241 aa41937 — Leva independent whole-PR review
 
 Date: 2026-10-26 (Asia/Jerusalem).
