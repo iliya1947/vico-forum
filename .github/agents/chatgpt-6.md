@@ -1,5 +1,18 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #243 — integration-only merge after PR #241 (2026-10-26)
+
+Assignment [#6427256502](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6427256502). Merged main commit `28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`; original independently reviewed PR #243 head `d5f992602fcc78276155a63aa14f56b931dd7656`. New exact head **`e2255f484705c147828ec0d5837c4d255d9e58c6`**, existing branch `chatgpt6/batch-l1-20261026`.
+
+- Verified Git diffs: package 5/main and Batch L1 overlap **only** in `PROJECT_STATE.md`; all 17 Batch L1 implementation/test paths are distinct from Package 5 changes.
+- `PROJECT_STATE.md` on old PR243 was byte-exact previous baseline plus one contiguous 3,003-character (49 lines) Batch L1 block. Resolved by inserting this block byte-exact before Package 5 into **entire current main document**, preserving all Package 5 text; removing inserted block restores current main state exactly.
+- Created true 2-parent merge commit (parents original PR243 head and new main), tree built from new main with the **unchanged original Git blob SHAs for all 17 Batch L1 implementation and test files**. Comparing old head against old base and new head against new main: same 17 paths and identical per-file additions/deletions; PROJECT_STATE only adds the same 49 lines. No implementation changes, no new PR or unrelated files.
+- GitHub PR #243 at exact head: `mergeable=true`, `mergeable_state=clean`; base `28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`.
+- [Exact-head CI #40402017209](https://github.com/iliya1947/vico-forum/actions/runs/40402017209): **SUCCESS**, both `checks` and `database` jobs SUCCESS. 1094 application tests in 102 files, 304 PostgreSQL17 tests in 28 files; lint 0 errors/1 pre-existing warning, typecheck, builds and schema/Worker CI checks pass.
+- Local tests/browser/PG or external/production/owner visual acceptance not performed by Lira. Existing Mira/Leva whole-PR PASS on implementation remains applicable because exact implementation blobs and requirements have not changed. No self-review or merge. PR #244 not touched. **STOP.**
+
+---
+
 ## PR #241 / HELP-01 + DOC-03 — correction завершена (2026-10-26)
 
 **Основание:** retry assignment [#6425922733](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6425922733) после tool failure; первоначальное [#6425661622](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6425661622). Исходный stable head `f5cdf71837aee78a31856c766c087c9bbf54a496`. Исправления в существующем [PR #241](https://github.com/iliya1947/vico-forum/pull/241) / branch `codex/package-5-help-tags`, финальный implementation exact head **`aa41937edf6ce32d74bed27d39c9d7c43aa1eecf`**.
