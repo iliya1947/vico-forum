@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTableDimension, segmentTechnicalMarkdown, spreadsheetToMarkdown } from "./technical-markdown";
+import { addTableDimension, decodeTableCell, encodeTableCell, segmentTechnicalMarkdown, spreadsheetToMarkdown } from "./technical-markdown";
 
 describe("Editor 2.0 technical Markdown source boundaries", () => {
   it("finds an ordinary table and keeps absolute cell positions", () => {
@@ -80,6 +80,28 @@ describe("Editor 2.0 technical Markdown source boundaries", () => {
   it("protects a table shape that would lose data if converted to ordinary cells", () => {
     const source = "| A | B |\n| --- | --- |\n| one | two | extra |";
     expect(segmentTechnicalMarkdown(source).some((segment) => segment.kind === "protected")).toBe(true);
+  });
+
+  it("serializes spreadsheet cells as literal Markdown-safe text and restores their exact values", () => {
+    const values = [
+      ["**literal**", "[shown](https://example.org)"],
+      ["a|b", "x\\y"],
+      ["~~strike~~", "&copy;"],
+      ["# Heading", "_emphasis_"],
+    ];
+    const source = spreadsheetToMarkdown(
+      "First\tSecond\n" + values.map((row) => row.join("\t")).join("\n"),
+    );
+    expect(source).not.toBeNull();
+    const table = segmentTechnicalMarkdown(source!).find((item) => item.kind === "table");
+    if (!table || table.kind !== "table") throw new Error("table missing");
+    expect(table.rows.map((row) => row.map((cell) => decodeTableCell(cell.text)))).toEqual(values);
+    expect(table.rows[0]?.[0]?.text).toBe("\\*\\*literal\\*\\*");
+    expect(table.rows[0]?.[1]?.text).toContain("\\[shown\\]\\(");
+    expect(table.rows[1]?.[0]?.text).toBe("a\\|b");
+    expect(table.rows[1]?.[1]?.text).toBe("x\\\\y");
+    expect(encodeTableCell("first\nsecond")).toBe("first second");
+    expect(encodeTableCell("first\r\nsecond")).toBe("first second");
   });
 
   it("converts rectangular spreadsheet TSV to escaped Markdown; rejects loss-prone shapes", () => {

@@ -162,7 +162,7 @@ describe("editor attachment UI", () => {
     expect(first.method).toBe("POST");
     expect(first.url).toBe("/api/attachments");
     expect(first.headers.get("X-Vico-Attachment-Id")).toBe(attachmentId);
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove" })).toBeEnabled();
 
     first.progress(3, 6);
     expect(screen.getByText("Uploading… 50%")).toBeInTheDocument();
@@ -331,6 +331,74 @@ function remoteDraft(generation: string, version: number, body: string) {
     title: "", snippet: body, editedAt: now, updatedAt: now, payload: { ...emptyDraftPayload, body } };
 }
 
+
+describe("MarkdownEditor pending attachment Remove", () => {
+  it.each(["late success", "late error"] as const)(
+    "keeps unsaved text and other selected uploads after pending Remove with %s",
+    async (lateOutcome) => {
+      renderDraftEditor();
+      await waitFor(() => expect(screen.getByLabelText("Attach")).toBeEnabled());
+      const form = screen.getByLabelText("Body").closest("form")!;
+      const field = screen.getByRole("textbox", { name: "Body" }) as HTMLTextAreaElement;
+      fireEvent.change(field, { target: { value: "Unsaved working notes" } });
+
+      const files = [
+        new File(["keep"], "kept.txt", { type: "text/plain" }),
+        new File(["remove"], "removed.txt", { type: "text/plain" }),
+        new File(["later"], "still-pending.txt", { type: "text/plain" }),
+      ];
+      fireEvent.change(screen.getByLabelText("Attach"), { target: { files } });
+      const [kept, removed, pending] = FakeXMLHttpRequest.instances;
+      expect(FakeXMLHttpRequest.instances).toHaveLength(3);
+      const keptId = kept!.headers.get("X-Vico-Attachment-Id")!;
+      const pendingId = pending!.headers.get("X-Vico-Attachment-Id")!;
+
+      await kept!.complete(201, { outcome: "stored", attachment: {
+        id: keptId, fileName: "kept.txt", detectedType: "text",
+        responseMime: "text/plain; charset=utf-8", byteSize: 4, verificationStatus: "type-checked",
+      } });
+      const operation = new FormData(form).get("editorOperationId");
+      expect(JSON.parse(String(new FormData(form).get("editorAttachmentIds")))).toEqual([keptId]);
+
+      const row = screen.getByText("removed.txt").closest("li")!;
+      const remove = row.querySelector("button")!;
+      expect(remove).toHaveTextContent("Remove");
+      expect(remove).toBeEnabled();
+      fireEvent.click(remove);
+
+      expect(removed!.aborted).toBe(false);
+      expect(screen.queryByText("removed.txt")).not.toBeInTheDocument();
+      expect(screen.getByText("still-pending.txt")).toBeInTheDocument();
+      expect(screen.getByText("kept.txt")).toBeInTheDocument();
+      expect(field).toHaveValue("Unsaved working notes");
+      expect(new FormData(form).get("editorOperationId")).toBe(operation);
+      expect(JSON.parse(String(new FormData(form).get("editorAttachmentIds")))).toEqual([keptId]);
+
+      removed!.progress(6, 6);
+      if (lateOutcome === "late success") {
+        await removed!.complete(201, { outcome: "stored", attachment: {
+          id: removed!.headers.get("X-Vico-Attachment-Id"), fileName: "removed.txt",
+          detectedType: "text", responseMime: "text/plain; charset=utf-8",
+          byteSize: 6, verificationStatus: "type-checked",
+        } });
+      } else {
+        removed!.fail();
+      }
+      expect(screen.queryByText("removed.txt")).not.toBeInTheDocument();
+      expect(screen.getByText("still-pending.txt")).toBeInTheDocument();
+      expect(new FormData(form).get("editorOperationId")).toBe(operation);
+
+      await pending!.complete(201, { outcome: "stored", attachment: {
+        id: pendingId, fileName: "still-pending.txt", detectedType: "text",
+        responseMime: "text/plain; charset=utf-8", byteSize: 5, verificationStatus: "type-checked",
+      } });
+      expect(JSON.parse(String(new FormData(form).get("editorAttachmentIds")))).toEqual([keptId, pendingId].sort());
+      expect(field).toHaveValue("Unsaved working notes");
+      expect(screen.queryByText("removed.txt")).not.toBeInTheDocument();
+      expect(removed!.aborted).toBe(false);
+    },
+  );
+});
 
 describe("MarkdownEditor inline image source/history integration", () => {
   it("inserts at the caret, preserves Undo/Redo and renders only an authorized stored image", async () => {

@@ -258,7 +258,18 @@ export async function validateTarStructure(
     if (allZero(header)) {
       if (offset + 1024 > source.size) return false;
       const second = await readExact(source, offset + 512, 512);
-      return second !== null && allZero(second);
+      if (!second || !allZero(second)) return false;
+      if (entries > 0) return true;
+
+      // An empty TAR has no file header: its entire body must consist of
+      // end-of-archive zero blocks (and optional zero padding).
+      for (let cursor = offset + 1024; cursor < source.size; cursor += READ_CHUNK_BYTES) {
+        const chunk = await readExact(
+          source, cursor, Math.min(READ_CHUNK_BYTES, source.size - cursor),
+        );
+        if (!chunk || !allZero(chunk)) return false;
+      }
+      return true;
     }
 
     if (!ascii(header, 257, "ustar")) return false;

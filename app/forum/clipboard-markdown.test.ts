@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseForumMarkdown } from "../markdown-syntax";
 import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
 
 describe("Editor 2.0 clipboard import", () => {
@@ -13,6 +14,28 @@ describe("Editor 2.0 clipboard import", () => {
   it("preserves boundary backticks and spaces in pasted inline code", () => {
     expect(clipboardHtmlToMarkdown("<p><code>`foo`</code></p>")).toBe("`` `foo` ``");
     expect(clipboardHtmlToMarkdown("<p><code> foo </code></p>")).toBe("`  foo  `");
+  });
+
+  it("preserves consecutive blank lines within HTML preformatted code through Markdown parsing", () => {
+    const code = "first\n\n\n\nlast";
+    const source = clipboardHtmlToMarkdown("<pre><code>" + code + "</code></pre>");
+    expect(source).toBe("```\n" + code + "\n```");
+    expect(parseForumMarkdown(source!).children.filter((node) => node.type === "code"))
+      .toMatchObject([{ type: "code", value: code }]);
+  });
+
+  it("normalizes HTML prose without collapsing blank lines in adjacent fenced code", () => {
+    const code = "first\n\n\n``` inside\n\n\nlast";
+    const source = clipboardHtmlToMarkdown(
+      "<p>Before</p><pre><code>" + code + "</code></pre><p>After</p>",
+    );
+    expect(source).toBe("Before\n\n````\n" + code + "\n````\n\nAfter");
+    expect(parseForumMarkdown(source!).children.map((node) => node.type))
+      .toEqual(["paragraph", "code", "paragraph"]);
+    expect(parseForumMarkdown(source!).children.find((node) => node.type === "code"))
+      .toMatchObject({ type: "code", value: code });
+    expect(clipboardHtmlToMarkdown("<p>One</p><div><p>Two</p></div>"))
+      .toBe("One\n\nTwo");
   });
 
   it("turns simple spreadsheet HTML into ordinary safe Markdown", () => {

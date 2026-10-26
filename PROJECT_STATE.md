@@ -20,6 +20,55 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Batch L1 — fixes 1–5/5 (2026-10-26)
+
+В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:
+два завершающих 512-byte zero blocks без `ustar` header распознаются при
+первичной проверке типа как TAR. Полная structural validation после приватной
+загрузки требует, чтобы оставшееся содержимое пустого TAR было zero padding;
+несоответствующая сигнатура, повреждённый архив и неверный MIME отвергаются.
+Добавлены focused type, structural и private R2 upload regressions.
+
+Вторым последовательным fix `ATTACH-04` разрешён локальный Remove uploading/
+pending файла из mounted editor selection без отмены всей operation и без per-file
+DELETE/abort. При Remove активный запрос помечается как игнорируемый для
+progress/success/error/terminal-410 callbacks, но продолжает обычный server
+upload/cleanup lifecycle; removed ID не может повторно появиться в selection.
+Другие pending/stored файлы, unsaved text и operation identity сохраняются.
+Focused mounted MarkdownEditor regression проверяет 3 файла + unsaved text,
+поздние success/error события и сохранение выбора остальных; отдельный
+published-edit regression проверяет, что late `410 gone` снятого файла не
+перезапускает operation. Whole Cancel сохраняет прежнюю отдельную semantics.
+
+Третий последовательный fix `ATTACH-HTTP-405-01` унифицирует ответ
+`405 Method Not Allowed` attachment-upload resource: для неподдерживаемых
+`HEAD`/`PATCH`/`PUT`/`OPTIONS` возвращается `Allow: GET, POST, DELETE` с
+сохранением прежнего `Cache-Control: no-store` и `nosniff`. Supported GET
+selection, POST upload и whole-operation DELETE cancel не меняются.
+Добавлена regression через React Router resource dispatch по фактическому
+route registry; direct handler-level тесты существующей upload semantics сохранены.
+
+Четвёртый последовательный fix `EDITOR-01` сохраняет точные последовательности
+пустых строк внутри fenced code при HTML-paste из `<pre>`, ограничивая прежнее
+сворачивание трёх и более переносов обычным prose вне code. Generated fence
+остаётся длиннее любого backtick-run содержимого; focused converter/Markdown AST
+regressions проверяют сохранность кода и нормализацию соседнего prose.
+
+Пятый последовательный fix `EDITOR-02` сохраняет таблицы, импортируемые из
+TSV и безопасного HTML, как literal cell values: символы Markdown-разметки
+экранируются при генерации Markdown table, но исходный пользовательский
+Markdown вне конверсии не меняется. Простой редактор показывает и редактирует
+исходные буквальные значения без накопления escape-символов. Existing
+pipe/backslash/newline preservation и отказ от неподдерживаемых сложных
+таблиц сохраняются. Focused regressions покрывают source, визуальную форму и
+опубликованный Markdown rendering.
+
+В draft batch L1 выполнены все пять fixes: `ATTACH-03`, `ATTACH-04`,
+`ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` (5/5).
+Implementation выполнена, exact-head CI и независимый whole-PR review/
+принятие ещё проверяются отдельно.
+Production/external/owner visual actions не выполнялись.
+
 ## Пакет 5 — Help lifecycle и ограничение тегов (2026-10-26)
 
 Correction package закрывает `HELP-01`, `HELP-02`, `HELP-MOD-01`,
