@@ -9,6 +9,8 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { ForumMarkdown, ForumInlineAttachmentProvider, highlightCode } from "./markdown";
 import { attributedQuoteMarkdown } from "./quote-markdown";
+import { spreadsheetToMarkdown } from "./technical-markdown";
+import { clipboardHtmlToMarkdown } from "./clipboard-markdown";
 import { publishedMentionRecipients } from "./mentions";
 
 function canonicalCommonResources(): Record<string, string> {
@@ -201,6 +203,34 @@ describe("Editor 2.0 technical rendering", () => {
     expect(container.querySelectorAll(".forum-markdown-table td")).toHaveLength(2);
     expect(screen.getByText("A").tagName).toBe("STRONG");
     expect(screen.getByRole("link", { name: "docs" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+  });
+
+  it("renders spreadsheet-pasted cell syntax literally without modifying authored rich Markdown", () => {
+    const source = spreadsheetToMarkdown(
+      "Label\tValue\n**literal**\t[shown](https://example.org)\na|b\tx\\y",
+    );
+    expect(source).not.toBeNull();
+    const { container } = renderMarkdown(source!);
+    const rows = [...container.querySelectorAll(".forum-markdown-table tr")].map((row) =>
+      [...row.querySelectorAll("th,td")].map((cell) => cell.textContent));
+    expect(rows).toEqual([
+      ["Label", "Value"],
+      ["**literal**", "[shown](https://example.org)"],
+      ["a|b", "x\\y"],
+    ]);
+    expect(container.querySelector(".forum-markdown-table strong, .forum-markdown-table a")).toBeNull();
+  });
+
+  it("renders HTML spreadsheet table values as literal text", () => {
+    const source = clipboardHtmlToMarkdown(
+      "<table><tr><th>Label</th><th>Value</th></tr>"
+      + "<tr><td>**literal**</td><td>[shown](https://example.org)</td></tr></table>",
+    );
+    expect(source).not.toBeNull();
+    const { container } = renderMarkdown(source!);
+    expect([...container.querySelectorAll(".forum-markdown-table tbody td")].map((cell) => cell.textContent))
+      .toEqual(["**literal**", "[shown](https://example.org)"]);
+    expect(container.querySelector(".forum-markdown-table strong, .forum-markdown-table a")).toBeNull();
   });
 
   it("renders agreed double-tilde strikethrough without enabling unrelated GFM syntax", () => {
