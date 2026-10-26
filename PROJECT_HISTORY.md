@@ -478,6 +478,24 @@ format/deploy identity не сопровождается durable refresh/converg
 contract — в `docs/translation/STORAGE_AND_VERSIONING.md`. Эта запись не выбирает механизм
 исправления.
 
+### H-012 — database constraints, notification reachability и read-state snapshot
+
+Repository audit выявил шесть связанных, но независимых дефектов: SQL `CHECK` принимал
+частично `NULL` allowance metadata из-за трёхзначной логики; schema manifest не фиксировал
+предикаты partial indexes; web runtime ACL не включал используемую read-state relation;
+author mutex конфликтовал с FK locks встречных ответов; bounded inbox мог навсегда скрыть
+старое непрочитанное; topic view мог отметить недоставленное concurrent сообщение прочитанным.
+
+Correction package добавил forward migration и structural predicate hashes, синхронизировал
+runtime capability, заменил author mutex на `FOR NO KEY UPDATE`, поставил непрочитанные перед
+bounded read history и ограничил read marker последним сообщением доставленного topic snapshot.
+Для каждого дефекта добавлена отдельная regression boundary, включая конкурентные транзакции
+на disposable PostgreSQL 17.
+
+Статус: исправление реализовано в пакете 4; merge остаётся отдельным решением владельца.
+
+---
+
 ## Важное свойство исторических записей
 
 Зелёный CI подтверждает проверяемые code/test/build contracts, но не доказывает, что

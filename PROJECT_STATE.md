@@ -20,6 +20,22 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Пакет 4 — database, notifications и read-state (2026-10-26)
+
+Correction package закрывает `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02` и `CORE-03`.
+Forward migration `0045_audit_database_notifications_read_state` делает allowance metadata
+явно non-null для активной allowance-ветви. Production schema manifest теперь включает hash
+предиката каждого индекса, а web runtime ACL — `SELECT`, `INSERT`, `UPDATE` для
+`forum_topic_read_states`.
+
+Forum cooldown mutex использует `FOR NO KEY UPDATE`: записи одного автора по-прежнему
+сериализуются, но встречные ответы разных авторов совместимы с FK `KEY SHARE`. Ограниченный
+notification inbox сортирует непрочитанные перед прочитанной историей, поэтому непрочитанные
+старше первых 50 остаются достижимыми. Topic view продвигает read marker только до последнего
+фактически доставленного в loader snapshot сообщения, а не до более нового cursor из отдельного
+concurrent read-state запроса. Disposable PostgreSQL и repository checks фиксируют эти
+контракты.
+
 ## Пакет 3 — точная замена image destination при recovery (2026-10-26)
 
 Подтверждён LEVA-PR239-A7D2954-01: Retry менял attachment ID, но regex мог оставить
@@ -1735,7 +1751,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0043`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0045`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

@@ -101,6 +101,10 @@ export async function readProductionSchemaSnapshot(client) {
       index_relation.relname AS name,
       index_row.indisunique AS unique,
       access_method.amname AS method,
+      CASE WHEN index_row.indpred IS NULL
+        THEN NULL
+        ELSE pg_catalog.pg_get_expr(index_row.indpred, index_row.indrelid, false)
+      END AS predicate,
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -219,6 +223,7 @@ export async function readProductionSchemaSnapshot(client) {
       unique: row.unique,
       method: row.method,
       columns: row.columns,
+      predicateSha256: row.predicate === null ? null : definitionHash(row.predicate),
     });
   }
 
@@ -261,6 +266,13 @@ export function assertProductionSchemaManifest(actual, expected) {
       const actualCheck = actual.tables[tableName]?.checks.find(({ name }) => name === check.name);
       pending.push(
         `check:${tableName}.${check.name}=${actualCheck?.definitionSha256 ?? "MISSING"}`,
+      );
+    }
+    for (const index of table.indexes) {
+      if (index.predicateSha256 !== "PENDING") continue;
+      const actualIndex = actual.tables[tableName]?.indexes.find(({ name }) => name === index.name);
+      pending.push(
+        `index-predicate:${tableName}.${index.name}=${actualIndex?.predicateSha256 ?? "MISSING"}`,
       );
     }
   }
@@ -307,6 +319,10 @@ function normalizeTableColumns(tables) {
       {
         ...table,
         columns: [...table.columns].sort((left, right) => left.name.localeCompare(right.name)),
+        indexes: table.indexes.map((index) => ({
+          ...index,
+          predicateSha256: index.predicateSha256 ?? null,
+        })),
       },
     ]),
   );

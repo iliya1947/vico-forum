@@ -2301,8 +2301,11 @@ export function TopicView({
     replyPublicationRef.current = null;
   }, [forumWriteError, location.hash, navigation.state, topic.id, topic.posts]);
 
+  const deliveredLatestPostId = topicReadState ? topic.posts.at(-1)?.id : undefined;
   useEffect(() => {
-    const latestPostId = topicReadState?.latestPostId;
+    // Never advance beyond the latest post actually delivered in this page
+    // snapshot. A separate read-state query may already observe a concurrent post.
+    const latestPostId = deliveredLatestPostId;
     if (!latestPostId) return;
     const snapshot = `${topic.id}:${latestPostId}`;
     if (markedReadSnapshot.current === snapshot) return;
@@ -2311,7 +2314,7 @@ export function TopicView({
       { intent: "markTopicRead", postId: latestPostId },
       { method: "post" },
     );
-  }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
+  }, [deliveredLatestPostId, readStateFetcher, topic.id]);
 
   const completedEditOperationId = editRecovery?.topicId === topic.id && editRecovery.post.id === editingPostId
     ? editRecovery.completedOperationId : undefined;

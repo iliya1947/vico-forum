@@ -299,6 +299,9 @@ export const translationTasks = pgTable(
         and ${table.allowanceUpdatedAt} is null
       ) or (
         ${table.translationKind} in ('content-topic-title', 'content-post-body')
+        and ${table.allowanceState} is not null
+        and ${table.allowanceGeneration} is not null
+        and ${table.allowanceAttempt} is not null
         and ${table.allowanceGeneration} = ${table.generation}
         and ${table.allowanceAttempt} = ${table.attemptCount} + 1
         and ${table.allowanceAttempt} <= ${table.maxAttempts}

@@ -108,6 +108,13 @@ test("accepts exact localization-read and web runtime capability contracts", () 
   );
 });
 
+test("web capability includes the authenticated topic read-state relation", () => {
+  assert.deepEqual(
+    runtimeCapabilityContracts.web.relations.forum_topic_read_states,
+    ["INSERT", "SELECT", "UPDATE"],
+  );
+});
+
 test("requires distinct runtime roles", () => {
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(fixture(), {

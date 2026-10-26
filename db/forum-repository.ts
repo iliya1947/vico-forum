@@ -1383,7 +1383,13 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .where(eq(forumReplyNotifications.recipientUserId, userId))
-      .orderBy(desc(forumReplyNotifications.createdAt), desc(forumReplyNotifications.id))
+      // Keep every unread row reachable even when the bounded inbox contains
+      // more than `limit` notifications. Read history remains newest-first.
+      .orderBy(
+        sql`case when ${forumReplyNotifications.readAt} is null then 0 else 1 end`,
+        desc(forumReplyNotifications.createdAt),
+        desc(forumReplyNotifications.id),
+      )
       .limit(limit);
   }
 
@@ -3878,7 +3884,9 @@ async function enforceForumWriteCooldown(
 ): Promise<Date> {
   // The existing Better Auth user row is the per-author mutex. This lock and the
   // post lookup deliberately live in the same transaction as the forum write.
-  await tx.select({ id: user.id }).from(user).where(eq(user.id, authorId)).for("update");
+  // Serialize writes by one author without conflicting with FK KEY SHARE locks
+  // acquired when another author inserts a notification for this user.
+  await tx.select({ id: user.id }).from(user).where(eq(user.id, authorId)).for("no key update");
   const [latest] = await tx.select({ createdAt: forumPosts.createdAt })
     .from(forumPosts)
     .where(eq(forumPosts.authorId, authorId))
