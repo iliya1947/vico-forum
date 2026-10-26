@@ -20,7 +20,7 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## Batch L1 — fixes 1–3/5 (2026-10-26)
+## Batch L1 — fixes 1–4/5 (2026-10-26)
 
 В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:
 два завершающих 512-byte zero blocks без `ustar` header распознаются при
@@ -48,8 +48,14 @@ selection, POST upload и whole-operation DELETE cancel не меняются.
 Добавлена regression через React Router resource dispatch по фактическому
 route registry; direct handler-level тесты существующей upload semantics сохранены.
 
-В draft batch L1 выполнены только три fixes: `ATTACH-03`, `ATTACH-04`,
-`ATTACH-HTTP-405-01` (3/5). `EDITOR-01` и `EDITOR-02` ещё не начаты.
+Четвёртый последовательный fix `EDITOR-01` сохраняет точные последовательности
+пустых строк внутри fenced code при HTML-paste из `<pre>`, ограничивая прежнее
+сворачивание трёх и более переносов обычным prose вне code. Generated fence
+остаётся длиннее любого backtick-run содержимого; focused converter/Markdown AST
+regressions проверяют сохранность кода и нормализацию соседнего prose.
+
+В draft batch L1 выполнены четыре fixes: `ATTACH-03`, `ATTACH-04`,
+`ATTACH-HTTP-405-01`, `EDITOR-01` (4/5). `EDITOR-02` ещё не начат.
 Whole-PR independent review и принятие batch L1 ещё не выполнялись.
 Production/external/owner visual actions не выполнялись.
 
