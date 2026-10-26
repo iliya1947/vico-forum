@@ -20,6 +20,20 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Batch L1 — fix 1/5: ATTACH-03 (2026-10-26)
+
+В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:
+два завершающих 512-byte zero blocks без `ustar` header распознаются при
+первичной проверке типа как TAR. Полная structural validation после приватной
+загрузки требует, чтобы оставшееся содержимое пустого TAR было zero padding;
+несоответствующая сигнатура, повреждённый архив и неверный MIME отвергаются.
+Добавлены focused type, structural и private R2 upload regressions.
+
+Это только `ATTACH-03` в первой последовательности L1 из пяти fixes.
+`ATTACH-04`, `ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` ещё не начаты;
+whole-PR independent review и принятие batch L1 ещё не выполнялись.
+Production/external/owner visual actions не выполнялись.
+
 ## Пакет 4 — database, notifications и read-state (2026-10-26)
 
 Correction package закрывает `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02` и `CORE-03`.
