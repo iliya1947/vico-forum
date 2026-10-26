@@ -66,3 +66,9 @@
 - Координатор независимо сверил Git tree: все 17 implementation/test blob SHA идентичны reviewed head `d5f99260`; изменён только integration state/documentation через сохранение Package 5 + Batch L1 в `PROJECT_STATE.md`. Exact-head CI `40402017209` SUCCESS (`checks`, `database`), GitHub `mergeable=true`.
 - По AGENTS новый whole-PR cycle не требуется: implementation и требования не изменены; предыдущие Mira + Leva PASS остаются применимыми.
 - **Следующий шаг:** owner merge PR #243. После merge координатор проверяет integration/mergeability PR #244.
+
+
+- PR #243 merged by owner into `main` as `9ceead2a035c95c47c15573db039f43aca0739ce`.
+- Post-merge PR #244 check: unchanged reviewed head `7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`, GitHub `mergeable=false` / `mergeable_state=dirty`. Overlap with changes now in main: `PROJECT_STATE.md`, `app/forum/public-read.test.tsx`, `app/forum/views.tsx`, `app/localization/catalog.ts`, `app/localization/manual-fingerprints.ts`; `manual-values.ts` remains non-overlapping.
+- Лире назначена bounded integration correction existing PR #244 preserving current main + reviewed LOC-04 diff; task #236 comment `6428231373`.
+- **Следующий шаг:** разработчик подключает Лиру к PR #236 для integration correction PR #244.
