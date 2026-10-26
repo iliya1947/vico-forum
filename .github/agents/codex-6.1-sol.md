@@ -1,5 +1,63 @@
 # Лёва — Codex-6.1 Sol
 
+## PR241 — adjudication Лёвы: A CONFIRMED; B CONFIRMED
+
+Date:2026-10-26,Asia/Jerusalem. Assignment:[6420951578](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6420951578).
+Unchanged exact head:`f5cdf71837aee78a31856c766c087c9bbf54a496`;base:`1364d5768906c6746c4397c615f846797051eb76`;tree:`4ba25681febb43f1392a826b0a2cf2d7b9dd8b6f`.
+
+**The previous personal whole-PR PASS published in6420790016 is withdrawn for this head. My corrected technical verdict is CHANGES REQUIRED.** I independently confirmed both disputed remaining parts of the original scope. This is not a majority vote,not an expansion of scope and not a new implementation assignment. No change to PR241/main was made.
+
+My prior review exercised stale removal,resolution and best-answer moderation but missed the separately canonicalized stale appeal-creation case. It checked the edited DOC-03 paragraph against presentation code but failed to check all locations explicitly included in the canonical finding. Those omissions made my claimed full-scope PASS incorrect.
+
+### A — HELP-01 stale appeal creation: CONFIRMED
+
+Canonical source:[6388946847](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6388946847),HELP-DUP-STALE-01. It explicitly defines three subcases:stale relationship remove,stale appeal resolution,**stale appeal creation**. The creation subcase is current-Stage relationship semantics,not future hardening. PR241 closes the first two but not the third.
+
+Actual source chain on the assigned head:
+- [Author form,views.tsx:2634](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/app/forum/views.tsx#L2634) sends intent/explanation and no observed relationship expectation.
+- [Action,actions.server.ts:365](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/app/forum/actions.server.ts#L365) forwards only topicId,actorId,explanation.
+- [Writer:220](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/db/hyperdrive-forum.ts#L220) and [service:251](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/db/forum-service.ts#L251) have no expected-relationship parameter.
+- [Repository:3433](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/db/forum-repository.ts#L3433) locks/selects the currently active relationship and [inserts:3452](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/db/forum-repository.ts#L3452) against that relationship. Ownership/Help/pending checks are valid but do not bind the intent to R1.
+- [Loader:185](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/app/routes/topic.tsx#L185) removes the newly introduced relationship ID from actors without management permission; the ordinary author currently cannot obtain it for this form either.
+
+Independent native reproduction used clean disposable PostgreSQL17 with all46 migrations and the real topicAction→writer→service→repository path:
+1. Author's public topic snapshot contains R1,Duplicate of original-X.
+2. Manager removes R1 using its correct existing removal expectation.
+3. Negative control before replacement:the old appeal submission returns409 and creates0appeals. Thus the no-active-relationship guard works.
+4. Manager creates R2 for the same question,now pointing to original-Y.
+5. Submit exactly the old author-form fields,intent=appealHelpDuplicate plus explanation="This question is not a duplicate of original X."
+6. Actual response302; PostgreSQL stores a pending appeal against **R2/original-Y** with the explanation for original-X. The current relationship remains R2 and becomes disputed.
+7. Additional control:even sending an unsolicited expectedRelationshipId=R1 is ignored by the current action; it again returns302 and creates a pending appeal for R2 after the previous appeal was resolved.
+
+This needs neither simultaneous requests nor a browser-specific event to fail:ordinary state replacement between page load and submit is enough. Role/origin/ownership guards do not prevent it because the same author legitimately owns the same question. The missing information is which relationship the author's intent concerned.
+
+Classification:remaining **current functional defect within the existing HELP-01 family**,not a fourth subcase/new root-cause group. Required correction outcome:the author operation must carry the observed relationship identity through all relevant boundaries and compare it under the existing locks; stale R1 submission after R2 replacement must conflict without creating an appeal for R2. The author must be able to supply that expectation without granting moderation authority or expanding unrelated public list projections. Implementation mechanism/scope is not assigned by this report.
+
+### B — DOC-03 incomplete cleanup: CONFIRMED
+
+Canonical source:[6391770817](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6391770817). It explicitly includes all three locations:UI_UX_PASS,PROJECT_STATE and localization catalog metadata. It classifies the inconsistency as current SOT/copy documentation,**not a runtime visibility defect**.
+
+On the exact head:
+- UI_UX_PASS:439–445 was corrected to the moderator-only contract.
+- [PROJECT_STATE:1446–1447](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/PROJECT_STATE.md#L1446) still says the topic page publicly shows a neutral Disputed marker. The same file [1455–1457](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/PROJECT_STATE.md#L1455),the accepted re-test at1466–1469 and the new package5 note at35–36 say moderator-only.
+- [Catalog:192](https://github.com/iliya1947/vico-forum/blob/f5cdf71837aee78a31856c766c087c9bbf54a496/app/localization/catalog.ts#L192) still describes helpDuplicateDisputed as "Public neutral marker while a confirmed duplicate relationship has a pending author appeal."
+- Existing code continues to gate the list badge with canViewDuplicateDispute and the topic badge with canManageHelpDuplicate; an appealing author gets a separate own pending message. That code was not changed in this adjudication.
+
+PROJECT_STATE's own purpose at7–8 says it records current state,not contradictory historical guidance; adding another correct note above does not remove the stale assertion. The canonical DOC-03 already named these exact remaining locations. Moving them into future DOC-01 would therefore change the agreed finding boundary and leave the assigned package5 sidecar incomplete. No evidence supports RECLASSIFIED or REJECTED.
+
+Classification:remaining **current documentation/localization-metadata defect within DOC-03**,not a newly confirmed runtime defect. Required outcome:make the two remaining texts agree with the existing moderator-only contract,with applicable localization-metadata/fingerprint checks. General PROJECT_STATE reorganization remains a separate DOC-01 concern; this narrow wording correction does not depend on it.
+
+### Verification limits and next step
+
+This was the assigned two-finding adjudication,not another full whole-PR review. The unchanged head's earlier1080app/303PG green suites do not prove closure of these untested/unread canonical subparts. No unnecessary full-suite rerun was used as a substitute for the focused reproduction. New native probe passed all assertions proving the stale behavior and its controls. Source/canonical comparisons establish B. Auth session was a controlled fixture; actual database ownership validation,writer,service,repository and transactions were used. No Chromium,visual acceptance,production or external-service checks were performed.
+
+Evidence outside implementation:`/workspace/work/pr241-stale-create-adjudication.mjs` and `pr241-stale-create-adjudication.log`. No project source/schema/dependency or implementation PR change. Test PG container stopped/removed; isolated clean worktree removed after completion.
+
+Мире:both disputed remaining parts are independently CONFIRMED; account for withdrawal of my previous PASS and establish the bounded correction assignment separately. This report does not start correction,assign an implementer,merge PR241 or start another package. Лёва STOP.
+
+
+## Предыдущие отчёты — historical context; PR241 PASS ниже отозван adjudication выше
+
 ## PR241 — independent whole-PR technical review Лёвы
 
 Date:2026-10-26,Asia/Jerusalem. Assignment:PR236 comment6419875144. Process decision:6419873950 (parallel blind reviews; no publication before all assigned independent reviews finish and separate developer instruction).
