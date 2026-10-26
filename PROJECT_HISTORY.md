@@ -496,6 +496,26 @@ bounded read history и ограничил read marker последним соо
 
 ---
 
+### H-013 — stale Help intents, lifecycle time и tag amplification
+
+Repository audit выявил четыре связанные границы. Topic-level moderation forms не передавали
+identity увиденной appeal/duplicate relationship/current best answer, поэтому устаревшая форма
+могла изменить уже заменившую её сущность. Duplicate removal и appeal resolution использовали
+transaction-start `now()`: после ожидания lock более новая `confirmed_at` / `created_at`
+могла оказаться позже resolution timestamp и нарушить database CHECK. Наконец, публичная
+публикация ограничивала длину каждого тега, но не число уникальных тегов, позволяя одной
+разрешённой записи без границы расширить глобальный каталог.
+
+Correction package добавил end-to-end expected identity с проверкой под lock, post-lock
+`statement_timestamp()` и лимит 10 уникальных нормализованных тегов до persistence.
+Документальный sidecar одновременно устранил противоречивое описание публичного
+`Disputed`: pending badge является moderator-only, а автору доступно отдельное сообщение
+о собственной appeal.
+
+Статус: исправление реализовано в пакете 5; merge остаётся отдельным решением владельца.
+
+---
+
 ## Важное свойство исторических записей
 
 Зелёный CI подтверждает проверяемые code/test/build contracts, но не доказывает, что

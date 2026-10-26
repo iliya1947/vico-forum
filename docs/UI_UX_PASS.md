@@ -436,12 +436,13 @@ composition without changing the forum hierarchy or schema:
   A confirmed duplicate points directly to a canonical original question; manager operations use
   the dedicated `forum.helpDuplicate.manage` capability. The duplicate-question author can dispute
   only an already confirmed relationship with a required explanation. Pending dispute preserves
-  the authoritative duplicate relationship: the topic page may show a neutral public `Disputed`
-  marker, while Help question lists keep public `Solved` and `Duplicate`, omit the redundant
-  `Best answer` badge, keep `Solution outdated` public, and expose `Needs review` plus pending
-  `Disputed` badges only to the relevant moderation actors in both lists and topic presentation.
-  The appealing author still sees their own pending-appeal message; the appeal explanation remains
-  private to that author and duplicate managers. Reject preserves
+  the authoritative duplicate relationship. The pending `Disputed` badge is moderator-only in
+  both Help question lists and topic presentation; the appealing author sees their own pending
+  appeal message, but not that moderator-only badge. Help question lists keep public `Solved` and
+  `Duplicate`, omit the redundant
+  `Best answer` badge, keep `Solution outdated` public, and expose `Needs review` only to the
+  relevant moderation actors. The appeal explanation remains private to the appealing author and
+  duplicate managers. Reject preserves
   the relation, while accepting the dispute removes it. A question with its own selected best
   answer or solved state cannot be confirmed as a duplicate, and an active duplicate cannot gain
   its own best answer, solved state or new replies until that relationship is removed. While an

@@ -156,7 +156,7 @@ export const reviewedCommonFingerprints = {
   helpSolutionsSolutionsEmpty: "2c0fce5b6678f81134756f6a9c578889f8e9ed238bf6af3a3ad5205279a84ba6",
   helpSolutionNeedsReview: "a7f73cf66e6910902e02e57bfc997dbf71d558423c70a1f2a4bb79db5efe8106",
   helpDuplicateBadge: "7263543cbed5a794ca6e17c6cae283bdca05c79fd75c732614dc74b698df39be",
-  helpDuplicateDisputed: "623a9d772e676d8bfcc0a34ebde13d8ec7b2a1c73a5eb2d96fdff76815536708",
+  helpDuplicateDisputed: "27f9d069cb3b7de40dac264b83180fa8df8fd83af306b4cdcb5a7ca241738f8d",
   helpDuplicateOf: "796b3888f466038f202230094b3592b8622746bed14da4405a46961b36e0ac4e",
   helpDuplicateOriginalIdLabel: "a611316656dbae6cfe06d039d15a7fb44f126e97b8b225ed6070cea93d814eaf",
   helpDuplicateConfirm: "0268f0602a3c9ea9bd8120f1ebeb30b21eada7d41bc60657ef2c12848a293bec",
