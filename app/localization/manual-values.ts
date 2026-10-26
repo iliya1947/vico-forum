@@ -932,6 +932,7 @@ export const hebrewCommonValues = {
   postEditedAt: "נערך {{date}}",
   postHistory: "היסטוריית עריכה",
   postHistoryHeading: "גרסאות שפורסמו",
+  postHistoryLoading: "היסטוריית העריכה נטענת…",
   postHistoryUnavailable: "היסטוריית העריכה אינה זמינה.",
   postRevisionBy: "{{author}} · {{date}}",
   postNumber: "הודעה #{{number}}",
