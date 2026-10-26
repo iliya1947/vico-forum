@@ -1,5 +1,25 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## Batch L1 / ATTACH-HTTP-405-01 — fix 3/5 завершён (2026-10-26)
+
+**Назначение:** [PR #236 comment #6422256497](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6422256497). Продолжение [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243), branch `chatgpt6/batch-l1-20261026`, base `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`. Новый exact implementation head: **`95fd8648aab5b63a9afc3194efd3a3150ef27c51`**.
+
+### Причинная цепочка и локальное исправление
+
+- В [registered resource route](https://github.com/iliya1947/vico-forum/blob/95fd8648aab5b63a9afc3194efd3a3150ef27c51/app/routes.ts) `api/attachments` у `loader` есть GET, у `action` POST и whole-operation DELETE. GET/HEAD requests направляются framework resource routing в loader, PATCH/PUT/DELETE — в action (см. официальный React Router resource route contract).
+- `app/routes/attachment-upload.ts`: guards `loader: method!==GET` и `action: method not POST/DELETE` возвращали `405` c JSON `error: method`, но **без обязательного `Allow`**. Retired per-file DELETE также возвращал 405 без Allow. Наличие метода в action само по себе не означает permission к конкретной операции с per-file DELETE.
+- Добавлена одна `methodNotAllowed()`, которая сохраняет прежний `json(...,405)`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff` и устанавливает **`Allow: GET, POST, DELETE`**. Три существующих unsupported-method branches используют один ответ. Не менялись authz, upload method semantics, body streaming, server private R2, resource registration и supported GET/POST/DELETE.
+- `app/routes/attachment-upload.test.ts`: новый тест вызывает **настоящий React Router `createStaticHandler.queryRoute`** на path, взятом из `app/routes.ts`, с настоящими `loader`/`action` exports и контролируемым `RouterContextProvider`. Проверяет HEAD/PATCH/PUT/OPTIONS → 405 + `Allow` + no-store/nosniff, а также GET list → 200, DELETE whole operation cancel → 200 и POST upload → 201. Оставлены старые direct-handler tests и все security/streaming regressions.
+- `PROJECT_STATE.md` обновлён: зафиксированы только 3/5 завершённых fixes, два последних по-прежнему unstarted.
+
+### Verification и границы
+
+- [CI #40366182831](https://github.com/iliya1947/vico-forum/actions/runs/40366182831), точный `head_sha=95fd8648aab5b63a9afc3194efd3a3150ef27c51`: **completed / SUCCESS**, оба jobs `checks` и `database` **SUCCESS** (проверено Лирой в GitHub).
+- Это actual router-dispatch unit/integration test в CI, не собственный deployed Worker/HTTP smoke и не Chromium. Лично локальные tests, PostgreSQL, реальный R2 или внешние сервисы не запускала. Никаких новых схем БД, библиотек или permissions.
+- Batch L1: **3/5 завершено** — `ATTACH-03`, `ATTACH-04`, `ATTACH-HTTP-405-01`. `EDITOR-01` и `EDITOR-02` не выполнялись. [PR #243](https://github.com/iliya194/vico-forum/pull/243) остаётся **draft, не merge-ready**, whole-PR review не инициирован, production/owner visual не выполнялись; PR #241 не изменён. **STOP** до отдельного назначения fix 4/5.
+
+---
+
 ## Batch L1 / ATTACH-04 — fix 2/5 завершён (2026-10-26)
 
 **Назначение:** [PR #236 comment #6421809155](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6421809155), продолжение того же [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243). Base `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`; новый exact implementation head `739f6b1be2ba3413a2a2e4fe979459037ad76090`. `ATTACH-03` остаётся первой завершённой подзадачей; выполнена **только** вторая `ATTACH-04`.
