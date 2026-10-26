@@ -364,6 +364,7 @@ export const russianCommonValues = {
   postEditedAt: "Отредактировано {{date}}",
   postHistory: "История правок",
   postHistoryHeading: "Опубликованные версии",
+  postHistoryLoading: "Загружаем историю правок…",
   postHistoryUnavailable: "История правок недоступна.",
   postRevisionBy: "{{author}} · {{date}}",
   postNumber: "Сообщение №{{number}}",
