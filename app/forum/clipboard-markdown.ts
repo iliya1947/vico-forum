@@ -16,6 +16,22 @@ function textAsMarkdown(value: string): string {
   }).join("\n");
 }
 
+// Clipboard prose uses compact paragraph spacing, but fenced code created from
+// <pre> must retain its original blank lines. The generated fence is longer than
+// every backtick run within the code, so it cannot close inside the code body.
+function normalizeClipboardProse(source: string): string {
+  const fence = /^(`{3,})\n[\s\S]*?^\1(?=\n|$)/gmu;
+  const compact = (value: string) => value.replace(/\n{3,}/gu, "\n\n");
+  let end = 0;
+  let normalized = "";
+  for (const match of source.matchAll(fence)) {
+    normalized += compact(source.slice(end, match.index));
+    normalized += match[0];
+    end = match.index + match[0].length;
+  }
+  return (normalized + compact(source.slice(end))).trim();
+}
+
 /**
  * Converts only safe structural formatting; external styles, scripts and
  * executable content are never transferred. Unsupported structures return
@@ -95,7 +111,7 @@ export function clipboardHtmlToMarkdown(html: string): string | null {
     valid = false;
     return inner();
   }
-  const source = children(doc.body).replace(/\n{3,}/gu, "\n\n").trim();
+  const source = normalizeClipboardProse(children(doc.body));
   return valid ? source : null;
 }
 
