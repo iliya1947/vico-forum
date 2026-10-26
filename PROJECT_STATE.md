@@ -20,7 +20,7 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## Batch L1 — fix 1/5: ATTACH-03 (2026-10-26)
+## Batch L1 — fixes 1–3/5 (2026-10-26)
 
 В implementation branch batch L1 исправлено распознавание valid nonzero empty TAR:
 два завершающих 512-byte zero blocks без `ustar` header распознаются при
@@ -40,8 +40,16 @@ Focused mounted MarkdownEditor regression проверяет 3 файла + unsa
 published-edit regression проверяет, что late `410 gone` снятого файла не
 перезапускает operation. Whole Cancel сохраняет прежнюю отдельную semantics.
 
-Завершены только fixes `ATTACH-03` и `ATTACH-04` (2/5) в draft batch L1.
-`ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` ещё не начаты.
+Третий последовательный fix `ATTACH-HTTP-405-01` унифицирует ответ
+`405 Method Not Allowed` attachment-upload resource: для неподдерживаемых
+`HEAD`/`PATCH`/`PUT`/`OPTIONS` возвращается `Allow: GET, POST, DELETE` с
+сохранением прежнего `Cache-Control: no-store` и `nosniff`. Supported GET
+selection, POST upload и whole-operation DELETE cancel не меняются.
+Добавлена regression через React Router resource dispatch по фактическому
+route registry; direct handler-level тесты существующей upload semantics сохранены.
+
+В draft batch L1 выполнены только три fixes: `ATTACH-03`, `ATTACH-04`,
+`ATTACH-HTTP-405-01` (3/5). `EDITOR-01` и `EDITOR-02` ещё не начаты.
 Whole-PR independent review и принятие batch L1 ещё не выполнялись.
 Production/external/owner visual actions не выполнялись.
 
