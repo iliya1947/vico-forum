@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — пакет 5: independent review Лиры назначен на PR #241 (2026-10-26)
+## Текущая реализация — пакет 5: parallel independent review PR #241 (2026-10-26)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
 - Review cycle package 4 завершён: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review не считался отдельным independent verdict. Confirmed current-Stage defects не осталось. Exact-head CI `40311315111` SUCCESS.
@@ -10,8 +10,9 @@
 - Revised post-package5 plan зафиксирован в #236 comments `6419029403` и `6419135497`: после package5 остаётся 39 findings = 16 в трёх связанных implementation packages Лёве (`L6` attachment core, `L7` structural Markdown, `L8` durable translation runtime) + 23 локальных fixes Лире, выполняемых по одному внутри implementation PR партиями по 5 (итого 5 PR: 5+5+5+5+3). `L7` предшествует `L8`; `DOC-01` выполняется последним. Автор implementation не считается собственным independent reviewer; Мишаня остаётся доступен как reviewer PR Лёвы/Лиры.
 - Мишаня завершил package 5 в PR #241 на stable exact head `f5cdf71837aee78a31856c766c087c9bbf54a496`; exact-head CI `40345202786` SUCCESS. Авторский handoff — comment `6419399136`.
 - Мира завершила первый whole-PR review в текущем чате; findings остаются непубличными до окончания предусмотренных проверок согласно AGENTS.md.
-- Независимая whole-PR проверка Лиры назначена нейтрально в #236 comment `6419772533` без передачи findings Миры.
-- **Следующий шаг:** разработчик подключает Лиру к PR #236. Production/external/owner visual actions не выполнялись. PR #236 — только communication и никогда не merge.
+- Owner decision о параллельных independent reviews зафиксирован в #236 comment `6419873950`: reviewers одного stable head работают одновременно, findings не раскрываются до завершения всех назначенных reviews.
+- Лира назначена нейтрально в #236 comment `6419772533`; Лёва назначен параллельно в #236 comment `6419875144`. Findings Миры им не передавались.
+- **Следующий шаг:** разработчик подключает Лиру и Лёву к PR #236. Production/external/owner visual actions не выполнялись. PR #236 — только communication и никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
