@@ -1,5 +1,32 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #241 — independent whole-PR review пакета 5 на `f5cdf718` (2026-10-26)
+
+**Вердикт Лиры: PASS по независимой проверке исходного кода, diff и регрессионного покрытия.** Новых подтверждённых дефектов текущего Stage в назначенном scope не обнаружено. Этот verdict не является командным consensus или разрешением merge. Публикация сделана **по прямой команде разработчика**; на момент проверки служебных записей завершение параллельной проверки Лёвы не было опубликовано, и результаты других reviewers в основание вердикта Лиры не принимались.
+
+- Implementation: [PR #241](https://github.com/iliya1947/vico-forum/pull/241).
+- Stable exact head: `f5cdf71837aee78a31856c766c087c9bbf54a496`.
+- Base: `main 1364d5768906c6746c4397c615f846797051eb76`.
+- Назначение: [PR #236, comment #6419772533](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6419772533).
+- Scope: `HELP-01`, `HELP-02`, `HELP-MOD-01`, `TAG-CARDINALITY-01`, documentation sidecar `DOC-03`; whole diff 14 файлов, +353/−42. Проверены source/action/service/repository/render paths, изменённые tests и их границы, связанные source-of-truth. Это не аудит всего репозитория.
+
+### Проверенные causal chains
+
+1. **HELP-01 — stale appeals и duplicate relationships.** Moderation forms передают `expectedAppealId` и `expectedRelationshipId`; `topicAction`, `ForumWriter`, `ForumService`, `DrizzleForumRepository` последовательно проводят expected identity. Repository сравнивает её с authoritative pending appeal/active relationship после topic/relationship locks внутри transaction и выдаёт `ForumStateConflictError` без применения к более новой сущности. Проверены тесты replaced appeal/reconfirmed relationship, сохранения нового state, и отсутствие раскрытия relationship ID неуполномоченным topic-loader actor.
+2. **HELP-MOD-01 — stale current best answer.** Moderator controls `markSolutionNeedsReview`, `markSolutionOutdated`, `clearSolutionModeration` передают `expectedBestAnswerPostId`; после `FOR UPDATE` на topic repository сверяет точный `bestAnswerPostId` и только затем меняет status/reason выбранного post. Сохранены Help-specific solved/resource checks; regression заменённого best answer отвергает stale action без изменения текущего target. Предыдущий сброс uncontrolled outdated textarea по authoritative state остаётся.
+3. **HELP-02 — lock wait/inverted lifecycle timestamps.** В `removeHelpDuplicate` и `resolveHelpDuplicateAppeal` `statement_timestamp()` вычисляется в выполняемых UPDATE после получения locks вместо transaction-start `now()`; post-lock write не предшествует вновь созданному `confirmed_at/created_at`. Native PostgreSQL regressions используют отдельные connections, `pg_stat_activity.wait_event_type=Lock`, изменение соответствующей временной метки до release и успешное завершение lifecycle transition.
+4. **TAG-CARDINALITY-01 — unbounded persisted global tags.** `ForumService.normalizeForumTags` выполняет NFKC, trim, whitespace collapse, case-fold unique keys и требует ≤10 unique non-empty tags; 11-й приводит к `InvalidForumContentError` **до** repository call/insert. Проверены пути createTopic/createTopicWithInitialPost и public write; тесты 10 accepted, пустые/case-duplicates ignored, 11 rejected, no topic/global-tag persistence.
+5. **DOC-03 — pending Disputed visibility.** Текущий `docs/UI_UX_PASS.md` однозначно называет moderator-only badge для Help lists и topic; runtime `HelpQuestionCards` gating и `TopicView` проверяет management permission. Duplicate author видит собственное pending appeal message без badge; application tests покрывают Guest/Author/Manager. **Остаточный исторический documentation drift:** в более раннем PR #205 историческом абзаце `PROJECT_STATE.md` ещё содержится формулировка «публично видна ... Disputed», хотя соседний более поздний текст и актуальный contract говорят moderator-only. Это подлежит окончательной current-state документационной очистке `DOC-01`; не подтверждает runtime defect пакета 5 и не меняет актуальное правило.
+
+### Evidence, exclusions и границы
+
+- [GitHub Actions run #40345202786](https://github.com/iliya194/vico-forum/actions/runs/40345202786): `completed / success` на точном SHA `f5cdf71837aee78a31856c766c087c9bbf54a496`; `database` и `checks` SUCCESS. Проверено независимо Лирой.
+- Автор в implementation handoff сообщает **102 application files / 1080 tests PASS**, **28 disposable PostgreSQL files / 303 tests PASS**, TypeScript, lint (0 ошибок/1 старое warning), production/UI Preview builds, migration/history guard, clean/mergeable PR. Это **не собственные локальные запуски Лиры**; лично PostgreSQL, Chromium, Pages, внешние сервисы или owner visual acceptance не запускала.
+- Изменений schema/migration/dependencies нет. Во время review `PR #241` и `main` не изменяла. Следующие самостоятельные проверки и сводка Миры остаются отдельными этапами. Служебный PR #236 не merge.
+- **STOP.**
+
+---
+
 ## PR #240 — независимая whole-PR проверка пакета 4 на `ec954ac5` (2026-10-26)
 
 **Вердикт Лиры: PASS по независимо просмотренным исходникам, миграционным контрактам и регрессионным тестам.** В заданном current-Stage scope новых подтверждённых дефектов не установлено. Вердикт относится только к стабильному implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`.
