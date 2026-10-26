@@ -49,3 +49,9 @@
 - **PR #241 review-cycle завершён:** Мира PASS + Лёва independent PASS на stable exact head `aa41937edf6ce32d74bed27d39c9d7c43aa1eecf`; Лира участвовала в correction и не считается independent reviewer. Confirmed current-Stage defects package 5 не осталось. Exact-head CI `40393643866` SUCCESS.
 - **Текущий reviewed-PASS набор:** PR #241 `aa41937e`, PR #243 `d5f99260`, PR #244 `7c750ba8`. Все три implementation PR остаются unmerged; PR #236 communication-only.
 - **Следующий шаг:** owner решает merge последовательность reviewed-PASS implementation PR; перед каждым merge координатор проверяет, не изменился ли head и не появилась ли реальная integration/conflict проблема из-за уже merged PR.
+
+
+- PR #241 merged by owner into `main` as `28cdc6ddec13fcc58dc0094ad0dc7d75696bc7cd`.
+- Post-merge integration check for PR #243: head remains `d5f992602fcc78276155a63aa14f56b931dd7656`, GitHub `mergeable=true`; overlap with merged PR #241 is only `PROJECT_STATE.md`, no implementation files overlap. Existing Mira + Leva PASS remains applicable; no new whole-PR cycle triggered.
+- PR #244 also remains open/mergeable on unchanged head `7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`, but its integration check is deferred until after #243 merge.
+- **Следующий шаг:** owner marks PR #243 ready if needed and merges it.
