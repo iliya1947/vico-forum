@@ -1,5 +1,40 @@
 # Лёва — Codex-6.1 Sol
 
+## L6 — implementation handoff, PR #245 (2026-10-27)
+
+Assignment: [6428907339](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428907339). Owner explicitly authorized one new implementation branch in this chat after the earlier branch-gate STOP. That blocker is resolved.
+
+Implementation: [draft PR #245](https://github.com/iliya1947/vico-forum/pull/245), branch `fix/l6-attachment-storage-zip`, baseline `bff130db5fb245e3a9ad3391fad54a2fe81aac88`, stable head `f673c90cb8d95c68623b690f4f3a0f340f24e03a`. Scope only ATTACH-01, ATTACH-02, ATTACH-STRUCT-01.
+
+### Implemented behavior and necessary scope
+
+- ATTACH-01: upload route durably records a server-generated private object key before PUT. Migration `0046_attachment_upload_object_journal` adds `forum_attachment_upload_objects`; accepted migrations unchanged. Existing asset/reference cleanup cannot discover objects whose metadata insertion rolled back, which makes this small journal necessary. Metadata admission and journal reconciliation take the same row lock. Existing bounded cleanup preserves authoritative assets after an unknown metadata commit result, deletes unregistered objects after the existing one-hour grace, and retains failed DELETE claims for lease-based retry. Stable-ID retry duplicates and failed best-effort deletion remain discoverable. Journal admission failure prevents PUT. Web runtime receives INSERT/SELECT/UPDATE for journal locking; schema manifest and actual runtime probes include the new relation.
+- ATTACH-02: consistent classic EOCD with exactly 65,535 entries is accepted. A genuine ZIP64 locator/EOCD is required when classic bounds cannot describe the directory; ZIP64/classic field consistency retained. A locator-like signature in a classic central comment does not force ZIP64 interpretation.
+- ATTACH-STRUCT-01: local/central flags, CRC and sizes agree when bit3 is off; bit3 requires a matching descriptor immediately after compressed bytes. Signed/unsigned classic and ZIP64 descriptors accepted, including CRC equal to the optional signature. Local ZIP64 sizes and malformed descriptor controls covered. Validation remains bounded metadata inspection, with no decompression or recomputation of payload CRC.
+- PROJECT_STATE synchronized. Merged TAR/Remove/405 and Editor lifecycle preserved; no dependency change, public endpoint, scheduler, text-draft persistence or AV work.
+
+### Author verification (not independent whole-PR review)
+
+Personally executed on final implementation:
+- Full application suite: **1107 tests / 102 files PASS**.
+- Native PostgreSQL17 suite: **306 tests / 28 files PASS**.
+- Typecheck PASS; lint 0 errors / 1 existing unused-disable warning in ui.test.tsx.
+- Application build, UI preview build, built Worker HTTP smoke with split local connection overrides PASS.
+- Drizzle metadata check, generation parity (no schema changes), migration-history guard (one new migration, accepted history unchanged), schema manifest parity (48 tables), runtime positive/negative privileges and journal FOR UPDATE probe PASS.
+- Disposable PostgreSQL provisioning/credential diagnostic/recovery/bootstrap probes PASS. These are local test checks, not production operations.
+
+Failure-chain evidence: actual upload action + Drizzle + PostgreSQL + controlled byte bucket verifies (1) journal exists before PUT; (2) real metadata INSERT failure/rollback leaves no asset and cleanup deletes the retained object; (3) metadata commits then ACK is lost, response is503 and cleanup preserves the authoritative object/ref; (4) stable-ID retry duplicate DELETE fails, cleanup removes only duplicate and preserves authoritative object; (5) failed orphan DELETE retains claim, blocks late metadata admission, and retries idempotently after lease expiry.
+
+ZIP regressions cover valid/malformed classic/ZIP64 controls and actual storage finalization with range reads/deletion. Running the new ZIP tests temporarily against the baseline validator yielded8 failures/9 passes; restoring the fix yielded17 passes, with the later central-comment regression bringing the final ZIP suite to18 passes. Final archive/storage targeted run35 tests PASS; full application count above includes final tests. PKWARE APPNOTE4.3.9/4.4 consulted.
+
+Verification bounds: controlled byte store and synthetic archive bytes; no real external R2/Cloudflare/Neon/OAuth/backup/restore or production changes. No browser/owner visual acceptance. Cleanup retains the existing one-hour grace and external invocation model; this package does not introduce a scheduler. No test simulates an in-flight storage PUT lasting beyond that grace. Author implementation checks are not an independent review verdict.
+
+### Exact-head GitHub CI
+
+[Run40417069540](https://github.com/iliya1947/vico-forum/actions/runs/40417069540) **SUCCESS** for `f673c90cb8d95c68623b690f4f3a0f340f24e03a`. `checks`121901961935 and `database`121901962286 both SUCCESS. Retrieved both completed job logs:1107 application tests/102 files and306 PostgreSQL tests/28 files PASS; lint/typecheck/builds/metadata/parity and database schema/privileges/Worker smoke passed. GitHub PR245 head unchanged, base bff130db, mergeable=true. Local preview and disposable PG stopped/removed; worktree preserved for any assigned corrections.
+
+Next: Mira starts the coordinator whole-PR cycle on the stable exact head; independent reviewers must not include the implementation author. Lira's Batch L2 remains separate. No merge or L7/L8 work; Leva STOP after handoff.
+
 ## L6 — branch authorization blocker (2026-10-27)
 
 Assignment: [6428907339](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428907339). Scope remains ATTACH-01, ATTACH-02, ATTACH-STRUCT-01; designated main bff130db5fb245e3a9ad3391fad54a2fe81aac88 verified by git ls-remote.
