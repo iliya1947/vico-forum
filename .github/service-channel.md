@@ -1,6 +1,6 @@
 # Shared service channel
 
-## Текущая реализация — пакет 5: PR #241 CHANGES REQUIRED after synthesis (2026-10-26)
+## Текущая реализация — пакет 5: PR #241 disputed findings awaiting Leva adjudication (2026-10-26)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
 - Review cycle package 4 завершён: Мира PASS, Лира PASS, Лёва final technical PASS. Мишаня — автор реализации; его self-review не считался отдельным independent verdict. Confirmed current-Stage defects не осталось. Exact-head CI `40311315111` SUCCESS.
@@ -16,9 +16,10 @@
 - Лёва лично запустил1080application/303nativePG PASS,typecheck,lint(1existingwarning),обе сборки,Drizzle metadata,migration guard0new,built Worker smoke. Дополнительные настоящие action→writer→PG probes:3наблюдаемых Lock waits с подменой relationship/appeal/best-answer, stale409 без изменения replacement; missing identity400 для6intents; актуальные targets302. Обе public tag flows принимают10unique с empty/case/NFKC duplicates и отклоняют11unique без topic/global-tag writes. Exact-head CI40345202786/checks121650163977/database121650163590 SUCCESS независимо сверены.
 - Личный PASS Лёвы не является синтезом результатов остальных reviewers или общекомандным merge authorization. PR241/main не менялись; local Worker/PG остановлены, review-worktree удалена. GitHub publication разрешена отдельной командой владельца после завершения проверки Лёвы; публикация чужих verdicts/завершение всего цикла из этого не выводятся.
 - **Лира завершила независимый whole-PR source-review** всех 14 изменённых файлов и полного scope package5 (`HELP-01`, `HELP-02`, `HELP-MOD-01`, `TAG-CARDINALITY-01`, `DOC-03`) на `f5cdf71837aee78a31856c766c087c9bbf54a496`: **индивидуальный PASS, новых подтверждённых current-Stage defects не обнаружено**. [Полный личный отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/0bfb77eedf6474476b7e97f26f3e6a8288e1bfbe/.github/agents/chatgpt-6.md). Exact-head CI checks/database SUCCESS проверены; PostgreSQL/Chromium Лира лично не запускала. Отмечена историческая wording-несогласованность о public Disputed в старом абзаце `PROJECT_STATE.md`, несмотря на текущий moderator-only контракт; отнесена к позднему `DOC-01`, не к runtime defect этого PR. Публикация личного verdict выполнена по прямой команде разработчика, без общего synthesis.
-- Cross-review synthesis опубликован в #236 comment `6420883610`: общий verdict **CHANGES REQUIRED**. Подтверждены 2 bounded current-Stage остатка исходного scope: (1) `HELP-01` stale author appeal creation всё ещё не привязан к observed duplicate relationship identity; (2) `DOC-03` не полностью очищен — stale public-Disputed wording остаётся в `PROJECT_STATE.md` и `app/localization/catalog.ts`. Individual PASS Лиры/Лёвы не отменяют эти source-confirmed gaps.
-- `HELP-02`, `HELP-MOD-01`, `TAG-CARDINALITY-01` PASS; exact-head CI `40345202786` SUCCESS; PR241 head остаётся `f5cdf71837aee78a31856c766c087c9bbf54a496`.
-- **Следующий шаг:** назначить bounded correction двух подтверждённых gaps в PR #241; после изменения implementation head требуется новый parallel whole-PR review cycle. Production/external/owner visual actions не выполнялись. PR236 — только communication, никогда не merge.
+- Comment `6420883610` преждевременно обозначил disputed findings Миры как confirmed. Этот статус отменён: при verdicts Мира CHANGES REQUIRED / Лира PASS / Лёва PASS общий verdict **не установлен** до отдельной technical adjudication расхождений.
+- Два disputed findings переданы Лёве на adjudication в #236 comment `6420951578`: (A) `HELP-01` stale author appeal creation; (B) classification/boundary оставшегося public-`Disputed` wording по `DOC-03`.
+- `HELP-02`, `HELP-MOD-01`, `TAG-CARDINALITY-01` не спорны; exact-head CI `40345202786` SUCCESS; PR241 head остаётся `f5cdf71837aee78a31856c766c087c9bbf54a496`.
+- **Следующий шаг:** разработчик подключает Лёву к PR #236 для adjudication. До verdict Лёвы correction scope и merge readiness не устанавливаются. Production/external/owner visual actions не выполнялись. PR236 — только communication, никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
