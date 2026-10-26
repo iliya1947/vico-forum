@@ -778,7 +778,7 @@ describe("PostgreSQL 17 locale migrations", () => {
   });
 
   it("fences author appeals to the observed relationship across replacement and topic lock waits", async () => {
-    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0 });
+    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
     const forum = new ForumService(repository);
     const duplicateId = "help-stale-appeal-duplicate";
     const originalX = "help-stale-appeal-original-x";
@@ -827,7 +827,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         await blocker.query("begin");
         await blocker.query("select id from forum_topics where id = $1 for update", [duplicateId]);
         const pendingAppeal = new ForumService(new DrizzleForumRepository(
-          drizzle(waiter), { cooldownMs: 0 },
+          drizzle(waiter), { cooldownMs: 0, now: () => new Date() },
         )).appealHelpDuplicate(duplicateId, author, "Stale after lock wait", r2);
         await waitForDatabaseLock("package5-stale-author-appeal-waiter");
         await blocker.query(`update forum_help_duplicate_relationships
