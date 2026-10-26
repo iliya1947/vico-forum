@@ -1,5 +1,15 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## Batch L1 / EDITOR-01 (4/5) — 2026-10-26
+
+Исправление HTML-вставки пустых строк кода реализовано в [PR #243](https://github.com/iliya1947/vico-forum/pull/243). Code head: `18633574e416102f71d702ea868116813ea53d11`.
+Нормализация переноса строк теперь не затрагивает fenced blocks из pre; проза нормализуется по-прежнему. Включены две целевые Markdown AST регрессии. `PROJECT_STATE.md` обновлён.
+[Exact-head CI #40368663361](https://github.com/iliya1947/vico-forum/actions/runs/40368663361): SUCCESS, checks и database SUCCESS. Прямой Chromium/runtime запуск не выполнялся.
+Batch 4/5; EDITOR-02 не начат. PR243 draft, whole-PR review и merge не начинались.
+[Handoff в PR #236](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6422923447). STOP.
+
+---
+
 ## Batch L1 / ATTACH-HTTP-405-01 — fix 3/5 завершён (2026-10-26)
 
 **Назначение:** [PR #236 comment #6422256497](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6422256497). Продолжение [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243), branch `chatgpt6/batch-l1-20261026`, base `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`. Новый exact implementation head: **`95fd8648aab5b63a9afc3194efd3a3150ef27c51`**.
