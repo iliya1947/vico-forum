@@ -1,5 +1,17 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## LOC-04 — post-history loading copy (2026-10-26)
+
+**Назначение:** [PR #236, #6424272144](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6424272144). По owner exception выполнен самостоятельный bounded fix, не дожидаясь merge PR #243. Исходный main `4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`; [draft PR #244](https://github.com/iliya1947/vico-forum/pull/244), branch `chatgpt6/loc04-history-loading-20261026`; финальный implementation head **`7c750ba8bfa0d0efc9d6046395a97d033c64d6a5`**.
+
+- **Причина:** в `app/forum/views.tsx` при `historyFetcher.state !== "idle"` история опубликованных версий ошибочно показывала текст `editorAttachmentRestoring` — «Restoring saved attachments…».
+- **Исправление:** `TopicView` использует отдельный `postHistoryLoading` с canonical EN «Loading edit history…» и reviewed RU/HE локальными значениями. Fingerprint для двух переводов соответствует descriptor; существующий attachment key/текст не изменён. Locale runtime, routing, авторизация и post-history action не менялись.
+- **Regression:** в `app/forum/public-read.test.tsx` mounted TopicRoute с настоящим React Router fetcher POST `readPostHistory` и задержанным ответом проверяет status, отсутствие attachment copy, сохранность attachment descriptor и показ ревизии после ответа. `PROJECT_STATE.md` обновлён, в scope только LOC-04.
+- **CI:** exact-head [GitHub Actions #40380768112](https://github.com/iliya1947/vico-forum/actions/runs/40380768112) **SUCCESS**, jobs `checks` и `database` **SUCCESS** на `7c750ba8`. Лира сверила результат через GitHub. Собственные local browser/native PG, external R2/production/owner visual проверки не выполняла.
+- PR #244 остаётся draft; independent whole-PR review и merge не начинала. PR #241 и PR #243 не изменяла. **STOP:** итог передан Мире для координации проверки.
+
+---
+
 ## Batch L1 / EDITOR-02 (5/5) — implementation завершена 2026-10-26
 
 **Назначение:** [#6423361282](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6423361282). Реализация: [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243), branch `chatgpt6/batch-l1-20261026`, base `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`. Исходный head fix5 `18633574e416102f71d702ea868116813ea53d11`; финальный implementation exact head **`d5f992602fcc78276155a63aa14f56b931dd7656`**.
