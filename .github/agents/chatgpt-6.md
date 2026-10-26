@@ -1,5 +1,27 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## Batch L1 / ATTACH-04 — fix 2/5 завершён (2026-10-26)
+
+**Назначение:** [PR #236 comment #6421809155](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6421809155), продолжение того же [draft PR #243](https://github.com/iliya1947/vico-forum/pull/243). Base `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`; новый exact implementation head `739f6b1be2ba3413a2a2e4fe979459037ad76090`. `ATTACH-03` остаётся первой завершённой подзадачей; выполнена **только** вторая `ATTACH-04`.
+
+### Причина и изменение
+
+- `app/forum/editor-attachments.tsx`: прежний UI скрывал `Remove` для `uploading/selecting`; `remove()` запрещал `uploading`. Из-за этого пользователь не мог снять отдельный pending-файл без удаления всей operation. Текущий `Remove` доступен во время uploading/selecting (кроме глобально disabled/removing), удаляет только выбранный entry из mounted selection, вызывает существующий `removeImage`, оставляет unsaved Markdown/Undo/Redo, остальные pending/stored files и operation.
+- Запрос не прерывается и остаётся в `requestsRef` до завершения или whole Cancel. `ignoredRequestsRef: WeakSet<XMLHttpRequest>` маркирует удалённый in-flight request; его progress/success/error/terminal-410 callbacks не меняют selected UI. Особенно важно: late `410 gone` после Remove в published edit **не** вызывает `freshOperation` и не abort'ит остающиеся uploads. Private server pool продолжает обычную retention/completion/idle cleanup, per-file DELETE не вводился.
+- `app/forum/editor-attachments.test.tsx`: две mounted MarkdownEditor регрессии (три одновременно выбранных файла + текст без сохранения, один stored и один still-pending); Remove третьего selection не блокирует, late 201/error/progress не возвращает удалённый файл, remaining upload доходит до stored, текущее тело, selected IDs и operation сохраняются. Прежний assertion об отсутствии Remove при uploading обновлён.
+- `app/forum/attachment-operation.test.tsx`: отдельная регрессия published-edit: один из двух pending uploads удалён, его late `410 gone` не меняет operation и не abort'ит второй; сохранённый второй upload по обычному 201 снимает blocking. Existing whole `Cancel`, retry/rebase, account isolation и completed-ack regressions остаются.
+- `PROJECT_STATE.md` обновлён: отмечены только ATTACH-03 и ATTACH-04; 3–5 пока не начаты.
+
+### Проверки и ограничения
+
+- На head `020b1b852889a3fdc09905e7c462f82ee7835aa5` первый [CI #40363579052](https://github.com/iliya194/vico-forum/actions/runs/40363579052) завершился checks FAILURE, database SUCCESS: единственный падающий тест `app/forum/editor-attachments.test.tsx:165` утверждал отсутствие кнопки `Remove` в uploading. Новые ATTACH-04 тесты PASS; failure определён по exact job logs и устаревший assertion исправлен, runtime-механизм в ответ на него не переделывался.
+- [Финальный exact-head CI #40364010321](https://github.com/iliya194/vico-forum/actions/runs/40364010321) на `739f6b1be2ba3413a2a2e4fe979459037ad76090` — **completed / SUCCESS**; jobs **checks SUCCESS**, **database SUCCESS**. Сверено Лирой непосредственно через GitHub.
+- Локального checkout/локальных PostgreSQL или Chromium tests не запускала; evidence — исходники, focused regressions и GitHub CI. Real R2/network/backend cleanup/owner visual/production не заявляются.
+- PR #243 остаётся **draft**, whole-PR review и merge не начинались; `ATTACH-HTTP-405-01`, `EDITOR-01`, `EDITOR-02` не выполнялись. PR #241 не меняла.
+- **STOP** после fix 2/5. Продолжение только после отдельного назначения fix 3/5.
+
+---
+
 ## Batch L1 / ATTACH-03 — fix 1/5 завершён (2026-10-26)
 
 **Implementation**: [Draft PR #243](https://github.com/iliya194/vico-forum/pull/243), branch `chatgpt6/batch-l1-20261026`. Baseline `main 4c4bb59c4b7e3c47a6598034b9bd75b6a06d032a`; exact implementation head `ecafe086ec5e769c54ee152a368397ea2d45c613`. Назначение: [PR #236 comment #6421152256](https://github.com/iliya194/vico-forum/pull/236#issuecomment-6421152256).
