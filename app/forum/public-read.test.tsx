@@ -2202,6 +2202,49 @@ describe("forum path encoding", () => {
 });
 
 describe("published editing presentation permissions", () => {
+  it("shows history-specific loading text while reading protected post revisions", async () => {
+    let resolveHistory!: (response: Response) => void;
+    const pendingHistory = new Promise<Response>((resolve) => { resolveHistory = resolve; });
+    const action = vi.fn(async ({ request }: { request: Request }) => {
+      const fields = await request.formData();
+      expect(fields.get("intent")).toBe("readPostHistory");
+      expect(fields.get("postId")).toBe("answer");
+      return pendingHistory;
+    });
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute,
+      loader: () => topicRenderData(topic, { canReadPostHistory: true }),
+      action,
+    }], { initialEntries: ["/en/topics/typed-api"] });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={{ id: "moderator", name: "Moderator" }}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit history" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Loading edit history…");
+    expect(screen.queryByText("Restoring saved attachments…")).not.toBeInTheDocument();
+    expect(canonicalEnglishCatalog.common.editorAttachmentRestoring.source)
+      .toBe("Restoring saved attachments…");
+    expect(action).toHaveBeenCalledTimes(1);
+
+    resolveHistory(Response.json({
+      operation: "postHistory", postId: "answer",
+      revisions: [{
+        id: "post-r0", authorId: "lin", authorName: "Lin",
+        originalContent: "Private previous revision", createdAt: "2026-10-10T10:00:00Z",
+      }],
+    }));
+    expect(await screen.findByText("Private previous revision")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    router.dispose();
+  });
+
   it("shows no edit/history control to a non-owner, but displays public edit date", async () => {
     const edited = {
       ...topic,
