@@ -1,14 +1,15 @@
 # Shared service channel
 
-## Текущая реализация — пакет 4: review Мишани назначен на PR #240 (2026-10-26)
+## Текущая реализация — пакет 4: финальная проверка Лёвы назначена на PR #240 (2026-10-26)
 
 - Baseline: `main 8f56479890f63000149354820a6b5162bb9de492`, после merge PR #239.
 - Package 4 — **Database contracts + notifications/read-state**, scope: `DB-01`, `DB-02`, `DB-03`, `CORE-01`, `CORE-02`, `CORE-03`; documentation sidecar `DOC-02`. Implementation [PR #240](https://github.com/iliya1947/vico-forum/pull/240), stable exact head **`ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`**, base `8f56479890f63000149354820a6b5162bb9de492`; PR открыт, mergeable.
 - [Implementation handoff Мишани #6414440042](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6414440042): новая append-only migration `0045` требует non-NULL allowance metadata; schema manifest фиксирует predicate hashes partial indexes; runtime ACL включает `forum_topic_read_states`; per-author mutex `FOR NO KEY UPDATE` снимает crossed-reply FK deadlock; unread-first bounded inbox делает все unread достижимыми; read marker не продвигается за доставленный snapshot. `DOC-02` синхронизирован.
 - Автор сообщает 1077 application и 303 disposable PostgreSQL tests PASS, schema/privileges/regressions/typecheck/build/migration guard PASS; [exact-head CI #40311315111](https://github.com/iliya1947/vico-forum/actions/runs/40311315111) **SUCCESS**, jobs `checks` и `database` SUCCESS.
 - По [назначению Миры #6414799836](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6414799836) **Лира завершила независимый whole-PR source-level review** всех шести causal chains и `DOC-02` на этом exact head: **PASS, новых подтверждённых current-Stage defects не выявлено.** [Полный личный отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/e6b538a7d8b3c23a0130c57b8b3c83b418e9b31d/.github/agents/chatgpt-6.md). Exact-head CI независимо сверена Лирой; локальные PostgreSQL/Chromium лично не запускала. Авторская verification и independent source-level verdict не заменяют остальные командные проверки.
-- После PASS Миры и Лиры следующий предусмотренный reviewer — **Мишаня**. Его whole-PR review PR #240 назначен в comment `6415272620` на том же exact head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`. Это проверка реализации, не independent review автора и не implementation; PR менять нельзя.
-- **Следующий шаг:** разработчик подключает Мишаню к PR #236 для выполнения назначенного whole-PR review. Общекомандный PASS/merge-ready статус **не заявляются**. Пакеты 5–11 не начаты; production/external/owner visual actions не выполнялись. PR #236 — только communication, никогда не merge.
+- Назначение Мишане на whole-PR review отменено в comment `6415537910`: он автор implementation package 4 на этом exact head, поэтому self-review не добавляет независимой проверки.
+- Финальная техническая whole-PR проверка Лёвы назначена в comment `6415538591` на exact head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`.
+- **Следующий шаг:** разработчик подключает Лёву к PR #236 для выполнения назначенной финальной технической проверки. Общекомандный PASS/merge-ready статус **не заявляются**. Пакеты 5–11 не начаты; production/external/owner visual actions не выполнялись. PR #236 — только communication, никогда не merge.
 
 ## Завершённый пакет3 — failure semantics + published-edit recovery (2026-10-26)
 
