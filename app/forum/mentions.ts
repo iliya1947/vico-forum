@@ -15,9 +15,19 @@ export function mentionTokenAtCaret(markdown: string, caret: number): MentionTok
 }
 
 export function mentionProfileLink(name: string, profilePath: string): string {
-  // Markdown link text must remain text, never author-controlled link syntax.
-  const escapedName = [...name].map((char) => char === "&" ? "&amp;"
-    : "\\[]*_~".includes(char) || char.charCodeAt(0) === 96 ? "\\" + char : char).join("");
+  // Treat the authoritative name as literal link-label text, not Markdown
+  // source. Encode ASCII syntax punctuation as character references so no
+  // autolinks, nested links, emphasis or GFM constructs can be parsed in it.
+  // Also encode controls to keep a single inline label for valid names.
+  const escapedName = [...name].map((char) => {
+    const code = char.codePointAt(0)!;
+    return code < 32 || code === 127
+      || (code >= 33 && code <= 47)
+      || (code >= 58 && code <= 64)
+      || (code >= 91 && code <= 96)
+      || (code >= 123 && code <= 126)
+      ? `&#${code};` : char;
+  }).join("");
   return `[${escapedName}](${profilePath})`;
 }
 /** Recipients must come from parsed profile links, not bare @words or displayed names. */
