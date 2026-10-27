@@ -1,5 +1,63 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent whole-PR review after second correction (2026-10-27)
+
+2026-10-27. Назначение #236 comment 6443697491. **Verdict: CHANGES REQUIRED — 2 current-scope regressions.**
+
+Exact head `46a7cda762ea763509ba3034c9be0c2aa0d6830e`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`; GitHub/local refs повторно сверены в конце, PR open/Draft, 13 changed files. Проверены все 13 файлов и весь EDITOR-10/LITERAL-TEXT-01/LOC-03/LOC-06, не только последняя correction. Автор Лира, независимый проверяющий Лёва не участвовал в реализации PR247. Findings других reviewers текущего цикла не использовались. PR245 не входит в задачу.
+
+## A. P2 / LITERAL-TEXT-01 — raw-tab bypass отключает escaping и в prose context
+
+Источник: `app/forum/clipboard-markdown.ts:12–16`, вызов из `app/forum/visual-markdown-editor.tsx:43–46` и forced-plain paste path.
+
+Новая ветка возвращает любую строку с tab в leading indent без escaping, предполагая indented-code context. Этот контекст определяется не одной строкой clipboard: indented code не прерывает уже начатый paragraph; вставка может вообще происходить в середине prose, а native typing предварительно добавляет structural entity, предотвращающую code block.
+
+Независимые actual mounted editor → FormData source → фактический ForumMarkdown/SSR воспроизведения:
+
+1. Caret в конце существующего `Before`, Ctrl+Shift+V с clipboard `\t&copy; ~~literal~~`. Новый source `Before\t&copy; ~~literal~~`; published text `Before\t© literal`, создаётся `<del>literal</del>`. Предыдущий exact-head serializer `53f059d` даёт `Before\t&amp;copy; \~\~literal\~\~`, отображается literal `Before\t&copy; ~~literal~~` без del.
+2. Полная forced-plain вставка `Before\n\t&copy; ~~literal~~` (также space+tab после newline): continuation line остаётся paragraph, entity декодируется и тильды форматируют. На прежнем head оба сохранялись literal. Вариант `Before\n\n\t…` с пустой строкой — проходящий code control, именно его покрывают новые author tests.
+3. Native Simple input `\t\t&copy; ~~literal~~` получает source `&#9;\t&copy; ~~literal~~`; `    \t&copy; ~~literal~~` получает `&#32;   \t&copy; ~~literal~~`. Первый structural entity не позволяет code block, но оставшийся leading tab попадает под новый bypass. Оба публикуют ©/del вместо literal input. Извлечённая настоящая baseline visual escape function с baseline clipboard dependency сохраняет исходные символы в обоих случаях. Single-tab native input и ordinary leading spaces — проходящие controls.
+
+Все три проявления — **одна причинная ошибка**, не три самостоятельных finding. Регрессия внесена именно второй correction относительно `53f059d`, а не историческая whitespace normalization. Raw tab сохранён, но это не оправдывает изменение видимых символов plain input. Ordinary TSV conversion и intentional Advanced Markdown к finding не относятся.
+
+Минимальный correction scope: различать фактический prose/code context с учётом позиции вставки, предшествующих строк и structural prefix visual typing; не использовать lexical leading-tab как достаточное доказательство code context. Закрепить mid-paragraph/continuation/native mixed-indent случаи вместе с изолированным tab-code и TSV/Advanced controls. Общая переработка Markdown renderer не обоснована. Реализация не менялась.
+
+## B. P2 / EDITOR-10 — numeric encoding допустимых control characters заменяет имя символом U+FFFD
+
+Источник: `app/forum/mentions.ts:22–29`. Все ASCII controls превращаются в numeric references, но parser не обязан декодировать запрещённые numeric-reference code points в исходный character. Для части controls он возвращает replacement character.
+
+Это не гипотеза о потенциальном будущем name domain. Проверен **настоящий текущий public email/password signup runtime → actual PostgreSQL17** в disposable schema:
+
+- имя с code points `[65,1,66]` (A + U+0001 + B), signup HTTP200, PostgreSQL хранит ровно `[65,1,66]`;
+- имя `[65,127,66]` (A + U+007F + B), signup HTTP200, БД также сохраняет его без изменения.
+
+Новый serializer создаёт соответственно `[A&#1;B](/en/users/member-42)` и `[A&#127;B](/en/users/member-42)`. Фактический Markdown parser даёт text child `A�B` (U+FFFD вместо исходного control). Actual Simple и Advanced autocomplete для первого имени + published ForumMarkdown подтверждают видимую замену. Старый serializer того же допустимого имени сохраняет прежнее значение; это **новая регрессия второй correction**. Immutable recipient/profile destination не меняются.
+
+Дополнительная enumeration ASCII1–127 (внутри `A…B`, не trim на краю) обнаруживает replacement для1–8,11,14–31,127. NUL не включался: PostgreSQL text его не допускает. Все остальные проверенные ASCII syntax punctuation/обычные characters сохраняются как единый text child одной profile-ссылки; обычные Unicode/ampersand/tilde/autolink cases проходят. Поэтому сама защита autolink действительно работает, но утверждение «весь уже допустимый name domain» ещё не выполнено.
+
+Минимальный scope: literal serializer должен учитывать реальные character-reference decoding semantics и сохранять уже допустимые данные. Изменение допустимого name domain/миграция существующих имён не являются автоматически разрешённым обходом этой serializer regression. Исходные ограничения sign-up trim/nonblank/≤100 рассмотрены, DB searchMentionableUsers возвращает stored user.name без такой замены. OAuth/provider/production не проверялись.
+
+## Прежние findings и остальной scope
+
+- Isolated raw-tab Ctrl+Shift+V теперь действительно показывает `&copy;`/`~~literal~~` без служебных escapes в code context. Отдельно найден A, где code context отсутствует.
+- Autolink-like имя `Ada <https://example.test> &copy; ~~name~~` через оба autocomplete paths теперь остаётся одной literal profile-ссылкой, без внешнего anchor/formatting; member42 сохраняется. Отдельно найден B для реально допустимых controls.
+- LOC03 malformed nesting performance не регрессировало: scanner по-прежнему однопроходный по quotes/escapes/depth. На этом head повторены actual publisher/compiler/verifier с malformed input длиной31/4099/10000 —9 ограниченных controls возвращают Malformed nesting без публикации. Source/options/lng/placeholders/provenance/plural/compiled/i18next paths просмотрены вместе с тестами. Findings нет.
+- 4+ leading spaces, literal tilde mention, Setext equals/dashes сохраняют прежние исправления. Raw Advanced Markdown по-прежнему даёт intentional h1/del. HTML rich paste и технические code/table branches не изменены второй correction.
+- LOC06 authoritative target/revision checks и no-segments guard перед source resolver сохраняются. Пересмотрены route/capability/planner/store paths; независимая actual HTTP action→capability→real planner/resolver matrix10 cases вновь PASS (automatic/explicit blank/whitespace/fenced/inline-only и prose202). Permission/guest/origin/disabled runtime guards сохранены. Findings нет.
+- PROJECT_STATE описывает задуманный literal contract; A/B нарушают его в указанных поддерживаемых условиях. Schema/dependencies/public endpoints не менялись в PR247. Это whole-PR code review текущего Stage, не аудит внешних сервисов или всей документации.
+
+## Проверки / evidence
+
+- Лично exact head: **1159 application tests /102 files PASS**,147.91s; typecheck PASS; lint12changed TS/TSX files PASS; app/UI-preview builds PASS (existing chunk-size advisory).
+- **27 independent editor/parser/generation controls PASS**,42 unrelated generation-fixture cases skipped; дополнительно1midline regression probe PASS и2actual signup/PostgreSQL domain probes PASS. Controls утверждают observed defects и baseline comparisons; их PASS не implementation acceptance. Enumeration127characters внутри одного test, не127отдельных tests.
+- Первый property probe ожидал literal roundtrip для всех controls и упал на code1; последующий probe перечислил весь диапазон и подтвердил actual mismatch. Это обнаружение дефекта, а не product/test-code correction. Проверяемые implementation tests не правились.
+- CI #40507554527 jobs и completed logs независимо прочитаны: checks122200650876 SUCCESS (1159/102), database122200651009 SUCCESS (304PG/28), applicable checks PASS. CI synthetic merge99f9c54… head46a7cda с указанной base. Full local PG suite не повторялась и не присваивается; лично выполнены только2 targeted PostgreSQL signup cases сверх app suite.
+- Evidence: `/workspace/work/pr247-r3-{app,type,build,lint,preview,final-probes,midline,name-domain,validation-chain}.log`; saved probes/baseline sources в `/workspace/work/pr247-r3-evidence/`.
+- Production/external/owner visual не выполнялись; OAuth не вызывался, только локальный email/password endpoint на synthetic accounts. Редакторные proofs — mounted jsdom events и actual ForumMarkdown SSR, не Chromium/owner visual acceptance.
+
+Временные probes удалены, tracked/untracked checkout чист, git diff --check PASS; preview artifact вынесен, disposable PG container/volume остановлены и удалены. Implementation/main и удалённые отчёты/комментарии не менялись. Findings сначала переданы только разработчику в текущем чате по independent-review правилу AGENTS.md. Эта публикация выполнена по прямой команде разработчика «Публикуй». Следующий шаг — согласование опубликованных reviews координатором в #236. Исправления не начинались. Лёва STOP.
+
+
 ## PR #245 — bounded v2 storage-fence implementation handoff (2026-10-27)
 
 2026-10-27, Asia/Jerusalem. Assignment #236 comment 6442252441; feasibility6441222913. Author implementation verification, not independent whole-PR review.
