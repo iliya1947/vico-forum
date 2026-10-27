@@ -1,5 +1,41 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 — L7 implementation handoff (2026-10-27)
+
+**Автор:** Лёва — Codex-6.1 Sol. Это отчёт реализации и её проверок, не независимый whole-PR review.
+**Назначение:** [#6447752059](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6447752059).
+**Implementation PR:** [#248](https://github.com/iliya1947/vico-forum/pull/248).
+**Accepted base:** `main 2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`.
+**Stable exact head:** `16f4b955c364e38ddc77dfce0cb4a995b4577bc3`, branch `fix/l7-editor-structure`; 1 commit, 18 files, +669/−66. PR open, mergeable=true; merge не выполнялся.
+
+### Завершённая реализация: все семь пунктов L7
+
+| Finding | Причина → исправление → проверяемый результат |
+| --- | --- |
+| EDITOR-03 | Partial clear открывал delimiter непосредственно перед пробелом, ломая невыделенный suffix. Boundary whitespace вынесен наружу новых wrappers; при необходимости underscore delimiters преобразуются в эквивалентные asterisks для intraword flanking. `**alpha beta**` + clear alpha → `alpha **beta**`; unit/selection regressions и native Chromium → FormData → public renderer. |
+| EDITOR-06 | Simple Enter вставлял raw blank line внутрь inline wrapper. Source transformation закрывает и повторно открывает активные wrappers, убирает пустые, учитывает boundary whitespace. Strong/emphasis/strike/nested/link controls, неизменные соседние CRLF/code spans, native Enter → два strong nodes; exact Undo. |
+| RES-EDITOR-02 | Native Backspace не имел операции перехода между отдельными contentEditable leaves. Ordinary paragraph join теперь изменяет source/history, сохраняет leading/trailing spaces, пустой trailing paragraph и body спойлера; совпадающие wrappers coalesce, underscore flanking сохраняется. Heading/list/code/table boundary controls, native keyboard, Undo/Redo и public renderer. |
+| EDITOR-07 | Tab включал строку на exclusive selection end, в том числе closing fence. Конечная строка исключается при selection end сразу после newline. Indent/outdent regressions, closing fence с тремя пробелами и After paragraph, exact Undo; native Tab/public renderer. |
+| EDITOR-11 | Initial publication использовала trim-returning requiredFormText для body. Topic/Help/reply читают raw form string, trim применяется лишь к проверке содержательности; IDs/title validation прежняя. Три action-level и native action → actual local adapter → service/repository → PostgreSQL regressions сохраняют leading indented code/trailing whitespace; topic replay не создаёт дубликат. Multipart EOL normalization не переопределялась. |
+| MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01 | Plain CommonMark parse всего source расходился с renderer boundaries. Новый semantic tree использует canonical technical segmentation: отдельные prose/cells/spoiler bodies, literal summary. **Оба обязательных subcases выполнены:** mention recipients исключают literal summary/quoted and code cells; translation защита сохраняет dimensions/alignment/spoiler markers и internal Markdown, переводит human text и literal summary. Protection policy `cnt06-custom-structure-v2`; provider boundary injection rejected. Actual ForumMarkdown tests, native durable notification recipients. |
+| MARKDOWN-SPOILER-01 | Каждый unmatched opener повторно сканировал оставшийся source. Fence-aware closing index вычисляется за O(n log n) / O(n) memory; opener lookup не сканирует suffix. Regression считает actual parser work на 1000 openers; 10 000 ограниченных mixed-fence/table/spoiler differential fixtures совпали со старой грамматикой. Production CPU limits не измерялись. |
+
+### Проверки и доказательства
+
+- Red regressions до правки: `/workspace/work/l7-red-first.log`, `l7-red-editor-translation.log`; исходные причины сверены с canonical audit findings.
+- Полный локальный app suite: **1151 tests /102 files PASS**; после последнего paragraph boundary изменения **44 focused document tests PASS**; mounted/editor/translation focused checks проходили отдельно.
+- Полный локальный PostgreSQL17: **326 tests /30 files PASS**, включая новый native publication/notification файл (3 cases).
+- Typecheck, final `tsc -b`, source lint, app build, UI-preview build, локальный Workers smoke PASS. Один прежний lint warning в `app/forum/ui.test.tsx`; ошибок source lint нет. Generated UI artifact вынесен за checkout перед source lint.
+- **9 headless Chromium checks PASS** на последнем implementation source: native Enter/Backspace, exact Undo/Redo, partial clear, equivalent/different delimiter spelling, empty/leading-space paragraph, spoiler body, exclusive-fence Tab, exact submitted source и public rendering. Это локальный component harness с synthetic API responses, не owner visual acceptance и не проверка production/browser deployment.
+- Локальные artifacts: `/workspace/work/l7-browser/results-exact.json`, `/workspace/work/l7-all-native.log`, `l7-app-final.log`, `l7-paragraph-final.log`, `l7-typecheck-final2.log`, `l7-tsc-final.log`, `l7-lint-source.log`, `l7-build.log`, `l7-ui-build.log`, `l7-smoke-isolated.log`, `l7-segmentation-differential.ts`.
+- **[Exact-head CI #40548381709](https://github.com/iliya1947/vico-forum/actions/runs/40548381709) SUCCESS: checks `122345095310` — **1152 app tests /102 files PASS**; database `122345094684` — **326 PostgreSQL17 tests /30 files PASS**. Lint/typecheck, both builds, migration/schema/runtime privilege probes и Workers smoke успешны; completed logs обеих jobs лично прочитаны.**
+
+`PROJECT_STATE.md` синхронизирован; translation detail contract явно описывает custom structural boundaries. Scope не включает отдельный direction parse/serialize round-trip LOC-08 (L8), PR #247 literal-paste/mention-label correction и external/live services. Новых dependencies/schema/migrations нет.
+
+Локальные HTTP/Workerd/Chromium процессы остановлены, disposable PG container/volume удалены, dependency symlink убран; implementation checkout clean. Автор не выполнял независимый whole-PR self-review.
+
+**Handoff Мире:** coordinator whole-PR review PR #248 на `16f4b955c364e38ddc77dfce0cb4a995b4577bc3`, затем non-author independent reviewers того же head. Изменения проекта завершены. **Лёва STOP.**
+
 ## PR #247 — independent whole-PR review after second correction (2026-10-27)
 
 2026-10-27. Назначение #236 comment 6443697491. **Verdict: CHANGES REQUIRED — 2 current-scope regressions.**
