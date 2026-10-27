@@ -1,5 +1,46 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — bounded v2 storage-fence implementation handoff (2026-10-27)
+
+2026-10-27, Asia/Jerusalem. Assignment #236 comment 6442252441; feasibility6441222913. Author implementation verification, not independent whole-PR review.
+
+Existing PR245/branch fix/l6-attachment-storage-zip. Previous head c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757 → stable new head cc0f3ad5d5888311d833fe5cbfdb1ccc208206a8, base082530ab6a62c37f4d7acf17556bc496e677ab5f. No new branch/PR. Commit changes 24 paths relative to previous head; PR totals26 changed paths relative to base. Implementation title/body updated.
+
+## Changed invariant
+
+Post-write terminal knowledge is no longer the only route to finite cleanup. A request first commits PREPARING journal, performs one create-only reservation PUT at one fresh physical key, then commits READY with the positively acknowledged reservation ETag under an unclaimed journal condition. Only then may the unique payload PUT positively match that ETag. A claimed journal can never activate again, even after lease expiry. Metadata for a fenced key always requires an unclaimed READY journal, including when an internal caller omits requireUploadRecord; the route additionally requires a structurally verified stored result.
+
+Cleanup's durable claim excludes metadata admission. For READY the initializer already finished and is not repeated; DELETE removes a payload committed before it, or makes a late payload's positive match false. PREPARING has no payload permission and cannot gain it after claim. A successful DELETE therefore permits journal retirement without the removed completeUploadObjectWrite/write_completed_at transition. Failed/unknown DELETE or DB retirement keeps discoverability for later token-fenced cleanup. Authoritative assets are reconciled to existing reference-aware cleanup, not deleted as upload orphans.
+
+A late PREPARING initialization can leave only a reservation, never data. A new bounded marker sweep walks the dedicated v2 namespace with a durable cursor and fenced lease. It verifies absence of both journal and authoritative asset before deleting candidates from LIST. A stale LIST plus asset-present check cannot destroy accepted data; DB errors never become negative ownership proof. Old processors cannot overwrite a reclaimed checkpoint. Full cycles revisit keys materialized before an earlier cursor. No permanent per-key tombstone and no same-key initialization retry. Default bounded pass: up to20 journal/asset deletes plus at most5 listed entries/marker deletes; small custom batches retain one marker entry. Liveness assumes eventual DB/storage availability and ongoing fair cleanup at serviceable load, not a fixed elapsed-time proof of remote settlement.
+
+The Worker adapter passes create-only/positive-match conditions and server metadata through actual R2 operations. Existing known-length streaming/cancellation is preserved. A successful reservation waits1 second before returning to activation/payload, spacing same-key writes according to documented R2 per-key rate. This adds about1 second to normal successful uploads; it is pacing, not a retry. An immediate best-effort DELETE may still fail, and the journal/sweep recover it.
+
+## Migration/schema policy
+
+Per assignment, compatibility with this PR's intermediate v1 design is removed: accepted0000–0045 remain byte-for-byte unchanged, unmerged0046/0047 replaced by one0046_attachment_upload_fences. It creates forum_attachment_upload_objects with reservation_etag and forum_attachment_sweep with cursor/claim identity, seeded singleton. Schema snapshots/journal/manifest synchronized; actual manifest49 tables verified against PostgreSQL. Existing web capability retains only INSERT/SELECT/UPDATE for upload journal; sweep remains maintenance-only, no new web grant. Migration guard confirms1 new migration and accepted history unchanged; Drizzle generation finds no schema changes.
+
+Existing registered legacy private/<uuid> assets remain readable/reference-aware, but new storage admission accepts only fenced-v1 identities. No claim about historical untracked storage, deployed old writers or production state: owner explicitly permits replacing the unmerged intermediate design; no external migration/reconciliation is performed.
+
+## Verification personally executed
+
+- Full application:1123 tests / 102 files PASS,160.22s; unchanged ZIP classic65535/reverse order/ZIP64/descriptor/bounded-read cases included. No whole compressed-payload buffer/decompression added, ATTACH-02/ATTACH-STRUCT-01 code unchanged.
+- Full PostgreSQL17:323 tests / 29 files PASS,50.31s. Protocol-native19 cases PASS: successful payload/metadata; terminal rejection/short/read; actual server-side activation UPDATE timeout; actual post-payload metadata INSERT timeout; commit/rollback/lost metadata ACK; genuinely unknown full-body commit before/after revoke; blocked in-flight payload; late PREPARING initializer with/without ACK; one initialization/no same-key retry; claimed/expired journal activation denial; metadata READY gate; bounded durable pagination; real SQL ownership-read failure; concurrent/expired journal and sweep claims/checkpoint fencing; asset-present stale-list protection.
+- Local pinned Workerd + R2 emulator, actual unchanged-at-head helper/adapter:9 controls PASS. normal5000stored; short/read typed failures; activation failure payload0; full PUT lost ACK; initialization lost ACK reservation1/activation0; late in-flight conditional payload after DELETE fails; explicit forbidden re-create ABA negative control demonstrates why oldkey cannot be reused; actual bounded LIST cursor finds/reclaims markers. This is local emulator/native FixedLengthStream evidence, not live R2 acceptance. Native PostgreSQL tests separately exercise route/real SQL/cleanup.
+- Typecheck (wrangler types/react-router typegen/tsc-b) PASS. ESLint0errors/1preexisting unused-disable warning in ui.test.tsx. App/UI-preview builds PASS, existing chunk-size advisory only.
+- 152 .github script tests PASS; migration guard1new PASS; Drizzle metadata/check/schema parity PASS; manifest49-table parity PASS; runtime positive/negative privileges, split-authority provisioning, credential diagnostic/recovery/bootstrap compensation probes PASS; built application Worker HTTP smoke PASS. git diff --check PASS.
+
+First full native run had the obsolete48migration count assertion after replacement by47total migrations, and one reconciliation CLI10s deadline under parallel application/native load. Count expectation corrected; isolated retry64 tests PASS, then complete native rerun323 PASS. No test timeout enlarged. Initial disposable PG used trust authentication, which invalidated the credential probe's expected password rejection; local host authentication changed to SCRAM, recovery/bootstrap probes then passed. Initial preview override omitted a password required by Miniflare; corrected only the local test URL. Early unit/native fixture failures were updated for reservation/activation contract; final suites above include fixes. These diagnostics do not describe production incidents.
+
+## CI and handoff
+
+Exact-head CI40517308507 SUCCESS: checks122234213784 and database122234213258 both SUCCESS. Completed job logs independently fetched:1123 application +323 PostgreSQL tests, migration-history1new, manifest49 tables and applicable checks PASS. CI tests synthetic merge6b9455a… of this exact head with the designated base; personal local suites ran directly on cc0f3ad.
+
+Local diagnostic Worker/application preview stopped, disposable PostgreSQL container stopped/removed, dependency symlink removed; implementation checkout clean. Evidence retained outside checkout.
+
+No production/external account/services, scheduler, paid resources, OAuth/backup/restore/owner visual actions. CPU/deployment candidateC and PR247 not changed. Local evidence /workspace/work/l6-v2-*.log and l6-v2-worker-check/{entry.ts,entry.mjs,wrangler.jsonc,results.json,server.log}. Next: Mira new exact-head coordinator cycle, then non-author independent reviewers. Author does not self-review; no merge or L7/L8 work. STOP after publication.
+
+
 ## PR #247 — independent whole-PR re-review after correction (2026-10-27)
 
 2026-10-27. Назначение #236 comment 6441255042. **Verdict: CHANGES REQUIRED — 2 подтверждённых current-scope findings.**
