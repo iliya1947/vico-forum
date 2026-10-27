@@ -86,6 +86,20 @@ describe("Editor 2.0 clipboard import", () => {
     expect(paragraph.children).toMatchObject([{ type: "text", value: original }]);
   });
 
+  it.each([
+    "\t&copy; ~~literal~~",
+    " \t&copy; ~~literal~~",
+    "  \t[link](https://example.test) ~~literal~~",
+  ])("keeps tab-indented forced prose literal rather than showing source escapes: %j", (plain) => {
+    const markdown = clipboardPlainToMarkdown(plain);
+    expect(markdown).toBe(plain);
+    const tree = parseForumMarkdown(markdown);
+    expect(tree.children[0]).toMatchObject({ type: "code" });
+    if (tree.children[0]?.type !== "code") throw new Error("Expected literal code block");
+    expect(tree.children[0].value).toContain(plain.includes("[link]") ? "[link]" : "&copy;");
+    expect(tree.children[0].value).toContain("~~literal~~");
+  });
+
   it("keeps multiline setext equals markers as literal paragraphs", () => {
     const markdown = clipboardPlainToMarkdown("Heading\\n===\\n~~plain~~ &copy;".replaceAll("\\n", "\n"));
     const tree = parseForumMarkdown(markdown);
