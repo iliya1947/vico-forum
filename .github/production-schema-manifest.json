@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0046_attachment_upload_object_journal",
+  "targetMigration": "0047_attachment_upload_write_completion",
   "tables": {
     "account": {
       "columns": [
@@ -5434,6 +5434,12 @@
         },
         {
           "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "write_completed_at",
           "type": "timestamp with time zone",
           "nullable": true,
           "defaultSha256": null

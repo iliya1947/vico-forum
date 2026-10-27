@@ -33,11 +33,26 @@ claim для повторения после lease. Журнал также по
 redundant stable-ID retry и storage/structural failures. Нового публичного endpoint,
 text-draft persistence, scheduler или внешнего storage rollout нет.
 
+Correction сохраняет journal незавершённого/неизвестного PUT даже после успешного DELETE:
+поздняя запись объекта остаётся обнаружимой и повторно удаляется после claim lease.
+Только подтверждённый PUT выставляет `write_completed_at` (forward migration
+`0047_attachment_upload_write_completion`); metadata admission требует эту отметку,
+а cleanup может окончательно убрать unregistered journal только после неё.
+При потерянном результате PUT tracking-запись остаётся для повторного reconciliation,
+пока завершение writer не установлено; finite grace не выдаётся за такую гарантию.
+Повторы journal вращаются по времени claim, и bounded pass сохраняет бюджет для обычных
+settled assets. Старые accepted migrations не меняются.
+
 ZIP finalizer различает classic count 65,535 и настоящий ZIP64 locator; размеры/offsets,
 которым нужен ZIP64, без него не принимаются. Local CRC/sizes/flags сверяются с central
 metadata; bit 3 требует согласованный data descriptor непосредственно за compressed data.
 Поддерживаются signed/unsigned classic и ZIP64 descriptors, включая CRC, совпадающий с
-optional signature. Проверки по-прежнему bounded random-access, без распаковки и AV-обещаний.
+optional signature. Descriptor/header/data не могут пересекать следующий local record;
+physical order проверяется независимо от central-directory order. Для Worker budget
+central metadata читается блоками и ограничена upload cap 50 MB, compact offset indexes
+занимают до 12 байт на entry; local validation использует только два блока по 128 KiB.
+Compressed payload целиком не буферизуется, распаковки и AV-обещаний нет. Classic 65,535
+проверяется через storage/action path со счётчиком GET и ограничением default budget.
 Merged TAR/pending Remove/405 behavior не меняется.
 
 Добавлены boundary и failure-chain regressions; фактические CI/checks и independent review
@@ -1856,7 +1871,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0046`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0047`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

@@ -17,6 +17,7 @@ import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-foru
 import { ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
+import { classicManyEntryZip } from "../forum/attachment-zip.test-fixtures";
 
 const contextKey = "topic:opaque/topic:reply";
 const draftId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
@@ -68,8 +69,10 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
   const recordUploadObject = vi.fn(async (key: string) => { void key; });
+  const completeUploadObjectWrite = vi.fn(async () => {});
   ctx.set(forumAttachmentStoreContext, {
     recordUploadObject,
+    completeUploadObjectWrite,
     createDraftAttachment,
     recordSecurityEvent,
     readSecurityAttachmentEvents,
@@ -81,7 +84,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
-    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject,
+    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject, completeUploadObjectWrite,
     listDraftAttachments, cancelOperation, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
@@ -146,6 +149,34 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
+  it("registers classic 65535 through the storage/action path within the default internal-service budget", async () => {
+    const env = setup(), data = classicManyEntryZip(65535, true);
+    let gets = 0;
+    env.ctx.set(privateAttachmentBucketContext, {
+      ...env.r2,
+      async get(key, {range}) {
+        if (++gets > 990) throw new Error("subrequest budget exceeded");
+        const object = env.r2.objects.get(key);
+        return object ? { size: object.length, body: new Response(object.slice(range.offset, range.offset + range.length)).body! } : null;
+      },
+    });
+    const response = await action({context: env.ctx, request: request(data, {fileName: "boundary.zip", declaredMime: "application/zip"})});
+    expect(response.status).toBe(201);
+    expect(env.createDraftAttachment).toHaveBeenCalledTimes(1);
+    expect(env.completeUploadObjectWrite).toHaveBeenCalledTimes(1);
+    expect(gets).toBeLessThan(60);
+  }, 30_000);
+
+  it("retains the unavailable response and skips metadata admission if PUT completion cannot be recorded", async () => {
+    const env = setup();
+    env.completeUploadObjectWrite.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    const response = await action({context: env.ctx, request: request(new TextEncoder().encode("hello"))});
+    expect(response.status).toBe(503);
+    expect(env.r2.put).toHaveBeenCalledTimes(1);
+    expect(env.r2.delete).toHaveBeenCalledTimes(1);
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
+
   it("does not write bytes if durable object admission fails", async () => {
     const env = setup();
     env.recordUploadObject.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());

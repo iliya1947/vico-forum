@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { inflateRawSync } from "node:zlib";
+import { classicManyEntryZip, descriptorOverlapZip } from "./attachment-zip.test-fixtures";
 import {
   validateZipAttachmentStructure,
   type AttachmentRandomAccessSource,
@@ -103,6 +105,19 @@ async function valid(bytes: Uint8Array, semantic: ZipAttachmentSemantic): Promis
 }
 
 describe("ZIP attachment structural validation", () => {
+  it("rejects a missing descriptor aliased by the next real local header", async () => {
+    const malformed = descriptorOverlapZip("missing");
+    expect(malformed.length).toBe(201);
+    expect([...inflateRawSync(malformed.subarray(31, 51))]).toEqual([65, 66, 67, 68, 213, 112, 45, 223]);
+    expect(await valid(malformed, "zip")).toBe(false);
+    expect(await valid(descriptorOverlapZip("unsigned"), "zip")).toBe(true);
+    expect(await valid(descriptorOverlapZip("signed"), "zip")).toBe(true);
+  });
+
+  it("checks physical boundaries independently of central directory order", async () => {
+    expect(await valid(classicManyEntryZip(8, true), "zip")).toBe(true);
+  });
+
   it("accepts exactly 65,535 classic entries without requiring a ZIP64 locator", async () => {
     expect(await valid(buildZip(Array.from({ length: 65535 }, (_, i) => ({ name: String(i), data: new Uint8Array() }))), "zip")).toBe(true);
     const missingZip64 = buildZip([{ name: "a" }], true);

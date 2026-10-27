@@ -51,7 +51,7 @@ export class ForumAttachmentCleanup {
           select object_key from forum_attachment_upload_objects
           where created_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_GRACE_MS)}
             and (claim_token is null or claimed_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_CLAIM_LEASE_MS)})
-          order by created_at, object_key limit 1 for update skip locked
+          order by coalesce(claimed_at, created_at), object_key limit 1 for update skip locked
         `);
         const row = rows.rows[0];
         if (!row) return null;
@@ -72,8 +72,10 @@ export class ForumAttachmentCleanup {
       counts.claimed++;
       try {
         await this.storage.delete(item.key);
+        // A successful DELETE cannot fence an unfinished/unknown PUT. Keep its
+        // claimed row for recurring deletion until the writer confirms completion.
         await this.db.execute(sql`delete from forum_attachment_upload_objects
-          where object_key=${item.key} and claim_token=${token}`);
+          where object_key=${item.key} and claim_token=${token} and write_completed_at is not null`);
         counts.deleted++;
       } catch {
         counts.failed++;
@@ -153,7 +155,9 @@ export class ForumAttachmentCleanup {
       throw new RangeError("invalid attachment cleanup batch size");
     }
     const prunedRefs = await this.pruneStaleRefs(batchSize);
-    const uploads = await this.cleanupUploadObjects(batchSize);
+    // Unknown writers can require recurring tombstones. Reserve asset progress
+    // and rotate retried journal rows rather than exhausting every pass on them.
+    const uploads = await this.cleanupUploadObjects(Math.ceil(batchSize / 2));
     let claimed = uploads.claimed;
     let deleted = uploads.deleted;
     let failed = uploads.failed;

@@ -168,6 +168,7 @@ export async function storePrivateAttachmentStream(
   upload: PrivateAttachmentUpload,
   maxBytes = DEFAULT_ATTACHMENT_MAX_BYTES,
   beforeWrite?: (objectKey: string) => Promise<void>,
+  afterWrite?: (objectKey: string) => Promise<void>,
 ): Promise<AttachmentStoreResult> {
   const sampleSize = Number.isSafeInteger(upload.size) && upload.size > 0 && upload.size <= maxBytes
     ? Math.min(upload.size, ATTACHMENT_SNIFF_BYTES)
@@ -282,6 +283,7 @@ export async function storePrivateAttachmentStream(
     }
 
     try {
+      await afterWrite?.(objectKey);
       const structurallyValid = await validateStoredStructure(
         bucket,
         objectKey,

@@ -1,3 +1,5 @@
+import { DEFAULT_ATTACHMENT_MAX_BYTES } from "./attachment-validation";
+
 export type ZipAttachmentSemantic = "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods";
 
 export interface AttachmentRandomAccessSource {
@@ -9,6 +11,7 @@ const EOCD_FIXED_BYTES = 22;
 const MAX_ZIP_COMMENT_BYTES = 0xffff;
 const CENTRAL_FILE_HEADER_BYTES = 46;
 const LOCAL_FILE_HEADER_BYTES = 30;
+const STORAGE_BLOCK_BYTES = 128 * 1024;
 
 const ZIP_SIGNATURE = {
   local: 0x04034b50,
@@ -383,11 +386,61 @@ function packageRequirementsSatisfied(
     && ((seen.get("content.xml") ?? 0) + (seen.get("styles.xml") ?? 0) >= 1);
 }
 
+/** Directory metadata only, bounded by the upload cap; compressed payload is not buffered. */
+async function directorySource(source: AttachmentRandomAccessSource, directory: ZipDirectory) {
+  if (directory.size > DEFAULT_ATTACHMENT_MAX_BYTES) return null;
+  const bytes = new Uint8Array(directory.size);
+  for (let offset = 0; offset < bytes.length; offset += STORAGE_BLOCK_BYTES) {
+    const part = await readExact(source, directory.offset + offset, Math.min(STORAGE_BLOCK_BYTES, bytes.length - offset));
+    if (!part) return null;
+    bytes.set(part, offset);
+  }
+  return {
+    size: source.size,
+    async read(offset: number, length: number) {
+      const relative = offset - directory.offset;
+      return relative < 0 || relative + length > bytes.length
+        ? new Uint8Array() : bytes.subarray(relative, relative + length);
+    },
+  } satisfies AttachmentRandomAccessSource;
+}
+
+/** Two physical blocks; sorted local traversal prevents per-entry remote reads. */
+function localSource(source: AttachmentRandomAccessSource, end: number): AttachmentRandomAccessSource {
+  const blocks = new Map<number, Uint8Array>();
+  return {
+    size: end,
+    async read(offset, length) {
+      if (!length) return new Uint8Array();
+      const output = new Uint8Array(length);
+      let copied = 0;
+      while (copied < length) {
+        const position = offset + copied;
+        const start = Math.floor(position / STORAGE_BLOCK_BYTES) * STORAGE_BLOCK_BYTES;
+        let block = blocks.get(start);
+        if (!block) {
+          const bytes = await readExact(source, start, Math.min(STORAGE_BLOCK_BYTES, end - start));
+          if (!bytes) return new Uint8Array();
+          block = bytes;
+        }
+        blocks.delete(start);
+        blocks.set(start, block);
+        if (blocks.size > 2) blocks.delete(blocks.keys().next().value!);
+        const count = Math.min(length - copied, block.length - (position - start));
+        output.set(block.subarray(position - start, position - start + count), copied);
+        copied += count;
+      }
+      return output;
+    },
+  };
+}
+
 /**
  * Final structural sanity for ZIP-backed attachments.
  *
  * ZIP is trailer-directed: EOCD is authoritative for locating the central directory.
- * A random-access source keeps validation bounded without buffering the whole archive.
+ * Only bounded central metadata is retained. Local checks use two storage blocks,
+ * in physical order, so record count does not become the remote subrequest count.
  * Storage integration supplies this boundary only after the private object is written.
  */
 export async function validateZipAttachmentStructure(
@@ -404,8 +457,14 @@ export async function validateZipAttachmentStructure(
     || directoryEnd > source.size || directory.size <= 0
     || directory.entries > Math.floor(directory.size / CENTRAL_FILE_HEADER_BYTES)) return false;
 
+  const central = await directorySource(source, directory);
+  if (!central) return false;
+  const centralOffsets = new Uint32Array(directory.entries);
+  const localOffsets = new Uint32Array(directory.entries);
+  const order = new Uint32Array(directory.entries);
+
   let cursor = directory.offset;
-  const archiveExtra = await readExact(source, cursor, Math.min(8, directory.size));
+  const archiveExtra = await readExact(central, cursor, Math.min(8, directory.size));
   if (archiveExtra?.byteLength === 8 && hasSignature(archiveExtra, 0, ZIP_SIGNATURE.archiveExtra)) {
     const recordSize = u32(archiveExtra, 4);
     cursor += 8 + recordSize;
@@ -414,9 +473,15 @@ export async function validateZipAttachmentStructure(
 
   const seen = new Map<string, number>();
   for (let index = 0; index < directory.entries; index += 1) {
-    const parsed = await readCentralEntry(source, cursor, directoryEnd);
+    const parsed = await readCentralEntry(central, cursor, directoryEnd);
     if (!parsed || parsed.entry.localOffset >= directory.offset) return false;
     const entry = parsed.entry;
+    // The upload cap keeps actual local offsets within Uint32. Oversized source
+    // fixtures must not silently wrap an offset in the compact ordering index.
+    if (entry.localOffset > 0xffffffff || cursor - directory.offset > 0xffffffff) return false;
+    centralOffsets[index] = cursor - directory.offset;
+    localOffsets[index] = entry.localOffset;
+    order[index] = index;
     const trackedNames = [
       "[Content_Types].xml", "_rels/.rels", "word/document.xml", "xl/workbook.xml",
       "ppt/presentation.xml", "mimetype", "META-INF/manifest.xml", "content.xml", "styles.xml",
@@ -429,18 +494,31 @@ export async function validateZipAttachmentStructure(
       return false;
     }
 
-    const local = await localHeaderMatches(source, entry, directory.offset);
-    if (!local) return false;
     if (requiredPackageName(semantic, entry.name) && (entry.flags & 1) !== 0) return false;
-    if ((semantic === "odt" || semantic === "ods") && nameIs(entry.name, "mimetype")
-      && !await validateOdfMime(source, entry, local, semantic)) return false;
     cursor = parsed.next;
   }
 
   if (cursor < directoryEnd) {
-    const signature = await readExact(source, cursor, 6);
+    const signature = await readExact(central, cursor, 6);
     if (!signature || !hasSignature(signature, 0, ZIP_SIGNATURE.digitalSignature)) return false;
     cursor += 6 + u16(signature, 4);
   }
-  return cursor === directoryEnd && packageRequirementsSatisfied(semantic, seen);
+  if (cursor !== directoryEnd || !packageRequirementsSatisfied(semantic, seen)) return false;
+
+  order.sort((a, b) => localOffsets[a]! - localOffsets[b]!);
+  const locals = localSource(source, directory.offset);
+  for (let position = 0; position < order.length; position++) {
+    const index = order[position]!;
+    const limit = position + 1 < order.length ? localOffsets[order[position + 1]!]! : directory.offset;
+    if (localOffsets[index]! >= limit) return false;
+    const parsed = await readCentralEntry(central, directory.offset + centralOffsets[index]!, directoryEnd);
+    if (!parsed) return false;
+    // Header, payload and required descriptor must all precede the next local
+    // record. Its header bytes cannot double as this entry's missing descriptor.
+    const local = await localHeaderMatches(locals, parsed.entry, limit);
+    if (!local) return false;
+    if ((semantic === "odt" || semantic === "ods") && nameIs(parsed.entry.name, "mimetype")
+      && !await validateOdfMime(locals, parsed.entry, local, semantic)) return false;
+  }
+  return true;
 }

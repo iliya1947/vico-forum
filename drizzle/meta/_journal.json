@@ -330,6 +330,13 @@
       "when": 1793055095680,
       "tag": "0046_attachment_upload_object_journal",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793063932677,
+      "tag": "0047_attachment_upload_write_completion",
+      "breakpoints": true
     }
   ]
 }

@@ -45,6 +45,7 @@ const migrations = [
   "0043_attachment_security_read_permission",
   "0044_attachment_draft_conflict_boundaries",
   "0046_attachment_upload_object_journal",
+  "0047_attachment_upload_write_completion",
 ];
 
 const ownerId = "attachment-owner";
@@ -948,6 +949,65 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     cleanup_status: string; cleanup_claim_token: string | null;
   }>("select cleanup_status, cleanup_claim_token from forum_attachments where id=$1", [id])).rows[0];
 
+  it.each([
+    { ageMinutes: 30, failDelete: false, status: 201, orphan: false },
+    { ageMinutes: 61, failDelete: false, status: 400, orphan: false },
+    { ageMinutes: 61, failDelete: true, status: 400, orphan: true },
+  ])("retains pending PUT tracking age=$ageMinutes failed fallback DELETE=$failDelete", async ({ageMinutes,failDelete,status,orphan}) => {
+    const contextKey=await contextFixture(),generation=crypto.randomUUID(),id=crypto.randomUUID();
+    const objects=new Map<string,Uint8Array>();let keyWritten="",deletes=0;let rejectDelete=failDelete;
+    let signalEntered!:()=>void,releasePut!:()=>void;
+    const entered=new Promise<void>(r=>{signalEntered=r;});
+    const released=new Promise<void>(r=>{releasePut=r;});
+    const bucket={
+      async put(key:string,body:ReadableStream<Uint8Array>) {
+        const content=new Uint8Array(await new Response(body).arrayBuffer());
+        keyWritten=key;signalEntered();await released;objects.set(key,content);return {size:content.length};
+      },
+      async get(){return null;},
+      async delete(key:string) {
+        deletes++;
+        if(rejectDelete && objects.has(key)) throw new Error("synthetic DELETE failure after late PUT commit");
+        objects.delete(key);
+      },
+    };
+    const context=new RouterContextProvider();
+    context.set(authSessionContext,{user:{id:ownerId}} as never);
+    context.set(forumReaderContext,{readSection:async()=>({id:"section"})} as never);
+    context.set(authorizationContext,{forUser:()=>({has:async()=>true})} as never);
+    context.set(privateAttachmentBucketContext,bucket);
+    context.set(forumAttachmentStoreContext,{
+      recordUploadObject:(key:string)=>store.recordUploadObject(key),
+      completeUploadObjectWrite:(key:string)=>store.completeUploadObjectWrite(key),
+      createDraftAttachment:(input:CreateDraftAttachmentInput)=>store.createDraftAttachment(input),
+    } as never);
+    const pending=uploadAction({context,request:new Request("https://forum.test/api/attachments",{
+      method:"POST",headers:{Origin:"https://forum.test","Content-Type":"text/plain",
+        "X-Vico-Attachment-Id":id,"X-Vico-Attachment-Name":"notes.txt","X-Vico-Attachment-Size":"5",
+        "X-Vico-Editor-Context":encodeURIComponent(contextKey),"X-Vico-Operation-Id":generation},body:"hello",
+    })});
+    await entered;
+    expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1",[keyWritten])).rowCount).toBe(1);
+    expect(objects.size).toBe(0);
+    const cleanup=new ForumAttachmentCleanup(drizzle(client),bucket,()=>new Date(Date.now()+ageMinutes*60_000));
+    await cleanup.runOnce();
+    const journalAfterCleanup=(await client.query("select 1 from forum_attachment_upload_objects where object_key=$1",[keyWritten])).rowCount;
+    expect(journalAfterCleanup).toBe(1);
+    releasePut();const response=await pending;
+    expect(response.status).toBe(status);
+    const metadata=(await client.query("select 1 from forum_attachments where object_key=$1",[keyWritten])).rowCount;
+    const second=await cleanup.runOnce();
+    expect(objects.has(keyWritten) && metadata===0).toBe(orphan);
+    if(orphan) {expect(second.claimed).toBe(0);expect(objects.size).toBe(1);expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1",[keyWritten])).rowCount).toBe(1);}
+    expect(deletes).toBe(ageMinutes<60?0:2);
+    // Once PUT has confirmed completion, retry cleanup after its claim lease.
+    rejectDelete=false;
+    const later=new ForumAttachmentCleanup(drizzle(client),bucket,()=>new Date(Date.now()+73*60_000));
+    await later.runOnce();
+    expect(objects.has(keyWritten)).toBe(status===201);
+    expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1",[keyWritten])).rowCount).toBe(0);
+  });
+
   it("journals before PUT and cleans a real metadata rollback without losing a committed upload", async () => {
     const contextKey = await contextFixture(), generation = crypto.randomUUID();
     const id = crypto.randomUUID(), objects = new Map<string, Uint8Array>();
@@ -968,6 +1028,7 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     context.set(privateAttachmentBucketContext, bucket);
     context.set(forumAttachmentStoreContext, {
       recordUploadObject: (key: string) => store.recordUploadObject(key),
+      completeUploadObjectWrite: (key: string) => store.completeUploadObjectWrite(key),
       async createDraftAttachment(input: CreateDraftAttachmentInput) {
         const result = await store.createDraftAttachment(input);
         if (loseAck) { loseAck = false; throw new ForumAttachmentStorageUnavailableError(); }
@@ -1014,6 +1075,7 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     const context = await contextFixture(), generation = crypto.randomUUID();
     const input = { ...upload(context, generation), requireUploadRecord: true };
     await store.recordUploadObject(input.objectKey);
+    await store.completeUploadObjectWrite(input.objectKey);
     await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours' where object_key=$1", [input.objectKey]);
     const bucket = { delete: vi.fn(async () => { throw new Error("lost delete ACK"); }) };
     await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
@@ -1026,6 +1088,47 @@ describe("durable orphan cleanup behind the existing private storage boundary", 
     expect(success.delete).toHaveBeenCalledWith(input.objectKey);
     expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1", [input.objectKey])).rowCount).toBe(0);
     await expect(store.createDraftAttachment(input)).rejects.toBeInstanceOf(InvalidForumAttachmentError);
+  });
+
+  it("retries unknown writers after a successful empty-key DELETE and preserves tracking for late bytes", async () => {
+    const key = `private/${crypto.randomUUID()}`, objects = new Set<string>();
+    await store.recordUploadObject(key);
+    await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours' where object_key=$1", [key]);
+    let now = new Date();
+    const cleanup = new ForumAttachmentCleanup(drizzle(client), { delete: async (item) => { objects.delete(item); } }, () => now);
+    await cleanup.runOnce();
+    expect((await client.query("select write_completed_at from forum_attachment_upload_objects where object_key=$1", [key])).rows)
+      .toEqual([{ write_completed_at: null }]);
+    objects.add(key); // uncertain PUT materializes after the first successful DELETE
+    now = new Date(now.getTime() + 6 * 60_000);
+    await cleanup.runOnce();
+    expect(objects.has(key)).toBe(false);
+    expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1", [key])).rowCount).toBe(1);
+    await store.completeUploadObjectWrite(key);
+    now = new Date(now.getTime() + 6 * 60_000);
+    await cleanup.runOnce();
+    expect((await client.query("select 1 from forum_attachment_upload_objects where object_key=$1", [key])).rowCount).toBe(0);
+  });
+
+  it("rotates unknown-writer retries and reserves bounded cleanup progress for settled assets", async () => {
+    const keys = Array.from({length: 25}, () => `private/${crypto.randomUUID()}`);
+    for (const key of keys) await store.recordUploadObject(key);
+    await client.query("update forum_attachment_upload_objects set created_at=now()-interval '2 hours' where object_key=any($1)", [keys]);
+    const { asset } = await makeOrphan(), removed = new Set<string>();
+    await client.query("delete from forum_attachment_draft_refs where attachment_id=$1", [asset.id]);
+    let now = new Date();
+    const cleanup = new ForumAttachmentCleanup(drizzle(client), { delete: async (key) => { removed.add(key); } }, () => now);
+    const first = await cleanup.runOnce();
+    expect(first.claimed).toBeLessThanOrEqual(20);
+    expect(removed.has(asset.objectKey)).toBe(true);
+    now = new Date(now.getTime() + 6 * 60_000);
+    await cleanup.runOnce();
+    expect(keys.filter(key => removed.has(key)).length).toBe(20);
+    now = new Date(now.getTime() + 6 * 60_000);
+    await cleanup.runOnce();
+    expect(keys.every(key => removed.has(key))).toBe(true);
+    // These intentionally unresolved writers belong only to this fixture.
+    await client.query("delete from forum_attachment_upload_objects where object_key=any($1)", [keys]);
   });
 
   it("preserves valid immediate uploads before the first text save and deletes only detached old assets", async () => {

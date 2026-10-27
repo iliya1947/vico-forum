@@ -139,6 +139,16 @@ export class DrizzleForumAttachments {
     await this.db.insert(forumAttachmentUploadObjects).values({ objectKey });
   }
 
+  async completeUploadObjectWrite(objectKey: string): Promise<void> {
+    if (!privateObjectKey.test(objectKey)) throw new InvalidForumAttachmentError();
+    // Only a confirmed PUT completion may settle a writer. A thrown/unknown PUT
+    // retains its durable retry tombstone, even after a successful DELETE.
+    const updated = await this.db.update(forumAttachmentUploadObjects)
+      .set({ writeCompletedAt: new Date() })
+      .where(eq(forumAttachmentUploadObjects.objectKey, objectKey)).returning({ key: forumAttachmentUploadObjects.objectKey });
+    if (!updated.length) throw new InvalidForumAttachmentError();
+  }
+
   async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
     const createdAt = new Date();
@@ -148,7 +158,7 @@ export class DrizzleForumAttachments {
       if (input.requireUploadRecord) {
         const [record] = await tx.select().from(forumAttachmentUploadObjects)
           .where(eq(forumAttachmentUploadObjects.objectKey, input.objectKey)).for("update");
-        if (!record || record.claimToken !== null) throw new InvalidForumAttachmentError();
+        if (!record || !record.writeCompletedAt || record.claimToken !== null) throw new InvalidForumAttachmentError();
       }
       const [created] = await tx.insert(forumAttachments).values({
         id: input.id,

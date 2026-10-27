@@ -920,6 +920,7 @@ export const forumPosts = pgTable(
 export const forumAttachmentUploadObjects = pgTable("forum_attachment_upload_objects", {
   objectKey: text("object_key").primaryKey(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  writeCompletedAt: timestamp("write_completed_at", { withTimezone: true }),
   claimToken: text("claim_token"),
   claimedAt: timestamp("claimed_at", { withTimezone: true }),
 }, (table) => [

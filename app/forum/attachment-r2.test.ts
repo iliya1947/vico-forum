@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { classicManyEntryZip, descriptorOverlapZip } from "./attachment-zip.test-fixtures";
 import {
   AttachmentLengthMismatchError,
   AttachmentStorageError,
@@ -88,6 +89,29 @@ function minimalGif(): Uint8Array {
 }
 
 describe("private R2 attachment write contract", () => {
+  it.each([false, true])("finalizes classic 65535 within a 1000-subrequest storage budget (reverse=%s)", async (reverse) => {
+    const data = classicManyEntryZip(65535, reverse), storage = bucket();
+    let requests = 0;
+    const get = storage.get;
+    storage.get = vi.fn(async (key, options) => {
+      expect(++requests).toBeLessThan(995); // reserve PUT/journal/metadata overhead
+      expect(options.range.length).toBeLessThanOrEqual(128 * 1024);
+      return get(key, options);
+    });
+    const result = await storePrivateAttachment(storage, file("boundary.zip", data, "application/zip"));
+    expect(result.outcome).toBe("stored");
+    expect(requests).toBeLessThan(60);
+  }, 30_000);
+
+  it("rejects descriptor/header overlap after PUT but preserves separate descriptor controls", async () => {
+    for (const descriptor of ["missing", "unsigned", "signed"] as const) {
+      const storage = bucket();
+      const result = await storePrivateAttachment(storage, file("descriptor.zip", descriptorOverlapZip(descriptor), "application/zip"));
+      expect(result.outcome).toBe(descriptor === "missing" ? "rejected" : "stored");
+      expect(storage.delete).toHaveBeenCalledTimes(descriptor === "missing" ? 1 : 0);
+    }
+  });
+
   it("finalizes ZIP metadata after private write and deletes CRC/descriptor mismatches", async () => {
     for (const kind of ["valid", "crc", "missing-descriptor"] as const) {
       const bytes = singleEntryZip(), store = bucket();
