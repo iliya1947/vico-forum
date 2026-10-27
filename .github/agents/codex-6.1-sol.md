@@ -1,5 +1,85 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / EDITOR-03 — author verification nested GFM strikethrough (2026-10-27)
+
+**Назначение:** [#6454156161](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454156161), reconciliation [#6454152253](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454152253).
+**Проверенный PR:** [#248](https://github.com/iliya1947/vico-forum/pull/248), exact head `c87ca0ed6e0ec669ac6c97d5c68d547980e6541d`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Remote/local head проверены в начале и перед публикацией, совпадают.
+**Автор:** Лёва — Codex-6.1 Sol, автор реализации; targeted verification, **не независимый whole-PR review**.
+
+**Технический verdict: EDITOR-03 CONFIRMED / current Stage. Оба назначенных cases нарушают selected-only Clear, но симптомы различаются. Implementation не менялась, correction не начиналась.**
+
+### Case 1 — Clear первой a: теряется strike невыделенного остатка
+
+Source `~~**alpha beta**~~`, selection source `[4,5)`:
+```md
+a~~**lpha beta**~~
+```
+
+Выполнен оригинальный `clearInlineMarkdownFormatting`, затем project `parseForumMarkdown` и настоящий public `ForumMarkdown` через actual Simple editor в Chromium. Public DOM:
+```html
+<p dir="auto">a~~<strong>lpha beta</strong>~~</p>
+```
+`<del>` нет; невыделенный `lpha beta` сохраняет strong, но теряет исходный strike, а `~~` видны буквально. Это подтверждает основную формулировку reviewer finding.
+
+### Case 2 — Clear l: выделенная буква остаётся зачёркнутой
+
+Тот же source, selection `[5,6)`:
+```md
+~~**a**~~l~~**pha beta**~~
+```
+Project parser/public renderer:
+```html
+<p dir="auto"><del><strong>a</strong><del>l</del><strong>pha beta</strong></del></p>
+```
+Весь `alpha beta` остаётся внутри внешнего del; выбранная `l` дополнительно попадает во внутренний del. Strong с неё снят, **strike не снят**.
+
+Уточнение scope: для этого case неверно описывать результат только как «теряется strike невыделенного текста». Невыделенные `a` и `pha beta` сохраняют нужное оформление; нарушается очистка **выделенной** `l`. Оба симптома — одна текущая family EDITOR-03, не два отдельных defects.
+
+### Causal chain / GFM pairing
+
+1. Исходный project AST: delete `[0,18)` → strong `[2,16)` → text `[4,14)`. Поддерживаемая грамматика — project GFM strikethrough extension с `singleTilde:false`, используемая и helper parser, и public renderer.
+2. Child-first reconstruction удаляет/разделяет strong, затем планирует delete. Порядок вложенности сохраняется как локальные смешанные runs `~~**` и `**~~`, но их GFM роли зависят от соседних букв и punctuation каждого **отдельного** delimiter family.
+3. В первом case новый `~~` стоит после `a` и перед `*`. По фактическому installed `micromark-extension-gfm-strikethrough/lib/syntax.js` before — letter, after — punctuation: token не может открыть strike. Получаются literal tildes без del.
+4. Во втором case intended closing `~~` после `**a**` имеет before `*`/after `l` и становится **opener**, а intended reopening `~~` перед `**pha` имеет before `l`/after `*` и становится **closer**. Они образуют внутренний del вокруг l; исходные outer markers продолжают охватывать весь paragraph. Actual project AST подтверждает outer delete `[0,26)`, inner delete `[7,12)`.
+5. `protectSelectedAttentionBoundaries()` (editor-document.ts:674+) снимает весь mixed run регулярным выражением `^[*_~]+|[*_~]+$` и в этих случаях смотрит на исходные соседние буквы. Внутренний punctuation context **между ~~ и **/*** скрыт этой операцией; character-reference protection не срабатывает. Общей проверки final GFM pairing нет.
+
+Это **не** прежняя whitespace/empty-link причина: split здесь находится внутри слова и не имеет пробела у границы. Общий high-level механизм тот же — partial Clear reconstructs nested delimiters; недостающая часть — сохранение GFM semantics при смешанных delimiter runs на буквенной границе.
+
+### Насколько широк finding
+
+Подтверждены также аналогичные `~~*alpha beta*~~` (outer delete / inner emphasis) для a и l.
+
+Контрпримеры на том же source path:
+- whole-word alpha или beta в `~~**alpha beta**~~` очищаются корректно; остаток сохраняет strike/strong;
+- `**~~alpha beta~~**` с a/l работает корректно;
+- flat `~~alpha beta~~` с a/l работает корректно;
+- whole-range Clear `~~**alpha beta**~~` даёт `alpha beta`.
+
+Следовательно нельзя расширять finding до любого nested/flat strike или любой границы. Минимальный подтверждённый scope — найденная outer-delete / inner-strong-or-emphasis комбинация с partial intraword selection.
+
+### Предыдущие heads / current-Stage classification
+
+На копиях исходных helpers из accepted base `2ff3aeb` и первоначального L7 head `16f4b95`:
+- Clear l даёт тот же `~~**a**~~l~~**pha beta**~~`;
+- Clear a даёт более ранний неверный `~~~~a~~**lpha beta**~~` (unchanged project parser распознаёт code block).
+
+Это **остаточный subcase исходного EDITOR-03**, а не новая регрессия, впервые внесённая correction `c87ca0e`. Последняя correction устранила прежние whitespace/link и empty-wrapper cases, но не закрыла final mixed-run GFM pairing. «Новый subcase» означает вновь выявленный, не вновь внесённый.
+
+Current contract: docs/EDITOR.md §3 (:76, :81) явно включает strong/emphasis/strike и Clear только выделенного содержимого; nested supported inline syntax уже штатная. Future Stage, LOC-08 или требования к внешним сервисам не задействованы.
+
+### Проверки и границы
+
+- **17 helper cases**, включая source/AST traces на 16 selections и whole-range control; **10 actual Chromium component scenarios**, **4 previous-head source controls**.
+- Chromium: DOM selections в Simple → actual Clear toolbar → FormData source → actual ForumMarkdown; все назначенные симптомы и перечисленные browser controls воспроизведены. **10/10 exact Undo/Redo**; отдельное повреждение history не утверждается.
+- TS helper повторно выполнен с pinned toolchain. Проверены оригинальные project parser/render path, а не самостоятельная модель delimiter operations или сторонний Markdown dialect.
+- Baseline controls выполняли оригинальные helpers из git blobs с адаптированными import paths к unchanged project Markdown syntax; старые whole applications/CI не запускались.
+- Full suites/typecheck/native PG/CI повторно не запускались: код не менялся, это targeted source/DOM verification. Другие L7 PASS-области не пересматривались.
+- Chromium — local component harness с synthetic API responses, не production и не owner visual acceptance. External/provider/live services не затрагивались.
+- Артефакты: `/workspace/work/l7-strike-verification/helper-results.json`, `helper-summary.jsonl`, `browser-results.json`, `base-results.jsonl`, `probe.ts`, `browser.py`, `base-controls.ts`.
+- Tracked/staged diff отсутствуют; dependency symlink удалён, локальные browser/server остановлены.
+
+**Мире:** author verification подтверждает одну current-Stage family EDITOR-03 с указанным уточнением второго симптома и residual classification. Correction по этому назначению не выполнялась. **Лёва STOP.**
+
 ## PR #248 / L7 — bounded correction после verification (2026-10-27)
 
 **Автор:** Лёва — Codex-6.1 Sol. Отчёт реализации correction и её проверок, не независимый whole-PR verdict.
