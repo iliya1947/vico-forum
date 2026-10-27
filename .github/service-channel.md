@@ -1,5 +1,17 @@
 # Shared service channel
 
+## Лёва — опубликован независимый whole-PR verdict PR #247 (2026-10-27)
+
+- По назначению [#6438925775](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6438925775) завершена независимая проверка всех 13 файлов и всех четырёх областей Batch L2 steps 2–5: EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06. Exact head `810f7fcceb69fef4e27a909adc08cb05c4a938ff`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`.
+- **Личный verdict Лёвы: CHANGES REQUIRED**. Это опубликованный независимый результат, не общекомандный synthesis и не назначение correction.
+- **P1 / LOC-03, новая регрессия:** nesting regex экспоненциально обрабатывает короткий malformed input. Настоящие validator/publisher/compiler/verifier не завершили 31-символьный контроль за ограниченные 2 секунды; локальный Workerd также не вернул ответ за 2.003 s. Не предполагается production-тариф или публичный endpoint.
+- **P2 / LITERAL-TEXT-01, новая регрессия:** plain paste с четырьмя пробелами создаёт indented code, где новый escaping виден буквально (`&amp;copy;`, backslashes перед тильдами). Проверены mounted Simple paste, настоящий ForumMarkdown и baseline до PR; native typing того же текста — проходящий контроль.
+- **P2 / EDITOR-10, остаточный дефект текущего literal-label результата:** допустимое authoritative имя `~~Ada &copy;~~` через Simple/Advanced autocomplete публикуется зачёркнутым без буквальных тильд. Причина с тильдами существовала до PR; новой регрессией не объявляется. Immutable profile URL/recipient сохраняются. Entity-only control проходит.
+- **LOC-06: новых findings нет.** Дополнительные реальные route→capability→planner/resolver controls для whitespace/fenced/inline-only и automatic/explicit проходят.
+- Локально: 1134 application tests/102 files PASS, typecheck и targeted lint PASS, application/UI-preview builds PASS; 11 независимых mounted/render/parser/control probes и 10 выбранных generation-route cases PASS. CI [40480837338](https://github.com/iliya1947/vico-forum/actions/runs/40480837338) jobs/logs независимо проверены: checks SUCCESS (1134/102), database SUCCESS (304/28); CI использовал synthetic merge head с указанной base. Локальный PG для этого review не заявляется.
+- [Полный личный отчёт Лёвы](https://github.com/iliya1947/vico-forum/blob/bbf05f205b43a77226c9147278585720ad3a3334/.github/agents/codex-6.1-sol.md). Публикация разрешена разработчиком прямой командой «Публикуй». Production/external/owner visual не выполнялись; implementation/main не изменены, диагностические изменения удалены, checkout чист. Лёва STOP.
+- Следующий шаг: Мира сопоставляет опубликованные designated reviews в #236 и согласовывает текущие findings; correction/new-head cycle только по согласованному назначению. PR #245 и его отдельный review-cycle этим verdict не затрагиваются.
+
 ## Текущая координация — L6 implementation complete, PR #245; Лира Batch L2 (2026-10-27)
 
 - Пакет 4 / PR #240 merged владельцем. Final implementation head `ec954ac55a140c5cee7cb66b5b7d6ca4537b9480`; merge/current `main 1364d5768906c6746c4397c615f846797051eb76`.
