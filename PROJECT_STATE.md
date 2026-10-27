@@ -87,10 +87,14 @@ schema/migration/dependency, provider и deployment изменений нет.
 также защищает 4+ начальных пробела на каждой строке
 одним structural entity до escaping, чтобы не превращать пользовательский
 prose в indented code с видимыми `&amp;` и обратными слэшами.
-Существующий literal Ctrl+Shift+V с tab сохраняет исходную табуляцию. Добавлены
-pure parser/regression tests для `---`, `~~literal~~`, `&copy;`,
-обычного текста и setext case, а также mounted Simple typing/paste
-и leading-whitespace checks. Markdown toolbar actions, Advanced source
+При forced plain Ctrl+Shift+V строки с табуляцией в пределах первых
+четырёх позиций сохраняются как raw tab-indented Markdown source без
+prose-escaping: в indented-code context `&amp;` и обратные слэши
+стали бы видимыми символами вместо буквального исходного текста.
+Для 4+ начальных пробелов сохраняется отдельный structural entity.
+Обычное TSV-преобразование и native typing не менялись. Дополнительно
+добавлены parser и mounted Ctrl+Shift+V → published ForumMarkdown regressions
+для raw tab, `&copy;`, `~~literal~~` и existing whitespace/Setext controls. Markdown toolbar actions, Advanced source
 editing, DB и authz contracts не менялись. Applicable exact-head CI
 и независимый whole-PR review фиксируются по факту отдельно.
 
@@ -98,16 +102,18 @@ editing, DB и authz contracts не менялись. Applicable exact-head CI
 
 В Batch L2 шаге 2/5 после влитого EDITOR-04 уточнена сериализация подписи
 ссылки, создаваемой autocomplete упоминания. User display name является
-авторитетным буквальным текстом: символ `&` экранируется как `&amp;` при
-генерации Markdown-ссылки, чтобы последовательности вроде `&copy;`,
-`&amp;` или `&#169;` не декодировались в другие отображаемые символы.
-Whole-PR correction дополнительно экранирует `~`: GFM `~~name~~`
-больше не превращает буквальную authoritative подпись в зачёркивание.
+авторитетным буквальным текстом. После второй независимой whole-PR проверки
+ручной неполный список Markdown-экранирования заменён context-aware
+literal-link-label serialization: ASCII punctuation и управляющие
+символы имени кодируются numeric character references до Markdown parsing.
+Последовательности вроде `&copy;`, `~~name~~`, `<https://example.test>`,
+nested bracket links и backticks остаются буквальным отображаемым именем,
+не создавая entity replacement, autolink или GFM formatting.
 Server-supplied member ID и profile destination остаются прежними.
 
-Pure Markdown-AST regressions проверяют буквальное значение подписи после
-парсинга и immutable recipient ID; mounted editor regressions проверяют
-упоминание с character-reference-подобным именем в Simple и Advanced.
+Parser/published Markdown и mounted Simple/Advanced autocomplete regressions
+проверяют единый profile link с одним literal text child, отсутствие
+дополнительных autolink/formatting nodes и immutable recipient ID.
 Ранее работавший обычный display name остаётся control. Действующий
 Markdown body / notifications / DB / localization contracts не изменены.
 Exact-head CI и независимая whole-PR проверка фиксируются отдельно по факту.
