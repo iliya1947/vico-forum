@@ -1,5 +1,67 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — targeted technical adjudication: three CONFIRMED findings (2026-10-27)
+
+Assignment: #236 comment 6430502049. Date 2026-10-27 UTC. Exact head `f673c90cb8d95c68623b690f4f3a0f340f24e03a`, base `bff130db5fb245e3a9ad3391fad54a2fe81aac88`. Author of implementation conducting explicitly assigned technical adjudication, not independent whole-PR self-review. No implementation correction performed. Published by the owner's explicit «Публикуй» command.
+
+## Verdict
+
+All three candidates are confirmed current-scope code defects, with qualifications below. The whole PR is not ready for acceptance on this head. Prior green suites did not exercise these boundaries. Seven focused local diagnostics passed: three real route/Drizzle/PostgreSQL pending-PUT cases and four ZIP/finalizer/quota tests. Passing diagnostic assertions record defective current behavior; they do not indicate acceptance PASS.
+
+## 1. Upload journal retired before a still-active PUT settles — CONFIRMED, ATTACH-01
+
+Actual code: route awaits journal admission before PUT, but no request/PUT deadline or durable writer-completion marker protects that record. cleanupUploadObjects claims a record older than one hour if there is no authoritative asset, deletes the object and then deletes the journal. A DELETE of an absent key does not fence a later write. createDraftAttachment requires the same journal row, so late metadata admission fails after cleanup removes it.
+
+Actual route+Drizzle+PostgreSQL 17 diagnostic holds a PUT pending before object visibility, runs existing cleanup with injected time, then releases the write:
+- At 30 minutes: journal remains; PUT completes; HTTP 201, metadata 1, object retained and referenced. Control PASS.
+- At 61 minutes with successful fallback DELETE: cleanup removes empty key/journal; PUT then writes; missing journal causes HTTP 400; fallback DELETE removes object. No orphan. Therefore a slow PUT alone does not prove a lasting orphan.
+- At 61 minutes with failed fallback DELETE: same order, HTTP 400, metadata 0, object remains. A further cleanup reports claimed 0 / deleted 0 / failed 0: no journal/asset remains from which to discover the object. Durable orphan reproduced. The existing contract explicitly includes recovery after best-effort DELETE failure, so this combination is current scope.
+
+Controlled time advanced without an actual hour-long wait. Byte storage models pending/late commit and DELETE failure; not a live R2 experiment. Current app has no finite PUT timeout. Official Workers limits say HTTP execution and individual subrequests have no fixed wall-clock deadline while the client remains connected; CPU budget is not a one-hour upload bound. Thus runtime does not establish the missing proof that every admitted PUT settles before grace.
+
+Minimal necessary correction scope: upload journal/PUT lifecycle plus existing reconciliation. Durable discoverability must persist until an admitted writer can no longer create/recreate the object, including unknown write outcome and failed DELETE. A journal row lock only around metadata, an increased fixed grace, or a retry of the same best-effort DELETE does not establish that invariant. Preserve ordinary cleanup of settled objects and authoritative committed metadata after lost ACK. Add pending-PUT/cleanup race and failure controls; no new scheduler/public endpoint/external rollout needed. Specific mechanism requires a bounded design before implementation; no schema redesign presumed automatically necessary.
+
+## 2. Missing descriptor accepted by aliasing the next local header — CONFIRMED, ATTACH-STRUCT-01
+
+Generated an independent 201-byte two-entry archive. File a payload is hex 41424344d5702ddf, CRC32=0x04034b50, uncompressed 8 bytes. Valid raw DEFLATE 20 bytes uses a stored block and empty blocks, independently decompressed by Python zlib. File b uses valid 3-byte raw DEFLATE for one byte. Both files extracted and CRC-checked with Python zipfile.
+
+File a sets bit 3 and has no data descriptor. At its dataEnd, the next genuine local header starts. That header's first 12 bytes reinterpret as CRC 0x04034b50, compressed 20, uncompressed 8. descriptorMatches accepts those bytes, with only central-directory offset as upper bound. The validator separately accepts file b at that same offset; no occupied-record interval check forbids overlap.
+
+Executed actual TypeScript validateZipAttachmentStructure and actual storePrivateAttachment/storage finalizer:
+- Missing descriptor/next-header overlap 201 bytes: validator=true, outcome=stored.
+- Separate unsigned descriptor 213 bytes: true/stored.
+- Separate signed descriptor 217 bytes: true/stored.
+- Countercontrol changes file b method (consistently in its local/central metadata) so its initial bytes no longer imitate file a's descriptor: false/rejected. The rejection is specifically from failed descriptor matching, not file b extraction support (the generic ZIP path does not restrict method 9).
+
+APPNOTE 4.3.9.1 requires a descriptor immediately after compressed bytes when bit 3 is set. Extractability via central-directory metadata is not proof that the missing descriptor exists as a separate record.
+
+Minimal correction: descriptor/local-record validation must establish actual occupied ranges and prevent a descriptor/data/header interval from overlapping another entry's local record. Return/track matched descriptor length and account for all relevant local offsets without assuming central order equals physical order. Preserve valid signed/unsigned 32/64-bit descriptors and CRC/signature ambiguity. Tests must include this counterexample and valid controls through finalizer. No decompression, payload CRC recalculation, AV or public contract change needed.
+
+## 3. Classic 65535 acceptance exceeds normal Worker subrequest budget — CONFIRMED current-scope algorithm defect, ATTACH-02
+
+Independent Python zipfile generator, allowZip64=False, created 65,535 distinct named empty entries. Archive 5,613,812 bytes, under 50,000,000-byte upload cap. Python verified entry count and CRC/extraction. It is classic ZIP, no ZIP64 requirement.
+
+Actual storePrivateAttachment finalizer over counted bucket completed stored with **262,142 GETs**: 4 per entry (central fixed+variable and local fixed+name) plus 2 (directory tail/archive-extra inspection). privateObjectSource.read maps each nonzero read to bucket.get, and workers/attachment-storage.ts forwards get one-for-one without cache/coalescing.
+
+Quota-model diagnostics execute both finalizer and real upload action with a controlled bucket throwing after 1,000 or 10,000 GETs. Finalizer throws AttachmentStorageError, attempts deletion; upload action returns HTTP 503 with 0 metadata writes. The attempt counters are 1,001 and 10,001 respectively. This proves app behavior under those documented budgets, not a live runtime quota measurement.
+
+Official Workers documentation fetched during adjudication defines R2 calls as subrequests: internal services Free 1,000, Paid configured default 10,000; Paid can configure a higher limit. Current wrangler.jsonc has no limits.subrequests override. It also has **no ATTACHMENT_R2 binding**; workers/app.ts explicitly accepts an optional binding and sets null otherwise. Consequently no claim that an existing deployed upload currently exhausts R2 quota is established: without an injected/provisioned bucket, the route returns unavailable earlier. Live account settings and production behavior were not inspected. This qualification does not resolve the algorithm defect against the explicitly assigned Workers-compatible 65535 acceptance case; deployment of R2 is deferred, but the requested code boundary is current L6 scope.
+
+Minimal correction: bounded, batched/coalesced random access with traversal locality, rather than one remote read for each record field. Prove 65535 finalization within the supported request/storage budget using counted storage regressions; preserve 50 MB memory/streaming bounds and structural validation. Do not merely reject65535, buffer arbitrarily, or silently require a paid quota increase. A configurable higher quota is an alternative deployment requirement/tradeoff, not an automatic correction of the existing default-budget acceptance claim; it would require explicit agreement.
+
+## Sources and evidence
+
+- Official https://developers.cloudflare.com/workers/platform/limits/ (saved HTML/text): subrequests/R2 quotas, CPU versus I/O wait, HTTP/subrequest duration.
+- Official https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT (saved), 4.3.9.1–4.3.9.4.
+- `/workspace/work/pr245-zip-adjudication.log`: 4 focused tests PASS with structured observed results.
+- `/workspace/work/pr245-journal-adjudication.log`: 3 focused PostgreSQL cases PASS; 44 unrelated tests skipped.
+- `/workspace/work/pr245-make-zip-probes.py` and generated pr245-descriptor-*.zip / pr245-classic-65535.zip.
+- `/workspace/work/pr245-journal-probe-snippet.txt` and saved temporary ZIP diagnostic source.
+
+No broad regression rerun: no implementation changes were made. No live Cloudflare/R2/Neon/Hyperdrive/OAuth/backup/restore/production/browser/visual actions. Local PostgreSQL disposable only. Reports from others were treated as hypotheses and all three causal paths were checked against actual code and targeted controls. Correction, new head, PR edits, merge and next packages not started. Findings published in the service PR by explicit owner instruction; correction still not started. STOP.
+
+Publication preflight: PR #245 is open; head `f673c90cb8d95c68623b690f4f3a0f340f24e03a` unchanged. The designated adjudication baseline remains `bff130db5fb245e3a9ad3391fad54a2fe81aac88`; no claim that current main still equals that baseline.
+
 ## PR #246 — independent whole-PR review PASS (2026-10-27)
 
 Date: 2026-10-27 (owner timezone). Assignment: service PR #236 comment6429594867. Individual verdict: **PASS**. No confirmed current-Stage defect found in the assigned EDITOR-04 scope. This is not a team merge-readiness declaration.
