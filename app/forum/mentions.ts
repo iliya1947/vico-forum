@@ -21,8 +21,13 @@ export function mentionProfileLink(name: string, profilePath: string): string {
   // Also encode controls to keep a single inline label for valid names.
   const escapedName = [...name].map((char) => {
     const code = char.codePointAt(0)!;
-    return code < 32 || code === 127
-      || (code >= 33 && code <= 47)
+    // CommonMark maps most C0/DEL numeric references to U+FFFD.
+    // Retain their literal characters; encode representable whitespace only.
+    if (code < 32 || code === 127) {
+      return code === 9 || code === 10 || code === 12 || code === 13
+        ? `&#${code};` : char;
+    }
+    return (code >= 33 && code <= 47)
       || (code >= 58 && code <= 64)
       || (code >= 91 && code <= 96)
       || (code >= 123 && code <= 126)

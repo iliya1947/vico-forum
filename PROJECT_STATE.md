@@ -87,11 +87,13 @@ schema/migration/dependency, provider и deployment изменений нет.
 также защищает 4+ начальных пробела на каждой строке
 одним structural entity до escaping, чтобы не превращать пользовательский
 prose в indented code с видимыми `&amp;` и обратными слэшами.
-При forced plain Ctrl+Shift+V строки с табуляцией в пределах первых
-четырёх позиций сохраняются как raw tab-indented Markdown source без
-prose-escaping: в indented-code context `&amp;` и обратные слэши
-стали бы видимыми символами вместо буквального исходного текста.
-Для 4+ начальных пробелов сохраняется отдельный structural entity.
+После bounded correction forced plain Ctrl+Shift+V различает raw-tab
+indented-code и prose в действительном Markdown context (включая текст до
+курсора и structural prefix). Только настоящий code сохраняет raw source;
+в prose escape сохраняет буквальные `&copy;`, тильды и прочую пунктуацию.
+Общий контекстный path применяется также к plain-text fallback таблиц и
+явной plain-text вставке. Для 4+ начальных пробелов structural entity
+сохраняется.
 Обычное TSV-преобразование и native typing не менялись. Дополнительно
 добавлены parser и mounted Ctrl+Shift+V → published ForumMarkdown regressions
 для raw tab, `&copy;`, `~~literal~~` и existing whitespace/Setext controls. Markdown toolbar actions, Advanced source
@@ -104,8 +106,12 @@ editing, DB и authz contracts не менялись. Applicable exact-head CI
 ссылки, создаваемой autocomplete упоминания. User display name является
 авторитетным буквальным текстом. После второй независимой whole-PR проверки
 ручной неполный список Markdown-экранирования заменён context-aware
-literal-link-label serialization: ASCII punctuation и управляющие
-символы имени кодируются numeric character references до Markdown parsing.
+literal-link-label serialization: ASCII punctuation кодируется numeric
+character references до Markdown parsing. После bounded correction C0/DEL
+символы, которые CommonMark numeric decoder заменяет на U+FFFD,
+передаются буквально; только представимые ASCII whitespace controls
+кодируются numeric references. Это сохраняет допустимые имена без потери
+authoritative code points.
 Последовательности вроде `&copy;`, `~~name~~`, `<https://example.test>`,
 nested bracket links и backticks остаются буквальным отображаемым именем,
 не создавая entity replacement, autolink или GFM formatting.

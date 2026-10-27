@@ -110,6 +110,32 @@ describe("Editor 2.0 clipboard import", () => {
     }]);
   });
 
+  it.each([
+    ["Before", "\t&copy; ~~literal~~", false],
+    ["Before", "\n\t&copy; ~~literal~~", false],
+    ["Before", "\n\n\t&copy; ~~literal~~", true],
+    ["&#32;   Before", "\t&copy; ~~literal~~", false],
+    ["", "\t&copy; ~~literal~~", true],
+  ] as const)("uses actual Markdown context for tabbed plain text (%j, %j)", (before, plain, expectedCode) => {
+    const source = clipboardPlainToMarkdown(plain, {
+      markdown: before, selection: { start: before.length, end: before.length },
+    });
+    const parsed = parseForumMarkdown(before + source);
+    if (expectedCode) {
+      const code = parsed.children.find((node) => node.type === "code");
+      if (code?.type !== "code") throw new Error("Expected real indented code");
+      expect(code.value).toContain("&copy; ~~literal~~");
+      expect(source).toBe(clipboardPlainToMarkdown(plain));
+    } else {
+      expect(parsed.children.some((node) => node.type === "code")).toBe(false);
+      expect(source).toContain("&amp;copy;");
+      const paragraph = parsed.children.find((node) => node.type === "paragraph");
+      if (paragraph?.type !== "paragraph") throw new Error("Expected prose");
+      expect(paragraph.children.map((node) => "value" in node ? node.value : "").join(""))
+        .toContain("&copy; ~~literal~~");
+    }
+  });
+
   it("preserves multiline Unicode when plain clipboard text is escaped", () => {
     expect(clipboardPlainToMarkdown("שלום\n**literal**")).toBe("שלום\n\\*\\*literal\\*\\*");
     expect(clipboardPlainToMarkdown("# Title\n- item")).toBe("\\# Title\n\\- item");

@@ -1841,3 +1841,70 @@ it.each([
   leaf.textContent=prefix + "Alpha";fireEvent.input(leaf,{data:"Alpha"});
   expect(leaf).toHaveFocus();expect(document.querySelector('input[name="body"]')).toHaveValue(source);
 });
+
+it.each([
+  ["simple", "\u0001"], ["advanced", "\u0001"],
+  ["simple", "\u007f"], ["advanced", "\u007f"],
+] as const)("keeps literal controls in a mounted %s mention", async (mode, control) => {
+  const name = "A" + control + "B";
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
+    return new Response(JSON.stringify({ users: [{ id: "member-42", name }] }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+  renderEditor(<HeaderAuthProvider initialUser={{ id: "control-name-" + mode, name: "Author" }}>
+    <form><label htmlFor="control-name">Body</label>
+      <MarkdownEditor id="control-name" name="body" editorLocale="en"
+        defaultAuthoringMode={mode} defaultValue="Hello " />
+    </form>
+  </HeaderAuthProvider>);
+  const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+  if (mode === "advanced") {
+    fireEvent.change(textarea, { target: { value: "Hello @Ada", selectionStart: 10, selectionEnd: 10 } });
+  } else {
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = "Hello @Ada";
+    fireEvent.input(leaf);
+  }
+  const suggestions = await screen.findByRole("group", { name: "Mention a member" });
+  await userEvent.click(suggestions.querySelector("button")!);
+  const source = "Hello " + mentionProfileLink(name, "/en/users/member-42");
+  await waitFor(() => expect(textarea).toHaveValue(source));
+  expect(parseForumMarkdown(source).children[0]).toMatchObject({ type: "paragraph", children: [
+    { type: "text", value: "Hello " },
+    { type: "link", url: "/en/users/member-42", children: [{ type: "text", value: name }] },
+  ] });
+  expect(publishedMentionRecipients(source)).toEqual(["member-42"]);
+  const rendered = renderEditor(<ForumMarkdown>{source}</ForumMarkdown>);
+  expect(rendered.container.querySelector('a[href="/en/users/member-42"]')?.textContent).toBe(name);
+  expect(rendered.container.querySelectorAll("a")).toHaveLength(1);
+});
+
+it.each([
+  ["\t&copy; ~~literal~~", false],
+  ["\n\t&copy; ~~literal~~", false],
+  ["\n\n\t&copy; ~~literal~~", true],
+] as const)("preserves Ctrl+Shift+V literal paste with real prose/code context %j", (plain, isCode) => {
+  renderEditor(<form><label htmlFor="context-paste">Body</label>
+    <MarkdownEditor id="context-paste" name="body" defaultValue="Before" /></form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();
+  const selection = window.getSelection()!, range = document.createRange();
+  range.setStart(leaf.firstChild!, 6);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+  fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+    format === "text/plain" ? plain : format === "text/html" ? "<h1>Ignored</h1>" : "" } });
+  const source = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
+  const rendered = renderEditor(<ForumMarkdown>{source}</ForumMarkdown>);
+  if (isCode) {
+    expect(rendered.container.querySelector("pre code")?.textContent).toContain("&copy; ~~literal~~");
+  } else {
+    expect(rendered.container.querySelector("del")).toBeNull();
+    expect(rendered.container.querySelector("pre code")).toBeNull();
+    expect(rendered.container.textContent).toContain("&copy; ~~literal~~");
+  }
+});

@@ -34,6 +34,7 @@ interface VisualEditorProps {
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
   onPasteTable(range: EditorSelection, plain: string): void;
+  onPastePlain(range: EditorSelection, plain: string): void;
   onPasteFallback(): void;
 }
 
@@ -581,7 +582,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
           return;
         }
         if (forcePlain) {
-          actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          actions.onPastePlain(selected, plain);
           return;
         }
         if (plain.includes("\t")) {
@@ -591,11 +592,11 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         if (html || plain.includes("\n") || plain.includes("\r")) {
           const converted = html ? clipboardHtmlToMarkdown(html) : null;
           if (converted !== null) actions.onReplaceRange(selected, converted);
-          else if (plain) actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          else if (plain) actions.onPastePlain(selected, plain);
           if (html && converted === null) actions.onPasteFallback();
           return;
         }
-        actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+        actions.onPastePlain(selected, plain);
       }}
       onSelect={(event) => reportSurfaceSelection(event.currentTarget)}
       onMouseUp={(event) => reportSurfaceSelection(event.currentTarget)}

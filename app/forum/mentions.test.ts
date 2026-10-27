@@ -58,6 +58,21 @@ describe("mention authoring tokens", () => {
   });
 
   it.each([
+    "\u0001", "\u0008", "\u000b", "\u000c", "\u000e", "\u001f", "\u007f",
+    "\t", "\n", "\r",
+  ])("preserves a valid display-name control character %j", (control) => {
+    const name = "A" + control + "B";
+    const markdown = mentionProfileLink(name, "/en/users/member-42");
+    const paragraph = parseForumMarkdown(markdown).children[0];
+    expect(paragraph).toMatchObject({ type: "paragraph", children: [
+      { type: "link", url: "/en/users/member-42", children: [{ type: "text", value: name }] },
+    ] });
+    if (paragraph?.type !== "paragraph") throw new Error("Expected paragraph");
+    expect(paragraph.children).toHaveLength(1);
+    expect(publishedMentionRecipients(markdown)).toEqual(["member-42"]);
+  });
+
+  it.each([
     "Ada &copy;",
     "Alice &amp; Bob",
     "Code &#169; reviewer",

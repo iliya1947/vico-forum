@@ -535,7 +535,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function pasteSpreadsheet(range: EditorSelection, text: string) {
       const converted = spreadsheetToMarkdown(text);
       if (!converted) {
-        replaceSourceRange(range, clipboardPlainToMarkdown(text));
+        replaceSourceRange(range, clipboardPlainToMarkdown(text, { markdown: value, selection: range }));
         setPasteNotice("fallback");
         return;
       }
@@ -620,7 +620,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (format === "plain") {
           const selection = sourceSelection();
           if (!selection) { setPasteNotice("error"); return; }
-          replaceSourceRange(selection, clipboardPlainToMarkdown(text));
+          replaceSourceRange(selection, clipboardPlainToMarkdown(text, { markdown: value, selection }));
           return;
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
@@ -1087,6 +1087,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onReplaceRange={replaceSourceRange}
               onTableDimension={extendTable}
               onPasteTable={pasteSpreadsheet}
+              onPastePlain={(range, plain) => replaceSourceRange(range,
+                clipboardPlainToMarkdown(plain, { markdown: value, selection: range }))}
               onPasteFallback={() => setPasteNotice("error")}
             />
           ) : null}

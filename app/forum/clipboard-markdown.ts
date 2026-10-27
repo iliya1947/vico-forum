@@ -1,4 +1,5 @@
 import { inlineCodeMarkdown } from "./editor-document";
+import { parseForumMarkdown } from "../markdown-syntax";
 import { serializeTable } from "./technical-markdown";
 
 const tick = String.fromCharCode(96);
@@ -8,12 +9,10 @@ function escapeText(value: string): string {
     (char) => char === "&" ? "&amp;" : "\\" + char);
 }
 
-function textAsMarkdown(value: string): string {
-  return value.replace(/\r\n/gu, "\n").split("\n").map((line) => {
-    // A tab within the leading indent is deliberately kept as a raw tab
-    // (Ctrl+Shift+V). It can form indented Markdown code: backslash/entity
-    // escaping inside that code would become visible instead of literal text.
-    if (/^ {0,3}\t/u.test(line)) return line;
+function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): string {
+  return value.replace(/\r\n/gu, "\n").split("\n").map((line, index) => {
+    // Raw tabs are code only when the whole Markdown document parses them so.
+    if (/^ {0,3}\t/u.test(line) && (!rawCodeLines || rawCodeLines.has(index))) return line;
     // Markdown would parse four leading spaces as an indented code
     // block and display our literal-text escapes instead of decoding them.
     // One structural character reference preserves the whitespace as prose.
@@ -128,6 +127,44 @@ export function clipboardHtmlToMarkdown(html: string): string | null {
   return valid ? source : null;
 }
 
-export function clipboardPlainToMarkdown(text: string): string {
-  return textAsMarkdown(text);
+export interface ClipboardPasteContext {
+  markdown: string;
+  selection: { start: number; end: number };
+}
+
+export function clipboardPlainToMarkdown(text: string, context?: ClipboardPasteContext): string {
+  const initial = textAsMarkdown(text);
+  if (!context || !/^ {0,3}\t/mu.test(text.replace(/\r\n/gu, "\n"))) return initial;
+  const { markdown, selection } = context;
+  if (!Number.isSafeInteger(selection.start) || !Number.isSafeInteger(selection.end)
+    || selection.start < 0 || selection.end < selection.start || selection.end > markdown.length) {
+    return textAsMarkdown(text, new Set());
+  }
+
+  // Judge code versus prose using the actual source surrounding the selection.
+  const candidate = markdown.slice(0, selection.start) + initial + markdown.slice(selection.end);
+  const codes: Array<{ start: number; end: number }> = [];
+  function collect(node: {
+    type: string;
+    position?: { start: { offset?: number }; end: { offset?: number } };
+    children?: readonly unknown[];
+  }) {
+    const start = node.position?.start.offset, end = node.position?.end.offset;
+    if (node.type === "code" && start !== undefined && end !== undefined) {
+      codes.push({ start, end });
+    }
+    for (const child of node.children ?? []) {
+      if (child && typeof child === "object" && "type" in child) collect(child as typeof node);
+    }
+  }
+  collect(parseForumMarkdown(candidate));
+  const codeLines = new Set<number>();
+  let offset = selection.start;
+  initial.split("\n").forEach((line, index) => {
+    if (/^ {0,3}\t/u.test(line) && codes.some((code) => code.start <= offset && offset < code.end)) {
+      codeLines.add(index);
+    }
+    offset += line.length + 1;
+  });
+  return textAsMarkdown(text, codeLines);
 }
