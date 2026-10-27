@@ -1,5 +1,38 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — bounded ATTACH-01 correction A/B implementation handoff (2026-10-27)
+
+Assignment: [#6438118930](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6438118930), following [second adjudication #6437634238](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6437634238). Author implementation-complete, not an independent whole-PR verdict.
+
+Existing [draft PR #245](https://github.com/iliya1947/vico-forum/pull/245), branch `fix/l6-attachment-storage-zip`. Previous reviewed head `86258701e56407f9ee16505aaf092d23559521df`; new stable exact head **`c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`**, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. GitHub head/base re-fetched unchanged, mergeable=true. Eight-file correction; no new branch/PR.
+
+### One writer-settlement lifecycle for A and B
+
+- Existing `write_completed_at` records established terminal writer settlement: successful PUT or a definitive failed/stopped write. It does not by itself authorize metadata; the route still requires the helper's structurally verified `stored` result before metadata admission.
+- Short sniff prefix is rejected before journal/PUT. After PUT failure, the helper cancels upstream; a provably incomplete stopped fixed-length producer can settle, as can explicit bucket proof of settled storage. Generic full-body errors and full-body read failures without a definitive remote result remain unknown: no outcome inferred from error text, elapsed grace or DELETE.
+- Workers adapter counts the bounded streaming producer, distinguishes a full-body unknown failure from an acknowledged result/incomplete stopped writer, and reports explicit internal settlement proof. It cancels its FixedLengthStream readable as well as its pump when the RPC fails/declines, so a definitive rejection without a consuming reader cannot leave a backpressured pump hanging. No whole-body buffering added.
+- Cleanup captures writer settlement under the existing claim transaction **before** storage DELETE. Only that captured settlement can authorize retiring this claim's journal row after DELETE. A completion update appearing during/after DELETE therefore leaves tracking until a later pass whose DELETE starts after settlement. Existing claim token identity, authoritative asset reconciliation and bounded retry fairness retained.
+- A known failed request now has finite journal retirement after grace/DELETE; a genuinely unknown write still retains durable discoverability for late bytes until safe settlement is established. These are intentionally distinct states; unknown transport results are not silently declared collected.
+- No schema/migration/dependency/public route change. PROJECT_STATE synchronized with the actual settlement and pre-DELETE snapshot rules. ZIP algorithms/limits, accepted attachment/editor contracts and CPU candidate C untouched. C remains the previously documented unverified deployment/acceptance boundary.
+
+### Regressions and author verification
+
+- Old-head native control: against `8625870`, desired finite short-body retirement and the protected DELETE→completion interleaving give **2 FAIL / 1 PASS / 49 skipped**. The other B ordering is the passing control. Isolated baseline worktree removed.
+- Corrected attachment native suite: **56 PASS**, including terminal short body, partial read failure, explicit definitive rejection, full-body unknown transport/read controls, and both actual PostgreSQL DELETE/completion interleavings. Late materialization after failed fallback DELETE remains journaled and is deleted on the later properly ordered pass; successful upload/metadata and ordinary cleanup controls retained.
+- Workers adapter suite: **5 PASS**; pre-admission short-prefix regression added. Original ATTACH-02 / ATTACH-STRUCT-01 tests remain in the full app suite.
+- Final local application suite: **1120 tests / 102 files PASS**, 132.43 seconds. Local full native PostgreSQL17 suite: **318 tests / 28 files PASS**, 76.27 seconds.
+- Typecheck PASS; lint 0 errors / 1 existing unused-disable warning in ui.test.tsx. Application and UI-preview builds PASS. Migration history guard (0046/0047 new against main, accepted history unchanged), Drizzle check/generation parity (no new schema drift), 48-table schema parity and runtime privilege probes PASS. Disposable local PG provisioning/diagnostic/recovery/bootstrap probes and built application Worker HTTP smoke PASS.
+- Additional **six real local pinned Workerd controls with native FixedLengthStream** exercised the unchanged public helper+Workers adapter and controlled byte-storage transport: normal→201/stored/settlement1; short body→400/settlement1; partial read error→400/settlement1; definitive rejection without reading→503/settlement1; full-body unknown→503/settlement0; short prefix→400/no PUT/no settlement. This is actual local Workerd stream behavior, with controlled storage—not live R2.
+- That Workerd run caught a difference from Node's TransformStream test double: an unconsumed native FixedLengthStream needed readable cancellation to release the aborted pump. The final code handles it; all six controls then passed. Initial adapter test mocks also needed a valid FixedLengthStream constructor. Final results above include the corrections.
+
+[Exact-head CI #40484192014](https://github.com/iliya1947/vico-forum/actions/runs/40484192014) **SUCCESS**. Jobs checks `122121746586` and database `122121746983` SUCCESS; completed logs independently retrieved and show **1120 application + 318 PostgreSQL tests** and applicable checks PASS. CI evidence is distinct from personally executed local runs.
+
+Bounds: controlled byte storage and local PostgreSQL/Workerd; no real external R2/Cloudflare/Neon/Hyperdrive/OAuth/backup/restore/account/production/browser/owner visual actions. No Free/Paid CPU acceptance or quota claim. Generic full-body unknown results still require real settlement evidence; no unsafe expiry added.
+
+Local evidence under /workspace/work: l6-ab-{baseline,db-target-final,db-full,app-final,type-final,lint-final,build-final,preview,schema,pg-probes,smoke,worker-final}.log; l6-ab-worker-check/{entry.ts,entry.mjs,wrangler.jsonc,results.log,server.log}. Baseline worktree removed, disposable PG and both local Worker processes stopped, implementation worktree/evidence preserved.
+
+Next: Mira starts a **new whole-PR coordinator cycle on c00b416**, then designated independent reviewers excluding the implementation author. Prior head verdicts do not apply to the new implementation. No self whole-PR review, merge, L7/L8, CPU correction or Batch L2 work. Leva STOP.
+
 ## PR #245 — second technical adjudication: A/B confirmed, C deployment boundary (2026-10-27)
 
 Date: 2026-10-27, Asia/Jerusalem. Assignment: service PR #236 comment 6432134667. Stable exact head `86258701e56407f9ee16505aaf092d23559521df`; designated base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. Explicitly assigned technical diagnosis by the implementation author; not an independent whole-PR self-review. No implementation correction performed.
