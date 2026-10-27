@@ -63,13 +63,13 @@ describe("Editor 2.0 clipboard import", () => {
   });
 
   it("protects a literal setext underline and character references across plain clipboard lines", () => {
-    const markdown = clipboardPlainToMarkdown("Heading\\n---\\n~~plain~~ &copy;");
+    const markdown = clipboardPlainToMarkdown("Heading\n---\n~~plain~~ &copy;");
     expect(parseForumMarkdown(markdown).children).toMatchObject([
       { type: "paragraph" },
     ]);
     const paragraph = parseForumMarkdown(markdown).children[0]!;
     expect(paragraph.type).toBe("paragraph");
-    expect(paragraph.children).toMatchObject([{ type: "text", value: "Heading\\n---\\n~~plain~~ &copy;" }]);
+    expect(paragraph.children).toMatchObject([{ type: "text", value: "Heading\n---\n~~plain~~ &copy;" }]);
   });
 
   it("preserves multiline Unicode when plain clipboard text is escaped", () => {
