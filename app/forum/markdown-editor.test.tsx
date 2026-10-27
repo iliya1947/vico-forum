@@ -197,10 +197,13 @@ describe("MarkdownEditor", () => {
     expect(screen.queryByRole("group", { name: "Mention a member" })).not.toBeInTheDocument();
   });
 
-  it.each(["advanced", "simple"] as const)("inserts entity-like member names verbatim in %s mode", async (mode) => {
+  it.each([
+    ["advanced", "Ada &copy;"], ["simple", "Ada &copy;"],
+    ["advanced", "~~Ada &copy;~~"], ["simple", "~~Ada &copy;~~"],
+  ] as const)("inserts literal member name %s / %s without interpreted GFM formatting", async (mode, name) => {
     const lookup = vi.fn(async (url: string) => {
       if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
-      return new Response(JSON.stringify({ users: [{ id: "member-42", name: "Ada &copy;" }] }), {
+      return new Response(JSON.stringify({ users: [{ id: "member-42", name }] }), {
         headers: { "Content-Type": "application/json" },
       });
     });
@@ -224,10 +227,18 @@ describe("MarkdownEditor", () => {
       leaf.textContent = "Hello @Ada";
       fireEvent.input(leaf);
     }
-    const candidate = await screen.findByRole("button", { name: "Ada &copy;" });
+    const candidate = await screen.findByRole("button", { name });
     await userEvent.click(candidate);
-    await waitFor(() => expect(textarea).toHaveValue("Hello [Ada &amp;copy;](/en/users/member-42)"));
+    const label = name === "Ada &copy;" ? "Ada &amp;copy;" : String.raw`\~\~Ada &amp;copy;\~\~`;
+    await waitFor(() => expect(textarea).toHaveValue(`Hello [${label}](/en/users/member-42)`));
     expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
+    if (mode === "simple") {
+      expect(document.querySelector(".markdown-editor-visual del")).toBeNull();
+      expect(document.querySelector(".markdown-editor-visual")?.textContent).toContain(name);
+    } else {
+      await chooseView("preview");
+      expect(document.querySelector(".markdown-editor-preview del")).toBeNull();
+    }
   });
 
   it("wraps the selected text and restores selection/focus", async () => {
@@ -815,6 +826,8 @@ describe("MarkdownEditor", () => {
 
   it.each([
     ["---", String.raw`\---`],
+    ["===", String.raw`\===`],
+    ["    &copy; ~~literal~~", String.raw`&#32;   &amp;copy; \~\~literal\~\~`],
     ["~~literal~~", String.raw`\~\~literal\~\~`],
     ["&copy;", "&amp;copy;"],
     ["ordinary text", "ordinary text"],
@@ -833,6 +846,8 @@ describe("MarkdownEditor", () => {
 
   it.each([
     ["---", String.raw`\---`],
+    ["===", String.raw`\===`],
+    ["    &copy; ~~literal~~", String.raw`&#32;   &amp;copy; \~\~literal\~\~`],
     ["~~literal~~", String.raw`\~\~literal\~\~`],
     ["&copy;", "&amp;copy;"],
     ["ordinary text", "ordinary text"],
