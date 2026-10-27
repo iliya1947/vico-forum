@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-26
+Последнее обновление: 2026-10-27
 
 ## Назначение
 
@@ -55,7 +55,11 @@ parameterized nested lookups не могут обойти provider/local/persist
 validation и затем изменить runtime text через i18next. При
 распознавании поддерживаются quoted values с parentheses и
 интерполируемые `{{variable}}` в JSON options; malformed и
-неподдерживаемый синтаксис отвергается.
+неподдерживаемый синтаксис отвергается. После whole-PR review
+вложенная повторяющаяся regex заменена линейным сканированием
+кавычек и скобок, исключающим экспоненциальную обработку короткого
+ошибочного input; контролируемый полный nesting-token и options
+сохранены.
 
 Изменение локализовано в общем `controlledTokens` boundary;
 published raw UI results, source priority, compiled bundle validation
@@ -63,14 +67,14 @@ published raw UI results, source priority, compiled bundle validation
 отказ в результате provider publication, compiled/verified bundle
 и фактическую интерпретацию опасного nesting i18next. Новых
 schema/migration/dependency, provider и deployment изменений нет.
-Exact-head CI и независимый whole-PR review фиксируются отдельно
-по завершении соответствующих проверок; Batch L2 LOC-06 ещё не начат.
+Реализация Batch L2 завершена; новый whole-PR review проводится только
+после bounded correction и повторного exact-head CI.
 
 ## LITERAL-TEXT-01 — буквальный текст в Simple (2026-10-27)
 
 В Batch L2 шаге 3/5 уточнено общее экранирование literal prose для
-визуального ввода и plain-text clipboard path. Тройные дефисы в начале
-строки больше не преобразуются в thematic break или setext underline,
+визуального ввода и plain-text clipboard path. Setext-маркеры из дефисов и знаков равенства в начале
+строки больше не преобразуются в headings/thematic breaks,
 тильды экранируются от GFM strikethrough, а буквальные ampersands
 сериализуются через `&amp;`, чтобы `&copy;` и другие character references
 не меняли видимый текст. Существующие обычные Markdown-линии,
@@ -79,8 +83,10 @@ Exact-head CI и независимый whole-PR review фиксируются �
 режимов.
 
 Служебный `&#32;` / `&#9;` для начала visual leaf по-прежнему создаётся
-отдельно от экранирования пользовательских символов, чтобы сохранить
-ведущие пробелы и tab без повторного преобразования entity. Добавлены
+отдельно от экранирования пользовательских символов. Plain-text paste
+также защищает 4+ начальных пробела и leading tab на каждой строке
+одним structural entity до escaping, чтобы не превращать пользовательский
+prose в indented code с видимыми `&amp;` и обратными слэшами. Добавлены
 pure parser/regression tests для `---`, `~~literal~~`, `&copy;`,
 обычного текста и setext case, а также mounted Simple typing/paste
 и leading-whitespace checks. Markdown toolbar actions, Advanced source
@@ -94,8 +100,9 @@ editing, DB и authz contracts не менялись. Applicable exact-head CI
 авторитетным буквальным текстом: символ `&` экранируется как `&amp;` при
 генерации Markdown-ссылки, чтобы последовательности вроде `&copy;`,
 `&amp;` или `&#169;` не декодировались в другие отображаемые символы.
-Остальное Markdown-экранирование имени, server-supplied member ID и
-profile destination остаются прежними.
+Whole-PR correction дополнительно экранирует `~`: GFM `~~name~~`
+больше не превращает буквальную authoritative подпись в зачёркивание.
+Server-supplied member ID и profile destination остаются прежними.
 
 Pure Markdown-AST regressions проверяют буквальное значение подписи после
 парсинга и immutable recipient ID; mounted editor regressions проверяют
