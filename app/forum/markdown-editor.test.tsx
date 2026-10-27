@@ -813,6 +813,59 @@ describe("MarkdownEditor", () => {
     expect(document.querySelector(".markdown-editor-visual h1, .markdown-editor-visual h2")).toBeNull();
   });
 
+  it.each([
+    ["---", String.raw`\---`],
+    ["~~literal~~", String.raw`\~\~literal\~\~`],
+    ["&copy;", "&amp;copy;"],
+    ["ordinary text", "ordinary text"],
+  ])("preserves typed Simple literal text %s in the visual leaf", (original, expectedSource) => {
+    renderEditor(<form><label htmlFor="literal-text">Body</label>
+      <MarkdownEditor id="literal-text" name="body" defaultValue="Before" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = original;
+    fireEvent.input(leaf);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea).toHaveValue(expectedSource);
+    expect(new FormData(textarea.form!).get("body")).toBe(expectedSource);
+    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')).toHaveTextContent(original);
+    expect(document.querySelector(".markdown-editor-visual hr, .markdown-editor-visual del")).toBeNull();
+  });
+
+  it.each([
+    ["---", String.raw`\---`],
+    ["~~literal~~", String.raw`\~\~literal\~\~`],
+    ["&copy;", "&amp;copy;"],
+    ["ordinary text", "ordinary text"],
+  ])("preserves pasted Simple literal text %s without interpretation", (original, expectedSource) => {
+    renderEditor(<form><label htmlFor="literal-paste">Body</label>
+      <MarkdownEditor id="literal-paste" name="body" defaultValue="Before" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const range = document.createRange();
+    range.selectNodeContents(leaf);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? original : "" } });
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea).toHaveValue(expectedSource);
+    expect(new FormData(textarea.form!).get("body")).toBe(expectedSource);
+    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')).toHaveTextContent(original);
+    expect(document.querySelector(".markdown-editor-visual hr, .markdown-editor-visual del")).toBeNull();
+  });
+
+  it("keeps literal ampersands when native typing follows protected Simple leading whitespace", () => {
+    renderEditor(<form><MarkdownEditor id="literal-leading-space" name="body" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    leaf.textContent = "    &copy;";
+    fireEvent.input(leaf);
+    expect(document.querySelector('input[name="body"]')).toHaveValue("&#32;   &amp;copy;");
+    expect(leaf).toHaveTextContent("    &copy;");
+    expect(leaf).toHaveFocus();
+  });
+
   it("does not turn visual source switching into a destructive Markdown round-trip", async () => {
     const source = "  text  \r\n\r\n**bold**\r\n\r\n```tsx\nhello();\n```";
     renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
