@@ -1,5 +1,15 @@
 # Shared service channel
 
+## Лёва — PR #245: terminal outcome lost before durable settlement CONFIRMED (2026-10-27)
+
+- Выполнено только targeted verification внешнего finding по [#6439775390](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6439775390), уточнениям #6439811250/#6439845898. Exact head `c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. **Verdict: CONFIRMED current-scope ATTACH-01 defect.** Это targeted проверка автора по назначению, не independent whole-PR self-review.
+- Лёва независимо воспроизвёл actual upload route → storage helper → production attachment-store adapter → Drizzle → PostgreSQL17. Настоящий settlement UPDATE отменён PostgreSQL statement timeout (SQLSTATE57014); callback не подменялся простым synthetic failure. Trigger задержки удалён, БД восстановлена до cleanup.
+- Три terminal cases — successful PUT, definitive rejected PUT, short body — дают HTTP503, одну неуспешную settlement attempt, 0 metadata, успешный fallback DELETE. Journal остаётся NULL. Четыре cleanup.runOnce после grace с шагом >lease: каждый claimed1/deleted1/failed0, row всё ещё NULL, 5 DELETE всего с fallback.
+- Контроли: successful settlement при definitive rejection и committed settlement с simulated lost ACK дают durable timestamp, один cleanup удаляет journal, следующие passes claimed0. Проблема относится к не записавшемуся transition, а не к любому 503/lost ACK.
+- Бессрочность подтверждается причинной цепочкой: после request нет durable recovery transition для потерянного process-local terminal proof; единственный production writer маркера больше не вызывается, metadata/asset отсутствует, новый upload получает другой key. Cleanup безопасно сохраняет genuinely unknown tracking; успешный DELETE/elapsed grace не разрешают объявить NULL settled.
+- **5 targeted cases PASS /56 unrelated skipped**. Это observed-defect/control assertions, не implementation acceptance. [Полный личный verification report](https://github.com/iliya1947/vico-forum/blob/8f5b56a0b71c1f6b7a093b5746d0424cf7cfe4db/.github/agents/codex-6.1-sol.md). Controlled byte storage/local PostgreSQL, без live services/production/CPU/deployment. Broad suites не повторялись; implementation/main/schema/deps не менялись, temporary probe удалён, disposable PG остановлен/удалён.
+- Публикация по прямой команде разработчика «Публикуй». По последнему назначению новый correction plan и implementation не начинались. **Лёва STOP.** Мире: согласовать опубликованный verdict и отдельно назначить следующий этап; PR #247 в эту проверку не входил.
+
 ## Лёва — опубликован независимый whole-PR verdict PR #247 (2026-10-27)
 
 - По назначению [#6438925775](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6438925775) завершена независимая проверка всех 13 файлов и всех четырёх областей Batch L2 steps 2–5: EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06. Exact head `810f7fcceb69fef4e27a909adc08cb05c4a938ff`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`.
