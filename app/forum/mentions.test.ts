@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { parseForumMarkdown } from "../markdown-syntax";
 import { mentionProfileLink, mentionTokenAtCaret, publishedMentionRecipients } from "./mentions";
 
 describe("mention authoring tokens", () => {
@@ -20,6 +21,21 @@ describe("mention authoring tokens", () => {
     expect(mentionProfileLink("Ada Lovelace", "/ru/users/123")).toBe("[Ada Lovelace](/ru/users/123)");
     expect(mentionProfileLink("A[B]*", "/he/users/abc")).toBe(String.raw`[A\[B\]\*](/he/users/abc)`);
   });
+  it("keeps GFM strikethrough markers literal in the authoritative mention label", () => {
+    const name = "~~Ada &copy;~~";
+    const markdown = mentionProfileLink(name, "/en/users/member-42");
+    expect(markdown).toBe(String.raw`[\~\~Ada &amp;copy;\~\~](/en/users/member-42)`);
+    const root = parseForumMarkdown(markdown);
+    expect(root.children).toMatchObject([{
+      type: "paragraph",
+      children: [{ type: "link", url: "/en/users/member-42", children: [
+        { type: "text", value: name },
+      ] }],
+    }]);
+    expect(JSON.stringify(root)).not.toContain('"delete"');
+    expect(publishedMentionRecipients(markdown)).toEqual(["member-42"]);
+  });
+
   it.each([
     "Ada &copy;",
     "Alice &amp; Bob",
