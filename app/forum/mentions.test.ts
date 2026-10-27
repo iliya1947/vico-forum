@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fromMarkdown } from "mdast-util-from-markdown";
 import { mentionProfileLink, mentionTokenAtCaret, publishedMentionRecipients } from "./mentions";
 
 describe("mention authoring tokens", () => {
@@ -19,6 +20,25 @@ describe("mention authoring tokens", () => {
     expect(mentionProfileLink("Ada Lovelace", "/ru/users/123")).toBe("[Ada Lovelace](/ru/users/123)");
     expect(mentionProfileLink("A[B]*", "/he/users/abc")).toBe(String.raw`[A\[B\]\*](/he/users/abc)`);
   });
+  it.each([
+    "Ada &copy;",
+    "Alice &amp; Bob",
+    "Code &#169; reviewer",
+    "Name & plain",
+  ])("preserves the literal mention label %s through Markdown parsing", (name) => {
+    const markdown = mentionProfileLink(name, "/en/users/member-42");
+    expect(markdown).toContain("&amp;");
+    expect(fromMarkdown(markdown).children[0]).toMatchObject({
+      type: "paragraph",
+      children: [{
+        type: "link",
+        url: "/en/users/member-42",
+        children: [{ type: "text", value: name }],
+      }],
+    });
+    expect(publishedMentionRecipients(markdown)).toEqual(["member-42"]);
+  });
+
 });
 
 
