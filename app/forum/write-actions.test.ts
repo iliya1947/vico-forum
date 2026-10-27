@@ -1497,7 +1497,7 @@ describe("forum write route actions", () => {
       data: expectedOutcome === "queued"
         ? { operation: "contentGeneration", outcome: "queued" }
         : { operation: "contentGeneration", outcome: "no-op", reason: "no-translatable-content" },
-      init: { status: 200 },
+      init: { status: expectedOutcome === "queued" ? 202 : 200 },
     });
     expect(readCurrentRevision).toHaveBeenCalledWith("post-1");
     if (expectedOutcome === "no-op") {
