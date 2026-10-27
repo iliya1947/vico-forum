@@ -16,7 +16,8 @@ export function mentionTokenAtCaret(markdown: string, caret: number): MentionTok
 
 export function mentionProfileLink(name: string, profilePath: string): string {
   // Markdown link text must remain text, never author-controlled link syntax.
-  const escapedName = [...name].map((char) => "\\[]*_".includes(char) || char.charCodeAt(0) === 96 ? "\\" + char : char).join("");
+  const escapedName = [...name].map((char) => char === "&" ? "&amp;"
+    : "\\[]*_".includes(char) || char.charCodeAt(0) === 96 ? "\\" + char : char).join("");
   return `[${escapedName}](${profilePath})`;
 }
 /** Recipients must come from parsed profile links, not bare @words or displayed names. */
