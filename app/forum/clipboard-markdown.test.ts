@@ -68,7 +68,7 @@ describe("Editor 2.0 clipboard import", () => {
       { type: "paragraph" },
     ]);
     const paragraph = parseForumMarkdown(markdown).children[0]!;
-    expect(paragraph.type).toBe("paragraph");
+    if (paragraph.type !== "paragraph") throw new Error("Expected literal paragraph, not Markdown formatting");
     expect(paragraph.children).toMatchObject([{ type: "text", value: "Heading\n---\n~~plain~~ &copy;" }]);
   });
 
