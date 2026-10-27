@@ -1,5 +1,40 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — bounded L6 correction implementation handoff (2026-10-27)
+
+Assignment: [#6431047906](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6431047906), following targeted adjudication [#6431037229](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6431037229). Author implementation-complete; **not an independent whole-PR verdict**.
+
+Existing branch `fix/l6-attachment-storage-zip` and [draft PR #245](https://github.com/iliya1947/vico-forum/pull/245). Previous reviewed/adjudicated head `f673c90cb8d95c68623b690f4f3a0f340f24e03a`. Correction commit `18b687e`; final stable exact head **`86258701e56407f9ee16505aaf092d23559521df`**, a merge of correction and accepted main `082530ab6a62c37f4d7acf17556bc496e677ab5f`. Integration conflict was solely PROJECT_STATE; current main's EDITOR-04 state/code preserved alongside corrected L6 state. GitHub head/base re-fetched unchanged, mergeable=true. No new branch/PR.
+
+### Implemented correction and essential bounds
+
+1. **ATTACH-01:** forward migration `0047_attachment_upload_write_completion` adds nullable `write_completed_at` to the existing L6 journal. Successful PUT is confirmed before that marker is written; metadata admission requires it and the existing unclaimed row lock. Cleanup may DELETE an old unfinished/unknown writer's key, but cannot retire its journal row on that DELETE success. A late materialization therefore remains discoverable and is retried after the existing claim lease. Once PUT completion is known, successful deletion can retire the row. Confirmed authoritative assets still transfer to ordinary reference-aware cleanup after lost metadata ACK. Unknown PUT outcomes deliberately retain retry tombstones until completion is established; a fixed elapsed grace is not treated as proof that no write remains possible. Retry rows rotate by last claim time, and each default bounded pass reserves progress for ordinary assets. No scheduler, public endpoint or general attachment redesign.
+2. **ATTACH-STRUCT-01:** central entries are indexed and local records validated in physical-offset order, independently of central order. The next actual local offset bounds this record's header/data/required descriptor; the missing descriptor cannot alias bytes of the next header. Duplicate/overlapping local offsets reject. Existing signed/unsigned classic/ZIP64 descriptors and CRC/signature ambiguity remain supported.
+3. **ATTACH-02:** read central metadata in128KiB chunks, retain only that metadata bounded by the50MB upload cap, and use compact12-byte-per-entry ordering indexes. Local validation uses a two-block128KiB cache and physical traversal. No whole compressed payload buffering or decompression. The valid65,535-entry storage finalization now makes **45GETs**, both normal and reversed central order, maximum range128KiB. Actual upload action returns201 within a990-GET test cap; the lower Free internal-service budget is covered without a quota override.
+
+Schema manifest targets0047 and includes the new column; original accepted migrations unchanged. No dependency/public contract changes. PROJECT_STATE updated only for implemented behavior; no preclaimed acceptance. Merged TAR/Remove/405/Editor lifecycle preserved.
+
+### Regression and author verification
+
+- New ZIP/storage regression tests copied onto the old `f673c90` code: **4 FAIL /36 PASS**, proving old descriptor acceptance and per-entry GET amplification; isolated baseline worktree removed after the control. The same targeted current ZIP/storage/action suites: **65 PASS**.
+- Actual action→Drizzle→PostgreSQL pending-PUT regressions retain the journal during cleanup, fence late metadata, preserve discoverability after failed fallback DELETE and reconcile after confirmed completion/lease retry. Controls before grace201 and after grace with successful DELETE remain valid. Additional unknown-write test materializes bytes after a successful empty-key DELETE and proves recurring cleanup can find/delete them; retry fairness test preserves settled-asset progress. Current attachment native suite **49 PASS**. These replace the old counterexample behavior recorded in the adjudication.
+- Full final local application suite: **1116 tests /102 files PASS**,151.80seconds.
+- Full native PostgreSQL17 suite: **311 tests /28 files PASS**,75.56seconds.
+- Typecheck PASS; lint0errors/1existing unused-disable warning in ui.test.tsx.
+- Application build, UI preview build, built local Worker HTTP smoke PASS.
+- Drizzle metadata and generation parity PASS (no additional schema changes); accepted migration-history guard PASS (0046+0047 new against current main); production schema manifest parity48tables, runtime positive/negative privileges, web provisioning/diagnostic/recovery/bootstrap disposable-PG probes PASS.
+- Dedicated resource measurement:65,535 fixed-width distinct named empty entries,5,636,032bytes;45GETs for both normal/reversed central directory, max range131,072bytes, outcome stored.
+
+[Exact-head CI #40432588993](https://github.com/iliya1947/vico-forum/actions/runs/40432588993) **SUCCESS**. Database job `121953595669` and checks job `121953596192` both SUCCESS; retrieved completed job logs independently confirm1116app and311PG tests plus applicable checks. Local verification and CI are distinguished above.
+
+Initial author checks found a test-fixture issue (makeOrphan retained a live draft ref, and intentionally pending journal rows needed cleanup between tests), and TypeScript rejected a fixture imported outside its composite include. Fixed the test setup/isolation and moved the shared fixture under app; no implementation workaround or configuration expansion. Final counts above are the successful final runs.
+
+Bounds: controlled byte storage / synthetic ZIPs and local PostgreSQL/Worker; no live R2/Cloudflare/Neon/Hyperdrive/OAuth/backup/restore/production/browser/owner visual actions. Actual external quotas are represented by counted-storage tests; no live account quota or deployment claim. Unresolved writer tombstones are intentionally retained, not silently declared collected. Disposable PG and local preview stopped; baseline worktree removed; implementation worktree/evidence retained for assigned follow-up.
+
+Next: Mira starts a **new whole-PR cycle** on stable `8625870`, followed by designated independent reviewers excluding the implementation author. Old head reviews/adjudication do not supply a verdict for this new head. No self-review, merge, L7/L8 or Lira package changes. Leva STOP.
+
+Local evidence: l6-correction-{app-full,db-full,target3,db-target4,type-final,lint-final,build,preview,schema,pg-probes,smoke,baseline-control,resource}.log under /workspace/work; resource probe source retained there.
+
 ## PR #245 — targeted technical adjudication: three CONFIRMED findings (2026-10-27)
 
 Assignment: #236 comment 6430502049. Date 2026-10-27 UTC. Exact head `f673c90cb8d95c68623b690f4f3a0f340f24e03a`, base `bff130db5fb245e3a9ad3391fad54a2fe81aac88`. Author of implementation conducting explicitly assigned technical adjudication, not independent whole-PR self-review. No implementation correction performed. Published by the owner's explicit «Публикуй» command.
