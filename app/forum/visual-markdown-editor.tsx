@@ -44,7 +44,13 @@ export function escapeVisualMarkdownText(value: string): string {
   if (/^[ ]{4}|^\t/u.test(value)) {
     // This leading-whitespace entity is structural and must not be escaped
     // again with the user's literal ampersands.
-    return (value[0] === "\t" ? "&#9;" : "&#32;") + clipboardPlainToMarkdown(value.slice(1));
+    const structuralPrefix = value[0] === "\t" ? "&#9;" : "&#32;";
+    // Later tabs belong to the prose started by this structural entity;
+    // don't reinterpret the suffix alone as a new indented code block.
+    return structuralPrefix + clipboardPlainToMarkdown(value.slice(1), {
+      markdown: structuralPrefix,
+      selection: { start: structuralPrefix.length, end: structuralPrefix.length },
+    });
   }
   return clipboardPlainToMarkdown(value);
 }

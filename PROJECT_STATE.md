@@ -94,8 +94,15 @@ indented-code и prose в действительном Markdown context (вкл�
 Общий контекстный path применяется также к plain-text fallback таблиц и
 явной plain-text вставке. Для 4+ начальных пробелов structural entity
 сохраняется.
-Обычное TSV-преобразование и native typing не менялись. Дополнительно
-добавлены parser и mounted Ctrl+Shift+V → published ForumMarkdown regressions
+Обычное TSV-преобразование и предыдущее поведение native typing на этом
+этапе не менялись. После следующей bounded correction Simple native input с
+двумя ведущими tabs или четырьмя пробелами и tab учитывает уже созданный
+structural prefix `&#9;` / `&#32;` при решении, является ли остаток indented code.
+Поэтому `&copy;` и `~~literal~~` в обычном введённом тексте экранируются,
+не меняя намеренный Markdown/code в Advanced или clipboard paste semantics.
+Добавлены parser и mounted native-input → FormData → public renderer regressions
+на оба mixed-indentation случая с проверками intentional code в Advanced.
+Дополнительно добавлены parser и mounted Ctrl+Shift+V → published ForumMarkdown regressions
 для raw tab, `&copy;`, `~~literal~~` и existing whitespace/Setext controls. Markdown toolbar actions, Advanced source
 editing, DB и authz contracts не менялись. Applicable exact-head CI
 и независимый whole-PR review фиксируются по факту отдельно.

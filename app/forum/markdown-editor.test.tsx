@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { escapeVisualMarkdownText } from "./visual-markdown-editor";
 import { ForumMarkdown } from "./markdown";
 import { mentionProfileLink, publishedMentionRecipients } from "./mentions";
 import { parseForumMarkdown } from "../markdown-syntax";
@@ -1907,4 +1908,47 @@ it.each([
     expect(rendered.container.querySelector("pre code")).toBeNull();
     expect(rendered.container.textContent).toContain("&copy; ~~literal~~");
   }
+});
+
+it.each([
+  ["\t\t&copy; ~~literal~~", "&#9;\t&amp;copy; \\~\\~literal\\~\\~"],
+  ["    \t&copy; ~~literal~~", "&#32;   \t&amp;copy; \\~\\~literal\\~\\~"],
+] as const)("protects nested Simple indentation without leaking Markdown syntax: %j", (typed, expected) => {
+  const serialized = escapeVisualMarkdownText(typed);
+  expect(serialized).toBe(expected);
+  expect(parseForumMarkdown(serialized).children[0]?.type).toBe("paragraph");
+
+  renderEditor(<form><label htmlFor="native-indentation">Body</label>
+    <MarkdownEditor id="native-indentation" name="body" />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();
+  const firstInput = typed.startsWith("\t") ? "\t" : "    ";
+  leaf.textContent = firstInput;
+  fireEvent.input(leaf, { data: firstInput });
+  expect(leaf).toHaveFocus();
+  expect(leaf).toBeInTheDocument();
+  leaf.textContent = typed;
+  fireEvent.input(leaf, { data: typed.slice(firstInput.length) });
+
+  const form = document.querySelector("form")!;
+  const body = new FormData(form).get("body");
+  expect(body).toBe(expected);
+  const published = renderEditor(<ForumMarkdown>{body as string}</ForumMarkdown>).container;
+  expect(published.querySelector("pre, code, del")).toBeNull();
+  expect(published.textContent).toContain("&copy; ~~literal~~");
+  expect(leaf).toHaveFocus();
+});
+
+it.each([
+  "\t\t&copy; ~~literal~~",
+  "    \t&copy; ~~literal~~",
+])("preserves intentional indented code in Advanced source %j", (markdown) => {
+  renderEditor(<form><label htmlFor="advanced-indentation">Body</label>
+    <MarkdownEditor id="advanced-indentation" name="body"
+      defaultAuthoringMode="advanced" defaultValue={markdown} />
+  </form>);
+  expect(new FormData(document.querySelector("form")!).get("body")).toBe(markdown);
+  const published = renderEditor(<ForumMarkdown>{markdown}</ForumMarkdown>).container;
+  expect(published.querySelector("pre code")?.textContent).toContain("&copy; ~~literal~~");
 });
