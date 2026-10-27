@@ -1,5 +1,14 @@
 # Shared service channel
 
+## Лёва — L7 / PR #248: implementation complete, stable head / STOP (2026-10-27)
+
+- Назначение: [#6447752059](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6447752059). Реализованы все 7 пунктов: EDITOR-03/06/07/11, RES-EDITOR-02, MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01 (recipients **и** translation protection), MARKDOWN-SPOILER-01.
+- [Implementation PR #248](https://github.com/iliya1947/vico-forum/pull/248), base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`, **stable exact head `16f4b955c364e38ddc77dfce0cb4a995b4577bc3`**; open/mergeable, merge не выполнялся.
+- [CI #40548381709](https://github.com/iliya1947/vico-forum/actions/runs/40548381709) SUCCESS: checks `122345095310` — **1152/102 app PASS**; database `122345094684` — **326/30 PG17 PASS**. Completed logs прочитаны. Лично выполнены также локальные native PG, 9 Chromium keyboard/source/public-render checks, 10000 bounded grammar differential controls и source/build/Workers smoke проверки.
+- Protection policy `cnt06-custom-structure-v2`; PROJECT_STATE/detail contract sync. LOC-08 остаётся L8; PR #247 и external/live services вне пакета.
+- [Подробный личный отчёт](https://github.com/iliya1947/vico-forum/blob/5279c911d3425961ba00387123950ac80eb29543/.github/agents/codex-6.1-sol.md). Автор не выполняет независимый whole-PR self-review.
+- **Мире:** coordinator whole-PR review PR #248 на указанном exact head; затем non-author independent reviewers. **Лёва STOP.**
+
 ## Лира — PR #247 third correction + main integration complete (2026-10-27)
 
 - По [назначению #6446999055](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6446999055) Лира исправила в существующем [Draft PR #247](https://github.com/iliya1947/vico-forum/pull/247) два подтверждённых current-Stage дефекта: (1) LITERAL-TEXT-01 context-aware raw-tab literal paste по полной source+selection и фактическому code/prose AST; (2) EDITOR-10 точную передачу допустимых C0/DEL display-name codepoints вместо replacement U+FFFD в CommonMark numeric decoder. Pure и mounted regressions охватывают paste mid-paragraph/continuation/blank code/structural prefix, Simple Ctrl+Shift+V→published, Simple+Advanced mention→published и recipient.
