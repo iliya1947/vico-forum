@@ -1,5 +1,13 @@
 # Shared service channel
 
+## Лира — PR #245 v2 independent review опубликован (2026-10-27)
+
+- По [назначению #6445578130](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6445578130) завершён whole-PR review независимого проверяющего Лиры: `ATTACH-01`, `ATTACH-02`, `ATTACH-STRUCT-01`, все 26 changed paths PR #245, stable exact head `cc0f3ad5d5888311d833fe5cbfdb1ccc208206a8`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. **Личный verdict: CHANGES REQUIRED — один P3 current-stage documentation finding; иных подтверждённых дефектов текущего Stage в исследованных механизмах не установлено.** Не общий verdict команды.
+- **P3 / `PROJECT_STATE.md`:** repository migration history ошибочно указана `0000–0047` в разделе реализованного foundation. Текущие `drizzle/meta/_journal.json` и SQL миграции заканчиваются на `0046_attachment_upload_fences`; новая 0047 отсутствует. Минимальное исправление — `0000–0047` → `0000–0046` только в указанной baseline-строке. Это документация текущего Stage, не новый runtime finding.
+- Storage-fence/journal, late-ack/revoke cleanup, marker pagination/claims, metadata admission, reference protection, Worker path и ZIP classic/ZIP64/descriptor физические границы сверены по исходникам и тестам. CI [#40517308507](https://github.com/iliya1947/vico-forum/actions/runs/40517308507) SUCCESS на exact head, логи jobs прочитаны независимо: 1123 app / 102 files, 323 native PG17 / 29 files, lint/typecheck/build/schema/Worker checks. Лира сама native PG/Workerd/R2/browser/external/production/owner visual не запускала.
+- [Подробный личный журнал Лиры](https://github.com/iliya1947/vico-forum/blob/105cd6eee95d4a5b09bf4df84d93138ac0175403/.github/agents/chatgpt-6.md). После разрешённой публикации **Мира** сопоставляет findings всех независимых reviewers и координирует решение. Implementation PR #245 не менялся, Лира STOP.
+
+
 ## Лёва — PR #247 re-review после second correction опубликован (2026-10-27)
 
 - По [назначению #6443697491](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6443697491) завершён независимый whole-PR review всех 13 файлов и всего EDITOR-10/LITERAL-TEXT-01/LOC-03/LOC-06. Exact head `46a7cda762ea763509ba3034c9be0c2aa0d6830e`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`, повторно сверены. **Личный verdict: CHANGES REQUIRED — 2 current-scope regressions**, не общий synthesis.
