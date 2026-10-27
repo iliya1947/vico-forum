@@ -134,6 +134,13 @@ export class ContentPostBodyTranslationPlanner {
       return original(targetLocale, "revision-not-current");
     }
 
+    // Attachment-only bodies and protected-only Markdown have no translation
+    // unit. Do not send blank authoritative content to locale normalization.
+    const protectedDocument = protectMarkdownForTranslation(authoritativeRevision.originalContent);
+    if (protectedDocument.segments.length === 0) {
+      return original(targetLocale, "no-translatable-content");
+    }
+
     const sourcePlan = await this.dependencies.sourceLocaleResolver.plan(
       authoritativeRevision,
       targetLocale,
@@ -143,11 +150,6 @@ export class ContentPostBodyTranslationPlanner {
         targetLocale,
         sourcePlan.reason === "same-locale" ? "same-locale" : "source-unresolved",
       );
-    }
-
-    const protectedDocument = protectMarkdownForTranslation(authoritativeRevision.originalContent);
-    if (protectedDocument.segments.length === 0) {
-      return original(targetLocale, "no-translatable-content");
     }
 
     if (!this.dependencies.providerCapability.supports({
