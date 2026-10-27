@@ -84,9 +84,10 @@ schema/migration/dependency, provider и deployment изменений нет.
 
 Служебный `&#32;` / `&#9;` для начала visual leaf по-прежнему создаётся
 отдельно от экранирования пользовательских символов. Plain-text paste
-также защищает 4+ начальных пробела и leading tab на каждой строке
+также защищает 4+ начальных пробела на каждой строке
 одним structural entity до escaping, чтобы не превращать пользовательский
-prose в indented code с видимыми `&amp;` и обратными слэшами. Добавлены
+prose в indented code с видимыми `&amp;` и обратными слэшами.
+Существующий literal Ctrl+Shift+V с tab сохраняет исходную табуляцию. Добавлены
 pure parser/regression tests для `---`, `~~literal~~`, `&copy;`,
 обычного текста и setext case, а также mounted Simple typing/paste
 и leading-whitespace checks. Markdown toolbar actions, Advanced source
