@@ -1,5 +1,84 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / L7 — verification согласованных findings, без correction (2026-10-27)
+
+**Автор проверки:** Лёва — Codex-6.1 Sol, автор реализации. Это targeted verification трёх согласованных families, **не независимый whole-PR review**.
+**Действующее назначение:** [#6451338805](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6451338805), заменившее correction-поручение #6451308188.
+**Reconciliation:** [#6451237180](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6451237180).
+**Проверенный PR:** [#248](https://github.com/iliya1947/vico-forum/pull/248), exact head `16f4b955c364e38ddc77dfce0cb4a995b4577bc3`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Remote head проверен в начале и перед публикацией; не изменился.
+
+**Технический verdict: все 3 families подтверждены как current-Stage defects. Неверных findings среди назначенных нет. Ни implementation, ни project documentation не менялись; correction не начиналась.**
+
+### 1. EDITOR-03 — CONFIRMED; nested wrappers и link whitespace различаются по непосредственной причине
+
+**Nested reproduction:** source `**alpha *beta gamma* delta**`, выделить только `beta` в Simple и выполнить Clear formatting. Реальный submitted source:
+```md
+**alpha **beta ***gamma* delta**
+```
+Публичный renderer выводит literal `**alpha **`; невыделенный `alpha` теряет strong. Helper и настоящий toolbar path в Chromium дали один и тот же результат.
+
+**Причина:** `editor-document.ts:597–612` вычисляет позиции закрытия/повторного открытия по raw slices исходника. Внешний prefix оканчивается delimiter вложенного emphasis, скрывающим trailing space. После удаления inner delimiter outer closing оказывается после whitespace и нарушает CommonMark flanking. Расчёт не учитывает видимый остаток после реконструкции вложенных wrappers.
+
+**Дополнительный nested-link control:** `[**alpha beta**](https://x)`, clear `beta` →
+```md
+[**alpha**](https://x) beta[](https://x)
+```
+В actual public DOM появляются две ссылки, вторая с пустым textContent. Внешний suffix считается непустым из-за raw `**`, хотя это удаляемый delimiter ребёнка; затем link открывается повторно без оставшегося видимого содержимого. Это та же family некорректной реконструкции nested formatting.
+
+**Отдельный обязательный subcase — link boundary whitespace:** `[alpha beta](https://x)`, clear только `alpha` → `alpha [beta](https://x)`. Невыделенный пробел оказывается вне anchor: before link text `alpha beta`, after `beta`. Это **не видимая потеря символа или поломка URL**: plain text остаётся `alpha beta`, но меняется link membership невыделенного пробела.
+
+Непосредственная причина whitespace subcase — применение emphasis-style trim к link delimiters. Link label допускает boundary whitespace; переносить его наружу не требуется. Контроль на accepted base даёт `alpha[ beta](https://x)`; тот же current parser сохраняет link text ` beta`. Значит whitespace subcase — регрессия L7, а не ограничение renderer/CommonMark. Nested/empty-link неисправности воспроизводятся и на accepted base (с несколько иным source), то есть остаются незакрытыми частями исходного EDITOR-03.
+
+**Current contract:** docs/EDITOR.md:39 и :81 — содержимое/нетронутые фрагменты сохраняются, Clear применяется только к выделенному содержимому. Flat strong control `**alpha beta**` → `alpha **beta**` работает; это не подтверждает корректность nested/link случаев. Reconciliation корректно объединяет subcases в одну family EDITOR-03, но их непосредственные причины не полностью одинаковы.
+
+### 2. EDITOR-06 — CONFIRMED; уточнена причина на обоих visual boundaries
+
+Source `**alpha *beta gamma* delta**`.
+- Native Enter **перед beta** → `**alpha **\n\n***beta gamma* delta**`: первый paragraph — literal `**alpha **`, strong потерян.
+- Native Enter **после gamma** → `**alpha *beta gamma***\n\n** delta**`: второй paragraph — literal `** delta**`, strong потерян.
+- Контроль **внутри beta**, после `be`, → `**alpha *be***\n\n***ta gamma* delta**`: оба paragraphs сохраняют нужные strong/emphasis и не показывают лишние delimiters.
+
+Все три paths выполнены native Enter в actual Simple component, затем FormData и actual public renderer.
+
+**Причина:** `insertVisualParagraph`, editor-document.ts:390–405, один раз вычисляет leftSpace/rightSpace **до** удаления inner wrapper. Перед beta original prefix заканчивается `*`, после gamma original suffix начинается `*`, поэтому whitespace не обнаружен. Inner-wrapper removal открывает пробел для outer wrapper, но whitespace/flanking не пересчитывается; outer delimiter вставляется на неправильной стороне пробела.
+
+Формулировка «работает по смещённой строке» описывает симптом слишком широко: для этих reproductions ключевой механизм — устаревший whitespace snapshot после удаления вложенного delimiter, а не доказанная самостоятельная ошибка пересчёта всех source offsets. Сам finding верен. На accepted base raw Enter тоже ломал enclosing formatting; current helper не закрыл эти nested boundaries.
+
+**Current contract:** docs/EDITOR.md:39 (смысл, содержимое и нетронутые фрагменты) и исходный agreed EDITOR-06. Начало/конец visual leaf — штатные позиции ввода, не future-only case.
+
+**Связь с EDITOR-03:** общий недостаток модели — raw delimiter text не равен видимому остатку после изменений вложенных wrappers. Но операции/функции и causal paths различны: partial formatting removal и paragraph insertion; это не дубликаты одного пользовательского действия и не основание убрать отдельный finding.
+
+### 3. RES-EDITOR-02 — CONFIRMED; только предыдущий terminal marker в минимальном воспроизведении
+
+Для обоих разрешённых значений `rtl` и `ltr`:
+```text
+Alpha {:vico-dir=rtl}
+
+Beta
+```
+Native Backspace в начале Beta →
+```text
+Alpha {:vico-dir=rtl}Beta
+```
+Before первый public paragraph имеет `dir=rtl`, text `Alpha`; after единственный paragraph имеет `dir=auto`, text содержит literal `{:vico-dir=rtl}`. Для `ltr` наблюдается тот же механизм. Helper и native browser path совпали.
+
+**Причина:** paragraph source range содержит terminal marker; `joinVisualParagraph` удаляет separator после этого полного range (editor-document.ts:448–455), не перенося metadata marker к концу объединённого paragraph. `applyParagraphDirections` в markdown-syntax.ts распознаёт только terminal token; после добавления Beta token закономерно становится обычным текстом. Это не ошибка unsupported value и не translation/serialization path.
+
+**Контрпример, ограничивающий формулировку:** `Alpha\n\nBeta {:vico-dir=rtl}` → `AlphaBeta {:vico-dir=rtl}`; override второго paragraph сохраняется и marker не виден. Поэтому неверно расширять finding до «Backspace всегда теряет любое направление». Минимальный подтверждённый scope — manual marker предыдущего paragraph при join со следующим обычным paragraph. Для подтверждения дефекта не нужен выбор продукта между двумя конфликтующими explicit directions.
+
+**Current contract:** docs/EDITOR.md §9 (:315–319), включая действующий способ сохранения manual override и отсутствие literal marker в visual/public views. Отдельный LOC-08 translation round-trip не задействован.
+
+### Проверки, история и пределы
+
+- **12 helper/AST cases**, **9 actual Chromium component scenarios**, **3 accepted-base Clear controls**; все заявленные outputs и контрпримеры воспроизведены.
+- Browser использовал DOM selections, настоящий toolbar/native Enter/Backspace, FormData и ForumMarkdown. В **9/9** сценариях Undo восстановил точный source; finding не следует расширять до повреждения Undo/history.
+- Локальный component harness с synthetic API responses; публикация в настоящую БД и live forum не выполнялась. Для этих source/DOM findings native PG не требуется. Full suites/typecheck/CI повторно не запускались; прежний green CI не опровергает новые воспроизведения.
+- Артефакты вне checkout: `/workspace/work/l7-findings-verification/helper-results.json`, `helper-summary.jsonl`, `browser-results.json`, `base-results.jsonl`, `probe.ts`, `browser.py`, `base-control.ts`.
+- Репозиторий остался на exact head, tracked/staged diffs отсутствуют; временный dependency symlink удалён, локальные browser/server процессы остановлены.
+- Другие PASS-области L7 не пересматривались и не изменялись; этот отчёт не является новым whole-PR verdict.
+
+**Мире:** targeted verification поддерживает reconciliation: три current-Stage families требуют correction. Настоящее поручение correction не разрешало; для её начала требуется следующее назначение. **Лёва STOP.**
+
 ## PR #248 — L7 implementation handoff (2026-10-27)
 
 **Автор:** Лёва — Codex-6.1 Sol. Это отчёт реализации и её проверок, не независимый whole-PR review.
