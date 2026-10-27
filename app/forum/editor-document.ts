@@ -667,7 +667,7 @@ function applySourceEditPlan(
   return { markdown: next, mapOffset };
 }
 
-/** CommonMark attention delimiters next to link punctuation sometimes need a
+/** Attention delimiters next to punctuation sometimes need a
  * literal character reference on the selected side (as mdast serialization does).
  * This changes no displayed character and leaves unselected source untouched.
  */
@@ -676,7 +676,11 @@ function protectSelectedAttentionBoundaries(
   deletions: EditorSelection[], rewrites: Map<number, string>,
 ): void {
   const punctuation = /[\p{P}\p{S}]/u;
-  const attention = /^[*_~]+|[*_~]+$/gu;
+  // Inspect the neighbor of the outer delimiter family, not of the entire
+  // mixed run: in ~~** the stars determine whether ~~ can open; **~~ is the
+  // symmetric closing case. Homogeneous *** still belongs to one family.
+  const openingAttention = /^([*_~])\1*/u;
+  const closingAttention = /([*_~])\1*$/u;
   function encode(at: number, value: string): void {
     if (!value || /\s/u.test(value) || punctuation.test(value)) return;
     rewrites.set(at, `&#${value.codePointAt(0)!};`);
@@ -684,13 +688,13 @@ function protectSelectedAttentionBoundaries(
   }
   const opening = insertions.get(target.end);
   if (opening && /^[*_~]/u.test(opening)) {
-    const next = opening.replace(attention, "")[0] ?? markdown[target.end] ?? "";
+    const next = opening.replace(openingAttention, "")[0] ?? markdown[target.end] ?? "";
     const previous = Array.from(markdown.slice(target.start, target.end)).at(-1) ?? "";
     if (punctuation.test(next)) encode(target.end - previous.length, previous);
   }
   const closing = insertions.get(target.start);
   if (closing && /[*_~]$/u.test(closing)) {
-    const previous = Array.from(closing.replace(attention, "")).at(-1)
+    const previous = Array.from(closing.replace(closingAttention, "")).at(-1)
       ?? Array.from(markdown.slice(0, target.start)).at(-1) ?? "";
     const next = Array.from(markdown.slice(target.start, target.end))[0] ?? "";
     if (punctuation.test(previous)) encode(target.start, next);

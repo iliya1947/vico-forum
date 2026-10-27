@@ -85,6 +85,44 @@ afterEach(() => {
 
 describe("MarkdownEditor", () => {
   it.each([
+    ["~~**alpha beta**~~", "a"], ["~~**alpha beta**~~", "l"],
+    ["~~*alpha beta*~~", "a"], ["~~*alpha beta*~~", "l"],
+    ["~~alpha beta~~", "l"], ["**~~alpha beta~~**", "l"],
+    ["~~**alpha beta**~~", "alpha"],
+  ])("preserves selected-only nested strike through the actual editor: %s / %s", async (source, selected) => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const start = "alpha beta".indexOf(selected), end = start + selected.length;
+    leaf.focus(); const range = document.createRange();
+    range.setStart(leaf.firstChild!, start); range.setEnd(leaf.firstChild!, end);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range); fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    expect(window.getSelection()!.toString()).toBe(selected);
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe("alpha beta");
+    const walker = document.createTreeWalker(published, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let node: Node | null;
+    while ((node = walker.nextNode())) for (const character of node.textContent ?? "") {
+      const cleared = offset >= start && offset < end;
+      if (character.trim()) {
+        const parent = node.parentElement!;
+        expect(Boolean(parent.closest("del"))).toBe(!cleared);
+        expect(Boolean(parent.closest("strong"))).toBe(!cleared && source.includes("**"));
+        expect(Boolean(parent.closest("em"))).toBe(!cleared && source.includes("*") && !source.includes("**"));
+      }
+      offset += character.length;
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([
     ["**alpha *beta gamma* delta**", "beta gamma", 0, 4, "alpha beta gamma delta", []],
     ["[alpha beta](https://x)", "alpha beta", 0, 5, "alpha beta", [" beta"]],
     ["[**alpha beta**](https://x)", "alpha beta", 6, 10, "alpha beta", ["alpha "]],

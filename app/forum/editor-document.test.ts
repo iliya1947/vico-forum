@@ -9,7 +9,56 @@ import {
   textareaOffsetToSourceOffset, undoEditorEdit,
 } from "./editor-document";
 
+type FormattingNode = {
+  type: string; value?: string; children?: FormattingNode[];
+  position?: { start: { offset?: number } };
+};
+
+function formattingCharacters(markdown: string) {
+  const result: Array<{ character: string; formats: string[]; sourceOffset: number }> = [];
+  function visit(node: FormattingNode, formats: string[] = []) {
+    const active = ["strong", "emphasis", "delete"].includes(node.type) ? [...formats, node.type] : formats;
+    let offset = node.position?.start.offset ?? 0;
+    if (node.type === "text") for (const character of node.value ?? "") {
+      result.push({ character, formats: /\s/u.test(character) ? [] : active, sourceOffset: offset });
+      offset += character.length;
+    }
+    for (const child of node.children ?? []) visit(child, active);
+  }
+  visit(parseForumMarkdown(markdown));
+  return result;
+}
+
 describe("Editor 2.0 lossless document foundation", () => {
+  it.each(["~~**alpha beta**~~", "~~*alpha beta*~~", "~~alpha beta~~", "**~~alpha beta~~**"]
+    .flatMap((source) => ["a", "l", "alpha", "beta"].map((selected) => [source, selected] as const)))("keeps selected-only rendered formatting for %s / %s", (source, selected) => {
+    const start = source.indexOf(selected), end = start + selected.length;
+    const expected = formattingCharacters(source).map(({ character, formats, sourceOffset }) => ({
+      character, formats: sourceOffset >= start && sourceOffset < end ? [] : formats,
+    }));
+    const result = clearInlineMarkdownFormatting(source, { start, end });
+    expect(formattingCharacters(result.markdown).map(({ character, formats }) => ({ character, formats }))).toEqual(expected);
+    expect(formattingCharacters(result.markdown.slice(result.selection.start, result.selection.end))
+      .map((item) => item.character).join("")).toBe(selected);
+  });
+
+  it.each(["𐐀", "б"])("preserves encoded %s on a mixed strike boundary", (selected) => {
+    const source = `~~**${selected}lpha beta**~~`;
+    const start = source.indexOf(selected);
+    const result = clearInlineMarkdownFormatting(source, { start, end: start + selected.length });
+    expect(formattingCharacters(result.markdown).map((item) => item.character).join("")).toBe(`${selected}lpha beta`);
+    expect(formattingCharacters(result.markdown)[0]?.formats).toEqual([]);
+    expect(formattingCharacters(result.markdown).slice(1).filter((item) => item.character.trim())
+      .every((item) => item.formats.includes("delete") && item.formats.includes("strong"))).toBe(true);
+    expect(formattingCharacters(result.markdown.slice(result.selection.start, result.selection.end))
+      .map((item) => item.character).join("")).toBe(selected);
+  });
+
+  it("clears all nested strike formatting without leaving markers", () => {
+    const source = "~~**alpha beta**~~";
+    expect(clearInlineMarkdownFormatting(source, { start: 0, end: source.length }).markdown).toBe("alpha beta");
+  });
+
   it.each([
     ["**alpha *beta gamma* delta**", "beta", "**alpha** beta ***gamma* delta**"],
     ["**alpha *beta gamma* delta**", "gamma", "**alpha *beta*** gamma **delta**"],

@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-27
+Последнее обновление: 2026-10-28
 
 ## Назначение
 
@@ -20,7 +20,7 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## L7 — Editor structural Markdown semantics (2026-10-27)
+## L7 — Editor structural Markdown semantics (2026-10-28)
 
 В implementation-ветке реализован пакет из семи согласованных findings:
 
@@ -30,6 +30,10 @@
   внутри ссылки; пустые residual wrappers не создаются. При необходимости
   CommonMark attention boundary экранируется literal character reference только
   со стороны выделенного текста, с сохранением символов и source-selection mapping.
+  В mixed GFM runs внешний delimiter проверяется отдельно от семьи маркеров ребёнка:
+  `~~**`/`**~~` сохраняют strike pairing и selected-only semantics, включая outer
+  strike с inner strong/emphasis и partial intraword selection. Flat strike,
+  whole-word Clear и reversed nesting остаются supported controls.
 - `EDITOR-06`: Simple Enter закрывает и вновь открывает пересекающие границу inline
   wrappers по фактическим границам после nested reconstruction, включая начало
   и конец visual leaf; исходник соседних блоков не пересериализуется.
