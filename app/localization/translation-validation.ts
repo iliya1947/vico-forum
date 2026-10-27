@@ -112,11 +112,42 @@ function placeholders(value: string): string[] {
     .sort(deterministicCompare);
 }
 
+// Match the default i18next nesting syntax, including JSON options and
+// parentheses within quoted option values. Token equality includes all options:
+// changing `lng` or another option can change the resolved UI text.
+const nestingPattern = /\$t\(((?:[^()"']+|"[^"]*"|'[^']*'|\((?:[^()]|"[^"]*"|'[^']*')*\))*?)\)/gy;
+
+function nestingTokens(value: string): string[] {
+  const tokens: string[] = [];
+  let cursor = 0;
+  while (true) {
+    const start = value.indexOf("$t(", cursor);
+    if (start < 0) return tokens;
+    nestingPattern.lastIndex = start;
+    const match = nestingPattern.exec(value);
+    const parts = match?.[1]?.trim().match(/^([\w.:-]+)(?:\s*,\s*(\{[\s\S]*\}))?$/u);
+    if (!match || !parts) throw new TranslationValidationError("Malformed i18next nesting");
+    if (parts[2]) {
+      // i18next interpolates {{variables}} before parsing nesting options as
+      // JSON. A numeric sentinel lets us verify JSON shape without resolving them.
+      const json = parts[2].replace(/{{\s*[\w.-]+\s*}}/gu, "0");
+      try {
+        const options: unknown = JSON.parse(json);
+        if (!isRecord(options)) throw new Error("nesting options must be a JSON object");
+      } catch {
+        throw new TranslationValidationError("Malformed i18next nesting options");
+      }
+    }
+    tokens.push(match[0]);
+    cursor = start + match[0].length;
+  }
+}
+
 function controlledTokens(value: string): string[] {
   return [
-    ...value.matchAll(/\$t\(\s*([\w.:-]+)\s*\)/g),
-    ...value.matchAll(/<\/?\d+>/g),
-  ].map((match) => match[0]).sort(deterministicCompare);
+    ...nestingTokens(value),
+    ...[...value.matchAll(/<\/?\d+>/g)].map((match) => match[0]),
+  ].sort(deterministicCompare);
 }
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {
