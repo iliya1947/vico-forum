@@ -1,5 +1,53 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — targeted technical verification: lost durable settlement (2026-10-27)
+
+2026-10-27. Задание: #236 comments 6439775390, 6439811250, 6439845898. **Verdict: CONFIRMED current-scope ATTACH-01 defect.** Это проверка внешнего finding по назначению, не independent whole-PR self-review и не новый correction plan.
+
+Проверенный GitHub/local exact head `c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. PR #247 исключён последним назначением и не проверялся. Implementation, schema и dependencies не изменены.
+
+## Независимое воспроизведение
+
+Использован настоящий upload action → storePrivateAttachmentStream → createHyperdriveForumAttachmentStore.completeUploadObjectWrite → Drizzle → disposable PostgreSQL17. Это реальный локальный SQL-вызов через production adapter с отдельным клиентом; внешние Hyperdrive/R2 не подключались. Storage — controlled byte bucket, terminal result известен по завершившемуся PUT, definitive rejection или остановленному short body.
+
+Чтобы проверить потерю записи, а не просто подменить ответ callback, установлен диагностический PostgreSQL BEFORE UPDATE OF write_completed_at trigger с pg_sleep(0.2). Клиент settlement получил statement_timeout=50 ms. PostgreSQL сам отменил настоящий UPDATE с SQLSTATE 57014 / `canceling statement due to statement timeout`; adapter преобразовал исключение в ForumAttachmentStorageUnavailableError. Затем trigger удалён, БД снова доступна до первого cleanup. Это моделирование окончательно не записавшегося settlement, не предположение о природе неизвестного commit.
+
+| Writer outcome | Settlement fault | HTTP | Calls settlement / metadata | Journal после request | После четырёх cleanup |
+|---|---|---|---|---|---|
+| успешный PUT | actual SQL timeout | 503 | 1 / 0 | NULL | остаётся NULL |
+| definitive rejected PUT | actual SQL timeout | 503 | 1 / 0 | NULL | остаётся NULL |
+| short body, 5000 из 10000 bytes | actual SQL timeout | 503 | 1 / 0 | NULL | остаётся NULL |
+| definitive rejected PUT | нет | 503 | 1 / 0 | terminal timestamp | journal удалён |
+| успешный PUT | committed settlement + simulated lost ACK | 503 | 1 / 0 | terminal timestamp | journal удалён |
+
+Во всех трёх дефектных случаях fallback DELETE успешен; объектов и metadata нет. Journal состарен до >1h, четыре настоящих cleanup.runOnce выполняются с injected clock, шагом 6 минут (>5m claim lease). Каждый проход: claimed=1, deleted=1, failed=0. Вместе с fallback получаются 5 успешных DELETE; единственная settlement attempt остаётся единственной. В двух контролях — fallback + один cleanup DELETE (2 всего), затем claimed=0. Lost-ACK контроль подменяет только результат после настоящего committed UPDATE и явно отличается от actual SQL timeout.
+
+Итог диагностической матрицы: **5 PASS / 56 unrelated tests skipped**, 1.75 s. Assertions подтверждают наблюдаемую цепочку/контроли, не acceptance реализации. Первоначальный диагностический запуск не достиг upload из-за неполного reader fixture для topic scope; probe переключён на существующий section scope с корректным reader. Продуктовый код не исправлялся.
+
+## Причинная цепочка и классификация
+
+1. `app/routes/attachment-upload.ts:190–191` передаёт единственный callback для settlement.
+2. `app/forum/attachment-r2.ts:286–320`: terminal failed/successful outcomes вызывают afterWrite один раз. Если запись не завершилась, выполняется best-effort DELETE и request выходит с ошибкой. Воспроизведён именно успешный fallback DELETE.
+3. `db/hyperdrive-forum-attachments.ts:61–79` выполняет одну операцию в отдельном клиенте и выбрасывает availability error; восстановительного durable handoff здесь нет.
+4. `db/forum-attachments.ts:142–150` — единственный production writer write_completed_at. Отменённый PostgreSQL UPDATE не изменяет NULL. Metadata admission не вызывается; иной authoritative asset для reconciliation отсутствует.
+5. `db/forum-attachment-cleanup.ts:51–81` правильно требует установленное ДО DELETE settlement для retirement. При NULL сохраняет tracking и обновляет claim. Время/lease только делает запись снова доступной; terminal transition эти проходы не выполняют.
+6. После завершения request process-local terminal proof больше не имеет исполнителя, способного записать его в эту запись. Поиск production references не обнаружил другого writer/recovery transition. Повторная пользовательская загрузка создаёт новый random object key и старую запись не завершает.
+
+Четыре прохода — наблюдаемая проверка повторяемости. Бессрочность следует из отсутствия дальнейшего перехода в текущем коде, а не из экстраполяции только четырёх измерений. Ручное изменение БД или будущая реализация сюда не относятся.
+
+Это текущий ATTACH-01 defect конечного lifecycle известного завершённого writer, уже включённого в принятую A/B correction, а не новый scheduler/future-only запрос. PROJECT_STATE:38–48 обещает finite retirement для proven terminal failures и сохраняет tombstone для действительно неизвестного PUT. Здесь PUT уже terminal, а durable representation после SQL failure неотличимо от genuinely unknown. Граница дефекта — потеря durable settlement evidence; cleanup сам по себе не может безопасно объявить такой NULL завершённым.
+
+Существующая защита late materialization остаётся необходимой: успешный DELETE и elapsed grace не доказывают settlement неизвестного writer. Findings не обосновывают удаление всех NULL rows по таймеру или ослабление fencing. Возможное исправление/пересмотр модели в рамках этого задания не выбирались: раннее поручение составить plan заменено более поздним «сначала verdict и STOP».
+
+## Границы и сохранённые доказательства
+
+Локальный controlled storage и PostgreSQL17; не live R2/Hyperdrive/Neon, без production, CPU/deployment, browser/owner visual или backup/restore. Broad suites и whole-PR review не повторялись: проверка только данного внешнего finding. Это не повторный independent verdict автора собственной реализации.
+
+`/workspace/work/pr245-settlement-verification.log` содержит SQLSTATE, результаты request и все cleanup counts. `/workspace/work/pr245-settlement-review.probe.test.ts` содержит диагностическую матрицу и исходные fixtures exact head. Временный probe удалён из checkout; tracked files чисты, git diff --check PASS. Изначальный node_modules symlink сохранён. Disposable PostgreSQL container остановлен и удалён. Implementation/main и удалённые файлы не менялись.
+
+Результат сначала передан только разработчику в текущем чате; эта публикация выполнена по его прямой команде «Публикуй». Следующий шаг — согласование verdict координатором в #236 и отдельное назначение дальнейшей работы. Новый plan и implementation не начинать без следующего назначения. Лёва STOP.
+
+
 ## PR #247 — независимая whole-PR проверка Лёвы (2026-10-27)
 
 Дата: 2026-10-27. Verdict: **FAIL / changes required**.
