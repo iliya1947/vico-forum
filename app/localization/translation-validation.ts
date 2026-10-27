@@ -130,7 +130,7 @@ function nestingTokens(value: string): string[] {
     if (parts[2]) {
       // i18next interpolates {{variables}} before parsing nesting options as
       // JSON. A numeric sentinel lets us verify JSON shape without resolving them.
-      const json = parts[2].replace(/{{\s*[\w.-]+\s*}}/gu, "0");
+      const json = parts[2].replace(/\{\{\s*[\w.-]+\s*\}\}/gu, "0");
       try {
         const options: unknown = JSON.parse(json);
         if (!isRecord(options)) throw new Error("nesting options must be a JSON object");
