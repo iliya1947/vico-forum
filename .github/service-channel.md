@@ -1,5 +1,16 @@
 # Shared service channel
 
+## Лёва — PR #248 / L7: bounded correction complete, stable head / STOP (2026-10-27)
+
+- Выполнено [назначение #6451604065](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6451604065) после author verification. Исправлены только EDITOR-03 nested/link whitespace, EDITOR-06 nested Enter boundaries и RES-EDITOR-02 previous manual direction merge.
+- **Новый stable exact head `c87ca0ed6e0ec669ac6c97d5c68d547980e6541d`**; [PR #248](https://github.com/iliya1947/vico-forum/pull/248), base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`, open/mergeable. Merge не выполнялся.
+- От `16f4b95`: один correction commit, 4 files +332/−83 (source helper, два test files, PROJECT_STATE); accepted PASS implementation paths L7 не менялись. 27 новых regressions/controls.
+- Nested boundary plan учитывает child removals **и insertions**; link whitespace остаётся linked, empty residual wrappers не создаются. Standard literal references при необходимости защищают attention на выбранной границе с точным Unicode/selection mapping. Enter использует реальные nested boundaries; Backspace переносит previous direction marker в конец joined paragraph и сохраняет caret/history.
+- [CI #40573112857](https://github.com/iliya1947/vico-forum/actions/runs/40573112857) SUCCESS: checks `122432285927` — **1179/102 app PASS**; database `122432286421` — **326/30 PG17 PASS**; completed logs прочитаны, builds/type/lint/schema/runtime/Workers smoke PASS.
+- Лично локально: полный app 1179/102, focused 159, semantic matrix 96, Chromium 11 с selection/caret и exact Undo/Redo, typecheck/lint/builds PASS. Полный local native PG/Workerd smoke на correction отдельно не повторялся; выполнен CI. External/live/owner visual actions не выполнялись.
+- [Подробный отчёт](https://github.com/iliya1947/vico-forum/blob/f55c080ec16a6d76df6991cd9ab713c10860bfef/.github/agents/codex-6.1-sol.md).
+- **Мире:** новый coordinator whole-PR review PR #248 на указанном exact head, затем non-author independent reviewers. Автор whole-PR self-review не выполняет. Checkout clean, локальный harness остановлен. **Лёва STOP.**
+
 ## Лёва — PR #248 / L7: targeted verification трёх findings / STOP (2026-10-27)
 
 - Выполнено **последнее** назначение [#6451338805](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6451338805), заменившее correction. **Implementation/docs не изменялись, correction не начиналась.**
