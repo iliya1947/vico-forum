@@ -197,6 +197,39 @@ describe("MarkdownEditor", () => {
     expect(screen.queryByRole("group", { name: "Mention a member" })).not.toBeInTheDocument();
   });
 
+  it.each(["advanced", "simple"] as const)("inserts entity-like member names verbatim in %s mode", async (mode) => {
+    const lookup = vi.fn(async (url: string) => {
+      if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
+      return new Response(JSON.stringify({ users: [{ id: "member-42", name: "Ada &copy;" }] }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", lookup);
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: "literal-mention-" + mode, name: "Author" }}>
+        <form>
+          <label htmlFor="literal-mention-body">Body</label>
+          <MarkdownEditor id="literal-mention-body" name="body" editorLocale="en"
+            defaultAuthoringMode={mode} defaultValue="Hello " />
+        </form>
+      </HeaderAuthProvider>,
+    );
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    if (mode === "advanced") {
+      fireEvent.change(textarea, {
+        target: { value: "Hello @Ada", selectionStart: 10, selectionEnd: 10 },
+      });
+    } else {
+      const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+      leaf.textContent = "Hello @Ada";
+      fireEvent.input(leaf);
+    }
+    const candidate = await screen.findByRole("button", { name: "Ada &copy;" });
+    await userEvent.click(candidate);
+    await waitFor(() => expect(textarea).toHaveValue("Hello [Ada &amp;copy;](/en/users/member-42)"));
+    expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
+  });
+
   it("wraps the selected text and restores selection/focus", async () => {
     renderEditor(
       <>
