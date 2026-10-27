@@ -4,7 +4,8 @@ import { serializeTable } from "./technical-markdown";
 const tick = String.fromCharCode(96);
 
 function escapeText(value: string): string {
-  return value.replace(/\\|`|\*|_|<|>|\[|\]/gu, "\\$&");
+  return value.replace(/\\|`|\*|_|<|>|\[|\]|~|&/gu,
+    (char) => char === "&" ? "&amp;" : "\\" + char);
 }
 
 function textAsMarkdown(value: string): string {
@@ -12,7 +13,9 @@ function textAsMarkdown(value: string): string {
     const escaped = escapeText(line);
     // Plain text must not accidentally become a heading, quote or list item.
     return escaped.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
-      (_, indent: string, marker: string) => indent + "\\" + marker);
+      (_, indent: string, marker: string) => indent + "\\" + marker)
+      .replace(/^([ \t]{0,3})(-{3,})(?=\s|$)/u,
+        (_, indent: string, dashes: string) => indent + "\\" + dashes);
   }).join("\n");
 }
 
