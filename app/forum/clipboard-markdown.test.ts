@@ -51,6 +51,8 @@ describe("Editor 2.0 clipboard import", () => {
 
   it.each([
     ["---", String.raw`\---`],
+    ["===", String.raw`\===`],
+    ["--", String.raw`\--`],
     ["~~literal~~", String.raw`\~\~literal\~\~`],
     ["&copy;", "&amp;copy;"],
     ["ordinary text", "ordinary text"],
@@ -70,6 +72,30 @@ describe("Editor 2.0 clipboard import", () => {
     const paragraph = parseForumMarkdown(markdown).children[0]!;
     if (paragraph.type !== "paragraph") throw new Error("Expected literal paragraph, not Markdown formatting");
     expect(paragraph.children).toMatchObject([{ type: "text", value: "Heading\n---\n~~plain~~ &copy;" }]);
+  });
+
+  it.each([
+    ["    &copy; ~~literal~~", "&#32;   &amp;copy; \\~\\~literal\\~\\~"],
+    ["     &copy; ~~literal~~", "&#32;    &amp;copy; \\~\\~literal\\~\\~"],
+    ["\\t&copy; ~~literal~~", "&#9;&amp;copy; \\~\\~literal\\~\\~"],
+  ])("preserves indented ordinary plain-text paste %j as paragraph text", (original, expectedSource) => {
+    const actual = original.replace(/^\\t/u, "\t");
+    const markdown = clipboardPlainToMarkdown(actual);
+    expect(markdown).toBe(expectedSource);
+    const [paragraph] = parseForumMarkdown(markdown).children;
+    expect(paragraph).toMatchObject({ type: "paragraph" });
+    if (paragraph?.type !== "paragraph") throw new Error("Unexpected indented code");
+    expect(paragraph.children).toMatchObject([{ type: "text", value: actual }]);
+  });
+
+  it("keeps multiline setext equals markers as literal paragraphs", () => {
+    const markdown = clipboardPlainToMarkdown("Heading\\n===\\n~~plain~~ &copy;".replaceAll("\\n", "\n"));
+    const tree = parseForumMarkdown(markdown);
+    expect(tree.children).toMatchObject([{ type: "paragraph" }]);
+    if (tree.children[0]?.type !== "paragraph") throw new Error("Unexpected heading");
+    expect(tree.children[0].children).toMatchObject([{
+      type: "text", value: "Heading\n===\n~~plain~~ &copy;",
+    }]);
   });
 
   it("preserves multiline Unicode when plain clipboard text is escaped", () => {
