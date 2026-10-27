@@ -35,9 +35,16 @@ text-draft persistence, scheduler или внешнего storage rollout нет
 
 Correction сохраняет journal незавершённого/неизвестного PUT даже после успешного DELETE:
 поздняя запись объекта остаётся обнаружимой и повторно удаляется после claim lease.
-Только подтверждённый PUT выставляет `write_completed_at` (forward migration
-`0047_attachment_upload_write_completion`); metadata admission требует эту отметку,
-а cleanup может окончательно убрать unregistered journal только после неё.
+`write_completed_at` (forward migration `0047_attachment_upload_write_completion`)
+фиксирует установленное завершение writer: успешный PUT либо доказанную terminal failure.
+Подтверждённо неполный остановленный fixed-length producer, definitive rejection или
+подтверждённый RPC result дают конечное retirement; full-body transport failure с
+неизвестным результатом не выдаётся за settlement. Short prefix отвергается до journal/PUT.
+Metadata admission по-прежнему требует именно проверенный `stored` result и completion,
+а не только эту отметку. После failed write metadata не создаётся.
+Cleanup фиксирует settlement под claim lock **до** storage DELETE и только на основании
+этого snapshot может окончательно убрать journal. Completion, появившийся во время/после
+DELETE, оставляет tracking до следующего правильно упорядоченного прохода.
 При потерянном результате PUT tracking-запись остаётся для повторного reconciliation,
 пока завершение writer не установлено; finite grace не выдаётся за такую гарантию.
 Повторы journal вращаются по времени claim, и bounded pass сохраняет бюджет для обычных

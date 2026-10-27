@@ -47,15 +47,15 @@ export class ForumAttachmentCleanup {
       const token = crypto.randomUUID();
       const now = this.clock();
       const item = await this.db.transaction(async (tx) => {
-        const rows = await tx.execute(sql<{ object_key: string }>`
-          select object_key from forum_attachment_upload_objects
+        const rows = await tx.execute(sql<{ object_key: string; settled: boolean }>`
+          select object_key, write_completed_at is not null as settled from forum_attachment_upload_objects
           where created_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_GRACE_MS)}
             and (claim_token is null or claimed_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_CLAIM_LEASE_MS)})
           order by coalesce(claimed_at, created_at), object_key limit 1 for update skip locked
         `);
         const row = rows.rows[0];
         if (!row) return null;
-        if (typeof row.object_key !== "string") throw new Error("invalid upload-object cleanup row");
+        if (typeof row.object_key !== "string" || typeof row.settled !== "boolean") throw new Error("invalid upload-object cleanup row");
         // Metadata admission takes the same object-record lock. If it committed
         // (even with a lost ACK), the ordinary reference-aware asset cleanup owns it.
         const registered = await tx.execute(sql`select 1 from forum_attachments where object_key=${row.object_key}`);
@@ -65,17 +65,19 @@ export class ForumAttachmentCleanup {
         }
         await tx.execute(sql`update forum_attachment_upload_objects set claim_token=${token}, claimed_at=${now}
           where object_key=${row.object_key}`);
-        return { key: row.object_key, registered: false };
+        return { key: row.object_key, registered: false, settled: row.settled };
       });
       if (!item) break;
       if (item.registered) continue;
       counts.claimed++;
       try {
         await this.storage.delete(item.key);
-        // A successful DELETE cannot fence an unfinished/unknown PUT. Keep its
-        // claimed row for recurring deletion until the writer confirms completion.
-        await this.db.execute(sql`delete from forum_attachment_upload_objects
-          where object_key=${item.key} and claim_token=${token} and write_completed_at is not null`);
+        // Settlement must precede THIS DELETE. Completion appearing during the
+        // await cannot retroactively fence a late PUT; a later pass deletes again.
+        if (item.settled) {
+          await this.db.execute(sql`delete from forum_attachment_upload_objects
+            where object_key=${item.key} and claim_token=${token} and write_completed_at is not null`);
+        }
         counts.deleted++;
       } catch {
         counts.failed++;

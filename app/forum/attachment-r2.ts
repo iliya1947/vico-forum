@@ -64,6 +64,14 @@ export class AttachmentStorageError extends Error {
   }
 }
 
+/** Internal bucket proof: this PUT has settled and cannot create bytes later. */
+export class AttachmentWriteSettledError extends Error {
+  constructor(cause: unknown) {
+    super("private attachment write has definitively settled", { cause });
+    this.name = "AttachmentWriteSettledError";
+  }
+}
+
 type AcceptedInspection = Extract<AttachmentInspection, { accepted: true }>;
 
 function fileExtension(fileName: string): string {
@@ -168,6 +176,8 @@ export async function storePrivateAttachmentStream(
   upload: PrivateAttachmentUpload,
   maxBytes = DEFAULT_ATTACHMENT_MAX_BYTES,
   beforeWrite?: (objectKey: string) => Promise<void>,
+  // Records terminal writer settlement, including a confirmed failed write.
+  // Only the stored result below permits metadata admission.
   afterWrite?: (objectKey: string) => Promise<void>,
 ): Promise<AttachmentStoreResult> {
   const sampleSize = Number.isSafeInteger(upload.size) && upload.size > 0 && upload.size <= maxBytes
@@ -205,6 +215,7 @@ export async function storePrivateAttachmentStream(
       }
     }
 
+    if (prefixBytes < sampleSize) throw new AttachmentLengthMismatchError();
     const inspection = inspectAttachment({
       fileName: upload.fileName, declaredMime: upload.declaredMime,
       size: upload.size, prefix: prefix.subarray(0, prefixBytes), maxBytes,
@@ -270,15 +281,30 @@ export async function storePrivateAttachmentStream(
       });
     } catch (error) {
       await reader.cancel(error).catch(() => {});
-      await bucket.delete(objectKey).catch(() => {});
-      if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
-        throw error;
+      // After cancellation a known incomplete body cannot finish a fixed-length
+      // PUT. A full body plus a generic error may still represent a lost ACK.
+      const failure = error instanceof AttachmentWriteSettledError ? error.cause : error;
+      try {
+        if (error instanceof AttachmentWriteSettledError || receivedBytes < upload.size) {
+          await afterWrite?.(objectKey);
+        }
+      } finally {
+        await bucket.delete(objectKey).catch(() => {});
       }
-      throw new AttachmentStorageError({ cause: error });
+      if (failure instanceof AttachmentLengthMismatchError || failure instanceof AttachmentUploadReadError) {
+        throw failure;
+      }
+      throw new AttachmentStorageError({ cause: failure });
     }
     if (!stored || stored.size !== upload.size) {
       await reader.cancel().catch(() => {});
-      await bucket.delete(objectKey).catch(() => {});
+      try {
+        // A resolved PUT (including a definitive rejection/null) has no
+        // outstanding writer, even when it did not yield an admissible object.
+        await afterWrite?.(objectKey);
+      } finally {
+        await bucket.delete(objectKey).catch(() => {});
+      }
       throw new AttachmentStorageError();
     }
 

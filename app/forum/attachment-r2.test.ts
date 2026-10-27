@@ -89,6 +89,17 @@ function minimalGif(): Uint8Array {
 }
 
 describe("private R2 attachment write contract", () => {
+  it("rejects an incomplete sniff prefix before admitting any writer", async () => {
+    const storage = bucket(), admitted = vi.fn(), settled = vi.fn();
+    await expect(storePrivateAttachmentStream(storage, {
+      fileName: "notes.txt", declaredMime: "text/plain", size: 10,
+      body: new Response("abc").body!,
+    }, undefined, admitted, settled)).rejects.toBeInstanceOf(AttachmentLengthMismatchError);
+    expect(storage.put).not.toHaveBeenCalled();
+    expect(admitted).not.toHaveBeenCalled();
+    expect(settled).not.toHaveBeenCalled();
+  });
+
   it.each([false, true])("finalizes classic 65535 within a 1000-subrequest storage budget (reverse=%s)", async (reverse) => {
     const data = classicManyEntryZip(65535, reverse), storage = bucket();
     let requests = 0;

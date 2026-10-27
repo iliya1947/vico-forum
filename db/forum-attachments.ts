@@ -141,8 +141,9 @@ export class DrizzleForumAttachments {
 
   async completeUploadObjectWrite(objectKey: string): Promise<void> {
     if (!privateObjectKey.test(objectKey)) throw new InvalidForumAttachmentError();
-    // Only a confirmed PUT completion may settle a writer. A thrown/unknown PUT
-    // retains its durable retry tombstone, even after a successful DELETE.
+    // Successful PUT or a definitive terminal failure settles the writer.
+    // Unknown outcomes retain their retry tombstone. This marker alone does
+    // not authorize metadata: the action still requires a verified stored result.
     const updated = await this.db.update(forumAttachmentUploadObjects)
       .set({ writeCompletedAt: new Date() })
       .where(eq(forumAttachmentUploadObjects.objectKey, objectKey)).returning({ key: forumAttachmentUploadObjects.objectKey });
