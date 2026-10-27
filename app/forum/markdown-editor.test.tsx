@@ -862,7 +862,7 @@ describe("MarkdownEditor", () => {
     leaf.textContent = "    &copy;";
     fireEvent.input(leaf);
     expect(document.querySelector('input[name="body"]')).toHaveValue("&#32;   &amp;copy;");
-    expect(leaf).toHaveTextContent("    &copy;");
+    expect(leaf.textContent).toBe("    &copy;");
     expect(leaf).toHaveFocus();
   });
 
