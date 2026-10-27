@@ -24,7 +24,7 @@ describe("mention authoring tokens", () => {
   it("keeps GFM strikethrough markers literal in the authoritative mention label", () => {
     const name = "~~Ada &copy;~~";
     const markdown = mentionProfileLink(name, "/en/users/member-42");
-    expect(markdown).toBe("[&#126;&#126;Ada &#38;copy;&#126;&#126;](/en/users/member-42)");
+    expect(markdown).toBe("[&#126;&#126;Ada &#38;copy&#59;&#126;&#126;](/en/users/member-42)");
     const root = parseForumMarkdown(markdown);
     expect(root.children).toMatchObject([{
       type: "paragraph",
