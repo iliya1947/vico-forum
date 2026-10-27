@@ -1194,6 +1194,7 @@ describe("MarkdownEditor", () => {
       format === "text/plain" ? "A\tB\n1\t2" : "" } });
     expect((screen.getByLabelText("Body") as HTMLTextAreaElement).value).toContain("| 1 | 2 |");
     expect(document.querySelector(".markdown-editor-visual-table")).not.toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("keeps spreadsheet Markdown-like cells literal when pasted and edited in Simple mode", () => {
@@ -1387,6 +1388,44 @@ describe("MarkdownEditor", () => {
       format === "text/plain" ? "\nleft\tright\nonly-one" : "" } });
 
     expect(screen.getByLabelText("Body")).toHaveValue("Before\nleft\tright\nonly-one");
+    expect(document.querySelector(".markdown-editor-visual-table")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This table could not be converted safely. Its contents were pasted as plain text.",
+    );
+  });
+
+  it("keeps quoted spreadsheet cells verbatim and announces the declined conversion", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 6);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    const original = '\nLabel\tValue\n"one\tcell"\t**literal**';
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? original : "" } });
+    expect(screen.getByLabelText("Body")).toHaveValue("Before" + original.replaceAll("**", "\\*\\*"));
+    expect(document.querySelector(".markdown-editor-visual-table")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("pasted as plain text");
+  });
+
+  it("keeps ordinary one-line plain paste free of table feedback", () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 6);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? " ordinary" : "" } });
+    expect(screen.getByLabelText("Body")).toHaveValue("Before ordinary");
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("keeps the native leaf mounted through the first character and a new paragraph", () => {
