@@ -1,5 +1,102 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — root-cause correction plan (2026-10-27)
+
+Дата: 2026-10-27. Назначение #236 comment 6440418586. Head `c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. Код не изменён. CPU/deployment и PR #247 исключены.
+
+## Вывод и рекомендуемое направление
+
+Проблема — не число попыток UPDATE, а отсутствие восстанавливаемого durable доказательства после утраты process-local знания. При текущих безусловных PUT/DELETE и единственном terminal marker в PostgreSQL невозможно одновременно гарантировать finite retirement каждого terminal writer после не записавшегося settlement и safety для genuinely unknown PUT.
+
+Поэтому **не рекомендую очередной локальный retry patch или объявление NULL завершённым по возрасту**. Рекомендуемое изменение модели: cleanup должен уметь получить durable доказательство, что право данного writer материализовать bytes отозвано (storage write fence), независимо от потерянного сообщения request. Это более сильная и полезная граница, чем «мы когда-то получили успешный ответ PUT».
+
+Это законченный root-cause анализ и план следующей ограниченной работы, но **не утверждённый, готовый к implementation протокол**: конкретная реализация fence в текущем storage adapter ещё не доказана. Утверждать обратное означало бы скрыть новый race. Нужна отдельная protocol-design/feasibility стадия до изменения PR.
+
+## 1. Фактическая модель 0046/0047
+
+| Состояние | Durable данные | Что знает request | Что может доказать cleanup |
+|---|---|---|---|
+| admission отсутствует | нет journal | PUT ещё запрещён | ничего об объекте; PUT не должен быть запущен |
+| admitted, до/во время PUT | row, NULL completion | pre-write/in-flight | writer мог ещё материализовать bytes |
+| full-body outcome unknown | та же row/NULL | ответ потерян | поздний PUT возможен |
+| terminal outcome, settlement не записан | та же row/NULL | PUT завершён / definitively failed | неотличимо от in-flight/unknown |
+| settlement persisted | timestamp | terminal | settlement существовал к моменту claim |
+| asset committed | authoritative asset + refs | metadata принято либо ACK потерян | asset reconciliation, reference-aware cleanup |
+| claimed | claim token/time поверх предыдущего состояния | metadata admission конфликтует | один claim, но не доказательство прекращения storage write |
+
+NULL не кодирует причину отсутствия timestamp. Claim lease ограничивает конкуренцию cleanup, но не срок жизни storage PUT. `write_completed_at` — positive evidence, отсутствие которого не означает ни active, ни failed. `createDraftAttachment` требует completion + unclaimed journal, при этом только structurally verified stored result разрешает вызов metadata admission.
+
+## 2. Causal proof: почему меньшего исправления недостаточно
+
+Две истории дают одинаковое доступное durable состояние:
+
+A. PUT definitively failed; UPDATE settlement отменён; fallback DELETE успешен; request завершён.
+B. Полный PUT ещё может закоммититься; его ответ неизвестен; DELETE успешен, пока key отсутствует.
+
+Обе: row NULL, metadata отсутствует, storage read может вернуть absent. Если cleanup удаляет tracking в A лишь по этим данным, он должен сделать то же в B и потеряет поздние bytes. Если он безопасно сохраняет B, тем же правилом сохраняет A бессрочно. Нужен новый различающий durable факт или возможность физически прекратить право на запись.
+
+Верификация 6440054664 уже показала A настоящим PostgreSQL timeout и четыре повторных DELETE. B и DELETE/completion order подтверждались предыдущими native interleaving regressions. Для плана повторять full suite/те же probes не требовалось.
+
+Отсюда недостаточны: N retries, waitUntil без durable handoff, ещё одна колонка, фиксированный deadline, successful DELETE, отрицательный HEAD, DB row/advisory lock без storage enforcement. Отдельный receipt после terminal outcome может закрыть конкретный SQL timeout при доступном втором хранилище, но оставляет crash window перед receipt и такой же дефект, если receipt не записался. Он не является полным root-cause решением и не рекомендуется как самостоятельный пакет.
+
+## 3. Требуемый invariant новой модели
+
+`retire journal => authoritative asset owns object OR (writer capability durably revoked AND delete completed after that revocation)`.
+
+Для каждой загрузки право материализации должно быть связано с единственным immutable identity/generation. Отзыв должен быть recoverable после crash и применяться на стороне storage в момент commit каждого потенциально позднего write. Cleanup обязан уметь завершить этот отзыв по durable admission information без process-local результата завершившегося request.
+
+Liveness формулируется при восстановлении доступности БД/storage и повторном запуске bounded cleanup; успешная работа при вечной недоступности сервисов не обещается. Но временная DB-недоступность в момент settlement не должна создавать невосстанавливаемую дыру.
+
+Сначала durable claim/revoke-intent блокирует metadata; затем подтверждённый storage fence; затем DELETE; затем retirement по тому же claim/generation. Если ACK fence потерян, intent сохраняется до положительного восстановления fence; отрицательный read не считается подтверждением. Если DELETE/DB retirement не завершились — тот же bounded cleanup продолжает lifecycle, не новая очередь ретраев.
+
+## 4. Минимальная следующая стадия и её границы
+
+До implementation подготовить и проверить один протокол storage-enforced revocation в existing private bucket boundary. Публичная официальная документация R2 подтверждает atomic conditional PUT в момент commit и Workers `onlyIf`/ETag conditions. Это подходящая primitive для исследования, **но не доказательство готовности простого tombstone алгоритма**.
+
+Обязательные proof obligations для conditional-write варианта:
+
+- Кто создаёт reservation, как её identity durably связывается с journal до любого payload PUT.
+- Как fenced generation отклоняет payload PUT, начатый раньше cleanup.
+- Что происходит при неизвестном результате самой reservation/fence операции: поздняя initializer/retry не должна воскресить прежнее право.
+- Как избежать ABA: удаление guard/tombstone не должно снова сделать старое условие истинным. В частности, `If-None-Match:*` + удалить tombstone — НЕ безопасное решение.
+- Как удаляются сами control objects; перенос бесконечного journal в бесконечные untracked markers не считается устранением дефекта.
+- Как восстанавливаются concurrent/expired claims без разрушающего позднего cleanup над уже принятым asset.
+- Старые rows/старые unconditional writers: новый протокол не имеет права задним числом считать их fenced. Нужен явный compatibility/drain policy; ожидание фиксированного grace не доказывает drain.
+
+Если эти условия не выполнимы через existing binding, остановиться с конкретным доказанным ограничением. Тогда потребуется отдельное техническое решение об abortable storage writer или другом durable coordinator; не добавлять такой сервис неявно в текущий correction.
+
+После доказанного протокола bounded implementation scope: внутренний storage contract/adapter, upload admission/finalization, существующий journal lifecycle/cleanup, metadata gate и относящиеся native/Workerd regressions. Если нужна durable generation/phase — только forward migration, без переписывания 0046/0047. Не обещать заранее zero schema changes: доказательство выбранного протокола определит необходимую persistence. ZIP/TAR/редактор, CPU, production provision и публичные endpoints не менять.
+
+## 5. Regression matrix для принятия протокола/последующей correction
+
+| Сценарий | Обязательный результат |
+|---|---|
+| valid successful PUT | verified stored → metadata commit, content/private refs сохранены |
+| definitive rejection | metadata 0; finite cleanup после recovery |
+| short body / partial read failure | metadata 0; producer остановлен; finite cleanup |
+| actual settlement SQL failure | crash/end request после failure; восстановление только durable state; конечное retirement без ручного UPDATE |
+| crash до/после terminal receipt/transition | отсутствие потери tracking, сохранение progress после recovery |
+| genuinely unknown full-body PUT | late commit до fence учитывается, после fence запрещён; ни одного untracked object |
+| reservation/fence lost ACK и definitive failure | возможность восстановления доказана; отсутствие ложного terminal по absent/timeout |
+| initializer или повторный write после fence/DELETE | capability не воскресает, ABA исключена |
+| completion до/во время/после cleanup DELETE | удаление tracking только после относящегося к этому writer fence/settlement |
+| metadata commit/rollback/lost ACK | authoritative asset защищён, rollback остаётся cleanup-recoverable |
+| concurrent cleanup + expired claim | token/generation fencing, поздний processor не удаляет accepted asset |
+| больше batch limit terminal/unknown/ordinary assets | bounded work и fairness, никакого полного bucket/DB scan |
+| legacy rows/writers | явная безопасная compatibility policy, без ложной миграции NULL→terminal |
+
+Матрица выполняется actual action→adapter→Drizzle→PostgreSQL и native local Workerd на fault-controlled bucket с gateable commit. Модель/fake должна явно разделять начало операции и atomic storage commit, иначе не проверяет основной race. Локальные доказательства не объявлять live-service acceptance.
+
+## 6. Проверенные источники и статус
+
+- https://developers.cloudflare.com/r2/reference/consistency/ — conditional-write commit semantics и non-final negative reads.
+- https://developers.cloudflare.com/r2/api/workers/workers-api-reference/ — conditional binding options и precondition rejection.
+
+Прочитаны 0046/0047, schema, helper, Workers adapter, route, store adapter, metadata admission и cleanup exact head. Повторная проверка status: implementation tracked files без изменений; существует прежний untracked node_modules symlink. Команды к аккаунту/provider не выполнялись. Публичные docs изучены для проверки primitive, аудит внешней инфраструктуры не проводился.
+
+План сначала передан разработчику в текущем чате; опубликован по его прямой команде «Публикуй». Рекомендация координатору: сначала назначить ограниченное доказательство storage-fence протокола с указанными gate criteria; не назначать ещё один blind retry correction. Реализацию PR #245 пока не начинать. STOP.
+
+
 ## PR #245 — targeted technical verification: lost durable settlement (2026-10-27)
 
 2026-10-27. Задание: #236 comments 6439775390, 6439811250, 6439845898. **Verdict: CONFIRMED current-scope ATTACH-01 defect.** Это проверка внешнего finding по назначению, не independent whole-PR self-review и не новый correction plan.
