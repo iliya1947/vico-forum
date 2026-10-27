@@ -20,6 +20,23 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## EDITOR-10 — буквальные подписи в Markdown-упоминаниях (2026-10-27)
+
+В Batch L2 шаге 2/5 после влитого EDITOR-04 уточнена сериализация подписи
+ссылки, создаваемой autocomplete упоминания. User display name является
+авторитетным буквальным текстом: символ `&` экранируется как `&amp;` при
+генерации Markdown-ссылки, чтобы последовательности вроде `&copy;`,
+`&amp;` или `&#169;` не декодировались в другие отображаемые символы.
+Остальное Markdown-экранирование имени, server-supplied member ID и
+profile destination остаются прежними.
+
+Pure Markdown-AST regressions проверяют буквальное значение подписи после
+парсинга и immutable recipient ID; mounted editor regressions проверяют
+упоминание с character-reference-подобным именем в Simple и Advanced.
+Ранее работавший обычный display name остаётся control. Действующий
+Markdown body / notifications / DB / localization contracts не изменены.
+Exact-head CI и независимая whole-PR проверка фиксируются отдельно по факту.
+
 ## EDITOR-04 — feedback при отклонённой spreadsheet conversion (2026-10-27)
 
 В отдельной Batch L2 implementation-ветке исправлен UI feedback для
