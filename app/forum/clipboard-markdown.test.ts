@@ -49,6 +49,29 @@ describe("Editor 2.0 clipboard import", () => {
     expect(clipboardHtmlToMarkdown('<table><tr><td colspan="2">x</td><td>y</td></tr></table>')).toBeNull();
   });
 
+  it.each([
+    ["---", String.raw`\---`],
+    ["~~literal~~", String.raw`\~\~literal\~\~`],
+    ["&copy;", "&amp;copy;"],
+    ["ordinary text", "ordinary text"],
+  ])("retains ordinary literal %s instead of creating Markdown syntax", (original, escaped) => {
+    const markdown = clipboardPlainToMarkdown(original);
+    expect(markdown).toBe(escaped);
+    expect(parseForumMarkdown(markdown).children).toMatchObject([
+      { type: "paragraph", children: [{ type: "text", value: original }] },
+    ]);
+  });
+
+  it("protects a literal setext underline and character references across plain clipboard lines", () => {
+    const markdown = clipboardPlainToMarkdown("Heading\\n---\\n~~plain~~ &copy;");
+    expect(parseForumMarkdown(markdown).children).toMatchObject([
+      { type: "paragraph" },
+    ]);
+    const paragraph = parseForumMarkdown(markdown).children[0]!;
+    expect(paragraph.type).toBe("paragraph");
+    expect(paragraph.children).toMatchObject([{ type: "text", value: "Heading\\n---\\n~~plain~~ &copy;" }]);
+  });
+
   it("preserves multiline Unicode when plain clipboard text is escaped", () => {
     expect(clipboardPlainToMarkdown("שלום\n**literal**")).toBe("שלום\n\\*\\*literal\\*\\*");
     expect(clipboardPlainToMarkdown("# Title\n- item")).toBe("\\# Title\n\\- item");
