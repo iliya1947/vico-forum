@@ -1,3 +1,4 @@
+import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool, type DatabaseError } from "pg";
@@ -9,15 +10,19 @@ import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../../
 import { authorizationContext } from "../../app/authorization/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
-import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
-import { ForumAttachmentCleanup, ATTACHMENT_CLEANUP_CLAIM_LEASE_MS } from "../../db/forum-attachment-cleanup";
+import { ForumAttachmentCleanup as Cleanup, ATTACHMENT_CLEANUP_CLAIM_LEASE_MS } from "../../db/forum-attachment-cleanup";
 
+class ForumAttachmentCleanup extends Cleanup {
+  constructor(db: ConstructorParameters<typeof Cleanup>[0], storage: ConstructorParameters<typeof Cleanup>[1] | {delete(key: string): Promise<void>}, clock?: () => Date) {
+    super(db, {listReservations: async () => ({keys: []}), ...storage}, clock);
+  }
+}
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 const url = new URL(databaseUrl);
@@ -44,6 +49,7 @@ const migrations = [
   "0042_attachment_edit_snapshots",
   "0043_attachment_security_read_permission",
   "0044_attachment_draft_conflict_boundaries",
+  "0046_attachment_upload_fences",
 ];
 
 const ownerId = "attachment-owner";
@@ -345,6 +351,7 @@ async function withSecurityUploadRoute(run: (fixture: {
   const clientId = crypto.randomUUID();
   let loseAck = false;
   const bucket = {
+    reserve: async () => ({etag: "reservation"}), listReservations: async () => ({keys: []}),
     async put(): Promise<never> { throw new Error("Suspicious bytes must not reach private storage"); },
     async get() { return null; },
     async delete() {},
@@ -716,6 +723,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     ctx.set(forumReaderContext, reader);
     ctx.set(forumAttachmentStoreContext, store as never);
     ctx.set(privateAttachmentBucketContext, {
+      reserve: async () => ({etag: "reservation"}), listReservations: async () => ({keys: []}),
       async put(_key, stream) { return { size: (await new Response(stream).arrayBuffer()).byteLength }; },
       async get() { return null; }, async delete() {},
     });

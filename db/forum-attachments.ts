@@ -1,7 +1,9 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
+  forumAttachmentUploadObjects,
   forumAttachments,
   forumAttachmentSecurityEvents,
   forumPostAttachments,
@@ -41,6 +43,7 @@ export interface CreateDraftAttachmentInput {
   byteSize: number;
   verificationStatus: "type-checked";
   expectedVersion?: number;
+  requireUploadRecord?: boolean;
 }
 
 export interface RecordAttachmentSecurityEventInput {
@@ -77,7 +80,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 export function isForumAttachmentUuid(value: string): boolean {
   return uuid.test(value);
 }
-const privateObjectKey = /^private\/[0-9a-f-]{36}$/iu;
+const privateObjectKey = /^private\/(?:fenced-v1\/)?[0-9a-f-]{36}$/iu;
 
 function validInput(input: CreateDraftAttachmentInput): boolean {
   return isForumAttachmentUuid(input.id)
@@ -131,12 +134,36 @@ function toMetadata(row: typeof forumAttachments.$inferSelect): ForumAttachmentM
 export class DrizzleForumAttachments {
   constructor(private readonly db: NodePgDatabase) {}
 
+  async recordUploadObject(objectKey: string): Promise<void> {
+    if (!isFencedAttachmentKey(objectKey)) throw new InvalidForumAttachmentError();
+    // Unknown commit outcome is safe: the caller must not PUT until this succeeds.
+    await this.db.insert(forumAttachmentUploadObjects).values({ objectKey });
+  }
+
+  async activateUploadObject(objectKey: string, reservationEtag: string): Promise<void> {
+    if (!isFencedAttachmentKey(objectKey) || !reservationEtag.trim() || reservationEtag.length > 1024) {
+      throw new InvalidForumAttachmentError();
+    }
+    // A claim is irreversible. Lease recovery must never restore writer permission.
+    const updated = await this.db.update(forumAttachmentUploadObjects)
+      .set({ reservationEtag })
+      .where(and(eq(forumAttachmentUploadObjects.objectKey, objectKey),
+        isNull(forumAttachmentUploadObjects.claimToken), isNull(forumAttachmentUploadObjects.reservationEtag)))
+      .returning({ key: forumAttachmentUploadObjects.objectKey });
+    if (!updated.length) throw new InvalidForumAttachmentError();
+  }
+
   async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
     const createdAt = new Date();
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, input.ownerId, input.contextKey);
       const draftId = await resolveAttachmentDraftGeneration(tx, input.ownerId, input.contextKey, input.draftId);
+      if (input.requireUploadRecord || isFencedAttachmentKey(input.objectKey)) {
+        const [record] = await tx.select().from(forumAttachmentUploadObjects)
+          .where(eq(forumAttachmentUploadObjects.objectKey, input.objectKey)).for("update");
+        if (!record || !record.reservationEtag || record.claimToken !== null) throw new InvalidForumAttachmentError();
+      }
       const [created] = await tx.insert(forumAttachments).values({
         id: input.id,
         ownerId: input.ownerId,

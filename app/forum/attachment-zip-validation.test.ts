@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { inflateRawSync } from "node:zlib";
+import { classicManyEntryZip, descriptorOverlapZip } from "./attachment-zip.test-fixtures";
 import {
   validateZipAttachmentStructure,
   type AttachmentRandomAccessSource,
@@ -34,7 +36,7 @@ function concat(...parts: Array<Uint8Array | number[]>): Uint8Array {
   return output;
 }
 
-type Entry = { name: string; data?: Uint8Array; method?: number };
+type Entry = { name: string; data?: Uint8Array; method?: number; descriptor?: "signed" | "unsigned" | "missing"; zip64?: boolean; crc?: number; comment?: Uint8Array };
 function buildZip(entries: Entry[], zip64 = false): Uint8Array {
   const localParts: Uint8Array[] = [];
   const centralParts: Uint8Array[] = [];
@@ -43,16 +45,25 @@ function buildZip(entries: Entry[], zip64 = false): Uint8Array {
     const name = text(item.name);
     const data = item.data ?? text("x");
     const method = item.method ?? 0;
+    const flags = item.descriptor ? 8 : 0;
+    const crc = item.crc ?? 0;
+    const comment = item.comment ?? new Uint8Array();
+    const extra = item.zip64 ? concat(u16(1), u16(16), u64(data.length), u64(data.length)) : new Uint8Array();
+    const size = item.zip64 ? 0xffffffff : data.length;
+    const descriptor = item.descriptor && item.descriptor !== "missing"
+      ? concat(item.descriptor === "signed" ? u32(0x08074b50) : [], u32(crc),
+        item.zip64 ? u64(data.length) : u32(data.length), item.zip64 ? u64(data.length) : u32(data.length))
+      : new Uint8Array();
     const local = concat(
-      u32(0x04034b50), u16(20), u16(0), u16(method), u16(0), u16(0),
-      u32(0), u32(data.byteLength), u32(data.byteLength),
-      u16(name.byteLength), u16(0), name, data,
+      u32(0x04034b50), u16(20), u16(flags), u16(method), u16(0), u16(0),
+      u32(flags ? 0 : crc), u32(flags && !item.zip64 ? 0 : size), u32(flags && !item.zip64 ? 0 : size),
+      u16(name.byteLength), u16(extra.length), name, extra, data, descriptor,
     );
     localParts.push(local);
     centralParts.push(concat(
-      u32(0x02014b50), u16(20), u16(20), u16(0), u16(method), u16(0), u16(0),
-      u32(0), u32(data.byteLength), u32(data.byteLength),
-      u16(name.byteLength), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), name,
+      u32(0x02014b50), u16(20), u16(20), u16(flags), u16(method), u16(0), u16(0),
+      u32(crc), u32(size), u32(size),
+      u16(name.byteLength), u16(extra.length), u16(comment.length), u16(0), u16(0), u32(0), u32(offset), name, extra, comment,
     ));
     offset += local.byteLength;
   }
@@ -94,6 +105,63 @@ async function valid(bytes: Uint8Array, semantic: ZipAttachmentSemantic): Promis
 }
 
 describe("ZIP attachment structural validation", () => {
+  it("rejects a missing descriptor aliased by the next real local header", async () => {
+    const malformed = descriptorOverlapZip("missing");
+    expect(malformed.length).toBe(201);
+    expect([...inflateRawSync(malformed.subarray(31, 51))]).toEqual([65, 66, 67, 68, 213, 112, 45, 223]);
+    expect(await valid(malformed, "zip")).toBe(false);
+    expect(await valid(descriptorOverlapZip("unsigned"), "zip")).toBe(true);
+    expect(await valid(descriptorOverlapZip("signed"), "zip")).toBe(true);
+  });
+
+  it("checks physical boundaries independently of central directory order", async () => {
+    expect(await valid(classicManyEntryZip(8, true), "zip")).toBe(true);
+  });
+
+  it("accepts exactly 65,535 classic entries without requiring a ZIP64 locator", async () => {
+    expect(await valid(buildZip(Array.from({ length: 65535 }, (_, i) => ({ name: String(i), data: new Uint8Array() }))), "zip")).toBe(true);
+    const missingZip64 = buildZip([{ name: "a" }], true);
+    // Saturated 32-bit fields cannot be interpreted as a classic directory.
+    missingZip64[missingZip64.length - 42] = 0;
+    expect(await valid(missingZip64, "zip")).toBe(false);
+  }, 30_000);
+
+  it("does not interpret a classic central comment as a ZIP64 locator", async () => {
+    const comment = concat(u32(0x07064b50), new Uint8Array(16));
+    expect(await valid(buildZip([{ name: "a", comment }]), "zip")).toBe(true);
+  });
+
+  it.each([14, 18, 22, 6])("rejects inconsistent local CRC/size/flags at offset %i", async (offset) => {
+    const bytes = buildZip([{ name: "a" }]);
+    bytes[offset] = bytes[offset]! ^ 1;
+    expect(await valid(bytes, "zip")).toBe(false);
+  });
+
+  it.each(["signed", "unsigned"] as const)("requires a consistent %s data descriptor", async (descriptor) => {
+    const bytes = buildZip([{ name: "a", descriptor }]);
+    expect(await valid(bytes, "zip")).toBe(true);
+    const descriptorOffset = 32;
+    for (const relative of [0, 4, 8]) {
+      const broken = bytes.slice();
+      broken[descriptorOffset + (descriptor === "signed" ? 4 : 0) + relative] ^= 1;
+      expect(await valid(broken, "zip")).toBe(false);
+    }
+    expect(await valid(buildZip([{ name: "a", descriptor: "missing" }]), "zip")).toBe(false);
+  });
+
+  it.each(["signed", "unsigned"] as const)("validates ZIP64 %s descriptors and CRC/signature ambiguity", async (descriptor) => {
+    const zip = buildZip([{ name: "a", descriptor, zip64: true, crc: 0x08074b50 }]);
+    expect(await valid(zip, "zip")).toBe(true);
+    const descriptorOffset = 52;
+    for (const relative of [0, 4, 12]) {
+      const broken = zip.slice();
+      broken[descriptorOffset + (descriptor === "signed" ? 4 : 0) + relative] ^= 1;
+      expect(await valid(broken, "zip")).toBe(false);
+    }
+    expect(await valid(buildZip([{ name: "a", zip64: true, descriptor: "missing" }]), "zip")).toBe(false);
+    expect(await valid(buildZip([{ name: "a", zip64: true, crc: 42 }]), "zip")).toBe(true);
+  });
+
   it("accepts an ordinary ZIP and rejects truncated or inconsistent central metadata", async () => {
     const zip = buildZip([{ name: "a.txt" }, { name: "b.txt" }]);
     expect(await valid(zip, "zip")).toBe(true);
