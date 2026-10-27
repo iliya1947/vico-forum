@@ -1,5 +1,75 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — second technical adjudication: A/B confirmed, C deployment boundary (2026-10-27)
+
+Date: 2026-10-27, Asia/Jerusalem. Assignment: service PR #236 comment 6432134667. Stable exact head `86258701e56407f9ee16505aaf092d23559521df`; designated base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. Explicitly assigned technical diagnosis by the implementation author; not an independent whole-PR self-review. No implementation correction performed.
+
+## Classification
+
+- Candidate A: **CONFIRMED current-scope defect, ATTACH-01** for conclusively failed/finished writers, distinct from genuinely unresolved remote PUT outcomes.
+- Candidate B: **CONFIRMED current-scope defect, ATTACH-01**, reproduced with actual upload action, Drizzle, PostgreSQL 17 and controlled storage interleaving. R2 strong consistency does not invalidate the sequence.
+- Candidate C: **deployment/acceptance boundary not established as a current-scope defect**. Free-plan 10 ms compatibility is not demonstrated and the measured local footprint is much larger; however no authoritative Free-plan requirement/account plan was established. Actual production CPU quota compliance remains **Информация не проверена**. No acceptance PASS for Free or Paid is claimed.
+
+## A — failed requests retain journal rows permanently
+
+Three actual upload actions each declared 10000 bytes and supplied 5000 ASCII bytes, enough to pass prefix inspection and admit the journal. The stream length error occurred after journal admission while bucket.put consumed the stream. Each route returned 400. completeUploadObjectWrite was called 0 times; no metadata was admitted, and the controlled byte bucket never committed an object. This is a known terminated producer/body failure, not merely a never-returning remote operation.
+
+The same actual PostgreSQL journal rows were aged past grace. Four sequential existing cleanup passes, separated by injected 6-minute lease intervals, each successfully deleted the three keys. The rows remained with write_completed_at=NULL and claimed=true after every pass. Fifteen DELETE calls total: three immediate failure cleanup attempts plus 4 × 3 cleanup calls. This loop is structurally permanent: completeUploadObjectWrite is only called on successful PUT; there is no failed-writer terminal transition, another completion path or conditional retirement for this finished request. A normal new upload uses a new random physical key, so client retry cannot settle the earlier journal.
+
+The existing distinction in correction docs—retain truly unknown writers—is necessary but does not establish a finite lifecycle for known-terminal failures. Repeating cheap invalid-size requests can accumulate rows and recurring work despite the per-pass batch reservation. Four observed passes establish the repeated condition; source-level reachability establishes that this finished request has no future transition to completion.
+
+Minimal correction scope: the existing upload/journal/reconciliation lifecycle needs a terminal outcome for definitively stopped writers, covering short body, read failure and confirmed PUT failure, separately from successful metadata eligibility. Establish safe storage-write settlement/cancellation before permitting journal retirement. Preserve genuinely unresolved outcomes until a real settlement/fence exists. Do not reinterpret a timeout, negative GET or one successful DELETE as proof that an unknown PUT can no longer commit. No new scheduler/public endpoint/general architecture is automatically required.
+
+## B — completion becomes visible after DELETE but before journal retirement
+
+Actual PostgreSQL + actual upload action sequence, with controlled byte bucket and promise gates:
+
+1. Journal committed; PUT is held before object visibility. Journal is aged past grace.
+2. Existing cleanup commits claim_token in its own transaction.
+3. Storage DELETE physically completes while key is absent; delivery of its successful acknowledgement is held to expose the legal scheduling window.
+4. PUT commits bytes; actual completeUploadObjectWrite commits write_completed_at on the claimed row. Metadata admission is held separately.
+5. Successful DELETE acknowledgement returns to cleanup. Its actual SQL DELETE sees the newly non-null completion and removes journal by key+claim token.
+6. Metadata admission resumes: actual store transaction rejects missing journal; upload action returns400. Its final best-effort object DELETE is made to fail.
+7. Object exists, metadata count 0, journal count 0. Another cleanup after lease expiry claims 0 / deletes 0 and leaves the object present.
+
+Control changes only the order: allow cleanup's SQL DELETE to run while completion is stillNULL, then commit PUT/completion. Journal remains (count 1); after the same failed fallback DELETE, later cleanup claims 1 / deletes 1 and removes object. Both branches use actual SQL, not an in-memory journal model.
+
+Evidence trace defect: physical DELETE → PUT committed → completion UPDATE committed → cleanup journal DELETE finished. Control trace: physical DELETE → cleanup journal DELETE finished → PUT committed → completion UPDATE committed. The storage gate delays acknowledgement after the physical DELETE, not the physical deletion itself; PUT therefore completes later, consistent with the official R2 rule that the last writer to complete wins.
+
+Official R2 consistency documentation was fetched during this adjudication: competing PUT/DELETE to the same key use last-completing-writer semantics; reads/negative absence do not wait for or cancel an earlier in-flight PUT. Strong consistency does not make a DELETE, an independently committed journal UPDATE and a later SQL DELETE one atomic operation. No live R2 reproduction is claimed.
+
+Minimal correction scope: journal retirement must depend on writer settlement already established **before** the storage DELETE it relies on, with claim/state identity preserved. A completion which appears during or after DELETE cannot retroactively make that earlier DELETE final; retain tracking and perform a subsequent correctly ordered deletion. A claim-time settled-state snapshot/version or equivalent atomic lifecycle rule can establish this without expanding ZIP scope. Do not merely test current non-null completion after await. Coordinate this with A's failed-writer terminal state so fixing one path does not reintroduce the other.
+
+## C — applicable CPU budget and measured runtime footprint
+
+Contract/configuration checks:
+- PROJECT.md establishes Cloudflare Workers as the runtime, but does not select Workers Free/Paid or a CPU budget.
+- Repository-wide searches of PROJECT_STATE, ROADMAP, docs, wrangler.jsonc and workflows did not establish a Free-plan mandate or explicit cpu_ms/usage_model. Service-channel/comment context contains no earlier authoritative Free/Paid decision found by the same targeted search.
+- wrangler.jsonc has neither CPU override nor R2 binding. An absent CPU override does not identify an account plan: Free and Paid have different defaults outside this config.
+- PROJECT.md's pre-release principle and ROADMAP Stage 6 defer external infrastructure/production-candidate acceptance; docs/EDITOR.md defers actual R2 provisioning and paid actions. These are not a declaration that every feature already supports Free 10 ms.
+- Current official Workers limits: CPU excludes network/I/O wait; Free 10 ms per HTTP request; Paid default 30 seconds with configurable maximum 5 minutes. Account/subscription settings were not queried.
+
+Additional local runtime diagnostic, rather than using Node wall time as Worker CPU proof:
+- Bundled the unchanged exact-head storePrivateAttachmentStream/finalizer into a disposable local Worker, using the project's pinned Wrangler 4.130.0 / workerd 1.20260908.1, same compatibility date 2026-09-09.
+- Supplied the independently generated valid classic 65535 ZIP (5613812 bytes) to the actual helper/finalizer. Storage was a diagnostic in-memory byte bucket; no auth/DB/full application request or live R2 cost was represented by this wrapper.
+- Three local requests all returned diagnostic HTTP 200 with outcome=stored and 45 GETs.
+- V8 inspector sampling at 1 ms: sampled non-idle sums 732.795 ms, 759.371 ms, 710.221 ms; wall durations 741.998 ms, 764.234 ms, 722.592 ms. Raw cpuprofiles saved. These are local profiler observations, **not Cloudflare's billed/enforced cpuTime**; profiling, hardware and the synthetic bucket affect them.
+- The result supplies no support for a 10 ms Free claim, but local execution does not enforce/prove a production Free/Paid CPU budget. It is neither a measured production quota failure nor a Paid acceptance certificate.
+
+Therefore the premise that the current project necessarily has an applicable Free 10 ms budget is unproven. Record C as an unresolved deployment/acceptance requirement, with a strong local warning against assuming Free compatibility. Establish the target plan/budget and verify the release path against it at the relevant acceptance boundary before choosing CPU-related implementation changes. No current correction scope is authorized by an assumed plan. Future choice of Free could make this a concrete incompatibility; it should not be silently declared resolved.
+
+## Verification and artifacts
+
+- Three targeted native diagnostic cases PASS: A and B's two orders; 49 unrelated existing tests skipped. Assertions capture observed defects/controls; this is not an implementation acceptance PASS. No broad suites rerun and no correction code written.
+- `/workspace/work/pr245-adjudication2-pg.log` and corrected-order temporary snippet/test evidence.
+- `/workspace/work/pr245-adjudication2-cpu.log`, `pr245-adjudication2-cpu-{0,1,2}.cpuprofile`, local Worker bundle/source and diagnostic driver.
+- Saved official pages/text: https://developers.cloudflare.com/r2/reference/consistency/ and https://developers.cloudflare.com/workers/platform/limits/ .
+- Disposable local PostgreSQL and Workerd only; no external services/account inspection, production, browser or owner visual acceptance.
+
+Results published by the owner's explicit «Публикуй» instruction. Disposable PostgreSQL/Workerd stopped, diagnostic worktree removed; local evidence retained. Implementation, PR/head/main, migration/schema/dependencies unchanged. No correction, merge or unrelated Batch L2 work. STOP.
+
+Publication preflight: PR #245 open, exact head `86258701e56407f9ee16505aaf092d23559521df` and base `082530ab6a62c37f4d7acf17556bc496e677ab5f` unchanged. No implementation correction or merge started.
+
 ## PR #245 — bounded L6 correction implementation handoff (2026-10-27)
 
 Assignment: [#6431047906](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6431047906), following targeted adjudication [#6431037229](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6431037229). Author implementation-complete; **not an independent whole-PR verdict**.
