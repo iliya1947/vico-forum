@@ -1,5 +1,33 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #248 — independent whole-PR review L7 (2026-10-27)
+
+**Назначение:** Мира, [PR #236 #6448730200](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6448730200). Независимый whole-PR review [implementation PR #248](https://github.com/iliya1947/vico-forum/pull/248); автор Лёва, Лира не участвовала в реализации. Проверенная стабильная версия **`16f4b955c364e38ddc77dfce0cb4a995b4577bc3`**, base **`2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`**, PR open, non-draft, mergeable, head не изменялся на всём протяжении проверки.
+
+**Личный verdict Лиры: APPROVE / PASS — 0 подтверждённых current-Stage defects.** Это личная независимая оценка заданного scope, не team synthesis, не merge authorization. Четыре этапа: (1) требования/main/карта полных 18 изменённых путей; (2) редактор source edits/history/публикация; (3) renderer-compatible custom structure, mentions, translation, spoiler boundedness; (4) сверка CI/тестов/интеграций/документации.
+
+### Проверка по всем семи findings L7
+
+1. **EDITOR-03**: `clearInlineMarkdownFormatting` на частичных selections корректирует delimiter positions при пробелах и преобразует underscore delimiters в допустимые asterisks на пересечениях; непомеченный исходник и технические конструкции не подвергаются глобальной сериализации. Проверены pure source/selection regressions, включая nested/link/whitespace и unselected formatting.
+2. **EDITOR-06**: Simple native Enter в editable visual leaves использует `insertVisualParagraph`, закрывает/переоткрывает inline wrappers вокруг границы, сохраняет source prefix/suffix и делает одну запись Undo; source selection восстановляется через общую editor history. Checked pure+mounted scenarios (strong/emphasis/delete/link/nesting, CRLF-neighbor, native selection across leaves/blocks).
+3. **RES-EDITOR-02**: `joinVisualParagraph` выполняет Backspace join только между обычными paragraph blocks, не стирает heading/list/code/table boundaries, рекурсивно учитывает тело spoiler, схлопывает одинаковые wrappers, сохраняет whitespace/source/history; mounted Backspace и Undo подтверждают integration path.
+4. **EDITOR-07**: `codeKey` обрабатывает exclusive `selection.end` при выделении целых code lines; не добавляет/убирает отступы строки за правой границей и closing fence. Pure/mounted multi-line Tab/Shift+Tab и Undo regressions.
+5. **EDITOR-11**: Проверена цепочка `actions.server.ts` -> `publicationBody` -> `ForumWriter` -> `ForumService.normalizeRevision` -> `DrizzleForumRepository` -> `forum_post_revisions.original_content`. `trim()` применяется только к content/blank validation, raw Markdown (CRLF/leading/trailing whitespace/indented code) записывается без нормализации. Проверены section topic, Help question, reply, idempotent publication, реальные disposable PG regressions.
+6. **MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01** — обе требуемые части: `parseRenderedForumMarkdown` использует те же `segmentTechnicalMarkdown` и cell/body parsing границы, что `ForumMarkdown`; summary буквальный text. `publishedMentionRecipients` исключает spoiler title, quotes/code/HTML/images и dedupe по immutable profile ID, учитывает independent table cells. `protectMarkdownForTranslation` работает на той же структурной AST; policy `cnt06-custom-structure-v2`, protected tokens/segment IDs, structure signature и repair/fallback checks препятствуют изменению table/spoiler skeleton, human text (в том числе literal title) переводится без исполнения Markdown в summary. Прочитаны pure, mounted и native PG notification tests. Отдельный `LOC-08` является L8 scope и не включён.
+7. **MARKDOWN-SPOILER-01**: `spoilerClosingLines` precomputes fence-aware closers с monotone width frontier, исключая повторные suffix scans для многих незакрытых `:::spoiler`; проверены fenced closing markers, width/type matching, отсутствие closers, bounded RegExp work 1000 unmatched openers. Рендерер и semantic consumers используют тот же segmenter.
+
+### Whole-diff, CI и границы
+
+**Diff 18 путей** сверен целиком: `PROJECT_STATE.md`, actions, editor source/tests, visual editor, mentions/tests, новый `semantic-markdown.ts`, technical-markdown source/tests, write-actions tests, content-translation source/tests, profile translation contract, новый `tests/database/forum-markdown-publication.test.ts`, `tsconfig.node.json`. Не найдено подтверждённых несвязанных runtime/schema/dependency changes или current-Stage regressions в проверенной реализации. `PROJECT_STATE.md` соответствует L7 пакету, `docs/translation/CONTENT_TRANSLATION.md` описывает renderer-compatible tables/spoilers и policy version.
+
+**[Exact-head CI #40548381709](https://github.com/iliya1947/vico-forum/actions/runs/40548381709): SUCCESS**, PR event на reviewed exact head, jobs `checks 122345095310`, `database 122345094684` complete SUCCESS. Полные завершённые логи обеих jobs прочитаны: **1152 application tests /102 files PASS**, **326 PostgreSQL17 tests /30 files PASS**; lint (0 errors, 1 existing unused eslint-disable warning), TS typecheck, app/UI-preview builds, migration/schema 49-table manifest/privilege probes, split-authority/recovery checks, built Worker smoke PASS. В DB logs есть ожидаемые diagnostic negative-case errors / initial smoke connection attempts, но шаги завершены successfully и тесты 0 failed.
+
+**Что лично не выполнялось:** полные локальные PostgreSQL/Workerd runs, local Chromium/native keyboard, external/provider/production, owner visual acceptance, merge. Автор сообщает собственные local Chromium/PG/grammar checks, но они не считаются независимо повторёнными Лирой. Источники независимого вывода: исходники/тесты на exact head, контроль потоков и записи, GitHub exact-head CI logs и проверка сопоставимых boundary cases. Green CI не был единственным критерием.
+
+**Статус:** личная проверка Лиры завершена, implementation/PR #248/main не изменялись. После разрешения владельца результат публикуется в служебном PR #236 для координатора Миры; команде ещё требуется согласовать все reviewer verdicts и оставшиеся acceptance boundaries. **Лира STOP.**
+
+---
+
 ## Batch L2 / EDITOR-04 — branch permission blocker (2026-10-27)
 
 Owner task: [#6428906267](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6428906267). Baseline main `bff130db5fb245e3a9ad3391fad54a2fe81aac88`. Requested **step 1/5 only**: explicit feedback when spreadsheet conversion declines but clipboard text is retained losslessly; no changes to successful conversion or ordinary plain paste. Steps EDITOR-10/LITERAL-TEXT-01/LOC-03/LOC-06 not started.
