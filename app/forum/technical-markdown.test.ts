@@ -1,7 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { addTableDimension, decodeTableCell, encodeTableCell, segmentTechnicalMarkdown, spreadsheetToMarkdown } from "./technical-markdown";
 
 describe("Editor 2.0 technical Markdown source boundaries", () => {
+  it("does bounded parsing work for repeated unmatched spoiler openers", () => {
+    const source = ":::spoiler\n".repeat(1_000);
+    const exec = vi.spyOn(RegExp.prototype, "exec");
+    let calls: number;
+    try {
+      expect(segmentTechnicalMarkdown(source)).toEqual([
+        { kind: "prose", span: { start: 0, end: source.length }, source },
+      ]);
+      calls = exec.mock.calls.length;
+    } finally { exec.mockRestore(); }
+    // Counts actual parser work rather than relying on machine-dependent timing.
+    expect(calls).toBeLessThan(20_000);
+  });
   it("finds an ordinary table and keeps absolute cell positions", () => {
     const markdown = "Before\n\n| A | B |\n| --- | :---: |\n| one | two |\n\nAfter";
     const table = segmentTechnicalMarkdown(markdown).find((segment) => segment.kind === "table");

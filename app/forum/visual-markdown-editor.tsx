@@ -30,6 +30,7 @@ interface VisualEditorProps {
   ): void;
   onSelection(selection: EditorSelection | null): void;
   onInsertParagraph(selection: EditorSelection): void;
+  onBackspaceParagraph(selection: EditorSelection): boolean;
   onEditTechnical(range?: EditorSelection): void;
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
@@ -277,7 +278,7 @@ function sourceRange(node: VisualNode): EditorSelection | null {
 }
 
 function VisualTextLeaf({
-  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph,
+  text, range, raw, disabled, onTextEdit, onSelection, onInsertParagraph, onBackspaceParagraph,
   resolveSurfaceSelection,
 }: {
   text: string;
@@ -287,6 +288,7 @@ function VisualTextLeaf({
   onTextEdit: VisualEditorProps["onTextEdit"];
   onSelection: VisualEditorProps["onSelection"];
   onInsertParagraph: VisualEditorProps["onInsertParagraph"];
+  onBackspaceParagraph: VisualEditorProps["onBackspaceParagraph"];
   resolveSurfaceSelection(): EditorSelection | null;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -351,7 +353,8 @@ function VisualTextLeaf({
       onMouseUp={reportSelection}
       onFocus={reportSelection}
       onKeyDown={(event) => {
-        if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey) return;
+        if ((event.key !== "Enter" && event.key !== "Backspace")
+          || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey || event.nativeEvent.isComposing) return;
         const selection = window.getSelection();
         const active = selection?.rangeCount ? selection.getRangeAt(0) : null;
         const currentText = event.currentTarget.textContent ?? "";
@@ -359,10 +362,14 @@ function VisualTextLeaf({
         const sourceStart = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.start) : null;
         const sourceEnd = offsets ? visualOffsetToSourceOffset(raw, currentText, offsets.end) : null;
         const surfaceSelection = resolveSurfaceSelection();
-        event.preventDefault();
-        onInsertParagraph(surfaceSelection ?? (sourceStart === null || sourceEnd === null
-          ? { start: range.end, end: range.end }
-          : { start: range.start + sourceStart, end: range.start + sourceEnd }));
+        const selected = surfaceSelection ?? (sourceStart === null || sourceEnd === null
+          ? null : { start: range.start + sourceStart, end: range.start + sourceEnd });
+        if (event.key === "Backspace") {
+          if (selected && sourceStart === 0 && sourceEnd === 0 && onBackspaceParagraph(selected)) event.preventDefault();
+        } else {
+          event.preventDefault();
+          onInsertParagraph(selected ?? { start: range.end, end: range.end });
+        }
       }}
     />
   );
@@ -371,7 +378,7 @@ function VisualTextLeaf({
 function VisualNodeView({
   node, markdown, disabled, baseOffset, ...actions
 }: { node: VisualNode; markdown: string; disabled: boolean; baseOffset: number } & Pick<
-VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension" | "onPasteTable" | "onPasteFallback"
+VisualEditorProps, "onTextEdit" | "onSelection" | "onInsertParagraph" | "onBackspaceParagraph" | "onEditTechnical" | "onReplaceRange" | "onTableDimension" | "onPasteTable" | "onPasteFallback"
 > & { resolveSurfaceSelection(): EditorSelection | null }): ReactNode {
   const { t } = useTranslation("common");
   const children = node.children?.map((child, index) =>

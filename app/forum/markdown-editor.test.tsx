@@ -83,6 +83,63 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
+  it("splits inline formatting on native Enter and restores exact source on undo", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue="**alpha beta**" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 5);
+    range.collapse(true);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Enter" });
+    expect(document.querySelectorAll(".markdown-editor-visual strong")).toHaveLength(2);
+    expect(document.querySelectorAll(".markdown-editor-visual strong")[1]).toHaveTextContent("beta");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("**alpha beta**");
+  });
+
+  it("joins ordinary paragraphs on Backspace at the second leaf start, with history", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue={"Alpha \n\nbeta"} /></>);
+    const leaf = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')[1]!;
+    leaf.focus();
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 0);
+    range.collapse(true);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Backspace" });
+    expect(screen.getByLabelText("Body")).toHaveValue("Alpha beta");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("Alpha \n\nbeta");
+  });
+
+  it.each([false, true])("keeps an exclusive next-line boundary out of Tab (outdent=%s)", (shiftKey) => {
+    const source = "```ts\n  one\n  two\n```";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(source.indexOf("  one"), source.indexOf("  two"));
+    fireEvent.keyDown(textarea, { key: "Tab", shiftKey });
+    expect(textarea.value).toBe(shiftKey ? "```ts\none\n  two\n```" : "```ts\n    one\n  two\n```");
+  });
+
+  it("does not indent a closing fence at an exclusive code selection end", async () => {
+    const source = "```ts\none\n   ```\n\nAfter";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(source.indexOf("one"), source.indexOf("   ```"));
+    fireEvent.keyDown(textarea, { key: "Tab" });
+    expect(textarea.value).toBe("```ts\n  one\n   ```\n\nAfter");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(textarea).toHaveValue(source);
+  });
+
 
   it.each([
     ["b", "**alpha** beta"], ["i", "_alpha_ beta"], ["k", "[alpha](https://) beta"],

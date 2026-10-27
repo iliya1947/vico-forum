@@ -1,5 +1,6 @@
 import { fromMarkdown, type Handle } from "mdast-util-from-markdown";
 import { forumMarkdownFromOptions, parseForumMarkdown } from "../markdown-syntax";
+import { segmentTechnicalMarkdown } from "./technical-markdown";
 
 /**
  * The exact Markdown string is authoritative. Parsed nodes are only a read-only
@@ -369,6 +370,139 @@ interface MarkdownFormattingClearResult {
 
 const CLEARABLE_INLINE_NODE_TYPES = new Set(["strong", "emphasis", "delete", "link"]);
 
+/** Split active inline wrappers before inserting a block boundary. Only the
+ * selected source and its crossing delimiters change; no document serialization.
+ */
+export function insertVisualParagraph(markdown: string, selection: EditorSelection): EditorSnapshot {
+  const target = validSelection(selection, markdown.length);
+  const delimiters: FormattingDelimiter[] = [];
+  function visit(node: PositionedNode, depth: number): void {
+    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
+    if (delimiter) delimiters.push(delimiter);
+    for (const child of node.children ?? []) visit(child, depth + 1);
+  }
+  visit(parseForumMarkdown(markdown) as PositionedNode, 0);
+
+  let before = markdown.slice(0, target.start);
+  let after = markdown.slice(target.end);
+  const closing: string[] = [];
+  const opening: string[] = [];
+  // Strip adjacent whitespace out of the new wrappers: CommonMark delimiters
+  // immediately before/after whitespace cannot open/close emphasis.
+  const leftSpace = before.match(/[ \t]*$/u)?.[0] ?? "";
+  const rightSpace = after.match(/^[ \t]*/u)?.[0] ?? "";
+  before = before.slice(0, before.length - leftSpace.length);
+  after = after.slice(rightSpace.length);
+  for (const delimiter of [...delimiters].sort((a, b) => b.depth - a.depth)) {
+    if (target.start >= delimiter.open.end && target.start <= delimiter.close.start) {
+      if (before.length <= delimiter.open.end) {
+        before = before.slice(0, delimiter.open.start);
+      } else closing.push(delimiter.close.text);
+    }
+    if (target.end >= delimiter.open.end && target.end <= delimiter.close.start) {
+      const contentLeft = delimiter.close.start - target.end - rightSpace.length;
+      if (contentLeft <= 0) after = after.slice(delimiter.close.text.length);
+      else opening.unshift(delimiter.open.text);
+    }
+  }
+  const left = before + closing.join("") + leftSpace + "\n\n" + rightSpace + opening.join("");
+  return { markdown: left + after, selection: { start: left.length, end: left.length } };
+}
+
+/** Backspace joins adjacent ordinary paragraphs; protected/heading/list/code
+ * boundaries remain governed by their own editing controls.
+ */
+export function joinVisualParagraph(markdown: string, selection: EditorSelection): EditorSnapshot | null {
+  if (selection.start !== selection.end) return null;
+  for (const segment of segmentTechnicalMarkdown(markdown)) {
+    if (segment.kind === "spoiler") {
+      const local = { start: selection.start - segment.bodyStart, end: selection.end - segment.bodyStart };
+      if (local.start < 0 || local.end > segment.body.length) continue;
+      const joined = joinVisualParagraph(segment.body, local);
+      if (joined) return { markdown: markdown.slice(0, segment.bodyStart) + joined.markdown
+        + markdown.slice(segment.bodyStart + segment.body.length),
+        selection: { start: segment.bodyStart + joined.selection.start, end: segment.bodyStart + joined.selection.end } };
+      continue;
+    }
+    if (segment.kind !== "prose") continue;
+    const root = parseForumMarkdown(segment.source) as PositionedNode;
+    const blocks = [...(root.children ?? [])];
+    if (selection.start === markdown.length && /\n[ \t\r]*\n$/u.test(segment.source)) {
+      const offset = segment.source.length;
+      blocks.push({ type: "paragraph", children: [{ type: "text",
+        position: { start: { offset }, end: { offset } } }],
+        position: { start: { offset }, end: { offset } } });
+    }
+    for (let index = 1; index < blocks.length; index++) {
+      const current = blocks[index]!;
+      const previous = blocks[index - 1]!;
+      if (current.type !== "paragraph" || previous.type !== "paragraph") continue;
+      let first = current;
+      while (first.children?.length) first = first.children[0]!;
+      const firstRange = nodeRange(first);
+      const visibleStart = firstRange ? includeVisualWhitespace(segment.source, firstRange).start : undefined;
+      const currentRange = nodeRange(current);
+      const previousRange = nodeRange(previous);
+      if (first.type !== "text" || visibleStart === undefined || !currentRange || !previousRange
+        || selection.start !== segment.span.start + visibleStart) continue;
+      const start = segment.span.start + previousRange.end;
+      const currentStart = includeVisualWhitespace(segment.source, currentRange).start;
+      const end = segment.span.start + currentStart;
+      const gap = markdown.slice(start, end);
+      if (!/^[ \t\r\n]*\n[ \t\r\n]*$/u.test(gap)) continue;
+      // Keep spaces belonging to either paragraph; delete only their separator.
+      const leading = gap.match(/^[ \t]*/u)?.[0] ?? "";
+      const removals = [{ start: start + leading.length, end }];
+      const rewrites = new Map<number, string>();
+      // Underscores cannot delimit emphasis inside a word after joining. Keep
+      // the same style using asterisks, changing only the affected wrappers.
+      for (const [boundary, side] of [[previous, "left"], [current, "right"]] as const) {
+        let node = side === "left" ? boundary.children?.at(-1) : boundary.children?.[0];
+        while (node) {
+          const delimiter = inlineFormattingDelimiter(segment.source, node, 0);
+          if (!delimiter) break;
+          if (/^_{1,2}$/u.test(delimiter.open.text)) {
+            for (const range of [delimiter.open, delimiter.close]) {
+              for (let at = range.start; at < range.end; at++) rewrites.set(segment.span.start + at, "*");
+            }
+          }
+          node = side === "left" ? node.children?.at(-1) : node.children?.[0];
+        }
+      }
+      let left = previous.children?.at(-1);
+      let right = current.children?.[0];
+      let leftEnd = previousRange.end;
+      let rightStart = currentStart;
+      // Adjacent equal wrappers must coalesce: **a****b** would expose the
+      // middle delimiter run as text instead of joining the two bold words.
+      while (!leading && left && right && left.type === right.type) {
+        const leftDelimiter = inlineFormattingDelimiter(segment.source, left, 0);
+        const rightDelimiter = inlineFormattingDelimiter(segment.source, right, 0);
+        if (!leftDelimiter || !rightDelimiter || leftDelimiter.close.end !== leftEnd
+          || rightDelimiter.open.start !== rightStart
+          || canonicalEmphasisDelimiter(leftDelimiter.open.text) !== canonicalEmphasisDelimiter(rightDelimiter.open.text)
+          || canonicalEmphasisDelimiter(leftDelimiter.close.text) !== canonicalEmphasisDelimiter(rightDelimiter.close.text)) break;
+        removals.push({ start: segment.span.start + leftDelimiter.close.start,
+          end: segment.span.start + leftDelimiter.close.end });
+        removals.push({ start: segment.span.start + rightDelimiter.open.start,
+          end: segment.span.start + rightDelimiter.open.end });
+        leftEnd = leftDelimiter.close.start;
+        rightStart = rightDelimiter.open.end;
+        left = left.children?.at(-1);
+        right = right.children?.[0];
+      }
+      const ordered = [...removals].sort((a, b) => b.start - a.start);
+      let joined = "";
+      for (let at = 0; at < markdown.length; at++) joined += rewrites.get(at) ?? markdown[at]!;
+      for (const removal of ordered) joined = joined.slice(0, removal.start) + joined.slice(removal.end);
+      const caret = selection.start - removals.reduce((total, removal) =>
+        total + Math.max(0, Math.min(selection.start, removal.end) - removal.start), 0);
+      return { markdown: joined, selection: { start: caret, end: caret } };
+    }
+  }
+  return null;
+}
+
 function nodeRange(node: PositionedNode): EditorSelection | null {
   const start = node.position?.start.offset;
   const end = node.position?.end.offset;
@@ -408,6 +542,10 @@ function inlineFormattingDelimiter(
   return { depth, open, close };
 }
 
+function canonicalEmphasisDelimiter(text: string): string {
+  return /^_{1,2}$/u.test(text) ? "*".repeat(text.length) : text;
+}
+
 function mergeDeletionRanges(ranges: EditorSelection[]): EditorSelection[] {
   const sorted = [...ranges].sort((left, right) => left.start - right.start || left.end - right.end);
   const merged: EditorSelection[] = [];
@@ -440,8 +578,9 @@ export function clearInlineMarkdownFormatting(
 
   const root = parseForumMarkdown(markdown) as PositionedNode;
   const deletions: EditorSelection[] = [];
-  const closeAtStart: Array<{ depth: number; text: string }> = [];
-  const openAtEnd: Array<{ depth: number; text: string }> = [];
+  const rewrites = new Map<number, string>();
+  const closeAtStart: Array<{ depth: number; text: string; at: number }> = [];
+  const openAtEnd: Array<{ depth: number; text: string; at: number }> = [];
 
   function visit(node: PositionedNode, depth: number): void {
     const delimiter = inlineFormattingDelimiter(markdown, node, depth);
@@ -449,16 +588,28 @@ export function clearInlineMarkdownFormatting(
       const contentStart = delimiter.open.end;
       const contentEnd = delimiter.close.start;
       if (target.start < contentEnd && target.end > contentStart) {
+        if ((target.start > contentStart || target.end < contentEnd) && /^_{1,2}$/u.test(delimiter.open.text)) {
+          for (const range of [delimiter.open, delimiter.close]) {
+            for (let at = range.start; at < range.end; at++) rewrites.set(at, "*");
+            range.text = canonicalEmphasisDelimiter(range.text);
+          }
+        }
         if (target.start <= contentStart) {
           deletions.push({ start: delimiter.open.start, end: delimiter.open.end });
         } else {
-          closeAtStart.push({ depth, text: delimiter.close.text });
+          const before = markdown.slice(contentStart, target.start);
+          const at = target.start - (before.match(/\s*$/u)?.[0].length ?? 0);
+          if (at === contentStart) deletions.push(delimiter.open);
+          else closeAtStart.push({ depth, text: delimiter.close.text, at });
         }
 
         if (target.end >= contentEnd) {
           deletions.push({ start: delimiter.close.start, end: delimiter.close.end });
         } else {
-          openAtEnd.push({ depth, text: delimiter.open.text });
+          const after = markdown.slice(target.end, contentEnd);
+          const at = target.end + (after.match(/^\s*/u)?.[0].length ?? 0);
+          if (at === contentEnd) deletions.push(delimiter.close);
+          else openAtEnd.push({ depth, text: delimiter.open.text, at });
         }
       }
     }
@@ -468,21 +619,11 @@ export function clearInlineMarkdownFormatting(
 
   const mergedDeletions = mergeDeletionRanges(deletions);
   const insertions = new Map<number, string>();
-  if (closeAtStart.length > 0) {
-    insertions.set(
-      target.start,
-      closeAtStart
-        .sort((left, right) => right.depth - left.depth)
-        .map((item) => item.text)
-        .join(""),
-    );
+  for (const item of closeAtStart.sort((left, right) => right.depth - left.depth)) {
+    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
   }
-  if (openAtEnd.length > 0) {
-    const opening = openAtEnd
-      .sort((left, right) => left.depth - right.depth)
-      .map((item) => item.text)
-      .join("");
-    insertions.set(target.end, (insertions.get(target.end) ?? "") + opening);
+  for (const item of openAtEnd.sort((left, right) => left.depth - right.depth)) {
+    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
   }
 
   if (mergedDeletions.length === 0 && insertions.size === 0) {
@@ -502,7 +643,7 @@ export function clearInlineMarkdownFormatting(
     }
     const deletion = mergedDeletions[deletionIndex];
     if (deletion && deletion.start <= index && index < deletion.end) continue;
-    next += markdown[index]!;
+    next += rewrites.get(index) ?? markdown[index]!;
   }
 
   function mapOffset(offset: number, includeInsertionAtBoundary: boolean): number {

@@ -20,6 +20,45 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## L7 — Editor structural Markdown semantics (2026-10-27)
+
+В implementation-ветке реализован пакет из семи согласованных findings:
+
+- `EDITOR-03`: частичное снятие inline formatting оставляет пробелы за границами
+  вновь создаваемых delimiters, сохраняя форматирование невыделенного текста.
+- `EDITOR-06`: Simple Enter закрывает и вновь открывает пересекающие границу inline
+  wrappers; исходник соседних блоков не пересериализуется.
+- `RES-EDITOR-02`: Backspace в начале следующего обычного абзаца удаляет separator,
+  сохраняет исходный текст и поддерживает общую Undo/Redo history. Совпадающие
+  соприкасающиеся inline wrappers объединяются; heading/list/code/table boundaries
+  не интерпретируются как обычные paragraph separators.
+- `EDITOR-07`: Tab/Shift+Tab в Advanced code учитывает exclusive selection end;
+  следующая строка, включая closing fence, не получает отступ.
+- `EDITOR-11`: первоначальная публикация темы, Help-вопроса и ответа сохраняет raw
+  body; trim применяется только при проверке содержательности, а не к сохраняемому
+  Markdown. Заголовки/идентификаторы сохраняют прежнюю validation.
+- `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`: mention recipients и translation
+  protection используют renderer-compatible разбиение tables/spoilers. Literal
+  spoiler summary не создаёт mentions; quotes/code внутри самостоятельных ячеек
+  исключаются из recipients. Перевод сохраняет table/spoiler structure и переводит
+  человеческий текст, включая буквальный summary. Protection policy повышена до
+  `cnt06-custom-structure-v2`; direction round-trip (`LOC-08`, L8) не входит в пакет.
+- `MARKDOWN-SPOILER-01`: fence-aware индекс closing markers заменяет повторные
+  suffix scans при незакрытых spoiler openers; preprocessing ограничен `O(n log n)`
+  по числу строк и `O(n)` памяти.
+
+Добавлены focused regressions для source edits/history, notification recipients,
+translation restore и parser work, а также native action → writer → PostgreSQL проверки
+сохранения indented code/trailing whitespace и durable mention notifications.
+Локальный Chromium проверил native Enter, Backspace с Undo/Redo, partial clear и
+exclusive-end Tab вместе с FormData и публичным renderer. Это инженерные локальные
+проверки; owner visual acceptance и внешняя infrastructure validation не выполнялись.
+Локально пройдены общий application suite, последующие focused regressions, native
+PostgreSQL suite, typecheck/TypeScript build, source lint, app/UI-preview builds и
+Workers smoke. Fence-aware segmentation совпало с прежней грамматикой на 10 000
+ограниченных смешанных примерах. Whole-PR review implementation-пакета остаётся
+следующим отдельным этапом.
+
 ## L6 — attachment object journal и ZIP integrity (2026-10-27)
 
 В незамерженном implementation PR L6 прежний post-write settlement дизайн заменён

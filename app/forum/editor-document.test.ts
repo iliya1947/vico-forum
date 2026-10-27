@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  insertVisualParagraph, joinVisualParagraph,
   applyTextareaEdit, clearInlineMarkdownFormatting, createEditorHistory, editableCodeRanges,
   editableVisualTextRanges, editVisualText,
   recordEditorEdit, redoEditorEdit, setParagraphDirection, sourceOffsetToTextareaOffset, textareaMarkdown,
@@ -8,6 +9,59 @@ import {
 } from "./editor-document";
 
 describe("Editor 2.0 lossless document foundation", () => {
+  it.each(["**alpha beta**", "*alpha beta*", "~~alpha beta~~", "**_alpha beta_**", "[alpha beta](https://example.com)"])("splits active wrappers without touching surrounding source: %s", (inline) => {
+    const source = "Before\r\n\r\n" + inline + "\r\n\r\n```js\nconst x = 1;\n```";
+    const caret = source.indexOf("alpha") + 5;
+    const result = insertVisualParagraph(source, { start: caret, end: caret });
+    expect(result.markdown.startsWith("Before\r\n\r\n")).toBe(true);
+    expect(result.markdown.endsWith("\r\n\r\n```js\nconst x = 1;\n```")).toBe(true);
+    expect(result.markdown.slice(result.selection.start)).toMatch(/^beta/);
+  });
+
+  it.each([
+    ["_Alpha_\n\nBeta", "*Alpha*Beta"],
+    ["Alpha\n\n_Beta_", "Alpha*Beta*"],
+    ["**Alpha**\n\n__Beta__", "**AlphaBeta**"],
+  ])("preserves emphasis flanking when joining %s", (source, expected) => {
+    const caret = source.indexOf("Beta");
+    expect(joinVisualParagraph(source, { start: caret, end: caret })?.markdown).toBe(expected);
+  });
+
+  it("preserves paragraph indentation and joins prose inside a spoiler body", () => {
+    expect(joinVisualParagraph("Alpha\n\n beta", { start: 7, end: 7 })?.markdown).toBe("Alpha beta");
+    const source = ":::spoiler Label\nAlpha \n\nbeta\n:::\n";
+    const caret = source.indexOf("beta");
+    const joined = joinVisualParagraph(source, { start: caret, end: caret });
+    expect(joined?.markdown).toBe(":::spoiler Label\nAlpha beta\n:::\n");
+  });
+
+  it("joins an empty trailing paragraph but keeps protected block boundaries", () => {
+    expect(joinVisualParagraph("Alpha\n\n", { start: 7, end: 7 })?.markdown).toBe("Alpha");
+    for (const source of ["# Heading\n\nBeta", "```ts\ncode\n```\n\nBeta", "- List\n\nBeta", "| H |\n| --- |\n| cell |\n\nBeta"]) {
+      const start = source.indexOf("Beta");
+      expect(joinVisualParagraph(source, { start, end: start })).toBeNull();
+    }
+    expect(joinVisualParagraph("Alpha\n\nBeta", { start: 8, end: 8 })).toBeNull();
+    const formatted = "**_Alpha_**\n\n**_Beta_**";
+    const caret = formatted.indexOf("Beta");
+    const joined = joinVisualParagraph(formatted, { start: caret, end: caret });
+    expect(joined?.markdown).toBe("***AlphaBeta***");
+    expect(joined?.selection).toEqual({ start: 8, end: 8 });
+  });
+
+  it.each([
+    ["**alpha beta**", "alpha", "alpha **beta**"],
+    ["**alpha beta**", "beta", "**alpha** beta"],
+    ["~~alpha beta~~", "alpha", "alpha ~~beta~~"],
+    ["*alpha beta*", "beta", "*alpha* beta"],
+    ["**alpha   beta**", "alpha", "alpha   **beta**"],
+    ["_alpha beta_", "pha b", "*al*pha b*eta*"],
+  ])("keeps unselected formatting valid around whitespace: %s / %s", (source, selected, expected) => {
+    const start = source.indexOf(selected);
+    const result = clearInlineMarkdownFormatting(source, { start, end: start + selected.length });
+    expect(result.markdown).toBe(expected);
+    expect(result.markdown.slice(result.selection.start, result.selection.end)).toBe(selected);
+  });
   it("removes active attachment images while preserving the same text inside code and escaped syntax", () => {
     const id = "23b93562-0550-4eef-88af-f951d6ea6138";
     const image = `![caption](vico-attachment:${id})`;
