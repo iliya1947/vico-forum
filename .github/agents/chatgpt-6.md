@@ -1,5 +1,23 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #247 — bounded LITERAL-TEXT-01 native Simple indentation correction (2026-10-27)
+
+**Назначение Миры:** [#6454119080](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454119080). Existing Draft [PR #247](https://github.com/iliya1947/vico-forum/pull/247), branch `chatgpt6/batch-l2-20261027`, prior head `894f9719bfb19028b788560a75d42b3163dde740`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Исправлен только один assigned current-Stage defect `LITERAL-TEXT-01`: multiple leading tabs / 4spaces+tab during native Simple editing are not safely treated as literal text.
+
+**Three-step outcome:**
+1. Source diagnosis: `escapeVisualMarkdownText` previously prefixed first leading whitespace with structural entity `&#9;` / `&#32;`, then called `clipboardPlainToMarkdown` on remainder without context; remainder starting `\t` or `   \t` was interpreted as genuine indented code by `textAsMarkdown`, returning unescaped `&copy;` and GFM `~~literal~~`. Main baseline also compared, bounded correction avoids global clipboard semantics change.
+2. [Implementation commit `51e2301d9c5e3aca5b5238a7681878b1a4199829`](https://github.com/iliya1947/vico-forum/commit/51e2301d9c5e3aca5b5238a7681878b1a4199829): exactly **three files** `app/forum/visual-markdown-editor.tsx` (+7/-1), `app/forum/markdown-editor.test.tsx` (+44), `PROJECT_STATE.md` (+9/-2). `escapeVisualMarkdownText` now calls unchanged `clipboardPlainToMarkdown(value.slice(1), { markdown: structuralPrefix, selection: {start: structuralPrefix.length,end:structuralPrefix.length} })`; candidate parsed with actual structural prefix treats remainder as prose so entities/GFM are escaped. Clipboard plain/rich/TSV implementations unchanged; Advanced raw source unchanged.
+3. Four mounted/pure test cases added: native Simple `\t\t&copy; ~~literal~~` and `    \t&copy; ~~literal~~`, source + FormData + published `ForumMarkdown` literal outcome + leaf focus, and Advanced intentional indented code for same two sources. Existing simple typing and paste controls remain. Test source and current commit diff re-read and exact head checked.
+
+**[Exact-head CI #40589705256](https://github.com/iliya194/vico-forum/actions/runs/40589705256): completed SUCCESS**, pull_request head `51e2301d9c5e3aca5b5238a7681878b1a4199829`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Read both completed job logs: checks job `122490424584` **1211/1211 app tests, 102 files PASS** (markdown-editor 115 tests, clipboard 25), lint 0 errors / 1 preexisting unused-disable warning, typecheck, app and UI-preview builds, migration guard, production schema checks PASS. Database job `122490425213` **323/323 PostgreSQL17 tests, 29 files PASS**, 49 table schema manifest/permissions, built Workers smoke PASS. PostgreSQL ERROR/FATAL diagnostics are expected negative-case assertions; no test failures.
+
+**Boundaries:** No independent local real Chromium/native PG/Workerd or live/external/provider/production/owner visual testing in this correction; tests executed by CI on exact head, not claimed personally. Owner visual acceptance, whole-PR independent review and merge are not complete. PR #247 remains Draft and open. No L7/PR #248 implementation, schema/migrations, dependencies or unrelated project code changed. No new implementation branch; reused assigned PR #247 existing branch.
+
+**Status:** bounded LITERAL-TEXT-01 correction and CI verification complete. **Лира as implementer STOP**; Мира coordinates applicable independent whole-PR review on this stable head and remaining PR #247 acceptance. No self-review verdict and no merge.
+
+
+---
+
 ## PR #248 — новый независимый whole-PR cycle / head c87ca0ed (2026-10-27)
 
 **Поручение:** Мира, [служебный комментарий #6452383742](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6452383742). **Область:** полный [implementation PR #248](https://github.com/iliya1947/vico-forum/pull/248), все 18 paths и 7 L7 findings, после bounded correction автора Лёвы; base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`; **stable exact head `c87ca0ed6e0ec669ac6c97d5c68d547980e6541d`**. Лира не участвовала в L7 implementation. Head открыт, не Draft, mergeable; повторно сверялся перед публикацией.
