@@ -20,6 +20,27 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LOC-03 — controlled i18next nesting с options (2026-10-27)
+
+Batch L2 шаг 4/5 расширяет текущий UI translation validator для
+i18next nesting: `$t(key)` и default i18next options form
+`$t(key, {"lng":"en"})` проверяются как защищённые полные токены,
+включая option payload. Добавленные, удалённые или изменённые
+parameterized nested lookups не могут обойти provider/local/persistent
+validation и затем изменить runtime text через i18next. При
+распознавании поддерживаются quoted values с parentheses и
+интерполируемые `{{variable}}` в JSON options; malformed и
+неподдерживаемый синтаксис отвергается.
+
+Изменение локализовано в общем `controlledTokens` boundary;
+published raw UI results, source priority, compiled bundle validation
+и runtime используют существующие механизмы. Regression проверяет
+отказ в результате provider publication, compiled/verified bundle
+и фактическую интерпретацию опасного nesting i18next. Новых
+schema/migration/dependency, provider и deployment изменений нет.
+Exact-head CI и независимый whole-PR review фиксируются отдельно
+по завершении соответствующих проверок; Batch L2 LOC-06 ещё не начат.
+
 ## LITERAL-TEXT-01 — буквальный текст в Simple (2026-10-27)
 
 В Batch L2 шаге 3/5 уточнено общее экранирование literal prose для
