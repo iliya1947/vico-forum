@@ -1,5 +1,59 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / L7 — bounded correction после verification (2026-10-27)
+
+**Автор:** Лёва — Codex-6.1 Sol. Отчёт реализации correction и её проверок, не независимый whole-PR verdict.
+**Назначение:** [#6451604065](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6451604065), после author verification [#6451496176](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6451496176).
+**PR:** [#248](https://github.com/iliya1947/vico-forum/pull/248).
+**Предыдущий проверенный head:** `16f4b955c364e38ddc77dfce0cb4a995b4577bc3`.
+**Новый stable exact head:** `c87ca0ed6e0ec669ac6c97d5c68d547980e6541d`, branch `fix/l7-editor-structure`; accepted base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. PR open/mergeable, merge не выполнялся.
+
+### Scope correction
+
+Только три назначенные families. От предыдущего head изменены **4 файла, +332/−83**: `app/forum/editor-document.ts`, `editor-document.test.ts`, `markdown-editor.test.tsx`, `PROJECT_STATE.md`. Другие implementation paths L7, custom parser/recipients/translation policy, publication actions, dependencies/schema/migrations не изменялись.
+
+### EDITOR-03 — nested reconstruction и link whitespace
+
+- Форматирование рассчитывается **изнутри наружу**: перед границей внешнего wrapper известны удаления и вставки delimiters детей. Общий source-edit plan применяет изменения по исходным offsets и отображает selection без пересериализации документа.
+- Emphasis boundary whitespace исключается из его delimiters; link label не требует такого trim, поэтому невыделенные пробелы остаются внутри ссылки. Если после удаления child delimiters видимого остатка нет, wrapper не открывается повторно и пустая ссылка не создаётся.
+- `**alpha *beta gamma* delta**` + clear beta → `**alpha** beta ***gamma* delta**`; public alpha сохраняет strong, gamma — strong/emphasis, delta — strong.
+- `[alpha beta](https://x)` + clear alpha → `alpha[ beta](https://x)`, public anchor text ` beta`.
+- `[**alpha beta**](https://x)` + clear beta → `[**alpha** ](https://x)beta`: одна ссылка с text `alpha `, без empty anchor.
+- Контроли вложенной ссылки внутри strong показали, что учитывать нужно **и вставленные** brackets/target ребёнка; иначе outer delimiter может пересечь link structure. При соприкосновении выбранного слова с link punctuation CommonMark attention дополнительно требует literal reference на выделенной границе. Например `bet&#97;**[ gamma](https://x) delta**` отображает тот же beta и сохраняет стиль/ссылку невыделенного текста. Используется стандартное Markdown character-reference escaping (аналогичная необходимость подтверждена mdast serializer), а не HTML или добавление видимых/zero-width символов.
+- Source mapping учитывает длину reference и supplementary Unicode; mounted/Chromium controls проверили `𐐀amma`, selection после Clear и exact history. Неизменённый окружающий source не нормализуется.
+
+### EDITOR-06 — actual boundaries после nested reconstruction
+
+- Убран единый whitespace snapshot до удаления inner wrapper. Для каждого crossing wrapper вычисляется его реально оставшаяся граница, включая planned child delimiters; Empty residual wrappers удаляются. Paragraph insertion и caret отображаются общей source-edit plan.
+- Enter перед beta в `**alpha *beta gamma* delta**` → `**alpha** \n\n***beta gamma* delta**`; после gamma → `**alpha *beta gamma***\n\n **delta**`.
+- Public renderer показывает два корректных paragraphs без literal delimiters, нужные strong/emphasis сохраняются. Контроль Enter внутри beta остаётся корректным.
+- Невыделенные соседние блоки/CRLF/code source не пересериализуются; существующие cross-leaf/cross-block selection и history tests проходят.
+
+### RES-EDITOR-02 — terminal manual direction
+
+- При join previous paragraph сохраняет свой explicit block style: его распознанный terminal marker удаляется со старой позиции и ставится в конец объединённого paragraph. Если у второго paragraph тоже explicit marker, он заменяется previous override, чтобы не появлялся literal internal token.
+- `Alpha {:vico-dir=rtl}\n\nBeta` → `AlphaBeta {:vico-dir=rtl}`; аналогично ltr. Public paragraph имеет нужный dir, text `AlphaBeta`, marker скрыт.
+- Если previous paragraph auto, right-only explicit direction остаётся прежним. Есть controls на оба explicit overrides, wrapper coalescing, CRLF и empty trailing paragraph.
+- Caret отображается **перед** скрытым terminal marker, включая empty paragraph join; native browser проверил offset 5 между Alpha и Beta. Undo/Redo восстанавливают точный source.
+- Перенос опирается на уже распознанную parser metadata; direction grammar и отдельный LOC-08 translation round-trip не redesign-ились.
+
+### Проверки
+
+- До correction новые helper regressions: **11 FAIL /46 PASS**, подтверждая causal chains. После: **159 focused editor tests PASS**.
+- **27 добавленных regressions/controls**: 16 helper cases и 11 mounted component cases. Проверяются source/selection, public ForumMarkdown, anchor whitespace/empty links, nested Enter, direction и history.
+- Полный локальный app suite: **1179 tests /102 files PASS**.
+- **96 semantic matrix controls PASS**: несколько nested strong/emphasis/strike/link fixtures, Clear по каждому слову и Enter в начале/середине/конце, сравнение rendered symbols/formatting и unselected link membership.
+- **11 headless Chromium scenarios PASS**: DOM selection + actual toolbar/native keyboard → submitted source → public renderer; selected character references/Unicode, join caret, **11/11 exact Undo и Redo**.
+- Final local `pnpm typecheck` и `tsc -b`, source lint (0 errors / прежний warning в ui.test.tsx), app build и UI-preview build PASS. Generated UI artifact вынесен за checkout до source lint.
+- **[Exact-head CI #40573112857](https://github.com/iliya1947/vico-forum/actions/runs/40573112857) SUCCESS: checks `122432285927` — **1179 app tests /102 files PASS**; database `122432286421` — **326 PostgreSQL17 tests /30 files PASS**. Completed logs обеих jobs прочитаны; typecheck/lint, both builds, migration/schema/runtime probes и Workers smoke успешны.**
+- Full local native PG/Workerd smoke на correction отдельно не повторялись: эти suites выполнены exact-head CI. Chromium — локальный component harness с synthetic API responses, не live deployment или owner visual acceptance. Внешние сервисы/production не затрагивались.
+
+Артефакты: `/workspace/work/l7-correction-red.log`, `l7-correction-mounted.log`, `l7-correction-app.log`, `l7-correction-typecheck-final.log`, `l7-correction-tsc.log`, `l7-correction-lint.log`, `l7-correction-build.log`, `l7-correction-ui-build.log`, `/workspace/work/l7-correction/semantic-matrix-results.json`, `browser-final-results.json`.
+
+PROJECT_STATE синхронизирован с correction. Локальный server/browser остановлены, dependency symlink удалён, implementation checkout clean. Предыдущие independent verdicts относятся к старому head; автор новый independent whole-PR self-review не выполняет.
+
+**Handoff Мире:** coordinator whole-PR review PR #248 на `c87ca0ed6e0ec669ac6c97d5c68d547980e6541d`, затем non-author independent reviewers того же head. Correction завершена; implementation head фиксирован. **Лёва STOP.**
+
 ## PR #248 / L7 — verification согласованных findings, без correction (2026-10-27)
 
 **Автор проверки:** Лёва — Codex-6.1 Sol, автор реализации. Это targeted verification трёх согласованных families, **не независимый whole-PR review**.
