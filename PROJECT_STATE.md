@@ -20,6 +20,31 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LOC-06 — отсутствие текста при генерации перевода post body (2026-10-27)
+
+Batch L2 шаг 5/5: в `ContentPostBodyTranslationPlanner.planAndDispatch`
+`protectMarkdownForTranslation` выполняется после чтения authoritative
+revision, но **до** source-locale resolver. Если segments пусты
+(attachment-only / blank / whitespace-only / fenced-code-only post),
+действует существующий bounded `original:no-translatable-content`
+вместо `InvalidContentSourceLocaleInputError` из normalization и
+HTTP 500. Это относится одинаково к automatic и explicit post-body
+generation; текущие permission, disabled-runtime, target-locale и
+immutable revision проверки сохранены. Для обычного текста source
+resolution, provider capability, task upsert и enqueue выполняются
+как прежде.
+
+Focused regressions проходят через actual topic action →
+DefaultContentGenerationActionCapability → post-body planner,
+authoritative revision store и настоящий locale resolver: оба
+generation intents с blank-body, whitespace и fenced-only cases
+возвращают no-op и не вызывают resolver/upsert/enqueue, а prose cases
+queued. Planner-unit regressions также проверяют, что caller-supplied
+текст не подменяет authoritative empty revision. Новых schema,
+dependency, runtime-policy или external-provider изменений нет.
+Exact-head CI и независимый whole-PR review Batch L2 фиксируются
+после их фактического выполнения.
+
 ## LOC-03 — controlled i18next nesting с options (2026-10-27)
 
 Batch L2 шаг 4/5 расширяет текущий UI translation validator для
