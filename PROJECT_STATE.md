@@ -20,6 +20,27 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LITERAL-TEXT-01 — буквальный текст в Simple (2026-10-27)
+
+В Batch L2 шаге 3/5 уточнено общее экранирование literal prose для
+визуального ввода и plain-text clipboard path. Тройные дефисы в начале
+строки больше не преобразуются в thematic break или setext underline,
+тильды экранируются от GFM strikethrough, а буквальные ampersands
+сериализуются через `&amp;`, чтобы `&copy;` и другие character references
+не меняли видимый текст. Существующие обычные Markdown-линии,
+обработчики HTML rich paste и intentionally formatted Markdown source
+не заменяются универсальным escaping при просмотре или переключении
+режимов.
+
+Служебный `&#32;` / `&#9;` для начала visual leaf по-прежнему создаётся
+отдельно от экранирования пользовательских символов, чтобы сохранить
+ведущие пробелы и tab без повторного преобразования entity. Добавлены
+pure parser/regression tests для `---`, `~~literal~~`, `&copy;`,
+обычного текста и setext case, а также mounted Simple typing/paste
+и leading-whitespace checks. Markdown toolbar actions, Advanced source
+editing, DB и authz contracts не менялись. Applicable exact-head CI
+и независимый whole-PR review фиксируются по факту отдельно.
+
 ## EDITOR-10 — буквальные подписи в Markdown-упоминаниях (2026-10-27)
 
 В Batch L2 шаге 2/5 после влитого EDITOR-04 уточнена сериализация подписи
