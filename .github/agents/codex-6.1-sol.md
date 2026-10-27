@@ -1,5 +1,86 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent whole-PR re-review after correction (2026-10-27)
+
+2026-10-27. Назначение #236 comment 6441255042. **Verdict: CHANGES REQUIRED — 2 подтверждённых current-scope findings.**
+
+Новый exact head `53f059dbd43ecb8339f2b611eb4eef3ac6774cff`; base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. GitHub head/base повторно подтверждены в конце проверки, PR open/Draft, 13 changed files. Проверены все 13 файлов и весь scope steps2–5: EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06, включая underlying editor/parser/renderer/validation/planning boundaries и актуальные применимые Stage/SOT требования. PR #245 в задачу не входил и не менялся. Автор реализации Лира; проверяющий Лёва к реализации этого PR не привлекался. Findings других reviewers этого цикла не читались и не использовались.
+
+## A. P2 / LITERAL-TEXT-01: Ctrl+Shift+V с ведущей табуляцией показывает новое escaping пользователю
+
+`app/forum/clipboard-markdown.ts:6–17`, actual forced-plain path `app/forum/visual-markdown-editor.tsx:583–585`.
+
+Обычный paste с tab направляется в spreadsheet conversion; поэтому finding воспроизведён именно через **реальный mounted Ctrl+Shift+V** (keydown modifier + paste + selection), а не подменён ordinary paste. Это предусмотренная пользовательская команда «только текст без форматирования», docs/EDITOR.md §10.
+
+| Clipboard | Base source / видимый code text | Head source / видимый code text |
+|---|---|---|
+| tab + `&copy;` | tab + `&copy;` / `&copy;` | tab + `&amp;copy;` / `&amp;copy;` |
+| space + tab + `~~literal~~` | space + tab + `~~literal~~` / `~~literal~~` | space + tab + `\~\~literal\~\~` / `\~\~literal\~\~` |
+
+True baseline serializers извлечены из указанной base через git show; тест использует фактический ForumMarkdown renderer. New head guard защищает только четыре ASCII spaces. Tab остаётся indented-code marker; в code content ampersand entities и backslash escapes не декодируются, поэтому новый escapeText меняет видимые символы. Native Simple typing tab+entity остаётся literal через structural `&#9;`, что является passing control.
+
+Причина относится к изменениям этого PR относительно base. Это **остаток текущей literal escaping regression**, не новая потребность превратить tab в structural entity. Решение автора сохранить прежнюю raw-tab сериализацию учтено: finding НЕ требует менять raw-tab контракт, spreadsheet detection или превращать весь paste в prose. Оно требует не показывать пользователю новое служебное escaping в уже существующем forced-plain пути. Четыре leading spaces теперь исправлены, но это не устраняет приведённый tab-case.
+
+Минимальный correction scope: serialization/escaping в согласованном raw-tab context, с regression реального Ctrl+Shift+V + published render, контролями ordinary TSV paste и native typing. Во время review не исправлялось.
+
+## B. P2 / EDITOR-10: допустимый autolink-подобный display name перестаёт быть единой буквальной profile-link подписью
+
+`app/forum/mentions.ts:17–21`; имя разрешено текущим sign-up name validation (`app/auth/auth.server.ts:45–54`: string, trim, nonblank, ≤100), reader/mentions route не исключает `<…>`.
+
+Authoritative имя `Ada <https://example.test> &copy;` через actual autocomplete в **Simple и Advanced** сериализуется как:
+
+```text
+[Ada <https://example.test> &amp;copy;](/en/users/member-42)
+```
+
+Actual ForumMarkdown/SSR вместо одной буквальной profile-link подписи создаёт:
+
+- profile anchor с текстом `Ada `;
+- отдельный внешний anchor `https://example.test`;
+- ` &copy;` вне profile anchor.
+
+Видимый combined text — `Ada https://example.test &copy;`: угловые скобки имени исчезли, а часть authoritative display name стала внешней ссылкой. Это обычный HTTPS autolink CommonMark, не full-GFM expansion и не запрос нового parser feature. Mention serializer не экранирует `<`/`>`; escaping `&` и `~` не предотвращает этот interpretation.
+
+Проверены фактические parsed AST, HTML, mounted chooseMention paths и recipient extraction. Recipient остаётся `member-42`, исходный profile destination не подменяется. Ошибка notification recipient, XSS или переход на произвольную схему не заявляются.
+
+На извлечённом baseline serializer такой autolink тоже создаёт два anchors. Значит **это не новая регрессия correction**, а ранее существовавший незакрытый случай текущего EDITOR-10 literal authoritative-label результата. Исходный task/PR и текущий PROJECT_STATE объявляют имя authoritative literal text; пример включает также character-reference-подобный текст, targeted entity/tilde controls проходят. Проблема не переносится в future-only work просто потому, что причина старше correction.
+
+Минимальный correction scope: literal escaping link-label для поддерживаемого parser/autolink syntax + published-label regression в обоих editor modes. Не менять member IDs, recipient logic, auth model или требования к допустимым именам как обход.
+
+## Проверка прежних четырёх findings на новом head
+
+1. **LOC-03 performance — конкретная регрессия устранена.** Nested-repeat regexp удалён; scanner двигается вперёд по quotes/escapes/depth. Actual UiTranslationResultPublisher.publish, compileNamespaceBundle, verifyCompiledNamespaceBundle проверены malformed input длиной31,4099,10000: все9 controls возвращают Malformed nesting без записи. Publish/compile ~0.5–1.3ms; verifier ~16.6–20.1ms вместе со своей работой. Ранее31символ не возвращался за2s. Корректные nesting/options/placeholders, смена lng, malformed/unsupported syntax и реальная i18next интерпретация проверены source/tests. Ни quota, ни production CPU утверждений нет.
+2. **Четыре+ spaces paste — исправлено для прежнего воспроизведения.** Actual mounted paste и published render сохраняют entity/tilde text без code/visible escapes; отдельно выявлен A с tabs.
+3. **Literal tilde mention — исправлено.** `~~Ada &copy;~~` через Simple/Advanced autocomplete и настоящий renderer остаётся literal, без del; member42 сохраняется. Отдельно выявлен B с autolink syntax.
+4. **Setext equals — исправлено.** `Heading\n===`, `---`, repeated equals/dashes проходят actual paste; native typing с реальным Enter затем marker не создаёт heading/hr. Advanced raw source продолжает создавать intended h1/strikethrough, Bold после native entity text работает.
+
+## Остальной whole-PR scope
+
+- LOC-06: authoritative revision/target identity checks сохраняются до нового no-segments guard. Guard до locale resolver предотвращает пустой/защищённый-only content planning. Caller prose не подменяет authoritative empty revision. Authz/guest/origin/disabled runtime, source resolution/prose capability/current translation/task enqueue paths рассмотрены, контракт не менялся. Независимая расширенная actual HTTP action→default capability→real planner/resolver matrix10 cases PASS: automatic/explicit blank, whitespace, fenced, inline-code-only + prose202. Findings нет.
+- LOC-03: publication и compiled bundle boundaries используют общий validator; size/placeholders/protected terms/plural branches и provenance сохранены. Новый scanner не вводит повторного backtracking. Дополнительных findings нет.
+- Literal/editor controls: ordinary paste, multiline Setext, leading spaces, entity/tilde typing, repeated native edits без double encoding, intentional toolbar Bold/Advanced raw semantics проверены. HTML clipboard conversion сохраняет technical code branches; table serialization/recipient API contracts не менялись.
+- PROJECT_STATE additions соответствуют четырём declared fixes и LOC06 implementation, дата и stale LOC06 sentence исправлены. Обнаруженные A/B означают, что общий literal-label/text результат ещё не полностью обеспечен.
+
+## Наблюдения, не объявленные новыми дефектами
+
+Native editable leaf имеет aria-multiline=false и нормализует искусственно присвоенный ему newline в space. Первоначальный diagnostic probe, присвоивший `Heading\n===` непосредственно leaf.textContent, не моделировал native Enter. Его ложное expectation отброшено; заменён actual Enter control, который прошёл.
+
+На continuation prose lines mdast сохраняет structural leading whitespace, а published Markdown→HTML soft-line handling его нормализует. Сопоставление ordinary text с base даёт то же поведение. Это не включено в findings этого PR как новая escaping regression и не использовано для требования общего renderer rewrite.
+
+Обычный tab-paste превращается в таблицу по существующему spreadsheet path. Это намеренное поведение, не finding A; A ограничен Ctrl+Shift+V. `<b>Ada</b>` control отображается literal (HTML не выполняется); B относится к конкретному поддерживаемому autolink path.
+
+## Проверки / доказательства / границы
+
+- Лично на exact head: **1148 application tests/102files PASS**,135.07s; typecheck PASS; ESLint12изменённых TS/TSXfiles PASS; app build и UI-preview build PASS. Preview выдаёт существующее nonblocking chunk-size предупреждение.
+- **43 независимых diagnostic controls PASS /42 unrelated route tests skipped**: 33editor/parser/renderer/control +10generation route. Часть asserts фиксирует подтверждённые defects/baseline comparisons; их PASS не означает acceptance.
+- Nine bounded actual publication/compiler/verifier controls PASS. Первоначальный diagnostic launcher не нашёл top-level esbuild, затем .ts runner выбрал CJS для top-level await; исправлен только launcher на tsx/.mts. До исправления эти запуски не достигли validation; времена взяты только из финального успешного лога.
+- Independently fetched CI #40491273526 jobs и completed logs: checks122145529893 SUCCESS (1148/102), database122145530412 SUCCESS (304nativePG/28files + applicable probes/Worker smoke). CI checkout synthetic merge b011214… head53f059d с base082530a; личные local app runs непосредственно на head. Локальная PG suite для review не запускалась и не присваивается.
+- Artifacts `/workspace/work/pr247-r2-{app,type,lint,build,preview,final-probes,validation-chain}.log`, diagnostic editor/generation/base serializers и `pr247-r2-validation-chain-probe.mts`. Временные tests/serializers удалены из checkout, symlink и preview dist вынесены/убраны; tracked/untracked checkout чист, git diff --check PASS.
+- Нет production/provider/Queue/external services/OAuth/backup/restore действий. Browser end-to-end и owner visual acceptance не заявляются: редакторные proofs mounted jsdom events + actual parser/ForumMarkdown SSR. Implementation/main/GitHub reports/comments не менялись; никаких исправлений в review.
+
+Результат сначала передан только разработчику в текущем чате, согласно independent-review publication barrier AGENTS.md. Эта публикация выполнена по прямой команде разработчика «Публикуй». Следующий шаг — согласование опубликованных reviews координатором в #236. Исправления или самостоятельную сверку с чужими reviews не начинал. Лёва STOP.
+
+
 ## PR #245 — storage-fence feasibility proof (2026-10-27)
 
 Дата: 2026-10-27. Назначение #236 comment 6440923322, после плана 6440713368. GitHub/local head повторно подтверждён: `c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`.
