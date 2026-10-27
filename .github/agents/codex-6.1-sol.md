@@ -1,5 +1,115 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #245 — storage-fence feasibility proof (2026-10-27)
+
+Дата: 2026-10-27. Назначение #236 comment 6440923322, после плана 6440713368. GitHub/local head повторно подтверждён: `c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`.
+
+**Verdict: протокол для новых uploads архитектурно выполним в существующих R2/Workers + PostgreSQL, но требует расширить текущий внутренний интерфейс. Одних conditional PUT недостаточно.** Необходимы pre-write reservation, durable activation, positive ETag condition и bounded discovery/sweep поздних reservation-маркеров. Нового внешнего сервиса не требуется. Это feasibility/design result, не implementation acceptance; PR/schema/dependencies не изменены. Legacy unconditional writers остаются отдельным reconciliation/migration case, безопасный автоматический drain для них не доказан.
+
+## A. Проверенные primitive и границы доказательства
+
+Официальные документы:
+
+- https://developers.cloudflare.com/r2/reference/consistency/ — conditional write проверяется атомарно при commit; отрицательный read не завершает ранее начатую запись.
+- https://developers.cloudflare.com/r2/api/workers/workers-api-reference/ — Workers put supports onlyIf/etagMatches и customMetadata; precondition failure возвращает null; LIST имеет prefix, limit, cursor, include customMetadata.
+
+Текущий PrivateAttachmentBucket возвращает только size, скрывает ETag и не предоставляет condition/custom metadata/LIST. Текущий Workers adapter отправляет unconditional PUT. Через этот неизменённый интерфейс нужного протокола нет. Ни DB claim, ни новые колонки сами по себе не отменяют такой PUT.
+
+Дальнейший протокол — собственный вывод из documented primitive. Исполняемая конечная модель проверяет interleavings при этих семантиках, не моделирует всю сеть/provider и не является математическим доказательством любого возможного protocol. Дополнительный local Workerd + local R2 emulator проверяет конкретные API controls, не production R2.
+
+## B. Конкретный минимальный протокол v2
+
+### 1. Одноразовая identity и PREPARING
+
+Новый серверный random physical key в выделенной v2 namespace, например `private/fenced-v1/<uuid>`. Не переиспользовать key при retry, не восстанавливать reservation по старому key. До любой storage mutation записать journal PREPARING. Протокол определяется namespace/version; v1 rows нельзя принять за PREPARING v2.
+
+В рамках одного key — ровно одна логическая initialization PUT и не более одной логической payload PUT. При неизвестном initialization outcome request прекращает эту попытку: не повторяет initialization на том же key и не начинает payload. Новый пользовательский retry получает новую physical identity. Возобновление payload по одной лишь найденной reservation запрещено.
+
+### 2. Reservation и durable READY
+
+Один небольшой служебный PUT на тот же key, с If-None-Match:* и server-only customMetadata `kind=reservation` + protocol identity. Получить положительный ACK и ETag reservation. Payload/body клиента не используется как служебная metadata.
+
+Затем выполнить атомарный DB activation PREPARING→READY с этим ETag, только если journal всё ещё существует, не claimed и принадлежит этой попытке. Только подтверждённое committed activation разрешает payload. Никаких data PUT из PREPARING. Потеря activation ACK не разрешает optimistic upload; допустимо прекратить попытку. Cleanup увидит фактическое committed состояние БД.
+
+Свойство READY: initialization уже положительно завершилась, повторных initialization для key нет, следовательно старая reservation не сможет появиться повторно после её удаления. Если claim победил activation, writer не получает data permission.
+
+### 3. Payload
+
+Единственный payload PUT на тот же key с `onlyIf: {etagMatches: reservationEtag}`. Это положительное совпадение существующего объекта, а не If-None-Match. Payload PUT заменяет server metadata на `kind=data`. Существующие streaming/length/structural gates и private asset authorization сохраняются.
+
+Completion marker может оставаться для совместимости и metadata gating, но новое orphan retirement больше не зависит от успешности post-PUT UPDATE этого marker. Если settlement UPDATE не записался, request по-прежнему может вернуть503 без metadata; cleanup располагает pre-write протоколом, которого сейчас нет.
+
+### 4. Cleanup как отзыв права
+
+Под прежним DB row lock проверить authoritative asset и зафиксировать claim. Registered object передать существующему reference-aware asset cleanup, не удалять как orphan. Claim атомарно запрещает дальнейший activation и metadata admission.
+
+Для PREPARING: ни один data writer не был разрешён и после claim уже не будет. Возможна только поздняя initialization reservation.
+
+Для READY: initialization уже завершена, её повторение запрещено. Выполнить DELETE. Если payload commit был раньше DELETE, bytes удаляются. Если commit позже DELETE, positive ETag match не проходит, поскольку reservation уже отсутствует. Следовательно **положительно завершившийся DELETE сам становится revoke для v2 READY**, а не просто наблюдением отсутствия.
+
+После положительного DELETE retire journal по тому же claim token/version. Если DELETE ACK неизвестен — journal сохраняется, следующий pass повторяет DELETE. Если DB retirement не записался — journal сохраняется, следующий pass повторяет безопасный DELETE. Durable claim запрещает вернуть попытку в READY/unclaimed, даже после истечения lease: новый claim только продолжает cleanup.
+
+### 5. Конечный lifecycle поздних reservation
+
+Claim/DELETE могут обогнать initialization PREPARING; поздно закоммившаяся initialization создаст reservation после retirement journal. Data PUT всё равно запрещён: activation больше невозможен. Но оставить такой marker навсегда нельзя.
+
+Поэтому обязательна **bounded paginated sweep** v2 namespace с server-only reservation metadata и durable cursor/checkpoint. На каждом проходе — жёсткий лимит просмотренных entries, DB probes и deletes; общий budget делится с существующим cleanup так, чтобы обычные assets и journal не голодали. В конце страницы/цикла прогресс сохраняется, следующий полный цикл снова начинается с начала prefix. Это итеративный обход v2 keyspace, с реальной дополнительной стоимостью; не бесплатная операция и не полный scan в одном request.
+
+Перед удалением найденного reservation-кандидата подтвердить в authoritative DB **отсутствие и journal, и asset** для этого physical key. DB failure/timeout не трактовать как отсутствие. LIST может быть устаревшим относительно последующего commit: без проверки asset можно удалить уже принятый файл. No-reuse identity и обязательный journal для metadata исключают создание нового authoritative owner после положительно установленного отсутствия обоих.
+
+Если journal ещё существует — marker sweep не вмешивается; его lifecycle ведёт journal cleanup. Если asset существует — skip независимо от старого LIST. Data objects не являются targets marker sweep.
+
+Каждая попытка имеет максимум одну initialization commit. После её фактического завершения поздний marker обнаруживается очередным fair sweep и удаляется. Не требуется постоянный per-key tombstone. Liveness предполагает eventual availability, продолжающиеся bounded cleanup runs и fair progress при обслуживаемой нагрузке; конечное число operations данного key, а не фиксированный wall-clock срок, обеспечивает отсутствие бесконечного recreation.
+
+## C. Causal proof / ABA
+
+Безопасность получается из двух разных барьеров:
+
+1. PREPARING защищён DB activation fence: после claim не может появиться data writer, даже если reservation materializes позже.
+2. READY защищён storage positive-match fence: после DELETE старая payload operation не проходит условие, а initialization уже завершилась и не повторяется.
+
+Ключевое отсутствие ABA — следствие single initialization, запрета повторного использования key и DB activation, а не предположение об уникальности ETag. Даже identical reservation body/ETag нельзя заново записывать на этот key. При нарушении этого правила старый PUT действительно снова получает право: counterexample есть в модели и локальном R2 control.
+
+Таким образом terminal outcome не требуется переносить в durable storage после факта, чтобы cleanup смог остановить будущую materialization. Права ограничены до payload; потеря post-terminal settlement UPDATE больше не делает terminal и genuinely unknown writer неразрешимо различимыми для cleanup.
+
+Никакой одинаковый timestamp/grace не используется как доказательство завершения старого RPC. Genuine unknown payload сохраняется tracked до подтверждённого v2 DELETE-revoke. В v1 этого свойства нет.
+
+## D. Executable evidence
+
+`model.py` разделяет initialization commit/ACK, DB activation, payload begin/commit/ACK, metadata admission, claim/DELETE/retire и marker LIST/DB-check. Condition проверяется в момент commit. Перечислены 7920 допустимых порядков двух цепочек и sweep; 8 fault modes ×13 crash positions = **823680 schedules PASS**.
+
+Modes: normal; initialization не committed; initialization ACK lost; activation не committed; activation ACK lost; settlement не committed; payload ACK lost; terminal data failure. Crash прекращает последующие local request steps, но не отменяет ранее начатые remote commits. Финальный fair orphan sweep после всех delayed commits проверяет finite control-state reclamation. Это модель одного key; cursor fairness, concurrent claim token реализации и actual PG новой схемы остаются обязательными implementation acceptance tests.
+
+Четыре негативных controls нашли counterexamples:
+
+- Заменить positive match на If-None-Match: payload создаётся после DELETE и остаётся untracked.
+- Разрешить recreated reservation с прежним ETag: старый delayed payload проходит после journal retirement (ABA).
+- Убрать orphan sweep: late initialization оставляет control object без journal.
+- Не проверять authoritative asset при stale LIST: accepted payload удаляется marker collector.
+
+Local pinned Wrangler/Workerd + эмулированный R2: **6/6 controls PASS** — reservation→positive-match payload; DELETE→positive-match rejection; committed payload→DELETE; поздний marker виден LIST и удаляется; forbidden recreation действительно снова разрешает старый ETag; FixedLengthStream body in flight + DELETE до окончания body приводит к отказу conditional PUT. Последний case — local emulator behavior, а general commit-semantics опирается на official docs.
+
+Artifacts: `/workspace/work/pr245-fence-feasibility/{model.py,results.json,entry.mjs,wrangler.jsonc,workerd-results.json,server.log}`. Диагностические files вне PR, без dependencies/schema modifications. Broad application/PG suites не повторялись: новой реализации нет, whole-PR acceptance не заявляется.
+
+## E. Минимальное расширение и обязательные acceptance gates
+
+Требуются: internal bucket reservation/conditional payload operations с ETag+metadata; bounded LIST API; durable PREPARING/READY distinction (например nullable reservation ETag в v2 journal, не переосмысление terminal write_completed_at); один lease/token-fenced checkpoint обхода; v2 key validator/namespace; protocol-aware journal/metadata cleanup. Конкретные migration/table names — implementation design, не уже внесённые изменения. Очередь, новый внешний coordinator, полный upload buffer или новая dependency не требуются данным протоколом.
+
+Дополнительно к перечисленной executable matrix implementation должна подтвердить actual action→adapter→PostgreSQL CAS/claim/metadata races; real server-side settlement SQL timeout; settlement/metadata commit rollback/lost ACK; concurrent expired claims; durable cursor recovery, empty/truncated pages, marker после cursor boundary; budget/fairness при большом v2 prefix; no protocol downgrade и no same-key initializer retry.
+
+## F. Legacy boundary
+
+Existing v1 NULL row с потенциальным unconditional PUT нельзя сделать v2 добавлением ETag/колонки или ожиданием grace. Такой PUT игнорирует условие и может материализовать bytes после DELETE. Legacy rows с durable settled marker/authoritative asset могут завершаться прежним безопасным путём; genuinely unknown v1 требуют отдельного доказанного drain/reconciliation решения. **Bounded automatic transition для неизвестного v1 writer не доказан и этим результатом не обещается.**
+
+До eventual rollout должна быть установлена фактическая применимость legacy case: ещё не развёрнутый код и пустой disposable storage не равны доказательству состояния production. Production проверка здесь не проводилась и не предлагается неявно. Необходимо либо подтвердить отсутствие старых writers/rows в назначенном acceptance scope, либо сохранить отдельный legacy handling. Смешанный rollout не допускает old code создавать unconditional writes в v2 namespace.
+
+## G. Итог
+
+Все восемь пунктов назначения разобраны: identity/activation до data, recoverable revoke через claim+positive-match DELETE, late payload rejection, no-recreate ABA invariant, конечный marker lifecycle через bounded discovery, metadata/claim fencing, явный legacy exception и local/CI проверяемость. Через текущий неизменённый PrivateAttachmentBucket результат недостижим; указанное внутреннее расширение необходимо для предложенного протокола.
+
+Feasibility для новых uploads — положительная при явно сформулированных single-attempt/no-reuse/fair-sweep условиях. Это основание для согласования ограниченного implementation plan, а не разрешение молча начать его. Code PR #245/main/schema/deps не менялись; PR #247/CPU/deployment исключены. Локальный Wrangler/Workerd остановлен после controls, evidence сохранён; git diff --check PASS, прежний untracked node_modules symlink сохранён. Результат опубликован в рамках назначения #6440923322. Это архитектурная feasibility-проверка, не independent review; отдельный publication barrier независимых проверок к ней не применяется. STOP.
+
+
 ## PR #245 — root-cause correction plan (2026-10-27)
 
 Дата: 2026-10-27. Назначение #236 comment 6440418586. Head `c00b416eabe5f8cbe68b4fc35a175f0d7ef6e757`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. Код не изменён. CPU/deployment и PR #247 исключены.
