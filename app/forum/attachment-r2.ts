@@ -11,6 +11,7 @@ import {
   inspectAttachment,
   type AttachmentInspection,
 } from "./attachment-validation";
+import { ATTACHMENT_UPLOAD_PREFIX } from "./attachment-storage-protocol";
 
 /**
  * Structural subset of Cloudflare R2's private Workers bucket binding.
@@ -18,10 +19,14 @@ import {
  * request boundary, not to the storage object key.
  */
 export interface PrivateAttachmentBucket {
+  reserve(key: string): Promise<{ etag: string } | null>;
+  listReservations(options: { limit: number; cursor?: string }): Promise<{
+    keys: string[]; cursor?: string;
+  }>;
   put(
     key: string,
     content: ReadableStream<Uint8Array>,
-    options: { byteLength: number; httpMetadata: { contentType: string } },
+    options: { byteLength: number; httpMetadata: { contentType: string }; reservationEtag: string },
   ): Promise<{ size: number } | null>;
   get(
     key: string,
@@ -61,6 +66,14 @@ export class AttachmentStorageError extends Error {
   constructor(options?: ErrorOptions) {
     super("private attachment storage unavailable", options);
     this.name = "AttachmentStorageError";
+  }
+}
+
+/** Internal bucket proof: this PUT has settled and cannot create bytes later. */
+export class AttachmentWriteSettledError extends Error {
+  constructor(cause: unknown) {
+    super("private attachment write has definitively settled", { cause });
+    this.name = "AttachmentWriteSettledError";
   }
 }
 
@@ -167,6 +180,9 @@ export async function storePrivateAttachmentStream(
   bucket: PrivateAttachmentBucket,
   upload: PrivateAttachmentUpload,
   maxBytes = DEFAULT_ATTACHMENT_MAX_BYTES,
+  beforeWrite?: (objectKey: string) => Promise<void>,
+  // Durable PREPARING -> READY. Never start the payload without its positive ACK.
+  activateWrite?: (objectKey: string, reservationEtag: string) => Promise<void>,
 ): Promise<AttachmentStoreResult> {
   const sampleSize = Number.isSafeInteger(upload.size) && upload.size > 0 && upload.size <= maxBytes
     ? Math.min(upload.size, ATTACHMENT_SNIFF_BYTES)
@@ -203,6 +219,7 @@ export async function storePrivateAttachmentStream(
       }
     }
 
+    if (prefixBytes < sampleSize) throw new AttachmentLengthMismatchError();
     const inspection = inspectAttachment({
       fileName: upload.fileName, declaredMime: upload.declaredMime,
       size: upload.size, prefix: prefix.subarray(0, prefixBytes), maxBytes,
@@ -256,34 +273,31 @@ export async function storePrivateAttachmentStream(
       cancel(reason) { return reader.cancel(reason); },
     });
 
-    const objectKey = "private/" + crypto.randomUUID();
-    let stored: { size: number } | null;
+    const objectKey = ATTACHMENT_UPLOAD_PREFIX + crypto.randomUUID();
+    // Admission must commit before even the reservation is allowed to appear.
+    await beforeWrite?.(objectKey);
     try {
-      stored = await bucket.put(objectKey, content, {
-        byteLength: upload.size,
-        httpMetadata: { contentType: "application/octet-stream" },
-      });
-    } catch (error) {
-      await reader.cancel(error).catch(() => {});
-      await bucket.delete(objectKey).catch(() => {});
-      if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
-        throw error;
+      // One create attempt only. Ambiguous initialization never retries this key.
+      let reservation;
+      try { reservation = await bucket.reserve(objectKey); }
+      catch (error) { throw new AttachmentStorageError({cause: error}); }
+      if (!reservation?.etag) throw new AttachmentStorageError();
+      await activateWrite?.(objectKey, reservation.etag);
+      let stored: { size: number } | null;
+      try {
+        stored = await bucket.put(objectKey, content, {
+          byteLength: upload.size,
+          httpMetadata: { contentType: "application/octet-stream" },
+          reservationEtag: reservation.etag,
+        });
+      } catch (error) {
+        const failure = error instanceof AttachmentWriteSettledError ? error.cause : error;
+        if (failure instanceof AttachmentLengthMismatchError || failure instanceof AttachmentUploadReadError) throw failure;
+        throw new AttachmentStorageError({ cause: failure });
       }
-      throw new AttachmentStorageError({ cause: error });
-    }
-    if (!stored || stored.size !== upload.size) {
-      await reader.cancel().catch(() => {});
-      await bucket.delete(objectKey).catch(() => {});
-      throw new AttachmentStorageError();
-    }
-
-    try {
+      if (!stored || stored.size !== upload.size) throw new AttachmentStorageError();
       const structurallyValid = await validateStoredStructure(
-        bucket,
-        objectKey,
-        inspection,
-        stored.size,
-        structuralValidator,
+        bucket, objectKey, inspection, stored.size, structuralValidator,
       );
       if (!structurallyValid) {
         await bucket.delete(objectKey).catch(() => {});
@@ -292,7 +306,8 @@ export async function storePrivateAttachmentStream(
       return { outcome: "stored", objectKey, inspection, bytes: stored.size };
     } catch (error) {
       await reader.cancel(error).catch(() => {});
-      // R2 may have received bytes before a failed finalization. Never hand out the key.
+      // READY payloads positively match the reservation; DELETE revokes them.
+      // A late PREPARING reservation has no payload permission and is swept.
       await bucket.delete(objectKey).catch(() => {});
       throw error;
     }

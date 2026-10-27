@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { classicManyEntryZip, descriptorOverlapZip } from "./attachment-zip.test-fixtures";
 import {
   AttachmentLengthMismatchError,
   AttachmentStorageError,
@@ -33,6 +34,8 @@ function chunked(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
 
 function bucket() {
   const objects = new Map<string, Uint8Array>();
+  const reserve = vi.fn(async () => ({ etag: "reservation" }));
+  const listReservations = vi.fn(async () => ({ keys: [] as string[] }));
   const put = vi.fn(async (key: string, body: ReadableStream<Uint8Array>,
     options: { byteLength: number; httpMetadata: { contentType: string } }) => {
     if (!key.startsWith("private/") || options.httpMetadata.contentType !== "application/octet-stream") {
@@ -53,7 +56,7 @@ function bucket() {
     if (!key.startsWith("private/")) throw new Error("unprotected object deletion");
     objects.delete(key);
   });
-  return { put, get, delete: del } satisfies PrivateAttachmentBucket;
+  return { reserve, listReservations, put, get, delete: del } satisfies PrivateAttachmentBucket;
 }
 
 function emptyZip(): Uint8Array {
@@ -65,6 +68,20 @@ function emptyZip(): Uint8Array {
   ]);
 }
 
+function singleEntryZip(): Uint8Array {
+  const bytes = new Uint8Array(101), view = new DataView(bytes.buffer);
+  view.setUint32(0, 0x04034b50, true);
+  view.setUint32(18, 1, true); view.setUint32(22, 1, true); view.setUint16(26, 1, true);
+  bytes[30] = 97; bytes[31] = 120;
+  view.setUint32(32, 0x02014b50, true);
+  view.setUint32(52, 1, true); view.setUint32(56, 1, true); view.setUint16(60, 1, true);
+  bytes[78] = 97;
+  view.setUint32(79, 0x06054b50, true);
+  view.setUint16(87, 1, true); view.setUint16(89, 1, true);
+  view.setUint32(91, 47, true); view.setUint32(95, 32, true);
+  return bytes;
+}
+
 function minimalGif(): Uint8Array {
   return Uint8Array.from([
     0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
@@ -74,6 +91,57 @@ function minimalGif(): Uint8Array {
 }
 
 describe("private R2 attachment write contract", () => {
+  it("rejects an incomplete sniff prefix before admitting any writer", async () => {
+    const storage = bucket(), admitted = vi.fn(), settled = vi.fn();
+    await expect(storePrivateAttachmentStream(storage, {
+      fileName: "notes.txt", declaredMime: "text/plain", size: 10,
+      body: new Response("abc").body!,
+    }, undefined, admitted, settled)).rejects.toBeInstanceOf(AttachmentLengthMismatchError);
+    expect(storage.put).not.toHaveBeenCalled();
+    expect(admitted).not.toHaveBeenCalled();
+    expect(settled).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])("finalizes classic 65535 within a 1000-subrequest storage budget (reverse=%s)", async (reverse) => {
+    const data = classicManyEntryZip(65535, reverse), storage = bucket();
+    let requests = 0;
+    const get = storage.get;
+    storage.get = vi.fn(async (key, options) => {
+      expect(++requests).toBeLessThan(995); // reserve PUT/journal/metadata overhead
+      expect(options.range.length).toBeLessThanOrEqual(128 * 1024);
+      return get(key, options);
+    });
+    const result = await storePrivateAttachment(storage, file("boundary.zip", data, "application/zip"));
+    expect(result.outcome).toBe("stored");
+    expect(requests).toBeLessThan(60);
+  }, 30_000);
+
+  it("rejects descriptor/header overlap after PUT but preserves separate descriptor controls", async () => {
+    for (const descriptor of ["missing", "unsigned", "signed"] as const) {
+      const storage = bucket();
+      const result = await storePrivateAttachment(storage, file("descriptor.zip", descriptorOverlapZip(descriptor), "application/zip"));
+      expect(result.outcome).toBe(descriptor === "missing" ? "rejected" : "stored");
+      expect(storage.delete).toHaveBeenCalledTimes(descriptor === "missing" ? 1 : 0);
+    }
+  });
+
+  it("finalizes ZIP metadata after private write and deletes CRC/descriptor mismatches", async () => {
+    for (const kind of ["valid", "crc", "missing-descriptor"] as const) {
+      const bytes = singleEntryZip(), store = bucket();
+      if (kind === "crc") bytes[14] = 1;
+      if (kind === "missing-descriptor") { bytes[6] = 8; bytes[40] = 8; }
+      const result = await storePrivateAttachment(store, file("one.zip", bytes, "application/zip"));
+      expect(store.put).toHaveBeenCalledOnce();
+      expect(store.get).toHaveBeenCalled();
+      if (kind === "valid") {
+        expect(result.outcome).toBe("stored");
+        expect(store.delete).not.toHaveBeenCalled();
+      } else {
+        expect(result).toMatchObject({ outcome: "rejected", inspection: { reason: "invalid-structure" } });
+        expect(store.delete).toHaveBeenCalledOnce();
+      }
+    }
+  });
   it("streams accepted content to an unguessable private key without exposing active content MIME", async () => {
     const store = bucket();
     const content = new TextEncoder().encode("<html><script>danger</script></html>");
@@ -81,9 +149,10 @@ describe("private R2 attachment write contract", () => {
     expect(result).toMatchObject({ outcome: "stored", bytes: content.length,
       inspection: { accepted: true, responseMime: "text/plain; charset=utf-8" } });
     if (result.outcome !== "stored") return;
-    expect(result.objectKey).toMatch(/^private\/[0-9a-f-]{36}$/u);
+    expect(result.objectKey).toMatch(/^private\/fenced-v1\/[0-9a-f-]{36}$/u);
     expect(store.put).toHaveBeenCalledOnce();
     expect(store.put.mock.calls[0]?.[2]).toEqual({
+      reservationEtag: "reservation",
       byteLength: content.length,
       httpMetadata: { contentType: "application/octet-stream" },
     });
@@ -294,4 +363,13 @@ describe("bounded one-pass upload stream", () => {
     });
     expect(store.delete).toHaveBeenCalledOnce();
   });
+});
+
+it('never retries an ambiguous reservation on its physical key',async()=>{
+  const storage=bucket();storage.reserve.mockRejectedValueOnce(new Error('ACK lost'));
+  await expect(storePrivateAttachment(storage,file('notes.txt',new TextEncoder().encode('hello')))).rejects.toBeInstanceOf(AttachmentStorageError);
+  expect(storage.reserve).toHaveBeenCalledOnce();expect(storage.put).not.toHaveBeenCalled();
+  expect((await storePrivateAttachment(storage,file('notes.txt',new TextEncoder().encode('hello')))).outcome).toBe('stored');
+  const first=storage.reserve.mock.calls[0] as unknown as [string];const second=storage.reserve.mock.calls[1] as unknown as [string];
+  expect(first[0]).not.toBe(second[0]);
 });

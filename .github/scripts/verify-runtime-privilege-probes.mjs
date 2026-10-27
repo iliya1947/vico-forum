@@ -102,6 +102,7 @@ async function positiveWebLockProbes() {
     await client.query("SELECT 1 FROM public.authz_mutation_lock WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_topics WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_posts WHERE false FOR UPDATE");
+    await client.query("SELECT 1 FROM public.forum_attachment_upload_objects WHERE false FOR UPDATE");
     await client.query("ROLLBACK");
   } catch (error) {
     try {

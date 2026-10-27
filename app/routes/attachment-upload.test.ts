@@ -17,6 +17,7 @@ import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-foru
 import { ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
+import { classicManyEntryZip } from "../forum/attachment-zip.test-fixtures";
 
 const contextKey = "topic:opaque/topic:reply";
 const draftId = "76568e3b-7cf0-4f32-9847-051d5a9b8071";
@@ -24,6 +25,8 @@ const uploadId = "23b93562-0550-4eef-88af-f951d6ea6138";
 
 function bucket() {
   const objects = new Map<string, Uint8Array>();
+  const reserve = vi.fn(async () => ({ etag: "reservation" }));
+  const listReservations = vi.fn(async () => ({ keys: [] as string[] }));
   const put = vi.fn(async (key: string, body: ReadableStream<Uint8Array>) => {
     const bytes = new Uint8Array(await new Response(body).arrayBuffer());
     objects.set(key, bytes);
@@ -31,7 +34,7 @@ function bucket() {
   });
   const get = vi.fn(async () => null);
   const del = vi.fn(async (key: string) => { objects.delete(key); });
-  const result = { put, get, delete: del, objects };
+  const result = { reserve, listReservations, put, get, delete: del, objects };
   return result satisfies PrivateAttachmentBucket;
 }
 
@@ -67,7 +70,11 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const cancelOperation = vi.fn(async () => {});
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
+  const recordUploadObject = vi.fn(async (key: string) => { void key; });
+  const activateUploadObject = vi.fn(async () => {});
   ctx.set(forumAttachmentStoreContext, {
+    recordUploadObject,
+    activateUploadObject,
     createDraftAttachment,
     recordSecurityEvent,
     readSecurityAttachmentEvents,
@@ -79,7 +86,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
-    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent,
+    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject, activateUploadObject,
     listDraftAttachments, cancelOperation, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
@@ -144,6 +151,41 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
+  it("registers classic 65535 through the storage/action path within the default internal-service budget", async () => {
+    const env = setup(), data = classicManyEntryZip(65535, true);
+    let gets = 0;
+    env.ctx.set(privateAttachmentBucketContext, {
+      ...env.r2,
+      async get(key, {range}) {
+        if (++gets > 990) throw new Error("subrequest budget exceeded");
+        const object = env.r2.objects.get(key);
+        return object ? { size: object.length, body: new Response(object.slice(range.offset, range.offset + range.length)).body! } : null;
+      },
+    });
+    const response = await action({context: env.ctx, request: request(data, {fileName: "boundary.zip", declaredMime: "application/zip"})});
+    expect(response.status).toBe(201);
+    expect(env.createDraftAttachment).toHaveBeenCalledTimes(1);
+    expect(env.activateUploadObject).toHaveBeenCalledTimes(1);
+    expect(gets).toBeLessThan(60);
+  }, 30_000);
+
+  it("retains the unavailable response and skips metadata admission if reservation activation cannot be recorded", async () => {
+    const env = setup();
+    env.activateUploadObject.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    const response = await action({context: env.ctx, request: request(new TextEncoder().encode("hello"))});
+    expect(response.status).toBe(503);
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.r2.delete).toHaveBeenCalledTimes(1);
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
+
+  it("does not write bytes if durable object admission fails", async () => {
+    const env = setup();
+    env.recordUploadObject.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    expect((await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx })).status).toBe(503);
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
 
   it.each([["real-user", 201], ["other", 403], [null, 404]] as const)(
     "uses edit permission plus authoritative post ownership for post-edit files (%s)", async (authorId, status) => {

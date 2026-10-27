@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-26
+Последнее обновление: 2026-10-27
 
 ## Назначение
 
@@ -19,6 +19,62 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## L6 — attachment object journal и ZIP integrity (2026-10-27)
+
+В незамерженном implementation PR L6 прежний post-write settlement дизайн заменён
+v2 upload fence. Accepted migrations до `0045` неизменны; промежуточные `0046/0047`
+самого PR заменены одной `0046_attachment_upload_fences`. Она создаёт journal с
+nullable `reservation_etag` и singleton `forum_attachment_sweep` с durable cursor/claim.
+Промежуточного v1 writer в новой реализации нет; production/external state не предполагается.
+
+Новая physical identity `private/fenced-v1/<uuid>` одноразовая. Сначала journal
+PREPARING, затем единственный create-only reservation PUT. Только positive ACK
+reservation и committed DB activation READY разрешают единственный payload PUT
+с positive `etagMatches`. Claim запрещает activation и metadata, даже после
+истечения lease. Metadata принимает только проверенный `stored` result и READY
+unclaimed journal; это обязательно для v2 key независимо от caller flag.
+Идентификатор browser upload и существующие stable-ID retry semantics сохранены;
+новая попытка storage всегда использует новый physical key. Ambiguous initialization
+не повторяется на старом key и не даёт права payload-writer.
+
+У READY initialization уже завершена и не повторяется. Подтверждённый DELETE
+удаляет payload, если тот committed раньше, либо делает positive match позднего
+PUT ложным. Cleanup retire journal по claim token после DELETE независимо от
+post-write DB availability: прежний `write_completed_at`/единственный terminal
+UPDATE больше не используются. Unknown DELETE/DB-retirement outcome сохраняет
+claim для следующего bounded прохода. Authoritative asset по key передаётся
+обычному reference-aware cleanup и не удаляется orphan processor.
+
+Cleanup PREPARING может обогнать initialization. Поздно появившийся reservation
+не сможет пройти DB activation, но подлежит отдельному bounded marker sweep.
+По умолчанию pass ограничен 20 journal/asset deletions плюс страницей максимум
+5 storage entries для markers; маленькие custom batches сохраняют минимум одну
+marker entry. Cursor и lease/token checkpoint durable; завершённый цикл начинает
+обход prefix заново. Перед DELETE marker-кандидата проверяется отсутствие
+**и journal, и authoritative asset**; DB failure не означает отсутствие.
+Старый sweep processor не может перезаписать checkpoint нового claim.
+Нет постоянных per-key tombstones, full-prefix scan в одном request или нового
+scheduler/Queue. Конечный progress предполагает восстановление DB/storage,
+продолжение bounded cleanup и fair cursor progress при обслуживаемой нагрузке.
+
+Workers adapter сохраняет streaming через native FixedLengthStream, cancellation
+и hard byte bounds. Reservation отделяется от следующего same-key payload write
+ожиданием 1 секунды после ACK: это pacing для документированного R2 per-key write
+rate, не storage retry. Обычная успешная загрузка получает эту дополнительную
+секунду; failed best-effort DELETE всё ещё восстанавливается journal cleanup.
+
+ZIP finalizer и ATTACH-02/ATTACH-STRUCT-01 не менялись: classic count 65,535
+отличается от ZIP64 locator, central metadata читается 128 KiB blocks,
+local records проверяются в physical-offset order; missing data descriptor
+не может пересечь следующий header. Whole-body buffering/decompression не добавлены.
+
+Native PostgreSQL regressions проверяют actual activation/metadata SQL timeout,
+late unknown payload до/после revoke, PREPARING lost ACK, metadata commit/rollback,
+concurrent/expired claims, marker pagination/budget/DB failure/stale LIST и asset
+protection. Workerd/CI evidence фиксируется после фактического завершения checks.
+Новых внешних сервисов, runtime credentials, production/owner visual acceptance
+или CPU/deployment candidate C этот correction не включает.
 
 ## EDITOR-04 — feedback при отклонённой spreadsheet conversion (2026-10-27)
 
@@ -1850,7 +1906,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0045`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0046`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

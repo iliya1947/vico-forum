@@ -3,9 +3,14 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DrizzleForumAttachments } from "../../db/forum-attachments";
-import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
+import { ForumAttachmentCleanup as Cleanup } from "../../db/forum-attachment-cleanup";
 import { DrizzleForumRepository, ForumAuthorizationError, ForumStateConflictError } from "../../db/forum-repository";
 
+class ForumAttachmentCleanup extends Cleanup {
+  constructor(db: ConstructorParameters<typeof Cleanup>[0], storage: {delete(key: string): Promise<void>}, clock?: () => Date) {
+    super(db, {listReservations: async () => ({keys: []}), ...storage}, clock);
+  }
+}
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 const url = new URL(databaseUrl);

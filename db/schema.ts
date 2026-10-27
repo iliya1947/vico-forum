@@ -916,6 +916,21 @@ export const forumPosts = pgTable(
 );
 
 
+// Written before private bytes, independently of metadata/publication commit.
+export const forumAttachmentUploadObjects = pgTable("forum_attachment_upload_objects", {
+  objectKey: text("object_key").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  reservationEtag: text("reservation_etag"),
+  claimToken: text("claim_token"),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+}, (table) => [
+  index("forum_attachment_upload_objects_cleanup_idx").on(table.createdAt),
+  check("forum_attachment_upload_objects_claim_check", sql`
+    (${table.claimToken} is null and ${table.claimedAt} is null)
+    or (${table.claimToken} is not null and ${table.claimedAt} is not null)
+  `),
+]);
+
 export const forumAttachments = pgTable(
   "forum_attachments",
   {
@@ -1574,3 +1589,17 @@ function contentTranslationMetadataCheck(
     and ${providerModel} is null
   )`;
 }
+
+// One bounded reservation sweep, with durable pagination and fenced lease recovery.
+export const forumAttachmentSweep = pgTable("forum_attachment_sweep", {
+  id: text("id").primaryKey(),
+  cursor: text("cursor"),
+  claimToken: text("claim_token"),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+}, (table) => [
+  check("forum_attachment_sweep_singleton_check", sql`${table.id} = 'reservations-v2'`),
+  check("forum_attachment_sweep_claim_check", sql`
+    (${table.claimToken} is null and ${table.claimedAt} is null)
+    or (${table.claimToken} is not null and ${table.claimedAt} is not null)
+  `),
+]);
