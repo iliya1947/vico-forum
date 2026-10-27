@@ -23,9 +23,14 @@ import {
 } from "../localization/request-context";
 import {
   ContentGenerationPlanningUnavailableError,
+  DefaultContentGenerationActionCapability,
   type ContentGenerationActionCapability,
   type ContentGenerationActionResult,
 } from "../localization/content-generation-action.server";
+import { ContentPostBodyTranslationPlanner } from "../localization/content-post-body-planning";
+import { ContentTranslationService } from "../localization/content-translation";
+import { ContentSourceLocaleResolver, ThresholdContentSourceLocalePolicy } from "../localization/content-source-locale";
+import { localeRegistry } from "../localization/registry";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 const session = {
@@ -1416,6 +1421,95 @@ describe("forum write route actions", () => {
       targetLocale: "he",
     });
     expect(capability.generateAutomaticPostBody).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["generatePostBodyTranslation", "", "und", "no-op"],
+    ["generateExplicitPostBodyTranslation", "", "und", "no-op"],
+    ["generatePostBodyTranslation", "  \n\t  ", "und", "no-op"],
+    ["generateExplicitPostBodyTranslation", "```ts\nconst x = 1;\n```", "und", "no-op"],
+    ["generatePostBodyTranslation", "Обычный текст сообщения", "ru", "queued"],
+    ["generateExplicitPostBodyTranslation", "Обычный текст сообщения", "ru", "queued"],
+  ])("routes %s with body %j through real planner as %s", async (intent, body, sourceLocale, expectedOutcome) => {
+    const topic = {
+      ...generationTopic,
+      posts: [{
+        ...generationTopic.posts[0]!,
+        body: { ...generationTopic.posts[0]!.body, originalContent: body, sourceLocale },
+      }],
+    };
+    const authoritative = {
+      contentType: "post-body" as const,
+      contentId: "post-1",
+      revisionId: "post-r1",
+      originalContent: body,
+      sourceLocale,
+    };
+    const readCurrentRevision = vi.fn(async () => authoritative);
+    const upsertPending = vi.fn(async () => ({
+      outcome: "task" as const,
+      created: true,
+      task: { id: "translation-task-1" },
+    }));
+    const enqueuer = { enqueue: vi.fn(async () => {}) };
+    const detector = { detect: vi.fn(async () => {
+      throw new Error("detector should not run for blank or known-source revision");
+    }) };
+    const sourceLocaleResolver = new ContentSourceLocaleResolver(
+      detector,
+      new ThresholdContentSourceLocalePolicy(0.8, () => true),
+    );
+    const sourcePlan = vi.spyOn(sourceLocaleResolver, "plan");
+    const planner = new ContentPostBodyTranslationPlanner({
+      localeRegistry,
+      sourceLocaleResolver,
+      contentTranslations: new ContentTranslationService({
+        read: vi.fn(async () => undefined),
+      } as never),
+      providerCapability: { supports: vi.fn(() => true) },
+      tasks: { readCurrentRevision, upsertPending } as never,
+      enqueuer,
+      generationPolicyVersion: "content-v1",
+    });
+    const budgetPolicy = {
+      cost: 1,
+      windowSeconds: 60,
+      global: { name: "body-global", version: "v1", limit: 100 },
+      requester: { name: "body-requester", version: "v1", limit: 20 },
+    };
+    const capability = new DefaultContentGenerationActionCapability({
+      pseudonymizer: { pseudonymize: vi.fn(async () => ({
+        actorKind: "authenticated" as const,
+        keyVersion: "v1",
+        subjectKey: "S".repeat(43),
+      })) } as never,
+      titlePolicy: budgetPolicy,
+      postBodyPolicy: budgetPolicy,
+      titlePlanner: { planAndDispatch: vi.fn() } as never,
+      postBodyPlanner: planner,
+    });
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", { intent, postId: "post-1" }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({ capability, topic }),
+    });
+    expect(response).toMatchObject({
+      data: expectedOutcome === "queued"
+        ? { operation: "contentGeneration", outcome: "queued" }
+        : { operation: "contentGeneration", outcome: "no-op", reason: "no-translatable-content" },
+      init: { status: 200 },
+    });
+    expect(readCurrentRevision).toHaveBeenCalledWith("post-1");
+    if (expectedOutcome === "no-op") {
+      expect(sourcePlan).not.toHaveBeenCalled();
+      expect(upsertPending).not.toHaveBeenCalled();
+      expect(enqueuer.enqueue).not.toHaveBeenCalled();
+    } else {
+      expect(sourcePlan).toHaveBeenCalledTimes(1);
+      expect(upsertPending).toHaveBeenCalledTimes(1);
+      expect(enqueuer.enqueue).toHaveBeenCalledWith({ translationTaskId: "translation-task-1" });
+    }
+    expect(detector.detect).not.toHaveBeenCalled();
   });
 
   it("fails closed when generation is disabled and maps bounded planner outcomes", async () => {
