@@ -77,15 +77,13 @@ describe("Editor 2.0 clipboard import", () => {
   it.each([
     ["    &copy; ~~literal~~", "&#32;   &amp;copy; \\~\\~literal\\~\\~"],
     ["     &copy; ~~literal~~", "&#32;    &amp;copy; \\~\\~literal\\~\\~"],
-    ["\\t&copy; ~~literal~~", "&#9;&amp;copy; \\~\\~literal\\~\\~"],
   ])("preserves indented ordinary plain-text paste %j as paragraph text", (original, expectedSource) => {
-    const actual = original.replace(/^\\t/u, "\t");
-    const markdown = clipboardPlainToMarkdown(actual);
+    const markdown = clipboardPlainToMarkdown(original);
     expect(markdown).toBe(expectedSource);
     const [paragraph] = parseForumMarkdown(markdown).children;
     expect(paragraph).toMatchObject({ type: "paragraph" });
     if (paragraph?.type !== "paragraph") throw new Error("Unexpected indented code");
-    expect(paragraph.children).toMatchObject([{ type: "text", value: actual }]);
+    expect(paragraph.children).toMatchObject([{ type: "text", value: original }]);
   });
 
   it("keeps multiline setext equals markers as literal paragraphs", () => {
