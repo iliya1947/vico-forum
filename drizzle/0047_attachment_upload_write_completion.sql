@@ -1,1 +1,0 @@
-ALTER TABLE "forum_attachment_upload_objects" ADD COLUMN "write_completed_at" timestamp with time zone;

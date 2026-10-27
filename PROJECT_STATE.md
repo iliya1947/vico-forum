@@ -22,49 +22,59 @@
 
 ## L6 — attachment object journal и ZIP integrity (2026-10-27)
 
-В implementation-ветке L6 закрывается storage/metadata gap: перед private PUT сервер
-фиксирует случайный object key в `forum_attachment_upload_objects` (forward migration
-`0046_attachment_upload_object_journal`). Если admission не подтверждён, bytes не записываются.
-Metadata admission блокирует ту же запись журнала и не принимает object, уже claimed cleanup.
-После неизвестного результата metadata commit journal остаётся: существующий bounded
-`ForumAttachmentCleanup` сверяет authoritative asset по key, сохраняет registered object и
-удаляет только unregistered object после прежнего one-hour grace. Неудачный DELETE оставляет
-claim для повторения после lease. Журнал также покрывает неудачный best-effort DELETE
-redundant stable-ID retry и storage/structural failures. Нового публичного endpoint,
-text-draft persistence, scheduler или внешнего storage rollout нет.
+В незамерженном implementation PR L6 прежний post-write settlement дизайн заменён
+v2 upload fence. Accepted migrations до `0045` неизменны; промежуточные `0046/0047`
+самого PR заменены одной `0046_attachment_upload_fences`. Она создаёт journal с
+nullable `reservation_etag` и singleton `forum_attachment_sweep` с durable cursor/claim.
+Промежуточного v1 writer в новой реализации нет; production/external state не предполагается.
 
-Correction сохраняет journal незавершённого/неизвестного PUT даже после успешного DELETE:
-поздняя запись объекта остаётся обнаружимой и повторно удаляется после claim lease.
-`write_completed_at` (forward migration `0047_attachment_upload_write_completion`)
-фиксирует установленное завершение writer: успешный PUT либо доказанную terminal failure.
-Подтверждённо неполный остановленный fixed-length producer, definitive rejection или
-подтверждённый RPC result дают конечное retirement; full-body transport failure с
-неизвестным результатом не выдаётся за settlement. Short prefix отвергается до journal/PUT.
-Metadata admission по-прежнему требует именно проверенный `stored` result и completion,
-а не только эту отметку. После failed write metadata не создаётся.
-Cleanup фиксирует settlement под claim lock **до** storage DELETE и только на основании
-этого snapshot может окончательно убрать journal. Completion, появившийся во время/после
-DELETE, оставляет tracking до следующего правильно упорядоченного прохода.
-При потерянном результате PUT tracking-запись остаётся для повторного reconciliation,
-пока завершение writer не установлено; finite grace не выдаётся за такую гарантию.
-Повторы journal вращаются по времени claim, и bounded pass сохраняет бюджет для обычных
-settled assets. Старые accepted migrations не меняются.
+Новая physical identity `private/fenced-v1/<uuid>` одноразовая. Сначала journal
+PREPARING, затем единственный create-only reservation PUT. Только positive ACK
+reservation и committed DB activation READY разрешают единственный payload PUT
+с positive `etagMatches`. Claim запрещает activation и metadata, даже после
+истечения lease. Metadata принимает только проверенный `stored` result и READY
+unclaimed journal; это обязательно для v2 key независимо от caller flag.
+Идентификатор browser upload и существующие stable-ID retry semantics сохранены;
+новая попытка storage всегда использует новый physical key. Ambiguous initialization
+не повторяется на старом key и не даёт права payload-writer.
 
-ZIP finalizer различает classic count 65,535 и настоящий ZIP64 locator; размеры/offsets,
-которым нужен ZIP64, без него не принимаются. Local CRC/sizes/flags сверяются с central
-metadata; bit 3 требует согласованный data descriptor непосредственно за compressed data.
-Поддерживаются signed/unsigned classic и ZIP64 descriptors, включая CRC, совпадающий с
-optional signature. Descriptor/header/data не могут пересекать следующий local record;
-physical order проверяется независимо от central-directory order. Для Worker budget
-central metadata читается блоками и ограничена upload cap 50 MB, compact offset indexes
-занимают до 12 байт на entry; local validation использует только два блока по 128 KiB.
-Compressed payload целиком не буферизуется, распаковки и AV-обещаний нет. Classic 65,535
-проверяется через storage/action path со счётчиком GET и ограничением default budget.
-Merged TAR/pending Remove/405 behavior не меняется.
+У READY initialization уже завершена и не повторяется. Подтверждённый DELETE
+удаляет payload, если тот committed раньше, либо делает positive match позднего
+PUT ложным. Cleanup retire journal по claim token после DELETE независимо от
+post-write DB availability: прежний `write_completed_at`/единственный terminal
+UPDATE больше не используются. Unknown DELETE/DB-retirement outcome сохраняет
+claim для следующего bounded прохода. Authoritative asset по key передаётся
+обычному reference-aware cleanup и не удаляется orphan processor.
 
-Добавлены boundary и failure-chain regressions; фактические CI/checks и independent review
-фиксируются отдельно после выполнения. Implementation ещё не принята и не merged;
-production/external/owner visual actions не выполнялись.
+Cleanup PREPARING может обогнать initialization. Поздно появившийся reservation
+не сможет пройти DB activation, но подлежит отдельному bounded marker sweep.
+По умолчанию pass ограничен 20 journal/asset deletions плюс страницей максимум
+5 storage entries для markers; маленькие custom batches сохраняют минимум одну
+marker entry. Cursor и lease/token checkpoint durable; завершённый цикл начинает
+обход prefix заново. Перед DELETE marker-кандидата проверяется отсутствие
+**и journal, и authoritative asset**; DB failure не означает отсутствие.
+Старый sweep processor не может перезаписать checkpoint нового claim.
+Нет постоянных per-key tombstones, full-prefix scan в одном request или нового
+scheduler/Queue. Конечный progress предполагает восстановление DB/storage,
+продолжение bounded cleanup и fair cursor progress при обслуживаемой нагрузке.
+
+Workers adapter сохраняет streaming через native FixedLengthStream, cancellation
+и hard byte bounds. Reservation отделяется от следующего same-key payload write
+ожиданием 1 секунды после ACK: это pacing для документированного R2 per-key write
+rate, не storage retry. Обычная успешная загрузка получает эту дополнительную
+секунду; failed best-effort DELETE всё ещё восстанавливается journal cleanup.
+
+ZIP finalizer и ATTACH-02/ATTACH-STRUCT-01 не менялись: classic count 65,535
+отличается от ZIP64 locator, central metadata читается 128 KiB blocks,
+local records проверяются в physical-offset order; missing data descriptor
+не может пересечь следующий header. Whole-body buffering/decompression не добавлены.
+
+Native PostgreSQL regressions проверяют actual activation/metadata SQL timeout,
+late unknown payload до/после revoke, PREPARING lost ACK, metadata commit/rollback,
+concurrent/expired claims, marker pagination/budget/DB failure/stale LIST и asset
+protection. Workerd/CI evidence фиксируется после фактического завершения checks.
+Новых внешних сервисов, runtime credentials, production/owner visual acceptance
+или CPU/deployment candidate C этот correction не включает.
 
 ## EDITOR-04 — feedback при отклонённой spreadsheet conversion (2026-10-27)
 

@@ -25,6 +25,8 @@ const uploadId = "23b93562-0550-4eef-88af-f951d6ea6138";
 
 function bucket() {
   const objects = new Map<string, Uint8Array>();
+  const reserve = vi.fn(async () => ({ etag: "reservation" }));
+  const listReservations = vi.fn(async () => ({ keys: [] as string[] }));
   const put = vi.fn(async (key: string, body: ReadableStream<Uint8Array>) => {
     const bytes = new Uint8Array(await new Response(body).arrayBuffer());
     objects.set(key, bytes);
@@ -32,7 +34,7 @@ function bucket() {
   });
   const get = vi.fn(async () => null);
   const del = vi.fn(async (key: string) => { objects.delete(key); });
-  const result = { put, get, delete: del, objects };
+  const result = { reserve, listReservations, put, get, delete: del, objects };
   return result satisfies PrivateAttachmentBucket;
 }
 
@@ -69,10 +71,10 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
   const recordUploadObject = vi.fn(async (key: string) => { void key; });
-  const completeUploadObjectWrite = vi.fn(async () => {});
+  const activateUploadObject = vi.fn(async () => {});
   ctx.set(forumAttachmentStoreContext, {
     recordUploadObject,
-    completeUploadObjectWrite,
+    activateUploadObject,
     createDraftAttachment,
     recordSecurityEvent,
     readSecurityAttachmentEvents,
@@ -84,7 +86,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
-    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject, completeUploadObjectWrite,
+    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject, activateUploadObject,
     listDraftAttachments, cancelOperation, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
@@ -163,16 +165,16 @@ describe("private attachment upload API", () => {
     const response = await action({context: env.ctx, request: request(data, {fileName: "boundary.zip", declaredMime: "application/zip"})});
     expect(response.status).toBe(201);
     expect(env.createDraftAttachment).toHaveBeenCalledTimes(1);
-    expect(env.completeUploadObjectWrite).toHaveBeenCalledTimes(1);
+    expect(env.activateUploadObject).toHaveBeenCalledTimes(1);
     expect(gets).toBeLessThan(60);
   }, 30_000);
 
-  it("retains the unavailable response and skips metadata admission if PUT completion cannot be recorded", async () => {
+  it("retains the unavailable response and skips metadata admission if reservation activation cannot be recorded", async () => {
     const env = setup();
-    env.completeUploadObjectWrite.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    env.activateUploadObject.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
     const response = await action({context: env.ctx, request: request(new TextEncoder().encode("hello"))});
     expect(response.status).toBe(503);
-    expect(env.r2.put).toHaveBeenCalledTimes(1);
+    expect(env.r2.put).not.toHaveBeenCalled();
     expect(env.r2.delete).toHaveBeenCalledTimes(1);
     expect(env.createDraftAttachment).not.toHaveBeenCalled();
   });

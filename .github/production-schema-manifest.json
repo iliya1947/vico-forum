@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0047_attachment_upload_write_completion",
+  "targetMigration": "0046_attachment_upload_fences",
   "tables": {
     "account": {
       "columns": [
@@ -5427,6 +5427,12 @@
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
         },
         {
+          "name": "reservation_etag",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
           "name": "claim_token",
           "type": "text",
           "nullable": true,
@@ -5434,12 +5440,6 @@
         },
         {
           "name": "claimed_at",
-          "type": "timestamp with time zone",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "write_completed_at",
           "type": "timestamp with time zone",
           "nullable": true,
           "defaultSha256": null
@@ -5480,6 +5480,62 @@
           "predicateSha256": null
         }
       ]
+    },
+    "forum_attachment_sweep": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "cursor",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "claim_token",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_attachment_sweep_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_attachment_sweep_claim_check",
+          "columns": [
+            "claim_token",
+            "claimed_at"
+          ],
+          "definitionSha256": "0e28e6fb95b42e4003fde807296b3f4dc8de005a2de66d1b1d4a68f25bf1067c"
+        },
+        {
+          "name": "forum_attachment_sweep_singleton_check",
+          "columns": [
+            "id"
+          ],
+          "definitionSha256": "90f9d5005d9743508d8e884f03931fc2d93e5073d72aa40bc88ce3324efdcc23"
+        }
+      ],
+      "indexes": []
     }
   },
   "triggerFunctions": [

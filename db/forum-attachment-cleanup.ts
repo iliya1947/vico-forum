@@ -3,6 +3,7 @@ import { forumAttachmentDraftRefs } from "./schema";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { lockAttachmentDraftScope, retireAttachmentDraftGeneration } from "./attachment-draft-generation";
+import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
 import type { PrivateAttachmentBucket } from "../app/forum/attachment-r2";
 
 // Temporary uploads expire after 24 hours without another successful upload. No text is stored.
@@ -37,7 +38,7 @@ interface ClaimedObject {
 export class ForumAttachmentCleanup {
   constructor(
     private readonly db: NodePgDatabase,
-    private readonly storage: Pick<PrivateAttachmentBucket, "delete">,
+    private readonly storage: Pick<PrivateAttachmentBucket, "delete" | "listReservations">,
     private readonly clock: () => Date = () => new Date(),
   ) {}
 
@@ -47,15 +48,15 @@ export class ForumAttachmentCleanup {
       const token = crypto.randomUUID();
       const now = this.clock();
       const item = await this.db.transaction(async (tx) => {
-        const rows = await tx.execute(sql<{ object_key: string; settled: boolean }>`
-          select object_key, write_completed_at is not null as settled from forum_attachment_upload_objects
+        const rows = await tx.execute(sql<{ object_key: string }>`
+          select object_key from forum_attachment_upload_objects
           where created_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_GRACE_MS)}
             and (claim_token is null or claimed_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_CLAIM_LEASE_MS)})
           order by coalesce(claimed_at, created_at), object_key limit 1 for update skip locked
         `);
         const row = rows.rows[0];
         if (!row) return null;
-        if (typeof row.object_key !== "string" || typeof row.settled !== "boolean") throw new Error("invalid upload-object cleanup row");
+        if (typeof row.object_key !== "string" || !isFencedAttachmentKey(row.object_key)) throw new Error("invalid upload-object cleanup row");
         // Metadata admission takes the same object-record lock. If it committed
         // (even with a lost ACK), the ordinary reference-aware asset cleanup owns it.
         const registered = await tx.execute(sql`select 1 from forum_attachments where object_key=${row.object_key}`);
@@ -65,24 +66,65 @@ export class ForumAttachmentCleanup {
         }
         await tx.execute(sql`update forum_attachment_upload_objects set claim_token=${token}, claimed_at=${now}
           where object_key=${row.object_key}`);
-        return { key: row.object_key, registered: false, settled: row.settled };
+        return { key: row.object_key, registered: false };
       });
       if (!item) break;
       if (item.registered) continue;
       counts.claimed++;
       try {
         await this.storage.delete(item.key);
-        // Settlement must precede THIS DELETE. Completion appearing during the
-        // await cannot retroactively fence a late PUT; a later pass deletes again.
-        if (item.settled) {
-          await this.db.execute(sql`delete from forum_attachment_upload_objects
-            where object_key=${item.key} and claim_token=${token} and write_completed_at is not null`);
-        }
+        // Claim blocks PREPARING activation. READY has exactly one completed
+        // initializer: DELETE makes every late positive-match payload fail.
+        await this.db.execute(sql`delete from forum_attachment_upload_objects
+          where object_key=${item.key} and claim_token=${token}`);
         counts.deleted++;
       } catch {
         counts.failed++;
       }
     }
+    return counts;
+  }
+
+  private async sweepReservations(limit: number) {
+    const token = crypto.randomUUID(), now = this.clock();
+    const lease = await this.db.execute(sql<{ cursor: string | null }>`
+      update forum_attachment_sweep set claim_token=${token}, claimed_at=${now}
+      where id='reservations-v2' and (claim_token is null or claimed_at < ${new Date(now.getTime() - ATTACHMENT_CLEANUP_CLAIM_LEASE_MS)})
+      returning cursor`);
+    if (!lease.rows.length) return { claimed: 0, deleted: 0, failed: 0 };
+    const counts = { claimed: 0, deleted: 0, failed: 0 };
+    const previous = lease.rows[0]!.cursor;
+    if (previous !== null && typeof previous !== "string") throw new Error("invalid sweep checkpoint");
+    let cursor: string | null;
+    try {
+      const page = await this.storage.listReservations({limit, cursor: previous ?? undefined});
+      // Defensive adapter boundary: never exceed the configured per-pass budget.
+      if (page.keys.length > limit || (page.cursor !== undefined && !page.cursor)) throw new Error("invalid reservation page");
+      cursor = page.cursor ?? null;
+      for (const key of page.keys) {
+        if (!isFencedAttachmentKey(key)) throw new Error("invalid reservation key");
+        try {
+          // LIST can precede a payload/metadata commit. Verify BOTH ownership
+          // sources, not only the now-retired journal, before touching this key.
+          const owned = await this.db.execute(sql`select 1 from forum_attachment_upload_objects where object_key=${key}
+            union all select 1 from forum_attachments where object_key=${key} limit 1`);
+          if (owned.rows.length) continue;
+          counts.claimed++;
+          await this.storage.delete(key);
+          counts.deleted++;
+        } catch {
+          // No absence inferred from DB failure. A future full sweep retries.
+          counts.failed++;
+        }
+      }
+    } catch {
+      // An invalid/expired opaque cursor must not permanently strand the sweep.
+      // Resetting is safe; a completed cycle also returns to the prefix start.
+      cursor = null;
+      counts.failed++;
+    }
+    await this.db.execute(sql`update forum_attachment_sweep set cursor=${cursor}, claim_token=null, claimed_at=null
+      where id='reservations-v2' and claim_token=${token}`);
     return counts;
   }
 
@@ -157,8 +199,8 @@ export class ForumAttachmentCleanup {
       throw new RangeError("invalid attachment cleanup batch size");
     }
     const prunedRefs = await this.pruneStaleRefs(batchSize);
-    // Unknown writers can require recurring tombstones. Reserve asset progress
-    // and rotate retried journal rows rather than exhausting every pass on them.
+    // Independent bounded budgets ensure asset progress and marker discovery.
+    // At default batch20: at most20 journal/asset deletes plus5 marker deletes.
     const uploads = await this.cleanupUploadObjects(Math.ceil(batchSize / 2));
     let claimed = uploads.claimed;
     let deleted = uploads.deleted;
@@ -184,6 +226,8 @@ export class ForumAttachmentCleanup {
         failed++;
       }
     }
-    return { prunedRefs, claimed, deleted, failed };
+    const markers = await this.sweepReservations(Math.max(1, Math.floor(batchSize / 4)));
+    return { prunedRefs, claimed: claimed + markers.claimed,
+      deleted: deleted + markers.deleted, failed: failed + markers.failed };
   }
 }

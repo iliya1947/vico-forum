@@ -188,7 +188,7 @@ export async function action({ request, context }: { request: Request; context: 
     result = await storePrivateAttachmentStream(bucket, {
       fileName, declaredMime, size, body: request.body,
     }, undefined, (objectKey) => store.recordUploadObject(objectKey),
-    (objectKey) => store.completeUploadObjectWrite(objectKey));
+    (objectKey, etag) => store.activateUploadObject(objectKey, etag));
   } catch (error) {
     if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
       return json({ error: "invalid" }, 400);

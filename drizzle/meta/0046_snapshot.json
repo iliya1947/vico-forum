@@ -1,5 +1,5 @@
 {
-  "id": "d52afcd2-c669-491a-8659-6a96413f6583",
+  "id": "f3338e78-1a10-4d6a-a0f3-a22f555cfa04",
   "prevId": "7ef849c8-d289-454f-9a92-663b20cb1b1e",
   "version": "7",
   "dialect": "postgresql",
@@ -1377,6 +1377,52 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.forum_attachment_sweep": {
+      "name": "forum_attachment_sweep",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cursor": {
+          "name": "cursor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claim_token": {
+          "name": "claim_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "forum_attachment_sweep_singleton_check": {
+          "name": "forum_attachment_sweep_singleton_check",
+          "value": "\"forum_attachment_sweep\".\"id\" = 'reservations-v2'"
+        },
+        "forum_attachment_sweep_claim_check": {
+          "name": "forum_attachment_sweep_claim_check",
+          "value": "\n    (\"forum_attachment_sweep\".\"claim_token\" is null and \"forum_attachment_sweep\".\"claimed_at\" is null)\n    or (\"forum_attachment_sweep\".\"claim_token\" is not null and \"forum_attachment_sweep\".\"claimed_at\" is not null)\n  "
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.forum_attachment_upload_objects": {
       "name": "forum_attachment_upload_objects",
       "schema": "",
@@ -1393,6 +1439,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "reservation_etag": {
+          "name": "reservation_etag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "claim_token": {
           "name": "claim_token",

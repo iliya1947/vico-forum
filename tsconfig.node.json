@@ -16,6 +16,7 @@
     "app/forum/actions.server.ts",
     "app/forum/attachment-request-context.ts",
     "app/forum/attachment-r2.ts",
+    "app/forum/attachment-storage-protocol.ts",
     "app/forum/attachment-validation.ts",
     "app/forum/attachment-container-validation.ts",
     "app/forum/attachment-structural-validation.ts",

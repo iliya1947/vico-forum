@@ -1,9 +1,30 @@
 import { AttachmentWriteSettledError, type PrivateAttachmentBucket } from "../app/forum/attachment-r2";
+import { ATTACHMENT_RESERVATION_KIND, ATTACHMENT_UPLOAD_PREFIX, isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
 
 /** R2 requires a known-length body; arbitrary inspected JS streams lack it. */
 export function privateAttachmentBucket(bucket: R2Bucket): PrivateAttachmentBucket {
   return {
-    async put(key, content, { byteLength, httpMetadata }) {
+    async reserve(key) {
+      if (!isFencedAttachmentKey(key)) throw new Error("invalid reservation key");
+      const reservation = await bucket.put(key, "", {
+        onlyIf: new Headers({ "If-None-Match": "*" }),
+        customMetadata: { kind: ATTACHMENT_RESERVATION_KIND },
+      });
+      // R2 permits one write/second per key. Space initialization and payload;
+      // do not retry a failed/ambiguous create on this physical identity.
+      if (reservation) await new Promise((resolve) => setTimeout(resolve, 1_000));
+      return reservation;
+    },
+    async listReservations({ limit, cursor }) {
+      const page = await bucket.list({ prefix: ATTACHMENT_UPLOAD_PREFIX, limit, cursor, include: ["customMetadata"] });
+      return {
+        keys: page.objects.filter((item) => isFencedAttachmentKey(item.key)
+          && item.customMetadata?.kind === ATTACHMENT_RESERVATION_KIND).map((item) => item.key),
+        cursor: page.truncated ? page.cursor : undefined,
+      };
+    },
+    async put(key, content, { byteLength, httpMetadata, reservationEtag }) {
+      if (!reservationEtag) throw new Error("attachment payload requires a reservation");
       const fixed = new FixedLengthStream(byteLength);
       const abort = new AbortController();
       let forwarded = 0;
@@ -11,7 +32,9 @@ export function privateAttachmentBucket(bucket: R2Bucket): PrivateAttachmentBuck
         transform(chunk, controller) { forwarded += chunk.byteLength; controller.enqueue(chunk); },
       }));
       const pumping = counted.pipeTo(fixed.writable, { signal: abort.signal });
-      const writing = Promise.resolve().then(() => bucket.put(key, fixed.readable, { httpMetadata }))
+      const writing = Promise.resolve().then(() => bucket.put(key, fixed.readable, {
+        httpMetadata, onlyIf: { etagMatches: reservationEtag }, customMetadata: { kind: "vico-payload-v1" },
+      }))
         .then(async (stored) => {
           // A definitive rejection need not consume the body. Stop the pump
           // rather than waiting forever for a reader which has already returned.

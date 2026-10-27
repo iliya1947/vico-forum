@@ -34,6 +34,8 @@ function chunked(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
 
 function bucket() {
   const objects = new Map<string, Uint8Array>();
+  const reserve = vi.fn(async () => ({ etag: "reservation" }));
+  const listReservations = vi.fn(async () => ({ keys: [] as string[] }));
   const put = vi.fn(async (key: string, body: ReadableStream<Uint8Array>,
     options: { byteLength: number; httpMetadata: { contentType: string } }) => {
     if (!key.startsWith("private/") || options.httpMetadata.contentType !== "application/octet-stream") {
@@ -54,7 +56,7 @@ function bucket() {
     if (!key.startsWith("private/")) throw new Error("unprotected object deletion");
     objects.delete(key);
   });
-  return { put, get, delete: del } satisfies PrivateAttachmentBucket;
+  return { reserve, listReservations, put, get, delete: del } satisfies PrivateAttachmentBucket;
 }
 
 function emptyZip(): Uint8Array {
@@ -147,9 +149,10 @@ describe("private R2 attachment write contract", () => {
     expect(result).toMatchObject({ outcome: "stored", bytes: content.length,
       inspection: { accepted: true, responseMime: "text/plain; charset=utf-8" } });
     if (result.outcome !== "stored") return;
-    expect(result.objectKey).toMatch(/^private\/[0-9a-f-]{36}$/u);
+    expect(result.objectKey).toMatch(/^private\/fenced-v1\/[0-9a-f-]{36}$/u);
     expect(store.put).toHaveBeenCalledOnce();
     expect(store.put.mock.calls[0]?.[2]).toEqual({
+      reservationEtag: "reservation",
       byteLength: content.length,
       httpMetadata: { contentType: "application/octet-stream" },
     });
@@ -360,4 +363,13 @@ describe("bounded one-pass upload stream", () => {
     });
     expect(store.delete).toHaveBeenCalledOnce();
   });
+});
+
+it('never retries an ambiguous reservation on its physical key',async()=>{
+  const storage=bucket();storage.reserve.mockRejectedValueOnce(new Error('ACK lost'));
+  await expect(storePrivateAttachment(storage,file('notes.txt',new TextEncoder().encode('hello')))).rejects.toBeInstanceOf(AttachmentStorageError);
+  expect(storage.reserve).toHaveBeenCalledOnce();expect(storage.put).not.toHaveBeenCalled();
+  expect((await storePrivateAttachment(storage,file('notes.txt',new TextEncoder().encode('hello')))).outcome).toBe('stored');
+  const first=storage.reserve.mock.calls[0] as unknown as [string];const second=storage.reserve.mock.calls[1] as unknown as [string];
+  expect(first[0]).not.toBe(second[0]);
 });
