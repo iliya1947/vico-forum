@@ -1,5 +1,55 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / EDITOR-03 — bounded nested-strike correction (2026-10-28)
+
+**Автор:** Лёва — Codex-6.1 Sol. Implementation report, не независимый whole-PR verdict.
+**Назначение:** [#6454603798](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454603798), после author verification [#6454498746](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454498746).
+**PR:** [#248](https://github.com/iliya1947/vico-forum/pull/248).
+**Previous head:** `c87ca0ed6e0ec669ac6c97d5c68d547980e6541d`.
+**Новый stable exact head:** `5e5625390501753edb07c323b8c662cec9902474`, branch `fix/l7-editor-structure`; accepted base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. PR open/mergeable; merge не выполнялся.
+
+### Изменён только назначенный residual EDITOR-03
+
+От previous head: **4 файла, +101/−6** — `editor-document.ts`, `editor-document.test.ts`, `markdown-editor.test.tsx`, `PROJECT_STATE.md`. Production diff ограничен комментариями и проверкой соседей attention delimiters; parser grammar, reconstruction plan/history, другие L7 paths и dependencies/schema/migrations не менялись.
+
+Предыдущий predicate снимал сразу весь mixed run `~~**` или `**~~`. Поэтому соседние child stars исчезали из контекста, хотя определяли, может ли внешний GFM `~~` открыть/закрыть strike. Сейчас opening и closing проверяются раздельно: удаляется **только крайний homogeneous run одной семьи** маркеров. Child family остаётся видимой как punctuation. Existing selected-side character-reference escaping защищает границу и сохраняет правильное GFM pairing.
+
+Это локальная correction уже существующего boundary-protection helper; новый serializer или повторная сериализация документа не добавлялись. Homogeneous `***` продолжает рассматриваться как одна семья; уже исправленные strong/emphasis/link whitespace paths сохраняют semantics.
+
+### Подтверждённые результаты
+
+Source `~~**alpha beta**~~`:
+- Clear первой a → `&#97;~~**lpha beta**~~`. Public DOM: plain a, затем del→strong `lpha beta`. Literal tildes нет; selected a не форматирована, весь невыделенный остаток сохраняет strike/strong.
+- Clear l → `~~**a**~~&#108;~~**pha beta**~~`. Public DOM: del→strong a, plain l, del→strong `pha beta`. Выбранная l больше не остаётся во вложенном del.
+- Character references изменяют только source representation выбранного символа; отображаемая буква и DOM selection сохраняются, исходный невыделенный source не нормализуется.
+
+Эквивалентные outer-delete / inner-emphasis cases исправлены. Flat strike, whole-word clear, whole-range clear и reversed nesting controls проходят. Для некоторых mixed controls representation выбранной буквы тоже может стать reference; visible semantics, selection и exact history сохраняются.
+
+### Регрессии и проверки
+
+Добавлены **26 cases: 19 helper +7 mounted component**:
+- a/l для outer delete + inner strong и emphasis;
+- flat strike, whole-word и reversed nesting controls;
+- whole-range clear;
+- BMP/supplementary Unicode boundary и mapping source selection;
+- actual editor → FormData → public ForumMarkdown: отсутствие literal markers, per-character selected/unselected del/strong/em semantics, DOM selection, exact Undo/Redo.
+
+Red helper stage до correction: **6 FAIL /73 PASS** (оба strong cases, оба emphasis cases и два Unicode boundary cases). После correction: **185 focused editor tests PASS**.
+
+- Полный локальный app suite: **1205 tests /102 files PASS**; контрольный полный прогон на pinned **Node24.21.0** — **1205/102 PASS**.
+- Прежняя semantic matrix: **96/96 PASS**, включая strong/emphasis/link whitespace boundaries.
+- **13 headless Chromium scenarios PASS**: assigned minimal cases, equivalent emphasis, flat/whole-word/reversed nesting, whole-range, BMP/supplementary Unicode. DOM selection → actual toolbar → FormData → actual public renderer. **13/13 selection и exact Undo/Redo**.
+- Local `pnpm typecheck`, source lint (0 errors / один прежний warning в ui.test.tsx), app build и UI-preview build PASS. Generated artifact вынесен из checkout перед source lint.
+- **[Exact-head CI #40592508871](https://github.com/iliya1947/vico-forum/actions/runs/40592508871) SUCCESS: checks `122500070291` — **1205 app tests /102 files PASS**; database `122500071007` — **326 PostgreSQL17 tests /30 files PASS**. Completed logs обеих jobs прочитаны; typecheck/lint, app/UI-preview builds, migration/schema/runtime probes и Workers smoke успешны.**
+
+Full local native PG/Workerd smoke в этой correction отдельно не повторялся; выполнен exact-head CI. Browser — local component harness с synthetic API responses, не owner visual acceptance/live deployment. External/provider/production services не затрагивались.
+
+Артефакты: `/workspace/work/l7-strike-correction/red.log`, `mounted.log`, `app.log`, `app-pinned.log`, `semantic-matrix.json`, `browser-results.json`, `typecheck.log`, `lint.log`, `build.log`, `ui-build.log`, `browser.py`.
+
+PROJECT_STATE отражает correction и её дату. Нового independent whole-PR verdict автор не выносит; старые reviewers verdicts относятся к previous head. Локальный harness остановлен; dependency symlink удалён, implementation checkout clean.
+
+**Мире:** новый coordinator whole-PR review PR #248 на `5e5625390501753edb07c323b8c662cec9902474`, затем non-author independent reviewers того же head. Implementation зафиксирована. **Лёва STOP.**
+
 ## PR #248 / EDITOR-03 — author verification nested GFM strikethrough (2026-10-27)
 
 **Назначение:** [#6454156161](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454156161), reconciliation [#6454152253](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454152253).
