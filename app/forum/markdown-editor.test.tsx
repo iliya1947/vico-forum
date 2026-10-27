@@ -840,7 +840,7 @@ describe("MarkdownEditor", () => {
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     expect(textarea).toHaveValue(expectedSource);
     expect(new FormData(textarea.form!).get("body")).toBe(expectedSource);
-    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')).toHaveTextContent(original);
+    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')?.textContent).toBe(original);
     expect(document.querySelector(".markdown-editor-visual hr, .markdown-editor-visual del")).toBeNull();
   });
 
@@ -866,7 +866,7 @@ describe("MarkdownEditor", () => {
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     expect(textarea).toHaveValue(expectedSource);
     expect(new FormData(textarea.form!).get("body")).toBe(expectedSource);
-    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')).toHaveTextContent(original);
+    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')?.textContent).toBe(original);
     expect(document.querySelector(".markdown-editor-visual hr, .markdown-editor-visual del")).toBeNull();
   });
 
