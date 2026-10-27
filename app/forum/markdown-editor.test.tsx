@@ -8,6 +8,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { ForumMarkdown } from "./markdown";
+import { mentionProfileLink, publishedMentionRecipients } from "./mentions";
+import { parseForumMarkdown } from "../markdown-syntax";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 
 function canonicalCommonResources(): Record<string, string> {
@@ -200,6 +203,8 @@ describe("MarkdownEditor", () => {
   it.each([
     ["advanced", "Ada &copy;"], ["simple", "Ada &copy;"],
     ["advanced", "~~Ada &copy;~~"], ["simple", "~~Ada &copy;~~"],
+    ["advanced", "Ada <https://example.test> &copy;"],
+    ["simple", "Ada <https://example.test> &copy;"],
   ] as const)("inserts literal member name %s / %s without interpreted GFM formatting", async (mode, name) => {
     const lookup = vi.fn(async (url: string) => {
       if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
@@ -229,9 +234,21 @@ describe("MarkdownEditor", () => {
     }
     const candidate = await screen.findByRole("button", { name });
     await userEvent.click(candidate);
-    const label = name === "Ada &copy;" ? "Ada &amp;copy;" : String.raw`\~\~Ada &amp;copy;\~\~`;
-    await waitFor(() => expect(textarea).toHaveValue(`Hello [${label}](/en/users/member-42)`));
+    const link = mentionProfileLink(name, "/en/users/member-42");
+    await waitFor(() => expect(textarea).toHaveValue("Hello " + link));
     expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
+    const paragraph = parseForumMarkdown(textarea.value).children[0];
+    expect(paragraph).toMatchObject({ type: "paragraph", children: [
+      { type: "text", value: "Hello " },
+      { type: "link", url: "/en/users/member-42", children: [{ type: "text", value: name }] },
+    ] });
+    if (paragraph?.type !== "paragraph") throw new Error("Expected literal mention paragraph");
+    expect(paragraph.children).toHaveLength(2);
+    expect(publishedMentionRecipients(textarea.value)).toEqual(["member-42"]);
+    const published = renderEditor(<ForumMarkdown>{textarea.value}</ForumMarkdown>);
+    const profile = published.container.querySelector('a[href="/en/users/member-42"]');
+    expect(profile).toHaveTextContent(name);
+    expect(published.container.querySelectorAll("a")).toHaveLength(1);
     if (mode === "simple") {
       expect(document.querySelector(".markdown-editor-visual del")).toBeNull();
       expect(document.querySelector(".markdown-editor-visual")?.textContent).toContain(name);
@@ -1473,6 +1490,39 @@ describe("MarkdownEditor", () => {
 
     expect(screen.getByLabelText("Body")).toHaveValue("Before\n\tconst value = 1");
     expect(document.querySelector(".markdown-editor-visual-table")).toBeNull();
+  });
+
+  it.each([
+    "\n\n\t&copy; ~~literal~~",
+    "\n\n \t~~literal~~ &copy;",
+  ])("keeps raw-tab forced plain clipboard prose literal in published code %j", (plain) => {
+    renderEditor(<form><label htmlFor="raw-tab-paste">Body</label>
+      <MarkdownEditor id="raw-tab-paste" name="body" defaultValue="Before" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 6);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? plain : format === "text/html" ? "<h1>Wrong</h1>" : "" } });
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const markdown = textarea.value;
+    expect(markdown).toBe("Before" + plain);
+    expect(new FormData(textarea.form!).get("body")).toBe(markdown);
+    const tree = parseForumMarkdown(markdown);
+    expect(tree.children.map((node) => node.type)).toContain("code");
+    const published = renderEditor(<ForumMarkdown>{markdown}</ForumMarkdown>);
+    const code = published.container.querySelector("pre code");
+    expect(code).not.toBeNull();
+    expect(code?.textContent).toContain(plain.includes("~~literal~~") ? "~~literal~~" : "&copy;");
+    expect(code?.textContent).toContain("&copy;");
+    expect(code?.textContent).not.toContain("&amp;copy;");
+    expect(code?.textContent).not.toContain("\\~");
+    expect(published.container.querySelectorAll("h1, del")).toHaveLength(0);
   });
 
   it("preserves invalid tabular text when spreadsheet conversion declines it", () => {
