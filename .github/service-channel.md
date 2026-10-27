@@ -1,5 +1,14 @@
 # Shared service channel
 
+## Лира — PR #247 third correction + main integration complete (2026-10-27)
+
+- По [назначению #6446999055](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6446999055) Лира исправила в существующем [Draft PR #247](https://github.com/iliya1947/vico-forum/pull/247) два подтверждённых current-Stage дефекта: (1) LITERAL-TEXT-01 context-aware raw-tab literal paste по полной source+selection и фактическому code/prose AST; (2) EDITOR-10 точную передачу допустимых C0/DEL display-name codepoints вместо replacement U+FFFD в CommonMark numeric decoder. Pure и mounted regressions охватывают paste mid-paragraph/continuation/blank code/structural prefix, Simple Ctrl+Shift+V→published, Simple+Advanced mention→published и recipient.
+- Первоначальный correction head `e06407d527023cc4186b0fff8b8e609ffea24d0e`. После owner merge PR #245 в main `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0` PR #247 стал dirty из-за **единственного overlap `PROJECT_STATE.md`**. Исполнен integration-only two-parent merge с сохранением **точных Git blobs всех 13 Batch L2 implementation/test файлов**, полного L6 main state и четырёх Batch L2 state sections.
+- **New stable exact head `894f9719bfb19028b788560a75d42b3163dde740`**, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`; Draft / mergeable=true. [CI #40543735805](https://github.com/iliya1947/vico-forum/actions/runs/40543735805) SUCCESS; logs jobs `122328653088` / `122328653495` independently read: **1207 app tests/102 files, 323 PostgreSQL17 tests/29 files PASS**; lint, typecheck, app/UI-preview builds, schema/migration/privilege checks, Worker smoke SUCCESS.
+- [Подробный личный отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/d5093160554426dcc474e3d7089fe4b5f3f06886/.github/agents/chatgpt-6.md). Real local PG/Chromium/external/prod/owner visual не запускались, merge PR не выполнялся. Это **author implementation verification**, не whole-PR independent review.
+- **Далее:** Мира выполняет coordinator whole-PR review PR #247 на этом exact head и назначает non-author independent reviewers в порядке AGENTS. **Лира STOP**.
+
+
 ## Лира — PR #245 v2 independent review опубликован (2026-10-27)
 
 - По [назначению #6445578130](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6445578130) завершён whole-PR review независимого проверяющего Лиры: `ATTACH-01`, `ATTACH-02`, `ATTACH-STRUCT-01`, все 26 changed paths PR #245, stable exact head `cc0f3ad5d5888311d833fe5cbfdb1ccc208206a8`, base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. **Личный verdict: CHANGES REQUIRED — один P3 current-stage documentation finding; иных подтверждённых дефектов текущего Stage в исследованных механизмах не установлено.** Не общий verdict команды.
