@@ -19,12 +19,12 @@ describe("mention authoring tokens", () => {
 
   it("serializes the member id as a stable profile URL and escapes Markdown in the label", () => {
     expect(mentionProfileLink("Ada Lovelace", "/ru/users/123")).toBe("[Ada Lovelace](/ru/users/123)");
-    expect(mentionProfileLink("A[B]*", "/he/users/abc")).toBe(String.raw`[A\[B\]\*](/he/users/abc)`);
+    expect(mentionProfileLink("A[B]*", "/he/users/abc")).toBe("[A&#91;B&#93;&#42;](/he/users/abc)");
   });
   it("keeps GFM strikethrough markers literal in the authoritative mention label", () => {
     const name = "~~Ada &copy;~~";
     const markdown = mentionProfileLink(name, "/en/users/member-42");
-    expect(markdown).toBe(String.raw`[\~\~Ada &amp;copy;\~\~](/en/users/member-42)`);
+    expect(markdown).toBe("[&#126;&#126;Ada &#38;copy;&#126;&#126;](/en/users/member-42)");
     const root = parseForumMarkdown(markdown);
     expect(root.children).toMatchObject([{
       type: "paragraph",
@@ -37,13 +37,34 @@ describe("mention authoring tokens", () => {
   });
 
   it.each([
+    "Ada <https://example.test> &copy;",
+    "Ada <someone@example.test> &copy;",
+    "A [nested](https://example.test) ~~name~~",
+    String.raw`\\*[]<> ![] \\ \`backtick\` &copy;`,
+  ])("serializes complex allowed display names as one literal profile-link child: %s", (name) => {
+    const markdown = mentionProfileLink(name, "/en/users/member-42");
+    const paragraph = parseForumMarkdown(markdown).children[0];
+    expect(paragraph).toMatchObject({
+      type: "paragraph",
+      children: [{ type: "link", url: "/en/users/member-42",
+        children: [{ type: "text", value: name }] }],
+    });
+    if (paragraph?.type !== "paragraph") throw new Error("Expected single paragraph");
+    expect(paragraph.children).toHaveLength(1);
+    const [link] = paragraph.children;
+    if (link?.type !== "link") throw new Error("Expected one profile link");
+    expect(link.children).toHaveLength(1);
+    expect(publishedMentionRecipients(markdown)).toEqual(["member-42"]);
+  });
+
+  it.each([
     "Ada &copy;",
     "Alice &amp; Bob",
     "Code &#169; reviewer",
     "Name & plain",
   ])("preserves the literal mention label %s through Markdown parsing", (name) => {
     const markdown = mentionProfileLink(name, "/en/users/member-42");
-    expect(markdown).toContain("&amp;");
+    expect(markdown).toContain("&#38;");
     expect(fromMarkdown(markdown).children[0]).toMatchObject({
       type: "paragraph",
       children: [{
