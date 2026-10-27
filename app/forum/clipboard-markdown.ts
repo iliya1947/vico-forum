@@ -10,12 +10,17 @@ function escapeText(value: string): string {
 
 function textAsMarkdown(value: string): string {
   return value.replace(/\r\n/gu, "\n").split("\n").map((line) => {
-    const escaped = escapeText(line);
+    // Markdown would parse four leading spaces (or a tab) as an indented code
+    // block and display our literal-text escapes instead of decoding them.
+    // One structural character reference preserves the whitespace as prose.
+    const prefix = /^(?: {4}| {0,3}\t)/u.test(line)
+      ? (line[0] === "\t" ? "&#9;" : "&#32;") : "";
+    const escaped = prefix ? prefix + escapeText(line.slice(1)) : escapeText(line);
     // Plain text must not accidentally become a heading, quote or list item.
     return escaped.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
       (_, indent: string, marker: string) => indent + "\\" + marker)
-      .replace(/^([ \t]{0,3})(-{3,})(?=\s|$)/u,
-        (_, indent: string, dashes: string) => indent + "\\" + dashes);
+      .replace(/^([ \t]{0,3})(-{2,}|={2,})(?=\s|$)/u,
+        (_, indent: string, rule: string) => indent + "\\" + rule);
   }).join("\n");
 }
 
