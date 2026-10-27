@@ -24,14 +24,22 @@
 
 В implementation-ветке реализован пакет из семи согласованных findings:
 
-- `EDITOR-03`: частичное снятие inline formatting оставляет пробелы за границами
-  вновь создаваемых delimiters, сохраняя форматирование невыделенного текста.
+- `EDITOR-03`: частичное снятие inline formatting учитывает удалённые и вставленные
+  delimiters дочерних wrappers до расчёта внешней границы. Boundary whitespace
+  emphasis выводится за delimiters, а невыделенные пробелы link label остаются
+  внутри ссылки; пустые residual wrappers не создаются. При необходимости
+  CommonMark attention boundary экранируется literal character reference только
+  со стороны выделенного текста, с сохранением символов и source-selection mapping.
 - `EDITOR-06`: Simple Enter закрывает и вновь открывает пересекающие границу inline
-  wrappers; исходник соседних блоков не пересериализуется.
+  wrappers по фактическим границам после nested reconstruction, включая начало
+  и конец visual leaf; исходник соседних блоков не пересериализуется.
 - `RES-EDITOR-02`: Backspace в начале следующего обычного абзаца удаляет separator,
   сохраняет исходный текст и поддерживает общую Undo/Redo history. Совпадающие
   соприкасающиеся inline wrappers объединяются; heading/list/code/table boundaries
-  не интерпретируются как обычные paragraph separators.
+  не интерпретируются как обычные paragraph separators. Terminal manual direction
+  предыдущего paragraph переносится в конец объединённого paragraph, а каретка
+  остаётся перед скрытым marker. При двух explicit overrides сохраняется override
+  предыдущего paragraph; если он auto, сохраняется terminal override второго.
 - `EDITOR-07`: Tab/Shift+Tab в Advanced code учитывает exclusive selection end;
   следующая строка, включая closing fence, не получает отступ.
 - `EDITOR-11`: первоначальная публикация темы, Help-вопроса и ответа сохраняет raw
@@ -56,8 +64,10 @@ exclusive-end Tab вместе с FormData и публичным renderer. Эт�
 Локально пройдены общий application suite, последующие focused regressions, native
 PostgreSQL suite, typecheck/TypeScript build, source lint, app/UI-preview builds и
 Workers smoke. Fence-aware segmentation совпало с прежней грамматикой на 10 000
-ограниченных смешанных примерах. Whole-PR review implementation-пакета остаётся
-следующим отдельным этапом.
+ограниченных смешанных примерах. Bounded correction трёх editor transformation
+families покрыта helper/component regressions, включая nested links, boundary
+whitespace, literal references/Unicode и direction marker/history. После correction
+требуется новый whole-PR review стабильного implementation head.
 
 ## L6 — attachment object journal и ZIP integrity (2026-10-27)
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseForumMarkdown } from "../markdown-syntax";
 import {
   insertVisualParagraph, joinVisualParagraph,
   applyTextareaEdit, clearInlineMarkdownFormatting, createEditorHistory, editableCodeRanges,
@@ -9,6 +10,70 @@ import {
 } from "./editor-document";
 
 describe("Editor 2.0 lossless document foundation", () => {
+  it.each([
+    ["**alpha *beta gamma* delta**", "beta", "**alpha** beta ***gamma* delta**"],
+    ["**alpha *beta gamma* delta**", "gamma", "**alpha *beta*** gamma **delta**"],
+    ["**alpha *beta* gamma**", "beta", "**alpha** beta **gamma**"],
+    ["**alpha *beta* gamma**", "gamma", "**alpha *beta*** gamma"],
+    ["[alpha beta](https://x)", "alpha", "alpha[ beta](https://x)"],
+    ["[alpha beta](https://x)", "beta", "[alpha ](https://x)beta"],
+    ["[**alpha beta**](https://x)", "beta", "[**alpha** ](https://x)beta"],
+  ])("clears %s / %s without corrupting nested or unselected link boundaries", (source, selected, expected) => {
+    const start = source.indexOf(selected);
+    const result = clearInlineMarkdownFormatting(source, { start, end: start + selected.length });
+    expect(result.markdown).toBe(expected);
+    expect(result.markdown.slice(result.selection.start, result.selection.end)).toBe(selected);
+  });
+
+  it.each([
+    ["beta", 0, "**alpha** \n\n***beta gamma* delta**"],
+    ["gamma", 5, "**alpha *beta gamma***\n\n **delta**"],
+    ["beta", 2, "**alpha *be***\n\n***ta gamma* delta**"],
+  ])("splits nested formatting at %s + %s", (word, offset, expected) => {
+    const source = "**alpha *beta gamma* delta**";
+    const caret = source.indexOf(word) + offset;
+    const result = insertVisualParagraph(source, { start: caret, end: caret });
+    expect(result.markdown).toBe(expected);
+    expect(result.markdown.slice(result.selection.start)).toMatch(/^(?:beta|delta|ta)/);
+  });
+
+  it.each(["ltr", "rtl"])("retains the previous paragraph's explicit %s direction on join", (direction) => {
+    const source = `Alpha {:vico-dir=${direction}}\r\n\r\nBeta`;
+    const caret = source.indexOf("Beta");
+    const result = joinVisualParagraph(source, { start: caret, end: caret });
+    expect(result?.markdown).toBe(`AlphaBeta {:vico-dir=${direction}}`);
+    expect(result?.selection).toEqual({ start: 5, end: 5 });
+    const empty = source.slice(0, caret);
+    expect(joinVisualParagraph(empty, { start: empty.length, end: empty.length }))
+      .toEqual({ markdown: `Alpha {:vico-dir=${direction}}`, selection: { start: 5, end: 5 } });
+  });
+
+  it("retains terminal direction during wrapper coalescing and preserves a right-only override", () => {
+    for (const current of ["", " {:vico-dir=rtl}", " {:vico-dir=ltr}"]) {
+      const source = `**Alpha** {:vico-dir=rtl}\n\n**Beta**${current}`;
+      const caret = source.indexOf("Beta");
+      expect(joinVisualParagraph(source, { start: caret, end: caret })?.markdown)
+        .toBe("**AlphaBeta** {:vico-dir=rtl}");
+    }
+    const source = "Alpha\n\nBeta {:vico-dir=rtl}";
+    const caret = source.indexOf("Beta");
+    expect(joinVisualParagraph(source, { start: caret, end: caret })?.markdown)
+      .toBe("AlphaBeta {:vico-dir=rtl}");
+  });
+
+  it.each(["beta", "gamma", "𐐀amma"])("preserves nested-link flanking and selected character references: %s", (selected) => {
+    const second = selected === "𐐀amma" ? selected : "gamma";
+    const source = `**alpha [beta ${second}](https://x) delta**`;
+    const start = source.indexOf(selected);
+    const result = clearInlineMarkdownFormatting(source, { start, end: start + selected.length });
+    const root = parseForumMarkdown(result.markdown);
+    const text = (node: { value?: string; children?: unknown[] }): string => node.value
+      ?? (node.children ?? []).map((child) => text(child as Parameters<typeof text>[0])).join("");
+    expect(text(root)).toBe(`alpha beta ${second} delta`);
+    expect(text(parseForumMarkdown(result.markdown.slice(result.selection.start, result.selection.end)))).toBe(selected);
+    expect(result.markdown).toContain("https://x");
+  });
+
   it.each(["**alpha beta**", "*alpha beta*", "~~alpha beta~~", "**_alpha beta_**", "[alpha beta](https://example.com)"])("splits active wrappers without touching surrounding source: %s", (inline) => {
     const source = "Before\r\n\r\n" + inline + "\r\n\r\n```js\nconst x = 1;\n```";
     const caret = source.indexOf("alpha") + 5;

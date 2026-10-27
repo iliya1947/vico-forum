@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import { ForumMarkdown } from "./markdown";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 
@@ -83,6 +84,75 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
+  it.each([
+    ["**alpha *beta gamma* delta**", "beta gamma", 0, 4, "alpha beta gamma delta", []],
+    ["[alpha beta](https://x)", "alpha beta", 0, 5, "alpha beta", [" beta"]],
+    ["[**alpha beta**](https://x)", "alpha beta", 6, 10, "alpha beta", ["alpha "]],
+    ["**alpha [beta gamma](https://x) delta**", "beta gamma", 0, 4, "alpha beta gamma delta", [" gamma"]],
+    ["**alpha [beta gamma](https://x) delta**", "beta gamma", 5, 10, "alpha beta gamma delta", ["beta "]],
+    ["**alpha [beta 𐐀amma](https://x) delta**", "beta 𐐀amma", 5, 11, "alpha beta 𐐀amma delta", ["beta "]],
+  ] as const)("clears selected visual content and preserves published boundaries: %s", async (source, leafText, start, end, expectedText, links) => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent === leafText)!;
+    leaf.focus();
+    const range = document.createRange(); range.setStart(leaf.firstChild!, start); range.setEnd(leaf.firstChild!, end);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe(expectedText);
+    expect([...published.querySelectorAll("a")].map((node) => node.textContent)).toEqual(links);
+    if (leafText === "beta gamma" && links.length === 0) {
+      expect([...published.querySelectorAll("strong")].map((node) => node.textContent)).toEqual(["alpha", "gamma delta"]);
+      expect(published.querySelector("em")).toHaveTextContent("gamma");
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([0, 10, 2])("preserves published nested formatting on native Enter at %s", async (offset) => {
+    const source = "**alpha *beta gamma* delta**";
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent === "beta gamma")!;
+    leaf.focus(); const range = document.createRange(); range.setStart(leaf.firstChild!, offset); range.collapse(true);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Enter" });
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.querySelectorAll("p")).toHaveLength(2);
+    expect(published.textContent).not.toMatch(/[*_]/u);
+    expect([...published.querySelectorAll("em")].map((node) => node.textContent).join("")).toBe("beta gamma");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+  });
+
+  it.each(["ltr", "rtl"])("keeps manual %s direction through Backspace and history", async (direction) => {
+    const source = `Alpha {:vico-dir=${direction}}\n\nBeta`;
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent === "Beta")!;
+    leaf.focus(); const range = document.createRange(); range.setStart(leaf.firstChild!, 0); range.collapse(true);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Backspace" });
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.querySelector("p")).toHaveAttribute("dir", direction);
+    expect(published.textContent).toBe("AlphaBeta");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
   it("splits inline formatting on native Enter and restores exact source on undo", async () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
       defaultValue="**alpha beta**" /></>);

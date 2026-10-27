@@ -56,6 +56,7 @@ type PositionedNode = {
   type: string;
   url?: string;
   identifier?: string;
+  data?: { hProperties?: Record<string, unknown> };
   position?: { start: { offset?: number }; end: { offset?: number } };
   children?: PositionedNode[];
 };
@@ -375,38 +376,49 @@ const CLEARABLE_INLINE_NODE_TYPES = new Set(["strong", "emphasis", "delete", "li
  */
 export function insertVisualParagraph(markdown: string, selection: EditorSelection): EditorSnapshot {
   const target = validSelection(selection, markdown.length);
-  const delimiters: FormattingDelimiter[] = [];
+  const deletions: EditorSelection[] = [];
+  const closings: Array<{ at: number; text: string; depth: number }> = [];
+  const openings: Array<{ at: number; text: string; depth: number }> = [];
   function visit(node: PositionedNode, depth: number): void {
-    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
-    if (delimiter) delimiters.push(delimiter);
+    // Child delimiter removals must be known before resolving the parent's
+    // surviving boundary. Raw child markers can hide whitespace or empty spans.
     for (const child of node.children ?? []) visit(child, depth + 1);
-  }
-  visit(parseForumMarkdown(markdown) as PositionedNode, 0);
-
-  let before = markdown.slice(0, target.start);
-  let after = markdown.slice(target.end);
-  const closing: string[] = [];
-  const opening: string[] = [];
-  // Strip adjacent whitespace out of the new wrappers: CommonMark delimiters
-  // immediately before/after whitespace cannot open/close emphasis.
-  const leftSpace = before.match(/[ \t]*$/u)?.[0] ?? "";
-  const rightSpace = after.match(/^[ \t]*/u)?.[0] ?? "";
-  before = before.slice(0, before.length - leftSpace.length);
-  after = after.slice(rightSpace.length);
-  for (const delimiter of [...delimiters].sort((a, b) => b.depth - a.depth)) {
+    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
+    if (!delimiter) return;
+    const trim = node.type !== "link";
     if (target.start >= delimiter.open.end && target.start <= delimiter.close.start) {
-      if (before.length <= delimiter.open.end) {
-        before = before.slice(0, delimiter.open.start);
-      } else closing.push(delimiter.close.text);
+      const before = remainingSourceBoundary(markdown,
+        { start: delimiter.open.end, end: target.start }, deletions, trim, closings);
+      if (before.empty) deletions.push(delimiter.open);
+      else closings.push({ at: before.end, text: delimiter.close.text, depth });
     }
     if (target.end >= delimiter.open.end && target.end <= delimiter.close.start) {
-      const contentLeft = delimiter.close.start - target.end - rightSpace.length;
-      if (contentLeft <= 0) after = after.slice(delimiter.close.text.length);
-      else opening.unshift(delimiter.open.text);
+      const after = remainingSourceBoundary(markdown,
+        { start: target.end, end: delimiter.close.start }, deletions, trim, openings);
+      if (after.empty) deletions.push(delimiter.close);
+      else openings.push({ at: after.start, text: delimiter.open.text, depth });
     }
   }
-  const left = before + closing.join("") + leftSpace + "\n\n" + rightSpace + opening.join("");
-  return { markdown: left + after, selection: { start: left.length, end: left.length } };
+  visit(parseForumMarkdown(markdown) as PositionedNode, 0);
+  const insertions = new Map<number, string>();
+  for (const item of closings.sort((a, b) => b.depth - a.depth)) {
+    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
+  }
+  insertions.set(target.start, (insertions.get(target.start) ?? "") + "\n\n");
+  for (const item of openings.sort((a, b) => a.depth - b.depth)) {
+    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
+  }
+  deletions.push(target);
+  const result = applySourceEditPlan(markdown, deletions, insertions);
+  let afterStart = target.end;
+  while (afterStart < markdown.length) {
+    const deleted = deletions.find((range) => range.start <= afterStart && afterStart < range.end);
+    if (deleted) afterStart = deleted.end;
+    else if (/[ \t]/u.test(markdown[afterStart]!)) afterStart++;
+    else break;
+  }
+  const caret = result.mapOffset(Math.max(afterStart, ...openings.map((item) => item.at)), true);
+  return { markdown: result.markdown, selection: { start: caret, end: caret } };
 }
 
 /** Backspace joins adjacent ordinary paragraphs; protected/heading/list/code
@@ -453,6 +465,19 @@ export function joinVisualParagraph(markdown: string, selection: EditorSelection
       // Keep spaces belonging to either paragraph; delete only their separator.
       const leading = gap.match(/^[ \t]*/u)?.[0] ?? "";
       const removals = [{ start: start + leading.length, end }];
+      const insertions = new Map<number, string>();
+      const previousDirection = paragraphDirectionSuffix(segment.source, previous);
+      if (previousDirection) {
+        // A join retains the preceding paragraph and its explicit block style.
+        // Move its marker to the new terminal position, replacing a right-side
+        // marker so neither becomes literal text inside the merged paragraph.
+        removals.push({ start: segment.span.start + previousDirection.start,
+          end: segment.span.start + previousDirection.end });
+        const currentDirection = paragraphDirectionSuffix(segment.source, current);
+        if (currentDirection) removals.push({ start: segment.span.start + currentDirection.start,
+          end: segment.span.start + currentDirection.end });
+        insertions.set(segment.span.start + currentRange.end, previousDirection.source);
+      }
       const rewrites = new Map<number, string>();
       // Underscores cannot delimit emphasis inside a word after joining. Keep
       // the same style using asterisks, changing only the affected wrappers.
@@ -471,7 +496,7 @@ export function joinVisualParagraph(markdown: string, selection: EditorSelection
       }
       let left = previous.children?.at(-1);
       let right = current.children?.[0];
-      let leftEnd = previousRange.end;
+      let leftEnd = previousDirection?.start ?? previousRange.end;
       let rightStart = currentStart;
       // Adjacent equal wrappers must coalesce: **a****b** would expose the
       // middle delimiter run as text instead of joining the two bold words.
@@ -491,13 +516,9 @@ export function joinVisualParagraph(markdown: string, selection: EditorSelection
         left = left.children?.at(-1);
         right = right.children?.[0];
       }
-      const ordered = [...removals].sort((a, b) => b.start - a.start);
-      let joined = "";
-      for (let at = 0; at < markdown.length; at++) joined += rewrites.get(at) ?? markdown[at]!;
-      for (const removal of ordered) joined = joined.slice(0, removal.start) + joined.slice(removal.end);
-      const caret = selection.start - removals.reduce((total, removal) =>
-        total + Math.max(0, Math.min(selection.start, removal.end) - removal.start), 0);
-      return { markdown: joined, selection: { start: caret, end: caret } };
+      const result = applySourceEditPlan(markdown, removals, insertions, rewrites);
+      const caret = result.mapOffset(selection.start, false);
+      return { markdown: result.markdown, selection: { start: caret, end: caret } };
     }
   }
   return null;
@@ -542,6 +563,16 @@ function inlineFormattingDelimiter(
   return { depth, open, close };
 }
 
+function paragraphDirectionSuffix(markdown: string, node: PositionedNode):
+  (EditorSelection & { source: string }) | null {
+  const direction = node.data?.hProperties?.dir;
+  if (direction !== "ltr" && direction !== "rtl") return null;
+  const range = nodeRange(node);
+  if (!range) return null;
+  const match = /[ \t]+\{:vico-dir=(ltr|rtl)\}$/u.exec(markdown.slice(range.start, range.end));
+  return match ? { start: range.end - match[0].length, end: range.end, source: match[0] } : null;
+}
+
 function canonicalEmphasisDelimiter(text: string): string {
   return /^_{1,2}$/u.test(text) ? "*".repeat(text.length) : text;
 }
@@ -560,76 +591,43 @@ function mergeDeletionRanges(ranges: EditorSelection[]): EditorSelection[] {
   return merged;
 }
 
-/**
- * Remove supported inline text formatting from exactly the requested source range.
- * Structural Markdown and protected technical content stay intact. Formatting which
- * crosses a selection boundary is split so unselected text keeps its original style.
+/** Resolve a boundary after child delimiter deletions, without serializing any
+ * surviving source. Links keep their boundary spaces; emphasis cannot wrap them.
  */
-export function clearInlineMarkdownFormatting(
-  markdown: string,
-  targetSelection: EditorSelection,
-  selectionAfter: EditorSelection = targetSelection,
-): MarkdownFormattingClearResult {
-  const target = validSelection(targetSelection, markdown.length);
-  const preserved = validSelection(selectionAfter, markdown.length);
-  if (target.start === target.end || markdown.length === 0) {
-    return { markdown, selection: preserved };
+function remainingSourceBoundary(
+  markdown: string, range: EditorSelection, deletions: EditorSelection[], trimWhitespace: boolean,
+  childInsertions: ReadonlyArray<{ at: number; text: string }>,
+): EditorSelection & { empty: boolean } {
+  let { start, end } = range;
+  while (start < end) {
+    const deleted = deletions.find((item) => item.start <= start && start < item.end);
+    if (deleted) start = Math.min(end, deleted.end);
+    else if (trimWhitespace && /\s/u.test(markdown[start]!)) start++;
+    else break;
   }
-
-  const root = parseForumMarkdown(markdown) as PositionedNode;
-  const deletions: EditorSelection[] = [];
-  const rewrites = new Map<number, string>();
-  const closeAtStart: Array<{ depth: number; text: string; at: number }> = [];
-  const openAtEnd: Array<{ depth: number; text: string; at: number }> = [];
-
-  function visit(node: PositionedNode, depth: number): void {
-    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
-    if (delimiter) {
-      const contentStart = delimiter.open.end;
-      const contentEnd = delimiter.close.start;
-      if (target.start < contentEnd && target.end > contentStart) {
-        if ((target.start > contentStart || target.end < contentEnd) && /^_{1,2}$/u.test(delimiter.open.text)) {
-          for (const range of [delimiter.open, delimiter.close]) {
-            for (let at = range.start; at < range.end; at++) rewrites.set(at, "*");
-            range.text = canonicalEmphasisDelimiter(range.text);
-          }
-        }
-        if (target.start <= contentStart) {
-          deletions.push({ start: delimiter.open.start, end: delimiter.open.end });
-        } else {
-          const before = markdown.slice(contentStart, target.start);
-          const at = target.start - (before.match(/\s*$/u)?.[0].length ?? 0);
-          if (at === contentStart) deletions.push(delimiter.open);
-          else closeAtStart.push({ depth, text: delimiter.close.text, at });
-        }
-
-        if (target.end >= contentEnd) {
-          deletions.push({ start: delimiter.close.start, end: delimiter.close.end });
-        } else {
-          const after = markdown.slice(target.end, contentEnd);
-          const at = target.end + (after.match(/^\s*/u)?.[0].length ?? 0);
-          if (at === contentEnd) deletions.push(delimiter.close);
-          else openAtEnd.push({ depth, text: delimiter.open.text, at });
-        }
-      }
-    }
-    for (const child of node.children ?? []) visit(child, depth + 1);
+  while (start < end) {
+    const deleted = deletions.find((item) => item.start < end && end <= item.end);
+    if (deleted) end = Math.max(start, deleted.start);
+    else if (trimWhitespace && /\s/u.test(markdown[end - 1]!)) end--;
+    else break;
   }
-  visit(root, 0);
+  // A child's inserted wrapper is also part of the surviving raw boundary.
+  // In particular, [ space text ] can stay within outer emphasis because the
+  // link brackets/target, rather than its label spaces, meet that delimiter.
+  const anchors = childInsertions.filter((item) => item.at >= range.start && item.at <= range.end);
+  const empty = start === end && anchors.length === 0;
+  for (const item of anchors) {
+    start = Math.min(start, item.at);
+    end = Math.max(end, item.at);
+  }
+  return { start, end, empty };
+}
 
+function applySourceEditPlan(
+  markdown: string, deletions: EditorSelection[], insertions: Map<number, string>,
+  rewrites = new Map<number, string>(),
+) {
   const mergedDeletions = mergeDeletionRanges(deletions);
-  const insertions = new Map<number, string>();
-  for (const item of closeAtStart.sort((left, right) => right.depth - left.depth)) {
-    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
-  }
-  for (const item of openAtEnd.sort((left, right) => left.depth - right.depth)) {
-    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
-  }
-
-  if (mergedDeletions.length === 0 && insertions.size === 0) {
-    return { markdown, selection: preserved };
-  }
-
   let next = "";
   let deletionIndex = 0;
   for (let index = 0; index <= markdown.length; index += 1) {
@@ -658,8 +656,114 @@ export function clearInlineMarkdownFormatting(
         mapped += text.length;
       }
     }
+    for (const [position, text] of rewrites) {
+      if (position < bounded && !mergedDeletions.some((range) => range.start <= position && position < range.end)) {
+        mapped += text.length - 1;
+      }
+    }
     return mapped;
   }
+
+  return { markdown: next, mapOffset };
+}
+
+/** CommonMark attention delimiters next to link punctuation sometimes need a
+ * literal character reference on the selected side (as mdast serialization does).
+ * This changes no displayed character and leaves unselected source untouched.
+ */
+function protectSelectedAttentionBoundaries(
+  markdown: string, target: EditorSelection, insertions: Map<number, string>,
+  deletions: EditorSelection[], rewrites: Map<number, string>,
+): void {
+  const punctuation = /[\p{P}\p{S}]/u;
+  const attention = /^[*_~]+|[*_~]+$/gu;
+  function encode(at: number, value: string): void {
+    if (!value || /\s/u.test(value) || punctuation.test(value)) return;
+    rewrites.set(at, `&#${value.codePointAt(0)!};`);
+    if (value.length > 1) deletions.push({ start: at + 1, end: at + value.length });
+  }
+  const opening = insertions.get(target.end);
+  if (opening && /^[*_~]/u.test(opening)) {
+    const next = opening.replace(attention, "")[0] ?? markdown[target.end] ?? "";
+    const previous = Array.from(markdown.slice(target.start, target.end)).at(-1) ?? "";
+    if (punctuation.test(next)) encode(target.end - previous.length, previous);
+  }
+  const closing = insertions.get(target.start);
+  if (closing && /[*_~]$/u.test(closing)) {
+    const previous = Array.from(closing.replace(attention, "")).at(-1)
+      ?? Array.from(markdown.slice(0, target.start)).at(-1) ?? "";
+    const next = Array.from(markdown.slice(target.start, target.end))[0] ?? "";
+    if (punctuation.test(previous)) encode(target.start, next);
+  }
+}
+
+/**
+ * Remove supported inline text formatting from exactly the requested source range.
+ * Structural Markdown and protected technical content stay intact. Formatting which
+ * crosses a selection boundary is split so unselected text keeps its original style.
+ */
+export function clearInlineMarkdownFormatting(
+  markdown: string,
+  targetSelection: EditorSelection,
+  selectionAfter: EditorSelection = targetSelection,
+): MarkdownFormattingClearResult {
+  const target = validSelection(targetSelection, markdown.length);
+  const preserved = validSelection(selectionAfter, markdown.length);
+  if (target.start === target.end || markdown.length === 0) {
+    return { markdown, selection: preserved };
+  }
+
+  const root = parseForumMarkdown(markdown) as PositionedNode;
+  const deletions: EditorSelection[] = [];
+  const rewrites = new Map<number, string>();
+  const closeAtStart: Array<{ depth: number; text: string; at: number }> = [];
+  const openAtEnd: Array<{ depth: number; text: string; at: number }> = [];
+
+  function visit(node: PositionedNode, depth: number): void {
+    for (const child of node.children ?? []) visit(child, depth + 1);
+    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
+    if (delimiter) {
+      const contentStart = delimiter.open.end;
+      const contentEnd = delimiter.close.start;
+      if (target.start < contentEnd && target.end > contentStart) {
+        if ((target.start > contentStart || target.end < contentEnd) && /^_{1,2}$/u.test(delimiter.open.text)) {
+          for (const range of [delimiter.open, delimiter.close]) {
+            for (let at = range.start; at < range.end; at++) rewrites.set(at, "*");
+            range.text = canonicalEmphasisDelimiter(range.text);
+          }
+        }
+        if (target.start <= contentStart) {
+          deletions.push({ start: delimiter.open.start, end: delimiter.open.end });
+        } else {
+          const before = remainingSourceBoundary(markdown,
+            { start: contentStart, end: target.start }, deletions, node.type !== "link", closeAtStart);
+          if (before.empty) deletions.push(delimiter.open);
+          else closeAtStart.push({ depth, text: delimiter.close.text, at: before.end });
+        }
+
+        if (target.end >= contentEnd) {
+          deletions.push({ start: delimiter.close.start, end: delimiter.close.end });
+        } else {
+          const after = remainingSourceBoundary(markdown,
+            { start: target.end, end: contentEnd }, deletions, node.type !== "link", openAtEnd);
+          if (after.empty) deletions.push(delimiter.close);
+          else openAtEnd.push({ depth, text: delimiter.open.text, at: after.start });
+        }
+      }
+    }
+  }
+  visit(root, 0);
+
+  const insertions = new Map<number, string>();
+  for (const item of closeAtStart.sort((left, right) => right.depth - left.depth)) {
+    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
+  }
+  for (const item of openAtEnd.sort((left, right) => left.depth - right.depth)) {
+    insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
+  }
+
+  protectSelectedAttentionBoundaries(markdown, target, insertions, deletions, rewrites);
+  const { markdown: next, mapOffset } = applySourceEditPlan(markdown, deletions, insertions, rewrites);
 
   if (preserved.start === preserved.end) {
     const caret = mapOffset(preserved.start, true);
