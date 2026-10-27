@@ -1,5 +1,73 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — независимая whole-PR проверка Лёвы (2026-10-27)
+
+Дата: 2026-10-27. Verdict: **FAIL / changes required**.
+
+Задание: PR #236, comment 6438925775. Проверены все 13 изменённых файлов PR #247, шаги 2–5 Batch L2: EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06. EDITOR-04 уже принят отдельным PR #246 и повторно в объём не включён.
+
+Проверенный неизменившийся head: `810f7fcceb69fef4e27a909adc08cb05c4a938ff`; base `082530ab6a62c37f4d7acf17556bc496e677ab5f`. Проверяющий не участвовал в реализации. Реализация не изменялась. Отчёт опубликован по прямой команде разработчика «Публикуй» после выдачи verdict в текущем чате.
+
+## 1. P1 — LOC-03: новый nesting scanner расходует экспоненциальное время на короткий некорректный перевод
+
+Источник: `app/localization/translation-validation.ts:118–127`. Вложенное повторение `[^()"']+` внутри повторяемой группы допускает множество разбиений одного участка текста; при отсутствии завершающей скобки regex перебирает их до выбрасывания Malformed nesting.
+
+Проверка вызвала настоящий `validateTranslation` с коротким незавершённым nesting, без production или внешних запросов. Наблюдения по длине текста: 15 символов — 0.47 ms, 19 — 2.4 ms, 23 — 33.5 ms, 27 — 487.5 ms. На 31 символе отдельный диагностический процесс был остановлен по двухсекундному deadline, после входа в validator и до возврата. Ограничение перевода 10 000 символов этот случай не отсекает.
+
+Достижимость подтверждена через настоящие UiTranslationResultPublisher.publish, compileNamespaceBundle и verifyCompiledNamespaceBundle: короткий контроль отвергается как malformed без записи, более длинный тест в каждом методе не возвращает результат за 2 s. Дополнительно один ограниченный локальный Workerd-запрос к exact-head validator вошёл в validation и не вернул ответ за 2.003 s; процесс после проверки остановлен. Это доказательство блокирования синхронной validation, без предположений о тарифе, production CPU limit или публичном неавторизованном endpoint.
+
+Последствие: некорректный provider/local/persistent UI-текст вместо ограниченного отказа надолго блокирует обработку на общем validation boundary. Это регрессия текущего PR и относится к LOC-03, а не к будущему расширению синтаксиса.
+
+Необходимый объём исправления: ограниченный разбор поддерживаемого nesting и регрессии malformed input на publication/compiled boundaries. Исправление в ходе review не выполнялось.
+
+Доказательства: `pr247-regex-probe.log`, `pr247-validation-chain-probe.log`, `pr247-validator-worker/request.log` и server.log в `/workspace/work`.
+
+## 2. P2 — LITERAL-TEXT-01: plain paste с четырьмя пробелами показывает служебное экранирование
+
+Источник: `app/forum/clipboard-markdown.ts:6–18`. Новый escaping применяется до определения block context; plain-text path сохраняет четыре начальных пробела, поэтому Markdown распознаёт indented code, внутри которого entities/backslash escapes уже не декодируются как prose.
+
+Воспроизведено через mounted Simple paste → authoritative body source → настоящий ForumMarkdown:
+
+| Clipboard text | Сохранённый source | Видимый code text |
+|---|---|---|
+| четыре пробела + `&copy;` | четыре пробела + `&amp;copy;` | `&amp;copy;` |
+| четыре пробела + `~~literal~~` | четыре пробела + `\~\~literal\~\~` | `\~\~literal\~\~` |
+
+Сравнение с base, используя извлечённый неизменённый baseline clipboard serializer: code text был соответственно `&copy;` и `~~literal~~`. Значит видимое искажение внесено PR; сам indented-code разбор существовал раньше. Контроль native Simple typing того же текста сохраняет leading whitespace через structural entity и показывает правильный literal text. Обычные новые случаи без отступа работают; intentional Bold и Advanced strikethrough controls также работают.
+
+Необходимый объём исправления: согласовать literal plain-paste escaping с leading whitespace/block context и закрепить roundtrip проверками. Пересмотр общего Markdown parser не требуется по установленным данным.
+
+Доказательства: `pr247-clipboard-comparison.log`, `pr247-review-probes.log`, диагностический `pr247-review.probe.test.tsx` в `/workspace/work`.
+
+## 3. P2 — EDITOR-10: literal mention-label contract остаётся неполным для допустимого имени с тильдами
+
+Источник: `app/forum/mentions.ts:17–21`. Serializer экранирует ampersands и часть Markdown-символов, но оставляет `~`. Auth display-name validation разрешает такое имя; настоящий published renderer поддерживает GFM strikethrough.
+
+Authoritative имя `~~Ada &copy;~~` через autocomplete в Simple и Advanced превращается в `[~~Ada &amp;copy;~~](/en/users/member-42)`. Настоящий ForumMarkdown создаёт `<del>` внутри ссылки и показывает `Ada &copy;`: буквальные тильды исчезают и появляется форматирование. Immutable profile destination и recipient `member-42` сохраняются; перенаправление получателя не заявляется. Контроль имени `Ada &copy;` проходит.
+
+Причина с неэкранированными тильдами существовала до PR. Это **не новая регрессия**, а остаточный дефект заявленного текущего результата EDITOR-10: исходное задание и описание PR требуют буквального authoritative display name, включая имена с character-reference-подобным текстом. Полностью буквальная подпись для проверенного допустимого имени всё ещё не обеспечена. Обычный mdast parser без GFM в pure mention tests этот результат пропускает; проверка выполнена с фактическим published renderer и обоими autocomplete paths.
+
+Необходимый объём исправления: literal mention-label escaping в соответствии с действующим renderer плюс регрессия опубликованного текста. Расширение модели mentions/recipient logic не требуется.
+
+## Остальной проверенный scope
+
+- EDITOR-10: entity-only имена, immutable href и recipient IDs проходят; проблема 3 отделена от новой ampersand-защиты.
+- LITERAL-TEXT-01: обычный typing/paste для дефисов, тильд и entities, native leading whitespace, intentional toolbar и Advanced formatting проверены; проблема 2 специфична для paste в indented-code context.
+- LOC-03: новые проверки полного nesting token/options, изменения lng, malformed syntax, publisher/compiled rejection и i18next semantics рассмотрены вместе с тестами; проблема 1 блокирует безопасную bounded validation.
+- LOC-06: ранний authoritative no-segments guard стоит до source-locale planning после проверки target/revision identity. Пустые, whitespace, fenced/inline-code-only пути не вызывают planner/provider; prose продолжает queued 202. Независимо расширена временная матрица реального topic HTTP action → capability → real planner/resolver четырьмя случаями: explicit whitespace, automatic fenced-code-only, automatic и explicit inline-code-only. Все 10 выбранных маршрутных случаев прошли. Authz/guest/origin/disabled-runtime guards рассмотрены, контракт не изменён. Findings по LOC-06 нет.
+- Reviewed project state и применимые EDITOR/translation source-of-truth требования. Устаревшая строка LOC-03 «LOC-06 ещё не начат» противоречит более новому верхнему блоку с завершённым LOC-06; это хронологический остаток документа, не отдельный implementation blocker.
+
+## Проверки и границы
+
+Локально на exact head: 1134 application tests / 102 files PASS; typecheck PASS; lint 12 изменённых TS/TSX файлов PASS; application build и UI preview build PASS. Дополнительные 11 mounted/parser/render/control probes PASS: они утверждают наблюдаемое поведение, в том числе дефекты, а не означают отсутствие findings. Дополнительная route matrix: 10 PASS, 42 unrelated tests skipped. `git diff --check` PASS.
+
+Независимо прочитаны jobs и логи CI #40480837338: checks SUCCESS (1134/102), database SUCCESS (304 PostgreSQL tests/28 files, сопутствующие проверки и Worker smoke). Actions тестировал synthetic merge `28435bd…` head 810f7fc… с base 082530a…; локальные проверки выполнялись непосредственно на head. Личный локальный PG прогон для этого review не заявляется.
+
+Внешние сервисы, production, OAuth, реальные provider/Queue/storage/backup операции не выполнялись. Owner visual acceptance и браузерное end-to-end acceptance не заявляются; редакторные доказательства получены mounted jsdom events и фактическим published renderer, а не визуальной оценкой скриншота.
+
+Временные диагностические изменения тестов сохранены вне checkout и удалены/восстановлены. Проверяемый checkout чист; implementation-ветка и main не изменены. Во время независимой проверки findings другим проверяющим не публиковались. Текущая публикация — по прямой команде разработчика; следующий шаг — согласование опубликованных reviews координатором в #236. Исправления и merge не выполнялись. Лёва STOP.
+
+
 ## PR #245 — bounded ATTACH-01 correction A/B implementation handoff (2026-10-27)
 
 Assignment: [#6438118930](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6438118930), following [second adjudication #6437634238](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6437634238). Author implementation-complete, not an independent whole-PR verdict.
