@@ -124,7 +124,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       query.addEventListener("change", update);
       return () => query.removeEventListener("change", update);
     }, []);
-    const [pasteWarning, setPasteWarning] = useState(false);
+    const [pasteNotice, setPasteNotice] = useState<"error" | "fallback" | null>(null);
     const [findOpen, setFindOpen] = useState(false);
     const [findText, setFindText] = useState("");
     const [replaceText, setReplaceText] = useState("");
@@ -201,7 +201,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       pendingSelectionRef.current = null;
       historyRef.current = createEditorHistory(defaultValue);
       setValue(defaultValue);
-      setPasteWarning(false);
+      setPasteNotice(null);
       setFindOpen(false);
       publicationReplayRef.current = false;
       publicationPreparingRef.current = false;
@@ -523,7 +523,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         pendingSelectionRef.current = after;
       }
       setValue(next);
-      setPasteWarning(false);
+      setPasteNotice(null);
     }
 
     function extendTable(table: MarkdownTable, dimension: "row" | "column") {
@@ -536,6 +536,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const converted = spreadsheetToMarkdown(text);
       if (!converted) {
         replaceSourceRange(range, clipboardPlainToMarkdown(text));
+        setPasteNotice("fallback");
         return;
       }
       replaceSourceRange(range, "\n\n" + converted + "\n\n");
@@ -618,13 +619,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const text = await navigator.clipboard.readText();
         if (format === "plain") {
           const selection = sourceSelection();
-          if (!selection) { setPasteWarning(true); return; }
+          if (!selection) { setPasteNotice("error"); return; }
           replaceSourceRange(selection, clipboardPlainToMarkdown(text));
           return;
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
         insertTechnicalBlock(fence + normalizedCodeLanguage(codeLanguage) + "\n" + text + "\n" + fence);
-      } catch { setPasteWarning(true); }
+      } catch { setPasteNotice("error"); }
     }
 
     function clearInlineFormatting() {
@@ -636,7 +637,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const cleared = clearInlineMarkdownFormatting(value, target, selection);
       if (cleared.markdown === value) return;
       commitSource(cleared.markdown, selection, cleared.selection);
-      setPasteWarning(false);
+      setPasteNotice(null);
     }
 
     function findNext() {
@@ -1086,7 +1087,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onReplaceRange={replaceSourceRange}
               onTableDimension={extendTable}
               onPasteTable={pasteSpreadsheet}
-              onPasteFallback={() => setPasteWarning(true)}
+              onPasteFallback={() => setPasteNotice("error")}
             />
           ) : null}
           <div className={"markdown-editor-write-pane" + (mode === "preview" ? " is-preview-hidden" : "")}>
@@ -1167,7 +1168,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             />
           </div>
 
-          {pasteWarning ? <p className="markdown-editor-paste-warning" role="alert">{t("editorPasteTableWarning")}</p> : null}
+          {pasteNotice ? <p className="markdown-editor-paste-warning" role="alert">
+            {t(pasteNotice === "fallback" ? "editorPastePlainFallback" : "editorPasteTableWarning")}
+          </p> : null}
           {mode !== "write" && (
             <section ref={previewRef} id={id + "-preview"} className="markdown-editor-preview" aria-label={t("editorPreviewHeading")}
               onScroll={(event) => syncSplitScroll(event.currentTarget, textareaRef.current)}>
