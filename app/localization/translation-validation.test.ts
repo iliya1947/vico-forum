@@ -91,6 +91,23 @@ describe("provider output validation", () => {
       .toThrow(/Controlled token mismatch/);
   });
 
+  it("rejects maliciously long unclosed nesting within a bounded validation time", () => {
+    const unclosed = "$t(common:heading, " + "a".repeat(128);
+    const start = performance.now();
+    expect(() => validateProviderOutput(plainDescriptor, "fr", "Vico " + unclosed, rules))
+      .toThrow(/Malformed i18next nesting/);
+    expect(performance.now() - start).toBeLessThan(1_000);
+  });
+
+  it("preserves JSON options containing parentheses and escaped quotes", () => {
+    const raw = '$t(common:heading, {"label":"wide (screen) \\"quoted\\"","lng":"en"})';
+    const source = { ...plainDescriptor, source: "Read " + raw, protectedTerms: [] };
+    expect(() => validateProviderOutput(source, "fr", "Lire " + raw, rules)).not.toThrow();
+    expect(() => validateProviderOutput(source, "fr",
+      'Lire $t(common:heading, {"label":"wide (screen) \\"quoted\\"","lng":"ru"})', rules))
+      .toThrow(/Controlled token mismatch/);
+  });
+
   it.each([
     '$t(common:heading, {"lng":"en"',
     '$t(common:heading, {"lng":})',
