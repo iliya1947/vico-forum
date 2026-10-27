@@ -40,8 +40,12 @@ interface VisualEditorProps {
 export function escapeVisualMarkdownText(value: string): string {
   // Use the same literal-text escaping rule for visual typing and plain paste:
   // a leading #, >, list marker or rule must not silently become Markdown syntax.
-  const literal = /^[ ]{4}|^\t/u.test(value) ? (value[0] === "\t" ? "&#9;" : "&#32;") + value.slice(1) : value;
-  return clipboardPlainToMarkdown(literal);
+  if (/^[ ]{4}|^\t/u.test(value)) {
+    // This leading-whitespace entity is structural and must not be escaped
+    // again with the user's literal ampersands.
+    return (value[0] === "\t" ? "&#9;" : "&#32;") + clipboardPlainToMarkdown(value.slice(1));
+  }
+  return clipboardPlainToMarkdown(value);
 }
 
 /** Resolve DOM ranges relative to the whole visual leaf, not to one text node.
