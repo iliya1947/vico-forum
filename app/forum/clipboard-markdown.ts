@@ -10,6 +10,10 @@ function escapeText(value: string): string {
 
 function textAsMarkdown(value: string): string {
   return value.replace(/\r\n/gu, "\n").split("\n").map((line) => {
+    // A tab within the leading indent is deliberately kept as a raw tab
+    // (Ctrl+Shift+V). It can form indented Markdown code: backslash/entity
+    // escaping inside that code would become visible instead of literal text.
+    if (/^ {0,3}\t/u.test(line)) return line;
     // Markdown would parse four leading spaces as an indented code
     // block and display our literal-text escapes instead of decoding them.
     // One structural character reference preserves the whitespace as prose.
