@@ -1,5 +1,41 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent whole-PR review / PASS / STOP (2026-10-28)
+
+Назначение: PR236 comment6475387518. Дата: 2026-10-28.
+Exact head: 915643fd5fd94031d5a4ba9397276f187aa28075.
+Base/current main: ebdb482e8bb37cf18d7085beb2926930139b00d6.
+
+### Verdict
+
+PASS в полном заявленном scope: EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06.
+Новых подтверждённых current-Stage defects не найдено. Отдельных новых future-only findings не установлено. Два current-Stage subcase из предыдущего собственного review на 51e2301d больше не воспроизводятся. Это результат независимой проверки кода/поведения данного head, не author implementation verification и не утверждение об отсутствии любых возможных ошибок форума.
+
+### Проверено
+
+- Все 14 changed files относительно current main: 6 production files, 7 test files, PROJECT_STATE. Прослежены вызывающие UI/runtime/action boundaries. Сопоставлены PROJECT.md, актуальные relevant PROJECT_STATE sections, docs/EDITOR.md, CONTENT_TRANSLATION/UI_TRANSLATION contracts.
+- EDITOR-10: numeric escaping ASCII punctuation сохраняет literal authoritative display name, один profile anchor/text child и immutable recipient. Pure AST matrix 255 code points 1..255: 0 mismatches. Actual Chromium autocomplete→FormData→ForumMarkdown: 12 cases (6 names ×Simple/Advanced), punctuation/entities/autolink/nested markup/control/Unicode; 0 failures. NUL не заявлен поддержанным persistent name: PostgreSQL text его не допускает.
+- LITERAL-TEXT-01: общая literal escaping boundary, structural prefix и fresh DOM→source selection; parser учитывает тот же spoiler/table segmentation, что renderer. Pure native indentation matrix 28 cases:paragraph preserved. Clipboard/public-render matrix 96 cases проверяет сохранение literal ampersand/tilde payload в root/prose/list/quote/spoiler/table contexts. Это 96 отдельных literal payload checks, не доказательство всех возможных structural properties.
+- Chromium: 4 existing space-tab editable paragraphs с реальным keyboard.type(x) сохраняют leaf/focus, text и Undo/Redo. 3 root/spoiler code paste cases сохраняют raw tab/entity/tilde без visible escapes, 6 дополнительных prose/heading/list/spoiler paste cases проходят publication и Undo/Redo. Итого с mentions 25/25 browser cases PASS. Clipboard использует настоящий navigator.clipboard +Control+Shift+V; внешний provider не нужен.
+- LOC-03: scanner quote/parenthesis boundary и full-token equality проверены против runtime i18next. 9 added tokens rejected, 8 unchanged valid controls accepted. 3 unclosed inputs 75/1035/9011chars rejected (<1ms в этом run), без pathological regexp. Provider publication/compiler/verifier/shared persistent validation используют тот же validator. Unsupported/malformed nesting fail-closed; не расценено как defect из-за отсутствия текущего producer для unsupported grammar.
+- LOC-06: authoritative revision читается до protection; отсутствие segments останавливает planning до locale resolver.14 независимых capability→real planner cases:automatic/explicit ×empty/whitespace/fenced/inline-code/URL/numeric-only/prose. 12 no-text cases возвращают bounded no-op, detector/upsert/enqueue 0; 2 prose controls queued с 1/1/1. Existing route integration tests дополнительно покрывают permission/runtime/current revision, authoritative empty vs forged prose. No-op не обходит эти guards.
+
+### Проверки
+
+Full local application: 1346 tests /102 files PASS,159.33s.
+Exact-head GitHub Actions 40723598148 SUCCESS. Прочитаны completed logs checks122940805079 и database122940806079:
+- 1346 app /102 files; lint 0 errors/один прежний warning;typecheck;application/UI-preview builds;history/metadata/schema parity PASS.
+- 326 PostgreSQL17 /30 files;schema manifest/runtime privileges/web relation/credential probes;local Workers smoke PASS.
+CI выполнялся на GitHub test merge 061e9d24 из exact head 915643fd +base ebdb482, что явно подтверждено checkout logs.
+Native PG/Workerd отдельно локально не повторялись: использованы exact-head CI logs. Production/external/provider/owner visual не проверялись и не заявляются.
+
+### Ограничения и остановка
+
+Первый запуск внешнего SSR harness упал из-за React global, первый LOC06 script — из-за CJS top-level await. Исправлены только внешние harness scripts; окончательные runs PASS. Это не дефекты PR.
+Implementation не менялась. Implementation commit/push не выполнялись. Публикация результатов в служебном PR разрешена разработчиком после завершения проверки. Артефакты только в /workspace/work/pr247-review-915643fd/. Выводы координатора/других reviewers не читались.
+Разработчик дал команду «Публикуй». Результат передан для coordinator reconciliation; новых работ не начинать. STOP.
+
+
 ## L8 — implementation handoff: PR #249 (2026-10-28)
 
 Автор: Лёва — Codex-6.1 Sol. Назначение: [6474296261](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6474296261), reconciliation6474179882.
