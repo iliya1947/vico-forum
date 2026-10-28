@@ -79,11 +79,14 @@ families покрыта helper/component regressions, включая nested link
 whitespace, literal references/Unicode и direction marker/history. После correction
 требуется новый whole-PR review стабильного implementation head.
 
-Известный отдельный остаточный Clear-link case: `[a !b!](https://example.test)`,
-Clear `a !` создаёт `a ![b!](https://example.test)`. Parser получает image вместо
-невыделенного link label, а public renderer не выводит `b!`. Случай воспроизводится
-и до repeated-strike correction; он не исправлялся в этом ограниченном пакете.
-Требуется отдельное согласование scope, прежде чем считать весь Clear contract закрытым.
+Clear-link image collision исправлена: `[a !b!](https://example.test)`, Clear `a !`
+даёт `a &#33;[b!](https://example.test)` — выбранный `!` остаётся буквальным, suffix
+сохраняет link text/destination. Защита использует actual reopening anchor после
+удаления child delimiters, учитывает уже экранированный `!` и не меняет suffix source.
+Focused helper/component и локальный Chromium проверяют source/FormData/public
+semantics, selection и Undo/Redo; прежняя matrix до глубины wrappers 4 проходит
+14 597 выделений без нарушений. Это bounded correction; whole-PR acceptance
+требует нового review стабильного head, не следует из успешной локальной matrix.
 
 ## L6 — attachment object journal и ZIP integrity (2026-10-27)
 

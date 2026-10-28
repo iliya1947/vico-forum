@@ -31,6 +31,38 @@ function formattingCharacters(markdown: string) {
 
 describe("Editor 2.0 lossless document foundation", () => {
   it.each([
+    ["[a !b!](https://example.test)", "a !", "a &#33;[b!](https://example.test)"],
+    ["[a ?b!](https://example.test)", "a ?", "a ?[b!](https://example.test)"],
+    ["[a .b!](https://example.test)", "a .", "a .[b!](https://example.test)"],
+    ["[a :b!](https://example.test)", "a :", "a :[b!](https://example.test)"],
+    ["[a ,b!](https://example.test)", "a ,", "a ,[b!](https://example.test)"],
+    ["[a -b!](https://example.test)", "a -", "a -[b!](https://example.test)"],
+    ["[a <b!](https://example.test)", "a <", "a <[b!](https://example.test)"],
+    ["[a ;b!](https://example.test)", "a ;", "a ;[b!](https://example.test)"],
+    ["[a !!b!](https://example.test)", "a !!", "a !&#33;[b!](https://example.test)"],
+    ["[a \\!b!](https://example.test)", "a \\!", "a \\![b!](https://example.test)"],
+    ["[a &#33;b!](https://example.test)", "a &#33;", "a &#33;[b!](https://example.test)"],
+    ["[a \\\\!b!](https://example.test)", "a \\\\!", "a \\\\&#33;[b!](https://example.test)"],
+    ["[**a !** b!](https://example.test)", "a !", "a &#33;[ b!](https://example.test)"],
+  ])("keeps reopened link semantics after selected punctuation: %s", (source, selected, expected) => {
+    const start = source.indexOf(selected), end = start + selected.length;
+    const result = clearInlineMarkdownFormatting(source, { start, end });
+    expect(result.markdown).toBe(expected);
+    const root = parseForumMarkdown(result.markdown);
+    const nodes: Array<{ type: string; url?: string }> = [];
+    function visit(node: { type: string; url?: string; children?: typeof node[] }) {
+      nodes.push(node); for (const child of node.children ?? []) visit(child);
+    }
+    visit(root);
+    expect(nodes.filter((node) => node.type === "image")).toEqual([]);
+    expect(formattingCharacters(result.markdown).map((item) => item.character).join(""))
+      .toBe(formattingCharacters(source).map((item) => item.character).join(""));
+    expect(nodes.filter((node) => node.type === "link").map((node) => node.url)).toEqual(["https://example.test"]);
+    expect(formattingCharacters(result.markdown.slice(result.selection.start, result.selection.end))
+      .map((item) => item.character).join("")).toBe(formattingCharacters(selected).map((item) => item.character).join(""));
+  });
+
+  it.each([
     ["~~**~~a (b)~~**~~", "a"],
     ["~~**~~a(b)~~**~~", "a"],
     ["~~**~~𐐀 (b)~~**~~", "𐐀"],

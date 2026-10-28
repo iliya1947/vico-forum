@@ -85,6 +85,58 @@ afterEach(() => {
 
 describe("MarkdownEditor", () => {
   it.each([
+    ["[a !b!](https://example.test)", "a !"],
+    ["[a !b!](https://example.test)", "!"],
+    ["[a ?b!](https://example.test)", "a ?"],
+    ["[a \\!b!](https://example.test)", "a !"],
+    ["[a &#33;b!](https://example.test)", "a !"],
+    ["[**a !b!**](https://example.test)", "a !"],
+    ["**[a !b!](https://example.test)**", "a !"],
+    ["[**a !** b!](https://example.test)", "a !"],
+    ["[~~**~~a !b!~~**~~](https://example.test)", "a !"],
+    ["[𐐀 !b!](https://example.test)", "𐐀 !"],
+  ])("keeps literal punctuation and reopened links through Simple/public: %s / %s", async (source, selected) => {
+    function characters(container: HTMLElement) {
+      const result: Array<{ character: string; formats: string[]; offset: number }> = [];
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      let node: Node | null, offset = 0;
+      while ((node = walker.nextNode())) for (const character of node.textContent ?? "") {
+        const parent = node.parentElement!;
+        const formats = ["a", "strong", "em", "del"].filter((tag) =>
+          (character.trim() || tag === "a") && parent.closest(tag));
+        result.push({ character, formats, offset }); offset += character.length;
+      }
+      return result;
+    }
+    const original = renderEditor(<ForumMarkdown>{source}</ForumMarkdown>).container;
+    const before = characters(original), plain = original.textContent!;
+    const start = plain.indexOf(selected), end = start + selected.length;
+    renderEditor(<form><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent?.includes(selected))!;
+    const leafStart = leaf.textContent!.indexOf(selected);
+    leaf.focus(); const range = document.createRange();
+    range.setStart(leaf.firstChild!, leafStart); range.setEnd(leaf.firstChild!, leafStart + selected.length);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range); fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    expect(window.getSelection()!.toString()).toBe(selected);
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe(plain);
+    expect(published.querySelector("img")).toBeNull();
+    expect([...published.querySelectorAll("a")].every((link) => link.getAttribute("href") === "https://example.test")).toBe(true);
+    expect(characters(published)).toEqual(before.map((item) => ({
+      ...item, formats: item.offset >= start && item.offset < end ? [] : item.formats,
+    })));
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([
     ["~~**~~a (b)~~**~~", "a (b)", "a"],
     ["~~**~~a(b)~~**~~", "a(b)", "a"],
     ["~~*~~a (b)~~*~~", "a (b)", "a"],

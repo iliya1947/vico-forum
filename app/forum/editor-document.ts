@@ -667,14 +667,33 @@ function applySourceEditPlan(
   return { markdown: next, mapOffset };
 }
 
-/** Attention delimiters next to punctuation sometimes need a
+/** Rebuilt inline delimiters next to punctuation sometimes need a
  * literal character reference on the selected side (as mdast serialization does).
  * This changes no displayed character and leaves unselected source untouched.
  */
-function protectSelectedAttentionBoundaries(
+function protectSelectedInlineBoundaries(
   markdown: string, target: EditorSelection, insertions: Map<number, string>,
   deletions: EditorSelection[], rewrites: Map<number, string>,
 ): void {
+  // Use the actual reopened-link anchor: deleted child delimiters can move it
+  // past target.end. A literal selected ! must not turn that link into an image.
+  function previousSourceOffset(at: number): number {
+    let previous = at - 1;
+    while (previous >= 0) {
+      const deleted = deletions.find((range) => range.start <= previous && previous < range.end);
+      if (!deleted) break;
+      previous = deleted.start - 1;
+    }
+    return previous;
+  }
+  for (const [at, text] of insertions) {
+    if (!text.startsWith("[")) continue;
+    const previous = previousSourceOffset(at);
+    if (previous < target.start || previous >= target.end || markdown[previous] !== "!") continue;
+    let escapes = 0;
+    for (let offset = previousSourceOffset(previous); offset >= 0 && markdown[offset] === "\\"; offset = previousSourceOffset(offset)) escapes++;
+    if (escapes % 2 === 0) rewrites.set(previous, "&#33;");
+  }
   const punctuation = /[\p{P}\p{S}]/u;
   // Inspect the neighbor of the outer delimiter family, not of the entire
   // mixed run: in ~~** the stars determine whether ~~ can open; **~~ is the
@@ -797,7 +816,7 @@ export function clearInlineMarkdownFormatting(
     insertions.set(item.at, (insertions.get(item.at) ?? "") + item.text);
   }
 
-  protectSelectedAttentionBoundaries(markdown, target, insertions, deletions, rewrites);
+  protectSelectedInlineBoundaries(markdown, target, insertions, deletions, rewrites);
   const { markdown: next, mapOffset } = applySourceEditPlan(markdown, deletions, insertions, rewrites);
 
   if (preserved.start === preserved.end) {
