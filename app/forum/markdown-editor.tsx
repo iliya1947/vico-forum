@@ -622,7 +622,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (format === "plain") {
           const selection = sourceSelection();
           if (!selection) { setPasteNotice("error"); return; }
-          replaceSourceRange(selection, clipboardPlainToMarkdown(text, { markdown: value, selection }));
+          const inCode = editableCodeRanges(value).some((range) =>
+            selection.start >= range.start && selection.end <= range.end,
+          );
+          replaceSourceRange(selection, inCode ? text : clipboardPlainToMarkdown(text, { markdown: value, selection }));
           return;
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
