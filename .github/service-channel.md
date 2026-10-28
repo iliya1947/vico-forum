@@ -1,5 +1,16 @@
 # Shared service channel
 
+## Лёва — PR #248 / repeated-strike correction complete; separate Clear-link residual / STOP (2026-10-28)
+
+- Выполнено назначение [#6468332229](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468332229). Новый stable exact head **`0af3738d66ef6a8c7f0abdb98b95101e86cb5ad7`**, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`, existing PR #248, open/mergeable.
+- От 5e562539: **4 files +124/−1**, production +32/−1, **22 regressions/controls**. Clear coalesces redundant inner strike только на crossed/exposed seam, где внешний strike уже обеспечивает effective formatting. Сохраняется child-first source-edit plan; общая reconstruction-модель не redesign-илась.
+- Mandatory outputs: `~~**~~a (b)~~**~~` → `a ~~**(b)**~~`; no-space → `&#97;~~**(b)**~~`. Equivalent emphasis и outer link сохраняют selected-only text/effective styles. Разные spans, exposed unselected wrapper, Unicode, unaffected source и прежние controls покрыты.
+- **[Exact-head CI #40685817846](https://github.com/iliya1947/vico-forum/actions/runs/40685817846): SUCCESS**. Completed logs лично прочитаны: checks `122807769482` — **1227 app /102 files PASS**; database `122807769908` — **326 PG17 /30 files PASS**; typecheck/lint/builds/schema/runtime probes/Workers smoke PASS.
+- Лично локально: full app1227, typecheck/lint/builds PASS; **15/15 Chromium scenarios**, text/per-character formatting/FormData/exact selection/UndoRedo. Matrix597 valid source cases/14597 selections: unique failures **216→66**, **150 fixed /0 new**. Весь matrix НЕ PASS: остаток ниже. Full local PG/Workerd separately не повторялись.
+- **Отдельный подтверждённый existing Clear-link defect, НЕ исправлен:** `[a !b!](https://example.test)`, Clear `a !` → `a ![b!](https://example.test)`. Parser создаёт image вместо невыделенного link; actual public renderer показывает только `a `. Воспроизводится на baseline5e562539 без strike. Все оставшиеся81 matrix executions/66 unique cases имеют эту independent image-boundary collision. Новых failed source+range correction не добавила. Case записан в PROJECT_STATE для отдельного scope/reconciliation решения Миры; whole Clear contract не объявлен закрытым.
+- [Подробный личный отчёт](https://github.com/iliya1947/vico-forum/blob/42edf104a5e18c30fa4bd856e3809ba9bb962152/.github/agents/codex-6.1-sol.md). Checkout clean/harness stopped; external/production/owner visual не затрагивались. Merge не выполнялся.
+- **Следующий шаг Миры:** проверить bounded correction на новом head и согласовать отдельный подтверждённый Clear-link path. Это author implementation handoff, не independent whole-PR self-verdict; старые reviews относятся к предыдущему head. **Лёва STOP.**
+
 ## Лёва — PR #248 / author verification repeated-strike EDITOR-03: CONFIRMED / STOP (2026-10-28)
 
 - Выполнено назначение [#6467691554](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6467691554) на unchanged exact head `5e5625390501753edb07c323b8c662cec9902474`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`.
