@@ -1,5 +1,80 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent application E2E verification of matching fence: CONFIRMED / STOP (2026-10-29)
+
+Выполнено [назначение #6482419654](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482419654).
+Unchanged exact head **7c6bd4e8f3391e1189f130e40903184d7e484a7d**, base/main ebdb482e8bb37cf18d7085beb2926930139b00d6; remote повторно совпал.
+Только третий residual LITERAL-TEXT-01; первые два не перепроверялись, новый whole-PR review не проводился.
+
+**CONFIRMED: current-Stage P2 subcase. Matching fence из clipboard преждевременно закрывает existing code и меняет публичную структуру. Application path это не нейтрализует.**
+
+### Полный настоящий application path
+
+Это не component-only harness:
+- неизменный Vico Worker/React Router dev runtime на127.0.0.1:4216;
+- disposable local PostgreSQL17 с actual migrations всех текущих файлов;
+- синтетические category/section и аккаунт, созданный настоящим /api/auth/sign-up/email; никаких mock session/route/repository;
+- Chromium открывает actual /en/sections/fence-e2e-section, заполняет штатный topic form, переключает общий MarkdownEditor в Advanced;
+- настоящий navigator.clipboard, More tools → Paste without formatting;
+- сравнение hidden body и new FormData(form) с resulting source;
+- настоящий Create topic → POST section action → server repository/transaction → redirect на /en/topics/{id};
+- actual публичный ForumMarkdown на topic page, затем независимый прямой SQL read saved current post revision.
+
+Во всех пяти окончательных сценариях actual DB original_content **побайтово совпал с editor/FormData source**. На каждую форму зафиксирован один фактический POST; URL созданной локальной темы и payload сохранены в artifacts. Поэтому source/CommonMark гипотеза подтверждена до сохранённой публикации, не только parse helper.
+
+### Минимальный repro и результат
+
+Initial Advanced body: outer triple-backtick text fence, внутри строки Before / Alpha / After; после outer closing fence отдельный prose paragraph Outside.
+Выделяется только Alpha.
+Clipboard payload: standalone triple-backticks, строка **Payload formatted**, standalone triple-backticks.
+
+Команда raw-вставляет payload в существующий code. Actual saved source:
+````text
+```text
+Before
+```
+**Payload formatted**
+```
+After
+```
+
+Outside
+````
+
+В public DOM появляются **два code blocks**, а Payload formatted рендерится **strong между ними**, хотя это был literal clipboard text, вставленный внутрь code. After оказывается в новом code block. Исходный code envelope не сохраняется.
+
+### Проверенные variants / controls
+
+1. outer3 backticks / candidate3 backticks: reproduced,2code blocks,strong1; Outside остаётся prose.
+2. outer3 backticks / candidate4 backticks: reproduced,2code blocks,strong1; дополнительно **невыделенный Outside попадает внутрь нового code**, поскольку старый closing3 не закрывает новый fence4.
+3. outer4 backticks / candidate3: passing control,1code block,strong0, code.textContent точно Before + payload + After; Outside остаётся prose.
+4. outer3 tildes / candidate3 backticks: passing control,1code block,strong0, exact literal code text и Outside prose.
+5. outer3 tildes / candidate3 tildes: reproduced,2code blocks,strong1.
+
+Все5 — реальные локальные публикации и independent SQL persistence checks. Первоначальная отдельная same-fence probe также воспроизвела симптом. Это не утверждение о зелёном поведении всех5:3reproductions,2passing controls.
+
+### Причинная цепочка / классификация
+
+markdown-editor.tsx625–628 видит selection внутри editableCodeRanges и вызывает raw replaceSourceRange(selection,text). Fence opener/closer при этом не адаптируется к standalone closing candidate в payload. Existing keyboard-range helper корректно определяет выбранный body; проблема здесь не в missing range, а в изменении delimiter semantics после raw insertion.
+Ни submit validation, ни repository/immutable revision write, ни публичный renderer не вводят neutralizing protection; actual saved body совпадает с raw insertion, а renderer штатно применяет CommonMark matching-fence semantics.
+Текущая команда, code context и сохранение literal clipboard/code content уже входят в docs/EDITOR.md §10. Принимая запрошенный контракт plain-command сохранения existing code/невыделенного content, это current LITERAL-TEXT-01, не future rollout. Обычное intentional Advanced source editing и эта целевая команда — разные проверяемые действия.
+
+### Artifacts / operational limits
+
+/workspace/work/pr247-fence-e2e/:
+- seed.mts/seed.log — actual migrations и synthetic section;
+- inspect_forum_ui.py/inspect.log — local auth/UI readiness, без session token в отчёте;
+- verify_fence.py,verify_remaining.py,browser.log,remaining.log,browser-results.json — реальные UI commands/submissions/public DOM;
+- verify_persistence.mts,persistence.json,persistence.log — exact source persisted и current DOM classification по каждой теме;
+- debug_command.py/debug-command.log — повторный same-fence actual submission.
+
+Первый automation wait на expected source истёк до submit, отдельный слишком быстрый consecutive-submit run остановился на ожидании redirect. Это не объявлялось product defects. В окончательных runs проверена готовность editor source и соблюдена штатная5-second write cooldown; все5 окончательных publications и SQL checks завершились.
+Full app/CI/browser matrix не повторялись: targeted unchanged-head verification только этого residual.
+External/provider/production/owner visual acceptance не выполнялись. Hyperdrive connection overrides направляли обе local bindings только на disposable local PG; Google config была dummy и OAuth не вызывался.
+Implementation не менялась. Временные .dev.vars, dependency symlink и synthetic auth state удалены; own Vite/Workerd процессы и PG container/volume остановлены/удалены. Checkout clean.
+
+**Мире:** actual application E2E подтверждение третьего subcase готово; учесть в reconciliation/correction scope PR #247. Implementation correction не выполнялась. **Лёва STOP.**
+
 ## PR #247 — independent whole-PR review / REQUEST CHANGES / STOP (2026-10-28)
 
 Дата: 2026-10-28. Назначение: PR236 comment6481023543.
