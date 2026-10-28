@@ -1,3 +1,25 @@
+## PR #247 — LITERAL-TEXT-01 three-subcase bounded correction complete / exact head 7c6bd4e (2026-10-28)
+
+**Назначение Миры:** [#6478999149](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478999149), после author verification [#6478507459](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478507459). Существующая ветка `chatgpt6/batch-l2-20261027`, [PR #247](https://github.com/iliya1947/vico-forum/pull/247), **stable exact head `7c6bd4e8f3391e1189f130e40903184d7e484a7d`**, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. PR open, Draft, unmerged. Никакой новой ветки и whole-PR self-review не было: Лира — автор ограниченной correction.
+
+### Bounded implementation, 3 current-Stage P2 subcases `LITERAL-TEXT-01`
+
+1. **Literal spoiler closer.** `textAsMarkdown` защищает line-only `:::` через escaping аналогично `:::spoiler`; вставленный literal marker больше не закрывает существующий Vico spoiler с выпадением следующего `After` из body.
+2. **Tab-indented table-shaped plain paste.** `technical-markdown.ts/tableAt` не классифицирует indented code lines (raw tab/4 spaces) как Vico table до CommonMark. `clipboard-markdown.ts/collectRendered` учитывает protected segments, распознаёт actual code ranges и оставляет raw code text без отображаемых `\\|` escapes, сохраняя prose-escaping для не-code.
+3. **Advanced existing fenced code, Paste without formatting.** `markdown-editor.tsx/pasteFromClipboard("plain")` различает selection внутри `editableCodeRanges(value)` и обычный prose: внутри исходного fenced code вставляет исходный clipboard text, вне code по-прежнему применяет `clipboardPlainToMarkdown`. Не затронут intentional Advanced Markdown/native Ctrl+Shift+V.
+
+**Scope от прежнего head `4cc3122b`: 6 files, 10 commits**, `app/forum/clipboard-markdown.ts`, `app/forum/technical-markdown.ts`, `app/forum/markdown-editor.tsx`, `app/forum/clipboard-markdown.test.ts`, `app/forum/markdown-editor.test.tsx`, `PROJECT_STATE.md`. Pure converter и mounted tests добавлены для трёх cases с source, `FormData`, `ForumMarkdown`, Undo/Redo, spoiler/tab/code controls. Два первых CI failures оказались ожиданиями старых literal-closer тестов (ожидали сырой `:::`), обновлены только эти expectations; реализация не менялась после их исправления.
+
+### Actual exact-head checks
+
+[GitHub Actions run #40765793732](https://github.com/iliya1947/vico-forum/actions/runs/40765793732) — **SUCCESS**, jobs `checks` и `database` завершены успешно. Лира прочитала оба CI logs: **1368/1368 application tests, 102 test files; 326/326 PostgreSQL 17 tests, 30 test files**; lint/typecheck, app + UI preview builds, migration/schema verification, role checks, Workers smoke — PASS. Ранее failed run [#40764066753](https://github.com/iliya1947/vico-forum/actions/runs/40764066753) провалил только два устаревших expected source assertions (1366/1368); они исправлены и весь suite прошёл на новом head. Head повторно сверён.
+
+**Verification limits:** собственный новый Chromium/browser E2E, owner visual acceptance и Pages preview не проводились, не утверждаются. CI/componenent regressions не равны независимому whole-PR review и не являются merge approval. Лира — author, whole-PR self-review **не выполняла**; PR остаётся Draft. Production/external rollout не проводился.
+
+**Лира — correction handoff / STOP.** Дальше Мира проводит coordinator whole-PR review текущего head PR247, затем назначает независимых non-author reviewers по регламенту.
+
+---
+
 ## PR #247 — LITERAL-TEXT-01 author verification of three residuals / CONFIRMED / STOP (2026-10-28)
 
 **Назначение Миры:** [#6478340897](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478340897). Проверенный [PR #247](https://github.com/iliya1947/vico-forum/pull/247), unchanged stable exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`, Draft. Лира — **author**, поэтому проверка ограничена согласованными тремя `LITERAL-TEXT-01` subcases; whole-PR self-review не проводился. Implementation не менялась.
