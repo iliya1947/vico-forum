@@ -1,6 +1,6 @@
 import { inlineCodeMarkdown } from "./editor-document";
 import { parseForumMarkdown } from "../markdown-syntax";
-import { serializeTable } from "./technical-markdown";
+import { segmentTechnicalMarkdown, serializeTable } from "./technical-markdown";
 
 const tick = String.fromCharCode(96);
 
@@ -144,20 +144,36 @@ export function clipboardPlainToMarkdown(text: string, context?: ClipboardPasteC
   // Judge code versus prose using the actual source surrounding the selection.
   const candidate = markdown.slice(0, selection.start) + initial + markdown.slice(selection.end);
   const codes: Array<{ start: number; end: number }> = [];
-  function collect(node: {
+  type MarkdownNode = {
     type: string;
     position?: { start: { offset?: number }; end: { offset?: number } };
     children?: readonly unknown[];
-  }) {
-    const start = node.position?.start.offset, end = node.position?.end.offset;
-    if (node.type === "code" && start !== undefined && end !== undefined) {
-      codes.push({ start, end });
-    }
-    for (const child of node.children ?? []) {
-      if (child && typeof child === "object" && "type" in child) collect(child as typeof node);
+  };
+  // Like the public renderer, treat spoiler bodies and table cells as their
+  // own Markdown documents rather than parsing custom markers as root prose.
+  function collectRendered(source: string, base = 0) {
+    for (const segment of segmentTechnicalMarkdown(source)) {
+      if (segment.kind === "prose") {
+        collectWithOffset(parseForumMarkdown(segment.source), base + segment.span.start);
+      } else if (segment.kind === "spoiler") {
+        collectRendered(segment.body, base + segment.bodyStart);
+      } else if (segment.kind === "table") {
+        for (const row of [segment.headers, ...segment.rows]) {
+          for (const cell of row) collectWithOffset(parseForumMarkdown(cell.text), base + cell.span.start);
+        }
+      }
     }
   }
-  collect(parseForumMarkdown(candidate));
+  function collectWithOffset(node: MarkdownNode, base: number) {
+    const start = node.position?.start.offset, end = node.position?.end.offset;
+    if (node.type === "code" && start !== undefined && end !== undefined) {
+      codes.push({ start: base + start, end: base + end });
+    }
+    for (const child of node.children ?? []) {
+      if (child && typeof child === "object" && "type" in child) collectWithOffset(child as typeof node, base);
+    }
+  }
+  collectRendered(candidate);
   const codeLines = new Set<number>();
   let offset = selection.start;
   initial.split("\n").forEach((line, index) => {

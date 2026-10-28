@@ -2198,6 +2198,74 @@ it.each([
   expect(leaf).toHaveFocus();
 });
 
+
+it.each([1, 2, 3])("keeps editable Simple prose after %i spaces and a tab on native input", (spaces) => {
+  const prefix = " ".repeat(spaces);
+  const source = "&#32;" + " ".repeat(spaces - 1) + "\tAlpha";
+  renderEditor(<form><label htmlFor="space-tab-body">Body</label>
+    <MarkdownEditor id="space-tab-body" name="body" defaultValue={source} />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  expect(leaf.textContent).toBe(prefix + "\tAlpha");
+  leaf.focus();
+  leaf.textContent = prefix + "\tAlphax";
+  fireEvent.input(leaf, { data: "x", inputType: "insertText" });
+  const form = document.querySelector("form")!;
+  const expected = "&#32;" + " ".repeat(spaces - 1) + "\tAlphax";
+  expect(new FormData(form).get("body")).toBe(expected);
+  expect(leaf).toBeInTheDocument();
+  expect(leaf).toHaveFocus();
+  expect(document.querySelector('[data-visual-text="true"]')).toBe(leaf);
+  const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+  expect(published.querySelector("pre")).toBeNull();
+  expect(published.querySelector(".post-body p")?.textContent).toBe(prefix + "\tAlphax");
+});
+
+it.each([
+  [":::spoiler Label\nAlpha\n:::", true],
+  [":::spoiler Label\nBefore Alpha\n:::", false],
+] as const)("keeps Ctrl+Shift+V literal source in a %s spoiler body (code=%s)", async (source, isCode) => {
+  renderEditor(<form><label htmlFor="spoiler-tab-body">Body</label>
+    <MarkdownEditor id="spoiler-tab-body" name="body" defaultValue={source} />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('.forum-markdown-spoiler [data-visual-text="true"]')!;
+  const before = leaf.textContent ?? "";
+  const start = before.indexOf("Alpha");
+  expect(start).toBeGreaterThanOrEqual(0);
+  leaf.focus();
+  const range = document.createRange();
+  range.setStart(leaf.firstChild!, start);
+  range.setEnd(leaf.firstChild!, start + "Alpha".length);
+  const selection = window.getSelection()!;
+  selection.removeAllRanges();
+  selection.addRange(range);
+  fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+  fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+    format === "text/plain" ? "\t&copy; ~~literal~~"
+      : format === "text/html" ? "<h1>Ignored</h1>" : "" } });
+  const expectedText = isCode ? "\t&copy; ~~literal~~" : "\t&amp;copy; \\~\\~literal\\~\\~";
+  const expected = source.replace("Alpha", expectedText);
+  const form = document.querySelector("form")!;
+  expect(new FormData(form).get("body")).toBe(expected);
+  const rendered = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+  const details = rendered.querySelector("details");
+  expect(details).not.toBeNull();
+  const code = details?.querySelector("pre code");
+  if (isCode) {
+    expect(code?.textContent).toContain("&copy; ~~literal~~");
+    expect(code?.textContent).not.toContain("&amp;copy;");
+    expect(code?.textContent).not.toContain("\\~");
+  } else {
+    expect(code).toBeNull();
+    expect(details?.textContent).toContain("Before \t&copy; ~~literal~~");
+  }
+  expect(details?.querySelector("del, h1")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(new FormData(form).get("body")).toBe(source);
+  await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+  expect(new FormData(form).get("body")).toBe(expected);
+});
+
 it.each([
   "\t\t&copy; ~~literal~~",
   "    \t&copy; ~~literal~~",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { clipboardHtmlToMarkdown, clipboardPlainToMarkdown } from "./clipboard-markdown";
+import { segmentTechnicalMarkdown } from "./technical-markdown";
 
 describe("Editor 2.0 clipboard import", () => {
   it("keeps supported rich formatting, headings and links", () => {
@@ -134,6 +135,26 @@ describe("Editor 2.0 clipboard import", () => {
       expect(paragraph.children.map((node) => "value" in node ? node.value : "").join(""))
         .toContain("&copy; ~~literal~~");
     }
+  });
+
+
+  it.each([
+    [":::spoiler Label\nAlpha\n:::", true],
+    [":::spoiler Label\nBefore Alpha\n:::", false],
+    [":::spoiler Label\nBefore\n\nAlpha\n:::", true],
+  ] as const)("uses renderer-local spoiler body context for literal tab paste (%j)", (source, isCode) => {
+    const start = source.indexOf("Alpha");
+    const raw = "\t&copy; ~~literal~~";
+    const insertion = clipboardPlainToMarkdown(raw, {
+      markdown: source, selection: { start, end: start + "Alpha".length },
+    });
+    expect(insertion).toBe(isCode ? raw : "\t&amp;copy; \\~\\~literal\\~\\~");
+    const published = source.slice(0, start) + insertion + source.slice(start + "Alpha".length);
+    const spoiler = segmentTechnicalMarkdown(published).find((segment) => segment.kind === "spoiler");
+    if (spoiler?.kind !== "spoiler") throw new Error("Expected spoiler");
+    const parsed = parseForumMarkdown(spoiler.body);
+    expect(parsed.children.some((node) => node.type === "code")).toBe(isCode);
+    expect(parsed.children.some((node) => node.type === "delete")).toBe(false);
   });
 
   it("preserves multiline Unicode when plain clipboard text is escaped", () => {

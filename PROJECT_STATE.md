@@ -20,6 +20,24 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LITERAL-TEXT-01 — bounded correction после whole-PR review (2026-10-28)
+
+В Batch L2 на основе независимой проверки двух случаев уточнена буквальная
+семантика Simple без изменения intentional Advanced Markdown.
+Обычный Simple input после 1–3 ведущих пробелов и tab сохраняет editable
+paragraph: сериализатор защищает начальный пробел character reference и
+не превращает исходный prose в indented code. Plain-text paste в начале тела
+распознанного spoiler определяет code/prose по реальному renderer-compatible
+segment boundary, а не по whole-document CommonMark, считающему :::spoiler
+обычным текстом. Поэтому настоящий indented code внутри spoiler сохраняет
+raw tab, амперсанды и Markdown punctuation без видимых escape sequences;
+prose продолжает экранировать те же символы. Shared root/technical/table
+context, существующие Ctrl+Shift+V и Advanced source boundaries сохранены.
+Добавлены pure-parser и mounted Simple input/Ctrl+Shift+V → FormData →
+ForumMarkdown regressions, включая Undo/Redo и root controls. Это
+реализация correction; итоговые CI и независимая проверка фиксируются
+отдельно после фактического выполнения.
+
 ## L7 — Editor structural Markdown semantics (2026-10-28)
 
 В implementation-ветке реализован пакет из семи согласованных findings:

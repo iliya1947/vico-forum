@@ -42,7 +42,7 @@ interface VisualEditorProps {
 export function escapeVisualMarkdownText(value: string): string {
   // Use the same literal-text escaping rule for visual typing and plain paste:
   // a leading #, >, list marker or rule must not silently become Markdown syntax.
-  if (/^[ ]{4}|^\t/u.test(value)) {
+  if (/^(?: {1,3}\t| {4}|\t)/u.test(value)) {
     // This leading-whitespace entity is structural and must not be escaped
     // again with the user's literal ampersands.
     const structuralPrefix = value[0] === "\t" ? "&#9;" : "&#32;";
