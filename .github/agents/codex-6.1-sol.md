@@ -1,5 +1,71 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / EDITOR-03 — repeated-strike bounded correction (2026-10-28)
+
+**Назначение:** [#6468332229](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468332229), после author verification #6468030466. Это implementation handoff автора, не независимый whole-PR verdict.
+
+**Новый stable exact head:** `0af3738d66ef6a8c7f0abdb98b95101e86cb5ad7`.
+Base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`.
+Existing branch `fix/l7-editor-structure`, implementation PR #248. От предыдущего 5e562539: **4 файла, +124/−1**, production helper **+32/−1**, **22 новых regressions/controls** (15 helper, 7 mounted).
+
+### Что изменено и почему
+
+Предыдущая защита selected-side attention учитывала соседнюю family, но не обеспечивала pairing полного `~~**~~(` / `~~*~~(` sequence. Перенос lookup на actual anchor сам по себе недостаточен — no-space reproduction ломался даже после character-reference protection.
+
+Использована идемпотентность strike: вложенный delete ничего не добавляет к effective strike, пока внешний delete покрывает тот же текст. Подготовка существующего source-edit plan удаляет **оба delimiter spans избыточного внутреннего delete** только когда Clear пересекает этот wrapper либо выносит его к вновь построенной границе. Внешний delete продолжает обеспечивать strike невыделенному остатку. Для вновь exposed wrapper проверяется отсутствие intervening text, игнорируются только whitespace и delimiter spans его ancestor path. Вложенный strike вдали от затронутой границы остаётся byte-identical.
+
+Остальные wrappers проходят прежний child-first algorithm; deletions учитываются при расчёте boundaries, поэтому ambiguous repeated tilde sequence вообще не создаётся. Coalescing удаляет только delimiter spans; весь документ не пересериализуется, а прежние selected-side reference rewrites продолжают работать; существующая attention protection для обычных intraword cases и source-selection mapping сохранены.
+
+Общая reconstruction-модель, serializer, parser grammar, Enter/Backspace, secondary Markdown consumers, dependencies/schema не менялись. Это локальное coalescing redundant formatting в Clear, не новая универсальная сериализация.
+
+### Подтверждённые выходы
+
+| Source; Clear a | После correction |
+| --- | --- |
+| `~~**~~a (b)~~**~~` | `a ~~**(b)**~~` |
+| `~~**~~a(b)~~**~~` | `&#97;~~**(b)**~~` |
+| `~~*~~a (b)~~*~~` | `a ~~*(b)*~~` |
+| `~~*~~a(b)~~*~~` | `&#97;~~*(b)*~~` |
+| `[~~**~~a (b)~~**~~](https://example.test)` | `a[ ~~**(b)**~~](https://example.test)` |
+
+Selected a plain; весь невыделенный suffix сохраняет effective strike + strong/emphasis и link, где он был. Видимые markers не появляются. Уменьшение числа redundant delete AST ancestors намеренное; вложенность одинакового strike не является дополнительным визуальным formatting.
+
+### Проверки
+
+- До fix первый helper batch: **8 FAIL /81 PASS**, что подтверждает regressions против оригинального 5e562539.
+- Финальный full application suite на pinned Node24.21.0/pnpm12.3.4: **1227/1227 PASS, 102 files**.
+- Focused editor suites на промежуточном наборе: **206 PASS**; после последнего untouched-wrapper control итоговые helper94 + mounted113 =207 включены в full suite.
+- Новые tests: repeated strong/emphasis, whitespace/no-space, outer link, whole phrase, mid-word Clear, разные spans внешнего/внутреннего strike, exposed unselected wrapper, Unicode BMP/supplementary, exact selected text, соседние CRLF/code block bytes, untouched redundant wrapper вне seam; mounted actual FormData/public rendering и Undo/Redo.
+- **15/15 Chromium scenarios PASS**: DOM Range selection → actual toolbar click → FormData → actual ForumMarkdown; per-character effective formats и текст, 15/15 exact selection и Undo/Redo. Включены mandatory cases, two-level, flat, reversed, whole phrase, старые intraword a/l, punctuation, Unicode. API synthetic404; не deployed-site/owner visual acceptance.
+- Локальные typecheck, lint (0 errors /1 existing warning ui.test.tsx:174), application build и UI-preview build PASS.
+- Diagnostic property matrix: **597 valid source cases /14 597 selections** на цепочках wrappers до depth4 и разных spans. До/после сопоставлены по исходному source+range: **216 →66 уникальных нарушений, 150 исправлены, новых 0**. С учётом повторов одинаковых sources в generator: **277 →81 failed executions**. **Весь matrix не объявляется PASS** — остаток ниже.
+- Production/external/owner visual не затрагивались. Full local PostgreSQL/Workerd отдельно в этой correction не повторялся; exact-head CI evidence указывается отдельно после завершения.
+- PROJECT_STATE отражает реализацию и отдельное известное ограничение. Checkout clean; dependency symlink удалён, HTTP server остановлен, Chromium закрыт.
+
+### Exact-head CI
+
+[Run #40685817846](https://github.com/iliya1947/vico-forum/actions/runs/40685817846) **completed SUCCESS**, trigger pull_request для `0af3738d66ef6a8c7f0abdb98b95101e86cb5ad7`. Completed logs обеих jobs лично fetched/read:
+- checks `122807769482`: **1227/1227 app tests /102 files**, editor-document94, markdown-editor113; lint/typecheck, application/UI-preview builds и schema parity guards PASS.
+- database `122807769908`: **326/326 native PostgreSQL17 tests /30 files**; migrations, runtime privilege probes и local Workers smoke PASS.
+- Это CI evidence. Full local PG/Workerd separately не запускались; прежний known lint warning вне diff не исправлялся.
+- GitHub head/base совпадают с заявленными, PR open/mergeable; merge не выполнялся.
+
+### Отдельный подтверждённый старый Clear-link path — НЕ исправлен этим пакетом
+
+Все оставшиеся 81 failed matrix executions /66 unique source+range имеют link image collision `![`, а не повторную strike-pairing ambiguity. 60/66 дают byte-identical output до/после correction; в 6 output меняется из-за устранения repeated strike, но независимый image collision сохраняется.
+
+Минимальный case уже на **исходном 5e562539**, без strike:
+`[a !b!](https://example.test)`, Clear `a !` (source [1,4)) →
+`a ![b!](https://example.test)`.
+
+Project parser получает image вместо невыделенного link b!. Actual Chromium FormData/public ForumMarkdown подтвердил до/после: исходно visible `a !b!`, после public text **`a `** — этот renderer не показывает remote image. External URL requests заблокированы harness. Причина: literal selected '!' прилегает к вновь открытому '['; нужна отдельная literal/image boundary защита. Это **другая causal chain**, воспроизводимая до данного correction, не regression coalescing strike. Не добавляю исправление вне явно назначенного repeated-strike scope. Зафиксировано в PROJECT_STATE; Мире требуется отдельное scope/reconciliation решение. Whole-PR completion/merge не заявляются.
+
+### Артефакты
+
+`/workspace/work/l7-repeated-strike-correction/`: red.log, focused.log, app.log, typecheck.log, lint.log, build.log, ui-build.log; matrix.ts, matrix-before.ts, original.ts, matrix-results.json, matrix-before.json, matrix-delta.json; browser.py/browser-results.json/browser.log; link-bang.py/link-bang-browser.json.
+
+**Следующий шаг:** Мире — проверить новый head и согласовать отдельный подтверждённый Clear-link path. Старые whole-PR verdicts относятся к 5e562539; автор не даёт independent whole-PR self-approval. Merge не выполнялся. **Лёва STOP.**
+
 ## PR #248 / EDITOR-03 — author verification repeated nested strike (2026-10-28)
 
 **Назначение:** [#6467691554](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6467691554), reconciliation #6467690170. Это author verification одного finding, не независимый whole-PR review.
