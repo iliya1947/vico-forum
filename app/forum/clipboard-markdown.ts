@@ -24,7 +24,8 @@ function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): stri
     const literal = escaped
       .replace(/\|/gu, "\\|")
       .replace(/\{:vico-dir=(?:ltr|rtl)\}/gu, "\\$&")
-      .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler");
+      .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler")
+      .replace(/^:::[ \t]*$/u, "\\      .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler");");
     // Plain text must not accidentally become a heading, quote or list item.
     return literal.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
       (_, indent: string, marker: string) => indent + "\\" + marker)
