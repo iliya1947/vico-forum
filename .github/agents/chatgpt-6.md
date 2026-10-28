@@ -1,3 +1,28 @@
+## PR #247 — LITERAL-TEXT-01 custom grammar bounded correction complete / exact head 4cc3122b (2026-10-28)
+
+**Назначение Миры:** [#6476625898](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6476625898), согласованный residual после independent review Лёвы [#6475815472](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475815472) и coordinator [#6475748706](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475748706).
+
+**Implementation:** [PR #247](https://github.com/iliya1947/vico-forum/pull/247), existing branch `chatgpt6/batch-l2-20261027`. Current stable exact head **`4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`**, base/current main `ebdb482e8bb37cf18d7085beb2926930139b00d6`; PR open, Draft, unmerged. Correction commit [`4cc3122b`](https://github.com/iliya1947/vico-forum/commit/4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1), parent `915643fd5fd94031d5a4ba9397276f187aa28075`. No new PR/branch, implementation scope **four files**: `app/forum/clipboard-markdown.ts`, `app/forum/clipboard-markdown.test.ts`, `app/forum/markdown-editor.test.tsx`, `PROJECT_STATE.md`.
+
+### Bounded implementation
+
+- `textAsMarkdown` now protects plain-text source characters of Vico-specific grammar that CommonMark alone does not neutralize: literal `:::spoiler` opening lines, `|` table separators, and exact `{:vico-dir=ltr|rtl}` direction tokens. These remain readable as literal text in published ForumMarkdown without details/table/forced paragraph direction.
+- The change is restricted to existing literal clipboard serializer reused by Simple paste; raw lines confirmed as genuine tab-indented code still return unchanged, while previous CommonMark escapes (entities/tilde/list/headings), spoiler-body code/prose context, HTML/TSV conversion and intentional Advanced Markdown are not altered.
+- Tests: pure `clipboardPlainToMarkdown` matrix for spoiler, table, RTL/LTR tokens and raw tab/code controls; mounted Simple **Ctrl+Shift+V → FormData → ForumMarkdown → Undo/Redo** matrix for same four, HTML-ignore control; Advanced source controls for intentional Vico Markdown. `PROJECT_STATE.md` updated to describe implemented behavior without pre-asserting acceptance.
+
+### Actual verification
+
+[Exact-head CI #40743626291](https://github.com/iliya1947/vico-forum/actions/runs/40743626291) **SUCCESS**, both jobs independently inspected:
+- `checks`: **1358/1358 application tests /102 files**, lint, typecheck, app build, UI preview build, migration metadata/schema parity PASS.
+- `database`: **326/326 PostgreSQL 17 tests /30 files**, production schema manifest, privilege/provisioning diagnostics, web credential probes, Workers/Hyperdrive local smoke PASS.
+- Exact head/base were rechecked; exactly 4 correction paths changed relative to prior head; all original PR paths remain in same existing branch.
+
+These are completed repository CI checks, **not** a personal browser/Chromium run or independent whole-PR review. As implementation author, Лира **did not conduct** independent whole-PR review. Real browser interaction, Pages/owner visual acceptance and external production rollout not performed or claimed. There is no claimed evidence for tests beyond reported CI scope.
+
+**Status:** bounded `LITERAL-TEXT-01` correction implementation and CI complete, **STOP**. Coordinator Мира should arrange new whole-PR review on stable exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`, independent reviewers must not treat author checks as their own verification. No implementation PR comments, no merge.
+
+---
+
 ## PR #249 — Лира / independent whole-PR review L8 / exact head c4e32d3 (2026-10-28)
 
 **Назначение Миры:** [#6475679405](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475679405). **Implementation:** [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`, open/non-Draft/mergeable; reviewed exact head `c4e32d3014ee8e1391f9d0776384647fa1229361`, base/current main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. At publication head/base rechecked and unchanged. Reviewed 27 changed paths / five L8 current-Stage findings. Лира — non-author independent reviewer; implementation untouched.
