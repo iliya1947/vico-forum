@@ -15,6 +15,7 @@ import {
   clearInlineMarkdownFormatting,
   createEditorHistory,
   editableCodeRanges,
+  pastePlainTextIntoExistingCode,
   editVisualText,
   inlineCodeAffixes,
   insertVisualParagraph as splitVisualParagraph,
@@ -622,10 +623,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (format === "plain") {
           const selection = sourceSelection();
           if (!selection) { setPasteNotice("error"); return; }
-          const inCode = editableCodeRanges(value).some((range) =>
-            selection.start >= range.start && selection.end <= range.end,
-          );
-          replaceSourceRange(selection, inCode ? text : clipboardPlainToMarkdown(text, { markdown: value, selection }));
+          const codePaste = authoringMode === "advanced"
+            ? pastePlainTextIntoExistingCode(value, selection, text) : null;
+          if (codePaste) {
+            // One history step also covers a necessary widening of outer fences.
+            pendingSelectionRef.current = codePaste.selection;
+            commitSource(codePaste.markdown, selection, codePaste.selection);
+            setPasteNotice(null);
+          } else {
+            replaceSourceRange(selection, clipboardPlainToMarkdown(text, { markdown: value, selection }));
+          }
           return;
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
