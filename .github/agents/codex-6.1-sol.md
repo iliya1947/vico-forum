@@ -1,5 +1,87 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent whole-PR review / REQUEST CHANGES / STOP (2026-10-28)
+
+Дата: 2026-10-28. Назначение: PR236 comment6481023543.
+Exact head: 7c6bd4e8f3391e1189f130e40903184d7e484a7d.
+Base/current main: ebdb482e8bb37cf18d7085beb2926930139b00d6.
+
+### Verdict: REQUEST CHANGES
+
+Проверен весь scope EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06. Рассмотрены все 15 changed files относительно main, включая 7 production files, тесты и PROJECT_STATE; отдельно прослежены parser/source selection/paste/public rendering и translation validation/planning call chains. Выводы координатора/других reviewers на этом head не использовались.
+
+**Два подтверждённых current-Stage P2 subcase одной family LITERAL-TEXT-01:** команда Paste without formatting в Advanced всё ещё применяет prose escaping внутри inline code и внутри spoiler-local indented code. Это residual определения code context, не отсутствие исправления прежних root fenced/spoiler-closer/tabbed-table cases. Новых future-only findings не установлено.
+
+### 1. P2 — inline code не входит в code-context guard plain command
+
+Relevant code: app/forum/markdown-editor.tsx:625–628; app/forum/editor-document.ts:344–360.
+
+Initial Advanced source: `Alpha` (одинарные backticks вокруг Alpha).
+Выделить только Alpha, настоящий clipboard payload: ~~literal~~ &copy; | value |.
+More tools → Paste without formatting.
+
+Actual FormData/source: `\~\~literal\~\~ &amp;copy; \| value \|` (backticks по-прежнему окружают весь inline code).
+Actual public p code.textContent: \~\~literal\~\~ &amp;copy; \| value \|.
+Expected code.textContent: ~~literal~~ &copy; | value |.
+
+Source/content меняется из-за добавленных escapes; wrapper и destination не являются причиной. Тот же initial/payload обычным Ctrl+Shift+V в Advanced textarea сохраняет raw source и точный code text. Undo/Redo точно восстанавливает обе версии source.
+
+Причина: новый inCode guard использует editableCodeRanges, который выбирает только node.type=code и не возвращает inlineCode. Для inline source ranges=[]; команда уходит в clipboardPlainToMarkdown, предназначенный для prose, и escapes не декодируются внутри inline code.
+
+Это существующая доступная Advanced plain command и поддержанный inline-code контекст. docs/EDITOR.md §10 требует plain text/source сохранение; дополнительной будущей capability или rollout не требуется. Current-Stage LITERAL-TEXT-01.
+
+### 2. P2 — indented code внутри Vico spoiler не виден whole-document code ranges
+
+Initial valid Advanced source (TAB — настоящий U+0009):
+
+```text
+:::spoiler Outer
+<TAB>Alpha
+:::
+```
+
+Public renderer уже до вставки показывает Alpha как code внутри Outer: spoiler body разбирается независимо. Выделить только Alpha в Advanced textarea, тот же clipboard payload, More tools → Paste without formatting.
+
+Actual source:
+
+```text
+:::spoiler Outer
+<TAB>\~\~literal\~\~ &amp;copy; \| value \|
+:::
+```
+
+Actual details pre code.textContent содержит \~\~literal\~\~ &amp;copy; \| value \| вместо точного payload. Тот же Ctrl+Shift+V в Advanced сохраняет исходный текст code. Root indented code и root fenced code с этой командой проходят — дефект требует renderer-local code context.
+
+Причина: editableCodeRanges разбирает весь source через parseForumMarkdown, не используя Vico spoiler segmentation. Generic root parser видит :::spoiler как paragraph, а indented Alpha — его continuation; ranges=[] и guard ошибочно считает selection prose. Actual parseRenderedForumMarkdown/Public ForumMarkdown видит code в отдельно разобранном body. Explicit context diagnostic подтвердил эту разницу; это не неизвестный/неподдерживаемый синтаксис.
+
+Это дополнительная конкретная причинная граница в той же family: inlineCode отсутствует в type selection, а spoiler-local code отсутствует из-за несовпадения parser contexts. Не предлагается менять всю keyboard-helper семантику: review только фиксирует установленный trigger/result.
+
+### Browser evidence и controls
+
+Actual Chromium headless, настоящий navigator.clipboard.writeText/readText, выбор диапазона textarea, настоящие More tools/Paste without formatting, hidden body → FormData при локальном submit → тот же ForumMarkdown. Сравнивался textContent самого p code или pre code, не HTML-encoded строка и не toolbar text.
+
+- advanced-context-command.py/.json/.log: 9 cases — root fenced sensitive command, ordinary command, native paste, inline command/native control, root indented command, spoiler-indented command/native control, prose command. 2 command contexts воспроизводят residual; остальные отделяют правильный clipboard/selection/public rendering path. Undo/Redo asserted во всех 9.
+- code-contexts.ts/.json/.log: actual editableCodeRanges=[] для inline и spoiler-indented, nonempty для root-indented/root-fenced. Сохранены generic и rendered AST для сопоставления.
+- custom-paste.py/.json/.log: 8 root payload observations. Прежние literal spoiler/table/ltr+rtl direction и tab-indented table-shaped cases теперь нейтрализованы/выводятся без лишних escapes.
+- nested-paste.py/.json/.log: 3 cases, literal full spoiler и closer-only сохраняют After внутри Outer; ordinary control также сохраняется. Прежний spoiler-closer defect не воспроизводится.
+- Прежние 25 browser regression controls повторены: 4 native space-tab/focus/history, 3 root/spoiler raw-code paste, 6 prose/heading/list/spoiler paste, 12 mentions Simple/Advanced. Все asserted controls PASS. Дополнительные 20 custom/nested/Advanced observations включают 2 описанных failure; весь browser run НЕ PASS.
+
+### Остальной scope
+
+- EDITOR-10: полный production diff и call sites проверены повторно; immutable profile ID/recipient сохранён. AST matrix 255 code points 1..255 без mismatches; browser 12 complex/control/Unicode names PASS.
+- LITERAL-TEXT-01: shared native/clipboard/table code, HTML/TSV fallback, source selection и affected technical segmentation проверены, не только последний commit. Generic 96 ampersand/tilde context checks и 28 native-indentation paragraph controls PASS. Они имеют ограниченный охват и не доказывают корректность всех custom grammars.
+- LOC-03: полный scanner/token validation и compiler/publication/runtime path перепроверен. 9 injected nesting variants rejected, 8 unchanged controls accepted, 3 malformed inputs 75/1035/9011 chars rejected за bounded time (max 0.47 ms). Новых подтверждённых current-Stage defects нет.
+- LOC-06: authoritative revision/no-text guard до source resolver и route permission/runtime/currentness boundaries перепроверены. 14 capability→real planner cases: 12 no-text без detector/upsert/enqueue и 2 ordinary prose queued PASS. Новых подтверждённых current-Stage defects нет.
+
+### Checks и ограничения
+
+- Full local application: **1368 tests /102 files PASS**, 150.27s.
+- Exact-head [CI #40765793732](https://github.com/iliya1947/vico-forum/actions/runs/40765793732) SUCCESS. Completed logs checks123089469826/database123089470313 прочитаны: 1368 app /102 files, 326 PostgreSQL17 /30 files; lint 0 errors/один прежний warning,typecheck,application/UI builds,metadata/schema/runtime probes/Workers smoke PASS. Все job steps success. Checkout test merge 8dc5da20 из 7c6bd4e8 +base ebdb482.
+- Native PG/build/Workerd отдельно локально не повторялись; это completed exact-head CI evidence. Provider/external/production и owner visual acceptance не выполнялись.
+- Implementation не менялась. Артефакты только /workspace/work/pr247-review-7c6bd4e8/. Repo checkout clean, dependency symlink снят, Chromium/own HTTP stopped.
+- Разработчик разрешил публикацию командой «Публикуй»; результат передан в служебный PR для coordinator reconciliation. Whole-PR review завершён, первый finding не остановил проверку. STOP.
+
+
 ## PR #249 — author verification: unpersisted UI replay LOC-05 CONFIRMED / STOP (2026-10-28)
 
 Выполнено [назначение #6478119245](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478119245).
