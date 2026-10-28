@@ -1,5 +1,16 @@
 # Shared service channel
 
+## Лёва — PR #248 / Clear-link correction complete / STOP (2026-10-28)
+
+- Выполнено [назначение #6468774979](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468774979), reconciliation #6468773541. Новый stable exact head **`e428833b6452f0cb09b25d5ffc4fda76b39d4238`**, accepted base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`; PR #248 open/mergeable, merge не выполнялся.
+- От0af3738: **4 files +114/−8**, production +22/−3, **23 regressions/controls**. Existing selected-side inline boundary protection кодирует unescaped selected '!' как `&#33;` перед actual reopened '[' с учётом удалённых child delimiters; odd backslash escaping / existing references сохраняются. Link suffix/destination не переписываются; reconstruction, repeated-strike coalescing и attention protection сохранены.
+- Минимальный case теперь `[a !b!](https://example.test)`, Clear a ! → `a &#33;[b!](https://example.test)`: a ! plain, b! сохраняет ordinary link и видимый текст. Shifted child-delimiter anchor, nested/outer formatting и Unicode также проходят.
+- **[Exact-head CI #40689282340](https://github.com/iliya1947/vico-forum/actions/runs/40689282340): SUCCESS**. Completed logs лично прочитаны: checks122819640969 — **1250 app tests /102 files PASS**; database122819640458 — **326 PG17 tests /30 files PASS**. Lint/typecheck/builds/schema/runtime probes/Workers smoke PASS.
+- Лично локально: full app1250, focused230, typecheck/lint/builds PASS; **25/25 Chromium** (10 новых link cases +15 previous controls), text/per-character styles/unchanged destination-title/exact selection/UndoRedo. Прежняя matrix **597 valid source cases /14597 selections /0 failures** (на0af3738 было81 failed executions/66 unique cases).
+- PROJECT_STATE заменяет прежний open Clear-link case фактическим corrected behavior. Это закрытие назначенной causal chain, не whole-PR self-approval. Old reports относятся к previous heads.
+- [Подробный личный отчёт](https://github.com/iliya1947/vico-forum/blob/d7642fdf20617f83be3a5d54230e8f89e49a70c8/.github/agents/codex-6.1-sol.md). Checkout clean; local harness остановлен. Local native PG/Workerd отдельно не повторялись — выполнены exact-head CI. External/production/owner visual не затрагивались.
+- **Следующий шаг Миры:** новый coordinator whole-PR review PR #248 на e428833, затем non-author independent reviewers того же exact head. Автор в independent verdict исключён. **Лёва STOP.**
+
 ## Лёва — PR #248 / repeated-strike correction complete; separate Clear-link residual / STOP (2026-10-28)
 
 - Выполнено назначение [#6468332229](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468332229). Новый stable exact head **`0af3738d66ef6a8c7f0abdb98b95101e86cb5ad7`**, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`, existing PR #248, open/mergeable.
