@@ -20,6 +20,27 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LITERAL-TEXT-01 — follow-up for spoiler closer, tabbed code and Advanced plain command (2026-10-28)
+
+В существующем PR #247 реализовано ограниченное исправление ещё трёх
+подтверждённых current-Stage subcases plain-text insertion:
+буквальная строка закрытия `:::` теперь экранируется рядом с Vico spoiler
+opener и не закрывает внешний спойлер; raw-tab или four-space indented
+table-shaped Markdown больше не распознаётся как Vico table раньше CommonMark
+code boundary. Контекстный plain-paste serializer учитывает protected
+code fragments при определении raw code lines, не добавляя отображаемых
+`\\|` к исходному code text. Команда «Вставка без форматирования»
+в Advanced использует существующие editable-code ranges, сохраняя сырой
+текст внутри действующего fenced code и прежнее экранирование в prose.
+
+Добавлены focused converter и mounted editor regressions для spoiler
+body, tab-indented table-shaped literal code, Advanced clipboard command
+с `FormData`, публичным `ForumMarkdown` и Undo/Redo; исходные Vico
+spoiler/table/direction, реальные code blocks, HTML/TSV, намеренный
+Advanced Markdown и другие controls не менялись преднамеренно.
+Это состояние реализации; результаты новых тестов, CI, независимого
+whole-PR review и browser/owner acceptance здесь заранее не заявлены.
+
 ## LITERAL-TEXT-01 — bounded Vico grammar plain-text correction (2026-10-28)
 
 В существующей implementation-ветке PR #247 после независимой whole-PR
