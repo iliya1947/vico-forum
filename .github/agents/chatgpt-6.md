@@ -1,3 +1,39 @@
+## PR #249 — Лира / independent whole-PR review L8 / exact head c4e32d3 (2026-10-28)
+
+**Назначение Миры:** [#6475679405](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475679405). **Implementation:** [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`, open/non-Draft/mergeable; reviewed exact head `c4e32d3014ee8e1391f9d0776384647fa1229361`, base/current main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. At publication head/base rechecked and unchanged. Reviewed 27 changed paths / five L8 current-Stage findings. Лира — non-author independent reviewer; implementation untouched.
+
+### Independent verdict: REQUEST CHANGES — one confirmed current-Stage LOC-05 residual (P2)
+
+**Source:** [`db/translation-task-store.ts:464–496`](https://github.com/iliya1947/vico-forum/blob/c4e32d3014ee8e1391f9d0776384647fa1229361/db/translation-task-store.ts#L464-L496), `DrizzleTranslationTaskStore.upsertPending(specification, options?)`.
+
+**Reproducer / causal chain:**
+1. UI stable identity A is inserted as generation 1, then B for same (kind, namespace, key, locale) is inserted as generation 2 (current head=2).
+2. A processing claim is marked `stale` by `markStale()`, leaving A's generation=1.
+3. Delayed/replayed `PersistentTranslationJobDispatcher.dispatch([A])` **without** `{ freshPlanning: true }` calls `tasks.upsertPending(A)`, passing no options.
+4. Guard `if (existing.status !== "stale" && (!options?.freshPlanning || ...)) return existing;` is FALSE for every `stale` row, **even when freshPlanning is absent**. It enters reactivation, sets status=`pending`, generation=`currentGeneration + 1` (=3), resets claim/attempt data and updates `translationTaskGenerationHeads.currentGeneration` to 3.
+5. B becomes noncurrent and its conditional publication loses authorization. The stale old dispatch silently regains authority. This breaches `docs/translation/PROVIDERS_AND_JOBS.md` JOB-03 / `LOC-05`: replayed job-list dispatch must not activate stale work; only an eligible new fresh planning decision may do so.
+
+Current `UiTranslationService.planAndDispatch` properly passes `freshPlanning:true` to `PersistentTranslationJobDispatcher`; missing protection is the storage `stale` branch, not the fresh planner. Main already had unconditional stale reactivation, but L8 explicitly introduces freshPlanning to eliminate stale replay; therefore residual defect is in the exact current-Stage correction scope, not future-only. Existing `tests/database/translation-task-store.test.ts` and `translation-task-generation-isolation.test.ts` legacy tests still assert stale reactivation with no flag. New `tests/database/localization-l8-corrections.test.ts` verifies fresh A–B–A and pending/processing owner fences but does **not** verify negative stale replay. Focused fix/regression criterion for reconciliation: `upsertPending(A)` without fresh authorization leaves stale row/head unchanged (including A→B→A), while fresh eligible plan may assign generation 3, and current duplicate/terminal completed behaviors remain.
+
+**Confidence/boundary:** deterministic branch and mutation effects directly traced in current TS/SQL sources, caller and test harness; small branch truth-table evaluated independently. Did **not** execute the missing negative case against a new disposable PostgreSQL instance or claim a Chromium reproducer. Exact CI green is not proof that this scenario was tested. This is a code-level confirmed defect with that execution limitation explicitly recorded.
+
+### Rest of L8
+
+- `LOC-01` — PASS in reviewed scope. `ControlledLocaleWriter` classifies known transport COMMIT errors, readback compares pre/expected/actual semantic registry identity, avoids blind retry; PostgreSQL tests cover lost ACK/third-state and preserve error.
+- `LOC-02` — PASS. `CompiledBundleValidationError` / `TranslationValidationError` are separated from unknown verifier/crypto failures; only proven obsolete/malformed derived bundles may be deleted. PG tests cover crypto failure preserving row and obsolete version deletion.
+- `I18N-UI-POLICY-01` — PASS. v3 bundle version binds explicit generationPolicyVersion across compiler, atomic publication, verifier/runtime HIT, raw MISS, Hyperdrive request cache, local-only/manual fallback and reconciliation CLI. Unconfigured request policy null excludes machine source as prescribed; manual priority retained.
+- `LOC-05` content title/body — PASS for analyzed A–B–A, task/head locks, revision eligibility, claim/allowance generation fencing, duplicate active and terminal completed handling. One UI stale flag defect above remains.
+- `LOC-08` — PASS for reviewed semantic Markdown direction round-trips across paragraph, heading, list, spoiler, table and escaped literal lookalikes. Direction canonicalization guard and `cnt06-custom-structure-direction-v3` propagate to content task fingerprint/preflight.
+- `LOC-09` legacy upgrade / future rollout prerequisite: excluded from current required scope; not counted as defect.
+
+### Exact-head evidence and limits
+
+[CI #40728534829](https://github.com/iliya1947/vico-forum/actions/runs/40728534829): completed SUCCESS; personally inspected logs of both jobs: **1265 app tests / 103 files PASS**, **339 PostgreSQL17 tests / 31 files PASS**. Lint, typecheck, app/UI-preview builds, migrations/schema parity, DB privilege/probes and local Workers checks PASS. Full 27-file diff inspected and relevant surrounding source/tests independently traced; no changes to implementation PR. Personal Chromium run, separate PostgreSQL execution, live provider/Queue/production and owner visual acceptance **not** performed; author-reported external checks are not treated as my own.
+
+**Final independent result:** REQUEST CHANGES, **1 current-Stage P2 defect in LOC-05**, 4 other finding families clear under source review; no additional confirmed findings. No PR changes. This verdict is **independent**, not coordinator reconciliation or accepted team decision. Developer authorized publication after the full review; discussion/reconciliation belongs in PR #236. **Лира STOP.**
+
+---
+
 ## PR #247 — LITERAL-TEXT-01 bounded correction complete / exact head 915643fd (2026-10-28)
 
 **Назначение Миры:** [#6473562942](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6473562942). **Implementation PR:** [#247](https://github.com/iliya1947/vico-forum/pull/247), existing branch `chatgpt6/batch-l2-20261027`, Draft, open, mergeable. Stable exact head `915643fd5fd94031d5a4ba9397276f187aa28075`; current main/base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. Independent reviewer Лёва found two same-family current-Stage subcases; Мира reconciled both. Лира was implementer, **not** independent whole-PR reviewer of this correction.
