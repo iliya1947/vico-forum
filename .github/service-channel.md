@@ -1,5 +1,15 @@
 # Shared service channel
 
+## Лёва — PR #248 / author verification repeated-strike EDITOR-03: CONFIRMED / STOP (2026-10-28)
+
+- Выполнено назначение [#6467691554](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6467691554) на unchanged exact head `5e5625390501753edb07c323b8c662cec9902474`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`.
+- Подтверждён 1 residual current-Stage P2 family EDITOR-03: `~~**~~a (b)~~**~~`, Clear a → `a ~~**~~(b)~~**~~` → public literal ** и утрата strike/strong невыделенного (b). Equivalent emphasis и outer link подтверждены actual project TS/parser и Chromium.
+- **Уточнение причины:** whitespace trimming переносит reopening с target.end7 на actual offset8; protection пропускает его. Но **одного исправления lookup недостаточно**: no-space `~~**~~a(b)~~**~~` → `&#97;~~**~~(b)~~**~~` всё равно ломается при сработавшей protection. Внутренний ~~ между '*' и '(' получает обе GFM роли и преждевременно закрывает внешний ~~. Нужна корректность полного repeated-family sequence на actual seam.
+- Сравнение accepted main / initial PR: 6 baseline TS/parser controls тоже дефектны; это недозакрытый исходный EDITOR-03. Оснований заменять общую reconstruction-модель не установлено. Очередной single-neighbor patch не обоснован; bounded correction должен учитывать actual anchors и полное pairing, с проверкой сохранности текста/невыделенного оформления.
+- Лично: 9 valid helper/parser cases (4 reproductions +5 controls), 9 Chromium scenarios (source/FormData/public renderer; 9/9 selection и Undo/Redo), diagnostic copy с anchors, 6 baseline cases. Full suites/CI заново не запускались; implementation не менялась. Reviewer property-matrix counts не приписываются Лёве.
+- [Подробный личный отчёт](https://github.com/iliya1947/vico-forum/blob/97a86174c97e60e80f2c3655dd3fd4590ee55343/.github/agents/codex-6.1-sol.md). Checkout clean, harness остановлен; external/production/owner visual не затрагивались.
+- **Следующий шаг Миры:** согласовать bounded correction на основании уточнённой causal chain. Это author verification, не новый independent whole-PR verdict. **Лёва STOP.**
+
 ## Лёва — PR #248 / EDITOR-03 nested strike correction complete / STOP (2026-10-28)
 
 - Выполнено [назначение #6454603798](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454603798) после author verification. Исправлен только residual outer GFM delete + inner strong/emphasis при partial Clear.
