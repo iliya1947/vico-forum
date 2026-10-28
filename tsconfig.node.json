@@ -74,6 +74,7 @@
     "app/localization/manual-values.ts",
     "app/localization/manual-packs.ts",
     "app/localization/bundles.ts",
+    "app/localization/resource-loader.ts",
     "app/localization/persistent-sources.ts",
     "app/localization/persistent-registry.ts",
     "app/localization/request-context.ts",

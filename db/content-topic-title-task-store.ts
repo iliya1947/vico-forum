@@ -193,6 +193,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
             .limit(1);
           assertMetadataMatchesSpecification(metadataRows[0], specification);
 
+          const superseded = existingRows[0].generation !== currentGeneration;
           if (existingRows[0].status === "completed") {
             throw new ContentTopicTitlePlanningNoWorkRollback("task-completed");
           }
@@ -212,8 +213,8 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
           );
 
           if (
-            existingRows[0].status === "pending"
-            || existingRows[0].status === "processing"
+            !superseded && (existingRows[0].status === "pending"
+            || existingRows[0].status === "processing")
           ) {
             return {
               outcome: "task" as const,
@@ -243,6 +244,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
               allowanceLeaseExpiresAt: null,
               allowanceRetryNotBefore: null,
               allowanceReason: null,
+              allowanceProvider: null,
               allowanceReservationReference: null,
               allowanceUpdatedAt: null,
               claimToken: null,
@@ -255,7 +257,8 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
             })
             .where(and(
               eq(translationTasks.id, existingRows[0].id),
-              eq(translationTasks.status, "stale"),
+              eq(translationTasks.status, existingRows[0].status),
+              eq(translationTasks.generation, existingRows[0].generation),
             ))
             .returning();
           const reactivatedTask = requiredTaskRow(reactivated[0]);

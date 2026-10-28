@@ -6,6 +6,7 @@ import { isPostgresStatementTimeout } from "./postgres-deadlines";
 import { canonicalizeTranslationLocale, type LocaleDefinition } from "../app/localization/locale";
 import {
   RegistryIntegrityError,
+  isPostgresAvailabilityFailure,
   assemblePersistentRegistry,
   parsePersistentLocaleRow,
   type PersistentLocaleRepository,
@@ -152,6 +153,6 @@ function asRows(locales: readonly LocaleDefinition[]): PersistentLocaleRow[] {
 
 function isAmbiguousCommitError(error: unknown): boolean {
   const code = (error as DatabaseError | undefined)?.code;
-  return code === "40003" || code === "08007" || code?.startsWith("08") === true ||
+  return code === "40003" || isPostgresAvailabilityFailure(error) ||
     isPostgresStatementTimeout(error);
 }

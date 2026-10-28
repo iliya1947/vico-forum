@@ -121,7 +121,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       provider_model: "fake-v1",
       provenance_metadata: { attribution: "fixture" },
     }]);
-    await expect(new DrizzleUiTranslationBundleStore(database).read("fr", "common")).resolves.toMatchObject({
+    await expect(new DrizzleUiTranslationBundleStore(database).read("fr", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: { heading: "Fondation de traduction" },
     });
   });
@@ -217,7 +217,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       sectionCount_one: "{{count}} раздел",
       sectionCount_other: "{{count}} раздела",
     });
-    await expect(new DrizzleUiTranslationBundleStore(database).read("ru", "common")).resolves.toMatchObject({
+    await expect(new DrizzleUiTranslationBundleStore(database).read("ru", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: {
         heading: "Основа переводов",
         sectionCount_few: "{{count}} раздела",
@@ -247,7 +247,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     })).resolves.toBe(true);
 
-    await expect(new DrizzleUiTranslationBundleStore(database).read("it", "common")).resolves.toMatchObject({
+    await expect(new DrizzleUiTranslationBundleStore(database).read("it", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: { heading: "Manuale", stageSummary: "Stage 1 corrente" },
     });
   });
@@ -301,8 +301,8 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     })).resolves.toBe(true);
 
-    await expect(bundles.reconcilePersistedBundle("nl", "common")).resolves.toBe("current");
-    await expect(bundles.read("nl", "common")).resolves.toMatchObject({
+    await expect(bundles.reconcilePersistedBundle("nl", "common", "ui-policy-v1")).resolves.toBe("current");
+    await expect(bundles.read("nl", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: { heading: "Vertaalbasis" },
     });
   });
@@ -343,7 +343,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
           await release.promise;
         },
       );
-      const reconciliation = reconciler.reconcilePersistedBundle("sv", "common");
+      const reconciliation = reconciler.reconcilePersistedBundle("sv", "common", "ui-policy-v1");
       await locked.promise;
 
       const publication = new DrizzleUiTranslationPublicationStore(publicationDatabase)
@@ -358,7 +358,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
 
       await expect(reconciliation).resolves.toBe("deleted");
       await expect(publication).resolves.toBe(true);
-      await expect(new DrizzleUiTranslationBundleStore(drizzle(client)).read("sv", "common")).resolves.toMatchObject({
+      await expect(new DrizzleUiTranslationBundleStore(drizzle(client)).read("sv", "common", "ui-policy-v1")).resolves.toMatchObject({
         resources: { heading: "Översättningsbas" },
       });
     } finally {
@@ -400,7 +400,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
         }),
       ]).then((outcomes) => expect(outcomes).toEqual([true, true]));
 
-      await expect(new DrizzleUiTranslationBundleStore(firstDatabase).read("es", "common")).resolves.toMatchObject({
+      await expect(new DrizzleUiTranslationBundleStore(firstDatabase).read("es", "common", "ui-policy-v1")).resolves.toMatchObject({
         resources: { heading: "Base de traducción", stageSummary: "Stage 1 actual" },
       });
     } finally {

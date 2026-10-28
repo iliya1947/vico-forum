@@ -1,8 +1,10 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { localeContext, registryLoaderContext, uiTranslationStoreContext } from "../localization/request-context";
+import { localeContext, registryLoaderContext, uiTranslationStoreContext, uiGenerationPolicyContext } from "../localization/request-context";
 import { assemblePersistentRegistry } from "../localization/persistent-registry";
 import { localeRegistry } from "../localization/registry";
+import { sourceFingerprint } from "../localization/fingerprint";
+import { canonicalEnglishCatalog } from "../localization/catalog";
 import { loader, middleware } from "./locale-boundary";
 import { authSessionContext } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
@@ -171,5 +173,25 @@ describe("locale boundary loader", () => {
       params: { locale: "en" },
       context: localeLoaderContext(failure),
     })).rejects.toBe(failure);
+  });
+});
+
+describe("explicit UI machine policy on the runtime miss path", () => {
+  it.each([null, "policy-a", "policy-b"])("honors %s without invalidating manual rows", async (policy) => {
+    const fingerprint = await sourceFingerprint(canonicalEnglishCatalog.common.heading);
+    const row = { locale: "fr", namespace: "common", key: "heading", origin: "machine", status: "approved",
+      sourceFingerprint: fingerprint, translatedPayload: "Machine A", generationPolicyVersion: "policy-a" };
+    for (const manual of [false, true]) {
+      const context = localeLoaderContext(new AuthorizationUnavailableError());
+      context.set(localeContext, { translationLocale: "fr", fallbackLocales: ["en"], direction: "ltr",
+        formatting: { locale: "fr", timeZone: "UTC" }, nativeName: "Français", presentationMetadata: {} });
+      context.set(uiGenerationPolicyContext, policy);
+      const read = vi.fn(async () => undefined);
+      context.set(uiTranslationStoreContext, { read, readApproved: async (locale) => locale === "fr"
+        ? [row, ...(manual ? [{ ...row, origin: "persistent_manual", generationPolicyVersion: null, translatedPayload: "Manuel" }] : [])] : [] });
+      const snapshot = await loader({ request: new Request("https://vico.test/fr/"), params: { locale: "fr" }, context });
+      expect(snapshot.resourcesByLocale.fr.common.heading).toBe(manual ? "Manuel" : policy === "policy-a" ? "Machine A" : undefined);
+      expect(read).toHaveBeenCalledWith("fr", "common", policy);
+    }
   });
 });

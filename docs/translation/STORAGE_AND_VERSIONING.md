@@ -165,13 +165,28 @@ fallback locale, а structured plural raw JSON компилируется сущ
 suffix resources.
 
 Самосогласованного `bundleVersion`, вычисленного только по stored resources, недостаточно для
-currentness. Версия bundle format v2 дополнительно включает deterministic code-owned input
+currentness. Версия bundle format v3 дополнительно включает deterministic code-owned input
 identity: fingerprints всех canonical descriptors namespace и exact current local manual pack
 для locale/namespace (keys, сохранённые fingerprints и payloads, включая факт отсутствия key).
 Runtime пересчитывает эту identity из текущего deploy при verification. Поэтому изменение либо
 удаление local override меняет ожидаемую version, и старый bundle уходит в miss path. Это не
 требует schema migration: existing `bundle_version` уже хранит semantic hash, а публикация и
 runtime используют один compiler/verifier.
+
+В identity также входит явная требуемая `generationPolicyVersion` machine generation.
+Compiler, publication, runtime verifier и reconciliation получают одну и ту же policy;
+равенства stored resources недостаточно, если machine-policy context изменился.
+При отсутствии настроенной UI machine policy request composition использует только
+manual/local/English fallback (`uiGenerationPolicyContext=null`), не выбирая произвольную
+версию machine policy. Настроенная policy передаётся одновременно raw source и bundle reader.
+Manual/local values не теряют validity из-за смены machine policy; derived bundle может
+потребовать пересборки, но approved manual row не инвалидируется.
+Reconciliation CLI принимает тот же явный input `--generation-policy=<version>`;
+без него проверяет manual-only context. Этот параметр не активирует provider или Queue.
+
+Только доказанная ошибка данных/obsolete input identity классифицируется как bundle
+integrity failure и разрешает удаление derived row. Unknown runtime/crypto/programming
+failure проверки пробрасывается и не разрешает destructive reconciliation.
 
 Безопасный runtime miss является availability fallback, но не заменяет durable convergence.
 Persisted bundle, отклонённый как obsolete относительно текущего format/deploy identity, обязан

@@ -27,7 +27,7 @@ export interface UiTranslationJobSpecification {
 
 /** Provider- and transport-independent boundary for dispatching planned translation jobs. */
 export interface TranslationJobDispatcher {
-  dispatch(jobs: readonly UiTranslationJobSpecification[]): Promise<void>;
+  dispatch(jobs: readonly UiTranslationJobSpecification[], options?: { readonly freshPlanning: boolean }): Promise<void>;
 }
 
 export interface UiTranslationGenerationRequest {
@@ -122,7 +122,7 @@ export class UiTranslationService {
     request: UiTranslationGenerationRequest,
   ): Promise<readonly UiTranslationJobSpecification[]> {
     const jobs = await this.plan(request);
-    if (jobs.length > 0) await this.dependencies.dispatcher.dispatch(jobs);
+    if (jobs.length > 0) await this.dependencies.dispatcher.dispatch(jobs, { freshPlanning: true });
     return jobs;
   }
 

@@ -114,7 +114,7 @@ describe("UiTranslationService", () => {
     expect(heading?.sourceFingerprint).toMatch(/^[0-9a-f]{64}$/);
     expect(heading?.taskIdentity).toMatch(/^[0-9a-f]{64}$/);
     expect(dispatcher.dispatch).toHaveBeenCalledOnce();
-    expect(dispatcher.dispatch).toHaveBeenCalledWith(jobs);
+    expect(dispatcher.dispatch).toHaveBeenCalledWith(jobs, { freshPlanning: true });
   });
 
   it("does not dispatch a current local manual translation", async () => {

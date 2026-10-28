@@ -135,7 +135,7 @@ export interface ContentPostBodyTranslationTaskStore {
 }
 
 export interface TranslationTaskStore {
-  upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask>;
+  upsertPending(specification: UiTranslationJobSpecification, options?: { readonly freshPlanning: boolean }): Promise<TranslationTask>;
   findById(id: string): Promise<TranslationTask | undefined>;
   findByIdentity(taskIdentity: string): Promise<TranslationTask | undefined>;
   claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult>;
@@ -213,9 +213,9 @@ export class PersistentTranslationJobDispatcher implements TranslationJobDispatc
     private readonly enqueuer: TranslationTaskEnqueuer,
   ) {}
 
-  async dispatch(jobs: readonly UiTranslationJobSpecification[]): Promise<void> {
+  async dispatch(jobs: readonly UiTranslationJobSpecification[], options?: { readonly freshPlanning: boolean }): Promise<void> {
     for (const job of jobs) {
-      const task = await this.tasks.upsertPending(job);
+      const task = options ? await this.tasks.upsertPending(job, options) : await this.tasks.upsertPending(job);
       await this.enqueuer.enqueue({ translationTaskId: task.id });
     }
   }

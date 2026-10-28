@@ -106,3 +106,12 @@ describe("PersistentTranslationJobDispatcher", () => {
     ]);
   });
 });
+
+it("forwards fresh planning authority to persistence without adding it to queue messages", async () => {
+  const specification = job();
+  const persist = vi.fn(async () => task(specification));
+  const queue = new FakeTranslationTaskEnqueuer();
+  await new PersistentTranslationJobDispatcher(storeWith(persist), queue).dispatch([specification], { freshPlanning: true });
+  expect(persist).toHaveBeenCalledWith(specification, { freshPlanning: true });
+  expect(queue.messages).toEqual([{ translationTaskId: "task-1" }]);
+});

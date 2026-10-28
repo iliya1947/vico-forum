@@ -168,6 +168,12 @@ identity после промежуточной identity (`A → B → A`). Та�
 получить более новый authoritative ordering position и может сделать stale identity
 current/reactivated, не переиспользуя её старую позицию. Точное storage/schema представление новой
 planning occurrence не является частью этого контракта. `completed` identity остаётся terminal.
+Новое eligible решение `UiTranslationService.planAndDispatch` передаёт явное
+`freshPlanning` разрешение dispatcher/store; replay ранее полученного job list такого
+разрешения по умолчанию не имеет. Superseded pending/processing identity может получить
+новую позицию только от fresh decision, сохраняя fencing старых claim/allowance owners.
+Дубликат актуального claim не сбрасывает lease/attempt; completed identity остаётся terminal.
+
 `sourceFingerprint`, `taskIdentity` и `generationPolicyVersion` участвуют в identity/validation,
 но не сравниваются как хронологические значения.
 

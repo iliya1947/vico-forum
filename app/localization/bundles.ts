@@ -9,10 +9,14 @@ import {
 import type { TranslationSource, TranslationSourceBundle } from "./sources";
 import type { TranslationPack } from "./sources";
 
-const BUNDLE_VERSION_FORMAT = "vico-ui-bundle-v2";
+const BUNDLE_VERSION_FORMAT = "vico-ui-bundle-v3";
 const BUNDLE_CACHE_FORMAT = "vico-ui-bundle-cache-v1";
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const defaultLocaleRules = new IntlLocaleRulesProvider();
+
+export class CompiledBundleValidationError extends Error {
+  constructor(message: string) { super(message); this.name = "CompiledBundleValidationError"; }
+}
 
 export interface CompiledNamespaceBundle {
   locale: string;
@@ -22,11 +26,11 @@ export interface CompiledNamespaceBundle {
 }
 
 export interface TranslationBundleReader {
-  read(locale: string, namespace: string): Promise<CompiledNamespaceBundle | undefined>;
+  read(locale: string, namespace: string, generationPolicyVersion?: string | null): Promise<CompiledNamespaceBundle | undefined>;
 }
 
 export interface TranslationBundleStore extends TranslationBundleReader {
-  put(bundle: CompiledNamespaceBundle): Promise<void>;
+  put(bundle: CompiledNamespaceBundle, generationPolicyVersion?: string | null): Promise<void>;
 }
 
 export interface TranslationBundleCache {
@@ -38,6 +42,7 @@ export async function compileExactLocaleNamespaceBundle(
   locale: string,
   namespace: string,
   sources: readonly TranslationSource[],
+  generationPolicyVersion: string | null = null,
 ): Promise<CompiledNamespaceBundle> {
   const logicalResources: TranslationSourceBundle[string] = {};
   for (const source of sources) {
@@ -46,7 +51,7 @@ export async function compileExactLocaleNamespaceBundle(
       logicalResources[key] ??= value;
     }
   }
-  return compileNamespaceBundle(locale, namespace, logicalResources);
+  return compileNamespaceBundle(locale, namespace, logicalResources, undefined, generationPolicyVersion);
 }
 
 export async function compileNamespaceBundle(
@@ -54,6 +59,7 @@ export async function compileNamespaceBundle(
   namespace: string,
   resources: Readonly<Record<string, ProviderTranslationValue>>,
   localeRules: LocaleRulesProvider = defaultLocaleRules,
+  generationPolicyVersion: string | null = null,
 ): Promise<CompiledNamespaceBundle> {
   assertBundleScope(locale, namespace);
   const descriptors = descriptorMap(namespace);
@@ -61,22 +67,22 @@ export async function compileNamespaceBundle(
 
   for (const key of Object.keys(resources).sort(deterministicCompare)) {
     const descriptor = descriptors.get(key);
-    if (!descriptor) throw new Error(`Unknown canonical key: ${namespace}:${key}`);
+    if (!descriptor) throw new CompiledBundleValidationError(`Unknown canonical key: ${namespace}:${key}`);
     const value = resources[key]!;
     validateProviderOutput(descriptor, locale, value, localeRules);
 
     if (descriptor.messageKind === "plural") {
-      if (typeof value === "string") throw new Error(`Invalid structured resource: ${namespace}:${key}`);
+      if (typeof value === "string") throw new CompiledBundleValidationError(`Invalid structured resource: ${namespace}:${key}`);
       for (const branch of Object.keys(value).sort(deterministicCompare)) {
         runtimeResources[`${key}_${branch}`] = value[branch]!;
       }
     } else {
-      if (typeof value !== "string") throw new Error(`Invalid compiled resource: ${namespace}:${key}`);
+      if (typeof value !== "string") throw new CompiledBundleValidationError(`Invalid compiled resource: ${namespace}:${key}`);
       runtimeResources[key] = value;
     }
   }
 
-  return verifyCompiledNamespaceBundle(locale, namespace, runtimeResources, localeRules);
+  return verifyCompiledNamespaceBundle(locale, namespace, runtimeResources, localeRules, generationPolicyVersion);
 }
 
 export async function verifyCompiledNamespaceBundle(
@@ -84,6 +90,7 @@ export async function verifyCompiledNamespaceBundle(
   namespace: string,
   resources: Readonly<Record<string, string>>,
   localeRules: LocaleRulesProvider = defaultLocaleRules,
+  generationPolicyVersion: string | null = null,
 ): Promise<CompiledNamespaceBundle> {
   assertBundleScope(locale, namespace);
   const descriptors = descriptorMap(namespace);
@@ -97,7 +104,7 @@ export async function verifyCompiledNamespaceBundle(
     if (descriptor.messageKind !== "plural") {
       if (!Object.hasOwn(resources, descriptor.key)) continue;
       const value = resources[descriptor.key];
-      if (typeof value !== "string") throw new Error(`Invalid compiled resource: ${namespace}:${descriptor.key}`);
+      if (typeof value !== "string") throw new CompiledBundleValidationError(`Invalid compiled resource: ${namespace}:${descriptor.key}`);
       validateProviderOutput(descriptor, locale, value, localeRules);
       consumed.add(descriptor.key);
       normalizedResources[descriptor.key] = value;
@@ -116,7 +123,7 @@ export async function verifyCompiledNamespaceBundle(
       const runtimeKey = runtimeKeys[index]!;
       if (!Object.hasOwn(resources, runtimeKey)) continue;
       const value = resources[runtimeKey];
-      if (typeof value !== "string") throw new Error(`Invalid compiled resource: ${namespace}:${runtimeKey}`);
+      if (typeof value !== "string") throw new CompiledBundleValidationError(`Invalid compiled resource: ${namespace}:${runtimeKey}`);
       structured[branch] = value;
     }
     validateProviderOutput(descriptor, locale, structured, localeRules);
@@ -130,14 +137,18 @@ export async function verifyCompiledNamespaceBundle(
   }
 
   for (const key of resourceKeys) {
-    if (!consumed.has(key)) throw new Error(`Unknown compiled resource key: ${namespace}:${key}`);
+    if (!consumed.has(key)) throw new CompiledBundleValidationError(`Unknown compiled resource key: ${namespace}:${key}`);
   }
 
+  if (generationPolicyVersion !== null && !generationPolicyVersion.trim()) {
+    throw new TypeError("generation policy must be non-blank or null");
+  }
   const bundleVersion = await sha256Text(JSON.stringify({
     format: BUNDLE_VERSION_FORMAT,
     locale,
     namespace,
     codeOwnedInputs: await codeOwnedBundleInputs(locale, namespace),
+    generationPolicyVersion,
     resources: versionEntries.sort(([left], [right]) => deterministicCompare(left, right)),
   }));
 
@@ -190,15 +201,15 @@ function isCanonicalUiNamespace(namespace: string): namespace is keyof typeof ca
 }
 
 function assertBundleScope(locale: string, namespace: string): void {
-  if (!locale.trim()) throw new Error("bundle locale must not be blank");
-  if (!namespace.trim()) throw new Error("bundle namespace must not be blank");
+  if (!locale.trim()) throw new CompiledBundleValidationError("bundle locale must not be blank");
+  if (!namespace.trim()) throw new CompiledBundleValidationError("bundle namespace must not be blank");
   if (!isCanonicalUiNamespace(namespace)) {
-    throw new Error(`Unknown canonical namespace: ${namespace}`);
+    throw new CompiledBundleValidationError(`Unknown canonical namespace: ${namespace}`);
   }
 }
 
 function descriptorMap(namespace: string): Map<string, UiMessageDescriptor> {
-  if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+  if (!isCanonicalUiNamespace(namespace)) throw new CompiledBundleValidationError(`Unknown canonical namespace: ${namespace}`);
   const canonicalNamespace = canonicalEnglishCatalog[namespace];
   return new Map(
     (Object.values(canonicalNamespace) as UiMessageDescriptor[]).map((descriptor) => [descriptor.key, descriptor]),
@@ -206,7 +217,7 @@ function descriptorMap(namespace: string): Map<string, UiMessageDescriptor> {
 }
 
 function assertBundleVersion(bundleVersion: string): void {
-  if (!SHA256_HEX.test(bundleVersion)) throw new Error("bundle version must be a lowercase SHA-256 hex digest");
+  if (!SHA256_HEX.test(bundleVersion)) throw new CompiledBundleValidationError("bundle version must be a lowercase SHA-256 hex digest");
 }
 
 function deterministicCompare(left: string, right: string): number {

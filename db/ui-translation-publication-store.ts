@@ -31,7 +31,7 @@ const compilePublicationBundle: PublicationBundleCompiler = (locale, namespace, 
     new LocalTranslationSource(manualTranslationPacks),
     new DatabaseManualTranslationSource(store),
     new DatabaseMachineTranslationSource(store, undefined, policy),
-  ]);
+  ], policy);
 
 export class DrizzleUiTranslationPublicationStore implements UiTranslationPublicationStore {
   constructor(

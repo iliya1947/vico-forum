@@ -19,6 +19,7 @@ export class TranslationResourceLoader {
   constructor(
     private readonly sources: readonly TranslationSource[],
     private readonly bundleStore?: TranslationBundleReader,
+    private readonly generationPolicyVersion: string | null = null,
   ) {}
 
   async load(locale: ResolvedLocaleContext, namespaces: readonly string[]): Promise<TranslationSnapshot> {
@@ -35,7 +36,7 @@ export class TranslationResourceLoader {
       const missingNamespaces: string[] = [];
 
       for (const namespace of requestedNamespaces) {
-        const persisted = tag === "en" ? undefined : await this.bundleStore?.read(tag, namespace);
+        const persisted = tag === "en" ? undefined : await this.bundleStore?.read(tag, namespace, this.generationPolicyVersion);
         if (persisted) {
           runtimeBundle[namespace] = persisted.resources;
           versions[namespace] = persisted.bundleVersion;
@@ -56,7 +57,7 @@ export class TranslationResourceLoader {
       }
 
       for (const namespace of missingNamespaces) {
-        const compiled = await compileNamespaceBundle(tag, namespace, logicalBundle[namespace] ?? {});
+        const compiled = await compileNamespaceBundle(tag, namespace, logicalBundle[namespace] ?? {}, undefined, this.generationPolicyVersion);
         runtimeBundle[namespace] = compiled.resources;
         versions[namespace] = compiled.bundleVersion;
       }
