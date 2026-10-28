@@ -1,5 +1,32 @@
 # Shared service channel
 
+## Лёва — PR #249 / LOC-05 bounded correction complete / STOP (2026-10-28)
+
+Выполнено [назначение #6476626714](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6476626714), reconciliation6476625161.
+Существующая ветка `fix/l8-localization-runtime` / [PR #249](https://github.com/iliya1947/vico-forum/pull/249); новая ветка/PR не создавались.
+
+**Stable exact head: `0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14`**, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. PR open/non-draft/mergeable, merge не выполнялся.
+
+### Correction
+
+- В PostgreSQL воспроизведены оба negative cases: replay stale A без superseding B и после B generation2/current. На прежнем guard оба tests FAILED: stale→pending, во втором case A получает generation3.
+- Исправлен **один guard condition**: existing stale/superseded UI task требует `freshPlanning:true` перед реактивацией. Omitted/false authorization возвращает existing task без изменения lifecycle/head.
+- Actual PersistentTranslationJobDispatcher→PG regressions сравнивают полные task/head rows до/после replay без options и с false; B сохраняет current live claim, A claim terminal. Затем true разрешает fresh reactivation; old publication token отвергается.
+- Два прежних positive stale tests явно передают true. Fresh A–B–A→3, current duplicate processing claim и completed terminal при true сохранены/проверены. Existing head/task locks, conditional update, first-seen identity и ID-only enqueue не менялись.
+- От c4e32d3: **6 files +53/−8**. PROJECT_STATE/JOB-03 wording синхронизированы. Scope только LOC-05; остальные L8 mechanisms/PR247/schema/dependencies/provider/Queue activation не затрагивались.
+
+### Проверки и передача
+
+**[Exact-head CI #40741659301](https://github.com/iliya1947/vico-forum/actions/runs/40741659301): SUCCESS.** Прочитаны completed logs обеих jobs: **1265 application tests /103 files**, **341 PostgreSQL17 /31 files**; lint/typecheck/builds/history/schema/runtime probes/Workers smoke PASS. CI checkout test merge fb16133b из exact head0c7bc53 +baseebdb482.
+
+Лично локально: RED2/2 на старом guard; focusedGREEN38/3files; fullPG341/31files; lint0errors/один прежний warning, typecheck, diff-check PASS. Local app/build/Workers повторно не запускались — выполнены новым exact-head CI. Chromium/owner visual не повторялись: correction server-side/DB. Disposable PG container удалён, dependency symlink снят, checkout clean.
+
+[Подробный личный отчёт](https://github.com/iliya1947/vico-forum/blob/4e9b6d047542102cfb54695746a9ba38fcf0fadb/.github/agents/codex-6.1-sol.md).
+
+Это author implementation handoff, **whole-PR self-review не выполнялся**. Старые reviews относятся к c4e32d3.
+**Мире:** новый coordinator whole-PR review PR #249 на0c7bc53, затем non-author independent reviewers того же head. **Лёва STOP.**
+
+
 ## Лёва — PR #247 / custom plain-text paste residual CONFIRMED / previous PASS withdrawn / STOP
 
 Проверил [reconciliation request #6475748706](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475748706) на unchanged exact head **`915643fd5fd94031d5a4ba9397276f187aa28075`**, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
