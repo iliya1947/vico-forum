@@ -1,5 +1,44 @@
 # Лёва — Codex-6.1 Sol
 
+## L8 — implementation handoff: PR #249 (2026-10-28)
+
+Автор: Лёва — Codex-6.1 Sol. Назначение: [6474296261](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6474296261), reconciliation6474179882.
+Отдельная ветка `fix/l8-localization-runtime`; base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`; stable exact head **`c4e32d3014ee8e1391f9d0776384647fa1229361`**.
+[Implementation PR #249](https://github.com/iliya1947/vico-forum/pull/249). Один commit, 27 файлов +465/−65. Merge не выполнялся.
+
+### Реализация пяти согласованных causal chains
+
+1. **LOC-01.** COMMIT classifier использует уже существующий PostgreSQL availability classifier вместе с SQLSTATE40003 и statement timeout. Неизвестный transport outcome идёт через прежний pre/expected/actual semantic reconciliation. Нет blind retry. Native regression выполняет настоящий COMMIT, затем имитирует потерю ACK (ECONNRESET, EPIPE, code-less Connection terminated unexpectedly); независимый observer видит desired state и результат reconciles. Third-state control выбрасывает AmbiguousCommitOutcomeError, commit не повторяется.
+2. **LOC-02.** CompiledBundleValidationError помечает известную deterministic validation у источника. Persisted verifier оборачивает только этот класс и TranslationValidationError; unknown crypto/programming/operational failure проходит наружу без права DELETE. Неправильный пустой policy context — TypeError, также не data corruption. Native PG controls: valid row остаётся после injected digest TypeError и invalid policy; доказанно несовместимый bundleVersion удаляется.
+3. **I18N-UI-POLICY-01.** Format vico-ui-bundle-v3 включает generationPolicyVersion (string|null) в digest. Один input проведён через publication/compiler, verifier, persisted read/reconcile, resource loader и Hyperdrive request cache key; CLI имеет явный --generation-policy. Locale boundary получает request context uiGenerationPolicyContext. Поскольку утверждённой Worker machine-generation конфигурации сейчас нет, default null отключает machine source и оставляет manual/local/English. Нового выдуманного policy version, env/provider/Queue activation нет. Raw manual rows не invalid-ятся; derived bundle с другой identity можно удалить/rebuild. Реальные loader HIT/MISS и публикация в PG проверяют одинаковую policy, stale machine исключается при transition, manual priority сохраняется.
+4. **LOC-05.** UI fresh eligibility отмечается freshPlanning:true из UiTranslationService до task store. Прямой delayed dispatcher retry этим флагом не обладает; существующий delayed-old-planning regression сохранён без изменения и проходит. После head lock superseded pending/processing UI A получает новое generation и сброс старого claim. Content title/body planners уже представляют fresh authoritative eligibility и получают аналогичный head check с revision/manual/request-budget controls. Старые claim и allowance owners fence-ятся; UPDATE guarded old status+generation; актуальный duplicate claim и terminal completed/failed не сбрасываются. Native A–B–A =1,2,3; старый publisher, failure writer и allowance token не меняют новую occurrence.
+5. **LOC-08.** Общий L7 semantic serializer reifies paragraph/heading dir metadata в authored token; literal lookalikes экранируются через официальный default text handler. Обработка идемпотентна при nested spoiler/table serialization. Pre-canonicalization direction signature не позволяет уже потерянной metadata стать новым expected baseline. Protection version cnt06-custom-structure-direction-v3. Paragraph, ATX/Setext heading, list, spoiler, table, literal controls проходят перевод и восстановление; Chromium дополнительно проверяет rendered text, dir attributes и computed direction.
+
+PROJECT_STATE и STORAGE_AND_VERSIONING/PROVIDERS_AND_JOBS синхронизированы. Схема/зависимости не менялись. LOC-09 не включён: future rollout prerequisite по принятому reconciliation. PR247 не изменён.
+
+### Авторская проверка
+
+- Full local application: **1265 tests /103 files PASS**, после последней однострочной TypeError taxonomy правки focused final **31 tests /3 files PASS**.
+- Exact-final-source native **PostgreSQL17:339 tests /31 files PASS**, включая 13 новых native regressions. Реальная локальная схема и migrations; внешний DB не использовался.
+- Lint:0errors/один прежний warning app/forum/ui.test.tsx174. Typecheck, app build, UI-preview build PASS.
+- Local Workerd smoke: PASS. Только disposable local PG и local Hyperdrive connection overrides; external binding/service не использовался.
+- Chromium component harness: **10/10 PASS**, actual protect→restore→ForumMarkdown, text+dir+computed CSS. Это не owner visual acceptance и не real provider pipeline.
+- Artifacts: /workspace/work/l8-implementation/ (app-final.log, final-focused-app.log, database-final.log, lint-final.log, typecheck-final.log, build-final.log, ui-build.log, smoke.log, browser/check.log/results.json). smoke script выводит лог только при ошибке, пустой smoke.log при exit0 штатен.
+- Checkout clean; dependency symlink удалён. Chromium/ownHTTP/Workerd остановлены; disposable PG container удалён.
+
+### Exact-head CI
+
+[GitHub Actions #40728534829](https://github.com/iliya1947/vico-forum/actions/runs/40728534829): **SUCCESS**, full head c4e32d3014ee8e1391f9d0776384647fa1229361.
+Прочитаны completed logs обеих jobs:
+- checks122958247252 — **1265 application tests /103 files PASS**, migration-history guards, lint (один прежний warning), typecheck, app/UI-preview build, migration metadata и schema parity PASS.
+- database122958247050 — **339 PostgreSQL17 tests /31 files PASS**, schema manifest/runtime privileges/web relation + credential probes и Workers smoke с локальными override PASS.
+Логи negative controls содержат ожидаемые synthetic failure/constraint-denial messages; jobs и все шаги завершились success.
+
+
+Это implementation handoff автора, **не independent whole-PR verdict**. External/provider/production/owner visual не выполнялись.
+
+**Следующий шаг Миры:** coordinator whole-PR review PR #249 на c4e32d3, затем non-author independent reviewers того же stable exact head. **Лёва STOP.**
+
 ## L8 — техническая подготовка, без implementation (2026-10-28)
 
 Автор: Лёва — Codex-6.1 Sol.
