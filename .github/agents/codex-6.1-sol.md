@@ -1,5 +1,99 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent whole-PR re-review / REQUEST CHANGES / STOP (2026-10-28)
+
+Дата: 2026-10-28. Назначение: PR236 comment6477338488.
+Exact head: 4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1.
+Base/main: ebdb482e8bb37cf18d7085beb2926930139b00d6.
+
+### Verdict: REQUEST CHANGES
+
+Проверен весь заявленный scope EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06, все 14 changed files и вызывающие UI/runtime/action boundaries. Подтверждены **два current-Stage P2 subcase одной family LITERAL-TEXT-01**, с разными причинными границами ниже. Новые future-only findings не установлены. Три исходных root payload из предыдущей reconciliation теперь исправлены; это не закрывает новые подтверждённые контексты.
+
+### P2 / LITERAL-TEXT-01 / spoiler closer остаётся активным при буквальной вставке
+
+Relevant code: app/forum/clipboard-markdown.ts:27 (экранирует opener, не closer), technical-markdown.ts:151–166 (штатно выбирает raw ::: как ближайший closer).
+
+Initial valid Simple source:
+
+```text
+:::spoiler Outer
+Alpha
+
+After
+:::
+```
+
+Выделить только Alpha внутри существующего спойлера и выполнить настоящий Ctrl+Shift+V с payload:
+
+```text
+:::spoiler Label
+Alpha
+:::
+```
+
+Actual FormData/source:
+
+```text
+:::spoiler Outer
+\:::spoiler Label
+Alpha
+:::
+
+After
+:::
+```
+
+Public renderer закрывает Outer на вставленном closer. Его body содержит только literal opener и Alpha; After становится root paragraph вне спойлера, а старый завершающий ::: появляется буквальным текстом после After. Вставленный closer исчезает из literal text. Это меняет структуру ранее существовавшего сообщения за пределами выделения.
+
+Минимальный payload `:::` даёт тот же результат: Outer получает пустое body, After выходит наружу. Control `ordinary control` сохраняет After внутри Outer. Diagnostic source с инертным `\:::` также сохраняет literal marker и After внутри; это проверка renderer behavior, не правка implementation. Undo/Redo в настоящем браузере проходит и восстанавливает ошибочный source точно, поэтому history и clipboard не являются причиной.
+
+Expected: literal pasted text остаётся видимым, не завершает существующий spoiler и не перемещает невыделенный After. Контракт docs/EDITOR.md §2/§10 уже действует; не future-only.
+
+Artifacts: nested-paste.py/.json/.log; causal-controls.tsx/.json/.log.
+
+### P2 / LITERAL-TEXT-01 / table-shaped tab input показывает лишние escapes
+
+Relevant code: app/forum/clipboard-markdown.ts:15,25,142–192. Initial candidate используется для code/prose classification до финального escaping, которое само меняет его technical segmentation.
+
+Initial Simple source Alpha, выделить весь leaf; Ctrl+Shift+V:
+
+```text
+<TAB>| A | B |
+<TAB>| --- | --- |
+<TAB>| 1 | 2 |
+```
+
+Actual FormData содержит (TAB настоящий U+0009):
+
+```text
+<TAB>\| A \| B \|
+<TAB>\| --- \| --- \|
+<TAB>\| 1 \| 2 \|
+```
+
+Public renderer создаёт indented code с **буквальными лишними обратными слэшами** перед каждым pipe. Это проверено по actual pre/code.textContent, не toolbar text и не отображаемому source field. Variant с одним space перед TAB воспроизводит то же.
+
+Причина прослежена отдельно: textAsMarkdown без codeLines сначала возвращает raw tab lines. Vico segmenter видит initial candidate как vicoTable (splitCells trim-ит indent); collectRendered разбирает cells без raw leading tabs, поэтому codeLines пуст. Финальный textAsMarkdown экранирует pipes. Table grammar перестаёт совпадать, и та же строка теперь разбирается как CommonMark code: в code escape sequences не декодируются. Pure actual AST diagnostic подтверждает vicoTable→code classification flip.
+
+Control одно tab-indented `| A | B |` без separator остаётся raw code и выводит pipes без лишних слэшей. Обычная root table-shaped вставка без tabs теперь корректно остаётся literal prose. Вариант с четырьмя spaces нейтрализуется structural entity и не создаёт table. Поэтому issue не сводится к любому pipe или ко всякому code; это подтверждённое взаимодействие custom table classification и финального escaping. Expected: буквальные pipe characters не получают пользовательских лишних слэшей; intentional code и plain-text contract сохраняют содержимое. Current-Stage, без внешних предпосылок.
+
+Artifacts: custom-paste.py/.json/.log (table-tab и table-space-tab), causal-controls.tsx/.json/.log.
+
+### Остальной scope и checks
+
+- EDITOR-10: production diff и literal-name/immutable recipient paths перепроверены. AST matrix 255 code points 1..255 без mismatches; Chromium autocomplete Simple/Advanced для 6 names (12 cases) PASS.
+- LITERAL-TEXT-01: original root literal spoiler/table/ltr+rtl direction теперь сохраняют буквальный text и не создают структуру/dir override. Прежние 4 space-tab native-input, 3 raw-code root/spoiler paste и 6 prose/heading/list/spoiler paste scenarios проходят с FormData/public renderer/UndoRedo. Вместе с mentions это 25 прежних browser controls PASS. Дополнительно 8 custom payload observations и 3 nested-spoiler observations; среди них 4 failed executions двух описанных subcases, поэтому весь browser run НЕ PASS.
+- Generic context matrix 96 ampersand/tilde literal-payload checks PASS; native indentation matrix 28 paragraph controls PASS. Эти matrices не используются как доказательство полноты custom-grammar preservation.
+- LOC-03: полная validator/publication/runtime цепочка проверена заново; 9 injected nesting variants отвергнуты, 8 unchanged controls приняты; 3 malformed inputs 75/1035/9011chars fail-closed за bounded time (max 1.24 ms в этом run). Нового current producer неподдерживаемой grammar не найдено; future-only finding из этого не создаётся.
+- LOC-06: authoritative revision/no-text guard и route permission/runtime/currentness boundaries перепроверены; 14 независимых capability→real planner cases PASS: 12 no-text без detector/upsert/enqueue, 2 prose controls queued. Caller text не заменяет authoritative revision.
+- Full local app: **1358 tests /102 files PASS**,164.83s.
+- [Exact-head CI #40743626291](https://github.com/iliya1947/vico-forum/actions/runs/40743626291): SUCCESS. Прочитаны completed logs checks123011494370 и database123011495039: 1358 app /102 files, 326 PostgreSQL17 /30 files; lint 0 errors/один прежний warning,typecheck,application/UI builds,metadata/schema/runtime probes/Workers smoke PASS. Все steps success. Checkout test merge 63b4af7c из 4cc3122b +ebdb482.
+- Native PG/build/Workerd отдельно локально не повторялись, использованы exact-head CI logs. Production/provider/external/owner visual не выполнялись.
+
+Implementation не менялась. Все scripts/artifacts находятся вне repo в /workspace/work/pr247-review-4cc3122b/. Выводы координатора/других reviewers для данного head не читались. Разработчик дал команду «Публикуй»: результат опубликован в личном отчёте и служебном PR для coordinator reconciliation. Implementation не менялась. STOP.
+
+
 ## PR #249 — LOC-05 bounded correction complete / STOP (2026-10-28)
 
 Автор: Лёва — Codex-6.1 Sol. [Назначение #6476626714](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6476626714), coordinator reconciliation6476625161, finding Лиры6476514032.
