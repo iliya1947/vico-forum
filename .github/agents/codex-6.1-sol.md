@@ -1,5 +1,89 @@
 # Лёва — Codex-6.1 Sol
 
+## L8 — техническая подготовка, без implementation (2026-10-28)
+
+Автор: Лёва — Codex-6.1 Sol.
+Поручение: PR236 comment6473705886.
+Проверенный main: ebdb482e8bb37cf18d7085beb2926930139b00d6 (merged L7/#248).
+Новая ветка не создавалась; использован detached checkout существующего worktree. PR247/Batch L2 не изменялся и не включён в пакет.
+
+## Результат классификации
+
+Подтверждены пять current-Stage findings: LOC-01, LOC-02, LOC-05, LOC-08, I18N-UI-POLICY-01.
+Для LOC-09 подтверждена условная legacy-state цепочка; самостоятельный current-Stage trigger не установлен. Его нельзя автоматически переносить в обязательный correction scope только потому, что прежний аудит отметил этот ID.
+
+### LOC-01 — current; отдельная COMMIT outcome boundary
+db/locale-repository.ts ControlledLocaleWriter/isAmbiguousCommitError.
+Настоящий local PG COMMIT + инъекция потери ACK с ECONNRESET/EPIPE или стандартным code-less "Connection terminated unexpectedly": desired locale уже persisted, apply отклонён, reconciliation readAll не вызван. SQLSTATE08007 control reconciles успешно; failure до COMMIT не заявляет success; third-state control даёт AmbiguousCommitOutcomeError.
+Существующий общий availability classifier уже знает эти transport cases, но COMMIT classifier их пропускает.
+Действующий docs/translation/LOCALES.md требует semantic pre/expected/actual reconciliation неизвестного commit outcome; controlled test/admin writer — существующая Stage2 capability.
+Минимум: расширить только подтверждённую COMMIT failure classification; повторно читать через независимый/fresh repository после потери соединения. Не превращать unknown result в blind retry и не добавлять command journal/idempotency table. Failure до COMMIT, concurrent third state и неожиданные programming errors остаются разными outcomes.
+
+### LOC-02 — current; integrity vs runtime failure у compiled verifier
+db/ui-translation-bundle-store.ts verifyPersistedCompiledBundle/reconcilePersistedBundle.
+Valid compiled bundle реально записан в PG. Однократный injected crypto.subtle.digest TypeError оборачивается в PersistentBundleIntegrityError; reconciler принимает это за доказанную порчу и реально DELETE-ит корректную row. Runtime read отдельно скрывает тот же failure как invalid-bundle и показывает English. Controls: valid bundle current; действительно несовместимый bundleVersion удаляется; unknown SQL failure не считается integrity.
+Минимум: типизированно отделить детерминированно invalid/obsolete inputs от operational/programming/crypto failures. Известные validation/mismatch failures допускают invalidate/rebuild; неизвестный verifier failure пробрасывается и не разрешает DELETE.
+Не достаточно просто перестать ловить любые ошибки: compiler сейчас бросает и generic Error для действительно invalid shape/unknown key, их нужно корректно типизировать у источника. Это не новый cache/recovery framework.
+
+### I18N-UI-POLICY-01 — current read-contract inconsistency; связан с LOC-02
+app/localization/persistent-sources.ts, bundles.ts, resource-loader.ts, app/routes/locale-boundary.tsx, db/ui-translation-publication-store.ts.
+На одном локальном наборе inputs: DatabaseMachineTranslationSource(requiredPolicy=v2) отвергает approved machine v1, помечает key stale; тот же текст проходит реальный compiler + persisted verifier; loader bundle HIT возвращает его, MISS с policy-aware raw source — исключает. Active locale boundary создаёт raw machine source без required-policy аргумента, тогда как generation planning/publication передают policy.
+Это нарушение уже существующего STO-03 и source-merge/currentness contract (STORAGE_AND_VERSIONING.md), а не заявление о существующих production legacy rows. Проверка не зависит от реального provider/Queue/rollout.
+Минимум: один явный desired/current machine-policy input в generation/publication/runtime raw/compiled verification/reconciliation; policy-sensitive compiled identity и правильный miss/rebuild для incompatible machine policy. Значение policy должно поступать из утверждённой generation configuration/dependencies, а не выбираться произвольным новым default.
+Проверки manual/local priority обязательны: manual value не становится invalid только от machine-policy transition. Local control persistent_manual с null generationPolicyVersion остаётся eligible. Не вводить broad invalidation пользовательских/manual translations или per-read full raw namespace query.
+LOC-02 должен различать "доказанно obsolete по required policy" и "проверить не удалось"; поэтому bundle-policy correction зависит от безопасной error taxonomy/cleanup boundary, хотя причины этих двух findings разные. Объединение в один root cause неверно.
+
+### LOC-05 — current; fresh desired generation не равна duplicate delivery
+db/translation-task-store.ts, db/content-topic-title-task-store.ts, db/content-post-body-task-store.ts.
+Actual PG: свежие planning requests A→B→A дают поколения1,2,1. Pending/processing existing A возвращается до сопоставления с current head. UI deliveries, полностью обработанные current A consumer/executor, заканчиваются stale/terminal, provider/publication не вызываются, pending/reconciliation candidates не остаётся. Для title/body actual allowance acquisition отвергает старое A как terminal. Более поздний дополнительный fresh plan уже после stale marking восстанавливает generation3: это потеря запрошенного fresh generation до следующего planning, не утверждение о вечной невосстановимости.
+Controls: already-stale A возвращается как fresh generation3; duplicate актуального live claim не сбрасывает lease/attempt.
+Минимум: при свежем upsert сверять stable task с сериализованным generation head; superseded pending/processing identity не возвращать как current. Продвижение нового desired generation обязано fence старые claim/publication/allowance tokens. Обычный duplicate current generation сохраняет claim, attempt и dedup.
+Общий invariant применяется к UI/title/body, но revision locks, current-translation/manual checks и request-budget admission у content stores сохраняются. Не навязывается единый generic repository/новая Queue; existing locks/schema сначала проверить на достаточность.
+Это отдельная причина от compiled currentness и completed-translation projection. Stable taskIdentity сама по себе не является current desired generation.
+
+### LOC-08 — current; отдельный direction round-trip поверх принятого L7
+app/markdown-syntax.ts, app/forum/semantic-markdown.ts, app/localization/content-markdown-translation.ts.
+Actual current protection → identity restore → actual ForumMarkdown SSR:
+- active ltr/rtl marker теряется у paragraph, heading, list item, spoiler body, table cell; public dir становится auto;
+- escaped literal "\\{:vico-dir=rtl}" отвергается при unchanged translation как structure mismatch;
+- ordinary no-marker prose проходит.
+L7 уже даёт renderer-compatible tree/segmentation для tables/spoilers: повторно реализовывать grammar не требуется. Непосредственная причина — active marker превращается в data.hProperties.dir, generic serializer не восстанавливает authored token; expectedStructure строится уже после потери metadata. Literal escape — второй обязательный control той же parse/serialize boundary.
+Минимум: сохранить authored direction и literal/active distinction в существующем semantic parse/serialize/protection contract; проверять invariant до потери исходной direction, а не только на post-serialization canonical tree. Учитывать paragraph/ATX/Setext/list и L7 cells/body. Не переписывать renderer/придумывать скрытые direction symbols.
+Изменение protection representation требует согласованной task/policy identity; это не разрешение автоматически инвалидировать persistent manual translations.
+
+### LOC-09 — legacy rollout concern в доказанном reproduction; current-Stage correction пока не обоснован
+app/localization/content-generation-view.ts, db/hyperdrive-content-generation-status.ts.
+Полная local PG цепочка воспроизведена: специально созданные completed task старой protection policy + same-revision stored quote translation с повреждённой attribution → current read rejects translation → status completed → UI converging, automatic/explicit false; повторный loader не лечит state. Новая current-policy generation вручную через planner/executor действительно исправляет состояние.
+Но trigger этой проверки требует seeded legacy invalid translation/old protection task. Normal current-policy execution в отдельном local PG control публикует валидный result и loader даёт current. Текущий publisher валидирует restored content/quote structure и fencing до atomic result+completion; отдельный штатный current producer того seed-state не установлен.
+Это соответствует уже принятому reconciliation #248 comment6473203795: production/external upgrade с долговечным legacy state не входит в принятый current Stage. Не исправлять условную future-only ситуацию как обязательный current defect и не заменять completed→idle глобально.
+Зависимость только условная: перед future rollout политика stale/completed status должна учитывать desired task/protection policy и actual valid translation. LOC-05 сам по себе не решает rejected completed translation, а UI bundle policy вообще другой domain. Не объединять их и не отменять manual provenance/priority. Если Мира требует defensive LOC-09 сейчас как заранее одобренную foundation-work — это отдельное явное scope решение, не вывод о доказанном current defect.
+
+## Предлагаемые implementation boundaries / порядок
+
+1. LOC-01: отдельный узкий COMMIT reconciliation correction.
+2. LOC-02: безопасная verifier error taxonomy и cleanup.
+3. I18N-UI-POLICY-01: согласованный desired machine-policy input для raw/compiled/runtime/publication/reconciliation; отдельный correction поверх шага2.
+4. LOC-05: fresh generation upsert invariant во всех трёх stores с claim/allowance/publication fencing и duplicate controls.
+5. LOC-08: direction/literal round-trip в существующем L7 semantic boundary; технически независим от шагов1–4 и может быть отдельным commit.
+6. LOC-09: сохранить как future rollout prerequisite, не включать в обязательный current correction без отдельного подтверждённого штатного trigger или явного foundation assignment.
+
+Итого: не один общий "durable localization mechanism", а 5 ограниченных corrections; связанная пара2→3, общий generation invariant для трёх stores в4. LOC-09 — не шестой обязательный fix.
+Новая схема/миграция, provider/Queue activation и external infrastructure сейчас фактами не требуются. Если существующие locks/schema окажутся недостаточны, расширение обосновывается отдельным experiment, а не задаётся заранее.
+PR247 не prerequisite и не часть L8; перед implementation заново сверить main и сохранить изменения Лиры, если они к тому времени merged.
+
+## Evidence и границы
+
+Артефакты в /workspace/work/l8-preparation, diagnostic test copies вне репозитория.
+На текущем main выполнены26 диагностических cases:17 native PG cases +9 semantic/policy cases; из17 native cases LOC016,LOC024,LOC05 UI3/title1/body1,LOC09 legacy+normal2. После исправления только внешнего afterAll evidence-path LOC09 отдельно перезапущен:2/2 PASS; implementation не менялась. Initial aggregate все26 assertions прошли, один artifact-writing hook изначально упал; не выдаётся за полностью green aggregate run.
+Дополнительный ранний diagnostic batch17PASS включал два старых LOC06 controls вне L8; они не использованы для L8 classification.
+Native local PostgreSQL17, accepted migrations до0046; actual transactions и source APIs. COMMIT ACK/hash faults injected, не реальное внешнее отключение. Providers/Queues synthetic/spy, без real calls.
+Full app suite/CI/builds не повторялись: implementation не менялась, задача — technical preparation. SSR checks — actual renderer, не browser/owner visual acceptance.
+Все исходные SOT целевых invariants сверены с текущим main; это не новый полный аудит документации/всего форума.
+
+**Статус:** технический план предлагается Мире на согласование, не объявлен утверждённым implementation assignment. STOP.
+
+Локальный checkout clean; temporary PostgreSQL container/volume удалены, dependency symlink снят. Main повторно подтверждён как ebdb482. Общий service-channel не меняется до согласования плана Мирой.
+
 ## Независимый whole-PR review #247 — Лёва (2026-10-28)
 
 Exact head: 51e2301d9c5e3aca5b5238a7681878b1a4199829.
