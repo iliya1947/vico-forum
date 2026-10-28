@@ -1,5 +1,50 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / EDITOR-03 — bounded Clear-link collision correction (2026-10-28)
+
+Назначение: [#6468774979](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468774979); reconciliation #6468773541. Author implementation handoff, не independent whole-PR verdict.
+
+**Stable exact head:** `e428833b6452f0cb09b25d5ffc4fda76b39d4238`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`; existing PR #248 / branch fix/l7-editor-structure. От0af3738: **4 files +114/−8**, production **+22/−3** (включая rename helper/call и comment).
+
+### Изменение
+
+Существующая selected-side boundary protection расширена для reopened links и переименована из protectSelectedAttentionBoundaries в protectSelectedInlineBoundaries. Для actual insertion, начинающегося с '[', она находит предыдущий surviving source character с учётом child delimiter deletions. Если это выбранный неэкранированный '!', переписывает только его как `&#33;`. Odd backslash escaping оставляется неизменным; even count разрешает защиту. Existing numeric reference тоже не меняется. Destination, title, label и остальной suffix source не переписываются.
+
+Новая '[' больше не объединяется с literal '!' в image syntax. Используются прежние rewrites/mapOffset, поэтому source selection растёт на длину entity, а visual selection и отображаемый текст остаются прежними. Attention/GFM coalescing, reconstruction, Enter/Backspace, consumers, grammar/dependencies/schema не менялись.
+
+Примеры:
+- `[a !b!](https://example.test)`, Clear `a !` → `a &#33;[b!](https://example.test)`.
+- Clear только `!` → `[a ](https://example.test)&#33;[b!](https://example.test)`.
+- `[**a !** b!](https://example.test)`, Clear `a !` → `a &#33;[ b!](https://example.test)`: фактическая opening boundary сдвинута после удалённых '**', и тоже защищена.
+- `[**a !b!**](https://example.test)` → `a &#33;[**b!**](https://example.test)`: suffix strong/link сохранены.
+- `**[a !b!](https://example.test)**` → `a !**[b!](https://example.test)**`: между ! и '[' уже стоит strong delimiter, избыточное encoding не требуется.
+- Escaped `\!` и `&#33;` остаются в исходной форме.
+
+### Tests / evidence
+
+Добавлены **23 regressions/controls: 13 helper +10 mounted**. Включены terminal '!', выделение одной punctuation, '!!', '? . : , - < ;', odd/even backslashes, existing numeric reference, child-deletion shifted anchor, nested/outer strong, repeated strike и Unicode. Проверяются source, text, link destinations, отсутствие images, selected-side source slice, actual Simple FormData/public renderer, per-character selected/unselected formats и Undo/Redo.
+
+Две начальные bracket-fixtures не были валидными whole-label links; заменены валидными punctuation controls. Ранний полный suite остановлен после исправления этих fixtures; для итогового результата используется отдельный полный app-final.log. Это test fixture correction, production logic после первого patch не менялась.
+
+- Full local application suite на pinned Node24.21.0/pnpm12.3.4: **1250/1250 PASS /102 files**.
+- Final focused suites: **230/230 PASS** (editor-document107 +markdown-editor123).
+- **25/25 Chromium PASS**: 10 новых link/punctuation cases +15 предыдущих repeated-strike/formatting controls; actual toolbar→FormData→public renderer, exact displayed text/per-character formats, unchanged destination/title attributes, **25/25 visual selection и Undo/Redo**.
+- Прежняя property matrix: **597 valid source cases /14 597 selections /0 failures**, раньше на0af3738 —81 failed executions /66 unique source+range. Ни остаточных image collisions, ни новых failures в этом наборе не установлено. Это bounded diagnostic matrix, не доказательство whole-PR completeness.
+- Local typecheck, lint (0 errors/1 existing warning ui.test.tsx:174), application/UI-preview builds PASS.
+- PROJECT_STATE заменяет старое open limitation фактическим corrected behavior и границами verification.
+- Отдельные local native PG/Workerd не повторялись; они проверяются exact-head CI. Production/external/owner visual не выполнялись; synthetic browser API404 не является deployed acceptance.
+
+### Exact-head CI / итог
+
+[Run #40689282340](https://github.com/iliya1947/vico-forum/actions/runs/40689282340) **completed SUCCESS** для head `e428833b6452f0cb09b25d5ffc4fda76b39d4238`. Completed logs обеих jobs лично прочитаны:
+- checks `122819640969`: **1250/1250 application tests /102 files**, helper107 +mounted123; lint/typecheck, обе builds, migration/schema parity guards PASS.
+- database `122819640458`: **326/326 PostgreSQL17 tests /30 files**; runtime privilege probes и Workers smoke PASS.
+- GitHub head/base повторно подтверждены, PR open/mergeable. Merge не выполнялся. Локальный checkout clean, dependency symlink удалён, Chromium закрыт, HTTP server остановлен.
+- Это завершение назначенной correction. Нужен новый coordinator whole-PR review, затем non-author independent reviewers того же head; green CI и diagnostic matrix не являются self-approval всего PR.
+
+Артефакты: `/workspace/work/l7-clear-link-correction/` — focused-final.log, app-final.log, typecheck.log, lint.log, build.log, ui-build.log, matrix.ts/matrix-results.json/matrix.log, browser.py/browser-results.json/browser.log.
+
+Correction и exact-head checks завершены. Мире — начать новый coordinator whole-PR review PR #248. Автор не делает independent whole-PR self-approval. **Лёва STOP.**
 ## PR #248 / EDITOR-03 — repeated-strike bounded correction (2026-10-28)
 
 **Назначение:** [#6468332229](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468332229), после author verification #6468030466. Это implementation handoff автора, не независимый whole-PR verdict.
