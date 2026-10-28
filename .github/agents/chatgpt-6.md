@@ -1,3 +1,21 @@
+## PR #247 — LITERAL-TEXT-01 author verification of three residuals / CONFIRMED / STOP (2026-10-28)
+
+**Назначение Миры:** [#6478340897](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478340897). Проверенный [PR #247](https://github.com/iliya1947/vico-forum/pull/247), unchanged stable exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`, Draft. Лира — **author**, поэтому проверка ограничена согласованными тремя `LITERAL-TEXT-01` subcases; whole-PR self-review не проводился. Implementation не менялась.
+
+### Результат: три current-Stage P2 subcases подтверждены по исходникам
+
+1. **Literal spoiler closer в действующем spoiler.** `app/forum/clipboard-markdown.ts` защищает строку `:::spoiler`, но не экранирует literal closing line `:::`. При вставке его внутрь `:::spoiler Outer\nAlpha\n\nAfter\n:::` через `VisualMarkdownEditor.onPastePlain` → `clipboardPlainToMarkdown` → `MarkdownEditor.replaceSourceRange`, публичный `segmentTechnicalMarkdown` ищет первый следующий `:::` и закрывает внешний spoiler преждевременно. Оставшийся `After` выходит из body, literal closer теряется как source text. Нормальный текст и неактивный escaped closer являются альтернативными controls. Контракт `docs/EDITOR.md §10` нарушен.
+
+2. **Tab-indented table-shaped plain paste.** `clipboardPlainToMarkdown(text, context)` сначала формирует `initial=textAsMarkdown(text)`, после чего вызывает `segmentTechnicalMarkdown(candidate)` для определения tabbed code context. `tableAt` распознаёт табулированные `| A | B |\n| --- | --- |\n| 1 | 2 |` как Vico table; `codeLines` остаётся пустым, а финальный `textAsMarkdown(text, codeLines)` экранирует каждый `|` как `\\|`. Итоговый Markdown обрабатывается как indented code и показывает escape backslashes буквально. Вход без табуляции / normal real raw code — controls. Нарушение точности literal paste текущего Stage.
+
+3. **Advanced → existing fenced code → Paste without formatting.** В `app/forum/markdown-editor.tsx` команда `pasteFromClipboard("plain")` без проверки code context всегда вызывает `clipboardPlainToMarkdown(text, {markdown:value,selection})`. Для `~~literal~~ &copy; | value |` полученная строка `\\~\\~literal\\~\\~ &amp;copy; \\| value \\|` помещается в существующий fenced code. В `ForumMarkdown` fenced-code content — literal code, поэтому пользователь видит новые backslashes/entities, которых не было в clipboard. Native Advanced Ctrl+Shift+V raw insertion и plain prose — отличающиеся control paths.
+
+**Классификация:** все три — `LITERAL-TEXT-01`, current Stage, P2 по согласованному review/reconciliation; не future-only. Прочитаны `AGENTS.md` с `main`, текущие `docs/EDITOR.md §10`, `clipboard-markdown.ts`, `technical-markdown.ts`, `visual-markdown-editor.tsx`, `markdown-editor.tsx`, `markdown.tsx` и соответствующие существующие tests. Авторская верификация основана на source-level causal-chain analysis. **Самостоятельный Node.js, PostgreSQL, Chromium/browser, local FormData submit или новый test-run не выполнялись.** Предыдущее сообщение в чате ошибочно утверждало самостоятельную Node.js-трассировку; это заявление отозвано. Ранее опубликованное Лёвой actual Chromium reproduction — отдельное свидетельство другого агента, не моя личная проверка.
+
+**Лира — STOP после author verification.** Исправления выполнять лишь после reconciliation/нового bounded assignment Миры; implementation PR #247 не изменён. Разработчик дал команду продолжить после завершения; публикация author verification выполнена в служебном PR.
+
+---
+
 ## PR #249 — независимый whole-PR re-review Лиры после LOC-05 correction / PASS / exact head 0c7bc53b (2026-10-28)
 
 **Назначение Миры:** [#6477386361](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6477386361), которым отменено прежнее снятие назначения. Проверенный [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`, **stable exact head `0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14`**, base/current main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. PR open, non-Draft, unmerged. Лира — независимый reviewer, не автор L8/LOC-05 correction. Implementation не изменялась. Результат опубликован с прямого разрешения разработчика после завершения проверки.
