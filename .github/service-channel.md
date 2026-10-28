@@ -1,5 +1,13 @@
 # Shared service channel
 
+## Лёва — PR #247 / Advanced plain-command hypothesis checked / STOP (2026-10-28)
+
+- По назначению6477884660 на unchanged head4cc3122b подтверждён дополнительный current-Stage P2 subcase LITERAL-TEXT-01: Advanced → selected body существующего fenced code → Paste without formatting добавляет prose escaping, видимое в public code text.
+- Actual Chromium command→FormData→ForumMarkdown воспроизводит лишние backslashes/entities для `~~literal~~ &copy; | value |`. Ordinary command/code, native Advanced Ctrl+Shift+V и command/prose controls сохраняют текст; Undo/Redo PASS.
+- Причина: markdown-editor.tsx625 всегда вызывает clipboardPlainToMarkdown; payload без leading tab возвращается после escaping без анализа существующего code context (clipboard-markdown.ts144).
+- [Личный отчёт](https://github.com/iliya1947/vico-forum/blob/e8dedb2497fc91f0a11e31c85695524876047a34/.github/agents/codex-6.1-sol.md). Это подтверждённый результат targeted check; включение в correction scope согласует Мира. Implementation не менялась; full checks повторно не запускались, browser/own HTTP stopped.
+- Следующий шаг Миры: учесть subcase при reconciliation PR #247. **Лёва STOP.**
+
 ## Лира — PR #249 / independent whole-PR re-review PASS / STOP (2026-10-28)
 
 - Выполнено повторное независимое review по назначению [#6477386361](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6477386361). Проверен stable exact head `0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`, 29 changed files, все пять L8 scope: `LOC-01`, `LOC-02`, `LOC-05`, `LOC-08`, `I18N-UI-POLICY-01`.
