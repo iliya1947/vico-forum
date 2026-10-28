@@ -1,5 +1,61 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #248 / EDITOR-03 — author verification repeated nested strike (2026-10-28)
+
+**Назначение:** [#6467691554](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6467691554), reconciliation #6467690170. Это author verification одного finding, не независимый whole-PR review.
+
+**Exact head:** `5e5625390501753edb07c323b8c662cec9902474`; base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Проверены GitHub metadata и локальный HEAD. Implementation не менялась; checkout clean.
+
+### Вердикт
+
+**CONFIRMED: P2 / current-Stage EDITOR-03, один residual family.** Поддерживаемые inline nodes уже корректно отображаются и редактируются в Simple. docs/EDITOR.md §2 / §3.6 требует сохранять смысл, содержимое и нетронутые фрагменты, Clear — только выбранное inline-оформление. Это не future-only и не запрос на новую поддержку Markdown.
+
+Оригинальные TypeScript helper и parser, затем реальные MarkdownEditor / ForumMarkdown в локальном Chromium:
+
+| Source; Clear a | Actual source | Actual public result |
+| --- | --- | --- |
+| `~~**~~a (b)~~**~~` | `a ~~**~~(b)~~**~~` | `a <del>**</del>(b)<del>**</del>` |
+| `~~*~~a (b)~~*~~` | `a ~~*~~(b)~~*~~` | `a <del>*</del>(b)<del>*</del>` |
+| `[~~**~~a (b)~~**~~](https://example.test)` | `a[ ~~**~~(b)~~**~~](https://example.test)` | Link вокруг suffix сохранён, но звёздочки literal, (b) без strike/strong |
+| `~~**~~a(b)~~**~~` | `&#97;~~**~~(b)~~**~~` | Та же потеря suffix formatting и literal **, несмотря на сработавшую attention protection |
+
+До Clear первый source имеет AST `delete → strong → delete → text("a (b)")` и public `<del><strong><del>a (b)</del></strong></del>`. После Clear видимый текст меняется с `a (b)` на `a **(b)**`.
+
+### Причинная цепочка и существенное уточнение reconciliation
+
+1. Child-first traversal правильно удаляет три opening delimiters: [4,6), [2,4), [0,2).
+2. Для target [6,7) remainingSourceBoundary trim-ит пробел offset7. Все reopenings приходят в offset8, insertions = [[8,"~~**~~"]].
+3. protectSelectedAttentionBoundaries читает только insertion[target.end=7]; actual offset8 пропускается. Это подтверждённый gap, но **не вся причина**.
+4. В последовательности `~~**~~(` внутренний ~~ находится между punctuation '*' и '('. В установленном GFM tokenizer он одновременно opener/closer; resolver закрывает им предыдущий ~~ раньше intended nesting. Child stars становятся literal.
+5. Контроль **без пробела** имеет reopening ровно на target.end=7. Protection срабатывает, a становится `&#97;`, однако public output всё равно повреждён. Поэтому исправление только смещения lookup / сканирование всех anchors недостаточно: важна корректность полного mixed sequence, включая повторную семью и реальный suffix punctuation.
+6. Letter suffix `beta` в `~~**~~a beta~~**~~` проходит; two-level strong/strike, flat strike, reversed strong/strike, Clear всей фразы проходят. Не каждый nested strike сломан.
+
+Проверка установленного micromark-extension-gfm-strikethrough/lib/syntax.js: `token._open = !after || after === 2 && Boolean(before)`; `token._close = !before || before === 2 && Boolean(after)`. Punctuation с обеих сторон даёт обе роли. Повторное использование исходных delimiters после удаления начальной a меняет их pairing.
+
+### Сопоставление с baseline / масштаб следующего решения
+
+На accepted main helper 2ff3aeb и initial PR helper 16f4b95 те же три reproductions (strong, emphasis, no-space) тоже некорректны: literal markers и/или selected a остаётся deleted. Проверены actual TS outputs и project parser, всего 6 baseline cases. Это недозакрытый исходный EDITOR-03, а не новая регрессия последнего commit.
+
+Общая reconstruction-модель / весь редактор не доказаны требующими замены. Проблема локализована в сборке полного delimiter sequence на новых границах, а не source offsets, FormData, history или renderer.
+
+Однако очередного расширения single-neighbor predicate недостаточно. С учётом повторных corrections технический план должен учитывать реальные anchors после trimming и совместное pairing повторных семей. Следующий bounded correction должен проверять full affected seam и сохранность suffix semantics, не ограничиваться наличием insertion[target.end]. Переписывать весь документ, менять supported grammar или добавлять ещё один частный predicate без этой проверки оснований нет.
+
+Отдельно parser подтвердил существование локальных семантически эквивалентных представлений `a ~~**(b)**~~`, `a ~~*(b)*~~` и link variant с устранённым redundant inner delete. Это лишь проверка представимости трёх примеров, **не реализованный/доказанный универсальный алгоритм и не утверждённый correction**. Требуется учитывать разные spans внешнего/внутреннего strike; слепое удаление всех повторных delete не обосновано.
+
+### Лично выполненные проверки и границы
+
+- 9 valid helper/parser cases: 4 confirmed reproductions + 5 controls; отдельный invalid input `~~**~~(b) a~~**~~` изначально не даёт ожидаемого nested AST и исключён из доказательств finding.
+- Instrumented diagnostic copy вне checkout: deletion ranges / depths / actual insertion anchors; outputs совпали с оригинальным helper.
+- 9 Chromium scenarios: DOM Range selection + actual toolbar click → FormData → actual project ForumMarkdown. Source совпал с helper во всех 9; **9/9 selected text и Undo/Redo сохранены**. Это reproductions/controls, не 9 passing correctness cases.
+- 6 baseline executions + project AST checks; 3 static semantic-representation controls.
+- Full application/native PG suites, builds, CI заново не запускались: implementation не менялась. Числа reviewer property matrix самостоятельно не воспроизводились.
+- Browser harness synthetic /api/**404, не deployed-site/owner visual acceptance. Production/external services не затрагивались.
+- Локальный HTTP harness остановлен, browser закрыт, dependency symlink удалён; git diff --check / clean checkout.
+
+Артефакты: `/workspace/work/l7-repeated-strike-verification/` — probe.ts/results.json/probe.log, instrumented.ts, browser.py/browser-results.json, base-results.jsonl, controls.json.
+
+**Передача:** Мире — подтверждение finding с уточнением causal chain и bounded correction scope. Implementation остаётся на 5e562539. Исправление в этом verification не выполнялось. **Лёва STOP.**
+
 ## PR #248 / EDITOR-03 — bounded nested-strike correction (2026-10-28)
 
 **Автор:** Лёва — Codex-6.1 Sol. Implementation report, не независимый whole-PR verdict.
