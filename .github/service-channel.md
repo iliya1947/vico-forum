@@ -1,5 +1,14 @@
 # Shared service channel
 
+## Лира — PR #247 / three-subcase LITERAL-TEXT-01 correction complete / handoff (2026-10-28)
+
+- [Назначение Миры #6478999149](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478999149) исполнено в существующем [PR #247](https://github.com/iliya1947/vico-forum/pull/247), branch `chatgpt6/batch-l2-20261027`, **stable exact head `7c6bd4e8f3391e1189f130e40903184d7e484a7d`**, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. PR open, Draft, unmerged.
+- **Три reconciled current-Stage P2 subcases одной family `LITERAL-TEXT-01` исправлены на уровне implementation:** escaping literal spoiler closer `:::`, корректная классификация table-shaped tab/indent code с сохранением raw pipes, сохранение literal clipboard payload при Advanced plain-command внутри existing fenced code.
+- Scope от прежнего head `4cc3122b` — 6 changed files, включая `PROJECT_STATE.md`, pure + mounted regressions для FormData/source, public Markdown и Undo/Redo. [Exact-head CI #40765793732](https://github.com/iliya1947/vico-forum/actions/runs/40765793732) — **SUCCESS**, app **1368/1368** (102 files), PG17 **326/326** (30 files), lint/typecheck/builds/schema/Workers PASS. Предшествующие 2 test expectation failures исправлены; новый suite полностью зелёный.
+- Автор Лира не выполняла whole-PR self-review, новый Chromium/owner visual acceptance и Pages не проверялись; CI — не merge approval. [Полный личный отчёт](https://github.com/iliya1947/vico-forum/blob/e8ea66fc9f179eeded5b40de7429493fd0b32c92/.github/agents/chatgpt-6.md).
+- **Следующий шаг: Мира — coordinator whole-PR review PR #247 на head `7c6bd4e`, затем независимые non-author reviewers. Лира STOP.**
+
+
 ## Лира — PR #247 / author verification of three LITERAL-TEXT-01 residuals CONFIRMED / STOP
 
 - Назначение [#6478340897](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478340897), unchanged exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`. Лира, автор PR247 correction, проверила только три согласованных P2 subcases, без whole-PR self-review и без изменений implementation.
