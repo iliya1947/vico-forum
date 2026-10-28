@@ -30,6 +30,44 @@ function formattingCharacters(markdown: string) {
 }
 
 describe("Editor 2.0 lossless document foundation", () => {
+  it.each([
+    ["~~**~~a (b)~~**~~", "a"],
+    ["~~**~~a(b)~~**~~", "a"],
+    ["~~**~~𐐀 (b)~~**~~", "𐐀"],
+    ["~~**~~б (в)~~**~~", "б"],
+    ["~~**~~a !b!~~**~~", "a"],
+    ["~~**~~a [b]~~**~~", "a"],
+    ["~~*~~a (b)~~*~~", "a"],
+    ["~~*~~a(b)~~*~~", "a"],
+    ["[~~**~~a (b)~~**~~](https://example.test)", "a"],
+    ["~~**~~alpha (beta)~~**~~", "pha"],
+    ["~~**prefix ~~a (b)~~ suffix**~~", "a"],
+    ["~~**a ~~(b)~~ tail**~~", "a"],
+    ["~~**prefix ~~a (b)~~ suffix**~~", "prefix"],
+    ["~~**~~a (b)~~**~~", "a (b)"],
+  ])("preserves effective formatting across repeated strike seams: %s / %s", (inline, selected) => {
+    const source = "Untouched\r\n\r\n" + inline + "\r\n\r\n```ts\nkeep **bytes**\n```";
+    const start = source.indexOf(selected, source.indexOf(inline)), end = start + selected.length;
+    const expected = formattingCharacters(source).map(({ character, formats, sourceOffset }) => ({
+      character, formats: [...new Set(sourceOffset >= start && sourceOffset < end ? [] : formats)].sort(),
+    }));
+    const result = clearInlineMarkdownFormatting(source, { start, end });
+    expect(formattingCharacters(result.markdown).map(({ character, formats }) => ({
+      character, formats: [...new Set(formats)].sort(),
+    }))).toEqual(expected);
+    expect(formattingCharacters(result.markdown.slice(result.selection.start, result.selection.end))
+      .map((item) => item.character).join("")).toBe(selected);
+    expect(result.markdown.startsWith("Untouched\r\n\r\n")).toBe(true);
+    expect(result.markdown.endsWith("\r\n\r\n```ts\nkeep **bytes**\n```")).toBe(true);
+  });
+
+  it("leaves a redundant strike away from the rebuilt boundary byte-identical", () => {
+    const source = "~~before **~~inside~~** after~~";
+    const start = source.indexOf("bef");
+    const result = clearInlineMarkdownFormatting(source, { start, end: start + 3 });
+    expect(result.markdown).toContain("**~~inside~~** after~~");
+  });
+
   it.each(["~~**alpha beta**~~", "~~*alpha beta*~~", "~~alpha beta~~", "**~~alpha beta~~**"]
     .flatMap((source) => ["a", "l", "alpha", "beta"].map((selected) => [source, selected] as const)))("keeps selected-only rendered formatting for %s / %s", (source, selected) => {
     const start = source.indexOf(selected), end = start + selected.length;

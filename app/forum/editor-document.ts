@@ -723,9 +723,40 @@ export function clearInlineMarkdownFormatting(
   const closeAtStart: Array<{ depth: number; text: string; at: number }> = [];
   const openAtEnd: Array<{ depth: number; text: string; at: number }> = [];
 
+  // Strike is idempotent. At a rebuilt seam, keeping another strike inside
+  // the active one can turn ~~**~~( into an early closing pair. Remove only
+  // redundant wrappers crossed by Clear or exposed at its new boundary; keep
+  // the source text and all other wrappers in the existing source-edit plan.
+  const redundantStrike = new Set<PositionedNode>();
+  function findRedundantStrike(
+    node: PositionedNode, ancestors: Array<{ type: string; delimiter: FormattingDelimiter }> = [],
+  ): void {
+    const delimiter = inlineFormattingDelimiter(markdown, node, ancestors.length);
+    if (delimiter && node.type === "delete") {
+      const redundant = ancestors.some((ancestor, index) => {
+        const outer = ancestor.delimiter;
+        if (ancestor.type !== "delete" || target.start >= outer.close.start || target.end <= outer.open.end) return false;
+        if (target.start < delimiter.close.end && target.end > delimiter.open.start) return true;
+        const gap = target.end <= delimiter.open.start
+          ? { start: target.end, end: delimiter.open.start }
+          : { start: delimiter.close.end, end: target.start };
+        const intervening = ancestors.slice(index + 1)
+          .flatMap((item) => [item.delimiter.open, item.delimiter.close]);
+        return remainingSourceBoundary(markdown, gap, intervening, true, []).empty;
+      });
+      if (redundant) {
+        redundantStrike.add(node);
+        deletions.push(delimiter.open, delimiter.close);
+      }
+    }
+    const next = delimiter ? [...ancestors, { type: node.type, delimiter }] : ancestors;
+    for (const child of node.children ?? []) findRedundantStrike(child, next);
+  }
+  findRedundantStrike(root);
+
   function visit(node: PositionedNode, depth: number): void {
     for (const child of node.children ?? []) visit(child, depth + 1);
-    const delimiter = inlineFormattingDelimiter(markdown, node, depth);
+    const delimiter = redundantStrike.has(node) ? null : inlineFormattingDelimiter(markdown, node, depth);
     if (delimiter) {
       const contentStart = delimiter.open.end;
       const contentEnd = delimiter.close.start;

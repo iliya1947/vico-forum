@@ -85,6 +85,48 @@ afterEach(() => {
 
 describe("MarkdownEditor", () => {
   it.each([
+    ["~~**~~a (b)~~**~~", "a (b)", "a"],
+    ["~~**~~a(b)~~**~~", "a(b)", "a"],
+    ["~~*~~a (b)~~*~~", "a (b)", "a"],
+    ["~~*~~a(b)~~*~~", "a(b)", "a"],
+    ["[~~**~~a (b)~~**~~](https://example.test)", "a (b)", "a"],
+    ["~~**~~𐐀 (b)~~**~~", "𐐀 (b)", "𐐀"],
+    ["~~**~~a (b)~~**~~", "a (b)", "a (b)"],
+  ])("keeps repeated-strike Clear semantics in Simple: %s", async (source, plain, selected) => {
+    renderEditor(<form><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const start = plain.indexOf(selected), end = start + selected.length;
+    leaf.focus(); const range = document.createRange();
+    range.setStart(leaf.firstChild!, start); range.setEnd(leaf.firstChild!, end);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range); fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    expect(window.getSelection()!.toString()).toBe(selected);
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe(plain);
+    const walker = document.createTreeWalker(published, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let node: Node | null;
+    while ((node = walker.nextNode())) for (const character of node.textContent ?? "") {
+      const cleared = offset >= start && offset < end;
+      if (character.trim()) {
+        const parent = node.parentElement!;
+        expect(Boolean(parent.closest("del"))).toBe(!cleared);
+        expect(Boolean(parent.closest("strong"))).toBe(!cleared && source.includes("**"));
+        expect(Boolean(parent.closest("em"))).toBe(!cleared && !source.includes("**"));
+        expect(Boolean(parent.closest("a"))).toBe(!cleared && source.startsWith("["));
+      }
+      offset += character.length;
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([
     ["~~**alpha beta**~~", "a"], ["~~**alpha beta**~~", "l"],
     ["~~*alpha beta*~~", "a"], ["~~*alpha beta*~~", "l"],
     ["~~alpha beta~~", "l"], ["**~~alpha beta~~**", "l"],

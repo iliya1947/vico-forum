@@ -34,6 +34,12 @@
   `~~**`/`**~~` сохраняют strike pairing и selected-only semantics, включая outer
   strike с inner strong/emphasis и partial intraword selection. Flat strike,
   whole-word Clear и reversed nesting остаются supported controls.
+  При repeated strike через strong/emphasis Clear удаляет избыточный внутренний
+  strike только на пересечённой или вновь открываемой границе, где внешний strike
+  уже обеспечивает зачёркивание. Это сохраняет effective formatting невыделенного
+  остатка при punctuation и whitespace trimming, включая разные spans wrappers,
+  outer link и Unicode; текст и соседние блоки не пересериализуются. Общая модель
+  source edits и прежняя attention protection сохраняются.
 - `EDITOR-06`: Simple Enter закрывает и вновь открывает пересекающие границу inline
   wrappers по фактическим границам после nested reconstruction, включая начало
   и конец visual leaf; исходник соседних блоков не пересериализуется.
@@ -72,6 +78,12 @@ Workers smoke. Fence-aware segmentation совпало с прежней гра�
 families покрыта helper/component regressions, включая nested links, boundary
 whitespace, literal references/Unicode и direction marker/history. После correction
 требуется новый whole-PR review стабильного implementation head.
+
+Известный отдельный остаточный Clear-link case: `[a !b!](https://example.test)`,
+Clear `a !` создаёт `a ![b!](https://example.test)`. Parser получает image вместо
+невыделенного link label, а public renderer не выводит `b!`. Случай воспроизводится
+и до repeated-strike correction; он не исправлялся в этом ограниченном пакете.
+Требуется отдельное согласование scope, прежде чем считать весь Clear contract закрытым.
 
 ## L6 — attachment object journal и ZIP integrity (2026-10-27)
 
