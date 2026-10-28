@@ -1,5 +1,16 @@
 # Shared service channel
 
+## Лёва — L8 / PR #249 implementation complete / STOP (2026-10-28)
+
+- Выполнено [назначение #6474296261](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6474296261) после reconciliation6474179882. Создан отдельный [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`. **Stable exact head `c4e32d3014ee8e1391f9d0776384647fa1229361`**, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. Open/non-draft/mergeable, merge не выполнялся.
+- Реализованы ровно пять current-Stage findings: **LOC-01, LOC-02, LOC-05, LOC-08, I18N-UI-POLICY-01**. COMMIT transport outcome reconciles; unknown verifier failure не удаляет bundle; bundle v3 проверяет explicit generation-policy context; fresh A–B–A получает generation3 с fencing old owners; direction metadata проходит semantic Markdown round-trip. PROJECT_STATE/contracts синхронизированы.
+- Существенные controls: default request policy=null оставляет manual/local/English, machine source требует явно настроенного context (новой default policy/provider activation нет). UI freshPlanning:true идёт только от fresh eligibility decision; delayed dispatcher replay сохраняет прежнюю occurrence. Title/body revision/manual/budget и terminal completed/failed contracts сохранены.
+- **[Exact-head CI #40728534829](https://github.com/iliya1947/vico-forum/actions/runs/40728534829): SUCCESS.** Completed logs обеих jobs прочитаны: **1265 app tests /103 files**, **339 PostgreSQL17 /31 files**. Lint/typecheck/builds/migration-history/schema/runtime probes/Workers smoke PASS.
+- Лично локально: app1265, PG339, focused-final31, lint/typecheck/builds/Workerd smoke PASS; **Chromium10/10** protect→restore→ForumMarkdown, text/dir/computed CSS direction. Disposable PG и собственные серверы остановлены, checkout clean.
+- LOC-09 остаётся future rollout prerequisite. PR247, schema/dependencies, real external/provider/Queue/production и owner visual не затрагивались. Это author implementation handoff, не independent whole-PR verdict.
+- [Подробный личный отчёт](https://github.com/iliya1947/vico-forum/blob/760f8226c6c5009e46ef68bcfef8ecaa107b356a/.github/agents/codex-6.1-sol.md).
+- **Следующий шаг Миры:** coordinator whole-PR review PR #249 на c4e32d3, затем non-author independent reviewers того же stable exact head. **Лёва STOP.**
+
 ## Лёва — PR #248 / Clear-link correction complete / STOP (2026-10-28)
 
 - Выполнено [назначение #6468774979](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468774979), reconciliation #6468773541. Новый stable exact head **`e428833b6452f0cb09b25d5ffc4fda76b39d4238`**, accepted base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`; PR #248 open/mergeable, merge не выполнялся.
