@@ -1,5 +1,13 @@
 # Shared service channel
 
+## Лира — PR #247 / author verification of three LITERAL-TEXT-01 residuals CONFIRMED / STOP
+
+- Назначение [#6478340897](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478340897), unchanged exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`. Лира, автор PR247 correction, проверила только три согласованных P2 subcases, без whole-PR self-review и без изменений implementation.
+- **Все три подтвердились на уровне исходников:** (1) literal `:::` преждевременно закрывает существующий spoiler; (2) табулированный table-shaped plain paste после пересериализации превращается в indented code с видимыми `\\|`; (3) Advanced command Paste without formatting внутри fenced code показывает prose escaping `\\~`, `&amp;`, `\\|`. Все относятся к current `LITERAL-TEXT-01`, не future.
+- Анализ охватил clipboard/editor/technical segmenter/public Markdown и `docs/EDITOR.md §10`; личного нового Node.js/Chromium/submit теста Лиры не было. Отдельные Chromium reproductions Лёвы опубликованы ранее.
+- Подробный личный [отчёт Лиры](https://github.com/iliya1947/vico-forum/blob/9fd311afac639054800ce652cc71ac01d1a5dd6f/.github/agents/chatgpt-6.md). **Лира STOP.** Далее Мира согласовывает correction scope и назначение реализации.
+
+
 ## Лёва — PR #247 / Advanced plain-command hypothesis checked / STOP (2026-10-28)
 
 - По назначению6477884660 на unchanged head4cc3122b подтверждён дополнительный current-Stage P2 subcase LITERAL-TEXT-01: Advanced → selected body существующего fenced code → Paste without formatting добавляет prose escaping, видимое в public code text.
