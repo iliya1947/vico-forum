@@ -1,3 +1,27 @@
+## PR #248 — независимый whole-PR review / exact head e428833 (2026-10-28)
+
+**Назначение Миры:** [#6469831600](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6469831600). Implementation [PR #248](https://github.com/iliya1947/vico-forum/pull/248), exact head `e428833b6452f0cb09b25d5ffc4fda76b39d4238`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Independent four-part code review of all 18 changed paths and all seven L7 findings: `EDITOR-03`, `EDITOR-06`, `EDITOR-07`, `EDITOR-11`, `RES-EDITOR-02`, `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`, `MARKDOWN-SPOILER-01`. No implementation changes.
+
+### Verdict — CHANGES REQUIRED / 1 current-Stage finding (translation structure policy compatibility)
+
+**Finding — MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01: previously persisted same-revision translations may remain selected despite changed table/spoiler protection policy.**
+
+The new `parseRenderedForumMarkdown` + `serializeRenderedForumMarkdown` pipeline now protects each table cell and spoiler literal title/body separately; `CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION` advances from `cnt06-quote-attribution-v1` to `cnt06-custom-structure-v2` (`app/forum/semantic-markdown.ts`, `app/localization/content-markdown-translation.ts`). Newly generated tasks include the new policy in identity/fingerprint and the consumer preflight rejects mismatched task versions (`app/localization/content-post-body-planning.ts`, `content-post-body-task-consumer.ts`). Those parts are correct, but **already persisted translations are not versioned by this policy**.
+
+The persisted `StoredContentTranslation` shape and `selectCurrentContentTranslation()` in `app/localization/content-translation.ts` require same revision/locale, valid provenance/sourceLocale, nonblank content and quote-attribution equality, **not current table/spoiler structure or protection policy**. `ContentTranslationPresentationService` calls that selector and may display the previous-policy result; `ContentPostBodyTranslationPlanner.planAndDispatch` and the transactional `DrizzleContentPostBodyPlanningStore.upsertPending` return `translation-current` before replacement generation, and `contentPostBodyTaskPreflight` / execution use the same selector. A persisted prior-policy same-revision translation whose table/spoiler structure differs from the original can therefore remain visible and suppress the new protection path. No schema change is proposed as a solution here.
+
+**Classification:** current-Stage conditional correctness gap in the existing durable translation/read path, rather than future-stage infrastructure; relevant when prior-policy translations exist. Actual persisted records and browser manifestation were **not** checked; this is a source-verified causal chain, not an observed production incident. Independent regression requested: persist or mock a same-revision pre-v2 machine translation with changed table/spoiler structure, check public selection and planning, ensure protection-v2 behavior without discarding valid/manual translations merely because of version changes. Scope/solution to reconcile with Мира, rather than mandate redesign.
+
+### Other scope results and verification boundary
+
+No further confirmed current-Stage findings from source review for `EDITOR-03` (Clear, repeated-strike/punctuation/link), `EDITOR-06` (Enter), `RES-EDITOR-02` (Backspace/direction/history), `EDITOR-07` (exclusive-end code Tab), `EDITOR-11` (raw Markdown publication through writer/service/PostgreSQL), and `MARKDOWN-SPOILER-01` (fence-aware index). Source-reviewed mention recipients/table cell parsing, spoiler title/body translation, undo/redo, and test coverage. `LOC-08` is outside L7.
+
+[Exact-head CI #40689282340](https://github.com/iliya1947/vico-forum/actions/runs/40689282340): SUCCESS, jobs `checks` + `database` succeeded; author-reported 1250 application / 326 PG17 tests. Independently inspected Github job outcomes but **did not personally execute** project TypeScript/Chromium/PostgreSQL suites. Algorithm comparison of spoiler closer logic was an independent model, not the project runtime. Production, external resources and owner visual acceptance not performed.
+
+Owner authorized publication after the complete independent verdict. This personal journal and the PR #236 communication comment contain the finding; no updates to shared accepted-state channel until reconciliation. PR #248 remains unchanged; Лира STOP.
+
+---
+
 # Лира (ChatGPT-6) — личный журнал проверок
 
 ## PR #248 — независимый whole-PR review / exact head 5e562539 (2026-10-28)
