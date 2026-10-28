@@ -1,5 +1,45 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — targeted reconciliation: Advanced plain command in fenced code CONFIRMED / STOP (2026-10-28)
+
+Выполнено [назначение #6477884660](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6477884660) на unchanged exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
+Это targeted author-independent verification coordinator hypothesis, не новый whole-PR review.
+
+**CONFIRMED: current-Stage P2 subcase той же family LITERAL-TEXT-01.**
+
+### Actual Chromium command chain
+
+Advanced source `\x60\x60\x60text\nAlpha\n\x60\x60\x60` (три настоящих backticks, обычный fenced code).
+Выделить только Alpha в textarea. Clipboard payload: `~~literal~~ &copy; | value |`.
+Открыть More tools и нажать настоящую кнопку **Paste without formatting**. navigator.clipboard.readText читает настоящий clipboard, не mock API.
+Hidden body/FormData через локальный submit даёт:
+````text
+```text
+\~\~literal\~\~ &amp;copy; \| value \|
+```
+````
+Actual public `pre code.textContent` равен `\~\~literal\~\~ &amp;copy; \| value \|`, то есть содержит лишние backslashes и изменённый ampersand. Это не HTML serialization вроде &amp;amp; и не toolbar text: сравнивается textContent самого code.
+
+Controls в том же Chromium:
+1. Та же команда с ordinary control внутри того же fence → точный code text.
+2. Тот же sensitive payload через обычный **Ctrl+Shift+V** Advanced textarea → raw source и точный code text `~~literal~~ &copy; | value |`.
+3. Та же команда вне code, в обычном prose → escaped source, но точный visible literal text без formatting.
+4. Undo/Redo во всех четырёх случаях точно восстанавливает initial и вставленный source.
+
+### Причина
+
+`markdown-editor.tsx:625` в plain command безусловно вызывает prose-oriented clipboardPlainToMarkdown, даже когда selected content находится внутри существующего fenced code.
+`clipboard-markdown.ts:143–144` вычисляет escaped initial и немедленно возвращает его для payload без leading tab; passed document context для этого payload не анализируется. Обычный Advanced native paste использует другой source path, сохраняющий raw input.
+Escapes, необходимые в prose, внутри code становятся буквальными данными. Ошибка не в clipboard/read permissions, selection, React decoding, public renderer или Undo/Redo: passing controls отделяют эти причины.
+
+Current docs/EDITOR.md §10 уже требует plain text без форматирования и сохранения содержимого кода. Это доступная текущая команда, не provider/future-only concern. Существующие два согласованных subcases не заменяются этим — это дополнительный подтверждённый context внутри той же family; окончательную correction grouping выполняет Мира.
+
+Artifacts: /workspace/work/pr247-review-4cc3122b/advanced-plain-command.py, .json, .log.
+Первый harness attempt выбрал несуществующий textarea[name=body] (body хранится в hidden input); поправлен только внешний selector, окончательные четыре browser observations завершены. Implementation не менялась, checkout clean, Chromium/own HTTP stopped.
+Full app/CI не повторялись: unchanged source, bounded command path проверен напрямую. External/provider/production/owner visual не выполнялись.
+
+**Мире:** включить подтверждённый subcase в reconciliation LITERAL-TEXT-01 PR #247. **Лёва STOP.**
+
 ## PR #247 — independent whole-PR re-review / REQUEST CHANGES / STOP (2026-10-28)
 
 Дата: 2026-10-28. Назначение: PR236 comment6477338488.
