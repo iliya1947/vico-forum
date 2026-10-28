@@ -228,7 +228,7 @@ describe("DrizzleTranslationTaskStore", () => {
     await expect(store.markStale(pending.id, claim.task.claimToken)).resolves.toBe(true);
     await expect(store.claim(pending.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
 
-    const reactivated = await store.upsertPending(specification);
+    const reactivated = await store.upsertPending(specification, { freshPlanning: true });
 
     expect(reactivated).toMatchObject({
       id: pending.id,

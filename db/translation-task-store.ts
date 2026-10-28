@@ -461,10 +461,11 @@ export class DrizzleTranslationTaskStore implements
       if (existingRows[0]) {
         const existing = await parseTaskRow(existingRows[0]);
         assertMatchesSpecification(existing, specification);
-        // Only a new eligibility decision may supersede an active old occurrence.
-        // A delayed dispatcher retry must retain its old generation/claim.
-        if (existing.status !== "stale" && (!options?.freshPlanning || existing.generation === currentGeneration
-          || existing.status === "completed" || existing.status === "failed")) return existing;
+        // Only a new eligibility decision may reactivate a stale or superseded
+        // occurrence. A delayed dispatcher retry must retain its terminal state
+        // or old generation/claim, even after the consumer has marked it stale.
+        if (!options?.freshPlanning || existing.status === "completed" || existing.status === "failed"
+          || (existing.status !== "stale" && existing.generation === currentGeneration)) return existing;
 
         const databaseNow = sql`statement_timestamp()`;
         const generation =

@@ -35,7 +35,10 @@
   `--generation-policy=<version>` для того же контекста, не активируя внешние сервисы.
 - `LOC-05`: eligible fresh A–B–A продвигает superseded pending/processing task в
   новое поколение в UI/title/body stores и ограждает старые claim/allowance owners.
-  UI fresh decision отмечается явно; replay старого job list сам head не передвигает.
+  UI fresh decision отмечается явно; replay старого job list сам head не передвигает
+  и не реактивирует stale task, даже когда её поколение ещё совпадает с head.
+  Negative dispatcher regressions проверяют replay без флага и с `freshPlanning:false`;
+  разрешённая fresh reactivation и A–B–A сохраняются.
   Актуальный duplicate processing claim и terminal completed identity сохраняются.
 - `LOC-08`: L7 semantic serialization восстанавливает authored direction token,
   отличает его от literal lookalike и проверяет direction до canonicalization loss.

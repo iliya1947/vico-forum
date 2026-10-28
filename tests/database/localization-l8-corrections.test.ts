@@ -92,6 +92,7 @@ it.each([false, true])("orders fresh UI A-B-A and fences prior claim (processing
   const next = await tasks.claim(again.id, 60000);
   if (next.outcome !== "claimed") throw new Error("claim");
   expect(await tasks.upsertPending(spec)).toEqual(next.task);
+  expect(await tasks.upsertPending(spec, { freshPlanning: true })).toEqual(next.task);
 });
 
 it("publishes and verifies the same explicit UI policy, invalidates only the derived obsolete bundle", async () => {

@@ -170,7 +170,7 @@ current/reactivated, не переиспользуя её старую пози�
 planning occurrence не является частью этого контракта. `completed` identity остаётся terminal.
 Новое eligible решение `UiTranslationService.planAndDispatch` передаёт явное
 `freshPlanning` разрешение dispatcher/store; replay ранее полученного job list такого
-разрешения по умолчанию не имеет. Superseded pending/processing identity может получить
+разрешения по умолчанию не имеет. Stale или superseded pending/processing identity может получить
 новую позицию только от fresh decision, сохраняя fencing старых claim/allowance owners.
 Дубликат актуального claim не сбрасывает lease/attempt; completed identity остаётся terminal.
 
