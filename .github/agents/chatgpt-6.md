@@ -1,3 +1,29 @@
+## PR #249 — независимый whole-PR re-review Лиры после LOC-05 correction / PASS / exact head 0c7bc53b (2026-10-28)
+
+**Назначение Миры:** [#6477386361](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6477386361), которым отменено прежнее снятие назначения. Проверенный [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`, **stable exact head `0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14`**, base/current main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. PR open, non-Draft, unmerged. Лира — независимый reviewer, не автор L8/LOC-05 correction. Implementation не изменялась. Результат опубликован с прямого разрешения разработчика после завершения проверки.
+
+### Независимый verdict: PASS — 0 подтверждённых current-Stage дефектов
+
+Проверен весь назначенный L8 scope против контрактов и реализации; проанализированы patches всех **29 changed files** PR, relevant call boundaries, persistent stores, тесты, и журналы exact-head CI. Оценка независима от выводов Миры/Мишани. Первый возможный вопрос не прекращал обход scope.
+
+1. **LOC-01 — PASS.** `ControlledLocaleWriter` сохраняет pre/expected registry semantic identities вокруг COMMIT и при неопределённом transport outcome сверяется через независимый reader: actual=expected означает успех, actual=pre повторно поднимает исходную ошибку, third/unknown означает `AmbiguousCommitOutcomeError`. Blind retry неопределённого COMMIT не введён.
+2. **LOC-02 — PASS.** `verifyPersistedCompiledBundle` превращает подтверждённую некорректность payload/version в `PersistentBundleIntegrityError`. Неизвестные runtime/crypto/verifier ошибки не преобразуются в integrity error, а `reconcilePersistedBundle` удаляет derived bundle лишь после именно такого доказанного mismatch. Raw/manual translation rows остаются нетронутыми.
+3. **LOC-05 — PASS.** `UiTranslationService.planAndDispatch` выдаёт явное `freshPlanning:true`; `PersistentTranslationJobDispatcher` передаёт его persistence, но не в Queue message. `DrizzleTranslationTaskStore.upsertPending` сохраняет stale/superseded occurrence без fresh authorization и не передвигает generation head; eligible fresh A→B→A получает новое поколение под head/task row locks; current processing duplicate и completed terminal identity не реактивируются. Сверены topic-title/post-body stores, сброс старых claim/allowance owners, fencing completion/publication; tests включают stale replay без options/с `false`, fresh positive, old claim rejection и PostgreSQL integration.
+4. **LOC-08 — PASS.** `serializeRenderedForumMarkdown` восстанавливает authored `{:vico-dir=ltr|rtl}` при сериализации paragraph/heading; literal escaped lookalikes остаются буквальным текстом. `protectMarkdownForTranslation` проверяет сохранность direction до canonicalization и после restore через protected-structure semantics. Проверены paragraph, heading, list, spoiler/table и escaped controls.
+5. **I18N-UI-POLICY-01 — PASS.** Bundle format v3 включает explicit machine generation policy identity; compiler, verifier, persisted read, Hyperdrive read memoization, publication, loader, locale-boundary and reconciliation CLI передают policy consistently. При context=null machine resource не добавляется, сохраняются local/manual/English; смена policy инвалидирует derived bundle, но не manual row. Тесты покрывают hit/miss и приоритет manual.
+
+`LOC-09` классифицирован как **future rollout prerequisite**, не current-Stage blocker; реализацию будущего rollout не требовала.
+
+### Реальные проверки и пределы
+
+- GitHub exact-head [CI #40741659301](https://github.com/iliya1947/vico-forum/actions/runs/40741659301): **SUCCESS**. Лично прочитаны completed logs jobs `checks` и `database`: **1265/1265 application tests (103 files)**, **341/341 PostgreSQL 17 tests (31 files)**, lint (0 errors, 1 warning), typecheck, build/UI preview build, migration/schema guards, Worker smoke и database probes — completed success.
+- Самостоятельный локальный запуск тестов/PostgreSQL, новый Chromium/browser проход, owner visual acceptance или external rollout **не выполнялись**. Эти gates не следует считать закрытыми только этим review.
+- Перед публикацией stable head PR #249 повторно сверён с назначенным: `0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14`.
+
+**Итог Лиры: PASS / STOP.** Не обнаружено подтверждённых новых current-Stage defects в заявленном scope; это независимый технический verdict, а не автоматическое согласованное командное acceptance. Дальнейшая reconciliation / coordination — Мира. Никаких изменений implementation PR, merge или production.
+
+---
+
 ## PR #247 — LITERAL-TEXT-01 custom grammar bounded correction complete / exact head 4cc3122b (2026-10-28)
 
 **Назначение Миры:** [#6476625898](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6476625898), согласованный residual после independent review Лёвы [#6475815472](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475815472) и coordinator [#6475748706](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475748706).
