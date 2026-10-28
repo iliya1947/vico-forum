@@ -181,3 +181,40 @@ describe("Editor 2.0 clipboard import", () => {
   });
 
 });
+
+
+describe("literal plain paste in technical Markdown contexts", () => {
+  it.each([
+    [":::", "\\:::"],
+    [":::   ", "\\:::   "],
+    [":::spoiler Label\nAlpha\n:::", "\\:::spoiler Label\nAlpha\n\\:::"],
+  ])("does not close an existing spoiler with literal %j", (plain, expected) => {
+    const original = ":::spoiler Outer\nAlpha\n\nAfter\n:::";
+    const start = original.indexOf("Alpha");
+    const insertion = clipboardPlainToMarkdown(plain, {
+      markdown: original, selection: { start, end: start + 5 },
+    });
+    expect(insertion).toBe(expected);
+    const merged = original.slice(0, start) + insertion + original.slice(start + 5);
+    const spoilers = segmentTechnicalMarkdown(merged).filter((part) => part.kind === "spoiler");
+    expect(spoilers).toHaveLength(1);
+    const spoiler = spoilers[0];
+    if (spoiler?.kind !== "spoiler") throw new Error("Expected one outer spoiler");
+    expect(spoiler.title).toBe("Outer");
+    expect(spoiler.body).toContain("After");
+    expect(spoiler.body).toContain(expected);
+  });
+
+  it.each(["\t", " \t", "  \t", "   \t"])(
+    "preserves table-shaped tab-indented plain text as code with prefix %j",
+    (prefix) => {
+      const plain = prefix + "| A | B |\n" + prefix + "| --- | --- |\n" + prefix + "| 1 | 2 |";
+      const result = clipboardPlainToMarkdown(plain, {
+        markdown: "", selection: { start: 0, end: 0 },
+      });
+      expect(result).toBe(plain);
+      expect(segmentTechnicalMarkdown(result).some((part) => part.kind === "table")).toBe(false);
+      expect(parseForumMarkdown(result).children[0]?.type).toBe("code");
+    },
+  );
+});
