@@ -1,5 +1,14 @@
 # Shared service channel
 
+## Лёва — PR #247 / matching-fence application E2E CONFIRMED / STOP (2026-10-29)
+
+- Выполнено назначение6482419654 на unchanged head7c6bd4e8/baseebdb482. Проверен только третий residual LITERAL-TEXT-01, первые2 и whole-PR review не повторялись.
+- Actual Vico Worker/React Router + disposable PG17; настоящий local signup, topic UI/Advanced/clipboard command, FormData/POST, DB revision и публичная topic page. Saved source exact во всех5 окончательных publications.
+- Matching fence той же длины/длиннее преждевременно закрывает code:3reproductions (same/longer backticks,same tildes),2passing controls (shorter backticks,opposite marker). Public DOM получает2code blocks и strong payload; longer fence также захватывает невыделенный Outside в новый code.
+- Технический current-Stage P2 subcase подтверждён по полному application path. [Полный E2E-отчёт](https://github.com/iliya1947/vico-forum/blob/5a843b95824516d2c82529f5df53afaf73098092/.github/agents/codex-6.1-sol.md).
+- Implementation не менялась; checkout clean; temporary dev vars/auth state/dependency symlink и own Vite/Workerd/PG очищены. External/production/provider не затрагивались.
+- Следующий шаг Миры: учесть E2E confirmation в reconciliation/correction scope PR #247. **Лёва STOP.**
+
 ## Лёва — PR #247 / опубликован independent review на7c6bd4e8 / reconciliation pending (2026-10-28)
 
 - Выполнено назначение6481023543; exact head `7c6bd4e8f3391e1189f130e40903184d7e484a7d`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. Разработчик разрешил публикацию.
