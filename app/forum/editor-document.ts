@@ -358,6 +358,119 @@ export function editableCodeRanges(markdown: string): EditorSelection[] {
   return ranges;
 }
 
+/** Preserve literal Advanced plain-command clipboard text in actual rendered code. */
+export function pastePlainTextIntoExistingCode(
+  markdown: string, selection: EditorSelection, text: string,
+): EditorSnapshot | null {
+  if (!Number.isSafeInteger(selection.start) || !Number.isSafeInteger(selection.end)
+    || selection.start < 0 || selection.end < selection.start || selection.end > markdown.length) return null;
+  const tick = String.fromCharCode(96);
+  type Context = {
+    kind: "inline" | "block"; start: number; end: number; contentStart: number; contentEnd: number;
+    ticks?: number; opening?: { start: number; end: number; width: number; marker: string };
+    closing?: { start: number; end: number; width: number };
+  };
+  function locate(source: string, base = 0): Context | null {
+    function scan(node: PositionedNode, local: string, offset: number): Context | null {
+      const start = node.position?.start.offset, end = node.position?.end.offset;
+      if (start !== undefined && end !== undefined && start < end) {
+        if (node.type === "inlineCode") {
+          const raw = local.slice(start, end);
+          const open = /^\x60+/u.exec(raw)?.[0], close = /\x60+$/u.exec(raw)?.[0];
+          if (open && close && open.length === close.length) {
+            const contentStart = offset + start + open.length;
+            const contentEnd = offset + end - close.length;
+            if (selection.start >= contentStart && selection.end <= contentEnd) {
+              return { kind: "inline", start: offset + start, end: offset + end,
+                contentStart, contentEnd, ticks: open.length };
+            }
+          }
+        } else if (node.type === "code") {
+          const range = codeNodeContentRange(local, node);
+          if (range && selection.start >= offset + range.start && selection.end <= offset + range.end) {
+            const context: Context = { kind: "block", start: offset + start, end: offset + end,
+              contentStart: offset + range.start, contentEnd: offset + range.end };
+            const raw = local.slice(start, end);
+            const firstBreak = raw.search(/[\r\n]/u);
+            if (firstBreak >= 0) {
+              const open = /^( {0,3})(\x60{3,}|~{3,})/u.exec(raw.slice(0, firstBreak));
+              if (open) {
+                const marker = open[2]![0]!, width = open[2]!.length;
+                const from = offset + start + open[1]!.length;
+                context.opening = { start: from, end: from + width, marker, width };
+                const stripped = raw.replace(/[\r\n]+$/u, "");
+                const closeLineStart = Math.max(stripped.lastIndexOf("\n"), stripped.lastIndexOf("\r")) + 1;
+                const closing = new RegExp("^( {0,3})(" + marker + "{" + width + ",})[ \t]*$", "u")
+                  .exec(stripped.slice(closeLineStart));
+                if (closing) {
+                  const at = offset + start + closeLineStart + closing[1]!.length;
+                  context.closing = { start: at, end: at + closing[2]!.length, width: closing[2]!.length };
+                }
+              }
+            }
+            return context;
+          }
+        }
+      }
+      for (const child of node.children ?? []) {
+        const result = scan(child, local, offset);
+        if (result) return result;
+      }
+      return null;
+    }
+    for (const part of segmentTechnicalMarkdown(source)) {
+      if (part.kind === "spoiler") {
+        const match = locate(part.body, base + part.bodyStart);
+        if (match) return match;
+      } else if (part.kind === "prose" || part.kind === "protected") {
+        const match = scan(parseForumMarkdown(part.source) as PositionedNode, part.source, base + part.span.start);
+        if (match) return match;
+      }
+    }
+    return null;
+  }
+  const context = locate(markdown);
+  if (!context) return null;
+  const direct = markdown.slice(0, selection.start) + text + markdown.slice(selection.end);
+  const after = selection.start + text.length;
+  if (context.kind === "inline") {
+    const content = markdown.slice(context.contentStart, selection.start) + text
+      + markdown.slice(selection.end, context.contentEnd);
+    const run = longestBacktickRun(content);
+    if (run < context.ticks!) return { markdown: direct, selection: { start: after, end: after } };
+    const width = run + 1;
+    const padding = content.startsWith(tick) || content.endsWith(tick) ? " " : "";
+    const next = markdown.slice(0, context.start)
+      + tick.repeat(width) + padding + content + padding + tick.repeat(width)
+      + markdown.slice(context.end);
+    const caret = context.start + width + padding.length + selection.start - context.contentStart + text.length;
+    return { markdown: next, selection: { start: caret, end: caret } };
+  }
+  if (!context.opening) return { markdown: direct, selection: { start: after, end: after } };
+  const body = markdown.slice(context.contentStart, selection.start) + text
+    + markdown.slice(selection.end, context.contentEnd);
+  const { marker, width } = context.opening;
+  const hazards = body.split(/\r?\n/u).map((line) => {
+    const match = /^ {0,3}(\x60{3,}|~{3,})[ \t]*$/u.exec(line);
+    return match?.[1]?.[0] === marker && match[1]!.length >= width ? match[1]!.length : 0;
+  });
+  const hazard = Math.max(0, ...hazards);
+  if (!hazard) return { markdown: direct, selection: { start: after, end: after } };
+  const newWidth = Math.max(hazard + 1, context.closing?.width ?? width);
+  const replacement = marker.repeat(newWidth);
+  const edits = [
+    { start: selection.start, end: selection.end, value: text },
+    { start: context.opening.start, end: context.opening.end, value: replacement },
+    ...(context.closing ? [{ start: context.closing.start, end: context.closing.end, value: replacement }] : []),
+  ];
+  let next = markdown;
+  for (const edit of edits.sort((a, b) => b.start - a.start)) {
+    next = next.slice(0, edit.start) + edit.value + next.slice(edit.end);
+  }
+  const caret = after + newWidth - width;
+  return { markdown: next, selection: { start: caret, end: caret } };
+}
+
 interface FormattingDelimiter {
   depth: number;
   open: { start: number; end: number; text: string };
