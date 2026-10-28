@@ -1,5 +1,46 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #249 — LOC-05 bounded correction complete / STOP (2026-10-28)
+
+Автор: Лёва — Codex-6.1 Sol. [Назначение #6476626714](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6476626714), coordinator reconciliation6476625161, finding Лиры6476514032.
+Существующий PR #249 / ветка fix/l8-localization-runtime. Новая ветка/PR не создавались.
+Previous head c4e32d3014ee8e1391f9d0776384647fa1229361 → **stable exact head 0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14**.
+Base/current main ebdb482e8bb37cf18d7085beb2926930139b00d6.
+
+### Подтверждённая причина
+
+На настоящем disposable PostgreSQL17 добавлены два dispatcher→store negative scenarios: stale A всё ещё generation1/current либо stale A generation1 superseded by processing B generation2. Дважды вызывается PersistentTranslationJobDispatcher.dispatch([A]) — без options и с freshPlanning:false.
+До correction оба сценария падают: task A меняется stale→pending; superseded A получает generation3. Старый guard исключал stale из необходимости fresh authorization. Это current LOC-05, не новая family.
+
+### Минимальная correction
+
+Изменён один guard condition в db/translation-task-store.ts:
+- отсутствие freshPlanning сразу возвращает existing task независимо от stale/pending/processing status;
+- completed/failed identities сохраняют terminal semantics даже с fresh authorization;
+- non-stale current duplicate сохраняет claim/lease/attempt;
+- fresh stale или superseded pending/processing проходят существующий locked reactivation path.
+
+Head lock, task lock, generation advancement и conditional UPDATE прежние. First-seen identity и enqueue transport contract не менялись; Queue по-прежнему передаёт только ID. Stale replay может повторно enqueue ID, но durable task остаётся terminal, claim возвращает terminal, head и current B не меняются. Это не активация внешней Queue.
+
+Correction scope: **6 files +53/−8**, из них production изменение только guard/comment. Два прежних stale-reactivation positive tests явно используют freshPlanning:true, поскольку они моделируют новое planning decision. Новые negative tests сравнивают полную task и полную head row (включая timestamps) до/после обоих видов replay, проверяют current B claim, terminal claim A, permitted fresh reactivation и old-token publication rejection.
+Сохранены/усилены positive A–B–A→3, duplicate current processing claim при true, completed terminal при true и false/default.
+PROJECT_STATE и JOB-03 wording уточнены: stale тоже требует fresh permission.
+
+### Verification
+
+- RED на original c4e32d3 production: 2 failed /4 skipped, именно unexpected stale→pending/generation mutation.
+- GREEN focused: **38 tests /3 files PASS** (generation isolation, task store, all L8 native corrections).
+- Full local native PostgreSQL17: **341 tests /31 files PASS**,72.69s.
+- Local lint:0errors/один прежний warning app/forum/ui.test.tsx174. Typecheck PASS. git diff --check PASS.
+- **[Exact-head CI #40741659301](https://github.com/iliya1947/vico-forum/actions/runs/40741659301): SUCCESS.** Прочитаны completed logs checks123004562070 и database123004562645: **1265 app tests /103 files**, **341 PostgreSQL17 /31 files**; lint/typecheck/app+UI-preview builds/history/metadata/schema/runtime probes/Workers smoke PASS. Все шаги обеих jobs success. CI checkout test merge fb16133b: head0c7bc53 +baseebdb482.
+- Full application/build/Workers smoke локально повторно не запускались: они выполнены exact-head CI. Chromium повторно не запускался: correction меняет только durable server guard и DB tests. Whole-PR self-review и owner visual не выполнялись.
+- Disposable local PG container/volume удалены, dependency symlink снят; checkout clean. Production/real provider/Queue/external state не затрагивались.
+- Artifacts: /workspace/work/l8-loc05-correction/ (red.log,focused-green.log,database.log,lint.log,typecheck.log).
+
+LOC-09 scope не расширялся, PR247 не менялся. Остальные L8 mechanisms не переписывались. Старые independent reviews относятся к c4e32d3.
+
+**Мире:** coordinator whole-PR review PR #249 на 0c7bc53, затем non-author independent reviewers того же head. Автор correction independent verdict не выдаёт. **Лёва STOP.**
+
 ## PR #247 — reconciliation: LITERAL-TEXT-01 custom-syntax residual CONFIRMED / previous PASS withdrawn / STOP (2026-10-28)
 
 Проверено [назначение Миры #6475748706](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475748706) на неизменном exact head `915643fd5fd94031d5a4ba9397276f187aa28075`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
