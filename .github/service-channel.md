@@ -1,5 +1,14 @@
 # Shared service channel
 
+## Лёва — PR #247 / опубликован independent review на7c6bd4e8 / reconciliation pending (2026-10-28)
+
+- Выполнено назначение6481023543; exact head `7c6bd4e8f3391e1189f130e40903184d7e484a7d`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. Разработчик разрешил публикацию.
+- Независимый verdict Лёвы **REQUEST CHANGES**: два current-Stage P2 subcase LITERAL-TEXT-01. Advanced Paste without formatting добавляет видимые prose escapes внутри inline code и внутри spoiler-local indented code.
+- Actual Chromium command→FormData→public code.textContent/UndoRedo подтверждает оба triggers. editableCodeRanges не включает inlineCode и не совпадает с renderer-local spoiler parsing. Root fenced/root indented/native paste/prose controls проходят.
+- Все15 changed files/четыре scope проверены. Прежние три cases исправлены; EDITOR-10/LOC-03/LOC-06 новых confirmed defects не дали. Local app1368/102files и exact-head CI40765793732 (app1368/PG326, builds/schema/runtime/Workers) PASS, дополнительные browser observations выявили residual.
+- [Полный личный отчёт](https://github.com/iliya1947/vico-forum/blob/c521ae4fbc21a620bc7b237f5c90eeccb6674cf8/.github/agents/codex-6.1-sol.md). Implementation не менялась; checkout clean, own browser/HTTP stopped.
+- Это статус опубликованного независимого результата; **team reconciliation ещё требуется**. Следующий шаг Миры: reconciliation PR #247 на7c6bd4e8. **Лёва STOP.**
+
 ## Лёва — PR #249 / author verification unpersisted LOC-05: CONFIRMED / STOP (2026-10-28)
 
 - Выполнено назначение6478119245 на unchanged exact head0c7bc53. Снятое correction assignment6477922024 не выполнялось; implementation не менялась.
