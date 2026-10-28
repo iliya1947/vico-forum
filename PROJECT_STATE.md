@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-28
+Последнее обновление: 2026-10-29
 
 ## Назначение
 
@@ -19,6 +19,32 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## LITERAL-TEXT-01 — Advanced code contexts and matching fences (2026-10-29)
+
+В существующем PR #247 после независимого review реализована bounded
+correction трёх подтверждённых current-Stage остаточных случаев команды
+Advanced «Вставка без форматирования»:
+
+- распознаётся действующий inline code, чтобы Markdown-sensitive clipboard
+  content сохранялся буквально без prose escaping; при необходимости
+  увеличивается длина inline backtick delimiters;
+- code внутри Vico spoiler распознаётся по локальному Markdown-документу
+  тела спойлера (как в публичном ForumMarkdown), а не по root AST;
+- если clipboard внутри существующего fenced code содержит standalone
+  closing-fence candidate той же marker/длины или длиннее, расширяются
+  исходные opening/closing delimiters, а сам clipboard text остаётся raw.
+  Это предотвращает досрочное закрытие блока и попадание последующего
+  content в Markdown вне исходного кода.
+
+Команда формирует единый history edit; обычная prose plain-команда,
+Simple/Advanced native paste, другие технические команды и сохранение
+существующего текста преднамеренно не изменялись. Добавлены pure
+source/renderer-semantics и mounted toolbar → FormData → ForumMarkdown →
+Undo/Redo regressions, включая shorter/opposite-fence controls.
+Это зафиксированное implementation state; успех новых exact-head tests,
+CI, independent whole-PR review и browser/owner acceptance заранее
+не утверждается.
 
 ## LITERAL-TEXT-01 — follow-up for spoiler closer, tabbed code and Advanced plain command (2026-10-28)
 
