@@ -1,5 +1,52 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #249 — author verification: unpersisted UI replay LOC-05 CONFIRMED / STOP (2026-10-28)
+
+Выполнено [назначение #6478119245](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478119245).
+Предыдущее correction assignment6477922024 снято сообщением6478118423; implementation не изменялась.
+Проверенный unchanged exact head **0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14**, base/main ebdb482e8bb37cf18d7085beb2926930139b00d6. Remote повторно совпал перед публикацией.
+
+**CONFIRMED: current-Stage P2 residual LOC-05.** Это author verification согласованного finding, не whole-PR self-review.
+
+### Полная фактическая цепочка
+
+1. **Материализация без persistence реальна.** Выполнен настоящий UiTranslationService(policy-a).plan({targetLocale:fr,namespaces:[common]}) с actual DrizzleUiTranslationStore, пустым валидным LocalTranslationSource и зарегистрированным active fr в InMemoryLocaleRegistry. Возвращены 533 jobs, включая canonical heading/A с валидным source fingerprint/identity. Прямой SQL после plan: tasks=0,heads=0. Никаких поддельных specs, ручного INSERT task/head или mocked task store.
+2. **Delayed split dispatch допускается существующим API.** Public PersistentTranslationJobDispatcher.dispatch принимает ранее возвращённый heading/A без options и с freshPlanning:false. Первый вариант проверен отдельно от второго. Сам план не dispatch-ит и не сохраняет jobs. Обычный UiTranslationService.planAndDispatch всегда передаёт true — этот shortcut корректен; bug относится к отдельному реализованному public plan/dispatch/replay boundary.
+3. **B создаётся настоящим fresh path.** Между plan(A) и dispatch(A) вызван настоящий UiTranslationService(policy-b).planAndDispatch. B/heading persisted generation1 и current; claim B успешно получен. Preflight с depsB до replay не находит stale reason.
+4. **New-identity branch не требует authorization.** При delayed dispatch(A) существующей A row нет. Guard у existingRows не выполняется; new identity получает generation2, durable heading head меняется1→2. A становится current, а B claim получает generation-superseded.
+5. **Последствие подтверждено actual publisher.** DrizzleUiTranslationPublicationStore.publishClaimedMachineResult(B) после replay возвращает false. Independent no-replay control того же свежего B успешно публикует Fondation B в ui_translations. Поэтому отказ не объясняется неизвестным key, неверным fingerprint, payload validation или сломанным publication harness.
+6. **Consumer policy guard не нейтрализует mutation.** Настоящий UiTranslationTaskConsumer с current depsB принимает ID A и возвращает stale/policy-changed. A помечается stale, но durable head остаётся2, B по-прежнему non-current. Guard защищает от выполнения неправильной A policy, но не возвращает B publication right.
+
+### Native PostgreSQL17 observations
+
+- omitted options: A plan оставляет0tasks/0heads; B1/current → delayed A2/current; B publication=false; consumerA policy-changed; head2 и B non-current сохраняются.
+- explicit freshPlanning:false: тот же результат.
+- fresh-control: новое действительное serviceA.planAndDispatch после B законно создаёт A2/current. Это разрешённая fresh ordering decision, не доказательство исправления негативных случаев.
+- no-replay-control: B1/current, actual publication=true, persisted heading=Fondation B.
+
+Все четыре diagnostic scenarios завершены успешно; первые два **подтверждают дефект**, а не зелёное поведение implementation. Migrations применены в отдельной local schema на disposable PG17; schema удалена в finally, container/volume удалены. Provider/Queue adapter реальный внешний не использовался: FakeTranslationTaskEnqueuer записывает ID; planning/store/consumer/publication настоящие.
+
+### Current-Stage vs live rollout
+
+JOB-03 прямо различает новое eligible planning decision и replay ранее полученного job-list; последнее не имеет права само передвигать head. Ошибка доступна в уже реализованных public in-process API этой foundation, без нового provider, scheduler, external rollout или schema.
+При этом поиск callsites не установил работающий HTTP/production scheduler, автоматически выполняющий именно такой delayed split replay: стандартный planAndDispatch всегда ставит true. **Production incident/автоматический live trigger не заявляется.** Это ограничение наблюдаемости не превращает нарушение явного текущего public API contract в future-only.
+Дополнительное fresh planning B впоследствии может создать новую B occurrence и восстановить её ordering; это новое решение, а не текущий guard, который нейтрализует уже совершённое нарушение.
+
+### Causal locations / boundary
+
+- app/localization/ui-translation-service.ts:88 — public plan возвращает jobs без durable writes;125 — shortcut передаёт true.
+- app/localization/translation-tasks.ts:216–219 — dispatcher принимает omitted/false и передаёт их store.
+- db/translation-task-store.ts:459–468 — fresh authorization только внутри existing-row branch.
+- db/translation-task-store.ts:500–523 — absent-row branch создаёт generation/current head без fresh guard.
+- publication head check и consumer policy check выполняются после этой durable mutation и не исправляют её.
+
+Artifacts: /workspace/work/l8-unpersisted-verification/probe.mts,probe.log,results.json,control.mts,control.log,control-results.json.
+Code/project docs/test files не изменены; commit/push/новой ветки не было. Checkout clean, dependency symlink снят.
+Full app/CI/build/browser не повторялись: unchanged implementation, bounded native chain проверена непосредственно.
+Это не самостоятельное разрешение correction: предыдущее назначение снято, действующее требует verification и STOP.
+
+**Мире:** принять author confirmation и отдельно определить следующий correction assignment. **Лёва STOP.**
+
 ## PR #247 — targeted reconciliation: Advanced plain command in fenced code CONFIRMED / STOP (2026-10-28)
 
 Выполнено [назначение #6477884660](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6477884660) на unchanged exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
