@@ -1,3 +1,29 @@
+## PR #247 — LITERAL-TEXT-01 bounded correction complete / exact head 915643fd (2026-10-28)
+
+**Назначение Миры:** [#6473562942](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6473562942). **Implementation PR:** [#247](https://github.com/iliya1947/vico-forum/pull/247), existing branch `chatgpt6/batch-l2-20261027`, Draft, open, mergeable. Stable exact head `915643fd5fd94031d5a4ba9397276f187aa28075`; current main/base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. Independent reviewer Лёва found two same-family current-Stage subcases; Мира reconciled both. Лира was implementer, **not** independent whole-PR reviewer of this correction.
+
+### Step 1 — main integration
+
+After owner merge L7/#248, existing PR247 was one commit behind main. Built Git two-parent integration commit [`33ddee46`](https://github.com/iliya1947/vico-forum/commit/33ddee46aa35a4f0e327390cc85d631a8a2c394a), first parent prior PR247 head `51e2301d`, second parent accepted main `ebdb482e`. Used main tree as base; restored seven non-overlapping Batch L2 file blobs unchanged; merged seven overlapping paths by matching source contexts, including retaining both L7 and L2 documentation and unifying editor test imports. Confirmed 14 final PR paths, main fully ancestor, no lost L7 source/test files. Integration-only CI [#40720191755](https://github.com/iliya1947/vico-forum/actions/runs/40720191755): SUCCESS.
+
+### Step 2 — two bounded corrections
+
+Commit [`915643fd`](https://github.com/iliya1947/vico-forum/commit/915643fd5fd94031d5a4ba9397276f187aa28075), exactly five changed paths `app/forum/visual-markdown-editor.tsx`, `app/forum/clipboard-markdown.ts`, their two relevant test files and `PROJECT_STATE.md`.
+
+1. **Simple native typing, 1–3 spaces + Tab:** `escapeVisualMarkdownText` recognizes prefix ` {1,3}\t` alongside 4-space and initial-tab controls. A first-space structural `&#32;` protects the editable prose paragraph so later input does not silently turn it into an indented code leaf.
+2. **Ctrl+Shift+V at start of spoiler body:** `clipboardPlainToMarkdown` determines code ranges by `segmentTechnicalMarkdown`, parsing root prose and independent spoiler-body/table-cell Markdown segments with source offsets. Tabbed text in real indented code retains raw bytes; text in prose still escapes literal markup. No new grammar or public renderer modification.
+3. **Regressions:** 3 pure spoiler-body context controls (body code, body prose, blank-delimited code), 3 mounted native typing widths, 2 mounted spoiler paste scenarios with FormData + public `ForumMarkdown` + Undo/Redo; existing Advanced/code/TSV/root controls retained.
+
+### Step 3 — exact-head verification / stop
+
+[CI run #40723598148](https://github.com/iliya1947/vico-forum/actions/runs/40723598148): **completed SUCCESS**. Independently inspected both completed job logs: **1346/1346 application tests / 102 files**, **326/326 PostgreSQL17 tests / 30 files**. Lint, typecheck, both builds, migration/schema, runtime privilege and Workers smoke jobs completed successfully. Inspected full five-file correction diff, compared main vs head (behind 0; 14 expected changed paths), verified PR is Draft/open/mergeable. No code modification after CI; exact head stable at handoff.
+
+**Limitations:** project Chromium/browser scenarios were **not** independently run by Лира; no independent whole-PR verdict claimed. No real provider, production, external infrastructure or owner visual acceptance. No merge. No unrelated code/schema/dependency changes.
+
+**Handoff:** implementation complete / STOP. Mira to conduct coordinator whole-PR review PR247 on `915643fd` before assigning independent non-author reviewers. Other Batch L2 families `EDITOR-10`, `LOC-03`, `LOC-06` retained, not reimplemented.
+
+---
+
 ## PR #248 — независимый whole-PR review / exact head e428833 (2026-10-28)
 
 **Назначение Миры:** [#6469831600](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6469831600). Implementation [PR #248](https://github.com/iliya1947/vico-forum/pull/248), exact head `e428833b6452f0cb09b25d5ffc4fda76b39d4238`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Independent four-part code review of all 18 changed paths and all seven L7 findings: `EDITOR-03`, `EDITOR-06`, `EDITOR-07`, `EDITOR-11`, `RES-EDITOR-02`, `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`, `MARKDOWN-SPOILER-01`. No implementation changes.
