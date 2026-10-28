@@ -130,6 +130,14 @@ technical identifiers
 markup structure
 ```
 
+Для Vico tables и spoilers structured representation использует те же границы, что
+публичный renderer: каждая ячейка разбирается самостоятельно, spoiler body — как отдельный
+Markdown document, а summary — как буквальный текст. Summary можно переводить, но его
+содержимое не превращается в Markdown links/formatting. Table dimensions/alignment,
+spoiler markers и Markdown structure внутри ячеек/body защищаются при restore; provider
+получает только semantic text segments. Изменение этой политики версионируется отдельно
+от content revision и входит в identity защищённого translation input.
+
 Длинный content сегментируется по semantic boundaries внутри provider adapter/service
 boundary, а не произвольным `substring`.
 

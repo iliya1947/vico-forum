@@ -25,6 +25,50 @@ function protectedMarkers(value: string): string[] {
 }
 
 describe("protected CommonMark translation", () => {
+  it("keeps spoiler labels literal and rejects translations which inject a closing boundary", () => {
+    const document = protectMarkdownForTranslation(":::spoiler Label\nHuman body\n:::");
+    const values = translateIdentity(document.segments);
+    const title = document.segments.find((part) => part.text === "Label")!;
+    expect(title).toBeDefined();
+    const literal = document.restore(values.map((part) => part.id === title.id
+      ? { ...part, value: "**Literal label**" } : part));
+    const { container } = render(<ForumMarkdown>{literal}</ForumMarkdown>);
+    expect(container.querySelector("summary")).toHaveTextContent("**Literal label**");
+    expect(container.querySelector("summary strong")).toBeNull();
+    expect(() => document.restore(values.map((part) => part.id === title.id
+      ? { ...part, value: "Label\n:::\nOutside" } : part)))
+      .toThrow(MarkdownTranslationValidationError);
+  });
+
+  it("keeps fenced code and literal closing markers inside translated spoiler bodies", () => {
+    const source = ":::spoiler Label\nHuman words\n\n```md\n:::\nconst technical = true;\n```\n:::\n";
+    const document = protectMarkdownForTranslation(source);
+    expect(document.segments.map((part) => part.text).join(" ")).not.toContain("const technical");
+    const restored = document.restore(translateIdentity(document.segments));
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+    expect(container.querySelectorAll("details")).toHaveLength(1);
+    expect(container.querySelector("details pre code")).toHaveTextContent("::: const technical = true;");
+  });
+  it("protects custom spoiler and table structure while translating their human text", () => {
+    const source = [":::spoiler [Literal](/en/users/label)", "Human **body**.", "", "| Header | Other |",
+      "| :--- | ---: |", "| > Quoted words | Cell words |", ":::"].join("\n");
+    const document = protectMarkdownForTranslation(source);
+    const exposed = document.segments.map((part) => part.text).join(" ");
+    expect(exposed).not.toContain(":::spoiler");
+    expect(exposed).not.toContain("---");
+    expect(exposed).toContain("Cell words");
+    const restored = document.restore(document.segments.map((part) => ({ id: part.id,
+      value: part.text.replace("Human", "Translated").replace("Cell words", "Changed | cell"),
+    })));
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+    expect(container.querySelectorAll("details")).toHaveLength(1);
+    expect(container.querySelector("summary")).toHaveTextContent("[Literal](/en/users/label)");
+    expect(container.querySelectorAll("th")).toHaveLength(2);
+    expect(container.querySelectorAll("td")).toHaveLength(2);
+    expect(container.querySelector("td blockquote")).toHaveTextContent("Quoted words");
+    expect(container.querySelectorAll("td")[1]).toHaveTextContent("Changed | cell");
+  });
+
   it("extracts ordered semantic text while preserving block and inline structure", () => {
     const source = `# Translate this **carefully**
 

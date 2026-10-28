@@ -17,6 +17,8 @@ import {
   editableCodeRanges,
   editVisualText,
   inlineCodeAffixes,
+  insertVisualParagraph as splitVisualParagraph,
+  joinVisualParagraph,
   longestBacktickRun,
   recordEditorEdit,
   removeAttachmentImages,
@@ -586,7 +588,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           value.lastIndexOf("\n", Math.max(0, start - 1)) + 1,
           codeRange.start,
         );
-        const last = value.indexOf("\n", end);
+        const last = value.indexOf("\n", end > start && value[end - 1] === "\n" ? end - 1 : end);
         const right = Math.min(last < 0 ? value.length : last, codeRange.end);
         const block = value.slice(first, right);
         const lines = block.split("\n");
@@ -658,8 +660,24 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       replaceSourceRange({ start: 0, end: value.length }, value.split(findText).join(replaceText));
     }
 
+    function applyVisualStructureEdit(next: { markdown: string; selection: EditorSelection }, before: EditorSelection) {
+      historyRef.current = recordEditorEdit(historyRef.current, next.markdown, before, next.selection);
+      pendingVisualSelectionRef.current = next.selection;
+      visualSelectionRef.current = next.selection;
+      visualSelectionKnownRef.current = true;
+      setValue(next.markdown);
+      setPasteNotice(null);
+    }
+
     function insertVisualParagraph(selection: EditorSelection) {
-      replaceSourceRange(selection, "\n\n");
+      applyVisualStructureEdit(splitVisualParagraph(value, selection), selection);
+    }
+
+    function backspaceVisualParagraph(selection: EditorSelection): boolean {
+      const next = joinVisualParagraph(value, selection);
+      if (!next) return false;
+      applyVisualStructureEdit(next, selection);
+      return true;
     }
 
     useLayoutEffect(() => {
@@ -1083,6 +1101,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                   ? mentionTokenAtCaret(value, selection.end) : null);
               }}
               onInsertParagraph={insertVisualParagraph}
+              onBackspaceParagraph={backspaceVisualParagraph}
               onEditTechnical={(range) => switchAuthoring("advanced", range)}
               onReplaceRange={replaceSourceRange}
               onTableDimension={extendTable}

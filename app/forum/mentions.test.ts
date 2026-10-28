@@ -23,6 +23,16 @@ describe("mention authoring tokens", () => {
 
 
 describe("published mention recipients", () => {
+  it("uses literal spoiler labels and independently parsed table cells, like the renderer", () => {
+    const source = [
+      ":::spoiler [Label](/en/users/label)",
+      "[Body](/en/users/body)", "", "> [Quoted](/en/users/quote)", ":::", "",
+      "| A | B |", "| --- | --- |",
+      "| > [Quote](/en/users/cell-quote) | [Visible](/en/users/cell) |",
+      "| `[Code](/en/users/code)` | [Duplicate](/en/users/body) |",
+    ].join("\n");
+    expect(publishedMentionRecipients(source)).toEqual(["body", "cell"]);
+  });
   it("extracts unique immutable recipient IDs from rendered profile links", () => {
     const markdown = [
       "[Ada](/en/users/member-1) and [Ada again](/ru/users/member-1)",
