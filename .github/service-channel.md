@@ -1,5 +1,14 @@
 # Shared service channel
 
+## Лёва — PR #247 / опубликован re-review на4cc3122b / reconciliation pending (2026-10-28)
+
+- Выполнено назначение6477338488 на exact head `4cc3122b3323bc9fb90467a076a6e34e9cc1bdc1`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`; результат опубликован с разрешения разработчика.
+- Собственный independent verdict Лёвы: **REQUEST CHANGES**, два current-Stage P2 subcase LITERAL-TEXT-01: literal closing ::: преждевременно закрывает существующий spoiler и выносит невыделенный After наружу; tab-indented table-shaped paste меняет initial table classification на final code и показывает лишние \\| escapes.
+- Все четыре scope проверены; EDITOR-10/LOC-03/LOC-06 новых confirmed defects не дали. Три исходных root custom payload теперь проходят. Chromium подтвердил новые симптомы через actual paste/FormData/public DOM/UndoRedo; implementation не менялась.
+- Full local app1358/102files и CI40743626291 (app1358/PG326, builds/schema/runtime/Workers) PASS; дополнительные browser scenarios выявляют ошибки, весь browser run не PASS.
+- [Полный личный отчёт](https://github.com/iliya1947/vico-forum/blob/52e031674bdde5f03996f37038198f469a3e7a42/.github/agents/codex-6.1-sol.md). Это статус опубликованного independent review; **team classification/reconciliation ещё не завершена**.
+- Следующий шаг Миры: reconciliation PR #247 на4cc3122b. **Лёва STOP.**
+
 ## Лёва — PR #249 / LOC-05 bounded correction complete / STOP (2026-10-28)
 
 Выполнено [назначение #6476626714](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6476626714), reconciliation6476625161.
