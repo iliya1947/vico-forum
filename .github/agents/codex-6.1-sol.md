@@ -1,5 +1,33 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — reconciliation: LITERAL-TEXT-01 custom-syntax residual CONFIRMED / previous PASS withdrawn / STOP (2026-10-28)
+
+Проверено [назначение Миры #6475748706](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6475748706) на неизменном exact head `915643fd5fd94031d5a4ba9397276f187aa28075`, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
+
+**Подтверждаю current-Stage P2 defect одной family LITERAL-TEXT-01 с тремя subcases. Прежний общий PASS из #6475636980 отзываю.** Два ранее исправленных tab subcase остаются закрытыми; результаты EDITOR-10/LOC-03/LOC-06 эта проверка не опровергает.
+
+### Actual browser chain
+
+Тот же bundled exact-head MarkdownEditor/ForumMarkdown в локальном Chromium. Для каждого payload: Simple editor с Alpha → выделение всего leaf → настоящий navigator.clipboard.writeText(payload) → Control+Shift+V → hidden body/FormData → локальный submit → actual public ForumMarkdown. Это component/public-render harness, не удалённая публикация и не provider pipeline.
+
+| Literal payload | Сохранённый source | Public result |
+| --- | --- | --- |
+| `:::spoiler Label\nAlpha\n:::` | побайтово равен payload | один details/summary, visible text LabelAlpha; authored markers скрыты |
+| `\| A \| B \|\n\| --- \| --- \|\n\| 1 \| 2 \|` | побайтово равен payload | одна Vico table, visible text AB12 вместо literal table-shaped source |
+| `Text {:vico-dir=rtl}` | побайтово равен payload | p dir=rtl и computed CSS direction=rtl; visible text Text, literal marker скрыт |
+
+Control `~~literal~~ &copy;` превращается в escaped source и показывает точный literal text без del. Все четыре случая сохраняют ожидаемый source в FormData; Undo/Redo восстанавливает начальный и повторный source. Поэтому причина не в clipboard permissions, потере буфера, HTML paste или history.
+
+### Причина и классификация
+
+`app/forum/clipboard-markdown.ts:7–25` защищает CommonMark punctuation/entities/line markers, но не neutralizes Vico spoiler/table/direction syntax. Эти payload не содержат raw leading tab, поэтому дополнительный context/code branch вообще не запускается. Затем `segmentTechnicalMarkdown` и paragraph-direction parser распознают неэкранированные custom constructs штатно. Actual Ctrl+Shift+V path передаёт результат этого serializer в источник без последующей literal protection.
+
+Контракт docs/EDITOR.md §10: Ctrl+Shift+V — только текст без форматирования. Здесь literal text скрывается/становится таблицей, spoiler или direction override уже в текущем runtime, без external state. Поэтому **current-Stage residual существующего LITERAL-TEXT-01**, не future-only и не отдельная новая audit family. Предыдущие 96 matrix cases проверяли ampersand/tilde payload внутри contexts, а не literal insertion самих custom grammars; они не обосновывали общий PASS.
+
+Artifacts: /workspace/work/pr247-review-915643fd/reconciliation-custom-paste.py, .json, .log. Все три reproduced плюс passing CommonMark control. Полный suite не повторялся: implementation не менялась; bounded request проверен напрямую в Chromium. Checkout clean, browser и own HTTP stopped.
+
+**Мире:** расхождение подтверждено; назначить bounded correction этой family автору PR #247. Лёва implementation не менял и останавливается. **STOP.**
+
 ## PR #247 — independent whole-PR review / PASS / STOP (2026-10-28)
 
 Назначение: PR236 comment6475387518. Дата: 2026-10-28.
