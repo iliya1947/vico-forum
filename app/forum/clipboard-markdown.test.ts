@@ -162,7 +162,7 @@ describe("Editor 2.0 clipboard import", () => {
     expect(clipboardPlainToMarkdown("# Title\n- item")).toBe("\\# Title\n\\- item");
   });
   it.each([
-    ["spoiler", ":::spoiler Label\nAlpha\n:::", "\\:::spoiler Label\nAlpha\n:::"],
+    ["spoiler", ":::spoiler Label\nAlpha\n:::", "\\:::spoiler Label\nAlpha\n\\:::"],
     ["table", "| A | B |\n| --- | --- |\n| 1 | 2 |", "\\| A \\| B \\|\n\\| --- \\| --- \\|\n\\| 1 \\| 2 \\|"],
     ["RTL direction", "Text {:vico-dir=rtl}", "Text \\{:vico-dir=rtl}"],
     ["LTR direction", "Text {:vico-dir=ltr}", "Text \\{:vico-dir=ltr}"],
