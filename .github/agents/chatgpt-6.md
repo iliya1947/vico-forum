@@ -1,5 +1,38 @@
 # Лира (ChatGPT-6) — личный журнал проверок
 
+## PR #248 — независимый whole-PR review / exact head 5e562539 (2026-10-28)
+
+**Назначение Миры:** [#6457535857](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6457535857). **Implementation:** [PR #248](https://github.com/iliya1947/vico-forum/pull/248), stable exact head `5e5625390501753edb07c323b8c662cec9902474`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`, open, not Draft, mergeable. Проверены 18 diff paths, 7 L7 findings. Это новый независимый 4-этапный review после Lёвиного bounded correction `EDITOR-03`; предыдущие verdict на `c87ca0e` сюда не применяются.
+
+### Исправленный личный verdict — CHANGES REQUIRED / 1 confirmed current-Stage family: EDITOR-03
+
+В конце собственного четырёхэтапного whole-PR review Лира сообщила разработчику **APPROVE / 0 findings**. **До публикации** стало доступно новое независимое [заключение Мишани #6467515414](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6467515414) на **том же exact head**. Лира отдельно перепроверила reproducer по текущим source-edit functions (child-first `clearInlineMarkdownFormatting`, `remainingSourceBoundary`, `protectSelectedAttentionBoundaries`, `applySourceEditPlan`) и семантику GFM. Исходный APPROVE **отозван**, публикуется только amended CHANGES REQUIRED. До завершения собственного independent review выводы Мишани не использовались.
+
+**Finding, P2 / residual EDITOR-03 — repeated nested strike / punctuation boundary.** Исходник `~~**~~a (b)~~**~~` (valid parsed `delete → strong → delete → text "a (b)"`). Выделить только `a` (source range `[6,7)`) и применить Clear formatting. Сопоставление current implementation с вручную заданными nested positional nodes даёт **`a ~~**~~(b)~~**~~`**. Child-first удаляет три opening delimiters `~~**~~` перед `a` и на surviving suffix вставляет те же три delimiters `~~**~~` после пробела. `protectSelectedAttentionBoundaries` не включает encoding выбранной `a`: ближайшие neighboring markers не приводят к его punctuation condition. Независимый markdown-it parser с enabled strikethrough подтверждает: оригинал распознаёт `del → strong → del`, а transformed output распознаёт `"a " + del("**") + "(b)" + del("**")`. Невыделенный `(b)` теряет три уровня форматирования, показываются буквальные `**`. Это нарушение selected-only `EDITOR-03` в текущем editor, не future-only и не новая отдельная defect family.
+
+**Предел подтверждения Лиры:** собственная проверка — JS reproduction *эквивалентного* исходного source-edit plan с точными AST source offsets и отдельный markdown-it parser; не запуск оригинальной TypeScript-функции либо original project GFM runtime. Мишаня отдельно сообщил original project parser-path reproduction и 216 failures / 82 604 partial selections, но эти числа **не воспроизводились Лирой**. Признание finding основано на конкретном independently проверенном scenario, а не только совпадении чужих conclusions.
+
+### Полная область L7
+
+1. `EDITOR-03` — **CHANGES REQUIRED** для valid repeated `delete → strong/emphasis → delete` path, punctuation / partial Clear; ранее corrected double nesting `~~**alpha beta**~~` cases, link whitespace, Unicode boundaries по проверенным controls PASS.
+2. `EDITOR-06` — Enter with nested formatting and source-selection/Undo: новых current-Stage findings нет.
+3. `RES-EDITOR-02` — Backspace paragraph join, explicit LTR/RTL precedence, history: новых findings нет.
+4. `EDITOR-07` — Tab/Shift+Tab exclusive end, closing fence: новых findings нет.
+5. `EDITOR-11` — raw initial section/Help/reply body through action/writer/PG, content-emptiness validation separate: новых findings нет.
+6. `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01` — обе половины: renderer-compatible recipient extraction (table cells / spoiler title and body) и protected translation structure + policy `cnt06-custom-structure-v2`: новых findings нет.
+7. `MARKDOWN-SPOILER-01` — bounded fence-aware closer indexing, prior grammar semantics: новых findings нет. Для independent algorithm comparison Лира проверила 12 000 deterministic inputs / 23 885 comparisons без расхождений с prior sequential scan. `LOC-08` — L8, не L7.
+
+### CI и охват
+
+[Exact-head GitHub Actions #40592508871](https://github.com/iliya1947/vico-forum/actions/runs/40592508871): `pull_request`, completed **SUCCESS**, `checks` job `122500070291` — **1205/1205 app tests, 102 files**, включая `editor-document`79, `markdown-editor`106, `write-actions`45, `technical-markdown`10, `mentions`6, `content-markdown-translation`15; `database` job `122500071007` — **326/326 PG17 tests, 30 files**, включая native markdown publication3; оба full logs прочитаны. Typecheck/lint (0 errors, 1 nonblocking warning), app/UI-preview builds, migration guard, schema parity 49 tables, runtime permission probes, built Worker smoke PASS. Database ERROR/FATAL — negative-case probes; Node20 deprecation warning — GitHub Actions dependency, не current L7 defect. Green CI не опровергает непокрытую repeated strike комбинацию.
+
+Все 18 PR changed paths сверены с base; code source and regressions reviewed во всех 4 этапах. Самостоятельного actual Chromium, native PG/Workerd, production/external, owner visual acceptance Лира не выполняла; actual original project TS test данного edge case Лира не запускала. Авторские browser controls не представляются как self-run. Implementation/main не изменялись; merge не выполнялся.
+
+**Координатору Мире:** сопоставить amended verdict с independent [finding Мишани #6467515414](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6467515414), провести согласование текущего `EDITOR-03` family и определить только justified bounded correction. До reconciliation **не** записывать новую позицию как утверждённый team verdict в shared communication. Лира STOP; это личное заключение, не разрешение на merge.
+
+
+---
+
 ## PR #247 — bounded LITERAL-TEXT-01 native Simple indentation correction (2026-10-27)
 
 **Назначение Миры:** [#6454119080](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6454119080). Existing Draft [PR #247](https://github.com/iliya1947/vico-forum/pull/247), branch `chatgpt6/batch-l2-20261027`, prior head `894f9719bfb19028b788560a75d42b3163dde740`, base `2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0`. Исправлен только один assigned current-Stage defect `LITERAL-TEXT-01`: multiple leading tabs / 4spaces+tab during native Simple editing are not safely treated as literal text.
