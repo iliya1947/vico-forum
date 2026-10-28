@@ -18,8 +18,15 @@ function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): stri
     // One structural character reference preserves the whitespace as prose.
     const prefix = /^ {4}/u.test(line) ? "&#32;" : "";
     const escaped = prefix ? prefix + escapeText(line.slice(1)) : escapeText(line);
+    // Vico parses spoilers and tables before CommonMark, and directions after
+    // CommonMark. Protect their source syntax on the literal clipboard path.
+    // A genuine indented-code line returned above remains byte-for-byte raw.
+    const literal = escaped
+      .replace(/\|/gu, "\\|")
+      .replace(/\{:vico-dir=(?:ltr|rtl)\}/gu, "\\$&")
+      .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler");
     // Plain text must not accidentally become a heading, quote or list item.
-    return escaped.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
+    return literal.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
       (_, indent: string, marker: string) => indent + "\\" + marker)
       .replace(/^([ \t]{0,3})(-{2,}|={2,})(?=\s|$)/u,
         (_, indent: string, rule: string) => indent + "\\" + rule);

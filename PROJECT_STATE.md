@@ -20,6 +20,22 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LITERAL-TEXT-01 — bounded Vico grammar plain-text correction (2026-10-28)
+
+В существующей implementation-ветке PR #247 после независимой whole-PR
+сверки исправлен остаточный дефект plain-text/Ctrl+Shift+V: Vico-specific
+спойлер (`:::spoiler`), table-shaped строки с `|` и завершающие
+`{:vico-dir=ltr|rtl}` больше не превращаются в структуру/атрибут при
+публикации буквального текста. Защита применяется только в общем
+clipboard/Simple literal serializer; реальный tab-indented code по-прежнему
+сохраняется raw, а intentional Advanced Markdown, HTML/TSV conversion,
+previous CommonMark literal escaping и исходные пользовательские символы
+не меняют семантику. Добавлены pure и mounted
+Ctrl+Shift+V → FormData → ForumMarkdown → Undo/Redo regressions,
+а также Advanced/code controls. Это implementation state до новых
+exact-head CI, independent review и visual acceptance; их результаты
+не объявлены заранее.
+
 ## LITERAL-TEXT-01 — bounded correction после whole-PR review (2026-10-28)
 
 В Batch L2 на основе независимой проверки двух случаев уточнена буквальная

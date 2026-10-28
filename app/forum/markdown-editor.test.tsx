@@ -2278,3 +2278,50 @@ it.each([
   const published = renderEditor(<ForumMarkdown>{markdown}</ForumMarkdown>).container;
   expect(published.querySelector("pre code")?.textContent).toContain("&copy; ~~literal~~");
 });
+
+it.each([
+    ["spoiler", ":::spoiler Label\nAlpha\n:::", "\\:::spoiler Label\nAlpha\n:::"],
+    ["table", "| A | B |\n| --- | --- |\n| 1 | 2 |", "\\| A \\| B \\|\n\\| --- \\| --- \\|\n\\| 1 \\| 2 \\|"],
+    ["RTL direction", "Text {:vico-dir=rtl}", "Text \\{:vico-dir=rtl}"],
+    ["LTR direction", "Text {:vico-dir=ltr}", "Text \\{:vico-dir=ltr}"],
+] as const)("preserves literal Vico %s through Ctrl+Shift+V, FormData, public render and history", async (kind, plain, expectedSource) => {
+  renderEditor(<form><label htmlFor="vico-literal-paste">Body</label>
+    <MarkdownEditor id="vico-literal-paste" name="body" defaultValue="Alpha" />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();
+  const range = document.createRange();
+  range.selectNodeContents(leaf);
+  const selection = window.getSelection()!;
+  selection.removeAllRanges();
+  selection.addRange(range);
+  fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+  fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+    format === "text/plain" ? plain : format === "text/html" ? "<h1>Unwanted</h1>" : "" } });
+
+  const form = document.querySelector("form")!;
+  const actual = new FormData(form).get("body");
+  expect(actual).toBe(expectedSource);
+  const published = renderEditor(<ForumMarkdown>{String(actual)}</ForumMarkdown>).container;
+  expect(published.textContent).toContain(plain.split("\n")[0]);
+  if (kind === "spoiler") expect(published.querySelector("details, summary")).toBeNull();
+  if (kind === "table") expect(published.querySelector("table")).toBeNull();
+  if (kind.includes("direction")) {
+    expect(published.querySelector('p[dir="rtl"], p[dir="ltr"]')).toBeNull();
+  }
+
+  await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(new FormData(form).get("body")).toBe("Alpha");
+  await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+  expect(new FormData(form).get("body")).toBe(expectedSource);
+});
+
+it.each([
+  ":::spoiler Label\nAlpha\n:::",
+  "| A | B |\n| --- | --- |\n| 1 | 2 |",
+  "Text {:vico-dir=rtl}",
+] as const)("keeps intentionally authored Vico syntax unchanged in Advanced mode (%j)", (source) => {
+  renderEditor(<form><MarkdownEditor id="advanced-vico" name="body"
+    defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+  expect(new FormData(document.querySelector("form")!).get("body")).toBe(source);
+});

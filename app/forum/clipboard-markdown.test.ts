@@ -161,4 +161,23 @@ describe("Editor 2.0 clipboard import", () => {
     expect(clipboardPlainToMarkdown("שלום\n**literal**")).toBe("שלום\n\\*\\*literal\\*\\*");
     expect(clipboardPlainToMarkdown("# Title\n- item")).toBe("\\# Title\n\\- item");
   });
+  it.each([
+    ["spoiler", ":::spoiler Label\nAlpha\n:::", "\\:::spoiler Label\nAlpha\n:::"],
+    ["table", "| A | B |\n| --- | --- |\n| 1 | 2 |", "\\| A \\| B \\|\n\\| --- \\| --- \\|\n\\| 1 \\| 2 \\|"],
+    ["RTL direction", "Text {:vico-dir=rtl}", "Text \\{:vico-dir=rtl}"],
+    ["LTR direction", "Text {:vico-dir=ltr}", "Text \\{:vico-dir=ltr}"],
+  ] as const)("keeps literal Vico %s clipboard source inactive", (_kind, plain, expectedSource) => {
+    const source = clipboardPlainToMarkdown(plain);
+    expect(source).toBe(expectedSource);
+    expect(segmentTechnicalMarkdown(source).every((part) => part.kind === "prose")).toBe(true);
+    expect(parseForumMarkdown(source).children.every((node) => node.type === "paragraph")).toBe(true);
+    expect(JSON.stringify(parseForumMarkdown(source))).not.toContain('"dir":"rtl"');
+    expect(JSON.stringify(parseForumMarkdown(source))).not.toContain('"dir":"ltr"');
+  });
+
+  it("preserves actual tab-indented code even with Vico-shaped literal payload", () => {
+    expect(clipboardPlainToMarkdown("\t| A | B |")).toBe("\t| A | B |");
+    expect(clipboardPlainToMarkdown("\t:::spoiler Label")).toBe("\t:::spoiler Label");
+  });
+
 });
