@@ -1,5 +1,63 @@
 # Лёва — Codex-6.1 Sol
 
+## Независимый whole-PR review #247 — Лёва (2026-10-28)
+
+Exact head: 51e2301d9c5e3aca5b5238a7681878b1a4199829.
+Base: 2ff3aeb3c8feeab3df4b674d711ff3845c09b0e0.
+Assignment: PR236 comment6473042616. Scope: EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06.
+Прочитан весь diff: 14 paths, 6 implementation modules, 7 test files, PROJECT_STATE. Проверены current source и действующие Editor/translation contracts. Выводы других reviewers этого цикла не читались.
+
+## Verdict: CHANGES REQUIRED
+Два подтверждённых P2 subcases одной current-Stage family LITERAL-TEXT-01. Первый finding не завершал review; весь assigned scope проверен. Implementation не менялась. Review завершён и сначала передан разработчику в чате; публикуется по его прямой команде «Публикуй». Это личный независимый verdict, не утверждённый командный статус. Общий service-channel до reconciliation не меняется.
+
+### F1 / P2 — 1–3 leading spaces before existing tab turn edited prose into protected code
+app/forum/visual-markdown-editor.tsx:44–55 (onInput347–358).
+Минимальный valid existing source: `&#32;\tAlpha` (здесь \t — actual U+0009, не два символа).
+Simple сначала отображает один editable prose leaf " \tAlpha". Обычный keyboard.type('x') в конце даёт source " \tAlphax": он уже indented code. Editable leaf count становится0, activeElement BODY, public получает code block вместо paragraph. Автор теряет возможность продолжать ordinary Simple editing.
+
+Подтверждено actual Chromium на минимальном случае и расширенных 1/2/3 spaces +tab + literal entity/strike cases; 4-space+tab control остаётся paragraph, focus/editor preserved. В расширенных4 случаях Undo/Redo exact.
+
+Причина: structural prefix создаётся только для /^ {4}|^\t/. Вариант /^ {1,3}\t/ проходит без structural entity в clipboardPlainToMarkdown без prose context; textAsMarkdown видит raw indented-code tab, оставляет его raw. Последующая reconstruction меняет исходный paragraph на code. Это не намеренный Advanced code: до 'x' source корректно парсится как prose и editable в Simple.
+Сравнение source-extracted exact baseline main helper2ff3aeb/current: оба дают code для1/2/3space+tab. Это residual исходного LITERAL-TEXT-01, не новая regression последней correction.
+
+Не спутать с первым диагностическим экспериментом: CDP insert_text целой строки с tabs в пустой leaf приводит к browser-normalized spaces/NBSP. Одного pure-helper результата было недостаточно; finding подтверждён именно обычным вводом x в уже существующий допустимый prose.
+
+### F2 / P2 — forced plain paste at beginning of spoiler body serializes code as prose
+app/forum/clipboard-markdown.ts:145–169, особенно collect(parseForumMarkdown(candidate)):160.
+Исходник:
+```md
+:::spoiler Label
+Alpha
+:::
+```
+В Simple раскрыть spoiler, выделить Alpha, положить в clipboard actual tab + '&copy; ~~literal~~', нажать Ctrl+Shift+V.
+Actual inserted body: "\t&amp;copy; \\~\\~literal\\~\\~".
+Whole source parser считает строку продолжением paragraph с ':::spoiler', поэтому codeLines пуст и применяется prose escaping. Actual ForumMarkdown отделяет spoiler body, где та же строка — indented code. Public code text становится literal "&amp;copy; \\~\\~literal\\~\\~", вместо исходного "&copy; ~~literal~~".
+
+Проверен настоящий Chromium clipboard через navigator.clipboard.writeText + keyboard.press(Control+Shift+V), actual editor selection/source/FormData/public renderer; exact Undo/Redo. Root code и spoiler body после отдельного paragraph+blank line — проходящие controls.
+Сравнение с exact clipboard source46a7cda: там inserted body raw и actual segmented body code.value == original; на51e2301d появились escape artifacts. Это regression context-aware path внутри PR, тот же literal-text family, не future-only: Simple spoiler body editing/paste поддержаны текущим Editor contract.
+
+## Остальной scope
+EDITOR-10: 255 code-point name controls (U+0001–U+00FF) через actual mentionProfileLink/project parser/publishedMentionRecipients, mismatches0; complex allowed names из suites. Actual Chromium autocomplete12 cases (6 имён × Simple/Advanced), literal name, one profile anchor /en/users/member-42, no unintended formatting. Runtime fetch synthetic only.
+LOC-03: validator call chains provider publication, local/persistent sources, compiled verification прослежены; actual i18next runtime9 added nesting variants все rejected;8 valid identical-source token controls accepted; unclosed inputs75/1035/9011 chars rejected, max measured<1ms. JSON options/quotes/interpolation covered; additional current-Stage findings не установлены. Official nesting docs прочитаны; installed i18next implementation сопоставлен.
+LOC-06: authoritative read→protected segments no-op before source resolver проверен по actual planner, action capability и added route/planner regressions; invalid target/current revision/disabled-runtime/permission boundaries не обойдены. Blank/whitespace/fenced-only bodies и forged caller prose tests проходят; normal prose queues. Additional findings не установлены.
+
+## Validation
+- Лично local pinned Node24.21.0 full app1211/1211,102 files PASS.
+- Local typecheck, lint0errors/1 existing warning(ui.test.tsx174), app/UI-preview builds PASS.
+- Exact-head CI40589705256 SUCCESS. Completed logs обеих jobs fetched/read: checks122490424584 app1211/102; database122490425213 PG17 tests323/29, runtime probes/Workers smoke PASS.
+- Local native PG/Workerd separately не запускались: выше CI evidence.
+- Browser: 10 native fresh-input controls;4 existing-prose cases (3fail+1control) with exact history;1 minimal ordinary keyboard 'x' reproduction;12 mention cases PASS;3 native forced-clipboard scenarios (1fail+2controls) with exact history.
+- Pure probes:28 leading-indent cases,255 name controls,28 clipboard contexts;8 baseline helper executions +2 spoiler-baseline/current comparisons; LOC03 9reject/8accept/3bounded malformed probes.
+- Browser is local component harness with synthetic API404/mention replies, not deployed-site/owner visual acceptance. Production/external infrastructure not touched.
+- PR body still names historical894f9719 as "New stable exact head"; authoritative metadata/checkout/CI are51e2301d. Это информационная неточность PR description, не дополнительный code finding.
+- Checkout clean, dependency symlink removed; generated UI artifact moved outside checkout; Chromium/HTTP server stopped. Head rechecked stable.
+
+Артефакты — эта папка: probe.json/probe.ts, baseline.log/baseline.ts/source-extracted baseline modules, browser-native.json, browser-existing.json, minimal-native.json, browser-mentions.json, browser-paste.json, spoiler-baseline.log; loc03.json; app/typecheck/lint/build/ui-build logs.
+
+
+**Мире:** согласовать два подтверждённых subcases LITERAL-TEXT-01 на указанном exact head. **Лёва STOP.**
+
 ## PR #248 / EDITOR-03 — bounded Clear-link collision correction (2026-10-28)
 
 Назначение: [#6468774979](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6468774979); reconciliation #6468773541. Author implementation handoff, не independent whole-PR verdict.
