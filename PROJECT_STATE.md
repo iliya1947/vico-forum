@@ -39,6 +39,11 @@
   и не реактивирует stale task, даже когда её поколение ещё совпадает с head.
   Negative dispatcher regressions проверяют replay без флага и с `freshPlanning:false`;
   разрешённая fresh reactivation и A–B–A сохраняются.
+  Ранее не сохранённая UI identity тоже создаётся только с `freshPlanning:true`:
+  delayed unpersisted plan без разрешения отклоняется типизированной planning
+  precondition error без task/head writes или enqueue. Это относится и к первому
+  head; actual plan(A) → fresh planAndDispatch(B) → delayed dispatch(A) regressions
+  проверяют сохранение B publication right. Fixture creation отмечена fresh явно.
   Актуальный duplicate processing claim и terminal completed identity сохраняются.
 - `LOC-08`: L7 semantic serialization восстанавливает authored direction token,
   отличает его от literal lookalike и проверяет direction до canonicalization loss.

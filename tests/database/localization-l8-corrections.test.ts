@@ -9,11 +9,12 @@ import { DrizzleUiTranslationPublicationStore } from "../../db/ui-translation-pu
 import { createHyperdriveUiTranslationStore } from "../../db/hyperdrive-ui-translations";
 import { TranslationResourceLoader } from "../../app/localization/resource-loader";
 import { DatabaseMachineTranslationSource, DatabaseManualTranslationSource } from "../../app/localization/persistent-sources";
-import { CanonicalEnglishSource } from "../../app/localization/sources";
+import { CanonicalEnglishSource, LocalTranslationSource } from "../../app/localization/sources";
 import { compileNamespaceBundle } from "../../app/localization/bundles";
 import { canonicalEnglishCatalog } from "../../app/localization/catalog";
 import { sourceFingerprint } from "../../app/localization/fingerprint";
-import { uiTranslationJobIdentity } from "../../app/localization/ui-translation-service";
+import { UiTranslationService, uiTranslationJobIdentity } from "../../app/localization/ui-translation-service";
+import { DrizzleUiTranslationStore } from "../../db/ui-translation-store";
 import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
 import { DrizzleContentPostBodyPlanningStore } from "../../db/content-post-body-task-store";
 import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
@@ -21,8 +22,8 @@ import { ContentTranslationService } from "../../app/localization/content-transl
 import { ContentSourceLocaleResolver, ThresholdContentSourceLocalePolicy } from "../../app/localization/content-source-locale";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
 import { ContentPostBodyTranslationPlanner } from "../../app/localization/content-post-body-planning";
-import { FakeTranslationTaskEnqueuer } from "../../app/localization/translation-tasks";
-import { localeRegistry } from "../../app/localization/registry";
+import { FakeTranslationTaskEnqueuer, PersistentTranslationJobDispatcher, UiTranslationFreshPlanningRequiredError } from "../../app/localization/translation-tasks";
+import { InMemoryLocaleRegistry, localeRegistry } from "../../app/localization/registry";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumService } from "../../db/forum-service";
 
@@ -78,10 +79,51 @@ async function job(policy: string) {
   return { ...specification, taskIdentity: await uiTranslationJobIdentity(specification) };
 }
 
+it.each([undefined, false])("rejects unpersisted A replay without fresh planning (%s) and retains B publication", async (freshPlanning) => {
+  const queue = new FakeTranslationTaskEnqueuer();
+  const dispatcher = new PersistentTranslationJobDispatcher(tasks, queue);
+  const registry = new InMemoryLocaleRegistry([{ tag: "fr", translationStatus: "ready", publicationStatus: "active", direction: "ltr", fallbackChain: ["en"], nativeName: "Français" }]);
+  const service = (generationPolicyVersion: string) => new UiTranslationService({
+    localeRegistry: registry, localManualSource: new LocalTranslationSource({}),
+    persistentStore: new DrizzleUiTranslationStore(db), dispatcher, generationPolicyVersion,
+  });
+  const request = { targetLocale: "fr", namespaces: ["common"] };
+  const a = (await service("policy-a").plan(request)).find((spec) => spec.sourceIdentity.key === "heading")!;
+  expect((await client.query("select count(*)::int as count from translation_tasks")).rows).toEqual([{ count: 0 }]);
+  expect((await client.query("select count(*)::int as count from translation_task_generation_heads")).rows).toEqual([{ count: 0 }]);
+  const bSpec = (await service("policy-b").planAndDispatch(request)).find((spec) => spec.sourceIdentity.key === "heading")!;
+  const b = (await tasks.findByIdentity(bSpec.taskIdentity))!;
+  const claim = await tasks.claim(b.id, 60000); if (claim.outcome !== "claimed") throw new Error("claim");
+  const head = (await client.query("select * from translation_task_generation_heads where source_key='heading'")).rows;
+  const queued = queue.messages.length;
+  const replay = freshPlanning === undefined ? dispatcher.dispatch([a]) : dispatcher.dispatch([a], { freshPlanning });
+
+  await expect(replay).rejects.toBeInstanceOf(UiTranslationFreshPlanningRequiredError);
+
+  expect(await tasks.findByIdentity(a.taskIdentity)).toBeUndefined();
+  expect((await client.query("select * from translation_task_generation_heads where source_key='heading'")).rows).toEqual(head);
+  expect(await tasks.findById(b.id)).toEqual(claim.task);
+  expect(await tasks.isCurrentGeneration(claim.task)).toBe(true);
+  expect(queue.messages).toHaveLength(queued);
+  expect(await new DrizzleUiTranslationPublicationStore(db).publishClaimedMachineResult({ task: claim.task,
+    value: "Fondation B", provenance: { origin: "machine", provider: "fake", model: "fake" } })).toBe(true);
+
+  await service("policy-a").planAndDispatch(request);
+  expect(await tasks.findByIdentity(a.taskIdentity)).toMatchObject({ generation: 2, status: "pending" });
+});
+
+it.each([undefined, false])("does not create even an initial head without fresh planning (%s)", async (freshPlanning) => {
+  const specification = await job("policy-a");
+  const result = freshPlanning === undefined ? tasks.upsertPending(specification) : tasks.upsertPending(specification, { freshPlanning });
+  await expect(result).rejects.toBeInstanceOf(UiTranslationFreshPlanningRequiredError);
+  expect((await client.query("select count(*)::int as count from translation_tasks")).rows).toEqual([{ count: 0 }]);
+  expect((await client.query("select count(*)::int as count from translation_task_generation_heads")).rows).toEqual([{ count: 0 }]);
+});
+
 it.each([false, true])("orders fresh UI A-B-A and fences prior claim (processing=%s)", async (processing) => {
-  const spec = await job("policy-a"), a = await tasks.upsertPending(spec);
+  const spec = await job("policy-a"), a = await tasks.upsertPending(spec, { freshPlanning: true });
   const old = processing ? await tasks.claim(a.id, 60000) : null;
-  await tasks.upsertPending(await job("policy-b"));
+  await tasks.upsertPending(await job("policy-b"), { freshPlanning: true });
   const again = await tasks.upsertPending(spec, { freshPlanning: true });
   expect(again).toMatchObject({ id: a.id, generation: 3, status: "pending", attemptCount: 0, claimToken: null });
   expect(await tasks.isCurrentGeneration(again)).toBe(true);
@@ -96,7 +138,7 @@ it.each([false, true])("orders fresh UI A-B-A and fences prior claim (processing
 });
 
 it("publishes and verifies the same explicit UI policy, invalidates only the derived obsolete bundle", async () => {
-  const a = await tasks.upsertPending(await job("policy-a"));
+  const a = await tasks.upsertPending(await job("policy-a"), { freshPlanning: true });
   const claim = await tasks.claim(a.id, 60000); if (claim.outcome !== "claimed") throw new Error("claim");
   expect(await new DrizzleUiTranslationPublicationStore(db).publishClaimedMachineResult({ task: claim.task,
     value: "Fondation", provenance: { origin: "machine", provider: "fake", model: "fake" } })).toBe(true);
@@ -171,7 +213,7 @@ it.each(["title", "body"] as const)("fences an old processing %s claim after a n
 });
 
 it("uses the same policy on actual request-store HIT and MISS paths while retaining manual priority", async () => {
-  const a = await tasks.upsertPending(await job("policy-a"));
+  const a = await tasks.upsertPending(await job("policy-a"), { freshPlanning: true });
   const claim = await tasks.claim(a.id, 60000); if (claim.outcome !== "claimed") throw new Error("claim");
   await new DrizzleUiTranslationPublicationStore(db).publishClaimedMachineResult({ task: claim.task,
     value: "Machine A", provenance: { origin: "machine", provider: "fake", model: "fake" } });

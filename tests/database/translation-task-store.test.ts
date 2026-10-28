@@ -63,7 +63,7 @@ describe("DrizzleTranslationTaskStore", () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const queue = new FakeTranslationTaskEnqueuer();
     const specification = await job();
-    await new PersistentTranslationJobDispatcher(store, queue).dispatch([specification]);
+    await new PersistentTranslationJobDispatcher(store, queue).dispatch([specification], { freshPlanning: true });
     const created = await store.findByIdentity(specification.taskIdentity);
 
     expect(created).toMatchObject({
@@ -86,7 +86,7 @@ describe("DrizzleTranslationTaskStore", () => {
     const queueFailure = new Error("enqueue outcome unknown");
     const queue = new FakeTranslationTaskEnqueuer(() => { throw queueFailure; });
 
-    await expect(new PersistentTranslationJobDispatcher(store, queue).dispatch([specification]))
+    await expect(new PersistentTranslationJobDispatcher(store, queue).dispatch([specification], { freshPlanning: true }))
       .rejects.toBe(queueFailure);
 
     const freshClient = new Client({
@@ -114,7 +114,7 @@ describe("DrizzleTranslationTaskStore", () => {
   it("upserts a duplicate logical job without creating another durable task", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const specification = await job("stageSummary");
-    const first = await store.upsertPending(specification);
+    const first = await store.upsertPending(specification, { freshPlanning: true });
     const duplicate = await store.upsertPending(specification);
     const count = await client.query<{ count: string }>(
       "select count(*)::text as count from translation_tasks where task_identity = $1",
@@ -160,7 +160,7 @@ describe("DrizzleTranslationTaskStore", () => {
 
   it("atomically grants one execution owner and makes a live duplicate a no-op", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const pending = await store.upsertPending(await job("forumTagline"));
+    const pending = await store.upsertPending(await job("forumTagline"), { freshPlanning: true });
     const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
     const firstStore = new DrizzleTranslationTaskStore(drizzle(pool));
     const secondStore = new DrizzleTranslationTaskStore(drizzle(pool));
@@ -177,7 +177,7 @@ describe("DrizzleTranslationTaskStore", () => {
   it("keeps a live processing lease intact when the same logical job is dispatched again", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const specification = await job("processing-upsert");
-    const pending = await store.upsertPending(specification);
+    const pending = await store.upsertPending(specification, { freshPlanning: true });
     const claim = await store.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -196,7 +196,7 @@ describe("DrizzleTranslationTaskStore", () => {
 
   it("reclaims an expired database lease and never reclaims a terminal stale task", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const pending = await store.upsertPending(await job("productName"));
+    const pending = await store.upsertPending(await job("productName"), { freshPlanning: true });
     const first = await store.claim(pending.id, 60_000);
     expect(first.outcome).toBe("claimed");
     if (first.outcome !== "claimed") throw new Error("claim failed");
@@ -222,7 +222,7 @@ describe("DrizzleTranslationTaskStore", () => {
   it("reactivates the same stale logical task only when a new plan dispatches it again", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const specification = await job("reactivated-task");
-    const pending = await store.upsertPending(specification);
+    const pending = await store.upsertPending(specification, { freshPlanning: true });
     const claim = await store.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
     await expect(store.markStale(pending.id, claim.task.claimToken)).resolves.toBe(true);
@@ -250,7 +250,7 @@ describe("DrizzleTranslationTaskStore", () => {
 
   it("persists retryable failures and advances the durable attempt budget on each new claim", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const pending = await store.upsertPending(await job("retry-budget"));
+    const pending = await store.upsertPending(await job("retry-budget"), { freshPlanning: true });
     const first = await store.claim(pending.id, 60_000);
     if (first.outcome !== "claimed") throw new Error("first claim failed");
 
@@ -283,7 +283,7 @@ describe("DrizzleTranslationTaskStore", () => {
 
   it("moves the final retryable failure into the persistent DLQ-equivalent failed state", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const pending = await store.upsertPending(await job("retry-exhaustion"));
+    const pending = await store.upsertPending(await job("retry-exhaustion"), { freshPlanning: true });
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       const claim = await store.claim(pending.id, 60_000);
@@ -322,7 +322,7 @@ describe("DrizzleTranslationTaskStore", () => {
 
   it("claim-token fences terminal failure persistence", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const pending = await store.upsertPending(await job("terminal-fencing"));
+    const pending = await store.upsertPending(await job("terminal-fencing"), { freshPlanning: true });
     const claim = await store.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -359,7 +359,7 @@ describe("DrizzleTranslationTaskStore", () => {
 
   it("reclaims an expired exhausted attempt only to persist terminal exhaustion", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const pending = await store.upsertPending(await job("crashed-final-attempt"));
+    const pending = await store.upsertPending(await job("crashed-final-attempt"), { freshPlanning: true });
 
     for (let attempt = 1; attempt < 3; attempt++) {
       const claim = await store.claim(pending.id, 60_000);

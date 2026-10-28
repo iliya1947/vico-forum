@@ -668,7 +668,7 @@ describe("content topic-title durable planning", () => {
       ...uiSpecification,
       taskIdentity: await uiTranslationJobIdentity(uiSpecification),
     };
-    const stored = await new DrizzleTranslationTaskStore(drizzle(client)).upsertPending(uiTask);
+    const stored = await new DrizzleTranslationTaskStore(drizzle(client)).upsertPending(uiTask, { freshPlanning: true });
     expect(stored).toMatchObject({
       translationKind: "ui",
       sourceIdentity: { namespace: "common", key: "example" },

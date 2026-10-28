@@ -31,6 +31,7 @@ import {
 } from "../app/localization/translation-task-reconciliation";
 import {
   DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+  UiTranslationFreshPlanningRequiredError,
   validateContentPostBodyTranslationTaskSpecification,
   validateContentTopicTitleTranslationTaskSpecification,
   validateUiTranslationJobSpecification,
@@ -464,7 +465,7 @@ export class DrizzleTranslationTaskStore implements
         // Only a new eligibility decision may reactivate a stale or superseded
         // occurrence. A delayed dispatcher retry must retain its terminal state
         // or old generation/claim, even after the consumer has marked it stale.
-        if (!options?.freshPlanning || existing.status === "completed" || existing.status === "failed"
+        if (options?.freshPlanning !== true || existing.status === "completed" || existing.status === "failed"
           || (existing.status !== "stale" && existing.generation === currentGeneration)) return existing;
 
         const databaseNow = sql`statement_timestamp()`;
@@ -496,6 +497,8 @@ export class DrizzleTranslationTaskStore implements
         }
         return parseTaskRow(requiredRow(reactivated[0]));
       }
+
+      if (options?.freshPlanning !== true) throw new UiTranslationFreshPlanningRequiredError();
 
       const generation = insertedHead.length === 1 ? currentGeneration : currentGeneration + 1;
       const rows = await transaction.insert(translationTasks).values({

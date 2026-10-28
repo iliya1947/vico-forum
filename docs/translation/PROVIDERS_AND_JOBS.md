@@ -174,6 +174,14 @@ planning occurrence не является частью этого контрак
 новую позицию только от fresh decision, сохраняя fencing старых claim/allowance owners.
 Дубликат актуального claim не сбрасывает lease/attempt; completed identity остаётся terminal.
 
+Создание ранее не сохранённой UI identity также требует `freshPlanning:true`, даже
+если unit ещё не имеет head. Без разрешения store отклоняет такую операцию через
+`UiTranslationFreshPlanningRequiredError`; transaction не оставляет task/head writes,
+а dispatcher не enqueue-ит отсутствующую task. Это ошибка precondition planning API,
+не transient DB failure и не основание повторять старый plan как новое решение.
+Повторная отправка уже сохранённой task по-прежнему не требует нового разрешения;
+`UiTranslationService.planAndDispatch` получает его от нового eligibility decision.
+
 `sourceFingerprint`, `taskIdentity` и `generationPolicyVersion` участвуют в identity/validation,
 но не сравниваются как хронологические значения.
 
