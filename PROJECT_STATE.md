@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-27
+Последнее обновление: 2026-10-28
 
 ## Назначение
 
@@ -19,6 +19,74 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## L7 — Editor structural Markdown semantics (2026-10-28)
+
+В implementation-ветке реализован пакет из семи согласованных findings:
+
+- `EDITOR-03`: частичное снятие inline formatting учитывает удалённые и вставленные
+  delimiters дочерних wrappers до расчёта внешней границы. Boundary whitespace
+  emphasis выводится за delimiters, а невыделенные пробелы link label остаются
+  внутри ссылки; пустые residual wrappers не создаются. При необходимости
+  CommonMark attention boundary экранируется literal character reference только
+  со стороны выделенного текста, с сохранением символов и source-selection mapping.
+  В mixed GFM runs внешний delimiter проверяется отдельно от семьи маркеров ребёнка:
+  `~~**`/`**~~` сохраняют strike pairing и selected-only semantics, включая outer
+  strike с inner strong/emphasis и partial intraword selection. Flat strike,
+  whole-word Clear и reversed nesting остаются supported controls.
+  При repeated strike через strong/emphasis Clear удаляет избыточный внутренний
+  strike только на пересечённой или вновь открываемой границе, где внешний strike
+  уже обеспечивает зачёркивание. Это сохраняет effective formatting невыделенного
+  остатка при punctuation и whitespace trimming, включая разные spans wrappers,
+  outer link и Unicode; текст и соседние блоки не пересериализуются. Общая модель
+  source edits и прежняя attention protection сохраняются.
+- `EDITOR-06`: Simple Enter закрывает и вновь открывает пересекающие границу inline
+  wrappers по фактическим границам после nested reconstruction, включая начало
+  и конец visual leaf; исходник соседних блоков не пересериализуется.
+- `RES-EDITOR-02`: Backspace в начале следующего обычного абзаца удаляет separator,
+  сохраняет исходный текст и поддерживает общую Undo/Redo history. Совпадающие
+  соприкасающиеся inline wrappers объединяются; heading/list/code/table boundaries
+  не интерпретируются как обычные paragraph separators. Terminal manual direction
+  предыдущего paragraph переносится в конец объединённого paragraph, а каретка
+  остаётся перед скрытым marker. При двух explicit overrides сохраняется override
+  предыдущего paragraph; если он auto, сохраняется terminal override второго.
+- `EDITOR-07`: Tab/Shift+Tab в Advanced code учитывает exclusive selection end;
+  следующая строка, включая closing fence, не получает отступ.
+- `EDITOR-11`: первоначальная публикация темы, Help-вопроса и ответа сохраняет raw
+  body; trim применяется только при проверке содержательности, а не к сохраняемому
+  Markdown. Заголовки/идентификаторы сохраняют прежнюю validation.
+- `MARKDOWN-CUSTOM-STRUCTURE-DIVERGENCE-01`: mention recipients и translation
+  protection используют renderer-compatible разбиение tables/spoilers. Literal
+  spoiler summary не создаёт mentions; quotes/code внутри самостоятельных ячеек
+  исключаются из recipients. Перевод сохраняет table/spoiler structure и переводит
+  человеческий текст, включая буквальный summary. Protection policy повышена до
+  `cnt06-custom-structure-v2`; direction round-trip (`LOC-08`, L8) не входит в пакет.
+- `MARKDOWN-SPOILER-01`: fence-aware индекс closing markers заменяет повторные
+  suffix scans при незакрытых spoiler openers; preprocessing ограничен `O(n log n)`
+  по числу строк и `O(n)` памяти.
+
+Добавлены focused regressions для source edits/history, notification recipients,
+translation restore и parser work, а также native action → writer → PostgreSQL проверки
+сохранения indented code/trailing whitespace и durable mention notifications.
+Локальный Chromium проверил native Enter, Backspace с Undo/Redo, partial clear и
+exclusive-end Tab вместе с FormData и публичным renderer. Это инженерные локальные
+проверки; owner visual acceptance и внешняя infrastructure validation не выполнялись.
+Локально пройдены общий application suite, последующие focused regressions, native
+PostgreSQL suite, typecheck/TypeScript build, source lint, app/UI-preview builds и
+Workers smoke. Fence-aware segmentation совпало с прежней грамматикой на 10 000
+ограниченных смешанных примерах. Bounded correction трёх editor transformation
+families покрыта helper/component regressions, включая nested links, boundary
+whitespace, literal references/Unicode и direction marker/history. После correction
+требуется новый whole-PR review стабильного implementation head.
+
+Clear-link image collision исправлена: `[a !b!](https://example.test)`, Clear `a !`
+даёт `a &#33;[b!](https://example.test)` — выбранный `!` остаётся буквальным, suffix
+сохраняет link text/destination. Защита использует actual reopening anchor после
+удаления child delimiters, учитывает уже экранированный `!` и не меняет suffix source.
+Focused helper/component и локальный Chromium проверяют source/FormData/public
+semantics, selection и Undo/Redo; прежняя matrix до глубины wrappers 4 проходит
+14 597 выделений без нарушений. Это bounded correction; whole-PR acceptance
+требует нового review стабильного head, не следует из успешной локальной matrix.
 
 ## LOC-06 — отсутствие текста при генерации перевода post body (2026-10-27)
 

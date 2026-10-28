@@ -1,7 +1,7 @@
-import { parseForumMarkdown, serializeForumMarkdown } from "../markdown-syntax";
+import { parseRenderedForumMarkdown, serializeRenderedForumMarkdown } from "../forum/semantic-markdown";
 import { collectAttributedMarkdownQuoteHeaders } from "../forum/quote-markdown";
 
-export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-quote-attribution-v1";
+export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-custom-structure-v2";
 export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
@@ -571,11 +571,11 @@ function childPath(parentPath: string, type: string, index: number): string {
 }
 
 function parseMarkdown(value: string): MarkdownNode {
-  return parseForumMarkdown(value) as unknown as MarkdownNode;
+  return parseRenderedForumMarkdown(value);
 }
 
 function serializeMarkdown(tree: MarkdownNode): string {
-  return serializeForumMarkdown(tree as Parameters<typeof serializeForumMarkdown>[0]);
+  return serializeRenderedForumMarkdown(tree);
 }
 
 function escapeRegExp(value: string): string {

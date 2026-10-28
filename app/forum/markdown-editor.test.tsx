@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import { ForumMarkdown } from "./markdown";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
 import { escapeVisualMarkdownText } from "./visual-markdown-editor";
-import { ForumMarkdown } from "./markdown";
 import { mentionProfileLink, publishedMentionRecipients } from "./mentions";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { HeaderAuthProvider } from "../auth/auth-controls";
@@ -87,6 +87,264 @@ afterEach(() => {
 });
 
 describe("MarkdownEditor", () => {
+  it.each([
+    ["[a !b!](https://example.test)", "a !"],
+    ["[a !b!](https://example.test)", "!"],
+    ["[a ?b!](https://example.test)", "a ?"],
+    ["[a \\!b!](https://example.test)", "a !"],
+    ["[a &#33;b!](https://example.test)", "a !"],
+    ["[**a !b!**](https://example.test)", "a !"],
+    ["**[a !b!](https://example.test)**", "a !"],
+    ["[**a !** b!](https://example.test)", "a !"],
+    ["[~~**~~a !b!~~**~~](https://example.test)", "a !"],
+    ["[𐐀 !b!](https://example.test)", "𐐀 !"],
+  ])("keeps literal punctuation and reopened links through Simple/public: %s / %s", async (source, selected) => {
+    function characters(container: HTMLElement) {
+      const result: Array<{ character: string; formats: string[]; offset: number }> = [];
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      let node: Node | null, offset = 0;
+      while ((node = walker.nextNode())) for (const character of node.textContent ?? "") {
+        const parent = node.parentElement!;
+        const formats = ["a", "strong", "em", "del"].filter((tag) =>
+          (character.trim() || tag === "a") && parent.closest(tag));
+        result.push({ character, formats, offset }); offset += character.length;
+      }
+      return result;
+    }
+    const original = renderEditor(<ForumMarkdown>{source}</ForumMarkdown>).container;
+    const before = characters(original), plain = original.textContent!;
+    const start = plain.indexOf(selected), end = start + selected.length;
+    renderEditor(<form><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent?.includes(selected))!;
+    const leafStart = leaf.textContent!.indexOf(selected);
+    leaf.focus(); const range = document.createRange();
+    range.setStart(leaf.firstChild!, leafStart); range.setEnd(leaf.firstChild!, leafStart + selected.length);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range); fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    expect(window.getSelection()!.toString()).toBe(selected);
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe(plain);
+    expect(published.querySelector("img")).toBeNull();
+    expect([...published.querySelectorAll("a")].every((link) => link.getAttribute("href") === "https://example.test")).toBe(true);
+    expect(characters(published)).toEqual(before.map((item) => ({
+      ...item, formats: item.offset >= start && item.offset < end ? [] : item.formats,
+    })));
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([
+    ["~~**~~a (b)~~**~~", "a (b)", "a"],
+    ["~~**~~a(b)~~**~~", "a(b)", "a"],
+    ["~~*~~a (b)~~*~~", "a (b)", "a"],
+    ["~~*~~a(b)~~*~~", "a(b)", "a"],
+    ["[~~**~~a (b)~~**~~](https://example.test)", "a (b)", "a"],
+    ["~~**~~𐐀 (b)~~**~~", "𐐀 (b)", "𐐀"],
+    ["~~**~~a (b)~~**~~", "a (b)", "a (b)"],
+  ])("keeps repeated-strike Clear semantics in Simple: %s", async (source, plain, selected) => {
+    renderEditor(<form><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const start = plain.indexOf(selected), end = start + selected.length;
+    leaf.focus(); const range = document.createRange();
+    range.setStart(leaf.firstChild!, start); range.setEnd(leaf.firstChild!, end);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range); fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    expect(window.getSelection()!.toString()).toBe(selected);
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe(plain);
+    const walker = document.createTreeWalker(published, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let node: Node | null;
+    while ((node = walker.nextNode())) for (const character of node.textContent ?? "") {
+      const cleared = offset >= start && offset < end;
+      if (character.trim()) {
+        const parent = node.parentElement!;
+        expect(Boolean(parent.closest("del"))).toBe(!cleared);
+        expect(Boolean(parent.closest("strong"))).toBe(!cleared && source.includes("**"));
+        expect(Boolean(parent.closest("em"))).toBe(!cleared && !source.includes("**"));
+        expect(Boolean(parent.closest("a"))).toBe(!cleared && source.startsWith("["));
+      }
+      offset += character.length;
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([
+    ["~~**alpha beta**~~", "a"], ["~~**alpha beta**~~", "l"],
+    ["~~*alpha beta*~~", "a"], ["~~*alpha beta*~~", "l"],
+    ["~~alpha beta~~", "l"], ["**~~alpha beta~~**", "l"],
+    ["~~**alpha beta**~~", "alpha"],
+  ])("preserves selected-only nested strike through the actual editor: %s / %s", async (source, selected) => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    const start = "alpha beta".indexOf(selected), end = start + selected.length;
+    leaf.focus(); const range = document.createRange();
+    range.setStart(leaf.firstChild!, start); range.setEnd(leaf.firstChild!, end);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range); fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    expect(window.getSelection()!.toString()).toBe(selected);
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe("alpha beta");
+    const walker = document.createTreeWalker(published, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let node: Node | null;
+    while ((node = walker.nextNode())) for (const character of node.textContent ?? "") {
+      const cleared = offset >= start && offset < end;
+      if (character.trim()) {
+        const parent = node.parentElement!;
+        expect(Boolean(parent.closest("del"))).toBe(!cleared);
+        expect(Boolean(parent.closest("strong"))).toBe(!cleared && source.includes("**"));
+        expect(Boolean(parent.closest("em"))).toBe(!cleared && source.includes("*") && !source.includes("**"));
+      }
+      offset += character.length;
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([
+    ["**alpha *beta gamma* delta**", "beta gamma", 0, 4, "alpha beta gamma delta", []],
+    ["[alpha beta](https://x)", "alpha beta", 0, 5, "alpha beta", [" beta"]],
+    ["[**alpha beta**](https://x)", "alpha beta", 6, 10, "alpha beta", ["alpha "]],
+    ["**alpha [beta gamma](https://x) delta**", "beta gamma", 0, 4, "alpha beta gamma delta", [" gamma"]],
+    ["**alpha [beta gamma](https://x) delta**", "beta gamma", 5, 10, "alpha beta gamma delta", ["beta "]],
+    ["**alpha [beta 𐐀amma](https://x) delta**", "beta 𐐀amma", 5, 11, "alpha beta 𐐀amma delta", ["beta "]],
+  ] as const)("clears selected visual content and preserves published boundaries: %s", async (source, leafText, start, end, expectedText, links) => {
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent === leafText)!;
+    leaf.focus();
+    const range = document.createRange(); range.setStart(leaf.firstChild!, start); range.setEnd(leaf.firstChild!, end);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.mouseUp(leaf);
+    await userEvent.click(document.querySelector('.markdown-editor-extra-menu summary')!);
+    await userEvent.click(screen.getByRole("button", { name: "Clear formatting" }));
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.textContent).toBe(expectedText);
+    expect([...published.querySelectorAll("a")].map((node) => node.textContent)).toEqual(links);
+    if (leafText === "beta gamma" && links.length === 0) {
+      expect([...published.querySelectorAll("strong")].map((node) => node.textContent)).toEqual(["alpha", "gamma delta"]);
+      expect(published.querySelector("em")).toHaveTextContent("gamma");
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it.each([0, 10, 2])("preserves published nested formatting on native Enter at %s", async (offset) => {
+    const source = "**alpha *beta gamma* delta**";
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent === "beta gamma")!;
+    leaf.focus(); const range = document.createRange(); range.setStart(leaf.firstChild!, offset); range.collapse(true);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Enter" });
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.querySelectorAll("p")).toHaveLength(2);
+    expect(published.textContent).not.toMatch(/[*_]/u);
+    expect([...published.querySelectorAll("em")].map((node) => node.textContent).join("")).toBe("beta gamma");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+  });
+
+  it.each(["ltr", "rtl"])("keeps manual %s direction through Backspace and history", async (direction) => {
+    const source = `Alpha {:vico-dir=${direction}}\n\nBeta`;
+    renderEditor(<form><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={source} /></form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+      .find((node) => node.textContent === "Beta")!;
+    leaf.focus(); const range = document.createRange(); range.setStart(leaf.firstChild!, 0); range.collapse(true);
+    window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Backspace" });
+    const form = document.querySelector("form")!;
+    const changed = new FormData(form).get("body") as string;
+    const published = renderEditor(<ForumMarkdown>{changed}</ForumMarkdown>).container;
+    expect(published.querySelector("p")).toHaveAttribute("dir", direction);
+    expect(published.textContent).toBe("AlphaBeta");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(changed);
+  });
+
+  it("splits inline formatting on native Enter and restores exact source on undo", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue="**alpha beta**" /></>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 5);
+    range.collapse(true);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Enter" });
+    expect(document.querySelectorAll(".markdown-editor-visual strong")).toHaveLength(2);
+    expect(document.querySelectorAll(".markdown-editor-visual strong")[1]).toHaveTextContent("beta");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("**alpha beta**");
+  });
+
+  it("joins ordinary paragraphs on Backspace at the second leaf start, with history", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultValue={"Alpha \n\nbeta"} /></>);
+    const leaf = document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')[1]!;
+    leaf.focus();
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 0);
+    range.collapse(true);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    fireEvent.keyDown(leaf, { key: "Backspace" });
+    expect(screen.getByLabelText("Body")).toHaveValue("Alpha beta");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Body")).toHaveValue("Alpha \n\nbeta");
+  });
+
+  it.each([false, true])("keeps an exclusive next-line boundary out of Tab (outdent=%s)", (shiftKey) => {
+    const source = "```ts\n  one\n  two\n```";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(source.indexOf("  one"), source.indexOf("  two"));
+    fireEvent.keyDown(textarea, { key: "Tab", shiftKey });
+    expect(textarea.value).toBe(shiftKey ? "```ts\none\n  two\n```" : "```ts\n    one\n  two\n```");
+  });
+
+  it("does not indent a closing fence at an exclusive code selection end", async () => {
+    const source = "```ts\none\n   ```\n\nAfter";
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(source.indexOf("one"), source.indexOf("   ```"));
+    fireEvent.keyDown(textarea, { key: "Tab" });
+    expect(textarea.value).toBe("```ts\n  one\n   ```\n\nAfter");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(textarea).toHaveValue(source);
+  });
+
 
   it.each([
     ["b", "**alpha** beta"], ["i", "_alpha_ beta"], ["k", "[alpha](https://) beta"],

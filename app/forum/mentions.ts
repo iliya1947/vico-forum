@@ -1,4 +1,4 @@
-import { fromMarkdown } from "mdast-util-from-markdown";
+import { parseRenderedForumMarkdown } from "./semantic-markdown";
 /** A mention autocomplete token is only the immediate word at the authoring caret. */
 export interface MentionToken { start: number; end: number; query: string }
 
@@ -38,9 +38,9 @@ export function mentionProfileLink(name: string, profilePath: string): string {
 /** Recipients must come from parsed profile links, not bare @words or displayed names. */
 export function publishedMentionRecipients(markdown: string): string[] {
   const recipients = new Set<string>();
-  const root = fromMarkdown(markdown);
+  const root = parseRenderedForumMarkdown(markdown);
   function visit(node: { type: string; url?: string; children?: readonly unknown[] }) {
-    if (node.type === "blockquote" || node.type === "code" || node.type === "inlineCode"
+    if (node.type === "vicoSpoilerTitle" || node.type === "blockquote" || node.type === "code" || node.type === "inlineCode"
       || node.type === "html" || node.type === "image") return;
     if (node.type === "link" && node.url) {
       // Profile URLs inserted by the editor contain an immutable, path-encoded ID.

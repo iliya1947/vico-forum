@@ -121,29 +121,47 @@ function protectedTableAt(lines: Line[], index: number, source: string):
   };
 }
 
-function spoilerAt(lines: Line[], index: number, source: string): { spoiler: MarkdownSpoiler; next: number } | null {
+/** Each query starts outside a fence. Index fence exits once, then resolve the
+ * next eligible spoiler closer backwards, rather than rescanning every suffix.
+ * A monotone frontier answers "next closing fence at least this wide" in O(log n).
+ */
+function spoilerClosingLines(lines: Line[]): number[] {
+  const frontiers = new Map<string, Array<{ width: number; index: number }>>();
+  const result = Array<number>(lines.length + 1).fill(-1);
+  for (let index = lines.length - 1; index >= 0; index--) {
+    const text = lines[index]!.text;
+    const fence = /^ {0,3}(\x60{3,}|~{3,})(.*)$/u.exec(text);
+    if (fence) {
+      const width = fence[1]!.length;
+      const char = fence[1]![0]!;
+      const frontier = frontiers.get(char) ?? [];
+      let low = 0;
+      let high = frontier.length;
+      while (low < high) {
+        const middle = (low + high) >>> 1;
+        if (frontier[middle]!.width >= width) low = middle + 1;
+        else high = middle;
+      }
+      const exit = low > 0 ? frontier[low - 1]!.index : -1;
+      result[index] = exit < 0 ? -1 : result[exit + 1]!;
+      if (/^[ \t]*$/u.test(fence[2]!)) {
+        while (frontier.length && frontier.at(-1)!.width <= width) frontier.pop();
+        frontier.push({ width, index });
+        frontiers.set(char, frontier);
+      }
+    } else {
+      result[index] = /^:::[ \t]*$/u.test(text) ? index : result[index + 1]!;
+    }
+  }
+  return result;
+}
+
+function spoilerAt(lines: Line[], index: number, source: string, closers: number[]):
+  { spoiler: MarkdownSpoiler; next: number } | null {
   const open = /^:::spoiler(?:[ \t]+([^\r\n]*?))?[ \t]*$/u.exec(lines[index]!.text);
   if (!open) return null;
-  let next = index + 1;
-  let fenceChar: string | null = null;
-  let fenceWidth = 0;
-  while (next < lines.length) {
-    const text = lines[next]!.text;
-    if (fenceChar) {
-      const close = /^ {0,3}(\x60{3,}|~{3,})[ \t]*$/u.exec(text);
-      if (close && close[1]![0] === fenceChar && close[1]!.length >= fenceWidth) fenceChar = null;
-    } else {
-      const fence = /^ {0,3}(\x60{3,}|~{3,})(.*)$/u.exec(text);
-      if (fence) {
-        fenceChar = fence[1]![0]!;
-        fenceWidth = fence[1]!.length;
-      } else if (/^:::[ \t]*$/u.test(text)) {
-        break;
-      }
-    }
-    next++;
-  }
-  if (next === lines.length) return null; // unclosed marker remains literal Markdown
+  const next = closers[index + 1]!;
+  if (next < 0) return null; // unclosed marker remains literal Markdown
   return {
     spoiler: {
       kind: "spoiler",
@@ -162,6 +180,7 @@ function spoilerAt(lines: Line[], index: number, source: string): { spoiler: Mar
  */
 export function segmentTechnicalMarkdown(source: string): TechnicalSegment[] {
   const lines = linesOf(source);
+  const closers = spoilerClosingLines(lines);
   const result: TechnicalSegment[] = [];
   let proseStart = 0;
   let fenceChar: string | null = null;
@@ -191,7 +210,7 @@ export function segmentTechnicalMarkdown(source: string): TechnicalSegment[] {
       i++;
       continue;
     }
-    const spoiler = spoilerAt(lines, i, source);
+    const spoiler = spoilerAt(lines, i, source, closers);
     const table = spoiler ? null : tableAt(lines, i);
     const protectedTable = spoiler || table ? null : protectedTableAt(lines, i, source);
     const found = spoiler?.spoiler ?? table?.table ?? protectedTable?.block;

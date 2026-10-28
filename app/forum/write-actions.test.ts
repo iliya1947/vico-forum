@@ -191,6 +191,22 @@ function writer() {
   } satisfies ForumWriter;
 }
 
+describe("lossless initial publication bodies", () => {
+  it.each(["section", "help", "reply"])("preserves Markdown source through the %s action", async (kind) => {
+    const database = writer();
+    const body = "    indented code\r\n\r\nTrailing spaces  \r\n";
+    const fields = { title: " Topic ", body };
+    const result = kind === "section"
+      ? await sectionAction({ request: request("/en/sections/section-1", fields), params: { locale: "en", sectionId: "section-1" }, context: context(database) })
+      : kind === "help"
+        ? await categoryAction({ request: request("/en/categories/help-solutions", { ...fields, intent: "createHelpQuestion" }), params: { locale: "en", categoryId: "help-solutions" }, context: context(database) })
+        : await topicAction({ request: request("/en/topics/topic-1", fields), params: { locale: "en", topicId: "topic-1" }, context: context(database) });
+    expect(result).toBeInstanceOf(Response);
+    const call = kind === "reply" ? database.createReply : database.createTopic;
+    expect(call).toHaveBeenCalledWith(expect.objectContaining({ body }));
+  });
+});
+
 describe("post edit and protected history action permissions", () => {
   const fields = {
     intent: "editPost", postId: "post-1", expectedRevisionId: "post-r1",
@@ -362,7 +378,7 @@ describe("forum write route actions", () => {
       sectionId: "help-solutions-questions",
       authorId: "session-user",
       title: "A focused question",
-      body: "Reproduction details",
+      body: " Reproduction details ",
       tags: ["TypeScript", "Cloudflare"],
     });
     if (!(response instanceof Response)) throw new Error("expected redirect response");
@@ -596,7 +612,7 @@ describe("forum write route actions", () => {
       params: { locale: "he", sectionId: "typescript" }, context: context(forumWriter),
     });
     expect(forumWriter.createTopic).toHaveBeenCalledWith({
-      sectionId: "typescript", authorId: "session-user", title: "A title", body: "First post",
+      sectionId: "typescript", authorId: "session-user", title: "A title", body: " First post ",
       tags: ["TypeScript", "Cloudflare", "typescript"],
     });
     if (!(response instanceof Response)) throw new Error("expected redirect response");
@@ -613,7 +629,7 @@ describe("forum write route actions", () => {
     expect(forumWriter.createReply).toHaveBeenCalledWith({
       topicId: "topic-1",
       authorId: "session-user",
-      body: "A reply",
+      body: " A reply ",
       parentPostId: "post-1",
     });
     if (!(response instanceof Response)) throw new Error("expected redirect response");
