@@ -25,7 +25,7 @@ function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): stri
       .replace(/\|/gu, "\\|")
       .replace(/\{:vico-dir=(?:ltr|rtl)\}/gu, "\\$&")
       .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler")
-      .replace(/^:::[ \t]*$/u, "\\      .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler");");
+      .replace(/^:::[ \t]*$/u, "\\$&");
     // Plain text must not accidentally become a heading, quote or list item.
     return literal.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
       (_, indent: string, marker: string) => indent + "\\" + marker)
@@ -165,6 +165,8 @@ export function clipboardPlainToMarkdown(text: string, context?: ClipboardPasteC
         collectWithOffset(parseForumMarkdown(segment.source), base + segment.span.start);
       } else if (segment.kind === "spoiler") {
         collectRendered(segment.body, base + segment.bodyStart);
+      } else if (segment.kind === "protected") {
+        collectWithOffset(parseForumMarkdown(segment.source), base + segment.span.start);
       } else if (segment.kind === "table") {
         for (const row of [segment.headers, ...segment.rows]) {
           for (const cell of row) collectWithOffset(parseForumMarkdown(cell.text), base + cell.span.start);
