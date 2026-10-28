@@ -2400,21 +2400,26 @@ describe("LITERAL-TEXT-01 bounded plain paste corrections", () => {
     input.focus();
     const start = input.value.indexOf("Alpha");
     input.setSelectionRange(start, start + 5);
-    const clipboardNavigator = Object.assign(Object.create(navigator) as Navigator, {
-      clipboard: { readText: vi.fn(async () => plain) },
+    const previousClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true, value: { readText: vi.fn(async () => plain) },
     });
-    vi.stubGlobal("navigator", clipboardNavigator);
-    await userEvent.click(document.querySelector<HTMLDetailsElement>(
-      ".markdown-editor-extra-menu:last-of-type summary",
-    )!);
-    await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
-    const form = document.querySelector("form")!;
-    await waitFor(() => expect(new FormData(form).get("body")).toBe(expected));
-    const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
-    expect(published.querySelector("pre code")?.textContent).toBe(plain);
-    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(new FormData(form).get("body")).toBe(original);
-    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
-    expect(new FormData(form).get("body")).toBe(expected);
+    try {
+      await userEvent.click(document.querySelector<HTMLDetailsElement>(
+        ".markdown-editor-extra-menu:last-of-type summary",
+      )!);
+      await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+      const form = document.querySelector("form")!;
+      await waitFor(() => expect(new FormData(form).get("body")).toBe(expected));
+      const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+      expect(published.querySelector("pre code")?.textContent).toBe(plain);
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(new FormData(form).get("body")).toBe(original);
+      await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+      expect(new FormData(form).get("body")).toBe(expected);
+    } finally {
+      if (previousClipboard) Object.defineProperty(navigator, "clipboard", previousClipboard);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
   });
 });
