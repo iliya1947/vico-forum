@@ -2423,3 +2423,65 @@ describe("LITERAL-TEXT-01 bounded plain paste corrections", () => {
     }
   });
 });
+
+
+describe("Advanced plain command: residual code contexts", () => {
+  const tick = String.fromCharCode(96);
+  const sensitive = "~~literal~~ &copy; | value |";
+  const originalFenced = tick.repeat(3) + "js\nAlpha\nOutside\n" + tick.repeat(3);
+  const rawFence = "Before\n" + tick.repeat(3) + "\n**literal**\nAfter";
+  const cases = [
+    {
+      name: "inline code", original: "Before " + tick + "Alpha" + tick + " After",
+      plain: sensitive, expected: "Before " + tick + sensitive + tick + " After",
+      selector: "p code", raw: sensitive,
+    },
+    {
+      name: "spoiler-local indented code", original: ":::spoiler Outer\n\tAlpha\n:::",
+      plain: sensitive, expected: ":::spoiler Outer\n\t" + sensitive + "\n:::",
+      selector: ".forum-markdown-spoiler pre code", raw: sensitive,
+    },
+    {
+      name: "matching fenced-code clipboard", original: originalFenced,
+      plain: rawFence, expected: tick.repeat(4) + "js\n" + rawFence + "\nOutside\n" + tick.repeat(4),
+      selector: "pre code", raw: rawFence,
+    },
+  ] as const;
+
+  it.each(cases)("preserves $name through toolbar, FormData, public render and Undo/Redo", async (scenario) => {
+    renderEditor(<form><label htmlFor="advanced-plain-residual">Body</label>
+      <MarkdownEditor id="advanced-plain-residual" name="body" defaultAuthoringMode="advanced"
+        defaultValue={scenario.original} />
+    </form>);
+    const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    input.focus();
+    const start = input.value.indexOf("Alpha");
+    input.setSelectionRange(start, start + 5);
+    const previousClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true, value: { readText: vi.fn(async () => scenario.plain) },
+    });
+    try {
+      await userEvent.click(document.querySelector<HTMLDetailsElement>(
+        ".markdown-editor-extra-menu:last-of-type summary",
+      )!);
+      await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+      const form = document.querySelector("form")!;
+      await waitFor(() => expect(new FormData(form).get("body")).toBe(scenario.expected));
+      const published = renderEditor(<ForumMarkdown>{String(new FormData(form).get("body"))}</ForumMarkdown>).container;
+      expect(published.querySelector(scenario.selector)?.textContent).toContain(scenario.raw);
+      expect(published.querySelector("strong")).toBeNull();
+      if (scenario.name === "matching fenced-code clipboard") {
+        expect(published.querySelectorAll("pre code")).toHaveLength(1);
+        expect(published.querySelector("pre code")?.textContent).toContain("Outside");
+      }
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(new FormData(form).get("body")).toBe(scenario.original);
+      await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+      expect(new FormData(form).get("body")).toBe(scenario.expected);
+    } finally {
+      if (previousClipboard) Object.defineProperty(navigator, "clipboard", previousClipboard);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+});
