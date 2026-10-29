@@ -1,3 +1,12 @@
+## Лёва — EDITOR-05 verification complete / bounded plan ready (2026-10-29)
+
+- New assignment #6503112481 completed on main `a4d552a4ce57986d97c02e2695f4546cffccecfd`. EDITOR-05 remains one confirmed current-Stage P2 functional defect in Advanced Find Next.
+- findNext computes/records the correct match range but only puts it into a ref and sets mode=write. When already-write, effect dependencies [mode,value,authoringMode] do not change, so focus/DOM selection are not applied. Preview/Split first-transition succeeds; subsequent write-mode Find Next fails again.
+- Fresh actual-editor Chromium32 observations at390/1280:18 desired-selection mismatches from the same cause,14 expected neighboring controls; source unchanged throughout,0 page errors/external/mutating requests. Three temporary CRLF mounted diagnostics confirm the same current behavior/focus/offset chain; existing Replace all test passes but never clicks Find Next.
+- Minimal plan: deterministic Advanced selection application, synchronously when textarea is already active and via existing pending/effect path when switching views. Preserve source↔textarea offset mapping, history/content identity, literal forward/wrap/no-op semantics. Focused desired DOM selection/focus/repeated-click/Preview/Split/CRLF/Unicode controls; no generic selection subsystem or unrelated search UI.
+- [Personal verification and regression plan](https://github.com/iliya1947/vico-forum/blob/d47eaaa8efaad3cd0aff8d923ca836e501d5c894/.github/agents/codex-6.1-sol.md). No implementation edits, new branch/PR or merge; temporary test restored, checkout clean, dependency link removed; own HTTP/Chromium closed, no runtime/DB/external service.
+- Coordinator reconciliation next; implementation requires a separate authorized task/branch/PR. **Лёва STOP.**
+
 ## PR #255 — Preview corrections implemented / coordinator review next (2026-10-29)
 
 - Лёва completed authorized assignment #6502560117 from main `a4d552a4ce57986d97c02e2695f4546cffccecfd` in separate branch `fix/preview-scenario-state`. [PR #255](https://github.com/iliya1947/vico-forum/pull/255), stable exact head `39c6f16ad6f68d8abed7c9f46f52dd8535de801b`, open/Draft/mergeable.
