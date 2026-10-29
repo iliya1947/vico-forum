@@ -1,3 +1,9 @@
+## Active parallel work — PR #247 review / PR #250 correction (2026-10-29)
+
+- PR #247 stable exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: final serializer correction complete; exact-head CI SUCCESS; coordinator whole-PR review PASS. Мишаня is assigned independent whole-PR review of Лёва work on the same head.
+- PR #250 remains at `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`: normalized-query history residual is confirmed by independent review, coordinator reconciliation, and Лира author verification. Лира is assigned bounded correction in the existing PR.
+- The two scopes remain separate.
+
 ## PR #247 — bounded serializer correction implemented / coordinator review next (2026-10-29)
 
 - Выполнено [назначение #6495447379](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6495447379) в existing branch `chatgpt6/batch-l2-20261027`; новая ветка/PR не создавались.
