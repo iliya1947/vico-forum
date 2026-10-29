@@ -1,6 +1,6 @@
 # Admin panel implementation plan
 
-> Temporary implementation plan. Remove this file from the PR when the admin-panel implementation is complete.
+> Umbrella plan for the Vico Forum admin-panel project. Implementation is delivered through separate bounded implementation PRs merged sequentially into `main`; this plan remains as the project-level record.
 
 ## 1. Approved product model
 
@@ -212,7 +212,7 @@ Before implementation of blocking, explicitly decide what a block prevents in Vi
 8. Update `PROJECT_STATE.md` and permanent source-of-truth documentation only with factual implemented state.
 9. Run the full repository CI and the required whole-PR review cycle on a stable implementation head.
 10. Do not initiate owner visual acceptance unless the owner explicitly requests it.
-11. Remove this temporary plan file before the implementation PR is considered complete.
+11. Keep this umbrella plan in PR #251 as the project-level implementation record; individual implementation work is completed and merged through separate bounded PRs.
 
 ## 4. Explicitly out of scope
 
