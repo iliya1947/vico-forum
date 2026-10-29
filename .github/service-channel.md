@@ -1,3 +1,10 @@
+## Verified next implementation boundaries (2026-10-29)
+
+- `DISCOVERY-01`: confirmed current-Stage. Generic Unanswered/Search/Tag/Unread surfaces must keep Help topics discoverable while hiding the internal Help service-section identity. Лира verification complete; implementation not started.
+- Responsive package: `RES-UI-01`, `CODE-HISTORY-01`, `M-M07` all independently confirmed by Лёва on current main. Three distinct root causes, one bounded narrow-viewport hardening package; implementation not started.
+- Both new implementation branches/PRs require owner authorization.
+- Current main for both plans: `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
+
 ## Лёва — responsive verification complete / bounded plan ready (2026-10-29)
 
 - Assignment #6497168605 completed on main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`. RES-UI-01, CODE-HISTORY-01 and M-M07 remain three distinct current-Stage defects; subsequent merges did not close them.
