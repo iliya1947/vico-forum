@@ -1,3 +1,27 @@
+## CODE-SEARCH-01 — implementation PR #250 / author handoff / STOP (2026-10-29)
+
+**Assignment:** [PR #236 #6486369359](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486369359) after verification [#6486179455](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486179455).
+**Implementation:** [PR #250](https://github.com/iliya1947/vico-forum/pull/250), branch `chatgpt6/code-search-01-20261029`, stable exact head `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`, base/current main `0a09482fc2653b65e775ae069c86c48ab247b4fb`. Open/Draft/mergeable; no merge.
+
+### Bounded fix
+
+`app/forum/views.tsx`: search input `key={query}` ties its DOM identity to the authoritative normalized loader `query`, while keeping `defaultValue={query}`, editable GET search and unchanged backend/URL parsing. Same-route Back/Forward now remounts only the search input when the committed query changes, so stale edited value cannot persist.
+
+`app/forum/public-read.test.tsx`: added one actual `SearchRoute` + actual `searchLoader` + `createMemoryRouter` test with two GET searches A→B and memory history Back/Forward. Checks URL `q`, loader-based rendered results, visible `input` after every navigation, in-progress editing without premature result changes, and empty query after GET submit. New test runs in repository's normal Vitest/jsdom runtime, **not isolated synthetic React 16**. `PROJECT_STATE.md` synchronized. Only 3 changed files, +81/−1. No schema/dependency/provider/deployment changes.
+
+### Evidence
+
+- **[Exact-head CI #40807997303](https://github.com/iliya1947/vico-forum/actions/runs/40807997303) SUCCESS**.
+- `checks` job `123231420980`: **1266 application tests PASS / 103 files**, 68 tests in `public-read.test.tsx` (including new search regression), lint 0 errors/1 existing unused-disable warning, TypeScript typecheck, app build, UI-preview build, migration guard and schema parity PASS.
+- `database` job `123231421234`: **345 PostgreSQL 17 tests PASS /31 files**, privilege/recovery/bootstrap probes, Workers smoke PASS.
+- Checked complete job steps and logs; GitHub Actions PR merge SHA `24105ed570772569236020921587b6f72dfc6c22` and implementation head have identical Git tree `b7fd2746e6e431d03f9d691dd421a4ecf98b181e`.
+- React official docs confirm uncontrolled `defaultValue` initializes input but does not control its live DOM value; React Router docs confirm GET Form navigation semantics.
+- **Limits:** native Vitest/jsdom route integration is not real Chromium or deployed acceptance; no separate full browser E2E, Pages review, owner visual acceptance, or production actions are claimed. No personal local PostgreSQL suite was run; data comes from exact-head CI.
+
+**Status:** implementation + native route regression + applicable CI COMPLETE. No author whole-PR review. Coordinator Mira to perform first independent whole-PR review of stable exact head and coordinate subsequent reviewers. **Лира STOP.**
+
+---
+
 ## CODE-SEARCH-01 — source/contract verification + isolated Chromium reproduction / correction plan (2026-10-29)
 
 **Назначение:** [PR #236 #6485588579](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6485588579).
