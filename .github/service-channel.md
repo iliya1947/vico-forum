@@ -5,12 +5,14 @@
 - Coordinator independently rechecked and confirmed the causal chain. No other current-Stage findings remain from that review.
 - PR #250 is not merge-ready. Лира is assigned author verification of this single residual before correction.
 
-## PR #247 — one confirmed standalone-CR LITERAL-TEXT-01 residual (2026-10-29)
+## PR #247 — standalone-CR author verification complete / correction not started (2026-10-29)
 
-- Stable exact head remains `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`.
-- Мишаня independent whole-PR review found one current-Stage P2 residual: standalone CR in plain clipboard input bypasses line-anchored literal escaping because the serializer normalizes CRLF but splits only on LF, while public Markdown parsing recognizes standalone CR as a line ending.
-- Coordinator independently rechecked and confirmed the causal chain. No other current-Stage findings remain from that review.
-- PR #247 is not merge-ready. Лёва is assigned author verification of this single residual before any correction.
+- Unchanged exact head `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`, base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`.
+- Согласованный standalone-CR P2 LITERAL-TEXT-01 подтверждён автором: serializer CRLF-only splitting пропускает line-start guards, actual Markdown parser воспринимает CR как EOL. Mounted Simple clipboard→FormData→ForumMarkdown воспроизводит h1 для CR; LF/CRLF controls literal.
+- Минимальная граница CR correction: единая CR/LF/CRLF normalization на plain-clipboard input до splitting/escaping/contextual tab classification; existing document source и Advanced raw/code EOL fidelity не нормализовать глобально. Implementation не менялась, новой correction ещё нет.
+- Изолированный candidate вне checkout:120 renderer observations;104 проходят. Остальные16 показывают **отдельный author-confirmed ordered-marker control defect**, также существующий в base/main и при LF: escape перед digit в `1.`/`1)` отображает лишний backslash. Это не CR cause и не автоматически добавленный team finding; требуется coordinator reconciliation перед решением о scope.
+- 5 mounted diagnostic checks подтвердили3 EOL observations и2 ordered-marker observations; full app/PG/CI/HTTP/browser publication заново не запускались. Временные tests восстановлены, checkout clean.
+- [Полный author verification report](https://github.com/iliya1947/vico-forum/blob/92e743245d7e69a4af79c485e10d661c50dbe333/.github/agents/codex-6.1-sol.md). PR #247 не merge-ready. Следующий шаг Миры: reconcile additional control limit, затем назначить bounded correction. **Лёва STOP.**
 
 ## PR #250 — independent review published / reconciliation pending (2026-10-29)
 
