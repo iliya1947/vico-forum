@@ -23,8 +23,8 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       title,
       sourceLocale,
       titleDirection: sourceLocale === "und"
-        ? "auto"
-        : (registry?.find(sourceLocale)?.locale.direction ?? "auto"),
+        ? ("auto" as const)
+        : (registry?.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
       authorName,
       section,
       category,

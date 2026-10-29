@@ -690,7 +690,7 @@ function popularPeriods(locale: PreviewLocale): ForumPopularPage {
 function unansweredTopics(locale: PreviewLocale) {
   const rtl = locale === "he";
   const russian = locale === "ru";
-  const titleDirection = localeRegistry.find(locale)?.locale.direction ?? "auto";
+  const titleDirection = localeRegistry.find(locale)?.locale.direction ?? ("auto" as const);
   const categoryName = rtl ? "פיתוח" : russian ? "Разработка" : "Development";
   const aiCategoryName = rtl ? "Vibe Coding וכלי AI" : russian ? "Vibe Coding и AI-инструменты" : "Vibe Coding & AI tools";
 
@@ -740,7 +740,7 @@ function unreadTopics(locale: PreviewLocale) {
 function previewSearchResults(locale: PreviewLocale) {
   const rtl = locale === "he";
   const russian = locale === "ru";
-  const titleDirection = localeRegistry.find(locale)?.locale.direction ?? "auto";
+  const titleDirection = localeRegistry.find(locale)?.locale.direction ?? ("auto" as const);
   return [
     {
       id: "typed-api",

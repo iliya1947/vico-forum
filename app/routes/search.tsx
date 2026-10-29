@@ -32,8 +32,8 @@ export const loader = forumReadLoader(async function loader({ request, params, c
     results: results.map((result) => ({
       ...result,
       titleDirection: result.sourceLocale === "und"
-        ? "auto"
-        : (registry?.find(result.sourceLocale)?.locale.direction ?? "auto"),
+        ? ("auto" as const)
+        : (registry?.find(result.sourceLocale)?.locale.direction ?? ("auto" as const)),
     })),
   };
 });
