@@ -1,5 +1,62 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #253 — responsive containment / author implementation handoff / STOP (2026-10-29)
+
+Assignment: PR236 #6497648909; accepted verification #6497466128 / reconciliation #6497607854.
+Authorized separate branch: fix/responsive-containment.
+Base/main: f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96.
+Stable exact head: ca51415bf1cfe72c28c1b05867e158c39b409194.
+PR: https://github.com/iliya1947/vico-forum/pull/253 (open/Draft/mergeable; metadata rechecked).
+
+### Implemented boundaries
+
+Three distinct causes remain separately named in one bounded package:
+
+- RES-UI-01: at <=44rem, the main extra-menu details is static so its absolute popup uses the bounded, already-sticky toolbar; popup width is min(18rem,100%). The trigger summary remains positioned to preserve its former pointer paint order beside fullscreen controls. Nested menu anchors and desktop placement are retained.
+- CODE-HISTORY-01: history gets full-row grid-column:1/-1, min-inline-size:0 and bounded width. Raw pre gets local overflow-x:auto without whitespace/source transformation; history metadata can break long text. No raw content is hidden through document-level overflow masking.
+- M-M07: existing <30rem account row stays nowrap. Attention text wraps inside its own bounded link; auth uses min-content sizing, unshrunk action labels and a2.5rem profile minimum that contains the complete avatar/padding. Long names can truncate; actions and permission semantics are unchanged.
+
+Production delta is50 CSS lines (+48/-2). Other changes are PROJECT_STATE.md and five browser harness files. Total7files,+401/-2. No production TSX/editor source/parser/history retrieval/auth/API/schema/dependency changes. Contrast M-M10/F06, owner visual and unrelated responsive cleanup remain outside scope.
+
+### Reproducible browser regressions
+
+Maintained opt-in harness: tests/browser/responsive/check.py, actual shared presentation/styles via existing Vite; Python Playwright1.62.0 + Chromium154.0.8037.57, pinned Node24.21.0. Instructions and prerequisite boundary are in its README. No npm/browser platform dependency added.
+
+RED on unchanged base CSS: all3 original EN320 cases fail as expected: manager document357, opened More410, opened history4045 for the deliberately longer regression payload. No browser errors/external requests. The earlier verification's shorter history line produced789; these are different payloads, not inconsistent measurements.
+
+Final corrected-head run:240/240 PASS,0 page errors,0 blocked/external/mutating requests:
+-90 header cases:10 widths x EN/RU/HE x guest/user/manager. Bounds/hit testing of visible actions, long public name, full avatar rectangle and narrow single-row vertical intersection checked.
+-120 menu cases:10 widths x EN/RU/HE x Simple/Advanced x in-page/fullscreen. Real native More click, item hit testing including scrolling to enabled controls, keyboard Tab/Enter/Space, popup/document bounds, computed sticky preservation and closing checked. At320, all12 mode/locale/fullscreen combinations additionally click nested emoji, verify its presence in the actual hidden body and resize390→320 with the menu open.
+-30 history cases:10 widths x3 locale/direction/date contexts, actual TopicView + real Router fetcher dispatch to a fixed in-memory revision action. Two long raw revisions, exact pre.textContent including Hebrew/newlines/spaces, preserved white-space:pre, independent horizontal scroll, open/close containment checked. History UI labels deliberately remain English in this fixture; header/menu use actual EN/RU/HE preview packs.
+Widths:320,360,390,479,480,703,704,767,768,1280. One-pixel geometry tolerance for rounding.
+
+Author diagnosis caught a real intermediate regression: replacing the relative details anchor changed pointer painting in fullscreen and let Advanced intercept the More trigger. A keyboard-only opening did not catch this. Restoring positioned painting only on summary keeps the popup attached to the toolbar and restores native pointer targeting. The final240 run includes ordinary clicks and supersedes the earlier keyboard-only240 result.
+
+An earlier harness run inherited preview-only pointer-events:none for sign-out and asserted the narrow row contract at wider widths; it was discarded, not counted as product failures. The final fixture omits preview.css and checks the one-row contract only below480. Its interrupted process family was explicitly stopped; all final runs closed normally.
+
+### Native/static/build checks
+
+Personally run:267 targeted native tests/3files PASS (public-read, auth-controls, markdown-editor). Full local lint PASS with the existing ui.test.tsx unused-eslint-disable warning only. Full local generated-type/typecheck and production build PASS. Browser TSX fixture separately strict-typechecked with the project-pinned compiler PASS (it lives outside normal app tsconfig include). Python syntax compiled; generated __pycache__ removed. Final diff-check PASS.
+
+Full local application/PostgreSQL suites were not separately rerun. Native full suites and preview build below are new exact-head CI observations, not inferred local runs. Browser fixture uses synthetic identities/fixed revisions, not real auth/session/DB/server permission verification, SSR or production E2E. These layout checks are engineering validation, not owner visual acceptance.
+
+### Exact-head CI
+
+https://github.com/iliya1947/vico-forum/actions/runs/40882061194 — SUCCESS on ca51415.
+checks123475877559:1546 application tests/104files, lint/typecheck/application and UI-preview builds/history/migration/schema guards SUCCESS.
+database123475877099:345 native PostgreSQL17 tests/31files, schema parity, runtime privilege/provisioning/credential probes, local Workers smoke SUCCESS. Completed steps and logs inspected.
+CI checkout0ca12886151ce4ff3b03a384a07d8d2ce2236f25 merges the assigned base/head and has the same tree36e950859005ff45c922d59119a5968d98cc2897 as the implementation head (Git-fetched and compared). Earlier CI40881448898 passed9ba3d5d but is not final-head evidence.
+
+### Cleanup and handoff
+
+No local DB/container/production service or runtime server was started. Ephemeral loopback HTTP servers, Chromium contexts and temporary build directories closed/removed. Discarded diagnostic process family stopped; dependency symlink removed and checkout clean. No merge or owner visual/production acceptance performed.
+Artifacts outside checkout: /workspace/work/responsive-implementation, including red/results.json,green-corrected/results.json, logs/screenshots, native/static/build logs and diagnostic alternatives. Only final corrected-head results support this handoff.
+
+Implementation and author verification COMPLETE. This is not whole-PR self-review, independent PASS or merge approval. Mira starts coordinator whole-PR review of stable ca51415, then eligible independent reviewers check the same head. Лёва STOP.
+
+
+---
+
 ## Лёва — responsive package / verification complete + implementation plan / STOP (2026-10-29)
 
 Assignment: #6497168605. Exact current-main baseline: `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
