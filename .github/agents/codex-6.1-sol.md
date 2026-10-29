@@ -1,5 +1,56 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — PR #250 / independent whole-PR review — CHANGES REQUIRED
+
+Date: 2026-10-29. Assignment: PR236 comment6486530815.
+Exact head: a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1.
+Base/current main: 0a09482fc2653b65e775ae069c86c48ab247b4fb.
+Scope: CODE-SEARCH-01, all3 changed files (+81/-1).
+Разработчик разрешил публикацию завершённого независимого review. Вердикт относится только к указанному exact head; coordinator reconciliation ещё требуется.
+
+## Verdict
+
+One confirmed current-Stage P2 residual in CODE-SEARCH-01. No other confirmed findings in the assigned scope; no future-only blocker. Core A/B navigation works, but navigation between raw queries mapping to the same normalized query does not reset the dirty input. The fix is incomplete against the explicitly assigned normalized-query/history contract.
+
+## P2 — normalized query collisions retain a dirty search field across history
+
+Location: app/forum/views.tsx:458-459, key={query} with defaultValue={query}.
+
+The real loader in app/routes/search.tsx normalizes q using NFKC, trim and whitespace collapse (and truncates over-limit input for presentation). Different URL/history entries can therefore share one query/key. React retains the dirty uncontrolled input for that identity even after navigation has completed. The URL, loader query and displayed results follow the navigated entry, but the visible input can show an unrelated unsubmitted draft.
+
+Actual Vico/Chromium reproduction on exact head:
+
+1. Load /en/search?q=Beta. Input/defaultValue are Beta; results panel says no topics found for Beta.
+2. Submit raw query `  Ｂｅｔａ  ` through the actual GET form. URL q contains that raw value; loader normalizes it to Beta. Because the input key is still Beta, the visible value retains the raw full-width/spaced string.
+3. Edit the input to `Unsaved other query` without submitting; this is permitted editing and does not change the results.
+4. Browser Back to /en/search?q=Beta. After settled navigation, input.value is still `Unsaved other query`, defaultValue is Beta, and the rendered results still correspond to Beta. Forward to the full-width URL retains the same stale draft.
+
+The same cause also leaves spaces in the field for whitespace-only submissions/history between empty-equivalent queries. These are manifestations of one identity/synchronization defect, not additional findings.
+
+Independent native reproduction uses actual SearchRoute + searchLoader + createMemoryRouter and the repository reader/runtime fixtures. Initial TypeScript → GET full-width/spaced TypeScript → edit unrelated draft → Back TypeScript. Navigation is idle, URL is ?q=TypeScript and the expected TypeScript result link is present, but the searchbox remains `Unsaved unrelated query`. An assertion expecting TypeScript fails. This is not an abstract React16 harness or only a source inference.
+
+Required boundary: synchronize committed navigation/history transitions even when normalized query is equal, while retaining draft editing before submit. Do not expand backend/search/URL normalization semantics. Add a native regression with two distinct raw URL queries sharing the normalized query and a dirty-field Back/Forward case; include empty-equivalent control. No implementation suggestion was applied.
+
+## Whole-scope checks and passing controls
+
+- Read every changed line of views.tsx, public-read.test.tsx and PROJECT_STATE.md; followed route loader and repository search normalization. Only production change is one input key. No backend, parser, schema, dependency or unrelated search behavior change was introduced.
+- Existing native public-read suite:68/68 PASS,8.85s. The new PR test covers distinct normalized TypeScript/WebAssembly keys, history, draft-before-submit and empty query. It does not cover two entries with equal normalized query.
+- Additional native desired-behavior regression:1 FAIL /68 skipped,4.45s, with exact URL/result assertions passing before the searchbox assertion fails. Temporary test was removed and the original tracked file restored byte-for-byte; implementation never changed. Log: normalized-native.log.
+- Actual local Vico React19.3/ReactRouter8.3.1 + Chromium + disposable PostgreSQL17:19 settled-state observations.14 expected-state controls pass;5 failures are the single normalized-identity family. Covers initial query, editable draft, GET A/B, Back/Forward, empty transitions, normalization-changing-key, normalization-equal-key, whitespace-only, normalized SSR and over-limit SSR. Zero browser page errors. Artifacts: browser.py, browser.json, browser-stable.log.
+- The first preliminary browser capture could snapshot before POP data settled; that transient distinct-key snapshot is not a finding. The final run waits for settled navigation; ordinary different-key controls pass.
+- Full CI40807997303 independently read: both jobs and all steps SUCCESS. checks123231420980:1266 app tests/103files, lint/full typecheck/builds/guards PASS. database123231421234:345 PG17 tests/31files plus schema/runtime/Workers PASS. These are CI observations, not a claim that the reviewer personally reran all suites/builds locally.
+- Synthetic merge24105ed570772569236020921587b6f72dfc6c22 has the same tree b7fd2746e6e431d03f9d691dd421a4ecf98b181e as the exact head, verified by Git fetch/tree comparison.
+- Final GitHub metadata: unchanged head/base,3 changed files, open/Draft/mergeable.
+
+## Cleanup and publication
+
+Local Vite73090/Workerd73125 stopped; ports4218/55441 closed. Disposable leva-pr250-review-pg container and volume removed. Synthetic .dev.vars and dependency symlink removed; temporary native test restored; checkout clean and diff-check PASS. Во время review implementation commit, изменение ветки, публикация или merge не выполнялись; отчёт публикуется после отдельной команды разработчика. No real external service/provider/production/owner visual acceptance.
+
+Independent review COMPLETE. Публикация разрешена разработчиком. Мире — reconciliation одного P2 на этом exact head. Лёва STOP.
+
+
+---
+
 ## PR #247 — accepted LITERAL-TEXT-01 correction / author handoff / STOP
 
 Assignment: PR236 comment6485551587; accepted root-cause plan comment6485172583.
