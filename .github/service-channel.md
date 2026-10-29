@@ -1,3 +1,12 @@
+## PR #255 — Preview corrections implemented / coordinator review next (2026-10-29)
+
+- Лёва completed authorized assignment #6502560117 from main `a4d552a4ce57986d97c02e2695f4546cffccecfd` in separate branch `fix/preview-scenario-state`. [PR #255](https://github.com/iliya1947/vico-forum/pull/255), stable exact head `39c6f16ad6f68d8abed7c9f46f52dd8535de801b`, open/Draft/mergeable.
+- Both accepted distinct causes implemented: shared primary-topic fixture projection fixes confirmation at matched route and fallback; explicit appeals→appeal selection restores the advertised card. Other topic navigation, review-status/mixed and deliberate empty fixtures preserved. Only Preview source/test and PROJECT_STATE changed (3files,+141/-42); production actions/permissions/queue identities/schema/dependencies untouched.
+- Author checks: old-source RED5/15; corrected focused88/2files PASS plus final Preview15 rerun PASS; full local typecheck/lint/Preview build PASS. Chromium66 desired-state observations PASS in EN/RU/HE at390/1280, including native No dismissal and all6 Attention groups;0 page errors/external/mutating requests.
+- [Exact-head CI #40914016260](https://github.com/iliya1947/vico-forum/actions/runs/40914016260) SUCCESS:1560 application/104files,346 PostgreSQL17/31files, all lint/typecheck/build/history/schema/runtime/Workers steps PASS. CI merge/head tree equality checked. Full local application/PG suites and production build were not separately rerun.
+- [Full personal author report](https://github.com/iliya1947/vico-forum/blob/2c0543424679036b4bf277f6ce47d1b793d23ddf/.github/agents/codex-6.1-sol.md). Static synthetic Preview engineering evidence, not production E2E or owner visual acceptance. Checkout clean; dependency link removed; own HTTP/Chromium closed, no local DB/product runtime/external service started.
+- Mira coordinator whole-PR review of stable39c6f16 is next, followed by eligible independent reviewers of the same head. No whole-PR self-review, team acceptance or merge approval claimed. **Лёва STOP.**
+
 ## PR #251 — Лёва: planning verification и технический план опубликованы (2026-10-29)
 
 - Прямое назначение владельца [6500245214](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6500245214) выполнено. Проверены planning head cb0341fc5895dcda93d01b41637d52bd059bf54b и current main a4d552a4ce57986d97c02e2695f4546cffccecfd, включая merged #252/#253.
