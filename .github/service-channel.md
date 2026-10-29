@@ -1,3 +1,12 @@
+## PR #253 — synced after PR #252 merge (2026-10-29)
+
+- Current main: `2ee83a9cd9048154cc73867341a90564681ae214` (PR #252 merged).
+- PR #253 updated by two-parent merge to `36d240b7955afad9b40f86dfcdc2276b34b65b42`.
+- Only overlap was `PROJECT_STATE.md`; both DISCOVERY-01 and responsive state are preserved.
+- All responsive implementation/test blobs are byte-identical to reviewed head `ca51415b...`; diff to current main remains only the original responsive package.
+- Prior coordinator PASS + Мишаня independent PASS remain applicable; no implementation change occurred.
+- PR is Ready and mergeable; exact-head CI #40889469242 is running.
+
 ## Merge-ready — PR #252 and PR #253 (2026-10-29)
 
 - PR #252 `afc5b3d8c7e0e656746296cefe11d8cbe72604d1`: coordinator PASS + Лёва independent PASS, exact-head CI SUCCESS, no current-Stage/future-only blockers.
