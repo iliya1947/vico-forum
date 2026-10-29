@@ -1,5 +1,50 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #259 — EDITOR-08 / author implementation handoff / STOP (2026-10-29)
+
+Assignment #236/6504253810, confirmed verification #6504154885. Implementation branch `fix/editor-disabled-mutations`, base/main `e37314b63fc77825cad3209811676e0627a2851c`, stable exact head `d6008c5327b911df2d71e140964eb1690651f73c`.
+PR: https://github.com/iliya1947/vico-forum/pull/259 .
+
+### Implemented boundary
+
+Four files +153/-7, production-only +13/-7:
+- markdown-editor.tsx: retained Find/Replace inputs and mutation buttons inherit disabled; findNext and replaceAllMatches return before selection/ref/mode/source/history work when disabled. Panel/query/replacement state is retained; its close button remains available because closing the panel does not edit source/history.
+- Clipboard command checks a narrowly scoped ref before starting, after readText fulfillment, and before reporting failure. The ref is synchronized from disabled in a layout effect, so completion observes the latest committed disabled state rather than the originating render's captured false. A disabled success/rejection leaves source/history/pending selection/notice untouched. Re-enable allows fresh commands. This does not introduce global read-only policy, a new clipboard subsystem, dependencies or changes to unrelated imperative APIs.
+- visual-markdown-editor.tsx: disabled paste clears forced-plain transient state and returns before reading clipboard/dispatching any mutation callback. This covers plain, forced-plain, HTML/multiline and spreadsheet branches. Existing native disabled textarea/contentEditable and upload guards remain in place.
+- PROJECT_STATE.md records implementation only; no future CI/review acceptance was recorded in advance.
+
+The EDITOR-05 enabled find selection algorithm and active-write/Preview/Split pending path are unchanged, as are exact Markdown storage, offset mapping, Replace all transformation and history algorithms. No regex/counters/highlighting/toolbar redesign was added.
+
+### Personally executed author validation
+
+Twelve permanent mounted regressions were introduced before the production correction. RED against original source:10 FAIL/2 PASS (initial disabled-command controls). After correction, full MarkdownEditor:209/209 PASS,19.29s, comprising197 original tests and12 new cases.
+
+New coverage:
+- retained Find/Replace in write/Preview/Split: inputs/buttons disabled; exact source/selection/view stable; re-enable preserves queries, resumes focus/search/replace and retains prior content Undo/Redo;
+- Advanced plain/code and Simple plain: deferred success and rejection after disable leave source/selection/history/notice unchanged; fresh enabled command makes a normal Undo/Redo content step;
+- initially disabled Simple/Advanced do not start clipboard reads;
+- disabled Simple plain/HTML/tabular/forced-plain paste are no-op; re-enabled paste works and Undo/Redo preserves expected source.
+All original EOL/Unicode/literal-search/wrap/Find Next/Replace all/editor tests remained in the passing file.
+
+Fresh standalone Vite engineering harness imports the actual current MarkdownEditor and translation runtime. Chromium on390/1280:16/16 compound observations PASS,0 page errors/external/mutating network requests. Each width covers write/Preview/Split retained disabled panel plus resumed first/next/wrap/focus/replace/Undo, three in-flight clipboard formats, initial toolbar controls, and disabled Simple trusted native paste. Native reproduction uses real clipboard text, mouse double-click word selection and Ctrl+V; isTrusted=true/SPAN is observed but source remains exact. Deferred readText timing is deliberately controlled; actual OS permission-dialog timing is not claimed. The harness toggles the same disabled React prop that real busy/submitting forms pass; it is not a full network submission E2E.
+
+Full generated-type/typecheck PASS. Full app source lint PASS,0 errors, one pre-existing unused-eslint-disable warning in ui.test.tsx:174. Fresh standard UI Preview build PASS (existing Vite chunk-size advisory). Diff-check PASS. React skill checklist applied: no new render subscription/state, effect has primitive disabled dependency, ref reflects committed state, native disabled controls preserve accessibility semantics; no unrelated optimization or component redesign.
+
+Local full app/PostgreSQL suites and production build were not separately repeated; CI results below are attributed to CI. No production auth/DB/provider E2E, all-locale browser matrix or owner visual acceptance is claimed.
+
+### Exact-head CI
+
+Run https://github.com/iliya1947/vico-forum/actions/runs/40951664810 — SUCCESS. Both completed job step lists and logs inspected personally: checks123721090049 passed1583 application tests/104files, lint/typecheck, application and Preview builds, migration-history/metadata/schema checks; database123721090380 passed346 PostgreSQL17 tests/31files and every configured parity/privilege/provisioning/credential/Workers-smoke step. All listed steps SUCCESS. These are CI observations, not extra local suites or external provider acceptance.
+
+Both logs identify CI merge a9229374ab0b28cfffd39342c735a9b61abc9cc7 (head d6008c5 into base e37314b). Locally fetched merge and implementation head have identical tree a041f1a8f25f9cb837862faa28fb966eb7535bac. Final metadata is open/Draft/mergeable with assigned base and stable head unchanged.
+
+### Cleanup and handoff
+
+Artifacts `/workspace/work/editor08-implementation`: red.log,editor.log,typecheck.log,lint.log,preview-build.log,harness-build.log,browser.py/browser.json/browser.log,build and ui-preview-dist. Existing pinned Node24.21.0/dependencies used. Temporary harness source/config removed; dependency symlink removed; built output moved outside checkout. Own ephemeral loopback HTTP/Chromium closed; no app runtime,DB/container,external services or production resources started. Checkout clean at stable head.
+
+Implementation, author validation and exact-head CI complete. Coordinator whole-PR review of the stable exact head is next, followed by eligible independent non-authors. No whole-PR self-review/Ready/merge performed; this handoff is not team acceptance or merge approval. Лёва STOP after publication.
+
+
 ## EDITOR-08 — current-main verification + minimal correction boundary / STOP (2026-10-29)
 
 Assignment: #236/6503924468. Personally verified exact main `a79ae7278a02c5bf029a97859afc241c564858ca`. Verification only: no implementation branch, commit or PR created.
