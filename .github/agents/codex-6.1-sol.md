@@ -1,5 +1,40 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — Complaints Package 1 / PR #257 / author handoff
+
+Assignment: #254 comment #6502784442, technical contract #6502681405. Владелец в текущем чате отдельно разрешил создание implementation-ветки/PR; прежний branch blocker #6502882970 снят. Исполнитель — Лёва; координация — Мира, прежний handoff Мишане отменён прямым указанием владельца.
+
+**Implementation PR:** https://github.com/iliya1947/vico-forum/pull/257
+**Branch:** `feat/complaints-domain-foundation`
+**Stable exact head:** `07bf81f0723a8f9af497cde6edc0eb2c6aabdef9`
+**Current base/main:** `ab5345c06687a5a18c1a35a572186a973829d475`.
+
+Во время реализации merged #255. Выполнен двухродительский merge актуального main; единственный конфликт PROJECT_STATE разрешён сохранением обоих factual entries. Complaint implementation blobs при merge не менялись; post-merge Preview regression15 PASS. Diff к current main остаётся19files,+8999/-8;6367строк — новый Drizzle snapshot, structural manifest даёт1303строки generated metadata. PR Draft; merge не выполнялся.
+
+### Реализовано
+
+- Восемь отдельных domain/evidence relations: revision-bound targets, Case, Complaint, immutable initial Decision, private notes, Appeal, typed append-only events и attachment evidence refs. Existing post/title revisions reused; owner-matching FKs, partial open-target uniqueness, lifetime reporter/target duplicate barrier, deferred Case→Decision FK, version/CAS и durable command fingerprints/replay.
+- Server-only ComplaintsService + repository: submit, bounded reviewer/appeal evidence reads, own participant result, notes, initial decision, first appeal и отдельный appeal result. Актуальный PermissionResolver, custom role/user override model; ordinary SQL не выбирает reporter/appellant structured identity. Четыре code-backed permissions с реальными service capabilities; elevated identity не seed-ится даже admin.
+- Post evidence refs захватываются под content row lock. Active-ref gate сериализует их с cleanup; candidate, fresh locked recheck и final delete учитывают complaint refs. После реальной edit/detach private asset сохраняется без выдачи public download authority или object key.
+- Forward0047, journal/snapshot/schema, native-generated structural manifest, web ACL contracts, focused legacy migration fixtures, permanent docs/auth docs и factual PROJECT_STATE.
+
+Нет новых HTTP routes/runtime capability wiring, submission/queue/appeals UI, notifications, priority/presence, санкций или shared Quick actions. Package2 обязан добавить durable complaint-specific rate budget до HTTP exposure. Same-revision после resolved и новый revision при open predecessor возвращают policy-required без writes до product decision; subsequent appeal transitions также guarded до Package6. Storage допускает ordinal1..3 без unique-pending index; original Decision не переписывается, effective-outcome/re-appeal policy не угадана. Сохранённый первый appeal result не выдаётся за завершённый пользовательский appeals workflow.
+
+### Author verification
+
+- Full local application1549/104files PASS (до merge unrelated Preview package; его15tests отдельно post-merge PASS).
+- Full pinned-toolchain native PostgreSQL17 suite363/32files PASS, включая17new tests: title/first-post separation, grouping, lifetime duplicate/replay/modified conflicts, validation/FKs, ordinary/elevated/participant privacy, next-call permission overrides, actual edit→cleanup evidence retention, exact-version decisions, both first-appeal directions, SQL3-limit/same-case FK, unresolved-policy rollback, two-connection concurrent submit/resolve, deterministic submit-before-edit/edit-before-submit locks, event-failure transaction rollback, real web-role service commands без UPDATE на immutable evidence, page-independent51report count.
+- Node24.21.0/pnpm12.3.4: full typecheck, lint(одно прежнее warning), app/Preview builds, db:check/Drizzle no-change parity, diff-check и all18repository script test files PASS. Structural manifest57tables verified against native PostgreSQL17; positive/negative runtime privilege и split-authority provisioning probes PASS; built Worker split-local-Hyperdrive smoke PASS.
+- Первый общий DB run:352PASS/6FAIL; stage4 fixture не включал новую migration и был актуализирован; остальные5 были вызваны inherited pnpm11 вместо pinned12. Повтор affected30tests и полный pinned363suite PASS. В новом evidence test initial assertion ошибочно использовал новый operation ID после edit; проверка разделена на правильные committed same-key replay и fresh stale-request conflict. Доменная stale fence не ослаблялась.
+- [Exact-head CI #40919210643](https://github.com/iliya1947/vico-forum/actions/runs/40919210643) SUCCESS: checks123607555726 —1560application/104files; database123607556061 —363PostgreSQL17/32files,57-table manifest и все schema/ACL/provisioning/credential/Workers steps SUCCESS. Completed steps/logs просмотрены. CI merge e2bcb7330d259131ed89f4b204aaec75d0b01838 и implementation head имеют одинаковый tree66d7b4c2c178cb0be7594b2888dca043e4d8ed0e, сверено через Git. Это не whole-PR self-review или independent acceptance; новых UI нет, owner visual acceptance не заявляется. Production/Neon/GRANT/deploy/provider не запускались. Собственный disposable PostgreSQL контейнер остановлен/удалён, loopback preview закрыт, implementation checkout clean.
+
+### Следующий шаг
+
+Мире — coordinator whole-PR review exact07bf81f, затем eligible independent reviewers того же head по AGENTS. Проверить границы Package1, особенно privacy projections, retention/cleanup locks, deferred ownership, legacy fixture/manifest/ACL и сохранение нерешённых product gates. Это author handoff; team acceptance/merge approval не объявляются. Package2 не начинался. Лёва STOP после handoff.
+
+
+---
+
 ## Лёва — EDITOR-05 / current-main verification + minimal correction plan / STOP (2026-10-29)
 
 Assignment:#6503112481. Exact current main:a4d552a4ce57986d97c02e2695f4546cffccecfd.
