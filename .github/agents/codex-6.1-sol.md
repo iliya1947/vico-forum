@@ -1,5 +1,47 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #258 — EDITOR-05 / author implementation handoff / STOP (2026-10-29)
+
+Assignment:#6503299565; accepted verification:#6503251938.
+Authorized branch:fix/editor-find-next.
+Base/main:ab5345c06687a5a18c1a35a572186a973829d475.
+Stable exact head:545d4e91c81fd230b7c3fd7b3868ff531259f26d.
+PR:https://github.com/iliya1947/vico-forum/pull/258.
+
+### Implemented minimal correction
+
+findNext still finds literal source text from textarea selectionEnd, wraps and remembers selection metadata. It now puts the target into pendingSelectionRef first; if an Advanced write textarea already exists, it immediately focuses it, converts exact source offsets with existing sourceOffsetToTextareaOffset and sets the DOM range, then clears consumed pending state. Otherwise it changes mode to write and retains the existing layout-effect pending path. This uses the established active-write imperative-focus pattern without changing that API or unrelated selection consumers.
+
+Only12 lines of production diff (+11/-1) in markdown-editor.tsx. No new state, dummy render counter, effect dependency changes, whole-message normalization, history content edit, regex/highlighting/counters or Find/Replace redesign. Replace all is unchanged. PROJECT_STATE.md records the implementation. Total3files,+108/-1, including81 test lines and16 state lines.
+
+### Author regression evidence
+
+Eleven permanent mounted regressions were added before the production fix. Against the original source:9 FAIL/2 PASS (empty/no-match controls). After correction, the full MarkdownEditor file passed197/197 tests,34.70s. This includes all186 original tests and11 new cases:
+- write/Preview/Split initial modes: first0..3 -> next8..11 -> wrap0..3, with textarea focus, actual DOM selection and unchanged FormData source;
+- initial mid-caret4 and end-caret17;
+- emoji + Hebrew source with LF/CRLF/standaloneCR: correct UTF16/displayed offsets and exact raw FormData source preserved;
+- empty/no-match selection/source no-op;
+- a single literal Markdown-sensitive match, repeated wrap, followed by Undo/Redo proving search added no content history step.
+Existing Replace all and other editor tests remain in the same passing197 run.
+
+Personally executed full generated-type/typecheck PASS, full source lint PASS (one pre-existing ui.test.tsx unused-eslint-disable warning), fresh current UI Preview build and diff-check PASS. Local full application/PostgreSQL suites and production application build were not separately repeated; their full results below are exact-head CI observations.
+
+Actual built Preview/shared MarkdownEditor in Chromium154.0.8037.57:32/32 desired selection observations PASS at390/1280. Native Ctrl+F, input and pointer Find Next; initial write/Preview/Split, repeated click, end wrap, mid caret, empty/no-match. For each found match the actual textarea is focused and its DOM range equals the expected range. Hidden source remains unchanged;0 browser page errors/external/mutating requests. This repeats the same matrix where verification previously had18 selection mismatches. Native mounted tests additionally cover exact EOL/Unicode/FormData/Undo behavior; the browser matrix uses English UI and simple ASCII source and is not claimed as all-locale coverage.
+
+These are local engineering checks using synthetic Preview identity, not production auth/DB E2E or owner visual acceptance. No external resources/providers were used.
+
+### Exact-head CI
+
+Run https://github.com/iliya1947/vico-forum/actions/runs/40919512177 completed SUCCESS. Personally inspected both completed job step lists and logs: checks job123608612273 passed1571 application tests/104files, lint, typecheck, application and UI Preview builds, migration-history/metadata/schema checks; database job123608612438 passed346 PostgreSQL17 tests/31files and all configured parity/privilege/provisioning/credential/Workers-smoke steps. These are CI results, not additional personally executed local suites or real provider acceptance.
+
+Both logs identify CI merge b0e801e306525c07392e453d58d532910228d40f (head545d4e9 into baseab5345c). Locally fetched merge and implementation head have identical tree a5f06902015bd2d5351eb3d9a756045928adecdf. Final metadata: open/Draft/mergeable, same base/head.
+
+### Cleanup / handoff
+
+Artifacts:/workspace/work/editor05-implementation (red.log,focused.log,typecheck.log,lint.log,preview-build.log,browser.py/browser.json/browser.log and report). Node24.21.0 and existing pinned dependencies used. Own ephemeral HTTP/Chromium closed; no application server, local DB or container started. Dependency symlink removed; checkout clean.
+
+Implementation, author verification and exact-head CI are complete. No whole-PR self-review or merge performed. Coordinator whole-PR review of the stable head is next, followed by eligible independent reviewers. This is not team acceptance or merge approval. Лёва STOP after handoff.
+
 ## Лёва — Complaints Package 1 / PR #257 / author handoff
 
 Assignment: #254 comment #6502784442, technical contract #6502681405. Владелец в текущем чате отдельно разрешил создание implementation-ветки/PR; прежний branch blocker #6502882970 снят. Исполнитель — Лёва; координация — Мира, прежний handoff Мишане отменён прямым указанием владельца.
