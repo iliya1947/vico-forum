@@ -1,6 +1,6 @@
 # Admin panel implementation plan
 
-> Umbrella plan for the Vico Forum admin-panel project. Implementation is delivered through separate bounded implementation PRs merged sequentially into `main`; this plan remains as the project-level record.
+> Umbrella plan and coordination record for the Vico Forum admin-panel project. For this task, PR #251 is the authoritative planning/coordination channel by direct developer instruction; do not duplicate admin-panel reports or status to PR #236 unless the developer explicitly asks. Implementation is delivered through separate bounded implementation PRs merged sequentially into `main`; this plan remains as the project-level record.
 
 ## 1. Approved product model
 
