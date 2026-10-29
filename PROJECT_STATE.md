@@ -20,6 +20,25 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
+
+В отдельной implementation-ветке отключённый редактор блокирует inputs и команды
+сохранённой Advanced Find/Replace панели. Find Next/Replace all проверяют disabled
+до изменения selection, view, source или history; состояние панели сохраняется
+для повторного включения. Ранее исправленный EDITOR-05 active-write и
+Preview/Split pending-selection path не меняются.
+
+Simple paste проверяет disabled до передачи plain/HTML/spreadsheet/forced-plain
+в mutation callbacks. Clipboard-команды проверяют актуальное committed disabled
+состояние перед запуском и после завершения readText; поздний success/rejection
+в отключённом редакторе не изменяет source/history/pending selection или notice.
+Обычные enabled paste, точный source и Undo/Redo сохраняют прежнюю семантику.
+Изменение не вводит общий read-only redesign или новые внешние зависимости.
+
+Добавлены focused mounted regressions для трёх причин, re-enable, соседних
+заблокированных команд и enabled history controls. Фактические проверки/CI и
+независимый whole-PR review фиксируются отдельно после выполнения.
+
 ## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
 
 Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой

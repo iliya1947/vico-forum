@@ -581,6 +581,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         if (event.key.toLowerCase() === "v") forcePlainPasteRef.current = false;
       }}
       onPaste={(event) => {
+        if (disabled) { forcePlainPasteRef.current = false; return; }
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
         const plain = event.clipboardData.getData("text/plain");
         const html = event.clipboardData.getData("text/html");

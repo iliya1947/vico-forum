@@ -2654,3 +2654,124 @@ describe("final serializer mounted plain-paste boundary", () => {
     });
   }
 });
+
+
+describe("disabled editor command boundaries", () => {
+  function mount(mode: "simple" | "advanced" = "advanced", disabled = false) {
+    const i18n = runtime();
+    const tree = (off: boolean) => <I18nextProvider i18n={i18n}><form><label htmlFor="disabled-commands">Body</label>
+      <MarkdownEditor id="disabled-commands" name="body" defaultValue="one two one" defaultAuthoringMode={mode} disabled={off} />
+    </form></I18nextProvider>;
+    const rendered = render(tree(disabled));
+    const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const source = () => rendered.container.querySelector<HTMLInputElement>('input[name="body"]')!.value;
+    return { ...rendered, input, source, setDisabled: (off: boolean) => rendered.rerender(tree(off)) };
+  }
+
+  it.each(["write", "preview", "split"] as const)("freezes retained Find/Replace in disabled %s and resumes without losing history", async view => {
+    const m = mount();
+    fireEvent.change(m.input, { target: { value: "one two one!" } });
+    m.input.focus(); m.input.setSelectionRange(0, 0);
+    fireEvent.keyDown(m.input, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByLabelText("Find", { exact: true }), "one");
+    await userEvent.type(screen.getByLabelText("Replace with"), "X");
+    if (view !== "write") await chooseView(view);
+    const before = [m.input.selectionStart, m.input.selectionEnd];
+    m.setDisabled(true);
+    for (const label of ["Find", "Replace with"]) expect(screen.getByLabelText(label, { exact: true })).toBeDisabled();
+    for (const name of ["Find next", "Replace all"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toBeDisabled(); await userEvent.click(button);
+    }
+    expect(m.source()).toBe("one two one!");
+    expect([m.input.selectionStart, m.input.selectionEnd]).toEqual(before);
+    expect(m.container.querySelector('.markdown-editor')).toHaveAttribute('data-mode', view);
+    m.setDisabled(false);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(m.source()).toBe("one two one");
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(m.source()).toBe("one two one!");
+    await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+    expect(m.input).toHaveFocus();
+    expect(m.input.value.slice(m.input.selectionStart, m.input.selectionEnd)).toBe("one");
+    await userEvent.click(screen.getByRole("button", { name: "Replace all" }));
+    expect(m.source()).toBe("X two X!");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(m.source()).toBe("one two one!");
+  });
+
+  const commands = [["advanced", "plain"], ["advanced", "code"], ["simple", "plain"]] as const;
+  it.each(commands)("ignores late %s/%s clipboard success and failure while disabled", async (mode, format) => {
+    let resolve!: (text: string) => void;
+    let reject!: (error: Error) => void;
+    const readText = vi.fn(() => new Promise<string>((yes, no) => { resolve = yes; reject = no; }));
+    const previous = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText } });
+    try {
+      const m = mount(mode);
+      const label = format === "plain" ? "Paste without formatting" : "Paste as code";
+      await userEvent.click(screen.getByLabelText("More tools"));
+      for (const outcome of ["success", "failure"] as const) {
+        m.setDisabled(false);
+        if (mode === "advanced") { m.input.focus(); m.input.setSelectionRange(0, 3); }
+        await userEvent.click(screen.getByRole("button", { name: label }));
+        m.setDisabled(true);
+        const before = [m.input.selectionStart, m.input.selectionEnd];
+        await act(async () => { if (outcome === "success") resolve("PASTED"); else reject(new Error("Denied")); });
+        expect(m.source()).toBe("one two one");
+        expect([m.input.selectionStart, m.input.selectionEnd]).toEqual(before);
+        expect(m.container.querySelector('.markdown-editor-paste-warning')).toBeNull();
+        m.setDisabled(false);
+        await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+        expect(m.source()).toBe("one two one");
+        await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+        expect(m.source()).toBe("one two one");
+      }
+      expect(readText).toHaveBeenCalledTimes(2);
+      // A fresh enabled command still commits exactly one Undo/Redo step.
+      if (mode === "advanced") { m.input.focus(); m.input.setSelectionRange(0, 3); }
+      await userEvent.click(screen.getByRole("button", { name: label }));
+      await act(async () => resolve("PASTED"));
+      const pasted = m.source(); expect(pasted).toContain("PASTED");
+      await userEvent.click(screen.getByRole("button", { name: "Undo" })); expect(m.source()).toBe("one two one");
+      await userEvent.click(screen.getByRole("button", { name: "Redo" })); expect(m.source()).toBe(pasted);
+    } finally {
+      if (previous) Object.defineProperty(navigator, "clipboard", previous);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it.each(["simple", "advanced"] as const)("does not start a clipboard command in initially disabled %s", async mode => {
+    const previous = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    const readText = vi.fn(async () => "PASTED");
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText } });
+    try {
+      const m = mount(mode, true);
+      await userEvent.click(screen.getByLabelText("More tools"));
+      await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+      expect(readText).not.toHaveBeenCalled(); expect(m.source()).toBe("one two one");
+    } finally {
+      if (previous) Object.defineProperty(navigator, "clipboard", previous);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it.each(["plain", "html", "table", "forced"] as const)("blocks disabled Simple %s paste and preserves enabled paste/history", async kind => {
+    const m = mount("simple", true);
+    const paste = () => {
+      const leaf = m.container.querySelector<HTMLElement>('[data-visual-text=true]')!;
+      const range = document.createRange(); range.selectNodeContents(leaf);
+      window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+      if (kind === "forced") fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+      fireEvent.paste(leaf, { clipboardData: { getData: (format: string) => format === "text/plain"
+        ? (kind === "table" ? "a\tb\nc\td" : "PASTED") : kind === "html" ? "<b>PASTED</b>" : "" } });
+      fireEvent.keyUp(leaf, { key: "v" });
+    };
+    paste(); expect(m.source()).toBe("one two one");
+    m.setDisabled(false);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" })); expect(m.source()).toBe("one two one");
+    paste(); const pasted = m.source(); expect(pasted).not.toBe("one two one");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" })); expect(m.source()).toBe("one two one");
+    await userEvent.click(screen.getByRole("button", { name: "Redo" })); expect(m.source()).toBe(pasted);
+  });
+});
