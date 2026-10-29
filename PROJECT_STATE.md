@@ -20,6 +20,23 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Responsive containment — menu, revision history and manager header (2026-10-29)
+
+В отдельной implementation-ветке исправлены три разные current-Stage причины
+расширения document на узких экранах. Main extra-menu редактора использует
+ограниченный toolbar containing block, сохраняя sticky-панель; raw history
+получает full-row/shrink boundary и локальную горизонтальную прокрутку `pre`
+без изменения текста ревизии. Narrow manager header сохраняет один ряд account
+controls: attention label переносится внутри ссылки, auth sizing учитывает
+min-content, а профиль сохраняет полный avatar перед сокращаемым именем.
+
+Изменения ограничены presentation CSS. Editor source/Undo, history retrieval,
+permissions и auth actions не менялись. Добавлен отдельный воспроизводимый
+Chromium layout/hit-testing regression harness на реальных shared components
+и synthetic preview/history data. Фактические результаты checks/CI и независимый
+whole-PR review фиксируются отдельно после выполнения; owner visual acceptance,
+контрастный refinement и external rollout не заявляются.
+
 ## DISCOVERY-01 — generic discovery location of Help questions (2026-10-29)
 
 Публичные Help & Solutions вопросы сохраняются в internal service section
