@@ -20,6 +20,23 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## DISCOVERY-01 — generic discovery location of Help questions (2026-10-29)
+
+Публичные Help & Solutions вопросы сохраняются в internal service section
+`help-solutions-questions`, но он не должен отображаться как пользовательский
+раздел. Generic Unanswered, Search, Tag detail и authenticated Unread/New теперь
+используют общую repository projection public location: для обычных тем
+сохраняется category + section, для Help-вопросов возвращается только публичная
+Help category с `section: null`. UI-карточки условно показывают section
+без пустого разделителя; service-section id/name не передаются через эти
+reader/loader payloads. Help topics остаются discoverable с прежними topic
+links, сортировкой, тегами и результатами. Home/direct-section policy,
+dedicated Help flows, authoring, moderation, topic breadcrumb и схема БД
+не меняются. Добавлены PostgreSQL reader fixtures и route/presentation
+regressions для четырёх affected surfaces и обычных тем.
+CI и независимая whole-PR проверка фиксируются после реализации отдельно;
+browser/external/production acceptance не заявляются.
+
 ## CODE-SEARCH-01 — search history field synchronization (2026-10-29)
 
 В отдельной implementation-ветке исправлена рассинхронизация формы публичного поиска
