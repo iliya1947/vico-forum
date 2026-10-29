@@ -1,3 +1,9 @@
+## Independent review active — PR #252 / PR #253 (2026-10-29)
+
+- PR #252 stable exact head `afc5b3d8c7e0e656746296cefe11d8cbe72604d1`, scope `DISCOVERY-01`, exact-head CI SUCCESS. Лёва assigned independent whole-PR review.
+- PR #253 stable exact head `ca51415bf1cfe72c28c1b05867e158c39b409194`, scope `RES-UI-01` + `CODE-HISTORY-01` + `M-M07`, exact-head CI SUCCESS. Мишаня assigned independent whole-PR review.
+- Implementations remain unchanged during review. Reviewer findings are reconciled only after both reviews complete.
+
 ## PR #253 — responsive package implemented / coordinator review next (2026-10-29)
 
 - Лёва completed authorized assignment #6497648909 in separate branch `fix/responsive-containment`, based on main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`. Stable exact head `ca51415bf1cfe72c28c1b05867e158c39b409194`; [PR #253](https://github.com/iliya1947/vico-forum/pull/253) open/Draft/mergeable.
