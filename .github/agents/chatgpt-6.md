@@ -1,3 +1,30 @@
+## CODE-SEARCH-01 — source/contract verification + isolated Chromium reproduction / correction plan (2026-10-29)
+
+**Назначение:** [PR #236 #6485588579](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6485588579).
+**Baseline:** GitHub `main` `0a09482fc2653b65e775ae069c86c48ab247b4fb` (merged PR #249). Initial assigned `ebdb482e8bb37cf18d7085beb2926930139b00d6` also inspected; relevant search source unchanged.
+
+**Finding:** CODE-SEARCH-01 remains a **current-Stage source/contract defect**. `app/routes/search.tsx` loader derives `query` and `results` from URL `q`; `SearchRoute` renders `<SearchView {...data} />`. In `app/forum/views.tsx` SearchView contains a GET `<Form action={forumSearchPath(locale)}>` and an **uncontrolled** `<input name="q" type="search" defaultValue={query}>`, without a `key` varying with the query or a controlled value. React Router can navigate between query variants on the same route without remounting this input. Updating `defaultValue` does not control an already edited DOM input; React's current reference explicitly defines it as initial-only: https://react.dev/reference/react-dom/components/input . React Router GET form navigation updates URL and loader data: https://reactrouter.com/api/components/Form and https://reactrouter.com/how-to/optimize-revalidation .
+
+**Reproduction:** Chromium/Playwright isolated browser harness using the same React uncontrolled-input JSX semantics and a reused SearchView component with data query and results. The available offline React UMD in this harness is **React 16.0.0**, whereas repository pins **React 19.3.0**; router history is **emulated by updating query props in-place**, not run through Vico Forum or its React Router. Outcomes:
+- A: route data A, results A, input A.
+- Submit B: route data B, results B, input B.
+- Back to A as same-component rerender: route data A, results A, **visible input B**, even though DOM `defaultValue` is A.
+- Forward B: route data B, results B, visible input B.
+- With `key={query}` added to that input, isolated Chromium repeats A→B→A→B with corresponding visible field A→B→A→B.
+No project implementation code was changed by these experiments.
+
+**Causal boundary:** The loader/results chain is correct for the new URL; the mismatch is uncontrolled DOM state of the retained search input. Route remount is not forced by `SearchRoute` or `SearchView`; this is not a backend search bug or future-Stage feature.
+
+**Minimal proposed correction:** local `key={query}` on SearchView's input, retaining `defaultValue={query}` and existing GET Form, is a candidate minimal fix (isolated test passed). A fully controlled query input would introduce avoidable state and event synchronization for this issue. Confirm the key approach in native app regression before accepting. Do not expand to search backend/URL grammar.
+
+**Focused regression:** add route-level test (e.g. `app/forum/public-read.test.tsx`) using `createMemoryRouter` with same search route and query-aware loader data. Enter/submit A then B, invoke history back and forward on same mounted route, at every step assert URL `q`, loader-based rendered heading/results and `searchbox` visible `value`. Assert no remount on keystroke while editing (input remains editable) and check empty q / initial load. A pure single-render test is not sufficient. Current tests cover initial TypeScript query and WebAssembly no-results independently, not this navigation sequence.
+
+**Evidence limits:** **Информация не проверена** for actual Vico Forum React 19.3.0 + React Router 8.3.1 running in Chromium: current environment lacked a reachable project checkout/dependencies and local Chromium navigation to file:// or localhost was blocked by administrator policy. The browser result is isolated React 16 + same-component re-render; it is **not** claimed as native app E2E or HTTP/DB validation. Current React docs and exact source-chain support defect classification; proposed correction remains subject to real app regression.
+
+**Status:** Verification and minimum correction plan COMPLETE; implementation NOT AUTHORIZED (no branch/PR assigned), no source edits, no CI claimed. **Лира STOP.**
+
+---
+
 ## PR #249 — independent whole-PR review Лиры / PASS / exact head ae501c80 (2026-10-29)
 
 **Назначение:** [Мира, #6484205789](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6484205789). Независимый review, после bounded LOC-05 correction Лёвы. Implementation [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`; **stable exact head `ae501c80fb20ce3108e5da2136f9cbfc1d402c61`**, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`; open, non-draft, unmerged. 31 changed files, +626/−114. Лира не автор этого implementation head.
