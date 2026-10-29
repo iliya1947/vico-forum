@@ -37,6 +37,23 @@ runtime/browser/owner acceptance будущей админ-панели не з�
 
 
 
+
+## EDITOR-05 — Advanced Find Next selection/focus (2026-10-29)
+
+В отдельной implementation-ветке Find Next применяет найденный source range
+непосредственно к уже активному Advanced write textarea, используя существующее
+source-to-textarea offset mapping, и очищает consumed pending selection.
+Переход из Preview/Split сохраняет прежний pending-selection/layout-effect path.
+Поиск остаётся буквальным, идёт от selectionEnd и wraps к первому совпадению;
+empty/no-match не меняют selection/source. Поиск запоминает только selection,
+не создаёт Markdown edit или отдельный Undo content step.
+
+Добавлены mounted regressions для последовательных matches/wrap, исходных caret
+positions, Preview/Split, single literal match, LF/CRLF/CR и Unicode/UTF16 mapping,
+точного FormData source и Undo/Redo. Replace all и остальной Find/Replace UI
+не менялись; regex/highlighting/counters не добавлялись. Фактические проверки/CI
+и независимый whole-PR review фиксируются отдельно после выполнения.
+
 ## Preview scenario correctness — confirmation and Appeals (2026-10-29)
 
 В отдельной implementation-ветке исправлены две локальные Preview/tooling причины.
