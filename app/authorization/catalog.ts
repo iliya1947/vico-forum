@@ -14,6 +14,10 @@ export const PERMISSION_CATALOG = [
   "forum.sourceLocale.correctAny",
   "forum.translation.generate",
   "access.authorization.manage",
+  "forum.complaint.create",
+  "forum.complaint.review",
+  "forum.complaint.reporterIdentity.read",
+  "forum.complaint.appeal.review",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_CATALOG)[number];
@@ -33,6 +37,7 @@ export const INITIAL_ROLE_GRANTS = {
     "forum.helpSignal.create",
     "forum.sourceLocale.correctOwn",
     "forum.translation.generate",
+    "forum.complaint.create",
   ],
   moderator: [
     "forum.topic.create",
@@ -49,8 +54,11 @@ export const INITIAL_ROLE_GRANTS = {
     "forum.sourceLocale.correctOwn",
     "forum.sourceLocale.correctAny",
     "forum.translation.generate",
+    "forum.complaint.create",
+    "forum.complaint.review",
+    "forum.complaint.appeal.review",
   ],
-  admin: [...PERMISSION_CATALOG],
+  admin: PERMISSION_CATALOG.filter((permission) => permission !== "forum.complaint.reporterIdentity.read"),
 } as const satisfies Record<string, readonly PermissionKey[]>;
 
 export const AUTHORIZATION_MANAGE_PERMISSION: PermissionKey = "access.authorization.manage";

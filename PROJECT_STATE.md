@@ -20,6 +20,30 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Complaints — Package 1 domain foundation (2026-10-29)
+
+В отдельной implementation-ветке реализован server-only complaints foundation:
+отдельные Complaint/Case/immutable initial Decision/Appeal/notes/lifecycle events,
+post/title revision targets с owner-matching FKs, atomic replay/CAS и bounded
+reviewer/participant reads. Reporter/appellant identity не выбирается обычной
+SQL projection; дополнительный elevated permission не выдаётся initial admin.
+Новые code-backed permissions используют существующий PermissionResolver.
+
+Forward migration `0047_complaints_domain_foundation` сохраняет evidence refs
+вложений reported post revision; active-ref gate и все стадии cleanup учитывают
+эти refs. Append-only evidence/events и deferred Case→Decision FK защищают
+историю. Native tests покрывают grouping/title-first-post separation, privacy,
+permission freshness, revision/evidence retention, rollback и concurrency.
+Permanent contract: `docs/moderation/COMPLAINTS.md`.
+
+Новых HTTP routes, user/queue/appeals UI, rate-limit thresholds, priority/presence,
+notifications или Quick actions нет. Спорная same-revision/new-open-revision
+admission и subsequent appeal transitions возвращают explicit policy-required
+без writes до решений Packages 2/6. Storage поддерживает максимум 3 appeals без
+необратимого unique-pending ограничения; initial Decision не переписывается.
+Проверки/CI и independent whole-PR acceptance фиксируются отдельно после
+фактического выполнения; production migration/GRANT/deploy не выполнялись.
+
 ## Responsive containment — menu, revision history and manager header (2026-10-29)
 
 В отдельной implementation-ветке исправлены три разные current-Stage причины
@@ -2300,7 +2324,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0046`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0047`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

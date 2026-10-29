@@ -628,7 +628,8 @@ export const authzPermissions = pgTable("authz_permissions", {
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
-  'access.authorization.manage'
+  'access.authorization.manage', 'forum.complaint.create', 'forum.complaint.review',
+  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review'
 )`)]);
 
 export const authzRolePermissions = pgTable("authz_role_permissions", {
@@ -1602,4 +1603,139 @@ export const forumAttachmentSweep = pgTable("forum_attachment_sweep", {
     (${table.claimToken} is null and ${table.claimedAt} is null)
     or (${table.claimToken} is not null and ${table.claimedAt} is not null)
   `),
+]);
+
+
+// Complaint evidence uses the existing immutable forum revisions. The migration
+// adds the deferred Case -> initial Decision owner-matching FK (as for forum revisions).
+export const forumComplaintTargets = pgTable("forum_complaint_targets", {
+  id: text("id").primaryKey(),
+  kind: text("kind").notNull(),
+  topicId: text("topic_id").notNull().references(() => forumTopics.id, { onDelete: "restrict" }),
+  postId: text("post_id"),
+  postRevisionId: text("post_revision_id"),
+  titleRevisionId: text("title_revision_id"),
+  affectedAuthorId: text("affected_author_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+}, t => [
+  check("complaint_target_shape", sql`(${t.kind} = 'post' and ${t.postId} is not null and ${t.postRevisionId} is not null and ${t.titleRevisionId} is null) or (${t.kind} = 'topic-title' and ${t.postId} is null and ${t.postRevisionId} is null and ${t.titleRevisionId} is not null)`),
+  foreignKey({ name: "complaint_target_post_topic_fk", columns: [t.topicId, t.postId], foreignColumns: [forumPosts.topicId, forumPosts.id] }).onDelete("restrict"),
+  foreignKey({ name: "complaint_target_post_revision_fk", columns: [t.postId, t.postRevisionId], foreignColumns: [forumPostRevisions.postId, forumPostRevisions.id] }).onDelete("restrict"),
+  foreignKey({ name: "complaint_target_title_revision_fk", columns: [t.topicId, t.titleRevisionId], foreignColumns: [forumTopicTitleRevisions.topicId, forumTopicTitleRevisions.id] }).onDelete("restrict"),
+  uniqueIndex("complaint_target_post_unique").on(t.postId, t.postRevisionId).where(sql`${t.kind} = 'post'`),
+  uniqueIndex("complaint_target_title_unique").on(t.topicId, t.titleRevisionId).where(sql`${t.kind} = 'topic-title'`),
+]);
+
+export const forumComplaintCases = pgTable("forum_complaint_cases", {
+  id: text("id").primaryKey(),
+  targetId: text("target_id").notNull().references(() => forumComplaintTargets.id, { onDelete: "restrict" }),
+  state: text("state").notNull().default("open"),
+  version: integer("version").notNull().default(1),
+  initialDecisionId: text("initial_decision_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, t => [
+  unique("complaint_case_target_unique").on(t.id, t.targetId),
+  uniqueIndex("complaint_case_open_target_unique").on(t.targetId).where(sql`${t.state} = 'open'`),
+  index("complaint_case_state_created_idx").on(t.state, t.createdAt, t.id),
+  check("complaint_case_lifecycle", sql`${t.version} > 0 and ((${t.state} = 'open' and ${t.initialDecisionId} is null and ${t.resolvedAt} is null) or (${t.state} = 'resolved' and ${t.initialDecisionId} is not null and ${t.resolvedAt} is not null and ${t.resolvedAt} >= ${t.createdAt}))`),
+]);
+
+export const forumComplaints = pgTable("forum_complaints", {
+  id: text("id").primaryKey(),
+  caseId: text("case_id").notNull(),
+  targetId: text("target_id").notNull(),
+  reporterUserId: text("reporter_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  reason: text("reason").notNull(),
+  explanation: text("explanation"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  foreignKey({ name: "complaint_case_target_fk", columns: [t.caseId, t.targetId], foreignColumns: [forumComplaintCases.id, forumComplaintCases.targetId] }).onDelete("restrict"),
+  unique("complaint_reporter_target_unique").on(t.reporterUserId, t.targetId),
+  unique("complaint_case_id_unique").on(t.caseId, t.id),
+  index("complaint_case_created_idx").on(t.caseId, t.createdAt, t.id),
+  check("complaint_reason_check", sql`${t.reason} in ('spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other')`),
+  check("complaint_explanation_check", sql`(${t.explanation} is null or (btrim(${t.explanation}) <> '' and char_length(${t.explanation}) <= 2000)) and (${t.reason} <> 'other' or ${t.explanation} is not null)`),
+]);
+
+export const forumComplaintDecisions = pgTable("forum_complaint_decisions", {
+  id: text("id").primaryKey(),
+  caseId: text("case_id").notNull().references(() => forumComplaintCases.id, { onDelete: "restrict" }),
+  outcome: text("outcome").notNull(),
+  reviewerUserId: text("reviewer_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  reasoning: text("reasoning").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  unique("complaint_decision_case_unique").on(t.caseId),
+  unique("complaint_decision_owner_unique").on(t.caseId, t.id),
+  check("complaint_decision_outcome_check", sql`${t.outcome} in ('confirmed','not-confirmed')`),
+  check("complaint_decision_reasoning_check", sql`btrim(${t.reasoning}) <> '' and char_length(${t.reasoning}) <= 10000`),
+]);
+
+export const forumComplaintNotes = pgTable("forum_complaint_notes", {
+  id: text("id").primaryKey(),
+  caseId: text("case_id").notNull().references(() => forumComplaintCases.id, { onDelete: "restrict" }),
+  authorUserId: text("author_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  unique("complaint_note_owner_unique").on(t.caseId, t.id),
+  index("complaint_note_case_created_idx").on(t.caseId, t.createdAt, t.id),
+  check("complaint_note_body_check", sql`btrim(${t.body}) <> '' and char_length(${t.body}) <= 10000`),
+]);
+
+export const forumComplaintAppeals = pgTable("forum_complaint_appeals", {
+  id: text("id").primaryKey(),
+  caseId: text("case_id").notNull(),
+  decisionId: text("decision_id").notNull(),
+  appellantUserId: text("appellant_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  side: text("side").notNull(),
+  argument: text("argument").notNull(),
+  ordinal: integer("ordinal").notNull(),
+  status: text("status").notNull().default("pending"),
+  outcome: text("outcome"),
+  reasoning: text("reasoning"),
+  reviewerUserId: text("reviewer_user_id").references(() => user.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, t => [
+  foreignKey({ name: "complaint_appeal_decision_fk", columns: [t.caseId, t.decisionId], foreignColumns: [forumComplaintDecisions.caseId, forumComplaintDecisions.id] }).onDelete("restrict"),
+  unique("complaint_appeal_ordinal_unique").on(t.decisionId, t.ordinal),
+  unique("complaint_appeal_owner_unique").on(t.caseId, t.id),
+  index("complaint_appeal_pending_idx").on(t.status, t.createdAt, t.id),
+  check("complaint_appeal_ordinal_check", sql`${t.ordinal} between 1 and 3`),
+  check("complaint_appeal_side_check", sql`${t.side} in ('author','reporter')`),
+  check("complaint_appeal_argument_check", sql`btrim(${t.argument}) <> '' and char_length(${t.argument}) <= 2000`),
+  check("complaint_appeal_lifecycle_check", sql`(${t.status} = 'pending' and ${t.outcome} is null and ${t.reasoning} is null and ${t.reviewerUserId} is null and ${t.resolvedAt} is null) or (${t.status} = 'resolved' and ${t.outcome} is not null and ${t.outcome} in ('upheld','overturned') and ${t.reasoning} is not null and btrim(${t.reasoning}) <> '' and char_length(${t.reasoning}) <= 10000 and ${t.reviewerUserId} is not null and ${t.resolvedAt} is not null and ${t.resolvedAt} >= ${t.createdAt})`),
+]);
+
+export const forumComplaintEvents = pgTable("forum_complaint_events", {
+  id: text("id").primaryKey(),
+  caseId: text("case_id").notNull().references(() => forumComplaintCases.id, { onDelete: "restrict" }),
+  kind: text("kind").notNull(),
+  actorUserId: text("actor_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  operationId: text("operation_id").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  complaintId: text("complaint_id"),
+  decisionId: text("decision_id"),
+  noteId: text("note_id"),
+  appealId: text("appeal_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  unique("complaint_event_operation_unique").on(t.actorUserId, t.operationId),
+  index("complaint_event_case_created_idx").on(t.caseId, t.createdAt, t.id),
+  foreignKey({ name: "complaint_event_report_fk", columns: [t.caseId,t.complaintId], foreignColumns: [forumComplaints.caseId,forumComplaints.id] }).onDelete("restrict"),
+  foreignKey({ name: "complaint_event_decision_fk", columns: [t.caseId,t.decisionId], foreignColumns: [forumComplaintDecisions.caseId,forumComplaintDecisions.id] }).onDelete("restrict"),
+  foreignKey({ name: "complaint_event_note_fk", columns: [t.caseId,t.noteId], foreignColumns: [forumComplaintNotes.caseId,forumComplaintNotes.id] }).onDelete("restrict"),
+  foreignKey({ name: "complaint_event_appeal_fk", columns: [t.caseId,t.appealId], foreignColumns: [forumComplaintAppeals.caseId,forumComplaintAppeals.id] }).onDelete("restrict"),
+  check("complaint_event_fingerprint_check", sql`${t.fingerprint} ~ '^[0-9a-f]{64}$' and btrim(${t.operationId}) <> '' and char_length(${t.operationId}) <= 200`),
+  check("complaint_event_shape_check", sql`(${t.kind} = 'submitted' and ${t.complaintId} is not null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'decided' and ${t.decisionId} is not null and ${t.complaintId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'noted' and ${t.noteId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.appealId} is null) or (${t.kind} in ('appealed','appeal-resolved') and ${t.appealId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null)`),
+]);
+
+export const forumComplaintEvidenceAttachments = pgTable("forum_complaint_evidence_attachments", {
+  targetId: text("target_id").notNull().references(() => forumComplaintTargets.id, { onDelete: "restrict" }),
+  attachmentId: text("attachment_id").notNull().references(() => forumAttachments.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  primaryKey({ name: "complaint_evidence_pk", columns: [t.targetId, t.attachmentId] }),
+  index("complaint_evidence_attachment_idx").on(t.attachmentId),
 ]);
