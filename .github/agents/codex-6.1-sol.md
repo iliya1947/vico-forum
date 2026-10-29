@@ -1,5 +1,50 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — PR #250 / independent whole-PR review — PASS / STOP
+
+Date:2026-10-29. Assignment:PR236 comment6496099834.
+Exact head:750d6e9a5d9f1cd89a45afc40c864c93b0bf0772.
+Base/main:0a09482fc2653b65e775ae069c86c48ab247b4fb.
+Scope:CODE-SEARCH-01, all 3 changed files (+188/-1 against base).
+Публикация завершённого независимого review разрешена разработчиком. Вердикт относится только к указанному exact head.
+
+## Verdict
+
+PASS. Confirmed current-Stage defects:0. Future-only blockers:0. This is a personal independent verdict, not team acceptance or merge approval. The whole assigned PR was checked, not only the last correction.
+
+## Source and causal review
+
+Read the complete three-file diff: views.tsx, public-read.test.tsx and PROJECT_STATE.md. The entire production delta against base is a useLocation call and an input key. The search route loader, URL parsing, NFKC/trim/whitespace normalization, backend reader, form method/action, uncontrolled defaultValue, limits and other input attributes are unchanged.
+
+Input identity now follows the committed Router location.key. Distinct raw queries that normalize to the same loader query get distinct history entry identities and reset a dirty input. Back/Forward reuses each entry's key, which differs from the active entry. Editing without navigation leaves the key stable and the input editable. The existing Form already required router context; useLocation does not introduce a new unsupported standalone-render requirement. Checked the pinned React Router declaration documenting the unique location key and initial default key.
+
+All 167 added test lines were read: original distinct-query A/B navigation, new normalized-equivalent raw GET/dirty Back/Forward, and empty/whitespace-equivalent entries assert raw URL plus authoritative loader/result state and visible input. The state document accurately describes the current boundary and does not assert unperformed external acceptance.
+
+## Independent execution
+
+- Local pinned Node24.21 toolchain: public-read.test.tsx70/70 PASS,9.56s. This includes the real SearchRoute/searchLoader/createMemoryRouter tests and positive TypeScript result fixtures. No temporary diagnostic tests or implementation changes were needed.
+- Actual local Vico React19.3/ReactRouter8.3.1 application on4218 with disposable migrated PostgreSQL17 on55441, actual Chromium:19 settled-state observations,19 expected-state checks PASS. This repeats the prior exact reproducer, including normalized-equivalent GET, unrelated dirty draft, Back/Forward and empty/whitespace pair. Normal A/B, edit-before-submit, initial normalized and over-limit controls also pass. Zero browser page errors and zero console errors.
+- Six additional SSR/hydration checks PASS: JavaScript disabled and enabled, each with normalized full-width/spaced query, whitespace-only query and over-limit query. Original server response input value and final browser input agree with normalized loader value; response status200. No hydration or console errors.
+- Two additional real-browser checks PASS: after an SPA GET creates a non-default history location key, enter a dirty draft and hard-reload; server/client field is the committed query and the existing history key is retained. Back after reload correctly restores the previous query/input. No runtime/hydration errors.
+- Total browser evidence:27 observations/checks across these distinct paths. Artifacts:browser.py/browser.json/browser.log,ssr.py/ssr.json/ssr.log,reload.py/reload.json/reload.log.
+
+Browser uses a disposable migrated database without topic fixtures: real SQL returns empty results and the result panel explicitly identifies the authoritative normalized query. Positive matching-result behavior is independently covered by the native route fixture. This is local engineering validation, not owner visual/deployed acceptance.
+
+## CI and exact head
+
+Read the completed logs and job steps of exact-head CI40868500419:all steps SUCCESS. checks123429231677:1268 application tests/103files, lint/full typecheck/application+preview builds/history/schema guards PASS. database123429231250:345 PostgreSQL17 tests/31files plus schema/runtime privilege/provisioning/credential probes and local Workers smoke PASS. Full local app/native PG/build suites were not separately repeated; these full results are CI observations.
+
+CI checkout783b57b30494844f35c08e62a3d8c14bc159b514 merges the exact assigned head/base and has the same tree44fff84f21adc3ee35adb27220fd55c083129bfb as the head, verified through Git fetch/tree comparison. Final GitHub metadata:head/base unchanged, open/Draft/mergeable,3 changed files.
+
+## Cleanup and publication boundary
+
+Local Vite3658/Workerd3689 stopped; ports4218/55441 closed. Disposable leva-pr250-review-750-pg removed with volume. Synthetic .dev.vars and dependency symlink removed; checkout clean and diff-check PASS. Browser contexts closed. During review, no implementation changes/commits, branch pushes, service report/comment publication or merge were performed. Publication now follows the developer's separate command. No real external services/providers/production or owner visual acceptance.
+
+Independent review COMPLETE; developer authorized publication. Мире — coordinator reconciliation личного PASS на этом exact head. Лёва STOP.
+
+
+---
+
 ## PR #247 — bounded plain serializer correction / author handoff / STOP (2026-10-29)
 
 Assignment: PR236 comment6495447379. Existing PR247 and branch chatgpt6/batch-l2-20261027.
