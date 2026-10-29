@@ -1,5 +1,50 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — responsive package / verification complete + implementation plan / STOP (2026-10-29)
+
+Assignment: #6497168605. Exact current-main baseline: `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
+Scope: RES-UI-01, CODE-HISTORY-01, M-M07. These remain THREE distinct current-Stage causal groups; later merges have not closed them. This is verification/planning, not an implementation or whole-PR review.
+
+### Personally reproduced on current source
+
+Fresh current-source UI Preview build and separate actual TopicView + real stylesheet/React Router fixture, Chromium. Widths 320/360/390/768/1280. Menu/header: EN/RU/HE; history: EN with a raw source line. Header has manager permission fixture incl. Needs attention, notifications, profile, authorization and sign-out. History action is an explicitly fixed local fixture returning revision text; no DB/server authorization claim.
+
+| Finding | Current observation | Cause and minimal boundary |
+| --- | --- | --- |
+| RES-UI-01 | In each of EN/RU/HE, opening More changes document320→410,360→440,390→458. Wider768/1280 controls fit. | Main details is a relative anchor at an interior toolbar offset, while the absolute popup has width min(18rem,75vw) and inset-inline-start:0. Popup width ignores actual remaining space. On narrow layouts, anchor the main popup to the bounded toolbar instead; main details position:static, popup width min(18rem,100%). Preserve existing sticky toolbar, scrolling and nested menus. No fixed viewport offsets or global overflow hiding. |
+| CODE-HISTORY-01 | At320, closed document320; open history789; close320. Raw pre scroll728/client148. | Raw pre has white-space:pre/visible overflow; mobile .forum-post-content display:contents makes history a grid item without full-row/shrink boundary. Add full-row grid-column:1/-1 + min-inline-size:0/max-inline-size:100% to history and max width + overflow-x:auto to its pre. Keep exact raw text and pre whitespace; scroll only the raw source region. |
+| M-M07 | Manager EN320→357; RU320→382 and RU360→382. HE and larger controls do not reproduce document overflow. | Account row and auth row are nowrap; fixed notification/control widths plus unbreakable Needs attention and authorization/sign-out labels exceed available width. Profile-only flex shrinking was experimentally insufficient. Preserve the accepted single account row by allowing localized attention text to wrap inside its own link, sizing auth controls against their min-content and reserving a complete avatar minimum before truncating profile name. Do not hide authorization/sign-out or change permission semantics. |
+
+Source chain read: app/forum/markdown-editor.tsx toolbar/details markup; app/forum/views.tsx history fetch/render; app/forum/ui.tsx manager/account header; app/auth/auth-controls.tsx; applicable complete CSS rule groups including later overrides. Contract checked against docs/UI_UX_PASS.md current mobile single-account-row decision and narrow/overflow hardening, docs/EDITOR.md toolbar grouping and history, ROADMAP.md current defect vs later refinement distinction, current PROJECT_STATE.md. Existing native history permissions/actions remain outside this CSS correction.
+
+### Diagnostic experiments, not implementation
+
+All style changes were injected into disposable browser pages. No tracked source was edited.
+
+- Baseline matrix:35 scenarios,0 page errors. Main menu and header EN/RU/HE×5widths plus5 history widths.
+- Menu experiment repeated across all15 locale/width pairs while explicitly preserving position:sticky: document equals viewport in all15. The preliminary broader toolbar-relative experiment was discarded because it would remove stickiness. Preferred production media boundary is the existing narrow breakpoint, leaving desktop placement unchanged.
+- History localized scroll/full-row experiment: document equals viewport at all5 widths, raw text remains preformatted and locally scrollable. At320 pre client238/scroll728. A layout fixture verifies geometry, not real history permission/data persistence.
+- Header row wrapping removes document overflow but contradicts the current accepted one-row composition; discarded. Profile-only flex experiment still fails EN/RU narrow widths; discarded. Bounded attention-text wrapping and auth min-content correction retains nowrap account/auth composition and fixes current EN/RU width failures. Final avatar minimum is2.5rem (not2.15rem, which would clip avatar/padding). Final15/15 EN/RU/HE×5width cases have document==viewport and the full avatar rectangle inside the profile control;0 page errors. These are geometry checks, not a claim of completed interaction/owner acceptance.
+
+### Bounded implementation package
+
+1. Create one separately authorized implementation branch/PR from the then-current main; recheck these three source boundaries if main moved. Keep three causal findings named separately.
+2. Local CSS corrections only where sufficient: narrow main extra-popup containing block/width, raw history grid/shrink/scroll, narrow manager header allocation/attention-label wrapping. Expected production file app/styles.css; source markup only if a concrete regression proves CSS insufficient. No layout rewrite, parser/editor state/history APIs/auth changes/dependencies.
+3. Add focused reproducible real-browser layout coverage using actual shared components/styles and fixed local fixture data. No jsdom geometry assertions or tests merely matching CSS text. Preserve a script + exact-head JSON results and representative screenshots as engineering evidence; choose a small maintained harness consistent with existing project tooling, without adding a browser platform dependency merely for this package.
+4. Browser regression matrix:320/360/390 + existing breakpoint boundaries703/704 and767/768 +1280; EN/RU/HE; guest/user/manager controls; long identity/attention labels. Assert document scrollWidth<=clientWidth (rounding tolerance1px), rendered/control bounds and hit testing, localized accessible labels, controls retained, no overlapping/clipped avatar/action buttons. Account/auth row remains one row; attention text may wrap inside its link.
+5. Menu: Simple/Advanced and fullscreen/nonfullscreen, native keyboard/click opening/closing, nested emoji/direction/language controls, viewport resize while open, RTL + sticky toolbar after scrolling. Ensure all items remain reachable and focus visible; popup local vertical scrolling permitted. No weakening existing editor data/selection/Undo behavior.
+6. History: open/close at mobile/desktop, multiple revisions, long unbroken lines and mixed RTL/LTR source, exact pre.textContent, independent pre horizontal scroll, no ancestor/document expansion, long author/date labels and message action placement. Reuse real TopicView and its fetcher action shape; backend permission contract unchanged.
+7. Run relevant native component suites (public-read/auth-controls/markdown-editor), full lint/typecheck/builds and applicable exact-head CI; update PROJECT_STATE.md with actually implemented state. Finish implementation checks before coordinator and independent whole-PR reviews.
+
+No new future-only finding is promoted into this package. Deferred M-M10/F06 contrast refinement, owner visual acceptance, unrelated responsive cleanup and external/production services are excluded. Engineering layout checks do not certify owner acceptance.
+
+Artifacts outside tracked source: /workspace/work/responsive-verification (current builds, fixture, browser scripts/JSON/logs including rejected alternatives). No production implementation edits, new branch/PR, commit, push or merge. No real services/DB started. Ephemeral HTTP servers and browsers closed. Dependency symlink removed; checkout clean.
+
+Verification and technical plan COMPLETE. Implementation requires separate developer authorization for the new branch/PR. Coordinator should reconcile this bounded plan first. STOP.
+
+
+---
+
 ## Лёва — PR #250 / independent whole-PR review — PASS / STOP
 
 Date:2026-10-29. Assignment:PR236 comment6496099834.
