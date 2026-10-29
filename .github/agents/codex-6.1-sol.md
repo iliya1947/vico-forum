@@ -1,5 +1,62 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — EDITOR-05 / current-main verification + minimal correction plan / STOP (2026-10-29)
+
+Assignment:#6503112481. Exact current main:a4d552a4ce57986d97c02e2695f4546cffccecfd.
+This is the new authorized EDITOR-05 verification; the older cancelled assignment was not executed.
+
+### Verdict
+
+EDITOR-05 remains a confirmed current-Stage functional defect (P2) in Advanced Find Next. One causal group, including initially-write and repeated Find Next after Preview/Split. It is not a missing future search feature or visual polish. Implementation not performed; no branch/PR created.
+
+### Actual chain and observed result
+
+markdown-editor.tsx findNext() reads the DOM textarea selectionEnd, converts it to exact source offset, performs literal indexOf with wrap, and builds the correct source match range. It remembers selection in history metadata, calls setMode(write), then assigns pendingSelectionRef. DOM focus/selection is deferred to useLayoutEffect with dependencies [mode,value,authoringMode].
+
+If Advanced is already write, source value and authoring mode are unchanged and setMode(write) does not change mode. Changing a ref does not schedule application of that range. React may bail out of the state update; even an incidental render does not change those effect dependencies. Therefore the DOM stays at the previous selection/caret and focus stays on Find Next. The next click reads that SAME selectionEnd and computes the same target again. History selection metadata is not visible DOM selection.
+
+If the starting view is Preview or Split, the first Find Next changes mode to write, so the effect applies the first match and focuses textarea. The following click occurs in write and fails again. This positive control isolates the scheduling/application boundary: literal matching and source-to-textarea mapping can work, but application is not guaranteed when the view is already active.
+
+Native Chromium example, source one two one three, query one:
+- initial write, caret0: expected0..3; actual0..0, textarea not focused. Repeat remains0..0.
+- initial Preview or Split, caret0: first click selects0..3 and focuses textarea; second should select8..11 but remains0..3, focus on button.
+- initial write, caret17: expected wrap0..3; actual17..17. Preview from17 wraps successfully on its first transition.
+- initial write, caret4: expected8..11; actual4..4.
+- empty/no-match controls retain caret4/source, as expected.
+
+The existing imperative focus() path in the same component already handles an active Advanced write textarea synchronously using focus/setSelectionRange and clears pending state. This is a suitable existing local pattern; a new global selection state machine is unnecessary.
+
+Official React useState/useLayoutEffect documentation checked: identical state may skip rendering and effect dependencies use Object.is comparison. The defect conclusion also follows directly from unchanged dependencies and was observed with pinned React19.3.0/Chromium154.
+
+### Personally executed evidence
+
+- Fresh current-head UI Preview build PASS using pinned Node24.21.0 and existing dependencies.
+- Actual shared MarkdownEditor in built Preview, native Ctrl+F/input/pointer Find Next,390/1280 widths:32 observations across8 starting view/query/caret cases and2 attempts. Eighteen desired-selection mismatches reproduce the same cause;14 neighboring observations match intended behavior (first Preview/Split transition, empty/no-match). Not18 distinct defects. Source unchanged in every observation; zero page errors/external/mutating requests.
+- Three additional temporary mounted component diagnostics PASS as current-behavior verifiers, using exact raw one\r\ntwo one. Initially-write selection stays0..0; Preview/Split first selects0..3; all second clicks fail to select expected displayed8..11 (source9..12). Focus behavior and exact hidden body CRLF bytes checked. Tests removed/restored after execution. These passing diagnostic assertions verify the defect, not the desired fix.
+- Existing Find/Replace native regression PASS (1 selected/185 skipped); it only clicks Replace all and does not cover Find next. Its green result does not close EDITOR-05.
+- No full application/DB suites, general editor audit, production services or owner visual acceptance performed or inferred.
+
+### Minimal correction boundary
+
+1. Keep correction local to Advanced selection application in markdown-editor.tsx and focused editor tests/state documentation. Preserve literal case-sensitive matching, selectionEnd-based forward search, wrap, no-op empty/no-match, source byte preservation and current transition to write.
+2. Apply the found range deterministically: if the Advanced write textarea is already mounted/visible, focus it and setSelectionRange synchronously through existing sourceOffsetToTextareaOffset mapping, clearing the consumed pending request. If changing view is required, retain the pending range for the existing post-commit layout effect. A small shared Advanced selection/focus helper may reuse the existing imperative focus pattern if it reduces duplication; no unrelated refactor is necessary.
+3. Keep history selection metadata consistent, but do not add a source edit or Undo item for searching. Do not rewrite Markdown, normalize the full document, force a dummy render/counter, broaden the effect to run after every render or add a global selection subsystem just to process this local command.
+4. Permanent desired-behavior integration regression: Advanced already-write, query one in one two one three, first0..3 -> next8..11 -> wrap0..3; assert textarea focus AND DOM selection, not only a remembered helper range. Add a mid-caret and end-wrap control.
+5. Preview/Split first-transition and repeated-click regressions must reach the same ranges and focus. Empty/no-match retain source/selection; test a single match and literal Markdown-sensitive query as controls without promoting new search features.
+6. Preserve exact LF/CRLF/CR source and Unicode/UTF16 mapping in focused checks. Native source9..12 -> displayed8..11 demonstrates why raw source offsets must not be passed directly to the textarea. Assert hidden/FormData source and no extra Undo content edit; retain existing Replace all controls.
+7. Repeat the focused native Chromium flow on actual shared editor after implementation (including current-write and repeated navigation), run relevant native tests/typecheck/lint/builds and applicable exact-head CI. No general editor/a11y/UX search redesign, provider/deployment work or unrelated fixes.
+
+### Boundary / cleanup / handoff
+
+Current necessity is reliable selection/focus for the existing Find Next command. Match counters, all-match highlighting, regex/case toggles, richer replace UX and optional cosmetic scroll positioning beyond making the match usable are separate future work, not blockers added by this verification.
+
+Artifacts:/workspace/work/editor05-verification (browser.py/browser.json/browser.log,build.log,existing-test.log,diagnostic.txt/diagnostic.log and report). Source test edits restored byte-for-byte; dependency symlink removed, checkout/diff-check clean. Own loopback HTTP/Chromium closed; no application runtime/DB/container/external service started. No implementation commit/push/PR or merge.
+
+Verification + plan COMPLETE. Coordinator reconciliation next, then separately authorized implementation task/branch/PR if accepted. Лёва STOP.
+
+
+---
+
 ## PR #255 — CODE-PREVIEW-01 + CODE-PREVIEW-02 / author implementation handoff / STOP (2026-10-29)
 
 Assignment: #6502560117; verification #6499986202 / reconciliation #6502470140.
