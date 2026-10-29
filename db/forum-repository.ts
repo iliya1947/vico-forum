@@ -76,7 +76,7 @@ export interface ForumUnansweredTopicSummary {
   title: string;
   authorName: string;
   createdAt: Date;
-  section: { id: string; name: string };
+  section: { id: string; name: string } | null;
   category: { id: string; name: string };
 }
 
@@ -95,7 +95,7 @@ export interface ForumTaggedTopicSummary {
   authorName: string;
   postCount: number;
   createdAt: Date;
-  section: { id: string; name: string };
+  section: { id: string; name: string } | null;
   category: { id: string; name: string };
   tags: ForumTag[];
 }
@@ -111,7 +111,7 @@ export interface ForumSearchResult {
   authorName: string;
   postCount: number;
   activityAt: Date;
-  section: { id: string; name: string };
+  section: { id: string; name: string } | null;
   category: { id: string; name: string };
   tags: ForumTag[];
 }
@@ -135,8 +135,23 @@ export interface ForumUnreadTopicSummary {
   latestPostId: string;
   unreadCount: number;
   activityAt: Date;
-  section: { id: string; name: string };
+  section: { id: string; name: string } | null;
   category: { id: string; name: string };
+}
+
+// Only public category/section identities are returned to generic discovery lists.
+// Help questions retain their public category, but not the internal service section.
+function publicDiscoveryLocation(row: {
+  sectionId: string;
+  sectionName: string;
+  categoryId: string;
+  categoryName: string;
+}) {
+  return {
+    category: { id: row.categoryId, name: row.categoryName },
+    section: row.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
+      ? null : { id: row.sectionId, name: row.sectionName },
+  };
 }
 
 export interface ForumReplyNotificationSummary {
@@ -1045,8 +1060,7 @@ export class DrizzleForumRepository {
       title: row.title,
       authorName: row.authorName,
       createdAt: row.createdAt,
-      section: { id: row.sectionId, name: row.sectionName },
-      category: { id: row.categoryId, name: row.categoryName },
+      ...publicDiscoveryLocation(row),
     }));
   }
 
@@ -1113,8 +1127,7 @@ export class DrizzleForumRepository {
         authorName: topic.authorName,
         postCount: topic.postCount,
         createdAt: topic.createdAt,
-        section: { id: topic.sectionId, name: topic.sectionName },
-        category: { id: topic.categoryId, name: topic.categoryName },
+        ...publicDiscoveryLocation(topic),
         tags: tagsByTopic.get(topic.id) ?? [],
       })),
     };
@@ -1193,8 +1206,7 @@ export class DrizzleForumRepository {
       authorName: row.authorName,
       postCount: row.postCount,
       activityAt: row.activityAt,
-      section: { id: row.sectionId, name: row.sectionName },
-      category: { id: row.categoryId, name: row.categoryName },
+      ...publicDiscoveryLocation(row),
       tags: tagsByTopic.get(row.id) ?? [],
     }));
   }
@@ -1263,8 +1275,7 @@ export class DrizzleForumRepository {
       latestPostId: row.latestPostId,
       unreadCount: row.unreadCount,
       activityAt: row.activityAt,
-      section: { id: row.sectionId, name: row.sectionName },
-      category: { id: row.categoryId, name: row.categoryName },
+      ...publicDiscoveryLocation(row),
     }));
   }
 
