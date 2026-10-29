@@ -1188,6 +1188,7 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
   const selectedCases = group === "mixed"
     ? samples.filter((item) => item.topicId === "help-question" && item.type === "signal")
     : samples.filter((item) => item.kind === group ||
+      (group === "appeals" && item.type === "appeal") ||
       (group === "needs-review" && item.type === "review-status"));
   return <AttentionCenterView
     locale={scenario.locale} mode={mode} group={group}
@@ -1544,25 +1545,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     );
   }
   if (!routeTopicId || routeTopicId === topicId) {
-    const solved = scenario.view === "topic"
-      ? scenario.variant !== "topic-unsolved"
-        && scenario.variant !== "topic-reply-error"
-      : true;
-    const data = topicData(
-      scenario.locale,
-      scenario.direction,
-      scenario.identity,
-      solved,
-      scenario.view === "topic" && scenario.identity === "manager",
-    );
-    return (
-      <TopicView
-        {...data}
-        actionData={scenario.view === "topic" && scenario.variant === "topic-reply-error"
-          ? { error: "rateLimited" }
-          : undefined}
-      />
-    );
+    return <TopicView {...primaryTopicScenarioData(scenario)} />;
   }
 
   const candidateSections = homepageCategories(scenario.locale)
@@ -1803,27 +1786,8 @@ function previewElement(scenario: Scenario) {
           topicReadStates={null}
         />
       );
-    case "topic": {
-      const solutionConfirmation = scenario.variant === "topic-best-answer-unsolved";
-      const solved = scenario.variant !== "topic-unsolved"
-        && scenario.variant !== "topic-reply-error"
-        && !solutionConfirmation;
-      const data = topicData(
-        scenario.locale,
-        scenario.direction,
-        scenario.identity,
-        solved,
-        scenario.identity === "manager",
-        solutionConfirmation,
-      );
-      return (
-        <TopicView
-          {...data}
-          topic={solutionConfirmation ? { ...data.topic, bestAnswerPostId: "answer" } : data.topic}
-          actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
-        />
-      );
-    }
+    case "topic":
+      return <TopicView {...primaryTopicScenarioData(scenario)} />;
     case "admin": {
       const data = authorizationData(scenario.locale);
       const result = scenario.variant === "admin-success"
@@ -1836,6 +1800,28 @@ function previewElement(scenario: Scenario) {
     case "not-found":
       throw new Error("not-found is handled by previewRouter");
   }
+}
+
+// Matched routes and the fallback must describe the same primary-topic fixture.
+function primaryTopicScenarioData(scenario: Scenario) {
+  const isTopicScenario = scenario.view === "topic";
+  const confirmation = isTopicScenario && scenario.variant === "topic-best-answer-unsolved";
+  const solved = !isTopicScenario || (scenario.variant !== "topic-unsolved"
+    && scenario.variant !== "topic-reply-error" && !confirmation);
+  const data = topicData(
+    scenario.locale,
+    scenario.direction,
+    scenario.identity,
+    solved,
+    isTopicScenario && scenario.identity === "manager",
+    confirmation,
+  );
+  return {
+    ...data,
+    topic: confirmation ? { ...data.topic, bestAnswerPostId: "answer" } : data.topic,
+    actionData: isTopicScenario && scenario.variant === "topic-reply-error"
+      ? { error: "rateLimited" as const } : undefined,
+  };
 }
 
 function topicData(

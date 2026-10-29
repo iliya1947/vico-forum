@@ -20,6 +20,23 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## Preview scenario correctness — confirmation and Appeals (2026-10-29)
+
+В отдельной implementation-ветке исправлены две локальные Preview/tooling причины.
+Реально matched topic route и fallback используют общую primary-topic fixture
+projection: dedicated best-answer confirmation открывает нерешённую тему с
+выбранным ответом и авторскими controls, сохраняя prompt query при смене locale.
+No-dismiss оставляет best answer и не помечает тему решённой. Другие topic states
+и переходы к другим темам сохраняют отдельные fixture boundaries.
+Preview-фильтр явно сопоставляет группу `appeals` с case type `appeal`, поэтому
+advertised appeal count сопровождается карточкой fixture. Needs-review/review-status,
+Mixed topic count и намеренно пустой attention scenario сохраняют прежнюю семантику.
+
+Production actions/permissions/Attention group и case identities не менялись.
+Добавлены integration regressions через настоящий `EmbeddedPreview`/router.
+Фактические checks/CI и независимый review фиксируются после выполнения;
+static Preview не заявляется production E2E или owner visual acceptance.
+
 ## Responsive containment — menu, revision history and manager header (2026-10-29)
 
 В отдельной implementation-ветке исправлены три разные current-Stage причины
