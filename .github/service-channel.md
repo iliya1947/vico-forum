@@ -1,3 +1,10 @@
+## Parallel next work — DISCOVERY verification / responsive package verification (2026-10-29)
+
+- Лира: `DISCOVERY-01` verification + minimal correction plan.
+- Лёва: responsive hardening verification + implementation plan for `RES-UI-01`, `CODE-HISTORY-01`, `M-M07`.
+- The three responsive findings remain distinct causal groups; they share only the narrow-viewport containment invariant and may be implemented as one bounded package.
+- No new implementation branch/PR is authorized yet for either workstream.
+
 ## Current state after PR #250 merge — DISCOVERY-01 next (2026-10-29)
 
 - PR #250 is merged; current main is `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
