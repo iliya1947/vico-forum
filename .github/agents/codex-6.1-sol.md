@@ -1,5 +1,53 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #249 — bounded unpersisted LOC-05 correction complete / STOP (2026-10-29)
+
+Автор: Лёва — Codex-6.1 Sol. [Назначение #6483820011](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6483820011), после author verification6480789597.
+Существующие PR #249 / branch fix/l8-localization-runtime; новая ветка/PR не создавались.
+Previous head0c7bc53b7cfae56bd6b80bb0cc074c82c4a9de14 → **stable exact head ae501c80fb20ce3108e5da2136f9cbfc1d402c61**.
+Base/main ebdb482e8bb37cf18d7085beb2926930139b00d6. Merge не выполнялся.
+
+### Причина и изменение
+
+Author verification установила полный current path: service.plan(A) материализует jobs без task/head writes; serviceB.planAndDispatch создаёт B1/current; задержанный dispatcher(A) omitted/false попадал в absent-row branch и делал A2/current, лишая B conditional publication right. Поздний consumer policyB отклонял A, но не возвращал B currentness.
+
+Коррекция закрывает именно absence branch и согласует explicit authorization:
+- **Любая новая UI identity требует options.freshPlanning===true.**
+- Без разрешения выбрасывается **UiTranslationFreshPlanningRequiredError**. Это typed planning precondition, не SQL availability/corruption и не provider retry.
+- Исключение внутри той же transaction откатывает и tentative первый head: не остаётся durable task/head mutation, dispatcher не enqueue-ит отсутствующую task.
+- Known identity по-прежнему поддерживает transport replay без fresh permission. Прежняя защита stale/superseded, current processing duplicate и completed/failed terminal сохранена.
+- Fresh UiTranslationService.planAndDispatch уже передавал true; новый eligible identity и A→B→A работают через прежние locks/monotonic ordering. Return type upsertPending не менялся; для неавторизованного создания Promise отклоняется, это явно документировано.
+- Existing-row guard также сравнивает permission строго с true; новый provider/config/schema/retry mechanism не вводился.
+
+Это одна correction LOC-05, **10 files +125/−58**:
+production — typed error/API comment и store guard; PROJECT_STATE/JOB-03 отражают факт;
+6 native test files содержат51 явную fresh annotation genuine creation calls плюс2 dispatcher setup calls. Existing duplicate/replay negative assertions не превращались в fresh; test contracts не ослаблялись. Остальная механика publication/policy/content stores не переписывалась.
+
+### Regressions / causal controls
+
+В L8 native suite добавлены4 parameterized scenarios:
+1–2. Actual service.plan(A) даёт canonical heading/A при0tasks/0heads. Actual serviceB.planAndDispatch создаёт B. Delayed dispatcher(A), отдельно omitted иfalse, теперь отклонён typed error.
+Проверено: A row отсутствует, полная head row неизменна (включая timestamps), claim B неизменен/current, queue messages count не увеличился; actual PG publication B успешно возвращает true.
+После этого actual fresh serviceA.planAndDispatch создаёт A2/pending, показывая сохранение права нового eligible planning.
+3–4. Те же omitted/false при пустом unit: task count0 и head count0 после rejection, tentative head rolled back.
+
+RED на прежнем source: **4 failed /13 skipped**, поскольку операции неожиданно resolved/создавали задачи.
+GREEN focused: **42 tests /3 files PASS**; после усиления assertions до typed error они включены в full native suite.
+Existing fresh A–B–A→3, stale/superseded replay, current duplicate claim, completed terminal и old publication fencing controls сохраняются и проходят.
+
+### Verification
+
+- Full local PostgreSQL17: **345 tests /31 files PASS**,85.37s.
+- Local lint:0errors/один прежний app/forum/ui.test.tsx174 warning; typecheck,diff-check PASS.
+- **[Exact-head CI #40791016237](https://github.com/iliya1947/vico-forum/actions/runs/40791016237): SUCCESS.** Прочитаны completed logs checks123175960536 и database123175960836: **1265 application tests /103 files**, **345 PostgreSQL17 /31 files**; lint/typecheck/app+UI-preview builds/history/metadata/schema/runtime probes/Workers smoke PASS. Все steps обеих jobs success. Checkout test merge7e62fca3 из exact head ae501c8 +baseebdb482.
+- Full app/build/Workers локально не повторялись: выполнены exact-head CI. Дополнительный Chromium не запускался: correction только server-side task planning guard; owner visual не выполнялась.
+- Disposable local PG/schema/container/volume удалены, dependency symlink снят; checkout clean. Artifacts /workspace/work/l8-unpersisted-correction/ (red.log,focused.log,database.log,lint.log,typecheck.log,fixture update script).
+- LOC-09 остаётся future-only, PR247 и external/provider/Queue activation/production не затрагивались.
+
+Это **author implementation handoff**, не independent whole-PR self-review. Старые reviews относятся к0c7bc53.
+
+**Мире:** coordinator whole-PR review PR #249 на ae501c8, затем non-author independent reviewers того же head. **Лёва STOP.**
+
 ## PR #247 — independent application E2E verification of matching fence: CONFIRMED / STOP (2026-10-29)
 
 Выполнено [назначение #6482419654](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482419654).
