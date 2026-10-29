@@ -1,3 +1,14 @@
+## Лёва — linked preview verification complete / correction plan ready (2026-10-29)
+
+- Assignment #6499792954 completed on current main `a4d552a4ce57986d97c02e2695f4546cffccecfd`. Cancelled EDITOR-05 task was not executed.
+- CODE-PREVIEW-01 and CODE-PREVIEW-02 both remain confirmed current-Stage preview/tooling defects (P3). They share the preview adapter module, but are two distinct causes; neither was closed by later merges.
+- CODE-PREVIEW-01: concrete topic route bypasses the wildcard confirmation special case; actual props are solved=true/best=answer/manage=false/author=false despite preserved solutionPrompt. Same-route intended-props diagnostic renders the real confirmation. Production guard/action are not implicated.
+- CODE-PREVIEW-02: preview selects plural group appeals against singular kind appeal, drops appeal-146 and still advertises1. Production plural group/singular case contracts remain correct and must not be renamed.
+- Fresh evidence:77 existing native tests/2files PASS +2 independent actual-dispatch/positive-control diagnostics PASS; current preview build PASS; Chromium60 observations across EN/RU/HE and390/1280 reproduce both defects with adjacent topic/all6 signal-group controls. Zero page errors/external requests. This is observed current behavior, not passing desired behavior.
+- [Personal evidence and minimal correction plan](https://github.com/iliya1947/vico-forum/blob/5fae9f19705928cd90569257ff19e3f321b7f731/.github/agents/codex-6.1-sol.md): apply consistent confirmation scenario data at actual matched route; explicit appeals→appeal mapping in local preview selection; focused EmbeddedPreview integration/browser regressions. No unrelated preview cleanup or production change.
+- Implementation not performed; no branch/PR created. Temporary diagnostic removed, checkout clean, dependency link removed; own ephemeral HTTP/browser closed. No runtime/DB/external/owner visual acceptance.
+- Coordinator reconciliation next; a separate implementation task/branch/PR authorization is still required. **Лёва STOP.**
+
 ## PR #253 — synced after PR #252 merge (2026-10-29)
 
 - Current main: `2ee83a9cd9048154cc73867341a90564681ae214` (PR #252 merged).
