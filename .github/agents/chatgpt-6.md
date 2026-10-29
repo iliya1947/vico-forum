@@ -1,3 +1,34 @@
+## PR #250 — CODE-SEARCH-01 normalized-history correction complete / author handoff / STOP (2026-10-29)
+
+**Assignment:** Mira [#6495790177](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6495790177) after accepted author verification [#6495569361](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6495569361). This is **implementation/author evidence, not independent whole-PR review**.
+
+**Implementation PR:** [#250](https://github.com/iliya1947/vico-forum/pull/250) existing `chatgpt6/code-search-01-20261029`, stable **exact head `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772`**, base/current main `0a09482fc2653b65e775ae069c86c48ab247b4fb`. PR open/Draft/mergeable; 3 changed files; no merge.
+
+### Bounded correction
+
+Old `key={query}` in `app/forum/views.tsx` failed when two raw URL/history queries normalized to the same `query`. The corrected `SearchView` calls existing imported `useLocation()` and keys only the search input with `location.key`, which uniquely identifies committed browser history entries (initial key is `default`). Existing `defaultValue={query}` keeps input editable before submit; distinct history entries reset draft on settled navigation even when their normalized query matches. No controlled-form state, backend, loader normalization, URL grammar, other page, schema or dependency changes.
+
+Focused native route integration expanded `app/forum/public-read.test.tsx` to cover:
+- original distinct-query A→B GET, Back/Forward, URL/results/input and edit-before-submit/empty q;
+- raw NFKC/whitespace-equivalent GET `TypeScript` ⇄ `  ＴｙｐｅＳｃｒｉｐｔ  `, dirty unrelated draft before Back and Forward, authoritative raw URL, normalized loader/results and DOM value at each settled transition;
+- `q=""` ⇄ whitespace-only `q="   "` with dirty drafts before Back/Forward, loader query/results empty and reset DOM value;
+- existing native initial-load and no-result search tests.
+`PROJECT_STATE.md` correction record updated. Production file change is only `key` identity + reading location.
+
+### Verification
+
+- **[Exact-head CI #40868500419](https://github.com/iliya1947/vico-forum/actions/runs/40868500419) SUCCESS** (GitHub pull_request, head `750d6e9`).
+- `checks` job `123429231677`: **1268/1268 application tests, 103 files PASS**; **70/70 public-read.test.tsx PASS** including both added regressions. Lint0 errors/one pre-existing unused ESLint disable warning, full typecheck, application build, UI-preview build, migration history/schema parity PASS.
+- `database` job `123429231250`: **345/345 PostgreSQL 17 tests, 31 files PASS**, production manifest/privilege diagnostics/probes, Workers smoke PASS.
+- All steps and full job logs inspected. Synthetic PR merge commit `783b57b30494844f35c08e62a3d8c14bc159b514` and head `750d6e9` have identical tree `44fff84f21adc3ee35adb27220fd55c083129bfb`.
+- Current official [React input documentation](https://react.dev/reference/react-dom/components/input) establishes `defaultValue` initial-only semantics; [React Router v8 Location](https://api.reactrouter.com/v8/interfaces/react-router.Location.html) specifies unique `location.key` and initial default.
+
+**Evidence limit:** Native React Router tests run in Vitest/jsdom. No separate real Vico Chromium search-flow/browser acceptance or external deployed/production search E2E was run for this new exact head. Full native PostgreSQL runs via exact-head CI, not author's local executable checkout. Green CI is not whole-PR acceptance. Owner visual acceptance not claimed.
+
+**Status:** correction, focused regression, applicable exact-head CI, documentation and author handoff complete. No whole-PR self-review or merge. **Mira to perform first whole-PR coordinator review on exact head `750d6e9`, then coordinate eligible non-author reviewers. Лира STOP.**
+
+---
+
 ## PR #250 — CODE-SEARCH-01 normalized-equivalent history residual / author verification CONFIRMED / STOP (2026-10-29)
 
 **Роль:** Лира — автор implementation PR #250. Это **авторская targeted verification согласованного остаточного дефекта**, **не independent whole-PR review** и **не новый team verdict**.
