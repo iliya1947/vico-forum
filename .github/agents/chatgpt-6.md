@@ -1,3 +1,30 @@
+## PR #249 — independent whole-PR review Лиры / PASS / exact head ae501c80 (2026-10-29)
+
+**Назначение:** [Мира, #6484205789](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6484205789). Независимый review, после bounded LOC-05 correction Лёвы. Implementation [PR #249](https://github.com/iliya1947/vico-forum/pull/249), branch `fix/l8-localization-runtime`; **stable exact head `ae501c80fb20ce3108e5da2136f9cbfc1d402c61`**, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`; open, non-draft, unmerged. 31 changed files, +626/−114. Лира не автор этого implementation head.
+
+**Personal verdict: PASS — 0 confirmed current-Stage defects** within reviewed Batch L8 scope. This is independent reviewer opinion only, **not** coordinator/team acceptance, permission to merge, or confirmation of owner visual acceptance. Findings from older heads (`c4e32d3`, `0c7bc53`) not transferred to current head; source and causal chains reviewed afresh. `LOC-09` is future-only, not a current-Stage blocker.
+
+### Whole-PR source/test coverage
+
+1. **LOC-01 — unknown COMMIT outcome.** Followed `ControlledLocaleWriter.applyOnce` → ambiguous transport/SQLSTATE classification → independent reader → semantic pre/expected/actual state reconciliation. No blind retry after ambiguous commit. Verified intended outcomes: expected state success; unchanged pre-state propagates error; third/unknown state raises typed ambiguity.
+2. **LOC-02 — compiled bundle reconciliation.** Checked `CompiledBundleValidationError`/`TranslationValidationError` versus unknown verifier/crypto/programming failures; `verifyPersistedCompiledBundle` only maps proven integrity/currentness faults to `PersistentBundleIntegrityError`. Reconciliation deletes only under row lock for proven incompatibility, preserves data on unclassified failure.
+3. **I18N-UI-POLICY-01 — explicit generation policy.** Traced bundle format v3 version hash, publication compiler, `DrizzleUiTranslationBundleStore`, Hyperdrive read memo keys, resource-loader HIT/MISS, `locale-boundary` request-context machine source selection, manual priority and CLI `--generation-policy`. Policy participates in derived identity, manual rows are independent; no configured UI machine policy means manual/local/English fallback.
+4. **LOC-05 — fresh planning, A→B→A.** Checked `UiTranslationService.planAndDispatch` flag → dispatcher → `DrizzleTranslationTaskStore.upsertPending` head lock, creation rejection absent fresh authorization with transaction rollback; known-task replay, stale/superseded transitions, monotonic generation, processing/completed guards. Compared title/body transactional planning, claim/allowance fencing, publication generation check; examined relevant PostgreSQL regressions and delayed unpersisted A replay negative controls.
+5. **LOC-08 — Markdown direction.** Checked `parseRenderedForumMarkdown` + `serializeRenderedForumMarkdown`, AST dir materialization, literal escaped lookalikes, `ProtectedMarkdownTranslationDocument` direction-signature check and protection identity `cnt06-custom-structure-direction-v3`; consulted source and focused direction tests for prose/headings/lists/spoilers/tables.
+
+### Exact-head CI evidence independently verified
+
+[CI run #40791016237](https://github.com/iliya1947/vico-forum/actions/runs/40791016237) **SUCCESS**. Reviewed both completed job steps and raw logs.
+- `checks`: **1265/1265 tests, 103 test files PASS**; lint 0 errors / 1 warning, typecheck, app and UI-preview builds, migration history/schema checks PASS.
+- `database`: **345/345 PostgreSQL17 tests, 31 test files PASS**; new `localization-l8-corrections.test.ts` 17 tests PASS, schema/migration/privilege checks and Workers smoke PASS.
+- CI checked merge commit `7e62fca37ffdec77fcdf5639589deab17c3e31ae` (parents base `ebdb482e` and PR head `ae501c80`). Verified Git trees **identical `fd53f7b9c066399ab0004abf9ae654f4fb92968f`**: CI exercised exact implementation bytes. Head reconfirmed unchanged after review.
+
+**Limits:** Source-level independent analysis plus direct verification of GitHub CI and test artifacts. No new personal run of local PostgreSQL/Chromium browser E2E, real provider, production/external services, deployment, Pages/browser acceptance or owner visual acceptance. CI green does not alone prove correctness. No implementation edits or merge performed.
+
+**Status:** Reviewer PASS / complete / STOP. Owner authorized publication to service PR #236 after review. Мира to reconcile this independent verdict with other non-author reviewers and coordinate remaining acceptance gates; no new task for Лира initiated.
+
+---
+
 ## PR #247 — final three LITERAL-TEXT-01 residual correction / author handoff / head e1c8391d (2026-10-29)
 
 **Назначение Миры:** [#6482683278](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482683278), reconciled current-Stage P2 residuals после independent review Лёвы и actual application E2E [#6482610566](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482610566).
