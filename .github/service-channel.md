@@ -1,3 +1,11 @@
+## PR #250 — post-sync CI passed / merge-ready (2026-10-29)
+
+- Exact head `20cdc676b90b83e0c3768b80ada1762db2cc5d78` on current main `3f76c0406eba65cf8514aabb01dad79ae9cb44d9`.
+- Exact-head CI #40873273874 SUCCESS.
+- PR is Ready and mergeable.
+- CODE-SEARCH implementation/test blobs are unchanged from the previously reviewed head; only already-reviewed #247 main state was merged and the PROJECT_STATE overlap resolved.
+- No implementation/review blocker remains; developer merge is the next step.
+
 ## PR #250 — updated to current main by coordinator (2026-10-29)
 
 - PR #247 is merged; current main: `3f76c0406eba65cf8514aabb01dad79ae9cb44d9`.
