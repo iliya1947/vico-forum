@@ -188,8 +188,8 @@ export function PopularView({
 
 type UnansweredTopicPresentation = Pick<
   ForumUnansweredTopicSummary,
-  "id" | "title" | "authorName" | "section" | "category"
->;
+  "id" | "title" | "sourceLocale" | "authorName" | "section" | "category"
+> & { titleDirection: "ltr" | "rtl" | "auto" };
 
 export function UnansweredView({
   locale,
@@ -229,7 +229,7 @@ export function UnansweredView({
                       </svg>
                     </span>
                     <span className="unanswered-topic-copy">
-                      <strong dir="auto">{topic.title}</strong>
+                      <strong lang={topic.sourceLocale === "und" ? undefined : topic.sourceLocale} dir={topic.titleDirection}>{topic.title}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
                     </span>
                   </span>
@@ -436,7 +436,7 @@ export function SearchView({
 }: {
   locale: string;
   query: string;
-  results: readonly ForumSearchResult[];
+  results: readonly (ForumSearchResult & { titleDirection: "ltr" | "rtl" | "auto" })[];
   queryTooLong?: boolean;
 }) {
   const { t } = useTranslation("common");
@@ -493,7 +493,7 @@ export function SearchView({
                       </svg>
                     </span>
                     <span className="section-topic-copy">
-                      <strong>{topic.title}</strong>
+                      <strong lang={topic.sourceLocale === "und" ? undefined : topic.sourceLocale} dir={topic.titleDirection}>{topic.title}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
                       {topic.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
