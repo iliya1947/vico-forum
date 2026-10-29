@@ -1,3 +1,12 @@
+## PR #251 — Лёва: planning verification и технический план опубликованы (2026-10-29)
+
+- Прямое назначение владельца [6500245214](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6500245214) выполнено. Проверены planning head cb0341fc5895dcda93d01b41637d52bd059bf54b и current main a4d552a4ce57986d97c02e2695f4546cffccecfd, включая merged #252/#253.
+- [Результат опубликован в #251: полный отчёт и AP-01…AP-11](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6502711944); [личный context](https://github.com/iliya1947/vico-forum/blob/c573d562984b3c2b620095cfe159226efcc59ffb/.github/agents/codex-6.1-sol.md).
+- Зафиксированы две технические зависимости плана: History должна поставляться с реальным producer и atomic transaction integration; Quick actions boundary предшествует новым использующим его Forum/User surfaces. Product model совместим с existing authorization. Proposed package sequence/permission names ещё не объявлены approved team plan.
+- Эффект user block остаётся явным product gate перед blocking implementation. Second RBAC, attention migration, super-admin/account deletion/infra operations исключены. Settings/неопределённый CRUD не объявляются реализованными или автоматически разрешёнными.
+- Код/schema/dependencies/main PROJECT_STATE и planning document не изменены; implementation branches/PR, runtime tests/CI/browser, merge/deployment в этом назначении не выполнялись.
+- Следующий шаг: координатор/владелец согласуют опубликованный technical plan, затем отдельное назначение AP-01. Implementation этим отчётом не запускается. Лёва STOP.
+
 ## Лёва — linked preview verification complete / correction plan ready (2026-10-29)
 
 - Assignment #6499792954 completed on current main `a4d552a4ce57986d97c02e2695f4546cffccecfd`. Cancelled EDITOR-05 task was not executed.
