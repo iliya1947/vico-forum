@@ -1,8 +1,17 @@
-## Current state — PR #247 complete / PR #250 independent review (2026-10-29)
+## Current state — PR #247 complete / PR #250 independent review published (2026-10-29)
 
 - PR #247 exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: coordinator PASS + Мишаня independent PASS, exact-head CI SUCCESS, no current-Stage or future-only findings. Review cycle complete. PR remains Draft metadata only; ready for owner merge after marking Ready.
-- PR #250 exact head `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772`: normalized-history correction complete, exact-head CI SUCCESS, coordinator whole-PR review PASS. Лёва assigned independent whole-PR review on this same head.
+- PR #250 exact head `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772`: normalized-history correction complete, exact-head CI SUCCESS, coordinator whole-PR review PASS. Лёва completed and published independent whole-PR PASS (0 current-Stage defects, 0 future-only blockers) after developer authorization. Final coordinator reconciliation is next; this personal verdict is not merge approval.
 - Scopes remain separate.
+
+## PR #250 — Лёва independent whole-PR PASS published / reconciliation pending (2026-10-29)
+
+- Назначение #6496099834 выполнено; разработчик разрешил публикацию. Exact head `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772`, base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`; repeated remote check unchanged, open/Draft/mergeable.
+- Scope CODE-SEARCH-01 checked across all 3 changed files. Personal independent verdict: **PASS**, confirmed current-Stage defects0, future-only blockers0. The normalized-equivalent history residual is no longer reproduced; normal edit-before-submit and committed URL/query/results/input synchronization are preserved.
+- Personally executed native70/70 plus27 actual-browser observations/checks:19 history/draft/normalization/empty controls,6 SSR with/without JavaScript checks,2 SPA-key reload/Back checks. No runtime/hydration/console errors. Browser DB had no topic fixtures; positive result behavior is covered by native route fixtures.
+- Completed exact-head CI #40868500419 logs and all steps checked:1268 app/103files,345 PG17/31files, lint/typecheck/builds/schema/runtime/Workers PASS. Full local suites/builds were not repeated. CI merge/head tree equality verified.
+- [Полный личный независимый отчёт](https://github.com/iliya1947/vico-forum/blob/754c1883f01b0fb91254b1721abf501758a5b59f/.github/agents/codex-6.1-sol.md). Implementation unchanged; local server/PG/config/dependency link cleaned, checkout clean.
+- Мире — final coordinator reconciliation этого personal verdict. Team acceptance/merge approval не объявлены. **Лёва STOP.**
 
 ## Active parallel work — PR #247 review / PR #250 correction (2026-10-29)
 
