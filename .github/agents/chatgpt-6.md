@@ -1,3 +1,31 @@
+## PR #247 — final three LITERAL-TEXT-01 residual correction / author handoff / head e1c8391d (2026-10-29)
+
+**Назначение Миры:** [#6482683278](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482683278), reconciled current-Stage P2 residuals после independent review Лёвы и actual application E2E [#6482610566](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482610566).
+
+**Implementation:** существующий [PR #247](https://github.com/iliya1947/vico-forum/pull/247), branch `chatgpt6/batch-l2-20261027`; stable exact head **`e1c8391d15e604dedfd525a2e8b1b1cfd26d1881`**, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`, open Draft/unmerged. Relative to previous exact head `7c6bd4e8f3391e1189f130e40903184d7e484a7d`: exactly **5 files / 5 commits**: `app/forum/editor-document.ts` (+113), `app/forum/markdown-editor.tsx` (+11/−4), `app/forum/editor-document.test.ts` (+73), `app/forum/markdown-editor.test.tsx` (+62), `PROJECT_STATE.md` (+27/−1).
+
+### Three bounded corrections
+
+1. **Advanced plain-command → existing inline code:** `pastePlainTextIntoExistingCode` resolves `inlineCode` AST content range and preserves literal clipboard text instead of prose escaping; when payload includes enclosing backticks, widens inline delimiters.
+2. **Advanced plain-command → Vico spoiler-local indented code:** code context is determined from `segmentTechnicalMarkdown` and local parsed spoiler body, matching public `ForumMarkdown` semantics; raw clipboard text preserved.
+3. **Advanced plain-command → fenced code with matching/longer closing-fence candidate:** when clipboard would close existing block, source opening/closing fences are widened while clipboard bytes remain raw; replacement and caret are one history edit. Shorter/opposite-marker controls remain supported.
+
+Existing prose plain-command falls back to `clipboardPlainToMarkdown`. Normal modes, native Advanced source paste, existing technical controls and underlying Markdown source model were not intentionally modified. Added focused pure AST/source tests and mounted toolbar→FormData→public `ForumMarkdown`→Undo/Redo regressions. Updated `PROJECT_STATE.md` without preclaiming CI or acceptance.
+
+### Verified checks
+
+[CI #40785122902](https://github.com/iliya1947/vico-forum/actions/runs/40785122902) on exact head **SUCCESS**, `checks` and `database` completed success. Personally read both completed job logs:
+- **1380/1380 application tests / 102 files** passed.
+- **326/326 PostgreSQL 17 tests / 30 files** passed.
+- Lint, typecheck, production app build, UI preview build, migration/schema checks, Workers/database integration guards — PASS.
+- Exact head, base, relative 5-file change set checked again; no new PR/branch and no merge.
+
+**Limits:** CI and new mounted tests are not independent whole-PR review. No personally run real Chromium/Worker/DB E2E on new head, Pages preview, owner visual acceptance or production/external rollout. Лира — author of the changes, **no whole-PR self-review**. This is an **author implementation completion and review handoff**, not independent verdict or merge approval.
+
+**Лира — correction completed / STOP.** **Мире:** coordinator whole-PR review PR #247 at exact head `e1c8391d15e604dedfd525a2e8b1b1cfd26d1881`, then non-author independent reviewers following applicable gates.
+
+---
+
 ## PR #247 — LITERAL-TEXT-01 three-subcase bounded correction complete / exact head 7c6bd4e (2026-10-28)
 
 **Назначение Миры:** [#6478999149](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478999149), после author verification [#6478507459](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6478507459). Существующая ветка `chatgpt6/batch-l2-20261027`, [PR #247](https://github.com/iliya1947/vico-forum/pull/247), **stable exact head `7c6bd4e8f3391e1189f130e40903184d7e484a7d`**, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`. PR open, Draft, unmerged. Никакой новой ветки и whole-PR self-review не было: Лира — автор ограниченной correction.
