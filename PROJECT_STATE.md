@@ -2,22 +2,6 @@
 
 Последнее обновление: 2026-10-29
 
-## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
-
-Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой
-структуры, admission/section/action matrix, общего Quick actions, significant-action/reason
-matrix и отдельных границ «Требуют внимания» и будущей super-admin UI. Согласованы необходимые
-ссылки и scope формулировки в product, authorization, UI/UX и roadmap документах.
-
-Этот пакет меняет только документацию. Глобальный shell, administrative History, новые
-object pages, закрытие тем и блокировки не реализованы; runtime catalog, код, schema,
-миграции и зависимости не меняются. Эффект блокировки и ещё не выбранные reason/reopen rules
-сохранены как явные условия перед соответствующими implementation пакетами. Координация
-admin-panel работы ведётся в PR #251 по прямому указанию разработчика, без дублирования в #236.
-Checks и независимый review этого документационного пакета фиксируются после их выполнения;
-runtime/browser/owner acceptance будущей админ-панели не заявляется.
-
-
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -35,6 +19,23 @@ runtime/browser/owner acceptance будущей админ-панели не з�
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
+
+Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой
+структуры, admission/section/action matrix, общего Quick actions, significant-action/reason
+matrix и отдельных границ «Требуют внимания» и будущей super-admin UI. Согласованы необходимые
+ссылки и scope формулировки в product, authorization, UI/UX и roadmap документах.
+
+Этот пакет меняет только документацию. Глобальный shell, administrative History, новые
+object pages, закрытие тем и блокировки не реализованы; runtime catalog, код, schema,
+миграции и зависимости не меняются. Эффект блокировки и ещё не выбранные reason/reopen rules
+сохранены как явные условия перед соответствующими implementation пакетами. Координация
+admin-panel работы ведётся в PR #251 по прямому указанию разработчика, без дублирования в #236.
+Checks и независимый review этого документационного пакета фиксируются после их выполнения;
+runtime/browser/owner acceptance будущей админ-панели не заявляется.
+
+
 
 ## Preview scenario correctness — confirmation and Appeals (2026-10-29)
 
