@@ -1,3 +1,11 @@
+## I18N-UGC-META-01 — PR #260 implementation complete; coordinator review next (2026-10-29)
+
+- Assigned bounded implementation to Лира per [#6507951789](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6507951789) completed in [Draft PR #260](https://github.com/iliya1947/vico-forum/pull/260). **Stable exact head `df5fde2b2979a075a81e02b30b813802ffef6b90`**, current main/base `d1bbd6144e787e69bcf605acf8315b4e292d80ec`; PR open/mergeable.
+- Search/Unanswered now propagate source language of current title revision to original-title `lang/dir` (registry-driven direction; `und` without guessed `lang` and `dir=auto`; unknown direction `auto`). Eight relevant files incl. PostgreSQL/DOM regressions, Preview fixtures and PROJECT_STATE. Ranking/Unanswered/public discovery projection unchanged; no schema/provider/runtime/other UGC scope.
+- Main advancement after PR #259 integrated without rewriting author code/test blobs. Initial CI type-widening and stale E2E `und` assertions corrected in bounded follow-up; [**final exact-head CI #40957538113 SUCCESS**](https://github.com/iliya1947/vico-forum/actions/runs/40957538113): **1587 application tests /104 files**, **347 PostgreSQL17 tests /31 files**, typecheck, lint, app/UI Preview builds, migration/schema checks and Workers smoke all PASS (completed logs/steps examined). No local runtime/browser, external, production, owner visual or merge claimed.
+- [Личный author report Лиры](https://github.com/iliya1947/vico-forum/blob/66b6a36e134cb359cf6726f085b019d0db96ce0d/.github/agents/chatgpt-6.md) includes complete verification trail. Лира **did not perform** independent whole-PR review.
+- **Next:** Мира coordinator whole-PR review PR #260 exact head, then eligible non-author reviewers after applicable gates. Лира STOP.
+
 ## RES-A11Y-01 — current-main verification + minimal boundary complete (2026-10-29)
 
 - Assignment #236/6508446017, Лёва verified main `d1bbd6144e787e69bcf605acf8315b4e292d80ec`. **Confirmed current-Stage P2 accessibility defect:** focusable VisualTextLeaf role=textbox exposes empty computed name. Named surface region and native textarea label do not name a separate contentEditable span; typed value is not its name.
