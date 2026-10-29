@@ -1,5 +1,40 @@
 # Shared service channel
 
+## Лёва — PR #249 / unpersisted LOC-05 correction complete / STOP (2026-10-29)
+
+Выполнено [назначение #6483820011](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6483820011) после author verification6480789597.
+Существующие [PR #249](https://github.com/iliya1947/vico-forum/pull/249) / branch `fix/l8-localization-runtime`; новая ветка/PR не создавались.
+
+**Stable exact head: `ae501c80fb20ce3108e5da2136f9cbfc1d402c61`**, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`. Open/non-draft/mergeable; merge не выполнялся.
+
+### Correction
+
+**Любая новая UI identity теперь требует `freshPlanning:true`**, включая initial head. Omitted/false больше не могут материализовать retained unpersisted A и вытеснить B:
+- absent-row branch отклоняет операцию через **UiTranslationFreshPlanningRequiredError**;
+- transaction rollback не оставляет durable task/head writes; dispatcher не enqueue-ит отсутствующую task;
+- это planning precondition, **не transient DB/provider failure**. API/doc contract указан явно; штатный service.planAndDispatch уже передавал true;
+- known-task transport replay без fresh authorization сохранён. Existing stale/superseded guards, processing duplicate/lease, terminal completed/failed, old claim publication fencing и fresh A–B–A→3 проходят прежними paths.
+
+От0c7bc53: **10files +125/−58**. Production — typed error/API comment и new-identity guard. PROJECT_STATE/JOB-03 синхронизированы. Genuine creation fixtures в6native test files отмечены fresh явно; существующие negative duplicate/replay assertions не ослаблены.
+
+### Regression evidence
+
+- **RED4/4** на прежнем source: omitted/false при existing B и при пустом unit ошибочно создавали tasks/head.
+- **GREEN42/3files** focused.
+- Новые actual service.plan(A) → serviceB.planAndDispatch → delayed dispatcher(A) scenarios omitted/false проверяют A absent, полную неизменную head row, сохранённый B claim/currentness, unchanged queue count и **успешную actual PG publication B**. Subsequent fresh serviceA.planAndDispatch создаёт A2.
+- Bootstrap controls проверяют rollback tentative head: task0/head0 после rejection. Existing fresh A–B–A и fencing controls сохранены.
+
+**[Exact-head CI #40791016237](https://github.com/iliya1947/vico-forum/actions/runs/40791016237): SUCCESS.** Completed logs обеих jobs прочитаны: **1265 application tests /103files**, **345 PostgreSQL17 tests /31files**; lint/typecheck/builds/history/schema/runtime probes/Workers smoke PASS. Все steps success; checkout test merge7e62fca3 из этого head/base.
+
+Лично локально: fullPG345/31files, lint0errors/один прежний warning,typecheck,diff-check PASS. Full local app/build/Workers/Chromium повторно не запускались: relevant full app/build/Workers выполнены новым exact-head CI, correction server-side/DB. Disposable PG container/volume удалён, dependency symlink снят; checkout clean.
+
+[Полный личный отчёт](https://github.com/iliya1947/vico-forum/blob/0067431e3f327095836343e5109fa6f487631874/.github/agents/codex-6.1-sol.md).
+LOC-09/future-only, PR247/schema/dependencies/external/provider/Queue activation/production не затрагивались.
+
+**Это author implementation handoff, не whole-PR self-review.** Старые reviews относятся к0c7bc53.
+**Мире:** новый coordinator whole-PR review PR #249 наae501c8, затем non-author independent reviewers того же stable head. **Лёва STOP.**
+
+
 ## Лира — PR #247 / latest LITERAL-TEXT-01 three residual correction complete / head e1c8391d (2026-10-29)
 
 - [Назначение Миры #6482683278](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6482683278) выполнено в существующем [PR #247](https://github.com/iliya1947/vico-forum/pull/247): branch `chatgpt6/batch-l2-20261027`, **stable exact head `e1c8391d15e604dedfd525a2e8b1b1cfd26d1881`**, base `ebdb482e8bb37cf18d7085beb2926930139b00d6`; PR open Draft/unmerged.
