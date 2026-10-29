@@ -1,5 +1,58 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — CODE-PREVIEW-01 + CODE-PREVIEW-02 / verification + bounded correction plan / STOP (2026-10-29)
+
+Assignment: #6499792954. Superseded EDITOR-05 assignment #6499651711 was not executed.
+Exact current-main baseline: a4d552a4ce57986d97c02e2695f4546cffccecfd.
+
+### Verdict / classification
+
+Both findings remain confirmed current-Stage preview/tooling defects (P3), not production forum defects or future-only polish. Neither was closed by subsequent merges. They share the UI Preview scenario/route/fixture adaptation module, but have TWO distinct causes and must not be deduplicated. One bounded preview implementation package is appropriate; no shared production architecture change is required.
+
+### CODE-PREVIEW-01 — matched topic route drops the confirmation scenario state
+
+scenarios declares topic-best-answer-unsolved with user identity and path /en/topics/typed-api?solutionPrompt=answer#solution-confirmation. PreviewController exposes the option for User and sends it to EmbeddedPreview. EmbeddedPreview preserves query/hash when remapping locale and passes scenario.path to createMemoryRouter initialEntries.
+
+The concrete /:locale/topics/:topicId route selects PreviewTopicRoute. Its typed-api branch computes solved by excluding only topic-unsolved/topic-reply-error; the dedicated confirmation variant is omitted. It also calls topicData without solutionAuthor, so actual props are isSolved=true,bestAnswerPostId=answer,canManageSolution=false,isTopicAuthor=false. The correct special case in previewElement(case topic) exists but belongs to the wildcard route, so it never serves this matching URL.
+
+TopicView's real guard requires author + manage permission + unsolved + selected best-answer ID matching solutionPrompt. Multiple required fixture props are wrong; fixing just the solved boolean is insufficient. The URL/query itself is not lost. Production setBestAnswer action still redirects with the intended solutionPrompt/hash; production topic guard is correct and existing positive author/non-author tests pass.
+
+Personally executed two additional temporary native diagnostics (2/2 PASS): instrumented actual EmbeddedPreview dispatch confirms the four received props; on the SAME scenario route, passing intended unsolved/selected-answer/author/manage fixture props to the REAL TopicView immediately renders Problem solved?, Yes and the correct No permalink. This is a diagnostic positive control, not an implemented correction. Test file removed after execution; source is saved outside checkout.
+
+### CODE-PREVIEW-02 — plural group vs singular case identity
+
+Actual PreviewAttentionRoute accepts group=appeals. Its sample appeal-146 intentionally has type=appeal,kind=appeal; selectedCases filters item.kind===group, with an explicit special case only for needs-review review-status. The comparison appeal===appeals is false, while counts explicitly advertises appeals:1. Clicking the real Appeals tab therefore renders count1 with zero cases.
+
+Production plural group identity is intentional: AttentionGroup/route allowlist/repository use appeals; production repository maps those rows to singular case kind/type appeal. The production queue/view contract must not be renamed to satisfy the preview filter. Needs-review2 and Mixed1 are useful controls: review-status must remain included, and Mixed1 counts a topic with two cases rather than demanding count==number of case cards.
+
+### Fresh independent evidence on this main
+
+- Existing preview-app.test.tsx + public-read.test.tsx:77/77 PASS across2files,13.01s; includes real production author/non-author confirmation controls. Their green state does not cover these two broken Preview compositions.
+- Additional actual-dispatch/intended-props diagnostics:2/2 PASS,2.35s; no production mock substitutes for TopicView rendering.
+- Fresh actual UI Preview build PASS using pinned Node24.21.0/existing Vite8.2.2. No new dependencies.
+- Chromium154.0.8037.57 with actual freshly built preview main/EmbeddedPreview/router/shared components:60 observations in EN/RU/HE x390/1280. Twenty-four topic observations cover dedicated confirmation, ordinary solved, ordinary unsolved and editor reply. In all6 dedicated cases, solved badge1 + best-answer badge1 + confirmation0. Ordinary solved controls remain solved; unsolved/reply controls remain unsolved with no confirmation. Thirty-six Attention observations click all6 signal groups: case counts1/2/1/1/0/2 respectively for needs-details/needs-review/outdated/duplicate/appeals/mixed; Appeals tab advertises1 in every locale/width. Zero page errors or external/mutating requests. Current-behavior assertions passed; this does NOT mean desired behavior passed.
+- Compared current preview source against historical audit baseline d72b27c: only an unrelated auth-click interception line changed; these topic/group chains were not corrected.
+
+### Minimal correction boundary / later implementation plan
+
+1. Keep changes local to app/ui-preview/preview-app.tsx, focused preview integration tests and PROJECT_STATE.md. No production actions/readers/permissions/Attention identifiers, schema, dependencies, general preview framework or unrelated UI cleanup.
+2. CODE-PREVIEW-01: apply the intended confirmation fixture at the actual PreviewTopicRoute typed-api dispatch, including unsolved state, bestAnswerPostId=answer and author/manage flags. Prefer one small shared topic-scenario data helper used by actual matched route and any retained wildcard fallback so the existing divergent branches cannot drift. Do not let this dedicated typed-api fixture bleed into other navigated topics. Preserve query/hash and locale remapping; no synthetic write success is needed.
+3. CODE-PREVIEW-02: explicitly map the appeals group to the appeal case type/kind in the local sample selection, keeping ordinary signal and review-status/mixed behavior. Do not rename plural production group IDs or singular case identities. Global fixture registry/count-generation refactor is unnecessary for these two defects.
+4. Focused native regressions must mount EmbeddedPreview, not call the wildcard renderer or merely inspect scenario metadata. Desired confirmation scenario should initially show the real prompt/Yes/No, preserve selected answer on an unsolved topic, and dismiss via the existing No link without a write. Check normal solved/unsolved/reply and non-author/other-topic controls, plus locale changes preserving the prompt query.
+5. Appeals regression must click the actual tab and assert active group/heading, count1 AND appeal-146 card, submitter/explanation/canonical-original link. Keep Duplicate1, Needs-review2 and Mixed1/two-case controls; do not convert intentional empty fixtures or placeholder modes into fabricated records.
+6. Repeat focused current-main Chromium EN/RU/HE narrow/desktop scenarios after implementation, followed by applicable native tests/lint/typecheck/preview build and standard exact-head CI. Record only actual results; production behavior/owner acceptance is not inferred from static preview.
+
+Source-of-truth classification: UI_UX_PASS.md requires representative, truthful preview through the shared presentation; the declared named confirmation state and nonzero Appeals fixture currently fail that purpose. Broader visual refinement, generalized fixtures, real provider/auth/DB functionality and owner visual acceptance remain outside this package.
+
+### Cleanup / handoff
+
+Implementation not performed; no branch/PR/commit/push/merge created. Only existing detached checkout moved to assigned main. Temporary diagnostic removed; dependency symlink removed, git diff/check clean. Own ephemeral loopback servers, Chromium contexts and temporary builds closed; no product runtime/DB/container or external service started. Static build/evidence retained outside tracked source in /workspace/work/preview-verification (browser.py/browser.json, logs/screenshots, diagnostic.tsx/log and this report).
+
+Verification + plan COMPLETE. Coordinator reconciliation next; implementation requires a separate authorized task/branch/PR. EDITOR-05 remains unworked. Лёва STOP.
+
+
+---
+
 ## Лёва — PR #252 independent whole-PR review / PASS / published
 
 Date: 2026-10-29. Assignment: PR236 #6498377619.
