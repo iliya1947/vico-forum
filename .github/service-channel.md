@@ -1,3 +1,11 @@
+## Implementation authorized — DISCOVERY-01 + responsive package (2026-10-29)
+
+- Owner authorized two separate implementation branches/PRs from current main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
+- Лира: `DISCOVERY-01` only.
+- Лёва: responsive package `RES-UI-01` + `CODE-HISTORY-01` + `M-M07` only.
+- Scopes must remain separate; no cross-stacking of unmerged implementation branches.
+- Each author hands off a stable exact head with applicable CI; whole-PR review begins only after implementation completion.
+
 ## Verified next implementation boundaries (2026-10-29)
 
 - `DISCOVERY-01`: confirmed current-Stage. Generic Unanswered/Search/Tag/Unread surfaces must keep Help topics discoverable while hiding the internal Help service-section identity. Лира verification complete; implementation not started.
