@@ -2446,6 +2446,35 @@ describe("Advanced plain command: residual code contexts", () => {
       plain: rawFence, expected: tick.repeat(4) + "js\n" + rawFence + "\nOutside\n" + tick.repeat(4),
       selector: "pre code", raw: rawFence,
     },
+    {
+      name: "table-cell inline code", original: "| A | B |\n| --- | --- |\n| `Alpha` | Other |",
+      plain: sensitive, expected: "| A | B |\n| --- | --- |\n| `~~literal~~ &copy; \\| value \\|` | Other |",
+      selector: "td code", raw: sensitive,
+    },
+    {
+      name: "edge spaces", original: "`Alpha`", plain: " padded ", expected: "`  padded  `",
+      selector: "p code", raw: " padded ",
+    },
+    {
+      name: "root indented multiline", original: "\tBefore\n\tAlpha\n\tAfter\n\nOutside",
+      plain: "First\n**literal**\nLast", expected: "\tBefore\n\tFirst\n\t**literal**\n\tLast\n\tAfter\n\nOutside",
+      selector: "pre code", raw: "Before\nFirst\n**literal**\nLast\nAfter",
+    },
+    {
+      name: "spoiler indented multiline", original: ":::spoiler Outer\n\tBefore\n\tAlpha\n\tAfter\n:::",
+      plain: "First\n**literal**\nLast", expected: ":::spoiler Outer\n\tBefore\n\tFirst\n\t**literal**\n\tLast\n\tAfter\n:::",
+      selector: "pre code", raw: "Before\nFirst\n**literal**\nLast\nAfter",
+    },
+    {
+      name: "quoted fenced multiline", original: "> ```text\n> Before\n> Alpha\n> After\n> ```\n\nOutside",
+      plain: "First\n**literal**\nLast", expected: "> ```text\n> Before\n> First\n> **literal**\n> Last\n> After\n> ```\n\nOutside",
+      selector: "blockquote pre code", raw: "Before\nFirst\n**literal**\nLast\nAfter",
+    },
+    {
+      name: "CR-only fence hazard", original: originalFenced, plain: "```\r**literal**\r```",
+      expected: "````js\n```\r**literal**\r```\nOutside\n````",
+      selector: "pre code", raw: "**literal**",
+    },
   ] as const;
 
   it.each(cases)("preserves $name through toolbar, FormData, public render and Undo/Redo", async (scenario) => {
@@ -2484,4 +2513,30 @@ describe("Advanced plain command: residual code contexts", () => {
       else Reflect.deleteProperty(navigator, "clipboard");
     }
   });
+});
+
+it("keeps the source/history intact and reports an unrepresentable code paste without prose fallback", async () => {
+  const original = "| A | B |\n| --- | --- |\n| `Alpha` | Other |";
+  renderEditor(<form><label htmlFor="blocked-code-paste">Body</label>
+    <MarkdownEditor id="blocked-code-paste" name="body" defaultAuthoringMode="advanced" defaultValue={original} />
+  </form>);
+  const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+  input.focus();
+  const start = original.indexOf("Alpha");
+  input.setSelectionRange(start, start + 5);
+  const previous = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText: async () => "\\|" } });
+  try {
+    await userEvent.click(document.querySelector<HTMLDetailsElement>(".markdown-editor-extra-menu:last-of-type summary")!);
+    await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("This content could not be pasted without losing data.");
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe(original);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe(original);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe(original);
+  } finally {
+    if (previous) Object.defineProperty(navigator, "clipboard", previous);
+    else Reflect.deleteProperty(navigator, "clipboard");
+  }
 });

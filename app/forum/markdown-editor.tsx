@@ -625,6 +625,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           if (!selection) { setPasteNotice("error"); return; }
           const codePaste = authoringMode === "advanced"
             ? pastePlainTextIntoExistingCode(value, selection, text) : null;
+          if (codePaste && "blocked" in codePaste) { setPasteNotice("error"); return; }
           if (codePaste) {
             // One history step also covers a necessary widening of outer fences.
             pendingSelectionRef.current = codePaste.selection;

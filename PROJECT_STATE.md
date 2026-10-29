@@ -20,6 +20,33 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LITERAL-TEXT-01 — source-positioned literal code insertion (2026-10-29)
+
+В существующем PR #247 raw-substring helper заменён ограниченной моделью
+«найти действующую единицу кода → заменить logical content → применить
+bounded source edits». Токены существующего Markdown parser задают content,
+padding и container boundaries; renderer-compatible обход включает spoiler
+body и table header/body cells. Inline encoding сохраняет literal edge spaces
+и выбирает безопасные backtick delimiters. Block encoding сохраняет required
+indented/quote/list continuation prefixes и проверяет fenced hazards для
+CR/LF/CRLF. Exact source вне необходимых edits не пересериализуется;
+команда сохраняет одну Undo/Redo transaction и source caret mapping.
+
+Внутри table inline code применяется общий renderer/editor/semantic-consumer
+escaped-pipe codec: `\|` обозначает literal pipe по GFM, прочие punctuation и
+entities не декодируются. Общая table grammar не заменена. Непредставимые
+комбинации (например, odd literal backslash count перед pipe либо multiline
+cell code) отклоняются без изменения source, с generic clipboard warning;
+known-code failure не переходит в prose serializer. Перед применением edits
+проверяется фактическая renderer semantic structure и ожидаемое code value.
+Translation protection policy повышена до `cnt06-table-code-v3`, поскольку
+изменилась общая table-code semantics; provider/recovery/schema не менялись.
+
+Добавлены source/value/container/history, mounted command → FormData →
+public renderer и translation protection regressions. Это implementation
+state; CI, engineering application checks и независимая проверка фиксируются
+отдельно после выполнения. Whole-PR acceptance и owner visual не заявлены.
+
 ## LITERAL-TEXT-01 — Advanced code contexts and matching fences (2026-10-29)
 
 В существующем PR #247 после независимого review реализована bounded

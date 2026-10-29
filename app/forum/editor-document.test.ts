@@ -473,6 +473,7 @@ describe("LITERAL-TEXT-01 Advanced plain-command code context", () => {
     const original = "Before " + tick + "Alpha" + tick + " After";
     const start = original.indexOf("Alpha");
     const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, payload)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
     expect(result.markdown).toBe(original.replace("Alpha", payload));
     const paragraph = parseForumMarkdown(result.markdown).children[0]!;
     expect(paragraph.type).toBe("paragraph");
@@ -486,6 +487,7 @@ describe("LITERAL-TEXT-01 Advanced plain-command code context", () => {
     const start = original.indexOf("Alpha");
     const raw = tick + "code" + tick;
     const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, raw)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
     expect(result.markdown).toBe(tick.repeat(2) + " " + raw + " " + tick.repeat(2));
     expect(parseForumMarkdown(result.markdown).children[0]).toMatchObject({
       children: [expect.objectContaining({ type: "inlineCode", value: raw })],
@@ -496,6 +498,7 @@ describe("LITERAL-TEXT-01 Advanced plain-command code context", () => {
     const original = ":::spoiler Outer\n\tAlpha\n:::";
     const start = original.indexOf("Alpha");
     const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, payload)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
     expect(result.markdown).toBe(original.replace("Alpha", payload));
     const spoiler = segmentTechnicalMarkdown(result.markdown).find((part) => part.kind === "spoiler");
     expect(spoiler?.kind).toBe("spoiler");
@@ -519,6 +522,7 @@ describe("LITERAL-TEXT-01 Advanced plain-command code context", () => {
     const payload = "Before\n" + candidate + "\n**literal**\nAfter";
     const start = original.indexOf("Alpha");
     const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, payload)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
     const expectedWidth = hazard ? Math.max(inner + 1, outer) : outer;
     const fence = marker.repeat(expectedWidth);
     expect(result.markdown).toBe(fence + "text\n" + payload + "\nOutside\n" + fence);

@@ -346,6 +346,17 @@ Drafts and autosave остаётся в `Under development` как возмож�
 - В Расширенном режиме исходный Markdown вставляется без изменения разметки.
 - Не переносить из HTML чужие шрифты, цвета, размеры, исполняемые скрипты и небезопасную разметку.
 - Если сложное форматирование невозможно корректно преобразовать, предложить безопасный вариант вместо незаметной потери данных.
+- Advanced plain-команда внутри действующего кода заменяет logical content по
+  source positions существующего parser, сохраняя padding, code/container
+  prefixes, fences и surrounding source одним history edit. CR/LF/CRLF
+  учитываются как physical code lines; обычная CommonMark normalization
+  inline-code line endings при отображении сохраняется.
+- В code span внутри Vico table cell escaped pipe `\|` представляет literal
+  pipe (узкая GFM table-code semantics). Прочие punctuation/entities внутри
+  code остаются literal. Table renderer, semantic consumers и editor используют
+  одну семантику. Непредставимая вставка явно отклоняется без изменения source
+  и без автоматического перехода к prose escaping.
+
 
 ## 11. Клавиатура и мобильные устройства
 

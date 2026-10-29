@@ -1,3 +1,4 @@
+import { parseTableCellMarkdown } from "./table-code";
 import { inlineCodeMarkdown } from "./editor-document";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { segmentTechnicalMarkdown, serializeTable } from "./technical-markdown";
@@ -169,7 +170,7 @@ export function clipboardPlainToMarkdown(text: string, context?: ClipboardPasteC
         collectWithOffset(parseForumMarkdown(segment.source), base + segment.span.start);
       } else if (segment.kind === "table") {
         for (const row of [segment.headers, ...segment.rows]) {
-          for (const cell of row) collectWithOffset(parseForumMarkdown(cell.text), base + cell.span.start);
+          for (const cell of row) collectWithOffset(parseTableCellMarkdown(cell.text), base + cell.span.start);
         }
       }
     }

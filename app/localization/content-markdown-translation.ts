@@ -1,7 +1,7 @@
 import { parseRenderedForumMarkdown, serializeRenderedForumMarkdown } from "../forum/semantic-markdown";
 import { collectAttributedMarkdownQuoteHeaders } from "../forum/quote-markdown";
 
-export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-custom-structure-v2";
+export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-table-code-v3";
 export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
