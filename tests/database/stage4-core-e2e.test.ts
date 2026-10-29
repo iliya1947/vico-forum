@@ -40,6 +40,7 @@ const migrationFiles = [
   "0020_translation_generation_permission.sql",
   "0021_forum_tags.sql",
   "0022_forum_reply_relationships.sql",
+  "0023_forum_topic_read_states.sql",
   "0024_forum_reply_notifications.sql",
   "0025_forum_topic_pins.sql",
   "0026_best_answer_independent_from_solved.sql",
@@ -170,67 +171,6 @@ async function markSolved(userId: string, name: string, topicId: string, extra: 
     await state.close();
   }
 }
-
-describe("DISCOVERY-01 public Help location projection", () => {
-  it("keeps Help questions discoverable without leaking their service-section identity", async () => {
-    await insertUser("discovery-author", "Discovery Author");
-    await insertUser("discovery-reader", "Discovery Reader");
-    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
-    await forum.createCategory({ id: "discovery-category", name: "Public discovery" });
-    await forum.createSection({ id: "discovery-section", categoryId: "discovery-category", name: "Public section" });
-
-    const createQuestion = async (id: string, sectionId: string, title: string) => forum.createTopicWithInitialPost({
-      id,
-      sectionId,
-      authorId: "discovery-author",
-      titleRevision: { id: id + "-title", originalContent: title, sourceLocale: "en" },
-      initialPost: {
-        id: id + "-post",
-        topicId: id,
-        authorId: "discovery-author",
-        parentPostId: null,
-        bodyRevision: { id: id + "-body", originalContent: title + " initial body", sourceLocale: "en" },
-      },
-      tags: [{ key: "discovery-help-check", name: "Discovery Help Check" }],
-    });
-
-    const normalId = "discovery-normal-topic";
-    const helpId = "discovery-help-question";
-    await createQuestion(normalId, "discovery-section", "Discovery normal question");
-    await createQuestion(helpId, "help-solutions-questions", "Discovery Help question");
-
-    const expectedNormal = {
-      category: { id: "discovery-category", name: "Public discovery" },
-      section: { id: "discovery-section", name: "Public section" },
-    };
-    const expectedHelp = {
-      category: { id: "help-solutions", name: "Help & solutions" },
-      section: null,
-    };
-    const verifyLocations = (topics: readonly { id: string; section: unknown; category: unknown }[]) => {
-      const help = topics.find((entry) => entry.id === helpId);
-      const normal = topics.find((entry) => entry.id === normalId);
-      expect(help).toMatchObject({ id: helpId, ...expectedHelp });
-      expect(normal).toMatchObject({ id: normalId, ...expectedNormal });
-      expect(JSON.stringify(help)).not.toContain("help-solutions-questions");
-      expect(JSON.stringify(help)).not.toContain("Questions");
-    };
-
-    verifyLocations(await forum.readUnanswered());
-    verifyLocations(await forum.search("Discovery"));
-    const tagged = await forum.readTag("discovery-help-check");
-    expect(tagged).toBeDefined();
-    expect(tagged?.tag.name).toBe("Discovery Help Check");
-    verifyLocations(tagged?.topics ?? []);
-    verifyLocations(await forum.readUnreadForUser("discovery-reader"));
-
-    const helpSearch = (await forum.search("Discovery Help question")).find(({ id }) => id === helpId);
-    expect(helpSearch).toMatchObject({ id: helpId, ...expectedHelp });
-    expect((await forum.readHomepage()).find((category) => category.id === "help-solutions")?.sections)
-      .not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "help-solutions-questions" })]));
-    await expect(forum.readSection("help-solutions-questions")).resolves.toBeUndefined();
-  });
-});
 
 describe("Stage 4 connected forum authorization flow", () => {
   it("runs the forum MVP end-to-end and applies authorization changes on the next request", async () => {
@@ -530,5 +470,66 @@ describe("Stage 4 connected forum authorization flow", () => {
       "search-rank-body-z",
       "search-rank-body-a",
     ]);
+  });
+});
+
+describe("DISCOVERY-01 public Help location projection", () => {
+  it("keeps Help questions discoverable without leaking their service-section identity", async () => {
+    await insertUser("discovery-author", "Discovery Author");
+    await insertUser("discovery-reader", "Discovery Reader");
+    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
+    await forum.createCategory({ id: "discovery-category", name: "Public discovery" });
+    await forum.createSection({ id: "discovery-section", categoryId: "discovery-category", name: "Public section" });
+
+    const createQuestion = async (id: string, sectionId: string, title: string) => forum.createTopicWithInitialPost({
+      id,
+      sectionId,
+      authorId: "discovery-author",
+      titleRevision: { id: id + "-title", originalContent: title, sourceLocale: "en" },
+      initialPost: {
+        id: id + "-post",
+        topicId: id,
+        authorId: "discovery-author",
+        parentPostId: null,
+        bodyRevision: { id: id + "-body", originalContent: title + " initial body", sourceLocale: "en" },
+      },
+      tags: [{ key: "discovery-help-check", name: "Discovery Help Check" }],
+    });
+
+    const normalId = "discovery-normal-topic";
+    const helpId = "discovery-help-question";
+    await createQuestion(normalId, "discovery-section", "Discovery normal question");
+    await createQuestion(helpId, "help-solutions-questions", "Discovery Help question");
+
+    const expectedNormal = {
+      category: { id: "discovery-category", name: "Public discovery" },
+      section: { id: "discovery-section", name: "Public section" },
+    };
+    const expectedHelp = {
+      category: { id: "help-solutions", name: "Help & solutions" },
+      section: null,
+    };
+    const verifyLocations = (topics: readonly { id: string; section: unknown; category: unknown }[]) => {
+      const help = topics.find((entry) => entry.id === helpId);
+      const normal = topics.find((entry) => entry.id === normalId);
+      expect(help).toMatchObject({ id: helpId, ...expectedHelp });
+      expect(normal).toMatchObject({ id: normalId, ...expectedNormal });
+      expect(JSON.stringify(help)).not.toContain("help-solutions-questions");
+      expect(JSON.stringify(help)).not.toContain("Questions");
+    };
+
+    verifyLocations(await forum.readUnanswered());
+    verifyLocations(await forum.search("Discovery"));
+    const tagged = await forum.readTag("discovery-help-check");
+    expect(tagged).toBeDefined();
+    expect(tagged?.tag.name).toBe("Discovery Help Check");
+    verifyLocations(tagged?.topics ?? []);
+    verifyLocations(await forum.readUnreadForUser("discovery-reader"));
+
+    const helpSearch = (await forum.search("Discovery Help question")).find(({ id }) => id === helpId);
+    expect(helpSearch).toMatchObject({ id: helpId, ...expectedHelp });
+    expect((await forum.readHomepage()).find((category) => category.id === "help-solutions")?.sections)
+      .not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "help-solutions-questions" })]));
+    await expect(forum.readSection("help-solutions-questions")).resolves.toBeUndefined();
   });
 });
