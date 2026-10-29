@@ -1,3 +1,41 @@
+## I18N-UGC-META-01 — current-main verification + minimal correction boundary / COMPLETE / STOP (2026-10-29)
+
+**Назначение:** [Мира, PR #236 comment #6499648279](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6499648279). **Exact baseline:** `main a4d552a4ce57986d97c02e2695f4546cffccecfd` (последний проверенный main). Scope — только сохранение известных source language/direction metadata для оригинальных заголовков тем в **Search и Unanswered**. Это отдельная current-main verification + correction plan, **не независимый whole-PR review**. Implementation, branch/PR, merge не выполнялись.
+
+### Verdict и прослеженная причинная цепочка
+
+**CONFIRMED — current-Stage source-contract defect на уровне исходного кода.** Публичные original topic-title strings на двух secondary UGC surfaces не несут уже сохранённую source metadata до DOM.
+
+1. **Authoritative revision:** `db/schema.ts` задаёт `forumTopicTitleRevisions.sourceLocale`. На topic route `app/routes/topic.tsx` текущая `topic.title.sourceLocale` передаётся в `ContentTranslationPresentationService.readCurrent()`; `app/forum/content-translation-view.tsx` отображает `TopicTitlePresentation` с `lang={presentation.contentLocale}`, `dir={presentation.contentDirection}`. Существующий resolver получает направление из `loadedRegistry.registry.find(sourceLocale)?.locale.direction`; для `und` применяется `dir="auto"`.
+2. **Unanswered:** `db/forum-repository.ts` `readUnanswered()` делает join `forumTopicTitleRevisions.id = forumTopics.currentTitleRevisionId` и выбирает `originalContent` как `title`, но **не** `sourceLocale`; `ForumUnansweredTopicSummary` metadata не содержит. `app/routes/unanswered.tsx` дополнительно проектирует только `id/title/authorName/section/category`. `UnansweredView` в `app/forum/views.tsx` отрисовывает `<strong dir="auto">{topic.title}</strong>` без `lang`.
+3. **Search:** `db/forum-repository.ts` `search()` также связывает заголовок с current title revision, но выбирает только `originalContent`; `ForumSearchResult` не содержит `sourceLocale`. `app/routes/search.tsx` возвращает reader result без преобразования; `SearchView` использует `<strong>{topic.title}</strong>`, поэтому `lang` и `dir` наследуются от UI (document root в `app/root.tsx` использует UI locale/direction).
+4. **Наблюдаемая на уровне кода граница:** известная языковая metadata остаётся в БД, но отсутствует в передаваемом reader/loader объекте и атрибутах title element. В Search это может принудительно наследовать противоположный UI direction, в Unanswered `dir=auto` не использует авторитетную известную direction, а `lang` отсутствует в обоих местах. Runtime/browser rendering отдельно не воспроизводилось.
+
+Контракт: `TRANSLATION_ARCHITECTURE.md` различает язык/направление UGC и UI; `docs/translation/CONTENT_TRANSLATION.md` закрепляет revision-specific `sourceLocale` и независимые `lang/dir` content blocks; `docs/translation/LOCALES.md` требует `lang/dir` на UGC mixed-language block и разрешает `dir=auto`, когда направление неизвестно. `docs/UI_UX_PASS.md` также сохраняет собственные `lang/dir` translated content. Search и Unanswered уже реализованы в текущем product/UI Stage (см. `PROJECT_STATE.md` и `ROADMAP.md`), поэтому это **текущая** неисправность контракта, а не только future hardening.
+
+### Минимальная correction boundary
+
+- **`db/forum-repository.ts`:** добавить `sourceLocale` актуальной *title revision* в selection/result и соответствующие два типизированных интерфейса: `ForumSearchResult`, `ForumUnansweredTopicSummary`. Текущие title join, search matching/rank, посты, теги, counts, order, visibility и `publicDiscoveryLocation` оставить без изменений.
+- **Route/reader presentation boundary:** `app/routes/search.tsx`, `app/routes/unanswered.tsx` сохраняют `sourceLocale` до UI (Unanswered проекция не должна выбрасывать его); направление определяется существующим request-scoped `LocaleRegistry` по source locale, а не по UI locale и не по hardcoded языковым условиям.
+- **`app/forum/views.tsx`:** `SearchView` и `UnansweredView` задают `lang/dir` непосредственно на strong-элементе original title. Известный `en` → `lang=en dir=ltr`, `he` → `lang=he dir=rtl` в любом UI; `und` → без выдуманного `lang`, `dir=auto`; если source locale есть, а registry не знает направления — сохранить известный lang и `dir=auto`. Не включать для этих списков `ContentTranslationPresentationService.readCurrent`: автоматический перевод или новые translation lookups для исправления не требуются.
+- Никакой миграции/schema change, нового translation provider, query rework, общих UGC abstractions или изменения текущей Help category/section projection не требуется.
+
+### Focused regression coverage
+
+1. `tests/database/stage4-core-e2e.test.ts`: реальные current-title revision записи с различными `sourceLocale` и последующим изменением заголовка; `search` и `readUnanswered` возвращают metadata именно актуальной title revision, не тела найденного post. Сохранить существующие условия Search match/rank/tags и Unanswered unsolved/ровно initial post.
+2. `app/forum/public-read.test.tsx`: reader → loaders → mounted DOM в EN UI с HE title и HE UI с EN title; проверить точные `lang/dir` на заголовках, `und`/unknown-registry fallback и отсутствие подмены source locale UI language.
+3. Существующие discovery controls: Help service-section identity не появляется в public loader/cards; обычная category/section location, локализованные ссылки, пустые состояния Search, результаты/теги и сортировки остаются прежними. После реализации — применимые native tests и UI/RTL browser checks, не предварительно объявлять их PASS.
+
+### Scope exclusions и evidence limits
+
+Соседние `Popular`, `Tag`, `Unread`, `Section` также имеют title render paths, но их полный data/contract scope в рамках данного назначения **не проверялся**: не объявлять ни исправными, ни автоматически включёнными в этот correction. Не требуются перевод title в поиске, автоматический language detection для `und`, restructuring всех карточек, schema/provider/runtime/translation changes или future-only general hardening.
+
+**Фактически выполнено:** static source trace main SHA, сопоставление с штатным TopicTitlePresentation, изучение LocaleRegistry и existing native PG/React Router test fixtures, публичной Help projection и scoped CSS. **Не выполнялось:** запуск Vitest/PostgreSQL, Chromium/browser acceptance, production/external checks, изменение реализации или service branch за пределами этого личного отчёта. Runtime outcome и эффективность будущего fix пока не подтверждены тестами. Отчёт — **verification + plan**, а не whole-PR review.
+
+**Handoff:** Мира — reconciliation результата и решение по отдельному bounded implementation assignment через PR #236. **Лира STOP.**
+
+---
+
 ## DISCOVERY-01 — PR #252 bounded implementation + exact-head CI / author handoff / STOP (2026-10-29)
 
 **Authorization:** [Мира #6497647858](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6497647858) after confirmed verification [#6497386609](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6497386609) and reconciliation [#6497606913](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6497606913).
