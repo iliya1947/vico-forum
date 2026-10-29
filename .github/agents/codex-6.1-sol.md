@@ -1,5 +1,49 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #255 — CODE-PREVIEW-01 + CODE-PREVIEW-02 / author implementation handoff / STOP (2026-10-29)
+
+Assignment: #6502560117; verification #6499986202 / reconciliation #6502470140.
+Separate authorized branch: fix/preview-scenario-state.
+Base/main: a4d552a4ce57986d97c02e2695f4546cffccecfd.
+Stable exact head:39c6f16ad6f68d8abed7c9f46f52dd8535de801b.
+PR:https://github.com/iliya1947/vico-forum/pull/255.
+
+### Implemented bounded scope
+
+Two distinct Preview causes, not one deduplicated defect:
+- CODE-PREVIEW-01: actual typed-api route and wildcard topic fallback now obtain props from a shared private primaryTopicScenarioData projection. Dedicated confirmation keeps isSolved=false, bestAnswerPostId=answer and author/manage fixture flags. Query/hash routing is unchanged. Only primary-topic dispatch uses this helper; other known/unknown topic navigation retains its separate fixture path. Normal solved/unsolved/reply/error states preserve their former data/feedback semantics.
+- CODE-PREVIEW-02: local sample filtering explicitly maps group appeals to case type appeal. Ordinary kind matching, needs-review review-status inclusion, mixed-topic selection/count semantics and intentional empty fixture remain unchanged. No production group/case renaming or generalized fixture framework.
+
+Exactly3 files,+141/-42: preview-app.tsx,preview-app.test.tsx,PROJECT_STATE.md. Shared projection removes the former divergent duplicate topic-state derivation. Product actions/permissions/queue identities, other UI, schema, dependencies, localization catalogs and external services are unchanged. React author checklist: pure local derived data, no new hooks/effects/shared mutable runtime state or component identity changes.
+
+### Author regression evidence
+
+Before production edits, the expanded Preview suite ran against old source:5 FAIL/10 PASS. The five failures are initial confirmation, RU/HE confirmation locale remapping, confirmation-to-other-topic navigation and advertised Appeals card. Controls already passed.
+
+After correction:88 focused tests/2files PASS (Preview15 + public-read73),12.85s. The final Preview15 suite was repeated after fixing test-only TypeScript API usage and passed15/15,6.72s. Eleven new permanent integration tests mount actual EmbeddedPreview/Router/shared views rather than inspecting private helpers or only scenario declarations. They verify initial prompt/Yes/No, real No dismissal preserving selected best answer and unsolved state, RU/HE query remapping, normal solved/guest-unsolved/reply/rate-limited states, navigation to another topic, actual Appeals tab/card/reporter/explanation/canonical link, Duplicate controls, needs-review plus review-status, Mixed1 with2 case cards and intentional empty Attention.
+
+Personally run full generated-type/typecheck PASS, source lint PASS (one pre-existing ui.test.tsx unused-eslint-disable warning), current UI Preview build PASS and diff-check PASS. Initial local typecheck caught two test API typing issues; fixed without production changes or weakened type checks. No local full application/PostgreSQL suite or production build was separately rerun; full exact-head results are CI observations below.
+
+Fresh actual static UI Preview/Chromium154.0.8037.57 evidence:66 observations across EN/RU/HE x390/1280, all desired assertions PASS,0 page errors/blocked/external/mutating requests. Includes24 topic states,6 native No dismissals and36 actual signal-group tab navigations. Each dedicated state renders confirmation1/solved0/best-answer1, and No preserves best-answer1/solved0 while removing prompt. All6 Appeals cases render appeal-146 with reporter/canonical link and count1. Adjacent group counts remain1/2/1/1/1/2; Mixed1 represents one topic with two case cards. Locale switches preserve confirmation query through the actual Preview router.
+
+This is static synthetic Preview engineering validation, not production DB/auth/HTTP E2E or owner visual acceptance. Existing Preview mutation interception is retained. No real services or production acceptance is claimed.
+
+### Exact-head CI
+
+https://github.com/iliya1947/vico-forum/actions/runs/40914016260 — SUCCESS on39c6f16.
+checks123589297495:1560 application tests/104files, lint/typecheck/application and UI-preview builds/history/migration/schema gates SUCCESS.
+database123589297721:346 PostgreSQL17 tests/31files, schema parity/runtime privilege/provisioning/credential probes and local Workers smoke SUCCESS.
+Completed job steps and logs inspected. CI merge86c81a056282f6de5965e3fa33c664561f155dd2 and implementation head have identical tree7db4d3e68d03be5e5e25fe946a9925928fdf7948, fetched/compared via Git. Full results are exact-head CI observations, not local full-suite claims. PR head/base rechecked unchanged; open/Draft/mergeable.
+
+### Cleanup and handoff
+
+Native/browser artifacts outside tracked source: /workspace/work/preview-implementation (red.log,focused.log,preview-final.log,typecheck-final.log,lint.log,preview-build.log,browser.py/browser.json/browser.log and screenshots). Node24.21.0 and existing pinned dependencies used. Ephemeral loopback HTTP/Chromium contexts closed; no application runtime/DB/container started. Dependency symlink removed; checkout clean.
+
+This is author implementation/verification, not whole-PR self-review, team acceptance or merge approval. Coordinator whole-PR review of stable exact head is next, followed by eligible independent reviewers. Implementation and author verification COMPLETE; exact-head CI evidence recorded. Лёва STOP.
+
+
+---
+
 ## Лёва — PR #251 / независимая проверка и технический план опубликованы / STOP (2026-10-29)
 
 - Выполнено прямое назначение владельца [6500245214](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6500245214): source/contract verification и техническая декомпозиция, без реализации.
