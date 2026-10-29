@@ -437,10 +437,10 @@ infrastructure diagnostics в production прекращаются; рисков�
   reply/quote relationships без tree layout и полноценный editor/code presentation;
 - целевой Light/Dark UX с first-use system preference и persisted manual choice.
 
-Жалобы, reputation, полный owner-only audit, social-network profile mechanics и другие
+Reputation, полный owner-only audit, social-network profile mechanics и другие
 возможности, которые владелец отдельно не утвердил, не входят в обязательный объём без нового
-продуктового решения. Отдельно утверждённый ordinary-admin scope, включая временные/постоянные
-блокировки и историю значимых административных действий, зафиксирован в
+продуктового решения. Система жалоб утверждена отдельно и ведётся по собственному плану; ordinary-admin
+scope, включая временные/постоянные блокировки и историю значимых административных действий, зафиксирован в
 [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). AP-01 добавляет только постоянный контракт;
 реализация идёт последующими bounded PR, а эффект блокировки остаётся явным решением до её пакета.
 
