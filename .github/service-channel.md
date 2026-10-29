@@ -1,3 +1,9 @@
+## Merge-ready — PR #252 and PR #253 (2026-10-29)
+
+- PR #252 `afc5b3d8c7e0e656746296cefe11d8cbe72604d1`: coordinator PASS + Лёва independent PASS, exact-head CI SUCCESS, no current-Stage/future-only blockers.
+- PR #253 `ca51415bf1cfe72c28c1b05867e158c39b409194`: coordinator PASS + Мишаня independent PASS, exact-head CI SUCCESS, no current-Stage/future-only blockers.
+- Both PRs remain Draft metadata only; after owner marks Ready they are merge-ready.
+
 ## PR #252 — Лёва independent whole-PR PASS published (2026-10-29)
 
 - Assignment #6498377619 completed; developer authorized publication. Exact head `afc5b3d8c7e0e656746296cefe11d8cbe72604d1`, base/main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`; final remote metadata unchanged, open/Draft/mergeable.
