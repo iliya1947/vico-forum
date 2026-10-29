@@ -63,6 +63,8 @@ Multiple complaints about the same open incident are kept as separate Complaint 
 
 The initial grouping boundary is the concrete reported content revision. A later revision may therefore create a new incident/case after an earlier case has been resolved.
 
+If a Case for the same concrete revision has already been resolved and another user later submits a complaint about that same revision, the complaint creates a **new Case**. The earlier Case remains closed and immutable. The new Case must keep an explicit link/reference to the related closed Case so the moderation team can see the prior handling of the same revision without reopening or mutating the earlier Case.
+
 The case must preserve enough state to review:
 
 1. the reported revision;
