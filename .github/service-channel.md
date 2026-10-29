@@ -1,3 +1,10 @@
+## PR #250 — branch update required after PR #247 merge (2026-10-29)
+
+- PR #247 is merged; current main is `3f76c0406eba65cf8514aabb01dad79ae9cb44d9`.
+- PR #250 remains on `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772` and is currently not mergeable against new main.
+- File overlap between merged #247 and #250 is only `PROJECT_STATE.md`; CODE-SEARCH production/test files do not overlap.
+- Лира is assigned to update the existing PR #250 branch to current main, preserve both state-document sections, verify the implementation diff remains CODE-SEARCH-only, and run applicable CI on the new exact head.
+
 ## Merge-ready state — PR #247 and PR #250 (2026-10-29)
 
 - PR #247 exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: coordinator PASS, Мишаня independent PASS, exact-head CI SUCCESS, no current-Stage/future-only findings. Review cycle complete.
