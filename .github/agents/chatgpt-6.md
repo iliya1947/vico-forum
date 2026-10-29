@@ -1,3 +1,26 @@
+## PR #250 — CODE-SEARCH-01 normalized-equivalent history residual / author verification CONFIRMED / STOP (2026-10-29)
+
+**Роль:** Лира — автор implementation PR #250. Это **авторская targeted verification согласованного остаточного дефекта**, **не independent whole-PR review** и **не новый team verdict**.
+
+**Назначение:** [Мира #6486719578](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486719578); coordinator reconciliation [#6486719192](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486719192) после независимого review Лёвы [#6486707244](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486707244). Unchanged implementation [PR #250](https://github.com/iliya1947/vico-forum/pull/250) exact head `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`, base `0a09482fc2653b65e775ae069c86c48ab247b4fb`. PR Draft/open; implementation не изменялась в ходе verification.
+
+### Причинная цепочка и фактический результат
+
+1. `app/routes/search.tsx` получает raw URL `q`, применяет `normalize("NFKC").trim().replace(/\s+/gu, " ")`, ограничивает длину и возвращает normalized `query` + соответствующие `results`.
+2. `app/forum/views.tsx` использует неконтролируемый `input type="search" defaultValue={query} key={query}`. При обычном вводе (без submit) DOM `value` становится локальным draft. Переход по истории повторно рендерит SearchView, но `key` не меняется, если разные URL/raw q имеют один normalized `query`; React сохраняет DOM value вместо повторной инициализации `defaultValue`.
+3. Representative normalized-equivalent variants: URL `q=TypeScript` и URL q с внешними пробелами/fullwidth letters `  ＴｙｐｅＳｃｒｉｐｔ  ` → оба `query=TypeScript`; URL q empty и пробельный q → оба normalized `query=""`.
+4. Актуальные URL и loader-derived results при Back/Forward могут соответствовать правильному `query`, но поле показывает несохранённый draft; это один подтверждённый **current-Stage P2 residual `CODE-SEARCH-01`**. Факт подтверждён независимым real Vico/Chromium + native-React-Router regression воспроизведением Лёвы в #6486707244 и согласован Мирой в #6486719192. **Лира самостоятельно проверила исходную цепочку/модель идентичности; собственного успешного Chromium/Vico E2E не выполняла.** Не присваивать чужое browser evidence автору.
+
+### Минимальная correction boundary и регрессии
+
+- Кандидат: заменить `key={query}` на identity **закоммиченной записи навигации** (напр., `useLocation().key`), чтобы даже normalized-equivalent raw URL/history entries сбрасывали uncontrolled input после смены committed history entry. Обычное редактирование до submit не должно менять navigation identity или сбрасывать draft. Не изменять loader/query normalizer/backend, не вводить широкий controlled-state механизм без необходимости. Проверить влияние initial SSR/hydration and in-place revalidation через native tests; предложенный key **пока не реализован и не принят как прошедший browser regression**.
+- Новый focused native React Router test должен доказать URL/raw `q`, normalized loader/results, `input.value` при submit normalized-equivalent GET, dirty edit → Back/Forward и empty/whitespace-equivalent pairs, плюс controls distinct queries и edit-before-submit. Проверять именно settled navigation; `key` при создании нового history entry и при возврате к старому.
+- Применимые checks/CI/проверка актуального exact head нужны **после** correction; CI #40807997303 относится к прежнему failing exact head и не доказывает устранение residual.
+
+**Статус:** targeted author verification **CONFIRMED / COMPLETE**. Ни исходники PR #250, ни тесты, ни production не изменяла; implementation не разрешена в рамках этого verification поручения. **Лира STOP.**
+
+---
+
 ## CODE-SEARCH-01 — implementation PR #250 / author handoff / STOP (2026-10-29)
 
 **Assignment:** [PR #236 #6486369359](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486369359) after verification [#6486179455](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486179455).
