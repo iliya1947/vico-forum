@@ -1,5 +1,5 @@
 import { parseTableCellMarkdown } from "./table-code";
-import { inlineCodeMarkdown } from "./editor-document";
+import { inlineCodeMarkdown, textareaMarkdown } from "./editor-document";
 import { parseForumMarkdown } from "../markdown-syntax";
 import { segmentTechnicalMarkdown, serializeTable } from "./technical-markdown";
 
@@ -11,7 +11,7 @@ function escapeText(value: string): string {
 }
 
 function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): string {
-  return value.replace(/\r\n/gu, "\n").split("\n").map((line, index) => {
+  return value.split("\n").map((line, index) => {
     // Raw tabs are code only when the whole Markdown document parses them so.
     if (/^ {0,3}\t/u.test(line) && (!rawCodeLines || rawCodeLines.has(index))) return line;
     // Markdown would parse four leading spaces as an indented code
@@ -27,9 +27,9 @@ function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): stri
       .replace(/\{:vico-dir=(?:ltr|rtl)\}/gu, "\\$&")
       .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler")
       .replace(/^:::[ \t]*$/u, "\\$&");
-    // Plain text must not accidentally become a heading, quote or list item.
+    // Neutralize marker punctuation, not the digits of an ordered marker.
     return literal.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
-      (_, indent: string, marker: string) => indent + "\\" + marker)
+      (_, indent: string, marker: string) => indent + marker.slice(0, -1) + "\\" + marker.slice(-1))
       .replace(/^([ \t]{0,3})(-{2,}|={2,})(?=\s|$)/u,
         (_, indent: string, rule: string) => indent + "\\" + rule);
   }).join("\n");
@@ -142,8 +142,11 @@ export interface ClipboardPasteContext {
 }
 
 export function clipboardPlainToMarkdown(text: string, context?: ClipboardPasteContext): string {
+  // Share one physical-line view for escaping and contextual raw-code indices.
+  // Existing Markdown source and the dedicated Advanced code path stay raw.
+  text = textareaMarkdown(text);
   const initial = textAsMarkdown(text);
-  if (!context || !/^ {0,3}\t/mu.test(text.replace(/\r\n/gu, "\n"))) return initial;
+  if (!context || !/^ {0,3}\t/mu.test(text)) return initial;
   const { markdown, selection } = context;
   if (!Number.isSafeInteger(selection.start) || !Number.isSafeInteger(selection.end)
     || selection.start < 0 || selection.end < selection.start || selection.end > markdown.length) {

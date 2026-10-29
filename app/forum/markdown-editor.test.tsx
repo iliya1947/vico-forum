@@ -2540,3 +2540,36 @@ it("keeps the source/history intact and reports an unrepresentable code paste wi
     else Reflect.deleteProperty(navigator, "clipboard");
   }
 });
+
+describe("final serializer mounted plain-paste boundary", () => {
+  for (const eol of ["\n", "\r", "\r\n"]) for (const outer of [false, true]) {
+    it(`preserves literal markers, source/history and Vico context: ${JSON.stringify(eol)} spoiler=${outer}`, async () => {
+      const original = outer ? ":::spoiler Outer\nAlpha\n\nAfter\n:::" : "Before\r\n\r\nAlpha\r\n\r\nAfter";
+      const payload = ["before", "# heading", "1. one", "1) two", ":::spoiler Label", "body", ":::"].join(eol);
+      const insertion = "before\n\\# heading\n1\\. one\n1\\) two\n\\:::spoiler Label\nbody\n\\:::";
+      const expected = original.replace("Alpha", insertion);
+      renderEditor(<form><label htmlFor="final-plain">Body</label>
+        <MarkdownEditor id="final-plain" name="body" defaultValue={original} />
+      </form>);
+      const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+        .find((node) => node.textContent === "Alpha")!;
+      leaf.focus();
+      const range = document.createRange(); range.selectNodeContents(leaf);
+      const selection = window.getSelection()!; selection.removeAllRanges(); selection.addRange(range);
+      fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+      fireEvent.paste(leaf, { clipboardData: { getData: (format: string) => format === "text/plain" ? payload : "" } });
+      const form = document.querySelector("form")!;
+      expect(new FormData(form).get("body")).toBe(expected);
+      const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+      expect(published.querySelector("h1,h2,ol,ul,blockquote,table")).toBeNull();
+      expect(published.querySelectorAll("details.forum-markdown-spoiler")).toHaveLength(outer ? 1 : 0);
+      expect(published.textContent).toContain(payload.replace(/\r\n?|\n/gu, "\n"));
+      expect(published.textContent).not.toContain("\\1");
+      expect(published.textContent).toContain("After");
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(new FormData(form).get("body")).toBe(original);
+      await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+      expect(new FormData(form).get("body")).toBe(expected);
+    });
+  }
+});

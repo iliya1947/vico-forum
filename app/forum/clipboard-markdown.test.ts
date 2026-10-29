@@ -218,3 +218,49 @@ describe("literal plain paste in technical Markdown contexts", () => {
     },
   );
 });
+
+describe("final serializer EOL and ordered-marker boundary", () => {
+  it.each(["\n", "\r", "\r\n"])("keeps physical lines and ordered punctuation literal for %j", (eol) => {
+    const text = ["before", "# heading", "> quote", "- item", "1. one", "1) two", "12. twelve", "===", "---", "~~literal~~ &copy;"].join(eol);
+    const result = clipboardPlainToMarkdown(text);
+    expect(result).toBe("before\n\\# heading\n\\> quote\n\\- item\n1\\. one\n1\\) two\n12\\. twelve\n\\===\n\\---\n\\~\\~literal\\~\\~ &amp;copy;");
+    expect(parseForumMarkdown(result).children).toMatchObject([{ type: "paragraph", children: [
+      { type: "text", value: text.replace(/\r\n?|\n/gu, "\n") },
+    ] }]);
+  });
+
+  it.each(["\n", "\r", "\r\n", "\r\n\r"])("retains contextual raw-tab code across %j EOLs", (eol) => {
+    // The fourth value deliberately combines CRLF and CR to produce blank lines.
+    const plain = "before" + eol + eol + "\t&copy; ~~literal~~" + eol + "\t1. code";
+    for (const original of ["Alpha", ":::spoiler Outer\nAlpha\n:::"]) {
+      const start = original.indexOf("Alpha");
+      const insertion = clipboardPlainToMarkdown(plain, { markdown: original, selection: { start, end: start + 5 } });
+      expect(insertion).toBe(plain.replace(/\r\n?|\n/gu, "\n"));
+      const merged = original.replace("Alpha", insertion);
+      const part = segmentTechnicalMarkdown(merged).find((node) => node.kind === "spoiler");
+      const body = part?.kind === "spoiler" ? part.body : merged;
+      const code = parseForumMarkdown(body).children.find((node) => node.type === "code");
+      expect(code?.type).toBe("code");
+      if (code?.type !== "code") throw new Error("Expected genuine contextual code");
+      expect(code.value).toContain("&copy; ~~literal~~");
+      expect(code.value).toContain("1. code");
+      expect(code.value).not.toContain("\\1");
+      expect(code.value).not.toContain("&amp;copy;");
+    }
+  });
+
+  it("keeps mixed-EOL tab-prefixed paragraph insertion literal rather than treating it as code", () => {
+    const original = "Before Alpha";
+    const insertion = clipboardPlainToMarkdown("\t# literal\r1. item\r\n~~literal~~ &copy;", {
+      markdown: original, selection: { start: 7, end: 12 },
+    });
+    const tree = parseForumMarkdown(original.replace("Alpha", insertion));
+    expect(tree.children).toMatchObject([{ type: "paragraph" }]);
+    expect(JSON.stringify(tree)).not.toContain('"type":"code"');
+    const paragraph = tree.children[0];
+    if (paragraph?.type !== "paragraph" || paragraph.children[0]?.type !== "text") throw new Error("Expected literal prose");
+    expect(paragraph.children[0].value).toContain("1. item");
+    expect(paragraph.children[0].value).not.toContain("\\1");
+    expect(paragraph.children[0].value).toContain("~~literal~~ &copy;");
+  });
+});

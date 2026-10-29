@@ -20,6 +20,25 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
+## LITERAL-TEXT-01 — plain serializer EOL и ordered markers (2026-10-29)
+
+В существующем PR #247 реализована ограниченная correction двух согласованных
+остаточных случаев общего plain-text clipboard serializer. CRLF, CR и LF
+получают единую LF view на входе до построчного escaping и contextual raw-tab
+classification; повторные проходы используют тот же input и line indices.
+Markdown/Vico marker после одиночного CR больше не обходит line-start guards.
+Ordered-list marker экранируется по завершающей пунктуации (`1\.` / `1\)`),
+сохраняя literal цифры и знак без дополнительного отображаемого backslash.
+
+Genuine contextual raw-tab code сохраняет literal punctuation/entities;
+нормализация относится только к входящему plain clipboard fragment. Existing
+source вне insertion, Native Advanced raw paste, dedicated existing-code
+operation и HTML/TSV conversion сохраняют прежние boundaries. Добавлены
+CR/LF/CRLF/mixed marker/code controls и mounted Simple paste → FormData →
+public renderer → Undo/Redo regressions, включая outer spoiler и существующий
+CRLF source вне вставки. Это implementation state; applicable CI и новый
+whole-PR review фиксируются отдельно после выполнения.
+
 ## LITERAL-TEXT-01 — source-positioned literal code insertion (2026-10-29)
 
 В существующем PR #247 raw-substring helper заменён ограниченной моделью
