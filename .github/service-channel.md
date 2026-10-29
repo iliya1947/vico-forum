@@ -1,3 +1,10 @@
+## RES-A11Y-01 — current-main verification + minimal boundary complete (2026-10-29)
+
+- Assignment #236/6508446017, Лёва verified main `d1bbd6144e787e69bcf605acf8315b4e292d80ec`. **Confirmed current-Stage P2 accessibility defect:** focusable VisualTextLeaf role=textbox exposes empty computed name. Named surface region and native textarea label do not name a separate contentEditable span; typed value is not its name.
+- Actual-editor Chromium/CDP AX390/1280:20 scenarios,30 unnamed Simple leaf nodes (28 enabled focus observations+2 disabled); native Tab reaches plain unnamed leaf at both widths. Empty/formatted/nested spoiler/two instances reproduced; Advanced/table names and Preview boundaries distinguished. Direct DOM-only aria-labelledby control supplies name while value stays exact.0 page errors/external requests. Five temporary mounted diagnostics PASS,209 existing skipped. No real screen-reader/all-locale/global conformance claim.
+- Minimal correction: supply each actual Simple textbox an author name through existing localized editorVisualSurface fallback or explicit valid visible-label relationship; preserve source/history/focus/recursive leaves and valid native/table naming. No general accessibility/widget redesign required.
+- [Full personal evidence and focused plan](https://github.com/iliya1947/vico-forum/blob/de41caa53b86aace5739aec14e853a90ede6cfbd/.github/agents/codex-6.1-sol.md). Temporary tests/harness/link removed, checkout clean, own HTTP/Chromium closed. No implementation branch/PR or production changes; no DB/providers/owner visual acceptance. Мире: reconcile finding/plan, then separate authorized implementation assignment. Лёва STOP.
+
 ## EDITOR-08 — PR #259 / author implementation complete, coordinator review next (2026-10-29)
 
 - Assignment #236/6504253810 completed by Лёва. [Draft PR #259](https://github.com/iliya1947/vico-forum/pull/259), `fix/editor-disabled-mutations`, stable exact head `d6008c5327b911df2d71e140964eb1690651f73c`, base/main `e37314b63fc77825cad3209811676e0627a2851c`; open/Draft/mergeable.
