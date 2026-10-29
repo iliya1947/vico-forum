@@ -16,6 +16,17 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    adminPanelHeading: message("adminPanelHeading", "Admin panel", "Admin panel: adminPanelHeading."),
+    adminOverview: message("adminOverview", "Overview", "Admin panel: adminOverview."),
+    adminForum: message("adminForum", "Forum", "Admin panel: adminForum."),
+    adminUsers: message("adminUsers", "Users", "Admin panel: adminUsers."),
+    adminRoles: message("adminRoles", "Roles & permissions", "Admin panel: adminRoles."),
+    adminHistory: message("adminHistory", "History", "Admin panel: adminHistory."),
+    adminSettings: message("adminSettings", "Settings", "Admin panel: adminSettings."),
+    adminTopics: message("adminTopics", "Topics", "Admin panel: adminTopics."),
+    adminPosts: message("adminPosts", "Messages", "Admin panel: adminPosts."),
+    adminStatisticsUnavailable: message("adminStatisticsUnavailable", "Forum statistics are temporarily unavailable.", "Admin panel: adminStatisticsUnavailable."),
+    adminOverviewHint: message("adminOverviewHint", "Choose a section in the administration menu. Unfinished sections are marked as under development.", "Admin panel: adminOverviewHint."),
     authLinkGoogle: message("authLinkGoogle", "Connect Google", "Explicitly link Google to the signed-in account from its own profile."),
     authLinkGoogleHint: message("authLinkGoogleHint", "Already registered with a password? Sign in with it first, then connect Google from your profile.", "Safe linking guidance for an existing unverified local-email account."),
     profileHeading: message("profileHeading", "Forum profile", "Forum profile: profileHeading."),

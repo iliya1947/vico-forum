@@ -3,13 +3,16 @@
 ## Status and source-of-truth boundary
 
 This document is the permanent product and technical contract for the ordinary Vico Forum
-admin panel. AP-01 establishes documentation only. It does not implement the global shell,
-administrative History, object pages, topic closure or user blocking, and does not add
-runtime permissions, schema, migrations or API endpoints.
+admin panel. AP-01 established documentation only. AP-02 implements the protected global
+shell and Overview using existing capabilities, with real aggregate statistics and truthful
+unfinished destinations. Administrative History, new administrative object pages, topic
+closure and user blocking remain later delivery targets. No new permission keys or schema
+are introduced by the shell.
 
-The existing `/:locale/admin/authorization` UI and contextual forum operations remain the
-implemented baseline. Routes and capabilities described below as delivery targets become
-available only through their respective bounded implementation PRs.
+`/:locale/admin` is the global Overview entry. The existing `/:locale/admin/authorization`
+UI retains its own independent permission boundary and remains separately composed until
+AP-04. Contextual forum operations remain unchanged. Other routes and capabilities described
+below as delivery targets become available only through their respective bounded PRs.
 
 Related sources of truth:
 

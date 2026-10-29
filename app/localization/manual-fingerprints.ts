@@ -8,6 +8,17 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  adminPanelHeading: "a3d0b907a350a185093754fb8bc4fbbefd6d392df7536138d793ea88440201bb",
+  adminOverview: "800e1b29f99776c86c9a341554f4bca69f5a7e434674f6621a69280b34edf29d",
+  adminForum: "90dc8b6102aa29b253ce19e4ff7fd0c87761716494c01c438b577c2ffc5df963",
+  adminUsers: "10b830c53cde444406e68aeb54c600548f79dd299a654f8e02af942fe75babc1",
+  adminRoles: "baf915ef5b359e783b611a6acc52a611f4175fd4fdb020bc2f909a02e9cf2df3",
+  adminHistory: "ae593451717184816f1312a1789eb6e589444569bf144a4a5ff3c4cabaccf102",
+  adminSettings: "8d53c205255af4435d2d9ec2c19449eb7926b95f76dd0737def263641380bc9d",
+  adminTopics: "3a8147c207a73287589d452a342e0344c451a72956d378930f71a77359a303a7",
+  adminPosts: "a166ca8c9f63e241b96aec0e5195a65d804c915a5e14f477dcb9bb8a73e0def2",
+  adminStatisticsUnavailable: "3f78c0083c9a6694acc8dd4542568c03c296b593e087052fa10a663893211ed7",
+  adminOverviewHint: "21f1dffc44df209848c6092907efc5646cdf6ed624f81ec43296baf99ce98ad8",
   forumWriteError_unexpected: "1faa421142d7ef4d5b4b3aff1fba78aa4460b3679e8eac26268e488e9d470628",
   postEditConflict: "889f7a33e4618f9bc8631e60c7e55dcf11f6fa750d0bcdaa18c73acf8610485c",
   authLinkGoogle: "f76b1b3f666c22c6db8b082ad61af25b8e6d18ae0d3574edbd90ee186b6e362b",

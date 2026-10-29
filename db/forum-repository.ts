@@ -362,7 +362,10 @@ export interface ForumOnlinePresence {
   members: { id: string; name: string; image: string | null }[];
 }
 
+export type ForumStatistics = { topics: number; posts: number; users: number };
+
 export interface ForumReader {
+  readStatistics(): Promise<ForumStatistics>;
   searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>>;
   readOnlinePresence(): Promise<ForumOnlinePresence>;
   readProfile(userId: string): Promise<ForumProfile | undefined>;
@@ -477,6 +480,15 @@ export class DrizzleForumRepository {
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
   ) {}
+
+  async readStatistics(): Promise<ForumStatistics> {
+    // Independent scalar counts avoid a posts × users join and share one snapshot.
+    const result = await this.database.execute<ForumStatistics>(sql`select
+      (select count(*)::int from ${forumTopics}) as topics,
+      (select count(*)::int from ${forumPosts}) as posts,
+      (select count(*)::int from ${user}) as users`);
+    return result.rows[0];
+  }
 
   async searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>> {
     const term = query.trim();

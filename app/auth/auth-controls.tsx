@@ -12,6 +12,7 @@ export interface HeaderAuthUser {
   readonly image?: string | null;
   readonly name: string;
   readonly canManageAuthorization?: boolean;
+  readonly canAccessAdmin?: boolean;
   readonly canViewModerationAttention?: boolean;
   readonly unreadNotificationCount?: number;
 }
@@ -102,9 +103,9 @@ export function AuthControls({ locale, actions = authClientActions }: {
             <span>{user.name}</span>
           </Link>
         ) : null}
-        {user?.canManageAuthorization ? (
-          <Link className="auth-admin-link" to={`/${encodeURIComponent(locale)}/admin/authorization`}>
-            {t("authorizationNav")}
+        {(user?.canAccessAdmin ?? user?.canManageAuthorization) ? (
+          <Link className="auth-admin-link" to={`/${encodeURIComponent(locale)}/admin`}>
+            {t("adminPanelHeading")}
           </Link>
         ) : null}
         {user || pending ? (

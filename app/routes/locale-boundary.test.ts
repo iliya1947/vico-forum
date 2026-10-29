@@ -151,13 +151,24 @@ function localeLoaderContext(authorizationError: Error) {
 }
 
 describe("locale boundary loader", () => {
+  it.each([
+    ["forum.topic.pin", true], ["forum.post.history.read", true],
+    ["access.authorization.manage", true], ["forum.attachmentSecurity.read", false],
+    ["forum.helpNeedsDetails.manage", false], ["forum.sourceLocale.correctOwn", false],
+  ])("derives global header admission from effective %s", async (permission, expected) => {
+    const context = localeLoaderContext(new Error("unused"));
+    context.set(authorizationContext, { forUser: () => ({ has: async (key: string) => key === permission }) } as never);
+    const snapshot = await loader({ request: new Request("https://vico.test/en/"), params: { locale: "en" }, context });
+    expect(snapshot.authUser?.canAccessAdmin).toBe(expected);
+    expect(snapshot.authUser?.canManageAuthorization).toBe(permission === "access.authorization.manage");
+  });
   it("keeps public pages available for a classified optional authorization outage", async () => {
     const context = localeLoaderContext(new AuthorizationUnavailableError());
     const snapshot = await loader({
       request: new Request("https://vico.test/en/"), params: { locale: "en" }, context,
     });
 
-    expect(snapshot.authUser).toEqual({ id: "user-1", image: null, name: "Vico", canManageAuthorization: false, canViewModerationAttention: false });
+    expect(snapshot.authUser).toEqual({ id: "user-1", image: null, name: "Vico", canManageAuthorization: false, canAccessAdmin: false, canViewModerationAttention: false });
     expect(snapshot.locale.translationLocale).toBe("en");
     expect(snapshot.activeLocales).toEqual([
       { tag: "en", nativeName: "English", direction: "ltr" },

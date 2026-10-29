@@ -40,7 +40,7 @@ function i18n(direction: "ltr" | "rtl") {
 }
 
 function renderControls(
-  initialUser: { name: string } | null,
+  initialUser: { name: string; canAccessAdmin?: boolean; canManageAuthorization?: boolean } | null,
   actions: AuthClientActions,
   path = "/en/topics/one?from=list",
   direction: "ltr" | "rtl" = "ltr",
@@ -86,6 +86,14 @@ function actions(): AuthClientActions {
 }
 
 describe("forum header auth controls", () => {
+  it("links an admitted forum actor to the global panel and hides a denied entry", async () => {
+    renderControls({ name: "Custom", canAccessAdmin: true, canManageAuthorization: false }, actions());
+    expect(await screen.findByRole("link", { name: "Admin panel" })).toHaveAttribute("href", "/en/admin");
+    cleanup();
+    renderControls({ name: "Custom", canAccessAdmin: false, canManageAuthorization: false }, actions());
+    await screen.findByRole("link", { name: "Custom" });
+    expect(screen.queryByRole("link", { name: "Admin panel" })).not.toBeInTheDocument();
+  });
   it.each(["ltr", "rtl"] as const)("renders guest credential sign-in and registration links in %s", async (direction) => {
     const locale = direction === "ltr" ? "en" : "he";
     renderControls(null, actions(), `/${locale}`, direction);

@@ -1,4 +1,8 @@
 export const UNDER_DEVELOPMENT_FEATURES = [
+  { id: "admin-forum", labelKey: "adminForum" },
+  { id: "admin-users", labelKey: "adminUsers" },
+  { id: "admin-history", labelKey: "adminHistory" },
+  { id: "admin-settings", labelKey: "adminSettings" },
   { id: "drafts", labelKey: "underDevelopmentFeatureDrafts" },
   { id: "rules", labelKey: "underDevelopmentFeatureRules" },
   { id: "help", labelKey: "underDevelopmentFeatureHelp" },

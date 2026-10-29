@@ -80,7 +80,8 @@
     "app/localization/persistent-registry.ts",
     "app/localization/request-context.ts",
     "app/localization/registry.ts",
-    "app/localization/locale.ts"
+    "app/localization/locale.ts",
+    "app/admin/access.ts"
   ],
   "compilerOptions": {
     "composite": true,

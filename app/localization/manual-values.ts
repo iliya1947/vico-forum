@@ -4,6 +4,17 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  adminPanelHeading: "Админ-панель",
+  adminOverview: "Обзор",
+  adminForum: "Форум",
+  adminUsers: "Пользователи",
+  adminRoles: "Роли и права",
+  adminHistory: "История",
+  adminSettings: "Настройки",
+  adminTopics: "Темы",
+  adminPosts: "Сообщения",
+  adminStatisticsUnavailable: "Статистика форума временно недоступна.",
+  adminOverviewHint: "Выберите раздел в меню админ-панели. Незавершённые разделы отмечены как находящиеся в разработке.",
   authLinkGoogle: "Подключить Google",
   authLinkGoogleHint: "Уже зарегистрированы с паролем? Сначала войдите с ним, затем подключите Google в своём профиле.",
   profileHeading: "Форумный профиль",
@@ -581,6 +592,17 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  adminPanelHeading: "לוח ניהול",
+  adminOverview: "סקירה",
+  adminForum: "פורום",
+  adminUsers: "משתמשים",
+  adminRoles: "תפקידים והרשאות",
+  adminHistory: "היסטוריה",
+  adminSettings: "הגדרות",
+  adminTopics: "נושאים",
+  adminPosts: "הודעות",
+  adminStatisticsUnavailable: "נתוני הפורום אינם זמינים כרגע.",
+  adminOverviewHint: "בחרו סעיף בתפריט הניהול. סעיפים שטרם הושלמו מסומנים ככאלה שבפיתוח.",
   authLinkGoogle: "קישור Google",
   authLinkGoogleHint: "כבר נרשמתם עם סיסמה? היכנסו איתה תחילה, ואז קשרו את Google מהפרופיל שלכם.",
   profileHeading: "פרופיל בפורום",

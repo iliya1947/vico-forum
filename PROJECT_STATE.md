@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-29
+Последнее обновление: 2026-10-30
 
 ## Назначение
 
@@ -19,6 +19,30 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## AP-02 — global admin shell и Overview foundation (2026-10-30)
+
+Добавлен защищённый `/:locale/admin` с общим admin shell/navigation и Overview.
+Admission и global header entry выводятся из existing effective capabilities:
+authorization management либо применимые forum-management/history-read permissions.
+Own-only и attention-only права сами по себе вход не открывают. Нового общего
+permission или второго RBAC нет; existing `admin/authorization` сохраняет свои
+самостоятельные loader/action gates и прежнюю presentation.
+
+Overview читает реальные topic/post/registered-user counts одним aggregate SQL
+statement с согласованным snapshot. При classified statistics outage показывает
+unavailable вместо фиктивных нулей; authorization outage закрывает protected вход.
+Unexpected ошибки не маскируются. Доступные destinations фильтруются по capabilities;
+утверждённые незавершённые разделы обозначены через общий Under development,
+History пока не имеет активного read destination. Attention queues и recent history
+не добавлялись, contextual topic administration не переделывалась.
+
+Добавлены EN/RU/HE catalog/manual translations, responsive logical-direction layout,
+route/presentation regressions и native PostgreSQL проверки counts/custom-role/
+allow-deny freshness. Код schema, migrations, permission catalog, зависимости и
+AP-03+ не меняются. Фактические author checks, CI и coordinator whole-PR review
+фиксируются отдельно после выполнения; external rollout и owner visual acceptance
+не заявляются. Координация этой задачи остаётся только в PR #251.
 
 ## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
 

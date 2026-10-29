@@ -13,6 +13,7 @@ import { createAuthorizationCapability, AuthorizationService } from "../../db/au
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { readAdminAccess, canEnterAdmin } from "../../app/admin/access";
 import { FORUM_WRITE_COOLDOWN_MS } from "../../db/forum-write-policy";
 
 function requiredDatabaseUrl(): string {
@@ -173,6 +174,9 @@ async function markSolved(userId: string, name: string, topicId: string, extra: 
 }
 
 describe("Stage 4 connected forum authorization flow", () => {
+  it("reads authoritative zero Overview statistics without requiring rows", async () => {
+    expect(await new DrizzleForumRepository(drizzle(client)).readStatistics()).toEqual({ topics: 0, posts: 0, users: 0 });
+  });
   it("runs the forum MVP end-to-end and applies authorization changes on the next request", async () => {
     await insertUser("e2e-manager", "Manager");
     await insertUser("e2e-author", "Author");
@@ -470,6 +474,39 @@ describe("Stage 4 connected forum authorization flow", () => {
       "search-rank-body-z",
       "search-rank-body-a",
     ]);
+  });
+});
+
+describe("AP-02 current database state", () => {
+  it("counts persisted topics, posts and users independently, and applies custom-role overrides on the next request", async () => {
+    const actual = await new DrizzleForumRepository(drizzle(client)).readStatistics();
+    const expected = await client.query(`select
+      (select count(*)::int from forum_topics) topics,
+      (select count(*)::int from forum_posts) posts,
+      (select count(*)::int from "user") users`);
+    expect(actual).toEqual(expected.rows[0]);
+    expect(actual.topics).toBeGreaterThan(0);
+    expect(actual.posts).toBeGreaterThan(actual.topics);
+    const pool = scopedPool();
+    try {
+      const repository = new PostgresAuthorizationRepository(pool);
+      const management = new AuthorizationService(repository);
+      await insertUser("ap02-custom", "Custom administrator");
+      await management.createCustomRole("e2e-manager", { slug: "ap02-reviewer", displayName: "AP02 Reviewer" });
+      const role = (await repository.listRoles()).find(({ slug }) => slug === "ap02-reviewer")!;
+      await management.assignUserRole("e2e-manager", "ap02-custom", role.id);
+      const access = () => readAdminAccess(createAuthorizationCapability(repository).forUser("ap02-custom"));
+      expect(canEnterAdmin(await access())).toBe(false);
+      await management.replaceRoleGrants("e2e-manager", role.id, ["forum.topic.pin"]);
+      expect(await access()).toEqual({ forum: true, authorization: false });
+      await management.setUserOverride("e2e-manager", "ap02-custom", "forum.topic.pin", "deny");
+      expect(canEnterAdmin(await access())).toBe(false);
+      await management.setUserOverride("e2e-manager", "ap02-custom", "access.authorization.manage", "allow");
+      expect(await access()).toEqual({ forum: false, authorization: true });
+      await management.setUserOverride("e2e-manager", "ap02-custom", "access.authorization.manage", null);
+      await management.setUserOverride("e2e-manager", "ap02-custom", "forum.topic.pin", null);
+      expect(await access()).toEqual({ forum: true, authorization: false });
+    } finally { await pool.end(); }
   });
 });
 

@@ -25,6 +25,7 @@ import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { readAdminAccess, canEnterAdmin } from "../admin/access";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -89,19 +90,21 @@ export async function loader(args: LocaleBoundaryArgs) {
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;
+  let canAccessAdmin = false;
   let canViewModerationAttention = false;
   let unreadNotificationCount: number | undefined;
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead] = await Promise.all([
-        resolver.has("access.authorization.manage"),
+      const [adminAccess, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead] = await Promise.all([
+        readAdminAccess(resolver),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
         resolver.has("forum.helpNeedsDetails.manage"),
         resolver.has("forum.attachmentSecurity.read"),
       ]);
-      canManageAuthorization = authorizationManage;
+      canManageAuthorization = adminAccess.authorization;
+      canAccessAdmin = canEnterAdmin(adminAccess);
       canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead;
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
@@ -128,6 +131,7 @@ export async function loader(args: LocaleBoundaryArgs) {
           image: session.user.image ?? null,
           name: session.user.name,
           canManageAuthorization,
+          canAccessAdmin,
           canViewModerationAttention,
           ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
         }
