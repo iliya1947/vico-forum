@@ -1,3 +1,34 @@
+## DISCOVERY-01 — PR #252 bounded implementation + exact-head CI / author handoff / STOP (2026-10-29)
+
+**Authorization:** [Мира #6497647858](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6497647858) after confirmed verification [#6497386609](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6497386609) and reconciliation [#6497606913](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6497606913).
+
+**Implementation:** [PR #252](https://github.com/iliya1947/vico-forum/pull/252), existing dedicated branch `chatgpt6/discovery-01-20261029`, base/current main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`, stable **exact head `afc5b3d8c7e0e656746296cefe11d8cbe72604d1`**, PR open/Draft/mergeable. No merge.
+
+### Scoped correction
+
+- `db/forum-repository.ts`: common `publicDiscoveryLocation` maps `{sectionId,sectionName,categoryId,categoryName}` to public `category` and optional public `section`: for `HELP_SOLUTIONS_SERVICE_SECTION_ID`, `section:null` and public `HELP_SOLUTIONS_CATEGORY_ID`; ordinary topics keep actual category+section. Applied only to four generic reader projections: `readUnanswered`, `search`, `readTag`, `readUnreadForUser`. Nullable section type scoped to four corresponding summary interfaces. Existing SQL selection/filter/rank/count, Help topic discoverability and links unchanged.
+- `app/forum/views.tsx`: four list surfaces `UnansweredView`, `SearchView`, `TagView`, `UnreadView` render location conditionally; only Help category shows with no separator or section.
+- `tests/database/stage4-core-e2e.test.ts`: native PostgreSQL fixture with normal topic and persisted Help service-section question plus shared tag tests **all four** readers for Help no internal id/name, ordinary full category/section, Help topic discoverability, Homepage and direct-section controls. Test fixture migrated `0023_forum_topic_read_states.sql` (already existing migration) and diagnostic scenario executes **after** original fixed dataset tests to avoid data interference. No production schema/migration edit.
+- `app/forum/public-read.test.tsx`: native React Router/UI tests assert Unanswered loader+cards, Search+Tag loaders/cards, Unread/New cards, normal-section controls, no Help section identity in loader JSON and no dangling slash, correct topic destinations.
+- `PROJECT_STATE.md`: updated current behavior, CI not predeclared.
+
+Only **5 changed files**, +201/-19 relative baseline. No code changes outside generic location projection/presentation; no Help authoring/moderation/search semantics, database schema, dependencies, responsive package, external/production.
+
+### Diagnosed CI sequence
+
+- Initial CI #40880739178: **FAIL** because new PostgreSQL integration test was placed before original fixed-data suite and lacked read-state test migration; new UI tests asserted before async memory-router initialization. Diagnosed exact stack/SQL and route test logs, not production-code failure.
+- Corrected test-only migration/order and route `findByRole` readiness (commits `cb47491`, `afc5b3d`); no extra production refactor.
+- Final exact-head **[CI #40881203274](https://github.com/iliya1947/vico-forum/actions/runs/40881203274): SUCCESS**:
+  - checks job `123472871435`: **1549 application tests /104 files PASS**; `public-read.test.tsx` 73/73 PASS, lint 0 errors/one pre-existing unused disable warning, full typecheck, application and UI-preview builds, migration history/schema guards PASS.
+  - database job `123472870906`: **346 PostgreSQL17 tests /31 files PASS**, `stage4-core-e2e.test.ts` 3/3 PASS, schema/runtime provisioning/privilege and Workers smoke PASS.
+  - GitHub synthetic test merge `ab9077e871bfa1d4db1918cb39bfb6597e6a4e16` has Git tree `3ada2304d104820e8bf4ef6dd2c69cd2c2f8daef`, identical to exact head; verified Git API.
+
+**Evidence limits:** Native PostgreSQL and Vitest/jsdom route render tests; **no** separate actual Chromium/full application browser E2E, external/provider/production acceptance or owner visual performed. No whole-PR self-review by author. CI success alone is not independent acceptance.
+
+**Status:** Implementation + scoped native regressions + project-state sync + exact-head applicable CI COMPLETE. Coordinator Mira to start whole-PR review of PR #252 on exact `afc5b3d` then assign eligible non-author independent review. **Лира STOP.**
+
+---
+
 ## DISCOVERY-01 — current-main source verification and bounded correction plan / COMPLETE / STOP (2026-10-29)
 
 **Назначение:** [Мира #6496797893](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6496797893) после merge #250. **Exact baseline:** `main f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`, повторно проверен. Это отдельная проверка **одного** finding, без реализации или whole-PR review.
