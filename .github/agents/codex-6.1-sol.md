@@ -1,5 +1,80 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — accepted LITERAL-TEXT-01 correction / author handoff / STOP
+
+Assignment: PR236 comment6485551587; accepted root-cause plan comment6485172583.
+Author: Лёва — Codex-6.1 Sol. Date: 2026-10-29.
+Baseline: e1c8391d15e604dedfd525a2e8b1b1cfd26d1881.
+Integrated accepted main: 0a09482fc2653b65e775ae069c86c48ab247b4fb (merged PR249).
+Stable head: 2105c1063f57c0cc0ea662fb3b65413e33ba8bae.
+Existing branch: chatgpt6/batch-l2-20261027. No new branch or PR.
+
+## Implementation boundary
+
+The old raw-substring helper is replaced with actual code-unit discovery, logical content replacement, and bounded encoding. Existing parser token handlers supply exact code data, padding and container boundaries. The locator follows actual renderer units: root/protected Markdown, spoiler bodies, table header/body cells. Source UTF-16 offsets and CR/LF/CRLF are retained.
+
+Inline edits reuse the extracted existing inline-code padding primitive and preserve a safe delimiter width (only matching backtick run lengths conflict). Indented/quoted/list code receives structural continuation prefixes on new physical lines; semantic indentation, including partial-tab content, stays in the value. Fenced candidates use the common physical-line view and actual semantic validation before widening outer fences. No whole-document serialization is used. Existing commitSource/history applies one operation and caret mapping.
+
+Shared narrow table-code semantics matches GFM escaped-pipe handling: escaped pipes in inline code become literal pipes, while other backslashes, punctuation and entity syntax stay literal. Renderer, semantic consumer and clipboard cell parsing use the same rule. The source-positioned locator uses the same decoder/encoder with boundary projection. The existing table lexer/grammar is unchanged. Odd literal backslash count before a pipe and physical multiline cell code are unrepresentable in this grammar and explicitly blocked without buffer mutation; none of the four confirmed failures is closed by blocking it.
+
+Known-code blocked outcomes do not fall back to prose serialization. Successful encoding is checked against the actual renderer semantic tree with just the selected code value changed; surrounding structure/membership must remain identical. Generic clipboard feedback was updated in EN/RU/HE and the reviewed fingerprint refreshed for that descriptor only.
+
+Shared semantic changes advance content protection to cnt06-table-code-direction-v4, preserving the merged PR249 direction contract. No provider activation, recovery system, schema or dependency change. PROJECT_STATE.md and docs/EDITOR.md describe the implemented behavior.
+
+Commits: 42cc32b (correction), 1f4e384 (main integration), f28aa57 (joint table-code/direction regression), 2105c10 (explicit Node project file list). The final commit changes only tsconfig.node.json, with all application/test blobs identical to f28aa57.
+
+## Local verification
+
+- Baseline four residuals were previously reproduced by this author on e1c8391d (six browser executions); old evidence is in pr247-review-e1c8391d. This implementation does not invent new baseline results.
+- New code model suite: 126 cases. Root/spoiler/table header/body inline spaces/all-spaces/backticks/Unicode/pipe parity; block indents, quotes/lists/nesting, blank lines/semantic tabs; CR/LF/CRLF/mixed endings, fence widths/types; partial/whole selections, empty code, caret and exact Undo/Redo; blocked and prose controls.
+- Full local app before integrating PR249: 1514 tests /103 files PASS, 147.45s. This is explicitly pre-integration evidence, not the final combined full-suite count.
+- After integration: 332 tests /4 files PASS, 31.85s (code model, editor component, semantic serialization, protection/public rendering). Joint direction + escaped-pipe code regression passes.
+- Local full TypeScript build tsc -b PASS after adding table-code.ts to the explicit Node project include list. Earlier application-only tsc passed but missed that composite-project omission.
+- ESLint: 0 errors; one existing unused-disable warning in app/forum/ui.test.tsx:174. git diff --check PASS.
+
+## Actual application-path verification
+
+The actual local Vico Worker/React Router application ran on port4216 with a disposable PostgreSQL17 on55440. Synthetic email/password user and forum section; no OAuth, real provider, external DB or production. Current repository migrations applied to the disposable database.
+
+Eleven actual Chromium clipboard/native cases were executed before integration, then all eleven repeated after integration:
+
+1. Table-body inline code with literal punctuation/entities/pipes.
+2. Inline leading/trailing spaces.
+3. Root indented multiline code.
+4. Spoiler indented multiline code.
+5. Quoted fenced multiline code.
+6. CR-only matching-fence payload.
+7. LF matching-fence control.
+8. CRLF matching-fence control.
+9. Nested list/quote fenced code.
+10. Native Advanced inline paste control.
+11. Table-header code with padding/backticks/pipe together.
+
+Each path: actual clipboard → UI command/native control → collapsed exact caret → Undo original source → Redo encoded source → FormData → one real publication POST → redirected public topic → expected code content and surrounding membership. A separate SQL query for every topic asserted original_content equals the exact editor source; source/textarea caret normalization asserted independently. All 11 passed after integration. CR/CRLF sources remained exact in DB; public code text checked with physical EOL normalization, and unselected Outside remained outside code. No injected strong formatting appeared. Table rows/columns remained intact.
+
+The first development run published table-cell successfully, then encountered the existing five-second topic write cooldown. The harness was corrected to wait six seconds between publications; application policy was not changed. This preliminary interrupted run is not counted as a complete PASS.
+
+Artifacts: browser.py, browser-results.json, postmerge-browser.log, persistence.mts, persistence.json, postmerge-persistence.log. Pre-integration copies are named explicitly. No old application E2E head is reused as new evidence.
+
+## CI
+
+Initial final-candidate run40804490437: database PASS (345 tests /31files, schema/runtime/build/Workers); checks failed TS6307 because table-code.ts was absent from tsconfig.node.json's explicit include list. No app tests/build success is claimed for that failed job. The build list was corrected in2105c10 and a new exact-head CI is required.
+
+Final exact-head CI40804856322 SUCCESS on2105c1063f57c0cc0ea662fb3b65413e33ba8bae:
+- checks123221241225: 1529 application tests /104files PASS,74.47s; migration guards, lint, full typecheck, application/UI-preview builds, migration metadata and Drizzle schema parity PASS.
+- database123221241408: 345 PostgreSQL17 tests /31files PASS,29.43s; schema manifest, runtime privilege/provisioning/credential probes, build and local Workers smoke PASS.
+- Completed logs for both jobs read; all steps successful. Checkout test merge d1ec7790ccd5963939810971a0e8b08e484e7cbd from exact head/base. Git tree equality with implementation head checked separately.
+- Final head was rechecked through GitHub; unchanged, PR open/Draft/mergeable. No whole-PR self-review.
+
+## Cleanup / limits / handoff
+
+Local Vite68016/Workerd68046 stopped, ports4216/55440 closed. Disposable leva-pr247-code-correction-pg removed with its volume. Synthetic .dev.vars removed, dependency symlink removed, checkout clean. Browser contexts closed. No new branch/PR, no merge of PR247, no external/production/provider/Queue/owner visual action.
+
+This is author implementation verification, not a whole-PR self-review or team acceptance. Previous whole-PR reviews describe the superseded e1c8391d head. Mira must start a new coordinator whole-PR cycle on the stable new head, then assign eligible non-author independent reviewers. STOP after handoff.
+
+
+---
+
 ## PR #247 — root-cause / bounded redesign proposal — PROPOSED / STOP
 
 Дата: 2026-10-29. Автор: Лёва — Codex-6.1 Sol.
