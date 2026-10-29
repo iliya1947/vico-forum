@@ -33,6 +33,7 @@ import SearchRoute, { loader as searchLoader } from "../routes/search";
 import TagsRoute, { loader as tagsLoader } from "../routes/tags";
 import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
+import UnreadRoute from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
@@ -2246,6 +2247,91 @@ describe("Technology tags", () => {
     renderRoute(TagRoute, pageData, forumTagPath("en", "typescript"), "en", "ltr");
     expect(await screen.findByRole("heading", { level: 1, name: "#TypeScript" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /How do I type an API\?/ })).toHaveAttribute("href", forumTopicPath("en", topic.id));
+  });
+});
+
+describe("DISCOVERY-01 generic public topic location", () => {
+  const publicHelp = {
+    id: helpTopic.id,
+    title: helpTopic.title.originalContent,
+    authorName: helpTopic.authorName,
+    section: null,
+    category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
+  };
+  const publicNormal = {
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    section: { id: section.id, name: section.name },
+    category: section.category,
+  };
+  const checkCards = () => {
+    const helpCard = screen.getByRole("link", { name: /Why does my Worker lose auth state\?/u });
+    const normalCard = screen.getByRole("link", { name: /How do I type an API\?/u });
+    expect(helpCard).toHaveAttribute("href", forumTopicPath("en", helpTopic.id));
+    expect(within(helpCard).getByText("Help & solutions")).toBeInTheDocument();
+    expect(within(helpCard).queryByText("Questions")).not.toBeInTheDocument();
+    expect(helpCard.textContent).not.toContain(" / ");
+    expect(normalCard).toHaveAttribute("href", forumTopicPath("en", topic.id));
+    expect(within(normalCard).getByText("Development")).toBeInTheDocument();
+    expect(within(normalCard).getByText("TypeScript")).toBeInTheDocument();
+  };
+
+  it("does not expose service-section metadata in the public Unanswered loader or cards", async () => {
+    vi.spyOn(reader, "readUnanswered").mockResolvedValue([
+      { ...publicHelp, createdAt: helpTopic.createdAt },
+      { ...publicNormal, createdAt: topic.createdAt },
+    ]);
+    const loaded = await unansweredLoader({ params: { locale: "en" }, context: context() });
+    expect(JSON.stringify(loaded)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
+    expect(JSON.stringify(loaded)).not.toContain('"Questions"');
+    renderRoute(UnansweredRoute, loaded, forumUnansweredPath("en"), "en", "ltr");
+    checkCards();
+  });
+
+  it("keeps both kinds of topic discoverable through Search and Tag detail", async () => {
+    vi.spyOn(reader, "search").mockResolvedValue([
+      { ...publicHelp, activityAt: helpTopic.createdAt, postCount: helpTopic.posts.length, tags: helpTopic.tags },
+      { ...publicNormal, activityAt: topic.createdAt, postCount: topic.posts.length, tags: topic.tags },
+    ]);
+    const loaded = await searchLoader({
+      request: new Request("https://forum.example/en/search?q=discovery"),
+      params: { locale: "en" },
+      context: context(),
+    });
+    expect(JSON.stringify(loaded)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
+    renderRoute(SearchRoute, loaded, forumSearchPath("en") + "?q=discovery", "en", "ltr");
+    checkCards();
+
+    cleanup();
+    vi.spyOn(reader, "readTag").mockResolvedValue({
+      tag: { key: "discovery", name: "Discovery" },
+      topics: [
+        { ...publicHelp, postCount: helpTopic.posts.length, createdAt: helpTopic.createdAt, tags: helpTopic.tags },
+        { ...publicNormal, postCount: topic.posts.length, createdAt: topic.createdAt, tags: topic.tags },
+      ],
+    });
+    const tagged = await tagLoader({ params: { locale: "en", tagKey: "discovery" }, context: context() });
+    expect(JSON.stringify(tagged)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
+    renderRoute(TagRoute, tagged, forumTagPath("en", "discovery"), "en", "ltr");
+    checkCards();
+  });
+
+  it("shows category-only Help identity in authenticated Unread/New cards", () => {
+    const loaded = { locale: "en", topics: [
+      { ...publicHelp, state: "new" as const, firstUnreadPostId: helpTopic.posts[0]!.id,
+        latestPostId: helpTopic.posts[0]!.id, unreadCount: 1, activityAt: helpTopic.createdAt },
+      { ...publicNormal, state: "unread" as const, firstUnreadPostId: topic.posts[0]!.id,
+        latestPostId: topic.posts[0]!.id, unreadCount: 1, activityAt: topic.createdAt },
+    ] };
+    expect(JSON.stringify(loaded)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
+    renderRoute(UnreadRoute, loaded, "/en/unread", "en", "ltr");
+    const helpCard = screen.getByRole("link", { name: /Why does my Worker lose auth state\?/u });
+    const normalCard = screen.getByRole("link", { name: /How do I type an API\?/u });
+    expect(helpCard).toHaveAttribute("href", forumTopicPath("en", helpTopic.id) + "#post-help-question-post");
+    expect(within(helpCard).getByText("Help & solutions")).toBeInTheDocument();
+    expect(within(helpCard).queryByText("Questions")).not.toBeInTheDocument();
+    expect(within(normalCard).getByText("TypeScript")).toBeInTheDocument();
   });
 });
 
