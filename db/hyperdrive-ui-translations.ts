@@ -92,15 +92,15 @@ export function createHyperdriveUiTranslationStore(
       }
       return pending;
     },
-    read(locale, namespace) {
+    read(locale, namespace, generationPolicyVersion = null) {
       if (locale === "en") return Promise.resolve(undefined);
-      const key = JSON.stringify([locale, namespace]);
+      const key = JSON.stringify([locale, namespace, generationPolicyVersion]);
       let pending = bundleReads.get(key);
       if (!pending) {
         pending = (async () => {
           if (circuitOpen) return undefined;
           try {
-            return await (await loadStore()).bundles.read(locale, namespace);
+            return await (await loadStore()).bundles.read(locale, namespace, generationPolicyVersion);
           } catch (error) {
             if (error instanceof PersistentBundleIntegrityError) {
               reportOnce("invalid-bundle");

@@ -7,6 +7,14 @@ import type {
 
 export const DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS = 3;
 
+/** A retained job list is not authorization to create a new authoritative occurrence. */
+export class UiTranslationFreshPlanningRequiredError extends Error {
+  constructor() {
+    super("Fresh UI planning is required to persist a new task identity");
+    this.name = "UiTranslationFreshPlanningRequiredError";
+  }
+}
+
 export type TranslationTaskKind = "ui" | "content-topic-title" | "content-post-body";
 export type TranslationTaskStatus = "pending" | "processing" | "stale" | "completed" | "failed";
 export type TranslationTaskFailureDisposition = "terminal" | "retry-exhausted";
@@ -135,7 +143,8 @@ export interface ContentPostBodyTranslationTaskStore {
 }
 
 export interface TranslationTaskStore {
-  upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask>;
+  /** Creating a new identity requires freshPlanning:true; known tasks support transport replay. */
+  upsertPending(specification: UiTranslationJobSpecification, options?: { readonly freshPlanning: boolean }): Promise<TranslationTask>;
   findById(id: string): Promise<TranslationTask | undefined>;
   findByIdentity(taskIdentity: string): Promise<TranslationTask | undefined>;
   claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult>;
@@ -213,9 +222,9 @@ export class PersistentTranslationJobDispatcher implements TranslationJobDispatc
     private readonly enqueuer: TranslationTaskEnqueuer,
   ) {}
 
-  async dispatch(jobs: readonly UiTranslationJobSpecification[]): Promise<void> {
+  async dispatch(jobs: readonly UiTranslationJobSpecification[], options?: { readonly freshPlanning: boolean }): Promise<void> {
     for (const job of jobs) {
-      const task = await this.tasks.upsertPending(job);
+      const task = options ? await this.tasks.upsertPending(job, options) : await this.tasks.upsertPending(job);
       await this.enqueuer.enqueue({ translationTaskId: task.id });
     }
   }

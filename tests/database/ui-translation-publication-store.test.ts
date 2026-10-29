@@ -87,7 +87,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
     const specification = await job(canonicalEnglishCatalog.common.heading, "fr");
-    const pending = await tasks.upsertPending(specification);
+    const pending = await tasks.upsertPending(specification, { freshPlanning: true });
     const claim = await tasks.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -121,7 +121,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       provider_model: "fake-v1",
       provenance_metadata: { attribution: "fixture" },
     }]);
-    await expect(new DrizzleUiTranslationBundleStore(database).read("fr", "common")).resolves.toMatchObject({
+    await expect(new DrizzleUiTranslationBundleStore(database).read("fr", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: { heading: "Fondation de traduction" },
     });
   });
@@ -131,7 +131,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
     const specification = await job(canonicalEnglishCatalog.common.heading, "da");
-    const pending = await tasks.upsertPending(specification);
+    const pending = await tasks.upsertPending(specification, { freshPlanning: true });
 
     const first = await tasks.claim(pending.id, 60_000);
     if (first.outcome !== "claimed") throw new Error("first claim failed");
@@ -162,7 +162,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const database = drizzle(client);
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
-    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.stageSummary, "de"));
+    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.stageSummary, "de"), { freshPlanning: true });
     const claim = await tasks.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
     const lostTask = { ...claim.task, claimToken: "30000000-0000-4000-8000-000000000003" };
@@ -191,7 +191,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
     const translations = new DrizzleUiTranslationStore(database);
-    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.sectionCount, "ru"));
+    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.sectionCount, "ru"), { freshPlanning: true });
     const claim = await tasks.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
     const value = {
@@ -217,7 +217,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       sectionCount_one: "{{count}} раздел",
       sectionCount_other: "{{count}} раздела",
     });
-    await expect(new DrizzleUiTranslationBundleStore(database).read("ru", "common")).resolves.toMatchObject({
+    await expect(new DrizzleUiTranslationBundleStore(database).read("ru", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: {
         heading: "Основа переводов",
         sectionCount_few: "{{count}} раздела",
@@ -238,7 +238,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       values ('it', 'common', 'heading', 'persistent_manual', 'approved', $1, '"Manuale"'::jsonb)`,
     [headingFingerprint]);
 
-    const stage = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.stageSummary, "it"));
+    const stage = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.stageSummary, "it"), { freshPlanning: true });
     const stageClaim = await tasks.claim(stage.id, 60_000);
     if (stageClaim.outcome !== "claimed") throw new Error("claim failed");
     await expect(publications.publishClaimedMachineResult({
@@ -247,7 +247,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     })).resolves.toBe(true);
 
-    await expect(new DrizzleUiTranslationBundleStore(database).read("it", "common")).resolves.toMatchObject({
+    await expect(new DrizzleUiTranslationBundleStore(database).read("it", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: { heading: "Manuale", stageSummary: "Stage 1 corrente" },
     });
   });
@@ -258,7 +258,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const publication = new DrizzleUiTranslationPublicationStore(database, async () => {
       throw new Error("injected bundle compilation failure");
     });
-    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "pt"));
+    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "pt"), { freshPlanning: true });
     const claim = await tasks.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -283,7 +283,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
     const bundles = new DrizzleUiTranslationBundleStore(database);
-    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "nl"));
+    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "nl"), { freshPlanning: true });
     const claim = await tasks.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -301,8 +301,8 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     })).resolves.toBe(true);
 
-    await expect(bundles.reconcilePersistedBundle("nl", "common")).resolves.toBe("current");
-    await expect(bundles.read("nl", "common")).resolves.toMatchObject({
+    await expect(bundles.reconcilePersistedBundle("nl", "common", "ui-policy-v1")).resolves.toBe("current");
+    await expect(bundles.read("nl", "common", "ui-policy-v1")).resolves.toMatchObject({
       resources: { heading: "Vertaalbasis" },
     });
   });
@@ -322,7 +322,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       const publicationPid = await publicationClient.query<{ pid: number }>("select pg_backend_pid() as pid");
       const publicationDatabase = drizzle(publicationClient);
       const tasks = new DrizzleTranslationTaskStore(publicationDatabase);
-      const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "sv"));
+      const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "sv"), { freshPlanning: true });
       const claim = await tasks.claim(pending.id, 60_000);
       if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -343,7 +343,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
           await release.promise;
         },
       );
-      const reconciliation = reconciler.reconcilePersistedBundle("sv", "common");
+      const reconciliation = reconciler.reconcilePersistedBundle("sv", "common", "ui-policy-v1");
       await locked.promise;
 
       const publication = new DrizzleUiTranslationPublicationStore(publicationDatabase)
@@ -358,7 +358,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
 
       await expect(reconciliation).resolves.toBe("deleted");
       await expect(publication).resolves.toBe(true);
-      await expect(new DrizzleUiTranslationBundleStore(drizzle(client)).read("sv", "common")).resolves.toMatchObject({
+      await expect(new DrizzleUiTranslationBundleStore(drizzle(client)).read("sv", "common", "ui-policy-v1")).resolves.toMatchObject({
         resources: { heading: "Översättningsbas" },
       });
     } finally {
@@ -379,8 +379,8 @@ describe("DrizzleUiTranslationPublicationStore", () => {
       const secondDatabase = drizzle(secondClient);
       const firstTasks = new DrizzleTranslationTaskStore(firstDatabase);
       const secondTasks = new DrizzleTranslationTaskStore(secondDatabase);
-      const firstPending = await firstTasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "es"));
-      const secondPending = await secondTasks.upsertPending(await job(canonicalEnglishCatalog.common.stageSummary, "es"));
+      const firstPending = await firstTasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "es"), { freshPlanning: true });
+      const secondPending = await secondTasks.upsertPending(await job(canonicalEnglishCatalog.common.stageSummary, "es"), { freshPlanning: true });
       const [firstClaim, secondClaim] = await Promise.all([
         firstTasks.claim(firstPending.id, 60_000),
         secondTasks.claim(secondPending.id, 60_000),
@@ -400,7 +400,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
         }),
       ]).then((outcomes) => expect(outcomes).toEqual([true, true]));
 
-      await expect(new DrizzleUiTranslationBundleStore(firstDatabase).read("es", "common")).resolves.toMatchObject({
+      await expect(new DrizzleUiTranslationBundleStore(firstDatabase).read("es", "common", "ui-policy-v1")).resolves.toMatchObject({
         resources: { heading: "Base de traducción", stageSummary: "Stage 1 actual" },
       });
     } finally {

@@ -7,6 +7,7 @@ import {
   localeContext,
   registryForRequest,
   uiTranslationStoreForRequest,
+  uiGenerationPolicyContext,
 } from "../localization/request-context";
 import { TranslationResourceLoader } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
@@ -78,12 +79,13 @@ export async function loader(args: LocaleBoundaryArgs) {
     .sort((left, right) => left.tag < right.tag ? -1 : left.tag > right.tag ? 1 : 0);
 
   const store = uiTranslationStoreForRequest(args.context);
+  const generationPolicyVersion = args.context.get(uiGenerationPolicyContext);
   const resourceLoader = new TranslationResourceLoader([
     localSource,
     new DatabaseManualTranslationSource(store),
-    new DatabaseMachineTranslationSource(store),
+    ...(generationPolicyVersion === null ? [] : [new DatabaseMachineTranslationSource(store, undefined, generationPolicyVersion)]),
     canonicalEnglishSource,
-  ], store);
+  ], store, generationPolicyVersion);
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;

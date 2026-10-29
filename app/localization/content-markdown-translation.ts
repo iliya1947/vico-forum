@@ -1,7 +1,7 @@
 import { parseRenderedForumMarkdown, serializeRenderedForumMarkdown } from "../forum/semantic-markdown";
 import { collectAttributedMarkdownQuoteHeaders } from "../forum/quote-markdown";
 
-export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-table-code-v3";
+export const CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION = "cnt06-table-code-direction-v4";
 export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
@@ -127,6 +127,11 @@ export class ProtectedMarkdownTranslationDocument {
 
     const protectedMarkdown = serializeMarkdown(tree);
     const canonicalTree = parseMarkdown(protectedMarkdown);
+    if (directionSignature(tree) !== directionSignature(canonicalTree)) {
+      throw new MarkdownTranslationValidationError(
+        "protected-structure-mismatch", "Protected Markdown serialization changed authored direction",
+      );
+    }
     const markerPaths = locateSegmentMarkers(
       canonicalTree,
       recordsWithoutPaths.map((record) => record.marker),
@@ -580,4 +585,14 @@ function serializeMarkdown(tree: MarkdownNode): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function directionSignature(tree: MarkdownNode): string {
+  const directions: Array<[string, unknown]> = [];
+  walk(tree, "root", (node, path) => {
+    if (node.type !== "paragraph" && node.type !== "heading") return;
+    const dir = (node.data as { hProperties?: { dir?: unknown } } | undefined)?.hProperties?.dir;
+    if (dir === "ltr" || dir === "rtl") directions.push([path, dir]);
+  });
+  return JSON.stringify(directions);
 }

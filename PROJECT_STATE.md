@@ -39,7 +39,7 @@ entities не декодируются. Общая table grammar не замен
 cell code) отклоняются без изменения source, с generic clipboard warning;
 known-code failure не переходит в prose serializer. Перед применением edits
 проверяется фактическая renderer semantic structure и ожидаемое code value.
-Translation protection policy повышена до `cnt06-table-code-v3`, поскольку
+Translation protection policy повышена до `cnt06-table-code-direction-v4`, поскольку
 изменилась общая table-code semantics; provider/recovery/schema не менялись.
 
 Добавлены source/value/container/history, mounted command → FormData →
@@ -127,6 +127,42 @@ context, существующие Ctrl+Shift+V и Advanced source boundaries с�
 ForumMarkdown regressions, включая Undo/Redo и root controls. Это
 реализация correction; итоговые CI и независимая проверка фиксируются
 отдельно после фактического выполнения.
+## L8 — Durable localization / translation corrections (2026-10-28)
+
+В implementation-ветке реализованы пять согласованных current-Stage findings:
+
+- `LOC-01`: transport failure у неизвестного COMMIT outcome проходит semantic
+  pre/expected/actual reconciliation; blind retry не добавлен.
+- `LOC-02`: deterministic bundle validation/obsolete identity отделена от unknown
+  verifier/crypto failures; последние не разрешают удалять корректную derived row.
+- `I18N-UI-POLICY-01`: bundle format v3 учитывает явную machine generation policy
+  в compile/verify/publication/runtime/reconciliation. Request без настроенной policy
+  использует manual/local/English fallback; произвольный policy default не введён.
+  Manual values остаются независимы от machine policy. Reconciliation CLI принимает
+  `--generation-policy=<version>` для того же контекста, не активируя внешние сервисы.
+- `LOC-05`: eligible fresh A–B–A продвигает superseded pending/processing task в
+  новое поколение в UI/title/body stores и ограждает старые claim/allowance owners.
+  UI fresh decision отмечается явно; replay старого job list сам head не передвигает
+  и не реактивирует stale task, даже когда её поколение ещё совпадает с head.
+  Negative dispatcher regressions проверяют replay без флага и с `freshPlanning:false`;
+  разрешённая fresh reactivation и A–B–A сохраняются.
+  Ранее не сохранённая UI identity тоже создаётся только с `freshPlanning:true`:
+  delayed unpersisted plan без разрешения отклоняется типизированной planning
+  precondition error без task/head writes или enqueue. Это относится и к первому
+  head; actual plan(A) → fresh planAndDispatch(B) → delayed dispatch(A) regressions
+  проверяют сохранение B publication right. Fixture creation отмечена fresh явно.
+  Актуальный duplicate processing claim и terminal completed identity сохраняются.
+- `LOC-08`: L7 semantic serialization восстанавливает authored direction token,
+  отличает его от literal lookalike и проверяет direction до canonicalization loss.
+  Protection identity повышена до `cnt06-custom-structure-direction-v3`.
+
+`LOC-09` не включён: доказанный legacy upgrade path остаётся future rollout prerequisite.
+PR247/Batch L2 не изменён. Новых schema/dependency/provider/Queue/deployment изменений нет.
+Focused helper/component и native PostgreSQL regressions покрывают причинные цепочки,
+manual precedence и delayed-owner controls. Локально прошли application/native PostgreSQL17
+regressions, lint, typecheck, application/UI-preview build, Workers smoke и Chromium
+direction round-trip controls. Exact-head CI фиксируется отдельно после завершения.
+Whole-PR self-review и owner visual acceptance не заявляются.
 
 ## L7 — Editor structural Markdown semantics (2026-10-28)
 

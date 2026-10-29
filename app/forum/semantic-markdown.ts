@@ -1,4 +1,4 @@
-import { toMarkdown, type Handle } from "mdast-util-to-markdown";
+import { defaultHandlers, toMarkdown, type Handle } from "mdast-util-to-markdown";
 import { forumMarkdownToOptions, parseForumMarkdown } from "../markdown-syntax";
 import { parseTableCellMarkdown } from "./table-code";
 import { segmentTechnicalMarkdown } from "./technical-markdown";
@@ -49,7 +49,25 @@ function protectCellPipes(source: string): string {
 }
 
 export function serializeRenderedForumMarkdown(tree: ForumSemanticNode): string {
+  // Direction is authored structure, not generic HAST metadata. Reify only
+  // recognized overrides before serializing; literal lookalikes stay text.
+  function withDirections(node: ForumSemanticNode): ForumSemanticNode {
+    const copy = { ...node, children: node.children?.map(withDirections) };
+    const direction = (node.data as { hProperties?: { dir?: unknown } } | undefined)?.hProperties?.dir;
+    if ((node.type === "paragraph" || node.type === "heading") && (direction === "ltr" || direction === "rtl")
+      && copy.children?.at(-1)?.type !== "vicoDirection") {
+      copy.children = [...(copy.children ?? []), { type: "vicoDirection", value: direction }];
+    }
+    return copy;
+  }
   const handlers: Record<string, Handle> = {
+    vicoDirection(node) {
+      return ` {:vico-dir=${(node as unknown as ForumSemanticNode).value}}`;
+    },
+    text(node, parent, state, info) {
+      return defaultHandlers.text(node, parent, state, info)
+        .replace(/(?<!\\)\{:vico-dir=(?:ltr|rtl)\}/gu, "\\$&");
+    },
     vicoSpoiler(node) {
       const spoiler = node as unknown as ForumSemanticNode;
       const title = spoiler.children?.[0]?.children?.[0]?.value ?? "";
@@ -68,5 +86,5 @@ export function serializeRenderedForumMarkdown(tree: ForumSemanticNode): string 
       return rows.join("\n");
     },
   };
-  return toMarkdown(tree as Parameters<typeof toMarkdown>[0], { ...forumMarkdownToOptions, handlers });
+  return toMarkdown(withDirections(tree) as Parameters<typeof toMarkdown>[0], { ...forumMarkdownToOptions, handlers });
 }

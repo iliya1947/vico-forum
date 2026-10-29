@@ -10,6 +10,8 @@ import type { ContentGenerationStatusReader } from "./content-generation-status"
 export const localeContext = createContext<ResolvedLocaleContext>();
 export const registryLoaderContext = createContext<() => Promise<LoadedLocaleRegistry>>();
 export type RuntimeUiTranslationStore = UiTranslationStore & TranslationBundleReader;
+// No configured machine policy means manual/local/fallback-only UI resources.
+export const uiGenerationPolicyContext = createContext<string | null>(null);
 export const uiTranslationStoreContext = createContext<RuntimeUiTranslationStore>();
 export const contentTranslationPresentationContext = createContext<ContentTranslationPresentationService>();
 export const contentGenerationStatusReaderContext = createContext<ContentGenerationStatusReader>();

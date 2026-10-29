@@ -79,13 +79,13 @@ async function makePendingOld(id: string, seconds = 2): Promise<void> {
 describe("DrizzleTranslationTaskStore reconciliation", () => {
   it("reserves only recoverable work, applies the batch bound, and has query-derived indexes", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
-    const oldPending = await store.upsertPending(await job("old-pending"));
-    const freshPending = await store.upsertPending(await job("fresh-pending"));
-    const retryReleased = await store.upsertPending(await job("retry-released"));
-    const expired = await store.upsertPending(await job("expired-processing"));
-    const live = await store.upsertPending(await job("live-processing"));
-    const stale = await store.upsertPending(await job("stale-task"));
-    const failed = await store.upsertPending(await job("failed-task"));
+    const oldPending = await store.upsertPending(await job("old-pending"), { freshPlanning: true });
+    const freshPending = await store.upsertPending(await job("fresh-pending"), { freshPlanning: true });
+    const retryReleased = await store.upsertPending(await job("retry-released"), { freshPlanning: true });
+    const expired = await store.upsertPending(await job("expired-processing"), { freshPlanning: true });
+    const live = await store.upsertPending(await job("live-processing"), { freshPlanning: true });
+    const stale = await store.upsertPending(await job("stale-task"), { freshPlanning: true });
+    const failed = await store.upsertPending(await job("failed-task"), { freshPlanning: true });
 
     await makePendingOld(oldPending.id);
 
@@ -167,7 +167,7 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
   it("persists cross-run progress so a backlog larger than the batch cannot starve", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const tasks = await Promise.all(
-      Array.from({ length: 5 }, async (_, index) => store.upsertPending(await job(`backlog-${index}`))),
+      Array.from({ length: 5 }, async (_, index) => store.upsertPending(await job(`backlog-${index}`), { freshPlanning: true })),
     );
     for (const task of tasks) await makePendingOld(task.id);
 
@@ -187,7 +187,7 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
   it("lets concurrent reconcilers reserve disjoint bounded work", async () => {
     const firstStore = new DrizzleTranslationTaskStore(drizzle(client));
     const tasks = await Promise.all(
-      Array.from({ length: 4 }, async (_, index) => firstStore.upsertPending(await job(`concurrent-${index}`))),
+      Array.from({ length: 4 }, async (_, index) => firstStore.upsertPending(await job(`concurrent-${index}`), { freshPlanning: true })),
     );
     for (const task of tasks) await makePendingOld(task.id);
 
@@ -215,10 +215,10 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
   it("reports bounded age, attempt, lease, and terminal failure summaries", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
 
-    const pending = await store.upsertPending(await job("observe-pending"));
+    const pending = await store.upsertPending(await job("observe-pending"), { freshPlanning: true });
     await makePendingOld(pending.id, 5);
 
-    const retryPending = await store.upsertPending(await job("observe-retry-pending"));
+    const retryPending = await store.upsertPending(await job("observe-retry-pending"), { freshPlanning: true });
     const retryClaim = await store.claim(retryPending.id, 60_000);
     if (retryClaim.outcome !== "claimed") throw new Error("retry pending claim failed");
     await store.recordFailure(retryPending.id, retryClaim.task.claimToken, {
@@ -226,11 +226,11 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
       code: "provider-temporary",
     });
 
-    const live = await store.upsertPending(await job("observe-live"));
+    const live = await store.upsertPending(await job("observe-live"), { freshPlanning: true });
     const liveClaim = await store.claim(live.id, 60_000);
     if (liveClaim.outcome !== "claimed") throw new Error("live claim failed");
 
-    const expired = await store.upsertPending(await job("observe-expired-budget"));
+    const expired = await store.upsertPending(await job("observe-expired-budget"), { freshPlanning: true });
     const expiredClaim = await store.claim(expired.id, 60_000);
     if (expiredClaim.outcome !== "claimed") throw new Error("expired claim failed");
     await client.query(
@@ -242,12 +242,12 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
       [expired.id],
     );
 
-    const stale = await store.upsertPending(await job("observe-stale"));
+    const stale = await store.upsertPending(await job("observe-stale"), { freshPlanning: true });
     const staleClaim = await store.claim(stale.id, 60_000);
     if (staleClaim.outcome !== "claimed") throw new Error("stale claim failed");
     await store.markStale(stale.id, staleClaim.task.claimToken);
 
-    const completed = await store.upsertPending(await job("observe-completed"));
+    const completed = await store.upsertPending(await job("observe-completed"), { freshPlanning: true });
     const completedClaim = await store.claim(completed.id, 60_000);
     if (completedClaim.outcome !== "claimed") throw new Error("completed claim failed");
     await client.query(
@@ -265,7 +265,7 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
       [completed.id],
     );
 
-    const terminal = await store.upsertPending(await job("observe-terminal"));
+    const terminal = await store.upsertPending(await job("observe-terminal"), { freshPlanning: true });
     const terminalClaim = await store.claim(terminal.id, 60_000);
     if (terminalClaim.outcome !== "claimed") throw new Error("terminal claim failed");
     await store.recordFailure(terminal.id, terminalClaim.task.claimToken, {
@@ -273,7 +273,7 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
       code: "provider-output-invalid",
     });
 
-    const exhausted = await store.upsertPending(await job("observe-retry-exhausted"));
+    const exhausted = await store.upsertPending(await job("observe-retry-exhausted"), { freshPlanning: true });
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const claim = await store.claim(exhausted.id, 60_000);
       if (claim.outcome !== "claimed") throw new Error("retry exhaustion claim failed");

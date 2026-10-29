@@ -202,6 +202,7 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
             .limit(1);
           assertMetadataMatchesSpecification(metadataRows[0], specification);
 
+          const superseded = existingRows[0].generation !== currentGeneration;
           if (existingRows[0].status === "completed") {
             throw new ContentPostBodyPlanningNoWorkRollback("task-completed");
           }
@@ -221,8 +222,8 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
           );
 
           if (
-            existingRows[0].status === "pending"
-            || existingRows[0].status === "processing"
+            !superseded && (existingRows[0].status === "pending"
+            || existingRows[0].status === "processing")
           ) {
             return {
               outcome: "task" as const,
@@ -252,6 +253,7 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
               allowanceLeaseExpiresAt: null,
               allowanceRetryNotBefore: null,
               allowanceReason: null,
+              allowanceProvider: null,
               allowanceReservationReference: null,
               allowanceUpdatedAt: null,
               claimToken: null,
@@ -264,7 +266,8 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
             })
             .where(and(
               eq(translationTasks.id, existingRows[0].id),
-              eq(translationTasks.status, "stale"),
+              eq(translationTasks.status, existingRows[0].status),
+              eq(translationTasks.generation, existingRows[0].generation),
             ))
             .returning();
           const reactivatedTask = requiredTaskRow(reactivated[0]);
