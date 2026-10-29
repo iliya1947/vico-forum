@@ -375,14 +375,17 @@ const fenced = fooBar();
 });
 
 it("preserves table code pipes/backslashes across protection, translation and public rendering", () => {
-  const source = "| Human title | Code |\n| --- | --- |\n| Human body | `\\\\\\| &copy; \\* literal` |";
+  const source = "| Human title {:vico-dir=rtl} | Code |\n| --- | --- |\n| Human body {:vico-dir=rtl} | `\\\\\\| &copy; \\* literal {:vico-dir=ltr}` |";
   const document = protectMarkdownForTranslation(source);
   expect(document.segments).toHaveLength(3);
   const restored = document.restore(document.segments.map((segment) => ({ id: segment.id, value: segment.text + " translated" })));
   const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
-  expect(container.querySelector("td code")?.textContent).toBe("\\\\| &copy; \\* literal");
+  expect(container.querySelector("td code")?.textContent).toBe("\\\\| &copy; \\* literal {:vico-dir=ltr}");
   expect(container.querySelectorAll("tr")).toHaveLength(2);
   expect(container.querySelectorAll("td")).toHaveLength(2);
   expect(container.textContent).toContain("Human body translated");
+  expect(container.querySelector("th p")).toHaveAttribute("dir", "rtl");
+  expect(container.querySelector("td p")).toHaveAttribute("dir", "rtl");
+  expect(container.querySelector("td code")?.closest("p")).toHaveAttribute("dir", "auto");
   expect(container.querySelector("em")).toBeNull();
 });
