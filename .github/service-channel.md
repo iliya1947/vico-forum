@@ -1,3 +1,12 @@
+## PR #247 — LITERAL-TEXT-01 root-cause plan accepted / implementation next (2026-10-29)
+
+- Baseline stable exact head: `e1c8391d15e604dedfd525a2e8b1b1cfd26d1881`, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
+- Team-confirmed current-Stage P2 residuals: table-cell inline-code context; inline boundary-space loss; multiline indented/quoted code continuation loss; CR-only matching-fence bypass.
+- Лёва root-cause review #6485172583 accepted: common issue is the current raw source-substring replacement model with compensating delimiter fixes.
+- Approved technical boundary: locate the actual rendered code unit → replace logical code content → encode bounded source edits using renderer-compatible local contexts. Include the required narrow shared table-cell code semantics; do not reserialize the whole document or broaden native Advanced/Simple/HTML/TSV behavior.
+- Regression boundary: confirmed failure executions plus table/spoiler/root inline controls, multiline container-prefix cases, fence CR/LF/CRLF cases, mapping/caret and single-step Undo/Redo; representative mounted/public-render and application path evidence on the new head.
+- Next step: Лира implements this bounded correction in existing PR #247, then records a new stable exact head and applicable checks/CI. Author does not whole-PR self-review.
+
 # Shared service channel
 
 ## Лёва — PR #247 / опубликован independent review наe1c8391d / reconciliation pending (2026-10-29)
