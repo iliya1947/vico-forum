@@ -1,9 +1,13 @@
-## PR #247 — final bounded serializer correction assigned (2026-10-29)
+## PR #247 — bounded serializer correction implemented / coordinator review next (2026-10-29)
 
-- Stable pre-correction head: `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`.
-- Two current-Stage `LITERAL-TEXT-01` serializer residuals are confirmed in the same `textAsMarkdown()` boundary: standalone-CR line handling and visible-backslash ordered-marker escaping for `1.` / `1)`.
-- Both are assigned to Лёва as one bounded correction in existing PR #247. No new branch/PR.
-- After implementation, PR #247 requires a new exact-head review cycle.
+- Выполнено [назначение #6495447379](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6495447379) в existing branch `chatgpt6/batch-l2-20261027`; новая ветка/PR не создавались.
+- Stable exact head: `d0574225f6b0fc8285e69268441b989927d7e1db`; base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`. PR open/Draft/mergeable, head повторно сверён.
+- Два confirmed LITERAL-TEXT-01 serializer residuals реализованы одной bounded correction: общий входной LF view для CR/LF/CRLF до escaping/context classification; ordered markers нейтрализуются по пунктуации (`1\.`/`1\)`), без backslash перед digit.
+- Genuine contextual raw-tab code, Vico protections и source вне insertion сохраняются. Advanced raw/dedicated existing-code paths, HTML/TSV, schema/dependencies/policy не менялись. PROJECT_STATE.md/EDITOR.md синхронизированы.
+- Author checks: RED12/14 на старом source; GREEN360/3 focused tests;120/120 actual public-render matrix;6 новых mounted Simple paste→FormData→ForumMarkdown→Undo/Redo cases. Local full tsc-b/source lint/diff-check PASS.
+- [Exact-head CI #40866592828](https://github.com/iliya1947/vico-forum/actions/runs/40866592828) SUCCESS: **1543 application /104 files,345 PostgreSQL17 /31 files**, lint/typecheck/builds/history/schema/runtime/Workers PASS. Completed logs обеих jobs прочитаны; CI merge tree совпадает с implementation head.
+- [Подробный author report](https://github.com/iliya1947/vico-forum/blob/be8164eac57478dd8138a748f12e2fe650ef3b4b/.github/agents/codex-6.1-sol.md). Checkout clean; dependency symlink снят. Новый Chromium/HTTP/DB application E2E для этой небольшой correction не запускался; mounted/public-render evidence относится к новому source.
+- Это author handoff, не whole-PR self-review/team acceptance. Старые reviews относятся к2105c10. Следующий шаг: Мира начинает новый coordinator whole-PR review d057422, затем eligible non-author reviewers этого же stable head. **Лёва STOP.**
 
 ## PR #250 — one confirmed normalized-query CODE-SEARCH-01 residual (2026-10-29)
 
@@ -12,14 +16,6 @@
 - Coordinator independently rechecked and confirmed the causal chain. No other current-Stage findings remain from that review.
 - PR #250 is not merge-ready. Лира is assigned author verification of this single residual before correction.
 
-## PR #247 — standalone-CR author verification complete / correction not started (2026-10-29)
-
-- Unchanged exact head `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`, base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`.
-- Согласованный standalone-CR P2 LITERAL-TEXT-01 подтверждён автором: serializer CRLF-only splitting пропускает line-start guards, actual Markdown parser воспринимает CR как EOL. Mounted Simple clipboard→FormData→ForumMarkdown воспроизводит h1 для CR; LF/CRLF controls literal.
-- Минимальная граница CR correction: единая CR/LF/CRLF normalization на plain-clipboard input до splitting/escaping/contextual tab classification; existing document source и Advanced raw/code EOL fidelity не нормализовать глобально. Implementation не менялась, новой correction ещё нет.
-- Изолированный candidate вне checkout:120 renderer observations;104 проходят. Остальные16 показывают **отдельный author-confirmed ordered-marker control defect**, также существующий в base/main и при LF: escape перед digit в `1.`/`1)` отображает лишний backslash. Это не CR cause и не автоматически добавленный team finding; требуется coordinator reconciliation перед решением о scope.
-- 5 mounted diagnostic checks подтвердили3 EOL observations и2 ordered-marker observations; full app/PG/CI/HTTP/browser publication заново не запускались. Временные tests восстановлены, checkout clean.
-- [Полный author verification report](https://github.com/iliya1947/vico-forum/blob/92e743245d7e69a4af79c485e10d661c50dbe333/.github/agents/codex-6.1-sol.md). PR #247 не merge-ready. Следующий шаг Миры: reconcile additional control limit, затем назначить bounded correction. **Лёва STOP.**
 
 ## PR #250 — independent review published / reconciliation pending (2026-10-29)
 
