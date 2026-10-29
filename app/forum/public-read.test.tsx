@@ -2035,6 +2035,71 @@ describe("Popular topics", () => {
 });
 
 describe("Forum search", () => {
+  it("keeps URL, results, and search field synchronized through GET navigation and history", async () => {
+    const loadedQueries: string[] = [];
+    const router = createMemoryRouter([{
+      path: "/en/search",
+      Component: SearchRoute,
+      loader: ({ request }) => {
+        loadedQueries.push(new URL(request.url).searchParams.get("q") ?? "");
+        return searchLoader({
+          request,
+          params: { locale: "en" },
+          context: context("en", "ltr"),
+        });
+      },
+    }], { initialEntries: ["/en/search?q=TypeScript"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={null}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    const searchbox = () => screen.getByRole("searchbox", { name: "Search query" });
+    const submitSearch = () => fireEvent.click(
+      within(screen.getByRole("search")).getByRole("button"),
+    );
+    const resultLink = () => screen.getByRole("link", { name: /How do I type an API\?/u });
+
+    expect(await screen.findByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?q=TypeScript");
+    expect(searchbox()).toHaveValue("TypeScript");
+
+    // Editing the input must not change committed search results before submit.
+    fireEvent.change(searchbox(), { target: { value: "WebAssembly" } });
+    expect(searchbox()).toHaveValue("WebAssembly");
+    expect(resultLink()).toBeInTheDocument();
+    submitSearch();
+
+    await waitFor(() => expect(router.state.location.search).toBe("?q=WebAssembly"));
+    expect(await screen.findByText("No topics found for “WebAssembly”.")).toBeInTheDocument();
+    expect(searchbox()).toHaveValue("WebAssembly");
+
+    await router.navigate(-1);
+    await waitFor(() => expect(router.state.location.search).toBe("?q=TypeScript"));
+    expect(await screen.findByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+    expect(searchbox()).toHaveValue("TypeScript");
+
+    await router.navigate(1);
+    await waitFor(() => expect(router.state.location.search).toBe("?q=WebAssembly"));
+    expect(await screen.findByText("No topics found for “WebAssembly”.")).toBeInTheDocument();
+    expect(searchbox()).toHaveValue("WebAssembly");
+
+    fireEvent.change(searchbox(), { target: { value: "" } });
+    submitSearch();
+    await waitFor(() => expect(router.state.location.search).toBe("?q="));
+    await waitFor(() => expect(searchbox()).toHaveValue(""));
+    expect(screen.queryByRole("link", { name: /How do I type an API\?/u })).not.toBeInTheDocument();
+    expect(loadedQueries).toContain("TypeScript");
+    expect(loadedQueries).toContain("WebAssembly");
+    expect(loadedQueries.at(-1)).toBe("");
+  });
+
   it("loads a query through the public reader and keeps result links locale-aware", async () => {
     const request = new Request("https://forum.example/en/search?q=TypeScript");
     const data = await searchLoader({
