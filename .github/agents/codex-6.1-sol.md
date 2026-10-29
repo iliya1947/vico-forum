@@ -1,5 +1,72 @@
 # Лёва — Codex-6.1 Sol
 
+## RES-A11Y-01 — current-main accessible-name verification + minimal boundary / STOP (2026-10-29)
+
+Assignment #236/6508446017. Personally verified exact main `d1bbd6144e787e69bcf605acf8315b4e292d80ec`. Verification only: no implementation, branch or PR created.
+
+**Verdict: RES-A11Y-01 confirmed as a current-Stage P2 accessibility defect. Focusable Simple text leaves expose role=textbox and editable value, but their computed accessible name is empty.** This is not a claim about a complete accessibility audit, all assistive technologies or WCAG conformance of the whole editor.
+
+### Actual naming chain
+
+- VisualTextLeaf in visual-markdown-editor.tsx:336-346 renders a contentEditable span, role=textbox, aria-multiline=false, source-offset attributes. It supplies no aria-label, aria-labelledby, title or other author name.
+- VisualNodeView creates one such leaf for each editable text node, including formatting fragments. Empty/trailing paragraph synthesis also uses the same component. Nested spoiler recursively creates VisualMarkdownEditor and the same leaves.
+- The enclosing section at visual-markdown-editor.tsx:572 has localized aria-label=t(editorVisualSurface), English `Visual editor`. Chromium exposes it as a named region; that ancestor name is not the textbox's own name.
+- MarkdownEditor passes source/callbacks/disabled to VisualMarkdownEditor. It assigns the public editor id and describedBy to the native textarea, not the leaves. Actual create-topic/Help/reply labels use htmlFor matching that textarea id (views.tsx:1300,1985,3110). A nearby form label is not an implicit naming relationship for each span.
+- The Simple source textarea has tabIndex=-1 and its pane is visually clipped to1px by app/styles.css:9224. It still appears in the observed AX tree with its own label; it is not aria-hidden/display:none. Its existing name does not transfer to a different focusable textbox. Disabled/read-only/description semantics of those controls are not redesigned here.
+
+For the plain source `Alpha`, Chromium reports on the focused Simple leaf:
+role=textbox; name=''; value='Alpha'; focusable=true; editable=richtext; multiline=false. The name sources list aria-labelledby/aria-label/aria-placeholder/title but none supplies a value. Thus typed text is an editable value, not a stable control name.
+
+### Personally executed Chromium evidence
+
+Fresh Vite-built engineering harness imports the actual current MarkdownEditor and translation runtime, real app/styles.css with home-shell ancestor, external visible labels, describedBy help text and exact source. Uses disposable loopback static HTTP; no product server/identity/DB/provider. Chromium/CDP Accessibility.getPartialAXTree examines actual browser-computed names and properties rather than inferring from missing attributes.
+
+20 cases total at390/1280:
+- Simple empty, plain, formatted multi-leaf/multi-paragraph, expanded nested spoiler, ordinary table, two simultaneous editors with distinct visible labels, disabled;
+- Advanced enabled/disabled;
+- Simple Preview.
+
+Observed30 Simple leaf AX nodes across the matrix:all30 have empty names, including2 disabled leaves.28 enabled leaf focus/name observations succeed using HTMLElement focus; plain Simple is additionally reached with real keyboard Tab at both widths. Empty leaf focus works too. Source remains unchanged throughout.
+
+Correct controls:
+- Each Simple surface/expanded nested surface is a named `Visual editor` region; this does not name its leaves.
+- Advanced textarea is `Reply body` via the visible native label, both enabled and disabled. In Simple, the visually clipped textarea also retains its own AX name; that is a separate control.
+- Table header/cell inputs have their own localized aria-labels (`Table header cell`/`Table cell`). No text-leaf naming failure is attributed to those inputs.
+- Disabled Simple leaves have contentEditable=false and are excluded from the enabled-focus count; their empty names are observed but not counted as an additional active-focus defect.
+- Simple Preview mounts no visual editing leaves.
+- Two editors preserve native textarea names `Reply body`/`Question body`, but both editable Simple spans remain unnamed.
+
+Causal controls at both widths, DOM-only and reset by navigation: changing the ancestor region name does not change the leaf's blank name. Giving the visible label an id and directly applying aria-labelledby to the leaf changes AX name to `Reply body` while value remains `Alpha` and the leaf retains focus. These are diagnostic attribute changes only; no React implementation was altered.
+
+0 browser page errors/external or mutating requests. Browser matrix English; generic locale support is traced through existing localization, not claimed as all-locale/RTL or real screen-reader speech testing. No axe run or owner visual acceptance claimed.
+
+### Mounted diagnostics
+
+Five temporary tests PASS,209 existing skipped (1.89s):empty/plain/formatted leaves have empty computed names despite named section and labeled textarea;disabled leaf remains non-contentEditable;Advanced/table inputs keep their own names. These assert observed current behavior, not a fix. jsdom alone is not used to establish visible user focus or browser AX exposure; actual Chromium evidence above does that.
+
+### Minimal correction boundary and regressions
+
+Provide an author-supplied, localized accessible name on each actual VisualTextLeaf textbox, covering the shared text-node/empty-placeholder path and nested spoiler recursion. The existing translated editorVisualSurface name can supply the bounded fallback; a direct valid aria-labelledby relationship can preserve a field-specific visible label when explicitly provided. Merely naming the ancestor again, or using current message text as the name, does not close the confirmed cause.
+
+The minimal defect does not require redesigning the source-positioned editor, changing contentEditable ownership, adding a global ARIA widget model, new dependencies, changing source/history or removing textbox roles without a replacement semantic. New context-specific labels across every form and broader description/disabled-state changes are not made mandatory by this narrow finding. Existing valid native/table labels should stay intact.
+
+Focused desired coverage for implementation:
+1. Empty/populated/formatted/multi-paragraph leaves all have a nonempty localized name and retain correct AX value/editability.
+2. Nested spoiler, trailing placeholder and multiple editor instances preserve valid instance-scoped associations if idrefs are used; no dangling/duplicate ids.
+3. Native Tab reaches an appropriately named Simple textbox; DOM-only accessible-name assertions are supplemented by browser AX/focus checks.
+4. Advanced native label and table input names remain correct; disabled and Preview keep their existing focus boundaries.
+5. Name stays stable when source is typed/edited, mode changes or Undo/Redo runs; source, selection and existing EDITOR-05/08 behavior remain intact.
+6. Localization changes use the runtime catalog rather than hard-coded English. Applicable source checks/CI belong to the separately authorized implementation.
+
+Official references checked: WAI-ARIA1.2 textbox requires an accessible name from author; APG naming guidance specifies direct aria-labelledby/aria-label for non-native textboxes; WCAG4.1.2 requires programmatically determinable component names. Sources: https://www.w3.org/TR/wai-aria-1.2/#textbox ; https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/ ; https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html . These references support the naming expectation; the verdict is established against local code and browser evidence.
+
+### Cleanup / handoff
+
+Artifacts `/workspace/work/res-a11y01-verification`:REPORT.md,diagnostic-tests.tsx,diagnostics.log,build.log,browser.py/browser.json/browser-final.log,temporary standalone build. Temporary checkout tests restored, harness/config/dependency symlink removed. Final checkout clean at assigned main, diff-check PASS. Own loopback HTTP/Chromium closed; no DB/container/app runtime/external services/production used. Full app/PG/typecheck/lint/new CI were not rerun or claimed for this code-unchanged verification.
+
+Verification and minimal plan complete. Мире: reconcile finding and bounded plan, then separate authorized implementation assignment. No implementation performed; Лёва STOP.
+
+
 ## PR #259 — EDITOR-08 / author implementation handoff / STOP (2026-10-29)
 
 Assignment #236/6504253810, confirmed verification #6504154885. Implementation branch `fix/editor-disabled-mutations`, base/main `e37314b63fc77825cad3209811676e0627a2851c`, stable exact head `d6008c5327b911df2d71e140964eb1690651f73c`.
