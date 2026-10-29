@@ -107,3 +107,13 @@ describe("compiled translation bundles", () => {
     await expect(codeOwnedBundleInputs("ru", "common", removed)).resolves.not.toBe(previousIdentity);
   });
 });
+
+it("binds compiled currentness to the explicit machine policy without changing resource text", async () => {
+  const resources = { heading: "Fondation" };
+  const manual = await compileNamespaceBundle("fr", "common", resources);
+  const a = await compileNamespaceBundle("fr", "common", resources, undefined, "policy-a");
+  const b = await compileNamespaceBundle("fr", "common", resources, undefined, "policy-b");
+  expect(a.resources).toEqual(manual.resources);
+  expect(new Set([manual.bundleVersion, a.bundleVersion, b.bundleVersion]).size).toBe(3);
+  expect(await verifyCompiledNamespaceBundle("fr", "common", a.resources, undefined, "policy-a")).toEqual(a);
+});

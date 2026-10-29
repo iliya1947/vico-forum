@@ -11,6 +11,7 @@ import {
 import { DrizzleTranslationTaskStore } from "../../db/translation-task-store";
 import { DrizzleUiTranslationBundleStore } from "../../db/ui-translation-bundle-store";
 import { DrizzleUiTranslationPublicationStore } from "../../db/ui-translation-publication-store";
+import { FakeTranslationTaskEnqueuer, PersistentTranslationJobDispatcher } from "../../app/localization/translation-tasks";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for the disposable database integration test");
@@ -63,6 +64,40 @@ async function job(
 }
 
 describe("translation task generation isolation", () => {
+  it.each([false, true])("keeps stale UI replay terminal without fresh authorization (superseded=%s)", async (superseded) => {
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const specification = await job("stale-replay-a", `staleReplay${superseded}`);
+    const first = await tasks.upsertPending(specification, { freshPlanning: true });
+    const oldClaim = await tasks.claim(first.id, 60_000);
+    if (oldClaim.outcome !== "claimed") throw new Error("older claim failed");
+    const newer = superseded ? await tasks.upsertPending(await job("stale-replay-b", specification.sourceIdentity.key), { freshPlanning: true }) : null;
+    const newerClaim = newer ? await tasks.claim(newer.id, 60_000) : null;
+    if (newerClaim && newerClaim.outcome !== "claimed") throw new Error("newer claim failed");
+    await expect(tasks.markStale(first.id, oldClaim.task.claimToken)).resolves.toBe(true);
+    const stale = await tasks.findById(first.id);
+    const headBefore = await client.query("select * from translation_task_generation_heads where source_key=$1", [specification.sourceIdentity.key]);
+    const queue = new FakeTranslationTaskEnqueuer();
+    const dispatcher = new PersistentTranslationJobDispatcher(tasks, queue);
+
+    await dispatcher.dispatch([specification]);
+    await dispatcher.dispatch([specification], { freshPlanning: false });
+
+    expect(await tasks.findById(first.id)).toEqual(stale);
+    expect((await client.query("select * from translation_task_generation_heads where source_key=$1", [specification.sourceIdentity.key])).rows).toEqual(headBefore.rows);
+    await expect(tasks.claim(first.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
+    expect(queue.messages).toEqual([{ translationTaskId: first.id }, { translationTaskId: first.id }]);
+    if (newerClaim?.outcome === "claimed") {
+      expect(await tasks.findById(newerClaim.task.id)).toEqual(newerClaim.task);
+      expect(await tasks.isCurrentGeneration(newerClaim.task)).toBe(true);
+    }
+
+    await dispatcher.dispatch([specification], { freshPlanning: true });
+    expect(await tasks.findById(first.id)).toMatchObject({ id: first.id, generation: superseded ? 3 : 1, status: "pending", claimToken: null });
+    await expect(new DrizzleUiTranslationPublicationStore(drizzle(client)).publishClaimedMachineResult({
+      task: oldClaim.task, value: "Late result", provenance: { provider: "fake", model: "fake", origin: "machine" },
+    })).resolves.toBe(false);
+  });
+
   it("serializes concurrent different identities through one durable current generation", async () => {
     const firstClient = new Client({ connectionString: databaseUrl });
     const secondClient = new Client({ connectionString: databaseUrl });
@@ -75,8 +110,8 @@ describe("translation task generation isolation", () => {
       const firstStore = new DrizzleTranslationTaskStore(drizzle(firstClient));
       const secondStore = new DrizzleTranslationTaskStore(drizzle(secondClient));
       const [first, second] = await Promise.all([
-        firstStore.upsertPending(await job("concurrent-policy-a", "generationConcurrent")),
-        secondStore.upsertPending(await job("concurrent-policy-b", "generationConcurrent")),
+        firstStore.upsertPending(await job("concurrent-policy-a", "generationConcurrent"), { freshPlanning: true }),
+        secondStore.upsertPending(await job("concurrent-policy-b", "generationConcurrent"), { freshPlanning: true }),
       ]);
 
       expect(new Set([first.generation, second.generation])).toEqual(new Set([1, 2]));
@@ -100,11 +135,11 @@ describe("translation task generation isolation", () => {
     const publications = new DrizzleUiTranslationPublicationStore(drizzle(client));
     const olderSpecification = await job("delayed-policy-v1", "generationDelayed");
     const newerSpecification = await job("delayed-policy-v2", "generationDelayed");
-    const older = await tasks.upsertPending(olderSpecification);
+    const older = await tasks.upsertPending(olderSpecification, { freshPlanning: true });
     const oldClaim = await tasks.claim(older.id, 60_000);
     if (oldClaim.outcome !== "claimed") throw new Error("older claim failed");
 
-    const newer = await tasks.upsertPending(newerSpecification);
+    const newer = await tasks.upsertPending(newerSpecification, { freshPlanning: true });
     const bundles = new DrizzleUiTranslationBundleStore(drizzle(client));
     const existingBundle = await compileNamespaceBundle("fr", "common", { heading: "Valeur actuelle" });
     await bundles.put(existingBundle);
@@ -137,11 +172,11 @@ describe("translation task generation isolation", () => {
     const firstSpecification = await job("aba-policy-a", "generationReactivation");
     const secondSpecification = await job("aba-policy-b", "generationReactivation");
 
-    const firstPending = await tasks.upsertPending(firstSpecification);
+    const firstPending = await tasks.upsertPending(firstSpecification, { freshPlanning: true });
     const firstClaim = await tasks.claim(firstPending.id, 60_000);
     if (firstClaim.outcome !== "claimed") throw new Error("first A claim failed");
 
-    const secondPending = await tasks.upsertPending(secondSpecification);
+    const secondPending = await tasks.upsertPending(secondSpecification, { freshPlanning: true });
     expect(secondPending.generation).toBe(firstClaim.task.generation + 1);
     await expect(tasks.isCurrentGeneration(firstClaim.task)).resolves.toBe(false);
     await expect(tasks.isCurrentGeneration(secondPending)).resolves.toBe(true);
@@ -149,7 +184,7 @@ describe("translation task generation isolation", () => {
     await expect(tasks.markStale(firstPending.id, firstClaim.task.claimToken)).resolves.toBe(true);
     await expect(tasks.claim(firstPending.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
 
-    const reactivated = await tasks.upsertPending(firstSpecification);
+    const reactivated = await tasks.upsertPending(firstSpecification, { freshPlanning: true });
 
     expect(reactivated).toMatchObject({
       id: firstPending.id,
@@ -184,7 +219,7 @@ describe("translation task generation isolation", () => {
     const olderSpecification = await job("ui-policy-v1");
     const newerSpecification = await job("ui-policy-v2");
 
-    const olderPending = await tasks.upsertPending(olderSpecification);
+    const olderPending = await tasks.upsertPending(olderSpecification, { freshPlanning: true });
     const olderClaim = await tasks.claim(olderPending.id, 60_000);
     if (olderClaim.outcome !== "claimed") throw new Error("older claim failed");
     await expect(publications.publishClaimedMachineResult({
@@ -193,7 +228,12 @@ describe("translation task generation isolation", () => {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     })).resolves.toBe(true);
 
-    const newerPending = await tasks.upsertPending(newerSpecification);
+    const newerPending = await tasks.upsertPending(newerSpecification, { freshPlanning: true });
+    await expect(tasks.upsertPending(olderSpecification, { freshPlanning: true })).resolves.toMatchObject({
+      id: olderPending.id,
+      status: "completed",
+      generation: olderPending.generation,
+    });
     await expect(tasks.upsertPending(olderSpecification)).resolves.toMatchObject({
       id: olderPending.id,
       status: "completed",

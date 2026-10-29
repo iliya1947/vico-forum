@@ -51,11 +51,15 @@ async function main(): Promise<void> {
   await client.connect();
   try {
     const store = new DrizzleUiTranslationBundleStore(drizzle(client));
+    // Same explicit policy input as generation/runtime; absent means manual-only.
+    const policyArgument = process.argv.slice(2).find((argument) => argument.startsWith("--generation-policy="));
+    const generationPolicyVersion = policyArgument?.slice("--generation-policy=".length) ?? null;
+    if (generationPolicyVersion !== null && !generationPolicyVersion.trim()) throw new Error("generation policy must not be blank");
     const identities = await store.listPersistedBundleIdentities();
     const outcomes = { current: 0, deleted: 0, absent: 0 };
 
     for (const identity of identities) {
-      const outcome = await store.reconcilePersistedBundle(identity.locale, identity.namespace);
+      const outcome = await store.reconcilePersistedBundle(identity.locale, identity.namespace, generationPolicyVersion);
       outcomes[outcome] += 1;
     }
 

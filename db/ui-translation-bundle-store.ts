@@ -1,10 +1,12 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
+  CompiledBundleValidationError,
   verifyCompiledNamespaceBundle,
   type CompiledNamespaceBundle,
   type TranslationBundleStore,
 } from "../app/localization/bundles";
+import { TranslationValidationError } from "../app/localization/translation-validation";
 import { parseLocaleCandidate } from "../app/localization/locale";
 import { uiTranslationBundles } from "./schema";
 
@@ -21,7 +23,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
     private readonly afterReconciliationLock?: (identity: PersistedBundleIdentity) => void | Promise<void>,
   ) {}
 
-  async read(locale: string, namespace: string): Promise<CompiledNamespaceBundle | undefined> {
+  async read(locale: string, namespace: string, generationPolicyVersion: string | null = null): Promise<CompiledNamespaceBundle | undefined> {
     const persistentLocale = persistentBundleLocale(locale);
     if (!namespace.trim()) throw new Error("persistent bundle namespace must not be blank");
 
@@ -44,12 +46,12 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
     const row = rows[0];
     if (!row) return undefined;
 
-    return verifyPersistedCompiledBundle(row);
+    return verifyPersistedCompiledBundle(row, generationPolicyVersion);
   }
 
-  async put(bundle: CompiledNamespaceBundle): Promise<void> {
+  async put(bundle: CompiledNamespaceBundle, generationPolicyVersion: string | null = null): Promise<void> {
     const persistentLocale = persistentBundleLocale(bundle.locale);
-    const verified = await verifyCompiledNamespaceBundle(persistentLocale, bundle.namespace, bundle.resources);
+    const verified = await verifyCompiledNamespaceBundle(persistentLocale, bundle.namespace, bundle.resources, undefined, generationPolicyVersion);
     if (verified.bundleVersion !== bundle.bundleVersion) {
       throw new Error(`compiled bundle version mismatch: ${bundle.locale}:${bundle.namespace}`);
     }
@@ -85,6 +87,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
   async reconcilePersistedBundle(
     locale: string,
     namespace: string,
+    generationPolicyVersion: string | null = null,
   ): Promise<PersistedBundleReconciliationOutcome> {
     if (!locale.trim()) throw new Error("persisted bundle reconciliation locale must not be blank");
     if (!namespace.trim()) throw new Error("persisted bundle reconciliation namespace must not be blank");
@@ -118,7 +121,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
           namespace: row.namespace,
           bundleVersion: row.bundle_version,
           resources: row.resources,
-        });
+        }, generationPolicyVersion);
         return "current";
       } catch (error) {
         if (!(error instanceof PersistentBundleIntegrityError)) throw error;
@@ -150,24 +153,25 @@ export async function verifyPersistedCompiledBundle(row: {
   namespace: string;
   bundleVersion: string;
   resources: unknown;
-}): Promise<CompiledNamespaceBundle> {
+}, generationPolicyVersion: string | null = null): Promise<CompiledNamespaceBundle> {
   try {
     if (!row.resources || typeof row.resources !== "object" || Array.isArray(row.resources)) {
-      throw new Error("compiled bundle resources must be an object");
+      throw new CompiledBundleValidationError("compiled bundle resources must be an object");
     }
     const resources: Record<string, string> = {};
     for (const [key, value] of Object.entries(row.resources)) {
       if (typeof value !== "string") {
-        throw new Error(`compiled bundle contains unsupported structured payload: ${row.namespace}:${key}`);
+        throw new CompiledBundleValidationError(`compiled bundle contains unsupported structured payload: ${row.namespace}:${key}`);
       }
       resources[key] = value;
     }
-    const verified = await verifyCompiledNamespaceBundle(row.locale, row.namespace, resources);
+    const verified = await verifyCompiledNamespaceBundle(row.locale, row.namespace, resources, undefined, generationPolicyVersion);
     if (verified.bundleVersion !== row.bundleVersion) {
-      throw new Error(`compiled bundle version mismatch: ${row.locale}:${row.namespace}`);
+      throw new CompiledBundleValidationError(`compiled bundle version mismatch: ${row.locale}:${row.namespace}`);
     }
     return verified;
   } catch (error) {
+    if (!(error instanceof CompiledBundleValidationError) && !(error instanceof TranslationValidationError)) throw error;
     const detail = error instanceof Error ? `: ${error.message}` : "";
     throw new PersistentBundleIntegrityError(
       `persisted compiled bundle is not current or valid: ${row.locale}:${row.namespace}${detail}`,

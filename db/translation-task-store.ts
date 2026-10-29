@@ -31,6 +31,7 @@ import {
 } from "../app/localization/translation-task-reconciliation";
 import {
   DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+  UiTranslationFreshPlanningRequiredError,
   validateContentPostBodyTranslationTaskSpecification,
   validateContentTopicTitleTranslationTaskSpecification,
   validateUiTranslationJobSpecification,
@@ -431,7 +432,7 @@ export class DrizzleTranslationTaskStore implements
     return rows.length === 1;
   }
 
-  async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
+  async upsertPending(specification: UiTranslationJobSpecification, options?: { readonly freshPlanning: boolean }): Promise<TranslationTask> {
     validateUiTranslationJobSpecification(specification);
     await assertStableIdentity(specification);
     return this.database.transaction(async (transaction) => {
@@ -457,11 +458,15 @@ export class DrizzleTranslationTaskStore implements
         throw new TranslationTaskIntegrityError("translation generation head is missing or invalid");
       }
       const existingRows = await transaction.select().from(translationTasks)
-        .where(eq(translationTasks.taskIdentity, specification.taskIdentity)).limit(1);
+        .where(eq(translationTasks.taskIdentity, specification.taskIdentity)).for("update").limit(1);
       if (existingRows[0]) {
         const existing = await parseTaskRow(existingRows[0]);
         assertMatchesSpecification(existing, specification);
-        if (existing.status !== "stale") return existing;
+        // Only a new eligibility decision may reactivate a stale or superseded
+        // occurrence. A delayed dispatcher retry must retain its terminal state
+        // or old generation/claim, even after the consumer has marked it stale.
+        if (options?.freshPlanning !== true || existing.status === "completed" || existing.status === "failed"
+          || (existing.status !== "stale" && existing.generation === currentGeneration)) return existing;
 
         const databaseNow = sql`statement_timestamp()`;
         const generation =
@@ -481,7 +486,8 @@ export class DrizzleTranslationTaskStore implements
           completedAt: null,
           failedAt: null,
           updatedAt: databaseNow,
-        }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, "stale"))).returning();
+        }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, existing.status),
+          eq(translationTasks.generation, existing.generation))).returning();
 
         if (generation !== currentGeneration) {
           await transaction.update(translationTaskGenerationHeads).set({
@@ -491,6 +497,8 @@ export class DrizzleTranslationTaskStore implements
         }
         return parseTaskRow(requiredRow(reactivated[0]));
       }
+
+      if (options?.freshPlanning !== true) throw new UiTranslationFreshPlanningRequiredError();
 
       const generation = insertedHead.length === 1 ? currentGeneration : currentGeneration + 1;
       const rows = await transaction.insert(translationTasks).values({
