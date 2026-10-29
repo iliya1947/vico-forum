@@ -1,3 +1,9 @@
+## Current state — PR #247 complete / PR #250 independent review (2026-10-29)
+
+- PR #247 exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: coordinator PASS + Мишаня independent PASS, exact-head CI SUCCESS, no current-Stage or future-only findings. Review cycle complete. PR remains Draft metadata only; ready for owner merge after marking Ready.
+- PR #250 exact head `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772`: normalized-history correction complete, exact-head CI SUCCESS, coordinator whole-PR review PASS. Лёва assigned independent whole-PR review on this same head.
+- Scopes remain separate.
+
 ## Active parallel work — PR #247 review / PR #250 correction (2026-10-29)
 
 - PR #247 stable exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: final serializer correction complete; exact-head CI SUCCESS; coordinator whole-PR review PASS. Мишаня is assigned independent whole-PR review of Лёва work on the same head.
