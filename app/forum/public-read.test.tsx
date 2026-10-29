@@ -2035,6 +2035,108 @@ describe("Popular topics", () => {
 });
 
 describe("Forum search", () => {
+  function renderNavigableSearch(initialSearch: string) {
+    const loadedQueries: string[] = [];
+    const router = createMemoryRouter([{
+      id: "search",
+      path: "/en/search",
+      Component: SearchRoute,
+      loader: ({ request }) => {
+        loadedQueries.push(new URL(request.url).searchParams.get("q") ?? "");
+        return searchLoader({
+          request,
+          params: { locale: "en" },
+          context: context("en", "ltr"),
+        });
+      },
+    }], { initialEntries: ["/en/search" + initialSearch] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={null}>
+            <RouterProvider router={router} />
+          </HeaderAuthProvider>
+        </I18nextProvider>
+      </div>,
+    );
+
+    return {
+      router,
+      loadedQueries,
+      searchbox: () => screen.getByRole("searchbox", { name: "Search query" }),
+      submit: () => fireEvent.click(within(screen.getByRole("search")).getByRole("button")),
+      rawQuery: () => new URLSearchParams(router.state.location.search).get("q"),
+    };
+  }
+
+  it("resets a dirty input on normalized-equivalent GET and Back/Forward entries", async () => {
+    const search = renderNavigableSearch("?q=TypeScript");
+    const equivalentRaw = "  ＴｙｐｅＳｃｒｉｐｔ  ";
+
+    expect(await screen.findByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+    expect(search.rawQuery()).toBe("TypeScript");
+    expect(search.searchbox()).toHaveValue("TypeScript");
+
+    fireEvent.change(search.searchbox(), { target: { value: equivalentRaw } });
+    expect(search.searchbox()).toHaveValue(equivalentRaw);
+    search.submit();
+
+    await waitFor(() => expect(search.rawQuery()).toBe(equivalentRaw));
+    await waitFor(() => expect(search.searchbox()).toHaveValue("TypeScript"));
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "TypeScript" });
+    expect(screen.getByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+
+    fireEvent.change(search.searchbox(), { target: { value: "Unsaved unrelated query" } });
+    expect(search.searchbox()).toHaveValue("Unsaved unrelated query");
+    expect(screen.getByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+
+    await search.router.navigate(-1);
+    await waitFor(() => expect(search.rawQuery()).toBe("TypeScript"));
+    await waitFor(() => expect(search.searchbox()).toHaveValue("TypeScript"));
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "TypeScript" });
+    expect(screen.getByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+
+    fireEvent.change(search.searchbox(), { target: { value: "Another unsaved draft" } });
+    await search.router.navigate(1);
+    await waitFor(() => expect(search.rawQuery()).toBe(equivalentRaw));
+    await waitFor(() => expect(search.searchbox()).toHaveValue("TypeScript"));
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "TypeScript" });
+    expect(screen.getByRole("link", { name: /How do I type an API\?/u })).toBeInTheDocument();
+    expect(search.loadedQueries).toContain(equivalentRaw);
+  });
+
+  it("resets a dirty input for empty and whitespace-equivalent history entries", async () => {
+    const search = renderNavigableSearch("?q=");
+    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
+    expect(search.rawQuery()).toBe("");
+    expect(search.searchbox()).toHaveValue("");
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "", results: [] });
+
+    fireEvent.change(search.searchbox(), { target: { value: "   " } });
+    expect(search.searchbox()).toHaveValue("   ");
+    search.submit();
+    await waitFor(() => expect(search.rawQuery()).toBe("   "));
+    await waitFor(() => expect(search.searchbox()).toHaveValue(""));
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "", results: [] });
+
+    fireEvent.change(search.searchbox(), { target: { value: "Unsaved query" } });
+    expect(search.searchbox()).toHaveValue("Unsaved query");
+    expect(screen.queryByRole("link", { name: /How do I type an API\?/u })).not.toBeInTheDocument();
+
+    await search.router.navigate(-1);
+    await waitFor(() => expect(search.rawQuery()).toBe(""));
+    await waitFor(() => expect(search.searchbox()).toHaveValue(""));
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "", results: [] });
+
+    fireEvent.change(search.searchbox(), { target: { value: "Unsaved again" } });
+    await search.router.navigate(1);
+    await waitFor(() => expect(search.rawQuery()).toBe("   "));
+    await waitFor(() => expect(search.searchbox()).toHaveValue(""));
+    expect(search.router.state.loaderData.search).toMatchObject({ query: "", results: [] });
+    expect(search.loadedQueries).toContain("   ");
+  });
+
   it("keeps URL, results, and search field synchronized through GET navigation and history", async () => {
     const loadedQueries: string[] = [];
     const router = createMemoryRouter([{
