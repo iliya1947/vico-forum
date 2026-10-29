@@ -1,3 +1,10 @@
+## PR #247 — one confirmed standalone-CR LITERAL-TEXT-01 residual (2026-10-29)
+
+- Stable exact head remains `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`.
+- Мишаня independent whole-PR review found one current-Stage P2 residual: standalone CR in plain clipboard input bypasses line-anchored literal escaping because the serializer normalizes CRLF but splits only on LF, while public Markdown parsing recognizes standalone CR as a line ending.
+- Coordinator independently rechecked and confirmed the causal chain. No other current-Stage findings remain from that review.
+- PR #247 is not merge-ready. Лёва is assigned author verification of this single residual before any correction.
+
 ## PR #250 — CODE-SEARCH-01 implementation complete / independent review active (2026-10-29)
 
 - Stable exact head: `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`, base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`.
