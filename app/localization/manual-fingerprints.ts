@@ -395,7 +395,7 @@ export const reviewedCommonFingerprints = {
   editorTableCell: "88d106d65052a146a57a5b0975593289b1b88ac5ecec4027aca6016f297ef95c",
   editorAddTableRow: "35eb421430f321f7e168eb6b9edc6af75860d7ee7533594a293185df1144b07a",
   editorAddTableColumn: "511d9bb435d2cea23c6b192bb93b17e1135503ce7914e9bbc4cf19d0ee887c7f",
-  editorPasteTableWarning: "5781255587d342c0d7f7211ee8e6ca843b675be435db76fc0bf543e0706345f2",
+  editorPasteTableWarning: "29dfff17867346de3988d25e3403831d5ab16fea18d02c0d2f896987a27d9a5c",
   editorPastePlainFallback: "82f9c55834826b093f1ff900d3d2c6a7103a63233309c1487dc2b9ee2f741aac",
   editorLineNumbers: "16682230bd743fe66dae4b6d3f1e0433815cd8c56f24cd2a296bad1f95a2c6f3",
   editorAttachments: "7443165adb0ad38cc61b972c2a5774bf79d3e5e9f0ef2723d7d88c5ad7e02bb9",

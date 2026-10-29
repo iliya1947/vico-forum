@@ -15,6 +15,7 @@ import {
   clearInlineMarkdownFormatting,
   createEditorHistory,
   editableCodeRanges,
+  pastePlainTextIntoExistingCode,
   editVisualText,
   inlineCodeAffixes,
   insertVisualParagraph as splitVisualParagraph,
@@ -537,7 +538,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     function pasteSpreadsheet(range: EditorSelection, text: string) {
       const converted = spreadsheetToMarkdown(text);
       if (!converted) {
-        replaceSourceRange(range, clipboardPlainToMarkdown(text));
+        replaceSourceRange(range, clipboardPlainToMarkdown(text, { markdown: value, selection: range }));
         setPasteNotice("fallback");
         return;
       }
@@ -622,7 +623,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (format === "plain") {
           const selection = sourceSelection();
           if (!selection) { setPasteNotice("error"); return; }
-          replaceSourceRange(selection, clipboardPlainToMarkdown(text));
+          const codePaste = authoringMode === "advanced"
+            ? pastePlainTextIntoExistingCode(value, selection, text) : null;
+          if (codePaste && "blocked" in codePaste) { setPasteNotice("error"); return; }
+          if (codePaste) {
+            // One history step also covers a necessary widening of outer fences.
+            pendingSelectionRef.current = codePaste.selection;
+            commitSource(codePaste.markdown, selection, codePaste.selection);
+            setPasteNotice(null);
+          } else {
+            replaceSourceRange(selection, clipboardPlainToMarkdown(text, { markdown: value, selection }));
+          }
           return;
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
@@ -1106,6 +1117,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               onReplaceRange={replaceSourceRange}
               onTableDimension={extendTable}
               onPasteTable={pasteSpreadsheet}
+              onPastePlain={(range, plain) => replaceSourceRange(range,
+                clipboardPlainToMarkdown(plain, { markdown: value, selection: range }))}
               onPasteFallback={() => setPasteNotice("error")}
             />
           ) : null}

@@ -38,6 +38,132 @@ history entries, согласованность URL/результатов/input
 Выполнение CI и независимый whole-PR review фиксируются отдельно; external
 deployment и визуальная приёмка не заявляются.
 
+## LITERAL-TEXT-01 — plain serializer EOL и ordered markers (2026-10-29)
+
+В существующем PR #247 реализована ограниченная correction двух согласованных
+остаточных случаев общего plain-text clipboard serializer. CRLF, CR и LF
+получают единую LF view на входе до построчного escaping и contextual raw-tab
+classification; повторные проходы используют тот же input и line indices.
+Markdown/Vico marker после одиночного CR больше не обходит line-start guards.
+Ordered-list marker экранируется по завершающей пунктуации (`1\.` / `1\)`),
+сохраняя literal цифры и знак без дополнительного отображаемого backslash.
+
+Genuine contextual raw-tab code сохраняет literal punctuation/entities;
+нормализация относится только к входящему plain clipboard fragment. Existing
+source вне insertion, Native Advanced raw paste, dedicated existing-code
+operation и HTML/TSV conversion сохраняют прежние boundaries. Добавлены
+CR/LF/CRLF/mixed marker/code controls и mounted Simple paste → FormData →
+public renderer → Undo/Redo regressions, включая outer spoiler и существующий
+CRLF source вне вставки. Это implementation state; applicable CI и новый
+whole-PR review фиксируются отдельно после выполнения.
+
+## LITERAL-TEXT-01 — source-positioned literal code insertion (2026-10-29)
+
+В существующем PR #247 raw-substring helper заменён ограниченной моделью
+«найти действующую единицу кода → заменить logical content → применить
+bounded source edits». Токены существующего Markdown parser задают content,
+padding и container boundaries; renderer-compatible обход включает spoiler
+body и table header/body cells. Inline encoding сохраняет literal edge spaces
+и выбирает безопасные backtick delimiters. Block encoding сохраняет required
+indented/quote/list continuation prefixes и проверяет fenced hazards для
+CR/LF/CRLF. Exact source вне необходимых edits не пересериализуется;
+команда сохраняет одну Undo/Redo transaction и source caret mapping.
+
+Внутри table inline code применяется общий renderer/editor/semantic-consumer
+escaped-pipe codec: `\|` обозначает literal pipe по GFM, прочие punctuation и
+entities не декодируются. Общая table grammar не заменена. Непредставимые
+комбинации (например, odd literal backslash count перед pipe либо multiline
+cell code) отклоняются без изменения source, с generic clipboard warning;
+known-code failure не переходит в prose serializer. Перед применением edits
+проверяется фактическая renderer semantic structure и ожидаемое code value.
+Translation protection policy повышена до `cnt06-table-code-direction-v4`, поскольку
+изменилась общая table-code semantics; provider/recovery/schema не менялись.
+
+Добавлены source/value/container/history, mounted command → FormData →
+public renderer и translation protection regressions. Это implementation
+state; CI, engineering application checks и независимая проверка фиксируются
+отдельно после выполнения. Whole-PR acceptance и owner visual не заявлены.
+
+## LITERAL-TEXT-01 — Advanced code contexts and matching fences (2026-10-29)
+
+В существующем PR #247 после независимого review реализована bounded
+correction трёх подтверждённых current-Stage остаточных случаев команды
+Advanced «Вставка без форматирования»:
+
+- распознаётся действующий inline code, чтобы Markdown-sensitive clipboard
+  content сохранялся буквально без prose escaping; при необходимости
+  увеличивается длина inline backtick delimiters;
+- code внутри Vico spoiler распознаётся по локальному Markdown-документу
+  тела спойлера (как в публичном ForumMarkdown), а не по root AST;
+- если clipboard внутри существующего fenced code содержит standalone
+  closing-fence candidate той же marker/длины или длиннее, расширяются
+  исходные opening/closing delimiters, а сам clipboard text остаётся raw.
+  Это предотвращает досрочное закрытие блока и попадание последующего
+  content в Markdown вне исходного кода.
+
+Команда формирует единый history edit; обычная prose plain-команда,
+Simple/Advanced native paste, другие технические команды и сохранение
+существующего текста преднамеренно не изменялись. Добавлены pure
+source/renderer-semantics и mounted toolbar → FormData → ForumMarkdown →
+Undo/Redo regressions, включая shorter/opposite-fence controls.
+Это зафиксированное implementation state; успех новых exact-head tests,
+CI, independent whole-PR review и browser/owner acceptance заранее
+не утверждается.
+
+## LITERAL-TEXT-01 — follow-up for spoiler closer, tabbed code and Advanced plain command (2026-10-28)
+
+В существующем PR #247 реализовано ограниченное исправление ещё трёх
+подтверждённых current-Stage subcases plain-text insertion:
+буквальная строка закрытия `:::` теперь экранируется рядом с Vico spoiler
+opener и не закрывает внешний спойлер; raw-tab или four-space indented
+table-shaped Markdown больше не распознаётся как Vico table раньше CommonMark
+code boundary. Контекстный plain-paste serializer учитывает protected
+code fragments при определении raw code lines, не добавляя отображаемых
+`\\|` к исходному code text. Команда «Вставка без форматирования»
+в Advanced использует существующие editable-code ranges, сохраняя сырой
+текст внутри действующего fenced code и прежнее экранирование в prose.
+
+Добавлены focused converter и mounted editor regressions для spoiler
+body, tab-indented table-shaped literal code, Advanced clipboard command
+с `FormData`, публичным `ForumMarkdown` и Undo/Redo; исходные Vico
+spoiler/table/direction, реальные code blocks, HTML/TSV, намеренный
+Advanced Markdown и другие controls не менялись преднамеренно.
+Это состояние реализации; результаты новых тестов, CI, независимого
+whole-PR review и browser/owner acceptance здесь заранее не заявлены.
+
+## LITERAL-TEXT-01 — bounded Vico grammar plain-text correction (2026-10-28)
+
+В существующей implementation-ветке PR #247 после независимой whole-PR
+сверки исправлен остаточный дефект plain-text/Ctrl+Shift+V: Vico-specific
+спойлер (`:::spoiler`), table-shaped строки с `|` и завершающие
+`{:vico-dir=ltr|rtl}` больше не превращаются в структуру/атрибут при
+публикации буквального текста. Защита применяется только в общем
+clipboard/Simple literal serializer; реальный tab-indented code по-прежнему
+сохраняется raw, а intentional Advanced Markdown, HTML/TSV conversion,
+previous CommonMark literal escaping и исходные пользовательские символы
+не меняют семантику. Добавлены pure и mounted
+Ctrl+Shift+V → FormData → ForumMarkdown → Undo/Redo regressions,
+а также Advanced/code controls. Это implementation state до новых
+exact-head CI, independent review и visual acceptance; их результаты
+не объявлены заранее.
+
+## LITERAL-TEXT-01 — bounded correction после whole-PR review (2026-10-28)
+
+В Batch L2 на основе независимой проверки двух случаев уточнена буквальная
+семантика Simple без изменения intentional Advanced Markdown.
+Обычный Simple input после 1–3 ведущих пробелов и tab сохраняет editable
+paragraph: сериализатор защищает начальный пробел character reference и
+не превращает исходный prose в indented code. Plain-text paste в начале тела
+распознанного spoiler определяет code/prose по реальному renderer-compatible
+segment boundary, а не по whole-document CommonMark, считающему :::spoiler
+обычным текстом. Поэтому настоящий indented code внутри spoiler сохраняет
+raw tab, амперсанды и Markdown punctuation без видимых escape sequences;
+prose продолжает экранировать те же символы. Shared root/technical/table
+context, существующие Ctrl+Shift+V и Advanced source boundaries сохранены.
+Добавлены pure-parser и mounted Simple input/Ctrl+Shift+V → FormData →
+ForumMarkdown regressions, включая Undo/Redo и root controls. Это
+реализация correction; итоговые CI и независимая проверка фиксируются
+отдельно после фактического выполнения.
 ## L8 — Durable localization / translation corrections (2026-10-28)
 
 В implementation-ветке реализованы пять согласованных current-Stage findings:
@@ -142,6 +268,117 @@ Focused helper/component и локальный Chromium проверяют sourc
 semantics, selection и Undo/Redo; прежняя matrix до глубины wrappers 4 проходит
 14 597 выделений без нарушений. Это bounded correction; whole-PR acceptance
 требует нового review стабильного head, не следует из успешной локальной matrix.
+
+## LOC-06 — отсутствие текста при генерации перевода post body (2026-10-27)
+
+Batch L2 шаг 5/5: в `ContentPostBodyTranslationPlanner.planAndDispatch`
+`protectMarkdownForTranslation` выполняется после чтения authoritative
+revision, но **до** source-locale resolver. Если segments пусты
+(attachment-only / blank / whitespace-only / fenced-code-only post),
+действует существующий bounded `original:no-translatable-content`
+вместо `InvalidContentSourceLocaleInputError` из normalization и
+HTTP 500. Это относится одинаково к automatic и explicit post-body
+generation; текущие permission, disabled-runtime, target-locale и
+immutable revision проверки сохранены. Для обычного текста source
+resolution, provider capability, task upsert и enqueue выполняются
+как прежде.
+
+Focused regressions проходят через actual topic action →
+DefaultContentGenerationActionCapability → post-body planner,
+authoritative revision store и настоящий locale resolver: оба
+generation intents с blank-body, whitespace и fenced-only cases
+возвращают no-op и не вызывают resolver/upsert/enqueue, а prose cases
+queued. Planner-unit regressions также проверяют, что caller-supplied
+текст не подменяет authoritative empty revision. Новых schema,
+dependency, runtime-policy или external-provider изменений нет.
+Exact-head CI и независимый whole-PR review Batch L2 фиксируются
+после их фактического выполнения.
+
+## LOC-03 — controlled i18next nesting с options (2026-10-27)
+
+Batch L2 шаг 4/5 расширяет текущий UI translation validator для
+i18next nesting: `$t(key)` и default i18next options form
+`$t(key, {"lng":"en"})` проверяются как защищённые полные токены,
+включая option payload. Добавленные, удалённые или изменённые
+parameterized nested lookups не могут обойти provider/local/persistent
+validation и затем изменить runtime text через i18next. При
+распознавании поддерживаются quoted values с parentheses и
+интерполируемые `{{variable}}` в JSON options; malformed и
+неподдерживаемый синтаксис отвергается. После whole-PR review
+вложенная повторяющаяся regex заменена линейным сканированием
+кавычек и скобок, исключающим экспоненциальную обработку короткого
+ошибочного input; контролируемый полный nesting-token и options
+сохранены.
+
+Изменение локализовано в общем `controlledTokens` boundary;
+published raw UI results, source priority, compiled bundle validation
+и runtime используют существующие механизмы. Regression проверяет
+отказ в результате provider publication, compiled/verified bundle
+и фактическую интерпретацию опасного nesting i18next. Новых
+schema/migration/dependency, provider и deployment изменений нет.
+Реализация Batch L2 завершена; новый whole-PR review проводится только
+после bounded correction и повторного exact-head CI.
+
+## LITERAL-TEXT-01 — буквальный текст в Simple (2026-10-27)
+
+В Batch L2 шаге 3/5 уточнено общее экранирование literal prose для
+визуального ввода и plain-text clipboard path. Setext-маркеры из дефисов и знаков равенства в начале
+строки больше не преобразуются в headings/thematic breaks,
+тильды экранируются от GFM strikethrough, а буквальные ampersands
+сериализуются через `&amp;`, чтобы `&copy;` и другие character references
+не меняли видимый текст. Существующие обычные Markdown-линии,
+обработчики HTML rich paste и intentionally formatted Markdown source
+не заменяются универсальным escaping при просмотре или переключении
+режимов.
+
+Служебный `&#32;` / `&#9;` для начала visual leaf по-прежнему создаётся
+отдельно от экранирования пользовательских символов. Plain-text paste
+также защищает 4+ начальных пробела на каждой строке
+одним structural entity до escaping, чтобы не превращать пользовательский
+prose в indented code с видимыми `&amp;` и обратными слэшами.
+После bounded correction forced plain Ctrl+Shift+V различает raw-tab
+indented-code и prose в действительном Markdown context (включая текст до
+курсора и structural prefix). Только настоящий code сохраняет raw source;
+в prose escape сохраняет буквальные `&copy;`, тильды и прочую пунктуацию.
+Общий контекстный path применяется также к plain-text fallback таблиц и
+явной plain-text вставке. Для 4+ начальных пробелов structural entity
+сохраняется.
+Обычное TSV-преобразование и предыдущее поведение native typing на этом
+этапе не менялись. После следующей bounded correction Simple native input с
+двумя ведущими tabs или четырьмя пробелами и tab учитывает уже созданный
+structural prefix `&#9;` / `&#32;` при решении, является ли остаток indented code.
+Поэтому `&copy;` и `~~literal~~` в обычном введённом тексте экранируются,
+не меняя намеренный Markdown/code в Advanced или clipboard paste semantics.
+Добавлены parser и mounted native-input → FormData → public renderer regressions
+на оба mixed-indentation случая с проверками intentional code в Advanced.
+Дополнительно добавлены parser и mounted Ctrl+Shift+V → published ForumMarkdown regressions
+для raw tab, `&copy;`, `~~literal~~` и existing whitespace/Setext controls. Markdown toolbar actions, Advanced source
+editing, DB и authz contracts не менялись. Applicable exact-head CI
+и независимый whole-PR review фиксируются по факту отдельно.
+
+## EDITOR-10 — буквальные подписи в Markdown-упоминаниях (2026-10-27)
+
+В Batch L2 шаге 2/5 после влитого EDITOR-04 уточнена сериализация подписи
+ссылки, создаваемой autocomplete упоминания. User display name является
+авторитетным буквальным текстом. После второй независимой whole-PR проверки
+ручной неполный список Markdown-экранирования заменён context-aware
+literal-link-label serialization: ASCII punctuation кодируется numeric
+character references до Markdown parsing. После bounded correction C0/DEL
+символы, которые CommonMark numeric decoder заменяет на U+FFFD,
+передаются буквально; только представимые ASCII whitespace controls
+кодируются numeric references. Это сохраняет допустимые имена без потери
+authoritative code points.
+Последовательности вроде `&copy;`, `~~name~~`, `<https://example.test>`,
+nested bracket links и backticks остаются буквальным отображаемым именем,
+не создавая entity replacement, autolink или GFM formatting.
+Server-supplied member ID и profile destination остаются прежними.
+
+Parser/published Markdown и mounted Simple/Advanced autocomplete regressions
+проверяют единый profile link с одним literal text child, отсутствие
+дополнительных autolink/formatting nodes и immutable recipient ID.
+Ранее работавший обычный display name остаётся control. Действующий
+Markdown body / notifications / DB / localization contracts не изменены.
+Exact-head CI и независимая whole-PR проверка фиксируются отдельно по факту.
 
 ## L6 — attachment object journal и ZIP integrity (2026-10-27)
 

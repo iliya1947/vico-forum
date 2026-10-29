@@ -72,6 +72,8 @@ function splitCells(line: Line): TableCell[] | null {
 
 function tableAt(lines: Line[], index: number): { table: MarkdownTable; next: number } | null {
   if (index + 1 >= lines.length) return null;
+  // Markdown treats tab/four-space indentation as code, not a Vico table.
+  if (/^(?: {4}| {0,3}\t)/u.test(lines[index]!.text)) return null;
   const header = splitCells(lines[index]!);
   const separator = splitCells(lines[index + 1]!);
   if (!header || !separator || header.length !== separator.length) return null;

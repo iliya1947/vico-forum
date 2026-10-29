@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parseForumMarkdown } from "../markdown-syntax";
+import { segmentTechnicalMarkdown } from "./technical-markdown";
 import {
   insertVisualParagraph, joinVisualParagraph,
   applyTextareaEdit, clearInlineMarkdownFormatting, createEditorHistory, editableCodeRanges,
+  pastePlainTextIntoExistingCode,
   editableVisualTextRanges, editVisualText,
   recordEditorEdit, redoEditorEdit, setParagraphDirection, sourceOffsetToTextareaOffset, textareaMarkdown,
   removeAttachmentImages, replaceAttachmentImageId,
@@ -459,5 +461,80 @@ describe("Editor 2.0 lossless document foundation", () => {
     const divergent = recordEditorEdit(undone, "different", { start: 0, end: 0 }, { start: 0, end: 0 });
     expect(divergent.future).toHaveLength(0);
     expect(redoEditorEdit(divergent)).toBe(divergent);
+  });
+});
+
+
+describe("LITERAL-TEXT-01 Advanced plain-command code context", () => {
+  const tick = String.fromCharCode(96);
+  const payload = "~~literal~~ &copy; | value |";
+
+  it("uses literal clipboard content in inline code without prose escaping", () => {
+    const original = "Before " + tick + "Alpha" + tick + " After";
+    const start = original.indexOf("Alpha");
+    const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, payload)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
+    expect(result.markdown).toBe(original.replace("Alpha", payload));
+    const paragraph = parseForumMarkdown(result.markdown).children[0]!;
+    expect(paragraph.type).toBe("paragraph");
+    expect(paragraph).toMatchObject({ children: expect.arrayContaining([
+      expect.objectContaining({ type: "inlineCode", value: payload }),
+    ]) });
+  });
+
+  it("can widen inline code ticks without exposing pasted backticks as formatting", () => {
+    const original = tick + "Alpha" + tick;
+    const start = original.indexOf("Alpha");
+    const raw = tick + "code" + tick;
+    const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, raw)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
+    expect(result.markdown).toBe(tick.repeat(2) + " " + raw + " " + tick.repeat(2));
+    expect(parseForumMarkdown(result.markdown).children[0]).toMatchObject({
+      children: [expect.objectContaining({ type: "inlineCode", value: raw })],
+    });
+  });
+
+  it("uses the spoiler-local Markdown document for indented code", () => {
+    const original = ":::spoiler Outer\n\tAlpha\n:::";
+    const start = original.indexOf("Alpha");
+    const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, payload)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
+    expect(result.markdown).toBe(original.replace("Alpha", payload));
+    const spoiler = segmentTechnicalMarkdown(result.markdown).find((part) => part.kind === "spoiler");
+    expect(spoiler?.kind).toBe("spoiler");
+    if (spoiler?.kind !== "spoiler") throw new Error("missing original spoiler");
+    expect(parseForumMarkdown(spoiler.body).children[0]).toMatchObject({
+      type: "code", value: payload,
+    });
+  });
+
+  it.each([
+    [tick, 3, 3, true],
+    [tick, 3, 5, true],
+    ["~", 3, 3, true],
+    [tick, 4, 3, false],
+    [tick, 3, 2, false],
+  ] as const)("preserves outer code fence for %j width %i vs clipboard width %i", (marker, outer, inner, hazard) => {
+    const opening = marker.repeat(outer);
+    const opposite = marker === tick ? "~" : tick;
+    const candidate = marker === tick && inner === 2 ? opposite.repeat(3) : marker.repeat(inner);
+    const original = opening + "text\nAlpha\nOutside\n" + opening;
+    const payload = "Before\n" + candidate + "\n**literal**\nAfter";
+    const start = original.indexOf("Alpha");
+    const result = pastePlainTextIntoExistingCode(original, { start, end: start + 5 }, payload)!;
+    if ("blocked" in result) throw new Error("Unexpected blocked code paste");
+    const expectedWidth = hazard ? Math.max(inner + 1, outer) : outer;
+    const fence = marker.repeat(expectedWidth);
+    expect(result.markdown).toBe(fence + "text\n" + payload + "\nOutside\n" + fence);
+    expect(parseForumMarkdown(result.markdown).children).toMatchObject([
+      expect.objectContaining({ type: "code", value: expect.stringContaining("**literal**\nAfter\nOutside") }),
+    ]);
+    const history = recordEditorEdit(createEditorHistory(original), result.markdown, { start, end: start + 5 }, result.selection);
+    expect(undoEditorEdit(history).current.markdown).toBe(original);
+    expect(redoEditorEdit(undoEditorEdit(history)).current.markdown).toBe(result.markdown);
+  });
+
+  it("does not intercept ordinary prose", () => {
+    expect(pastePlainTextIntoExistingCode("Alpha", { start: 0, end: 5 }, payload)).toBeNull();
   });
 });

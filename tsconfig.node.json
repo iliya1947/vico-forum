@@ -30,6 +30,7 @@
     "app/forum/profile.ts",
     "app/forum/mentions.ts",
     "app/forum/semantic-markdown.ts",
+    "app/forum/table-code.ts",
     "app/forum/technical-markdown.ts",
     "app/forum/under-development.ts",
     "app/forum/request-context.ts",

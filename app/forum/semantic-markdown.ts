@@ -1,5 +1,6 @@
 import { defaultHandlers, toMarkdown, type Handle } from "mdast-util-to-markdown";
 import { forumMarkdownToOptions, parseForumMarkdown } from "../markdown-syntax";
+import { parseTableCellMarkdown } from "./table-code";
 import { segmentTechnicalMarkdown } from "./technical-markdown";
 
 export interface ForumSemanticNode {
@@ -24,7 +25,7 @@ export function parseRenderedForumMarkdown(source: string): ForumSemanticNode {
       children.push({ type: "vicoTable", align: segment.align, children:
         [segment.headers, ...segment.rows].map((row) => ({
           type: "vicoTableRow", children: row.map((cell) => ({
-            type: "vicoTableCell", children: parseForumMarkdown(cell.text).children as ForumSemanticNode[],
+            type: "vicoTableCell", children: parseTableCellMarkdown(cell.text).children as ForumSemanticNode[],
           })),
         })),
       });

@@ -470,7 +470,7 @@ export const canonicalEnglishCatalog = {
     editorTableCell: message("editorTableCell", "Table cell", "Accessible label for editing an ordinary Markdown table cell."),
     editorAddTableRow: message("editorAddTableRow", "Add row", "Insert a row in an ordinary Markdown table."),
     editorAddTableColumn: message("editorAddTableColumn", "Add column", "Insert a column in an ordinary Markdown table."),
-    editorPasteTableWarning: message("editorPasteTableWarning", "This table could not be pasted without losing data. Paste as plain text or edit the Markdown.", "Warning when clipboard tabular data cannot be converted losslessly."),
+    editorPasteTableWarning: message("editorPasteTableWarning", "This content could not be pasted without losing data. Edit the Markdown and try again.", "Warning when clipboard content cannot be inserted losslessly."),
     editorPastePlainFallback: message("editorPastePlainFallback", "This table could not be converted safely. Its contents were pasted as plain text.", "Confirmation that declined spreadsheet conversion inserted the original text without formatting."),
     editorLineNumbers: message("editorLineNumbers", "Line numbers", "Toggle visible code block line numbers without changing the source."),
     editorAttachments: message("editorAttachments", "Attachments", "Accessible label for the editor attachment area."),
