@@ -128,6 +128,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       return () => query.removeEventListener("change", update);
     }, []);
     const [pasteNotice, setPasteNotice] = useState<"error" | "fallback" | null>(null);
+    const disabledRef = useRef(disabled);
+    useLayoutEffect(() => { disabledRef.current = disabled; }, [disabled]);
     const [findOpen, setFindOpen] = useState(false);
     const [findText, setFindText] = useState("");
     const [replaceText, setReplaceText] = useState("");
@@ -617,9 +619,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     async function pasteFromClipboard(format: "plain" | "code") {
+      if (disabledRef.current) return;
       try {
         if (!navigator.clipboard?.readText) throw new Error("Clipboard unsupported");
         const text = await navigator.clipboard.readText();
+        // Clipboard completion retains the initiating render's props.
+        if (disabledRef.current) return;
         if (format === "plain") {
           const selection = sourceSelection();
           if (!selection) { setPasteNotice("error"); return; }
@@ -638,7 +643,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         }
         const fence = String.fromCharCode(96).repeat(Math.max(3, longestBacktickRun(text) + 1));
         insertTechnicalBlock(fence + normalizedCodeLanguage(codeLanguage) + "\n" + text + "\n" + fence);
-      } catch { setPasteNotice("error"); }
+      } catch { if (!disabledRef.current) setPasteNotice("error"); }
     }
 
     function clearInlineFormatting() {
@@ -654,7 +659,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function findNext() {
-      if (!findText) return;
+      if (disabled || !findText) return;
       const textarea = textareaRef.current;
       const current = textareaOffsetToSourceOffset(value, textarea?.selectionEnd ?? 0);
       let at = value.indexOf(findText, current);
@@ -677,7 +682,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     function replaceAllMatches() {
-      if (!findText || !value.includes(findText)) return;
+      if (disabled || !findText || !value.includes(findText)) return;
       replaceSourceRange({ start: 0, end: value.length }, value.split(findText).join(replaceText));
     }
 
@@ -1102,10 +1107,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         {authoringMode === "advanced" && findOpen ? (
           <div className="markdown-editor-find" role="group" aria-label={t("editorFindReplace")}>
-            <input aria-label={t("editorFind")} value={findText} onChange={(event) => setFindText(event.target.value)} />
-            <input aria-label={t("editorReplacement")} value={replaceText} onChange={(event) => setReplaceText(event.target.value)} />
-            <button type="button" onClick={findNext}>{t("editorFindNext")}</button>
-            <button type="button" onClick={replaceAllMatches}>{t("editorReplaceAll")}</button>
+            <input disabled={disabled} aria-label={t("editorFind")} value={findText} onChange={(event) => setFindText(event.target.value)} />
+            <input disabled={disabled} aria-label={t("editorReplacement")} value={replaceText} onChange={(event) => setReplaceText(event.target.value)} />
+            <button type="button" disabled={disabled} onClick={findNext}>{t("editorFindNext")}</button>
+            <button type="button" disabled={disabled} onClick={replaceAllMatches}>{t("editorReplaceAll")}</button>
             <button type="button" onClick={() => setFindOpen(false)}>{t("profileCancel")}</button>
           </div>
         ) : null}

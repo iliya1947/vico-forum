@@ -2,6 +2,24 @@
 
 Последнее обновление: 2026-10-29
 
+## I18N-UGC-META-01 — original topic-title metadata in Search/Unanswered (2026-10-29)
+
+В отдельной implementation-ветке устранена потеря source-locale metadata текущей ревизии
+заголовка темы между repository и Search/Unanswered presentation. `readUnanswered()` и
+`search()` теперь возвращают `sourceLocale` из current topic-title revision; loaders
+сохраняют его и получают `titleDirection` из request-scoped LocaleRegistry.
+Заголовки на обеих страницах имеют собственные `lang/dir` независимо от UI locale;
+для `und` атрибут `lang` не выдумывается, направление — `auto`, для известного
+source locale без registry direction сохраняется известный `lang` и `dir="auto"`.
+
+Добавлены focused repository/PostgreSQL и mounted route/DOM регрессии: противоположные
+направления source/UI, неизвестные метаданные, смена актуальной ревизии и совпадение
+по тексту сообщения. UI Preview fixtures для этих двух карточек синхронизированы с
+изменённым presentation contract. Не меняются схема БД, SQL ranking/query semantics,
+Unanswered filtering, public Help location projection, другие UGC списки,
+translation generation/provider/runtime или архитектура. CI, browser acceptance,
+независимый review и merge на момент этой записи не объявляются завершёнными.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -20,23 +38,24 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## I18N-UGC-META-01 — original topic-title metadata in Search/Unanswered (2026-10-29)
+## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
 
-В отдельной implementation-ветке устранена потеря source-locale metadata текущей ревизии
-заголовка темы между repository и Search/Unanswered presentation. `readUnanswered()` и
-`search()` теперь возвращают `sourceLocale` из current topic-title revision; loaders
-сохраняют его и получают `titleDirection` из request-scoped LocaleRegistry.
-Заголовки на обеих страницах имеют собственные `lang/dir` независимо от UI locale;
-для `und` атрибут `lang` не выдумывается, направление — `auto`, для известного
-source locale без registry direction сохраняется известный `lang` и `dir="auto"`.
+В отдельной implementation-ветке отключённый редактор блокирует inputs и команды
+сохранённой Advanced Find/Replace панели. Find Next/Replace all проверяют disabled
+до изменения selection, view, source или history; состояние панели сохраняется
+для повторного включения. Ранее исправленный EDITOR-05 active-write и
+Preview/Split pending-selection path не меняются.
 
-Добавлены focused repository/PostgreSQL и mounted route/DOM регрессии: противоположные
-направления source/UI, неизвестные метаданные, смена актуальной ревизии и совпадение
-по тексту сообщения. UI Preview fixtures для этих двух карточек синхронизированы с
-изменённым presentation contract. Не меняются схема БД, SQL ranking/query semantics,
-Unanswered filtering, public Help location projection, другие UGC списки,
-translation generation/provider/runtime или архитектура. CI, browser acceptance,
-независимый review и merge на момент этой записи не объявляются завершёнными.
+Simple paste проверяет disabled до передачи plain/HTML/spreadsheet/forced-plain
+в mutation callbacks. Clipboard-команды проверяют актуальное committed disabled
+состояние перед запуском и после завершения readText; поздний success/rejection
+в отключённом редакторе не изменяет source/history/pending selection или notice.
+Обычные enabled paste, точный source и Undo/Redo сохраняют прежнюю семантику.
+Изменение не вводит общий read-only redesign или новые внешние зависимости.
+
+Добавлены focused mounted regressions для трёх причин, re-enable, соседних
+заблокированных команд и enabled history controls. Фактические проверки/CI и
+независимый whole-PR review фиксируются отдельно после выполнения.
 
 ## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
 
