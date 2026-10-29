@@ -1,5 +1,112 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — independent whole-PR review / REQUEST CHANGES / STOP (2026-10-29)
+
+Дата: 2026-10-29. Назначение: PR236 comment6484190656.
+Exact head: e1c8391d15e604dedfd525a2e8b1b1cfd26d1881.
+Base/current main: ebdb482e8bb37cf18d7085beb2926930139b00d6.
+
+### Verdict: REQUEST CHANGES
+
+Проверен весь Batch L2 scope EDITOR-10, LITERAL-TEXT-01, LOC-03, LOC-06, все 17 changed files относительно main (8 production, 8 test, PROJECT_STATE) и относящиеся UI/parser/validation/planning call chains. Это новый независимый whole-PR cycle, не только последний patch. Coordinator/reviewer findings этого head до завершения не использовались.
+
+Подтверждены **4 current-Stage P2 residual subcase одной family LITERAL-TEXT-01**. В расширенном Chromium run это 6 failed executions (один subcase имеет3 container variants). Прежние три correction cases проходят. В EDITOR-10/LOC-03/LOC-06 новых current-Stage defects нет; отдельных новых future-only findings не установлено.
+
+### 1. Plain command не находит inline code в Vico table cell
+
+Relevant app/forum/editor-document.ts:421–428: locate разбирает spoiler, prose, protected, но не part.kind=table.
+
+Initial Advanced source:
+```text
+| A | B |
+| --- | --- |
+| `Alpha` | Other |
+```
+Выделить только Alpha. Clipboard: ~~literal~~ &copy; | value |. More tools → Paste without formatting.
+Actual FormData cell source между backticks: \~\~literal\~\~ &amp;copy; \| value \|.
+Actual public table p code.textContent содержит эти escapes/entities вместо literal payload.
+
+Причина: helper возвращает null для table, команда fallback-ится в prose serializer. Public renderer реально разбирает каждую ячейку отдельно и поддерживает inline code. Это не будущая table-code capability: тот же UI/source/public renderer уже показывает code до вставки. Root inline code с тем же payload — passing control.
+
+### 2. Clipboard spaces по обоим краям inline code теряются
+
+Relevant app/forum/editor-document.ts:436–445, особенно fast return440 и padding442.
+
+Initial source: `Alpha` с одиночными backticks. Выделить Alpha и вставить payload " padded " (по одному ASCII space с обеих сторон).
+Actual source: ` padded `; actual public inline code.textContent: "padded". Expected literal code value: " padded ".
+
+Причина: direct insertion не учитывает существующее CommonMark inline-code normalization — обе крайние spaces удаляются parser-ом. Даже branch расширения ticks добавляет padding только для backticks, не для padded non-space content.
+Control с исходным ` Alpha ` оставляет дополнительный structural padding и сохраняет payload spaces. Уже существующий inlineCodeAffixes в том же module22–35 явно поддерживает этот normalization contract; это подтверждённая потеря допустимых текущих code characters, не новое требование будущей работы.
+
+### 3. Multiline plain command выходит из indented/quoted code и меняет невыделенный suffix
+
+Relevant app/forum/editor-document.ts:434,449,458: raw direct replacement не переносит required code/container prefix на следующие clipboard lines.
+
+Initial root source (TAB — настоящий U+0009):
+```text
+<TAB>Before
+<TAB>Alpha
+<TAB>After
+
+Outside
+```
+Выделить Alpha. Payload: First\n**Payload formatted**\nLast (настоящие LF).
+Actual source:
+```text
+<TAB>Before
+<TAB>First
+**Payload formatted**
+Last
+<TAB>After
+
+Outside
+```
+Public code теперь содержит только Before/First; Payload formatted становится strong вне code, а невыделенный After перестаёт быть частью исходного code и становится continuation paragraph.
+
+Тот же trigger подтверждён:
+- внутри indented code в Vico spoiler body;
+- внутри quoted fenced code, где следующие payload lines не получают `> `, закрывая code/quote context и также активируя formatting.
+
+Это 3 concrete executions одной causal boundary — потеря structural continuation prefix при raw multiline insertion. Single-line root/spoiler code, root fenced code с тем же multiline payload и варианты с уже supplied correct TAB/quote prefixes сохраняют code/After (controls). Зависимость от наличия пользовательских continuation prefixes прямо отделяет проблему от clipboard decoding, selection или formatting payload как такового.
+
+### 4. Matching fenced-code protection пропускает CR-only clipboard lines
+
+Relevant app/forum/editor-document.ts:453: body.split(/\r?\n/u) не разбивает standalone U+000D.
+
+Initial triple-backtick text fence со строками Before / Alpha / After, после closing fence — paragraph Outside. Выделить Alpha.
+Payload — три backticks, CR, **Payload formatted**, CR, три backticks.
+Actual hidden body/FormData содержит настоящие CR. Opening/closing delimiters остаются 3, вместо widening. Public ForumMarkdown создаёт2code blocks и strong Payload formatted между ними.
+
+С тем же payload при LF и CRLF helper расширяет оба внешних fences до 4, public остаётся одним code block без strong. Clipboard write/read в настоящем Chromium сохраняет CR в этом случае, поэтому это не только hypothetical raw string. Current Markdown/code path принимает CR (другие source-range helpers явно обрабатывают CR/LF), внешнего rollout не нужно. Это текущий matching-fence residual, не future-only.
+
+### Evidence и controls
+
+Все новые symptoms проверены через настоящий Chromium clipboard/UI command → actual MarkdownEditor source → FormData при локальном harness-submit → actual ForumMarkdown DOM. Сравнивались code.textContent, strong nodes и принадлежность невыделенного After к code. Undo/Redo assertions проходили для всех advanced-expanded/advanced-controls cases.
+
+Это component/public-render browser harness, **не повторная DB/HTTP публикация форума на новом head**. Server write implementation в этом PR не менялась; full native PostgreSQL/Workers evidence — exact-head CI ниже. Результаты full-application публикаций старого7c6bd4e8 не выдаются за новые E2E.
+
+Artifacts /workspace/work/pr247-review-e1c8391d/:
+- advanced-expanded.py/.json/.log:16 cases, в том числе 6 failure executions четырёх boundaries;
+- advanced-controls.py/.json/.log: LF/CRLF, fenced multiline и supplied indentation/quote controls;
+- fence-controls.py/.json/.log:5 matching/longer/shorter/opposite marker scenarios, exact one code block, Outside prose, no strong, UndoRedo asserted PASS;
+- custom-paste/nested-paste: root literal custom syntax, tabbed tables и closer preservation перепроверены;
+- browser-existing/browser-paste/browser-context/browser-mentions: прежние 25 asserted regression controls PASS;
+- probe/context-matrix/loc03/loc06: независимые pure/domain diagnostics.
+
+Всего 62 browser observations: 25 previous asserted controls, 5 asserted fence controls и 32 additional observations. Последние включают 6 подтверждённых failure executions; весь browser run НЕ PASS. Generic 96 ampersand/tilde payload checks и 28 native indentation paragraph controls имеют ограниченный scope и не используются как доказательство всех custom contexts.
+
+### Остальной scope и checks
+
+- EDITOR-10: full name serialization/recipient path перепроверен; 255 code-point AST controls без mismatches,12 browser name cases в Simple/Advanced PASS. Immutable profile destinations/recipients сохраняются.
+- LOC-03: scanner/controlled-token validation, provider publication/compiler/verifier/runtime call chains перепроверены. 9 injected variants rejected, 8 unchanged valid controls accepted, 3 malformed bounded-size inputs rejected быстро. Новых current defects нет.
+- LOC-06: authoritative revision/no-text guard и callers/permission/runtime/currentness boundaries перепроверены. 14 capability→real planner diagnostics PASS, включая 12 no-text no-op без detector/upsert/enqueue и 2 prose queued. Новых current defects нет.
+- Full local application: **1380 tests /102 files PASS**,157.01s.
+- Exact-head [CI #40785122902](https://github.com/iliya1947/vico-forum/actions/runs/40785122902) SUCCESS; completed logs checks123156264275/database123156263484 прочитаны: **1380 app /102 files, 326 PostgreSQL17 /30 files**; lint 0 errors/один прежний warning,typecheck,application/UI builds,metadata/schema/runtime probes/Workers smoke PASS. CI checkout test merge f9376f86 из e1c8391d +base ebdb482.
+- Native PG/build/Workers отдельно локально не повторялись. External/provider/production/owner visual не выполнялись.
+
+Implementation не менялась; repo clean после удаления dependency symlink. Chromium/own HTTP stopped. Разработчик разрешил публикацию командой «Публикуй»; результат передан в служебный PR для coordinator reconciliation. Review завершён во всём scope; STOP.
+
+
 ## PR #249 — bounded unpersisted LOC-05 correction complete / STOP (2026-10-29)
 
 Автор: Лёва — Codex-6.1 Sol. [Назначение #6483820011](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6483820011), после author verification6480789597.
