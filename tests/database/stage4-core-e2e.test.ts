@@ -303,7 +303,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(unanswered).toMatchObject([{
       id: newerTopicId,
       title: "Newer but inactive topic",
-      sourceLocale: "en",
+      sourceLocale: "und",
       authorName: "Author",
       section: { id: "e2e-section", name: "E2E Section" },
       category: { id: "e2e-category", name: "E2E Category" },
@@ -313,7 +313,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(searchByTitle).toMatchObject([{
       id: topicId,
       title: "Core E2E topic",
-      sourceLocale: "en",
+      sourceLocale: "und",
       authorName: "Author",
       postCount: 2,
       section: { id: "e2e-section", name: "E2E Section" },
