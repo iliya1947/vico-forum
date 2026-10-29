@@ -2,6 +2,22 @@
 
 Последнее обновление: 2026-10-29
 
+## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
+
+Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой
+структуры, admission/section/action matrix, общего Quick actions, significant-action/reason
+matrix и отдельных границ «Требуют внимания» и будущей super-admin UI. Согласованы необходимые
+ссылки и scope формулировки в product, authorization, UI/UX и roadmap документах.
+
+Этот пакет меняет только документацию. Глобальный shell, administrative History, новые
+object pages, закрытие тем и блокировки не реализованы; runtime catalog, код, schema,
+миграции и зависимости не меняются. Эффект блокировки и ещё не выбранные reason/reopen rules
+сохранены как явные условия перед соответствующими implementation пакетами. Координация
+admin-panel работы ведётся в PR #251 по прямому указанию разработчика, без дублирования в #236.
+Checks и независимый review этого документационного пакета фиксируются после их выполнения;
+runtime/browser/owner acceptance будущей админ-панели не заявляется.
+
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -20,20 +36,22 @@
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
+## Preview scenario correctness — confirmation and Appeals (2026-10-29)
 
-Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой
-структуры, admission/section/action matrix, общего Quick actions, significant-action/reason
-matrix и отдельных границ «Требуют внимания» и будущей super-admin UI. Согласованы необходимые
-ссылки и scope формулировки в product, authorization, UI/UX и roadmap документах.
+В отдельной implementation-ветке исправлены две локальные Preview/tooling причины.
+Реально matched topic route и fallback используют общую primary-topic fixture
+projection: dedicated best-answer confirmation открывает нерешённую тему с
+выбранным ответом и авторскими controls, сохраняя prompt query при смене locale.
+No-dismiss оставляет best answer и не помечает тему решённой. Другие topic states
+и переходы к другим темам сохраняют отдельные fixture boundaries.
+Preview-фильтр явно сопоставляет группу `appeals` с case type `appeal`, поэтому
+advertised appeal count сопровождается карточкой fixture. Needs-review/review-status,
+Mixed topic count и намеренно пустой attention scenario сохраняют прежнюю семантику.
 
-Этот пакет меняет только документацию. Глобальный shell, administrative History, новые
-object pages, закрытие тем и блокировки не реализованы; runtime catalog, код, schema,
-миграции и зависимости не меняются. Эффект блокировки и ещё не выбранные reason/reopen rules
-сохранены как явные условия перед соответствующими implementation пакетами. Координация
-admin-panel работы ведётся в PR #251 по прямому указанию разработчика, без дублирования в #236.
-Checks и независимый review этого документационного пакета фиксируются после их выполнения;
-runtime/browser/owner acceptance будущей админ-панели не заявляется.
+Production actions/permissions/Attention group и case identities не менялись.
+Добавлены integration regressions через настоящий `EmbeddedPreview`/router.
+Фактические checks/CI и независимый review фиксируются после выполнения;
+static Preview не заявляется production E2E или owner visual acceptance.
 
 ## Responsive containment — menu, revision history and manager header (2026-10-29)
 
