@@ -1,3 +1,10 @@
+## Merge-ready state — PR #247 and PR #250 (2026-10-29)
+
+- PR #247 exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: coordinator PASS, Мишаня independent PASS, exact-head CI SUCCESS, no current-Stage/future-only findings. Review cycle complete.
+- PR #250 exact head `750d6e9a5d9f1cd89a45afc40c864c93b0bf0772`: coordinator PASS, Лёва independent PASS, exact-head CI SUCCESS, no current-Stage/future-only blockers. Review cycle complete.
+- Both PRs remain Draft metadata only. After owner marks them Ready, both are merge-ready.
+- Service PR #236 is not merged.
+
 ## Current state — PR #247 complete / PR #250 independent review published (2026-10-29)
 
 - PR #247 exact head `d0574225f6b0fc8285e69268441b989927d7e1db`: coordinator PASS + Мишаня independent PASS, exact-head CI SUCCESS, no current-Stage or future-only findings. Review cycle complete. PR remains Draft metadata only; ready for owner merge after marking Ready.
