@@ -1,3 +1,10 @@
+## PR #247 — final bounded serializer correction assigned (2026-10-29)
+
+- Stable pre-correction head: `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`.
+- Two current-Stage `LITERAL-TEXT-01` serializer residuals are confirmed in the same `textAsMarkdown()` boundary: standalone-CR line handling and visible-backslash ordered-marker escaping for `1.` / `1)`.
+- Both are assigned to Лёва as one bounded correction in existing PR #247. No new branch/PR.
+- After implementation, PR #247 requires a new exact-head review cycle.
+
 ## PR #250 — one confirmed normalized-query CODE-SEARCH-01 residual (2026-10-29)
 
 - Stable exact head remains `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`.
