@@ -6964,18 +6964,30 @@ p {
     height: 2.15rem;
   }
 
+  /* Keep one account row: the attention label can wrap inside its own link,
+     while auth actions retain their intrinsic width and the avatar stays whole. */
+  .home-shell .site-account-actions .header-attention-link {
+    flex: 1 1 4rem;
+    min-inline-size: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .home-shell .site-account-actions .auth-controls {
+    flex: 0 1 auto;
     width: auto;
-    min-width: 0;
+    min-inline-size: min-content;
   }
 
   .home-shell .site-account-actions .auth-controls-main {
-    width: auto;
+    inline-size: 100%;
     flex-wrap: nowrap;
     gap: 0.3rem;
   }
 
   .home-shell .site-account-actions .auth-user {
+    flex: 1 1 0;
+    min-inline-size: 2.5rem;
     max-width: 6.9rem;
     min-height: 2.15rem;
     padding-inline: 0.24rem 0.45rem;
@@ -6983,6 +6995,7 @@ p {
 
   .home-shell .site-account-actions .auth-admin-link,
   .home-shell .site-account-actions .auth-action {
+    flex-shrink: 0;
     min-height: 2.15rem;
     padding-inline: 0.48rem;
     font-size: 0.68rem;
@@ -7894,6 +7907,21 @@ a.topic-tag:focus-visible {
 
 .topic-message-desktop-actions .topic-message-participation {
   margin-top: 0;
+}
+
+/* Raw revisions are source text, not Markdown-rendered code blocks. Bound
+   the history grid item and scroll only the pre without changing its bytes. */
+.topic-post-history {
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
+.topic-post-history pre {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-x: auto;
 }
 
 /* Owner-approved compact mobile message composition. */
@@ -9312,6 +9340,18 @@ a.topic-tag:focus-visible {
 .home-shell .markdown-editor-extra-options .markdown-editor-tool-group { flex-wrap: wrap; }
 .home-shell .markdown-editor-extra-options .markdown-editor-language { flex-wrap: wrap; }
 .home-shell .markdown-editor-extra-options .markdown-editor-language input { max-inline-size: 100%; }
+
+@media (max-width: 44rem) {
+  /* The main popup uses the bounded sticky toolbar as its containing block,
+     rather than growing from the interior More button's inline offset. */
+  .home-shell .markdown-editor-formatting > .markdown-editor-extra-menu {
+    position: static;
+  }
+
+  .home-shell .markdown-editor-formatting > .markdown-editor-extra-menu > .markdown-editor-extra-options {
+    inline-size: min(18rem, 100%);
+  }
+}
 
 .home-shell .markdown-editor-direction {
   display: grid;
