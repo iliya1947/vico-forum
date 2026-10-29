@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-29
+Последнее обновление: 2026-10-30
 
 ## Назначение
 
@@ -19,6 +19,21 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## RES-A11Y-01 — accessible name Simple textbox (2026-10-30)
+
+В отдельной implementation-ветке каждый VisualTextLeaf с role=textbox получает
+собственное author-supplied accessible name через существующий локализованный
+ключ editorVisualSurface. Имя не вычисляется из текста сообщения и не зависит
+от наличия имени у ancestor region или отдельного native textarea.
+Общий leaf path покрывает пустой/trailing текст, formatted fragments и nested
+spoiler. Новые translation keys, зависимости или общая ARIA widget model не добавлены.
+
+Source/history/selection, Simple/Advanced переключения, native textarea labels,
+table inputs, Preview и disabled/paste boundaries не меняются. Добавлены focused
+mounted regressions для имени, нескольких instances, runtime localization,
+редактирования/Undo/Redo и соседних корректных controls. Фактические checks/CI
+и независимый whole-PR review фиксируются отдельно после выполнения.
 
 ## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
 

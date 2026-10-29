@@ -2775,3 +2775,80 @@ describe("disabled editor command boundaries", () => {
     await userEvent.click(screen.getByRole("button", { name: "Redo" })); expect(m.source()).toBe(pasted);
   });
 });
+
+describe("Simple textbox accessible names", () => {
+  it.each([
+    "", "Alpha", "Alpha **bold** and _italic_\n\nSecond paragraph", "Alpha\n\n",
+    "Before\n\n:::spoiler Details\nInside **nested** text\n:::\n\nAfter",
+  ])("names every editable leaf without changing source %j", async source => {
+    const m = renderEditor(<form><label htmlFor="named-simple">Reply body</label>
+      <MarkdownEditor id="named-simple" name="body" defaultValue={source} /></form>);
+    for (const summary of m.container.querySelectorAll('.forum-markdown-spoiler > summary')) await userEvent.click(summary);
+    const leaves = m.container.querySelectorAll<HTMLElement>('[data-visual-text=true]');
+    expect(leaves.length).toBeGreaterThan(0);
+    for (const leaf of leaves) {
+      expect(leaf).toHaveAttribute("role", "textbox");
+      expect(leaf).toHaveAccessibleName("Visual editor");
+      expect(leaf).toHaveAttribute("contenteditable", "true");
+    }
+    expect(new FormData(m.container.querySelector('form')!).get('body')).toBe(source);
+  });
+
+  it("names leaves in separate instances while keeping native field labels", () => {
+    const m = renderEditor(<form><label htmlFor="named-reply">Reply body</label>
+      <MarkdownEditor id="named-reply" name="reply" defaultValue="Alpha" />
+      <label htmlFor="named-question">Question body</label>
+      <MarkdownEditor id="named-question" name="question" defaultValue="Beta" /></form>);
+    const editors = m.container.querySelectorAll('.markdown-editor'); expect(editors).toHaveLength(2);
+    for (const editor of editors) expect(editor.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+    expect(m.container.querySelector('#named-reply')).toHaveAccessibleName('Reply body');
+    expect(m.container.querySelector('#named-question')).toHaveAccessibleName('Question body');
+  });
+
+  it("updates the leaf name from the active translation runtime without changing text", async () => {
+    const i18n = runtime();
+    const m = render(<I18nextProvider i18n={i18n}><MarkdownEditor id="named-localized" name="body" defaultValue="Alpha" /></I18nextProvider>);
+    for (const [locale, name] of [['he', 'עורך חזותי'], ['ru', 'Визуальный редактор'], ['eo', 'Vida redaktilo'], ['en', 'Visual editor']]) {
+      i18n.addResourceBundle(locale!, 'common', { ...canonicalCommonResources(), editorVisualSurface: name });
+      await act(async () => { await i18n.changeLanguage(locale); });
+      const leaf = m.container.querySelector('[data-visual-text=true]')!;
+      expect(leaf).toHaveAccessibleName(name!); expect(leaf.textContent).toBe('Alpha');
+    }
+  });
+
+  it("keeps a stable name and source history through edit, Undo/Redo and mode switches", async () => {
+    const m = renderEditor(<form><MarkdownEditor id="named-history" name="body" defaultValue="Alpha" /></form>);
+    const source = () => new FormData(m.container.querySelector('form')!).get('body');
+    const leaf = m.container.querySelector<HTMLElement>('[data-visual-text=true]')!;
+    leaf.focus(); leaf.textContent = 'Beta'; fireEvent.input(leaf);
+    expect(source()).toBe('Beta'); expect(leaf).toHaveAccessibleName('Visual editor');
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' })); expect(source()).toBe('Alpha');
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+    await userEvent.click(screen.getByRole('button', { name: 'Redo' })); expect(source()).toBe('Beta');
+    await userEvent.click(screen.getByRole('button', { name: 'Advanced' })); expect(source()).toBe('Beta');
+    await userEvent.click(screen.getByRole('button', { name: 'Simple' })); expect(source()).toBe('Beta');
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+  });
+
+  it("keeps disabled and Preview focus boundaries", async () => {
+    const i18n = runtime();
+    const tree = (disabled: boolean) => <I18nextProvider i18n={i18n}><MarkdownEditor id="named-states" name="body" disabled={disabled} defaultValue="Alpha" /></I18nextProvider>;
+    const m = render(tree(true));
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAttribute('contenteditable', 'false');
+    m.rerender(tree(false));
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(m.container.querySelector('[data-visual-text=true]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+  });
+
+  it("preserves independent Advanced and table names", () => {
+    const m = renderEditor(<form><label htmlFor="named-advanced">Reply body</label>
+      <MarkdownEditor id="named-advanced" name="body" defaultAuthoringMode="advanced" defaultValue="Alpha" />
+      <MarkdownEditor id="named-table" name="table" defaultValue={'| A | B |\n| --- | --- |\n| c | d |'} /></form>);
+    expect(m.container.querySelector('#named-advanced')).toHaveAccessibleName('Reply body');
+    const cells = m.container.querySelectorAll('.markdown-editor-visual-table input'); expect(cells).toHaveLength(4);
+    for (const cell of cells) expect(cell).toHaveAccessibleName(/Table (header cell|cell)/);
+  });
+});

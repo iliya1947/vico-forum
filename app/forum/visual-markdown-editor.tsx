@@ -303,6 +303,7 @@ function VisualTextLeaf({
   resolveSurfaceSelection(): EditorSelection | null;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const { t } = useTranslation("common");
   const spellCheck = useContext(visualSpellcheckContext);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -339,6 +340,7 @@ function VisualTextLeaf({
       ref={ref}
       contentEditable={!disabled}
       role="textbox"
+      aria-label={t("editorVisualSurface")}
       aria-multiline="false"
       suppressContentEditableWarning
       spellCheck={spellCheck}
