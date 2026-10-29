@@ -1,5 +1,61 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — standalone-CR author verification / CONFIRMED / STOP (2026-10-29)
+
+Назначение: [#6486554293](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486554293).
+Unchanged exact head: `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`.
+Base/main: `0a09482fc2653b65e775ae069c86c48ab247b4fb`.
+
+### Вердикт и causal chain
+
+**Согласованный current-Stage P2 LITERAL-TEXT-01 подтверждён.** Это несовпадение общей physical-line boundary plaintext serializer и Markdown parser, а не отдельный heading edge case.
+
+`textAsMarkdown()` (clipboard-markdown.ts:13–35) заменяет CRLF на LF и делит по LF. После standalone CR serializer продолжает ту же logical line; line-start guards heading/quote/list/rule/indentation не запускаются. Public CommonMark parser распознаёт CR как перевод строки. Для `before\r# literal heading` source остаётся с неэкранированным heading marker, actual ForumMarkdown создаёт h1 и убирает literal # из текста.
+
+Проверен реальный mounted Simple путь: Ctrl+Shift+V / clipboardData → VisualMarkdownEditor onPastePlain → clipboardPlainToMarkdown с selection/context → hidden body/FormData → actual ForumMarkdown → Undo/Redo. CR создаёт h1; LF и CRLF сохраняют literal #. Три diagnostic checks подтвердили именно текущее поведение, а не успех будущего исправления.
+
+### Минимальная bounded correction
+
+1. Canonicalize CRLF, standalone CR и LF к одному LF view **на общем входе plain clipboard serializer до line splitting, marker escaping и contextual raw-tab classification**. Существующий pure `textareaMarkdown` уже задаёт такую нормализацию; новый parser/framework или heading-specific special-case не требуется.
+2. Initial conversion, context gate, line indices и повторный `textAsMarkdown(..., codeLines)` должны использовать один и тот же normalized input. Удалить либо согласовать прежние разрозненные CRLF-only assumptions внутри этой private boundary.
+3. Не нормализовать целый существующий Markdown document. Native Advanced raw paste и dedicated existing-code operation с source EOL fidelity не переводить на prose serializer. Rich HTML/TSV conversion не расширять.
+4. После отдельного implementation assignment: EOL/marker regressions плюс mounted FormData/public-render/history, затем applicable exact-head CI и новый review cycle.
+
+Это техническая граница предложения; production implementation не менялась.
+
+### Изолированный эксперимент и существенный control limit
+
+Вне implementation checkout создана копия serializer с одним входным `text.replace(/\r\n?/gu, "\n")`. Imports указывают на реальные текущие modules; это диагностический candidate, не опубликованная реализация.
+
+Матрица: 4 EOL режима (LF/CR/CRLF/mixed) × root/spoiler ×14 marker payloads, плюс intended tab-code controls;120 наблюдений current +120 candidate. Проверялся actual ForumMarkdown SSR/DOM, отсутствие непреднамеренных структуры/направления и видимые literal symbols с обычной prose whitespace normalization. Candidate сохраняет EOL-independent результат для heading/quote/bullets/rules, Vico spoiler opener/closer/table/direction, backticks/entities/tilde и contextual raw-tab code.
+
+**Current80/120, candidate104/120**. Нельзя объявлять весь candidate PASS: оставшиеся16 failures относятся к двум ordered-marker controls `1.`/`1)` во всех EOL/root/spoiler combinations.
+
+**Отдельное author-confirmed наблюдение, не CR cause:** replacement на clipboard-markdown.ts:31–32 ставит backslash перед цифрой (`\1.`/`\1)`), а не перед Markdown punctuation. На публичном render получается видимый лишний backslash. Это есть уже при LF/CRLF и та же логика присутствует в base/main0a09482; это не следствие root-cause code correction. Два дополнительных mounted Simple paste→FormData→ForumMarkdown controls подтверждают лишний backslash и отсутствие ol.
+
+Не включаю это молча в согласованный standalone-CR finding и не меняю scope реализации. Мире нужно отдельно reconcile этот existing control defect перед назначением пакета. EOL normalization закрывает CR line-boundary bypass, но сама не исправляет ordered-marker encoding.
+
+### Regression boundary
+
+- Heading, quote, unordered/ordered markers, horizontal/Setext-like rules, initial four spaces, raw tabs.
+- Vico opener/closer, table-shaped literal text, direction lookalikes, backticks, entities/tilde.
+- LF/CR/CRLF/mixed, root и outer spoiler; genuine tab-code должен сохранять literal punctuation/entities.
+- Existing document CRLF source вне вставки остаётся exact; mounted selection/FormData/public semantics и single Undo/Redo.
+- Native Advanced raw/code operation, existing code/container preservation, HTML/TSV и обычный prose — controls. Ordered-marker known control issue учитывать отдельно, не скрывать failing assertion и не выдавать candidate за полный PASS.
+
+### Проверки и ограничения
+
+5 mounted diagnostic checks PASS /180 existing tests skipped,1.96s:3 EOL reproduction/control cases +2 ordered marker observations. Это не запуск всего application suite. Матрица240 actual-render observations; candidate не применялся к mounted implementation.
+
+Артефакты: /workspace/work/pr247-cr-verification/{candidate.ts,matrix.tsx,matrix.json,matrix.log,mounted-all.log}. Candidate и артефакты вне tracked implementation. Временные mounted tests удалены, исходный test file восстановлен; dependency symlink снят, checkout clean, diff-check PASS. Remote head/base повторно сверены.
+
+Новые CI/full app/PG/browser/HTTP publication не запускались и не заявляются. Для author verification использованы actual converter и mounted/public components; production/external/provider/owner visual не затрагивались.
+
+**Мире:** согласованный CR finding подтверждён; общий EOL-input fix достаточен для его causal path. Отдельно reconcile existing ordered-marker literal defect и затем выдать bounded implementation assignment. **Лёва STOP.**
+
+
+---
+
 ## Лёва — PR #250 / independent whole-PR review — CHANGES REQUIRED
 
 Date: 2026-10-29. Assignment: PR236 comment6486530815.
