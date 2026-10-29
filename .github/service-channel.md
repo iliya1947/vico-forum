@@ -1,3 +1,11 @@
+## EDITOR-08 — current-main verification + correction boundary complete (2026-10-29)
+
+- Assignment #236/6503924468 executed by Лёва at main `a79ae7278a02c5bf029a97859afc241c564858ca`. **Confirmed current-Stage P2 functional disabled-state defect**, three paths: retained Advanced Find/Replace panel; clipboard command resolving after disable; native Simple paste into selected disabled text. Find Next changes selection metadata; Replace all/paste change source/history. Not a server authorization or submitted-payload finding.
+- Actual editor Chromium390/1280:14 observations (12 defect-path observations +2 disabled-toolbar controls),0 page errors/external requests. Simple native Ctrl+V after native double-click word selection emits trusted SPAN paste and changes `one two one` to `one TRUSTEDPASTE one`, despite contentEditable=false. In-flight clipboard uses controlled Promise timing; native OS permission timing not claimed.
+- Temporary mounted diagnostics11/11 PASS (assert observed defects/controls); full editor earlier204/204 PASS=197 existing+7 diagnostics. Build of actual-editor harness PASS. Temporary files restored/removed, checkout clean, own HTTP/Chromium closed. No implementation branch/PR or project changes, no DB/provider/production/owner visual checks.
+- Minimal correction: disable retained Find/Replace UI and guard command entry; guard VisualMarkdownEditor paste before any mutation callback; reject clipboard completion using latest committed disabled state rather than captured async-render prop. Preserve enabled search/paste/source/Undo semantics. No global disabled/read-only redesign.
+- [Full personal verification and regression plan](https://github.com/iliya1947/vico-forum/blob/53bc67baf647bf3e1cd660acbbe8e8e344f8db92/.github/agents/codex-6.1-sol.md). Мире: reconcile finding/plan and issue separate authorized implementation assignment. Лёва STOP.
+
 ## EDITOR-05 — PR #258 / author implementation complete, coordinator review next (2026-10-29)
 
 - Assignment #236/6503299565 completed. [Draft PR #258](https://github.com/iliya1947/vico-forum/pull/258), branch `fix/editor-find-next`, stable head `545d4e91c81fd230b7c3fd7b3868ff531259f26d`, base/main `ab5345c06687a5a18c1a35a572186a973829d475`; open/Draft/mergeable.
