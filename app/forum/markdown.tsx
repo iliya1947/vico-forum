@@ -3,6 +3,7 @@ import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import { remarkForumParagraphDirection, remarkForumStrikethrough } from "../markdown-syntax";
+import { remarkTableCellCode } from "./table-code";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
 import { isAttributedQuoteHeader } from "./quote-markdown";
 import { ForumQuotedBlock } from "./quote-presentation";
@@ -358,13 +359,13 @@ function ForumTable({ table }: { table: MarkdownTable }) {
       <table className="forum-markdown-table">
         <thead><tr>{table.headers.map((cell, index) => (
           <th key={index} scope="col" style={{ textAlign: table.align[index] ?? undefined }}>
-            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection, remarkTableCellCode]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
           </th>
         ))}</tr></thead>
         <tbody>{table.rows.map((row, index) => <tr key={index}>
           {row.map((cell, column) => (
             <td key={column} style={{ textAlign: table.align[column] ?? undefined }}>
-              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkForumStrikethrough, remarkForumParagraphDirection, remarkTableCellCode]} urlTransform={forumUrlTransform}>{cell.text}</ReactMarkdown>
             </td>
           ))}
         </tr>)}</tbody>

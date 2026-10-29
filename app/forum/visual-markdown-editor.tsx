@@ -35,14 +35,25 @@ interface VisualEditorProps {
   onReplaceRange(range: EditorSelection, source: string): void;
   onTableDimension(table: MarkdownTable, dimension: "row" | "column"): void;
   onPasteTable(range: EditorSelection, plain: string): void;
+  onPastePlain(range: EditorSelection, plain: string): void;
   onPasteFallback(): void;
 }
 
 export function escapeVisualMarkdownText(value: string): string {
   // Use the same literal-text escaping rule for visual typing and plain paste:
   // a leading #, >, list marker or rule must not silently become Markdown syntax.
-  const literal = /^[ ]{4}|^\t/u.test(value) ? (value[0] === "\t" ? "&#9;" : "&#32;") + value.slice(1) : value;
-  return clipboardPlainToMarkdown(literal);
+  if (/^(?: {1,3}\t| {4}|\t)/u.test(value)) {
+    // This leading-whitespace entity is structural and must not be escaped
+    // again with the user's literal ampersands.
+    const structuralPrefix = value[0] === "\t" ? "&#9;" : "&#32;";
+    // Later tabs belong to the prose started by this structural entity;
+    // don't reinterpret the suffix alone as a new indented code block.
+    return structuralPrefix + clipboardPlainToMarkdown(value.slice(1), {
+      markdown: structuralPrefix,
+      selection: { start: structuralPrefix.length, end: structuralPrefix.length },
+    });
+  }
+  return clipboardPlainToMarkdown(value);
 }
 
 /** Resolve DOM ranges relative to the whole visual leaf, not to one text node.
@@ -584,7 +595,7 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
           return;
         }
         if (forcePlain) {
-          actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          actions.onPastePlain(selected, plain);
           return;
         }
         if (plain.includes("\t")) {
@@ -594,11 +605,11 @@ export function VisualMarkdownEditor(props: VisualEditorProps & { sourceBase?: n
         if (html || plain.includes("\n") || plain.includes("\r")) {
           const converted = html ? clipboardHtmlToMarkdown(html) : null;
           if (converted !== null) actions.onReplaceRange(selected, converted);
-          else if (plain) actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+          else if (plain) actions.onPastePlain(selected, plain);
           if (html && converted === null) actions.onPasteFallback();
           return;
         }
-        actions.onReplaceRange(selected, clipboardPlainToMarkdown(plain));
+        actions.onPastePlain(selected, plain);
       }}
       onSelect={(event) => reportSurfaceSelection(event.currentTarget)}
       onMouseUp={(event) => reportSurfaceSelection(event.currentTarget)}

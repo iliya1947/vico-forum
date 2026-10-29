@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { createInstance } from "i18next";
+import { compileNamespaceBundle, verifyCompiledNamespaceBundle } from "./bundles";
 import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
 import { sourceFingerprint } from "./fingerprint";
 import { IntlLocaleRulesProvider } from "./locale-rules";
@@ -117,6 +119,35 @@ describe("UiTranslationResultPublisher", () => {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     })).rejects.toBeInstanceOf(TranslationValidationError);
     expect(publishClaimedMachineResult).not.toHaveBeenCalled();
+  });
+
+  it("blocks parameterized nesting before publication and compiled resource reads", async () => {
+    const injected = 'Stage 1 $t(common:heading, {"lng":"en"})';
+    const claimed = await context(canonicalEnglishCatalog.common.stageSummary);
+    const { resultPublisher, publishClaimedMachineResult } = publisherHarness();
+
+    // i18next actually resolves the malicious added nesting at runtime, even
+    // though the original canonical stageSummary contains no controlled token.
+    const runtime = createInstance();
+    await runtime.init({
+      lng: "fr", fallbackLng: ["en"], load: "currentOnly", defaultNS: "common",
+      ns: ["common"], initAsync: false,
+      resources: {
+        fr: { common: { stageSummary: injected } },
+        en: { common: { heading: "Translation foundation" } },
+      },
+    });
+    expect(runtime.t("stageSummary")).toBe("Stage 1 Translation foundation");
+
+    await expect(resultPublisher.publish(claimed, {
+      value: injected,
+      provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+    })).rejects.toThrow(/Controlled token mismatch/);
+    expect(publishClaimedMachineResult).not.toHaveBeenCalled();
+    await expect(compileNamespaceBundle("fr", "common", { stageSummary: injected }))
+      .rejects.toThrow(/Controlled token mismatch/);
+    await expect(verifyCompiledNamespaceBundle("fr", "common", { stageSummary: injected }))
+      .rejects.toThrow(/Controlled token mismatch/);
   });
 
   it("rechecks manual priority after provider work and marks the claim stale instead of publishing", async () => {

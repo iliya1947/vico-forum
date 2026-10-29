@@ -9,6 +9,9 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ForumMarkdown } from "./markdown";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { escapeVisualMarkdownText } from "./visual-markdown-editor";
+import { mentionProfileLink, publishedMentionRecipients } from "./mentions";
+import { parseForumMarkdown } from "../markdown-syntax";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 
 function canonicalCommonResources(): Record<string, string> {
@@ -454,6 +457,64 @@ describe("MarkdownEditor", () => {
     expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
     expect(lookup).toHaveBeenCalled();
     expect(screen.queryByRole("group", { name: "Mention a member" })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["advanced", "Ada &copy;"], ["simple", "Ada &copy;"],
+    ["advanced", "~~Ada &copy;~~"], ["simple", "~~Ada &copy;~~"],
+    ["advanced", "Ada <https://example.test> &copy;"],
+    ["simple", "Ada <https://example.test> &copy;"],
+  ] as const)("inserts literal member name %s / %s without interpreted GFM formatting", async (mode, name) => {
+    const lookup = vi.fn(async (url: string) => {
+      if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
+      return new Response(JSON.stringify({ users: [{ id: "member-42", name }] }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", lookup);
+    renderEditor(
+      <HeaderAuthProvider initialUser={{ id: "literal-mention-" + mode, name: "Author" }}>
+        <form>
+          <label htmlFor="literal-mention-body">Body</label>
+          <MarkdownEditor id="literal-mention-body" name="body" editorLocale="en"
+            defaultAuthoringMode={mode} defaultValue="Hello " />
+        </form>
+      </HeaderAuthProvider>,
+    );
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    if (mode === "advanced") {
+      fireEvent.change(textarea, {
+        target: { value: "Hello @Ada", selectionStart: 10, selectionEnd: 10 },
+      });
+    } else {
+      const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+      leaf.textContent = "Hello @Ada";
+      fireEvent.input(leaf);
+    }
+    const candidate = await screen.findByRole("button", { name });
+    await userEvent.click(candidate);
+    const link = mentionProfileLink(name, "/en/users/member-42");
+    await waitFor(() => expect(textarea).toHaveValue("Hello " + link));
+    expect(new FormData(textarea.form!).get("body")).toBe(textarea.value);
+    const paragraph = parseForumMarkdown(textarea.value).children[0];
+    expect(paragraph).toMatchObject({ type: "paragraph", children: [
+      { type: "text", value: "Hello " },
+      { type: "link", url: "/en/users/member-42", children: [{ type: "text", value: name }] },
+    ] });
+    if (paragraph?.type !== "paragraph") throw new Error("Expected literal mention paragraph");
+    expect(paragraph.children).toHaveLength(2);
+    expect(publishedMentionRecipients(textarea.value)).toEqual(["member-42"]);
+    const published = renderEditor(<ForumMarkdown>{textarea.value}</ForumMarkdown>);
+    const profile = published.container.querySelector('a[href="/en/users/member-42"]');
+    expect(profile).toHaveTextContent(name);
+    expect(published.container.querySelectorAll("a")).toHaveLength(1);
+    if (mode === "simple") {
+      expect(document.querySelector(".markdown-editor-visual del")).toBeNull();
+      expect(document.querySelector(".markdown-editor-visual")?.textContent).toContain(name);
+    } else {
+      await chooseView("preview");
+      expect(document.querySelector(".markdown-editor-preview del")).toBeNull();
+    }
   });
 
   it("wraps the selected text and restores selection/focus", async () => {
@@ -1037,6 +1098,63 @@ describe("MarkdownEditor", () => {
     fireEvent.input(leaf);
     expect(screen.getByLabelText("Body")).toHaveValue("\\# Not a heading");
     expect(document.querySelector(".markdown-editor-visual h1, .markdown-editor-visual h2")).toBeNull();
+  });
+
+  it.each([
+    ["---", String.raw`\---`],
+    ["===", String.raw`\===`],
+    ["    &copy; ~~literal~~", String.raw`&#32;   &amp;copy; \~\~literal\~\~`],
+    ["~~literal~~", String.raw`\~\~literal\~\~`],
+    ["&copy;", "&amp;copy;"],
+    ["ordinary text", "ordinary text"],
+  ])("preserves typed Simple literal text %s in the visual leaf", (original, expectedSource) => {
+    renderEditor(<form><label htmlFor="literal-text">Body</label>
+      <MarkdownEditor id="literal-text" name="body" defaultValue="Before" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = original;
+    fireEvent.input(leaf);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea).toHaveValue(expectedSource);
+    expect(new FormData(textarea.form!).get("body")).toBe(expectedSource);
+    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')?.textContent).toBe(original);
+    expect(document.querySelector(".markdown-editor-visual hr, .markdown-editor-visual del")).toBeNull();
+  });
+
+  it.each([
+    ["---", String.raw`\---`],
+    ["===", String.raw`\===`],
+    ["    &copy; ~~literal~~", String.raw`&#32;   &amp;copy; \~\~literal\~\~`],
+    ["~~literal~~", String.raw`\~\~literal\~\~`],
+    ["&copy;", "&amp;copy;"],
+    ["ordinary text", "ordinary text"],
+  ])("preserves pasted Simple literal text %s without interpretation", (original, expectedSource) => {
+    renderEditor(<form><label htmlFor="literal-paste">Body</label>
+      <MarkdownEditor id="literal-paste" name="body" defaultValue="Before" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const range = document.createRange();
+    range.selectNodeContents(leaf);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? original : "" } });
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(textarea).toHaveValue(expectedSource);
+    expect(new FormData(textarea.form!).get("body")).toBe(expectedSource);
+    expect(document.querySelector<HTMLElement>('[data-visual-text="true"]')?.textContent).toBe(original);
+    expect(document.querySelector(".markdown-editor-visual hr, .markdown-editor-visual del")).toBeNull();
+  });
+
+  it("keeps literal ampersands when native typing follows protected Simple leading whitespace", () => {
+    renderEditor(<form><MarkdownEditor id="literal-leading-space" name="body" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    leaf.textContent = "    &copy;";
+    fireEvent.input(leaf);
+    expect(document.querySelector('input[name="body"]')).toHaveValue("&#32;   &amp;copy;");
+    expect(leaf.textContent).toBe("    &copy;");
+    expect(leaf).toHaveFocus();
   });
 
   it("does not turn visual source switching into a destructive Markdown round-trip", async () => {
@@ -1633,6 +1751,39 @@ describe("MarkdownEditor", () => {
     expect(document.querySelector(".markdown-editor-visual-table")).toBeNull();
   });
 
+  it.each([
+    "\n\n\t&copy; ~~literal~~",
+    "\n\n \t~~literal~~ &copy;",
+  ])("keeps raw-tab forced plain clipboard prose literal in published code %j", (plain) => {
+    renderEditor(<form><label htmlFor="raw-tab-paste">Body</label>
+      <MarkdownEditor id="raw-tab-paste" name="body" defaultValue="Before" /></form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, 6);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? plain : format === "text/html" ? "<h1>Wrong</h1>" : "" } });
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const markdown = textarea.value;
+    expect(markdown).toBe("Before" + plain);
+    expect(new FormData(textarea.form!).get("body")).toBe(markdown);
+    const tree = parseForumMarkdown(markdown);
+    expect(tree.children.map((node) => node.type)).toContain("code");
+    const published = renderEditor(<ForumMarkdown>{markdown}</ForumMarkdown>);
+    const code = published.container.querySelector("pre code");
+    expect(code).not.toBeNull();
+    expect(code?.textContent).toContain(plain.includes("~~literal~~") ? "~~literal~~" : "&copy;");
+    expect(code?.textContent).toContain("&copy;");
+    expect(code?.textContent).not.toContain("&amp;copy;");
+    expect(code?.textContent).not.toContain("\\~");
+    expect(published.container.querySelectorAll("h1, del")).toHaveLength(0);
+  });
+
   it("preserves invalid tabular text when spreadsheet conversion declines it", () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="Before" /></>);
     const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
@@ -1948,4 +2099,477 @@ it.each([
   expect(leaf).toHaveFocus();expect(leaf).toBeInTheDocument();
   leaf.textContent=prefix + "Alpha";fireEvent.input(leaf,{data:"Alpha"});
   expect(leaf).toHaveFocus();expect(document.querySelector('input[name="body"]')).toHaveValue(source);
+});
+
+it.each([
+  ["simple", "\u0001"], ["advanced", "\u0001"],
+  ["simple", "\u007f"], ["advanced", "\u007f"],
+] as const)("keeps literal controls in a mounted %s mention", async (mode, control) => {
+  const name = "A" + control + "B";
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (!url.startsWith("/en/mentions?q=")) throw new Error("Unexpected request: " + url);
+    return new Response(JSON.stringify({ users: [{ id: "member-42", name }] }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+  renderEditor(<HeaderAuthProvider initialUser={{ id: "control-name-" + mode, name: "Author" }}>
+    <form><label htmlFor="control-name">Body</label>
+      <MarkdownEditor id="control-name" name="body" editorLocale="en"
+        defaultAuthoringMode={mode} defaultValue="Hello " />
+    </form>
+  </HeaderAuthProvider>);
+  const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+  if (mode === "advanced") {
+    fireEvent.change(textarea, { target: { value: "Hello @Ada", selectionStart: 10, selectionEnd: 10 } });
+  } else {
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.textContent = "Hello @Ada";
+    fireEvent.input(leaf);
+  }
+  const suggestions = await screen.findByRole("group", { name: "Mention a member" });
+  await userEvent.click(suggestions.querySelector("button")!);
+  const source = "Hello " + mentionProfileLink(name, "/en/users/member-42");
+  await waitFor(() => expect(textarea).toHaveValue(source));
+  expect(parseForumMarkdown(source).children[0]).toMatchObject({ type: "paragraph", children: [
+    { type: "text", value: "Hello " },
+    { type: "link", url: "/en/users/member-42", children: [{ type: "text", value: name }] },
+  ] });
+  expect(publishedMentionRecipients(source)).toEqual(["member-42"]);
+  const rendered = renderEditor(<ForumMarkdown>{source}</ForumMarkdown>);
+  expect(rendered.container.querySelector('a[href="/en/users/member-42"]')?.textContent).toBe(name);
+  expect(rendered.container.querySelectorAll("a")).toHaveLength(1);
+});
+
+it.each([
+  ["\t&copy; ~~literal~~", false],
+  ["\n\t&copy; ~~literal~~", false],
+  ["\n\n\t&copy; ~~literal~~", true],
+] as const)("preserves Ctrl+Shift+V literal paste with real prose/code context %j", (plain, isCode) => {
+  renderEditor(<form><label htmlFor="context-paste">Body</label>
+    <MarkdownEditor id="context-paste" name="body" defaultValue="Before" /></form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();
+  const selection = window.getSelection()!, range = document.createRange();
+  range.setStart(leaf.firstChild!, 6);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+  fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+    format === "text/plain" ? plain : format === "text/html" ? "<h1>Ignored</h1>" : "" } });
+  const source = (screen.getByLabelText("Body") as HTMLTextAreaElement).value;
+  const rendered = renderEditor(<ForumMarkdown>{source}</ForumMarkdown>);
+  if (isCode) {
+    expect(rendered.container.querySelector("pre code")?.textContent).toContain("&copy; ~~literal~~");
+  } else {
+    expect(rendered.container.querySelector("del")).toBeNull();
+    expect(rendered.container.querySelector("pre code")).toBeNull();
+    expect(rendered.container.textContent).toContain("&copy; ~~literal~~");
+  }
+});
+
+it.each([
+  ["\t\t&copy; ~~literal~~", "&#9;\t&amp;copy; \\~\\~literal\\~\\~"],
+  ["    \t&copy; ~~literal~~", "&#32;   \t&amp;copy; \\~\\~literal\\~\\~"],
+] as const)("protects nested Simple indentation without leaking Markdown syntax: %j", (typed, expected) => {
+  const serialized = escapeVisualMarkdownText(typed);
+  expect(serialized).toBe(expected);
+  expect(parseForumMarkdown(serialized).children[0]?.type).toBe("paragraph");
+
+  renderEditor(<form><label htmlFor="native-indentation">Body</label>
+    <MarkdownEditor id="native-indentation" name="body" />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();
+  const firstInput = typed.startsWith("\t") ? "\t" : "    ";
+  leaf.textContent = firstInput;
+  fireEvent.input(leaf, { data: firstInput });
+  expect(leaf).toHaveFocus();
+  expect(leaf).toBeInTheDocument();
+  leaf.textContent = typed;
+  fireEvent.input(leaf, { data: typed.slice(firstInput.length) });
+
+  const form = document.querySelector("form")!;
+  const body = new FormData(form).get("body");
+  expect(body).toBe(expected);
+  const published = renderEditor(<ForumMarkdown>{body as string}</ForumMarkdown>).container;
+  expect(published.querySelector("pre, code, del")).toBeNull();
+  expect(published.textContent).toContain("&copy; ~~literal~~");
+  expect(leaf).toHaveFocus();
+});
+
+
+it.each([1, 2, 3])("keeps editable Simple prose after %i spaces and a tab on native input", (spaces) => {
+  const prefix = " ".repeat(spaces);
+  const source = "&#32;" + " ".repeat(spaces - 1) + "\tAlpha";
+  renderEditor(<form><label htmlFor="space-tab-body">Body</label>
+    <MarkdownEditor id="space-tab-body" name="body" defaultValue={source} />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  expect(leaf.textContent).toBe(prefix + "\tAlpha");
+  leaf.focus();
+  leaf.textContent = prefix + "\tAlphax";
+  fireEvent.input(leaf, { data: "x", inputType: "insertText" });
+  const form = document.querySelector("form")!;
+  const expected = "&#32;" + " ".repeat(spaces - 1) + "\tAlphax";
+  expect(new FormData(form).get("body")).toBe(expected);
+  expect(leaf).toBeInTheDocument();
+  expect(leaf).toHaveFocus();
+  expect(document.querySelector('[data-visual-text="true"]')).toBe(leaf);
+  const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+  expect(published.querySelector("pre")).toBeNull();
+  expect(published.querySelector(".post-body p")?.textContent).toBe(prefix + "\tAlphax");
+});
+
+it.each([
+  [":::spoiler Label\nAlpha\n:::", true],
+  [":::spoiler Label\nBefore Alpha\n:::", false],
+] as const)("keeps Ctrl+Shift+V literal source in a %s spoiler body (code=%s)", async (source, isCode) => {
+  renderEditor(<form><label htmlFor="spoiler-tab-body">Body</label>
+    <MarkdownEditor id="spoiler-tab-body" name="body" defaultValue={source} />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('.forum-markdown-spoiler [data-visual-text="true"]')!;
+  const before = leaf.textContent ?? "";
+  const start = before.indexOf("Alpha");
+  expect(start).toBeGreaterThanOrEqual(0);
+  leaf.focus();
+  const range = document.createRange();
+  range.setStart(leaf.firstChild!, start);
+  range.setEnd(leaf.firstChild!, start + "Alpha".length);
+  const selection = window.getSelection()!;
+  selection.removeAllRanges();
+  selection.addRange(range);
+  fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+  fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+    format === "text/plain" ? "\t&copy; ~~literal~~"
+      : format === "text/html" ? "<h1>Ignored</h1>" : "" } });
+  const expectedText = isCode ? "\t&copy; ~~literal~~" : "\t&amp;copy; \\~\\~literal\\~\\~";
+  const expected = source.replace("Alpha", expectedText);
+  const form = document.querySelector("form")!;
+  expect(new FormData(form).get("body")).toBe(expected);
+  const rendered = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+  const details = rendered.querySelector("details");
+  expect(details).not.toBeNull();
+  const code = details?.querySelector("pre code");
+  if (isCode) {
+    expect(code?.textContent).toContain("&copy; ~~literal~~");
+    expect(code?.textContent).not.toContain("&amp;copy;");
+    expect(code?.textContent).not.toContain("\\~");
+  } else {
+    expect(code).toBeNull();
+    expect(details?.textContent).toContain("Before \t&copy; ~~literal~~");
+  }
+  expect(details?.querySelector("del, h1")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(new FormData(form).get("body")).toBe(source);
+  await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+  expect(new FormData(form).get("body")).toBe(expected);
+});
+
+it.each([
+  "\t\t&copy; ~~literal~~",
+  "    \t&copy; ~~literal~~",
+])("preserves intentional indented code in Advanced source %j", (markdown) => {
+  renderEditor(<form><label htmlFor="advanced-indentation">Body</label>
+    <MarkdownEditor id="advanced-indentation" name="body"
+      defaultAuthoringMode="advanced" defaultValue={markdown} />
+  </form>);
+  expect(new FormData(document.querySelector("form")!).get("body")).toBe(markdown);
+  const published = renderEditor(<ForumMarkdown>{markdown}</ForumMarkdown>).container;
+  expect(published.querySelector("pre code")?.textContent).toContain("&copy; ~~literal~~");
+});
+
+it.each([
+    ["spoiler", ":::spoiler Label\nAlpha\n:::", "\\:::spoiler Label\nAlpha\n\\:::"],
+    ["table", "| A | B |\n| --- | --- |\n| 1 | 2 |", "\\| A \\| B \\|\n\\| --- \\| --- \\|\n\\| 1 \\| 2 \\|"],
+    ["RTL direction", "Text {:vico-dir=rtl}", "Text \\{:vico-dir=rtl}"],
+    ["LTR direction", "Text {:vico-dir=ltr}", "Text \\{:vico-dir=ltr}"],
+] as const)("preserves literal Vico %s through Ctrl+Shift+V, FormData, public render and history", async (kind, plain, expectedSource) => {
+  renderEditor(<form><label htmlFor="vico-literal-paste">Body</label>
+    <MarkdownEditor id="vico-literal-paste" name="body" defaultValue="Alpha" />
+  </form>);
+  const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+  leaf.focus();
+  const range = document.createRange();
+  range.selectNodeContents(leaf);
+  const selection = window.getSelection()!;
+  selection.removeAllRanges();
+  selection.addRange(range);
+  fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+  fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+    format === "text/plain" ? plain : format === "text/html" ? "<h1>Unwanted</h1>" : "" } });
+
+  const form = document.querySelector("form")!;
+  const actual = new FormData(form).get("body");
+  expect(actual).toBe(expectedSource);
+  const published = renderEditor(<ForumMarkdown>{String(actual)}</ForumMarkdown>).container;
+  expect(published.textContent).toContain(plain.split("\n")[0]);
+  if (kind === "spoiler") expect(published.querySelector("details, summary")).toBeNull();
+  if (kind === "table") expect(published.querySelector("table")).toBeNull();
+  if (kind.includes("direction")) {
+    expect(published.querySelector('p[dir="rtl"], p[dir="ltr"]')).toBeNull();
+  }
+
+  await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(new FormData(form).get("body")).toBe("Alpha");
+  await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+  expect(new FormData(form).get("body")).toBe(expectedSource);
+});
+
+it.each([
+  ":::spoiler Label\nAlpha\n:::",
+  "| A | B |\n| --- | --- |\n| 1 | 2 |",
+  "Text {:vico-dir=rtl}",
+] as const)("keeps intentionally authored Vico syntax unchanged in Advanced mode (%j)", (source) => {
+  renderEditor(<form><MarkdownEditor id="advanced-vico" name="body"
+    defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+  expect(new FormData(document.querySelector("form")!).get("body")).toBe(source);
+});
+
+
+describe("LITERAL-TEXT-01 bounded plain paste corrections", () => {
+  it("keeps a literal spoiler closer inside its outer spoiler through FormData, public render and history", async () => {
+    const source = ":::spoiler Outer\nAlpha\n\nAfter\n:::";
+    const plain = ":::spoiler Label\nAlpha\n:::";
+    const expected = source.replace("Alpha", "\\:::spoiler Label\nAlpha\n\\:::");
+    renderEditor(<form><label htmlFor="spoiler-closer">Body</label>
+      <MarkdownEditor id="spoiler-closer" name="body" defaultValue={source} />
+    </form>);
+    const leaf = [...document.querySelectorAll<HTMLElement>(".forum-markdown-spoiler [data-visual-text='true']")]
+      .find((node) => node.textContent?.includes("Alpha"))!;
+    const start = leaf.textContent!.indexOf("Alpha");
+    leaf.focus();
+    const range = document.createRange();
+    range.setStart(leaf.firstChild!, start);
+    range.setEnd(leaf.firstChild!, start + 5);
+    const selected = window.getSelection()!;
+    selected.removeAllRanges(); selected.addRange(range);
+    fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? plain : format === "text/html" ? "<h1>Ignored</h1>" : "" } });
+
+    const form = document.querySelector("form")!;
+    expect(new FormData(form).get("body")).toBe(expected);
+    const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+    const details = published.querySelectorAll(".forum-markdown-spoiler");
+    expect(details).toHaveLength(1);
+    expect(details[0]?.textContent).toContain(":::spoiler Label");
+    expect(details[0]?.textContent).toContain("After");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe(source);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(expected);
+  });
+
+  it("keeps tab-indented table-shaped plain paste as actual code without visible escapes", async () => {
+    const plain = "\t| A | B |\n\t| --- | --- |\n\t| 1 | 2 |";
+    renderEditor(<form><label htmlFor="tabbed-code-table">Body</label>
+      <MarkdownEditor id="tabbed-code-table" name="body" defaultValue="Alpha" />
+    </form>);
+    const leaf = document.querySelector<HTMLElement>('[data-visual-text="true"]')!;
+    leaf.focus();
+    const range = document.createRange();
+    range.selectNodeContents(leaf);
+    const selected = window.getSelection()!;
+    selected.removeAllRanges(); selected.addRange(range);
+    fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+    fireEvent.paste(leaf, { clipboardData: { getData: (format: string) =>
+      format === "text/plain" ? plain : format === "text/html" ? "<h1>Ignored</h1>" : "" } });
+
+    const form = document.querySelector("form")!;
+    expect(new FormData(form).get("body")).toBe(plain);
+    const published = renderEditor(<ForumMarkdown>{plain}</ForumMarkdown>).container;
+    expect(published.querySelector("table")).toBeNull();
+    expect(published.querySelector("pre code")?.textContent).toContain("| A | B |");
+    expect(published.querySelector("pre code")?.textContent).not.toContain("\\|");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(form).get("body")).toBe("Alpha");
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(form).get("body")).toBe(plain);
+  });
+
+  it("preserves clipboard characters inside existing Advanced fenced code with plain paste command", async () => {
+    const original = "~~~text\nAlpha\n~~~";
+    const plain = "~~literal~~ &copy; | value |";
+    const expected = original.replace("Alpha", plain);
+    renderEditor(<form><label htmlFor="advanced-fenced-plain">Body</label>
+      <MarkdownEditor id="advanced-fenced-plain" name="body"
+        defaultAuthoringMode="advanced" defaultValue={original} />
+    </form>);
+    const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    input.focus();
+    const start = input.value.indexOf("Alpha");
+    input.setSelectionRange(start, start + 5);
+    const previousClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true, value: { readText: vi.fn(async () => plain) },
+    });
+    try {
+      await userEvent.click(document.querySelector<HTMLDetailsElement>(
+        ".markdown-editor-extra-menu:last-of-type summary",
+      )!);
+      await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+      const form = document.querySelector("form")!;
+      await waitFor(() => expect(new FormData(form).get("body")).toBe(expected));
+      const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+      expect(published.querySelector("pre code")?.textContent).toBe(plain);
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(new FormData(form).get("body")).toBe(original);
+      await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+      expect(new FormData(form).get("body")).toBe(expected);
+    } finally {
+      if (previousClipboard) Object.defineProperty(navigator, "clipboard", previousClipboard);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+});
+
+
+describe("Advanced plain command: residual code contexts", () => {
+  const tick = String.fromCharCode(96);
+  const sensitive = "~~literal~~ &copy; | value |";
+  const originalFenced = tick.repeat(3) + "js\nAlpha\nOutside\n" + tick.repeat(3);
+  const rawFence = "Before\n" + tick.repeat(3) + "\n**literal**\nAfter";
+  const cases = [
+    {
+      name: "inline code", original: "Before " + tick + "Alpha" + tick + " After",
+      plain: sensitive, expected: "Before " + tick + sensitive + tick + " After",
+      selector: "p code", raw: sensitive,
+    },
+    {
+      name: "spoiler-local indented code", original: ":::spoiler Outer\n\tAlpha\n:::",
+      plain: sensitive, expected: ":::spoiler Outer\n\t" + sensitive + "\n:::",
+      selector: ".forum-markdown-spoiler pre code", raw: sensitive,
+    },
+    {
+      name: "matching fenced-code clipboard", original: originalFenced,
+      plain: rawFence, expected: tick.repeat(4) + "js\n" + rawFence + "\nOutside\n" + tick.repeat(4),
+      selector: "pre code", raw: rawFence,
+    },
+    {
+      name: "table-cell inline code", original: "| A | B |\n| --- | --- |\n| `Alpha` | Other |",
+      plain: sensitive, expected: "| A | B |\n| --- | --- |\n| `~~literal~~ &copy; \\| value \\|` | Other |",
+      selector: "td code", raw: sensitive,
+    },
+    {
+      name: "edge spaces", original: "`Alpha`", plain: " padded ", expected: "`  padded  `",
+      selector: "p code", raw: " padded ",
+    },
+    {
+      name: "root indented multiline", original: "\tBefore\n\tAlpha\n\tAfter\n\nOutside",
+      plain: "First\n**literal**\nLast", expected: "\tBefore\n\tFirst\n\t**literal**\n\tLast\n\tAfter\n\nOutside",
+      selector: "pre code", raw: "Before\nFirst\n**literal**\nLast\nAfter",
+    },
+    {
+      name: "spoiler indented multiline", original: ":::spoiler Outer\n\tBefore\n\tAlpha\n\tAfter\n:::",
+      plain: "First\n**literal**\nLast", expected: ":::spoiler Outer\n\tBefore\n\tFirst\n\t**literal**\n\tLast\n\tAfter\n:::",
+      selector: "pre code", raw: "Before\nFirst\n**literal**\nLast\nAfter",
+    },
+    {
+      name: "quoted fenced multiline", original: "> ```text\n> Before\n> Alpha\n> After\n> ```\n\nOutside",
+      plain: "First\n**literal**\nLast", expected: "> ```text\n> Before\n> First\n> **literal**\n> Last\n> After\n> ```\n\nOutside",
+      selector: "blockquote pre code", raw: "Before\nFirst\n**literal**\nLast\nAfter",
+    },
+    {
+      name: "CR-only fence hazard", original: originalFenced, plain: "```\r**literal**\r```",
+      expected: "````js\n```\r**literal**\r```\nOutside\n````",
+      selector: "pre code", raw: "**literal**",
+    },
+  ] as const;
+
+  it.each(cases)("preserves $name through toolbar, FormData, public render and Undo/Redo", async (scenario) => {
+    renderEditor(<form><label htmlFor="advanced-plain-residual">Body</label>
+      <MarkdownEditor id="advanced-plain-residual" name="body" defaultAuthoringMode="advanced"
+        defaultValue={scenario.original} />
+    </form>);
+    const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    input.focus();
+    const start = input.value.indexOf("Alpha");
+    input.setSelectionRange(start, start + 5);
+    const previousClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true, value: { readText: vi.fn(async () => scenario.plain) },
+    });
+    try {
+      await userEvent.click(document.querySelector<HTMLDetailsElement>(
+        ".markdown-editor-extra-menu:last-of-type summary",
+      )!);
+      await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+      const form = document.querySelector("form")!;
+      await waitFor(() => expect(new FormData(form).get("body")).toBe(scenario.expected));
+      const published = renderEditor(<ForumMarkdown>{String(new FormData(form).get("body"))}</ForumMarkdown>).container;
+      expect(published.querySelector(scenario.selector)?.textContent).toContain(scenario.raw);
+      expect(published.querySelector("strong")).toBeNull();
+      if (scenario.name === "matching fenced-code clipboard") {
+        expect(published.querySelectorAll("pre code")).toHaveLength(1);
+        expect(published.querySelector("pre code")?.textContent).toContain("Outside");
+      }
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(new FormData(form).get("body")).toBe(scenario.original);
+      await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+      expect(new FormData(form).get("body")).toBe(scenario.expected);
+    } finally {
+      if (previousClipboard) Object.defineProperty(navigator, "clipboard", previousClipboard);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+});
+
+it("keeps the source/history intact and reports an unrepresentable code paste without prose fallback", async () => {
+  const original = "| A | B |\n| --- | --- |\n| `Alpha` | Other |";
+  renderEditor(<form><label htmlFor="blocked-code-paste">Body</label>
+    <MarkdownEditor id="blocked-code-paste" name="body" defaultAuthoringMode="advanced" defaultValue={original} />
+  </form>);
+  const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+  input.focus();
+  const start = original.indexOf("Alpha");
+  input.setSelectionRange(start, start + 5);
+  const previous = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText: async () => "\\|" } });
+  try {
+    await userEvent.click(document.querySelector<HTMLDetailsElement>(".markdown-editor-extra-menu:last-of-type summary")!);
+    await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("This content could not be pasted without losing data.");
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe(original);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe(original);
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(new FormData(document.querySelector("form")!).get("body")).toBe(original);
+  } finally {
+    if (previous) Object.defineProperty(navigator, "clipboard", previous);
+    else Reflect.deleteProperty(navigator, "clipboard");
+  }
+});
+
+describe("final serializer mounted plain-paste boundary", () => {
+  for (const eol of ["\n", "\r", "\r\n"]) for (const outer of [false, true]) {
+    it(`preserves literal markers, source/history and Vico context: ${JSON.stringify(eol)} spoiler=${outer}`, async () => {
+      const original = outer ? ":::spoiler Outer\nAlpha\n\nAfter\n:::" : "Before\r\n\r\nAlpha\r\n\r\nAfter";
+      const payload = ["before", "# heading", "1. one", "1) two", ":::spoiler Label", "body", ":::"].join(eol);
+      const insertion = "before\n\\# heading\n1\\. one\n1\\) two\n\\:::spoiler Label\nbody\n\\:::";
+      const expected = original.replace("Alpha", insertion);
+      renderEditor(<form><label htmlFor="final-plain">Body</label>
+        <MarkdownEditor id="final-plain" name="body" defaultValue={original} />
+      </form>);
+      const leaf = [...document.querySelectorAll<HTMLElement>('[data-visual-text="true"]')]
+        .find((node) => node.textContent === "Alpha")!;
+      leaf.focus();
+      const range = document.createRange(); range.selectNodeContents(leaf);
+      const selection = window.getSelection()!; selection.removeAllRanges(); selection.addRange(range);
+      fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+      fireEvent.paste(leaf, { clipboardData: { getData: (format: string) => format === "text/plain" ? payload : "" } });
+      const form = document.querySelector("form")!;
+      expect(new FormData(form).get("body")).toBe(expected);
+      const published = renderEditor(<ForumMarkdown>{expected}</ForumMarkdown>).container;
+      expect(published.querySelector("h1,h2,ol,ul,blockquote,table")).toBeNull();
+      expect(published.querySelectorAll("details.forum-markdown-spoiler")).toHaveLength(outer ? 1 : 0);
+      expect(published.textContent).toContain(payload.replace(/\r\n?|\n/gu, "\n"));
+      expect(published.textContent).not.toContain("\\1");
+      expect(published.textContent).toContain("After");
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+      expect(new FormData(form).get("body")).toBe(original);
+      await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+      expect(new FormData(form).get("body")).toBe(expected);
+    });
+  }
 });

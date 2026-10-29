@@ -141,6 +141,37 @@ describe("ContentPostBodyTranslationPlanner", () => {
     expect(enqueuer.messages).toHaveLength(0);
   });
 
+  it.each([
+    ["attachment-only", "", "und"],
+    ["whitespace-only", "  \n\t  ", "ru"],
+    ["fenced-code-only", "```typescript\nconst value = 1;\n```", "und"],
+  ])("skips source locale planning for authoritative %s body", async (_case, originalContent, sourceLocale) => {
+    const authoritative = bodyRevision({ originalContent, sourceLocale });
+    const tasks = new FakePostBodyPlanningStore(authoritative);
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const sourceLocaleResolver = resolver(async () => {
+      throw new Error("detector must not run for no-text body");
+    });
+    const resolution = vi.spyOn(sourceLocaleResolver, "plan");
+    const providerCapability = { supports: vi.fn(() => true) };
+    const planner = plannerWith({ tasks, enqueuer, sourceLocaleResolver, providerCapability });
+
+    await expect(planner.planAndDispatch(
+      bodyRevision({ originalContent: "forged prose must not be used", sourceLocale: "en" }),
+      "he",
+      budgetAdmission(),
+    )).resolves.toEqual({
+      kind: "original",
+      taskCreated: false,
+      targetLocale: "he",
+      reason: "no-translatable-content",
+    });
+    expect(resolution).not.toHaveBeenCalled();
+    expect(providerCapability.supports).not.toHaveBeenCalled();
+    expect(tasks.specifications).toHaveLength(0);
+    expect(enqueuer.messages).toHaveLength(0);
+  });
+
   it("checks post-body provider/data-policy capability with protected segment metadata only", async () => {
     const supports = vi.fn((capability: Parameters<MachineTranslationProviderAdapter["supports"]>[0]) =>
       capability.domain === "content"

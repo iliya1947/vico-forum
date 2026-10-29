@@ -1,18 +1,37 @@
-import { inlineCodeMarkdown } from "./editor-document";
-import { serializeTable } from "./technical-markdown";
+import { parseTableCellMarkdown } from "./table-code";
+import { inlineCodeMarkdown, textareaMarkdown } from "./editor-document";
+import { parseForumMarkdown } from "../markdown-syntax";
+import { segmentTechnicalMarkdown, serializeTable } from "./technical-markdown";
 
 const tick = String.fromCharCode(96);
 
 function escapeText(value: string): string {
-  return value.replace(/\\|`|\*|_|<|>|\[|\]/gu, "\\$&");
+  return value.replace(/\\|`|\*|_|<|>|\[|\]|~|&/gu,
+    (char) => char === "&" ? "&amp;" : "\\" + char);
 }
 
-function textAsMarkdown(value: string): string {
-  return value.replace(/\r\n/gu, "\n").split("\n").map((line) => {
-    const escaped = escapeText(line);
-    // Plain text must not accidentally become a heading, quote or list item.
-    return escaped.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
-      (_, indent: string, marker: string) => indent + "\\" + marker);
+function textAsMarkdown(value: string, rawCodeLines?: ReadonlySet<number>): string {
+  return value.split("\n").map((line, index) => {
+    // Raw tabs are code only when the whole Markdown document parses them so.
+    if (/^ {0,3}\t/u.test(line) && (!rawCodeLines || rawCodeLines.has(index))) return line;
+    // Markdown would parse four leading spaces as an indented code
+    // block and display our literal-text escapes instead of decoding them.
+    // One structural character reference preserves the whitespace as prose.
+    const prefix = /^ {4}/u.test(line) ? "&#32;" : "";
+    const escaped = prefix ? prefix + escapeText(line.slice(1)) : escapeText(line);
+    // Vico parses spoilers and tables before CommonMark, and directions after
+    // CommonMark. Protect their source syntax on the literal clipboard path.
+    // A genuine indented-code line returned above remains byte-for-byte raw.
+    const literal = escaped
+      .replace(/\|/gu, "\\|")
+      .replace(/\{:vico-dir=(?:ltr|rtl)\}/gu, "\\$&")
+      .replace(/^:::spoiler(?=[ \t]|$)/u, "\\:::spoiler")
+      .replace(/^:::[ \t]*$/u, "\\$&");
+    // Neutralize marker punctuation, not the digits of an ordered marker.
+    return literal.replace(/^([ \t]{0,3})([#>+\-=]|\d+[.)])(?=\s|$)/u,
+      (_, indent: string, marker: string) => indent + marker.slice(0, -1) + "\\" + marker.slice(-1))
+      .replace(/^([ \t]{0,3})(-{2,}|={2,})(?=\s|$)/u,
+        (_, indent: string, rule: string) => indent + "\\" + rule);
   }).join("\n");
 }
 
@@ -117,6 +136,65 @@ export function clipboardHtmlToMarkdown(html: string): string | null {
   return valid ? source : null;
 }
 
-export function clipboardPlainToMarkdown(text: string): string {
-  return textAsMarkdown(text);
+export interface ClipboardPasteContext {
+  markdown: string;
+  selection: { start: number; end: number };
+}
+
+export function clipboardPlainToMarkdown(text: string, context?: ClipboardPasteContext): string {
+  // Share one physical-line view for escaping and contextual raw-code indices.
+  // Existing Markdown source and the dedicated Advanced code path stay raw.
+  text = textareaMarkdown(text);
+  const initial = textAsMarkdown(text);
+  if (!context || !/^ {0,3}\t/mu.test(text)) return initial;
+  const { markdown, selection } = context;
+  if (!Number.isSafeInteger(selection.start) || !Number.isSafeInteger(selection.end)
+    || selection.start < 0 || selection.end < selection.start || selection.end > markdown.length) {
+    return textAsMarkdown(text, new Set());
+  }
+
+  // Judge code versus prose using the actual source surrounding the selection.
+  const candidate = markdown.slice(0, selection.start) + initial + markdown.slice(selection.end);
+  const codes: Array<{ start: number; end: number }> = [];
+  type MarkdownNode = {
+    type: string;
+    position?: { start: { offset?: number }; end: { offset?: number } };
+    children?: readonly unknown[];
+  };
+  // Like the public renderer, treat spoiler bodies and table cells as their
+  // own Markdown documents rather than parsing custom markers as root prose.
+  function collectRendered(source: string, base = 0) {
+    for (const segment of segmentTechnicalMarkdown(source)) {
+      if (segment.kind === "prose") {
+        collectWithOffset(parseForumMarkdown(segment.source), base + segment.span.start);
+      } else if (segment.kind === "spoiler") {
+        collectRendered(segment.body, base + segment.bodyStart);
+      } else if (segment.kind === "protected") {
+        collectWithOffset(parseForumMarkdown(segment.source), base + segment.span.start);
+      } else if (segment.kind === "table") {
+        for (const row of [segment.headers, ...segment.rows]) {
+          for (const cell of row) collectWithOffset(parseTableCellMarkdown(cell.text), base + cell.span.start);
+        }
+      }
+    }
+  }
+  function collectWithOffset(node: MarkdownNode, base: number) {
+    const start = node.position?.start.offset, end = node.position?.end.offset;
+    if (node.type === "code" && start !== undefined && end !== undefined) {
+      codes.push({ start: base + start, end: base + end });
+    }
+    for (const child of node.children ?? []) {
+      if (child && typeof child === "object" && "type" in child) collectWithOffset(child as typeof node, base);
+    }
+  }
+  collectRendered(candidate);
+  const codeLines = new Set<number>();
+  let offset = selection.start;
+  initial.split("\n").forEach((line, index) => {
+    if (/^ {0,3}\t/u.test(line) && codes.some((code) => code.start <= offset && offset < code.end)) {
+      codeLines.add(index);
+    }
+    offset += line.length + 1;
+  });
+  return textAsMarkdown(text, codeLines);
 }

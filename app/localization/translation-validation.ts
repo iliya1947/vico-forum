@@ -112,11 +112,56 @@ function placeholders(value: string): string[] {
     .sort(deterministicCompare);
 }
 
+// Scan once rather than matching nested repetitions: malformed, untrusted
+// translation text must not cause exponential regexp backtracking.
+function nestingTokens(value: string): string[] {
+  const tokens: string[] = [];
+  let cursor = 0;
+  while (true) {
+    const start = value.indexOf("$t(", cursor);
+    if (start < 0) return tokens;
+    let depth = 1;
+    let quote: '"' | "'" | null = null;
+    let end = -1;
+    for (let index = start + 3; index < value.length; index += 1) {
+      const char = value[index]!;
+      if (quote) {
+        if (char === "\\") { index += 1; continue; }
+        if (char === quote) quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === "(") {
+        depth += 1;
+      } else if (char === ")" && --depth === 0) {
+        end = index;
+        break;
+      }
+    }
+    if (end < 0) throw new TranslationValidationError("Malformed i18next nesting");
+    const body = value.slice(start + 3, end).trim();
+    const parts = /^([\w.:-]+)(?:\s*,\s*(\{[\s\S]*\}))?$/u.exec(body);
+    if (!parts) throw new TranslationValidationError("Malformed i18next nesting");
+    if (parts[2]) {
+      // i18next interpolates {{variables}} before parsing nesting options as
+      // JSON. A numeric sentinel checks syntax without resolving them.
+      const json = parts[2].replace(/\{\{\s*[\w.-]+\s*\}\}/gu, "0");
+      try {
+        const options: unknown = JSON.parse(json);
+        if (!isRecord(options)) throw new Error("nesting options must be a JSON object");
+      } catch {
+        throw new TranslationValidationError("Malformed i18next nesting options");
+      }
+    }
+    tokens.push(value.slice(start, end + 1));
+    cursor = end + 1;
+  }
+}
+
 function controlledTokens(value: string): string[] {
   return [
-    ...value.matchAll(/\$t\(\s*([\w.:-]+)\s*\)/g),
-    ...value.matchAll(/<\/?\d+>/g),
-  ].map((match) => match[0]).sort(deterministicCompare);
+    ...nestingTokens(value),
+    ...[...value.matchAll(/<\/?\d+>/g)].map((match) => match[0]),
+  ].sort(deterministicCompare);
 }
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {
