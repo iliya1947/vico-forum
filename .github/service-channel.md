@@ -1,16 +1,26 @@
+## PR #253 — responsive package implemented / coordinator review next (2026-10-29)
+
+- Лёва completed authorized assignment #6497648909 in separate branch `fix/responsive-containment`, based on main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`. Stable exact head `ca51415bf1cfe72c28c1b05867e158c39b409194`; [PR #253](https://github.com/iliya1947/vico-forum/pull/253) open/Draft/mergeable.
+- Three distinct findings implemented as one bounded CSS package: RES-UI-01 popup containment with sticky/pointer targeting preserved; CODE-HISTORY-01 shrinkable full-row history with local raw-pre scroll; M-M07 narrow single account row with attention-text wrapping/min-content auth sizing/full avatar. No source/parser/auth/history API/schema/dependency changes.
+- Author evidence: base CSS RED3/3; final corrected-head Chromium240/240 PASS (90 header,120 menu,30 history),0 page errors/external requests; native267/3files PASS, local lint/typecheck/build plus strict browser fixture typecheck PASS. Browser fixture is synthetic presentation/fixed Router history, not real auth/DB E2E or owner acceptance.
+- [Exact-head CI #40882061194](https://github.com/iliya1947/vico-forum/actions/runs/40882061194) SUCCESS:1546 application/104files,345 PostgreSQL17/31files; all lint/typecheck/build/history/schema/runtime/Workers steps PASS. CI merge/head tree equality checked.
+- [Full personal author report](https://github.com/iliya1947/vico-forum/blob/e247e7a2b9086f1e12ff3aac3d3494ca44167e5c/.github/agents/codex-6.1-sol.md). Final browser matrix includes native More clicks and fixes an author-detected intermediate fullscreen trigger painting regression; earlier keyboard-only result is superseded.
+- Checkout clean; own browsers/ephemeral HTTP/temp build closed, dependency link removed. No merge/production/owner visual action. Contrast M-M10/F06 and unrelated cleanup excluded.
+- Next: Mira coordinator whole-PR review of ca51415, followed by eligible independent reviewers on the same stable head. This is author handoff, not self-review/team acceptance/merge approval. **Лёва STOP.**
+
 ## Implementation authorized — DISCOVERY-01 + responsive package (2026-10-29)
 
 - Owner authorized two separate implementation branches/PRs from current main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
 - Лира: `DISCOVERY-01` only.
-- Лёва: responsive package `RES-UI-01` + `CODE-HISTORY-01` + `M-M07` only.
+- Лёва: responsive package implemented in PR #253 at stable ca51415; author checks/exact-head CI complete, coordinator review next (details above).
 - Scopes must remain separate; no cross-stacking of unmerged implementation branches.
 - Each author hands off a stable exact head with applicable CI; whole-PR review begins only after implementation completion.
 
 ## Verified next implementation boundaries (2026-10-29)
 
 - `DISCOVERY-01`: confirmed current-Stage. Generic Unanswered/Search/Tag/Unread surfaces must keep Help topics discoverable while hiding the internal Help service-section identity. Лира verification complete; implementation not started.
-- Responsive package: `RES-UI-01`, `CODE-HISTORY-01`, `M-M07` all independently confirmed by Лёва on current main. Three distinct root causes, one bounded narrow-viewport hardening package; implementation not started.
-- Both new implementation branches/PRs require owner authorization.
+- Responsive package: three distinct causes implemented by Лёва in PR #253; author verification complete, coordinator whole-PR review pending.
+- Owner authorization for both separate implementation branches/PRs is recorded above; cross-stacking remains excluded.
 - Current main for both plans: `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
 
 ## Лёва — responsive verification complete / bounded plan ready (2026-10-29)
