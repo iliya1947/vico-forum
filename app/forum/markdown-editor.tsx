@@ -662,8 +662,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (at < 0) return;
       const selection = { start: at, end: at + findText.length };
       historyRef.current = rememberEditorSelection(historyRef.current, selection);
-      setMode("write");
       pendingSelectionRef.current = selection;
+      if (mode === "write" && textarea) {
+        // No mode/value change will run the layout effect for an active textarea.
+        textarea.focus();
+        textarea.setSelectionRange(
+          sourceOffsetToTextareaOffset(value, selection.start),
+          sourceOffsetToTextareaOffset(value, selection.end),
+        );
+        pendingSelectionRef.current = null;
+      } else {
+        setMode("write");
+      }
     }
 
     function replaceAllMatches() {

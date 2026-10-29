@@ -1544,6 +1544,87 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveValue("## Bold and link with `code`");
   });
 
+  it.each(["write", "preview", "split"] as const)("Find Next applies consecutive matches and wrap from %s", async (view) => {
+    const source = "one two one three";
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(0, 0);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    if (view !== "write") await chooseView(view);
+    const next = screen.getByRole("button", { name: "Find next" });
+    for (const [start, end] of [[0, 3], [8, 11], [0, 3]]) {
+      await userEvent.click(next);
+      expect(document.querySelector(".markdown-editor")).toHaveAttribute("data-mode", "write");
+      expect(document.activeElement).toBe(textarea);
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([start, end]);
+      expect(new FormData(textarea.closest("form")!).get("body")).toBe(source);
+    }
+  });
+
+  it.each([4, 17])("Find Next honors initial caret %s without a source edit", async (caret) => {
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue="one two one three" /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(caret, caret);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+    expect(document.activeElement).toBe(textarea);
+    expect([textarea.selectionStart, textarea.selectionEnd]).toEqual(caret === 4 ? [8, 11] : [0, 3]);
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe("one two one three");
+  });
+
+  it.each(["\n", "\r\n", "\r"])("Find Next maps UTF16 source offsets across %j without normalizing source", async (eol) => {
+    const source = `😀 one${eol}שלום one`;
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(0, 0);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    for (const range of [[3, 6], [12, 15], [3, 6]]) {
+      await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+      expect(document.activeElement).toBe(textarea);
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual(range);
+      expect(new FormData(textarea.closest("form")!).get("body")).toBe(source);
+    }
+  });
+
+  it.each(["", "absent"])("Find Next is a no-op for query %j", async (query) => {
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue="one two one" /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(4, 7);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    if (query) await userEvent.type(screen.getByRole("textbox", { name: "Find" }), query);
+    const next = screen.getByRole("button", { name: "Find next" });
+    await userEvent.click(next);
+    expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([4, 7]);
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe("one two one");
+  });
+
+  it("Find Next searches a single literal match without adding Undo content history", async () => {
+    const source = "before **one** after";
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: source + "!", selectionStart: source.length + 1, selectionEnd: source.length + 1 } });
+    textarea.focus(); textarea.setSelectionRange(0, 0);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "**one**");
+    for (let count = 0; count < 2; count += 1) {
+      await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([7, 14]);
+      expect(document.activeElement).toBe(textarea);
+    }
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe(source);
+    fireEvent.keyDown(textarea, { key: "y", ctrlKey: true });
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe(source + "!");
+  });
+
   it("finds and replaces literal source text without changing unrelated Markdown", async () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
       defaultAuthoringMode="advanced" defaultValue="one **one**" /></>);
