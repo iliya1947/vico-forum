@@ -2265,8 +2265,8 @@ describe("DISCOVERY-01 generic public topic location", () => {
     section: { id: section.id, name: section.name },
     category: section.category,
   };
-  const checkCards = () => {
-    const helpCard = screen.getByRole("link", { name: /Why does my Worker lose auth state\?/u });
+  const checkCards = async () => {
+    const helpCard = await screen.findByRole("link", { name: /Why does my Worker lose auth state\?/u });
     const normalCard = screen.getByRole("link", { name: /How do I type an API\?/u });
     expect(helpCard).toHaveAttribute("href", forumTopicPath("en", helpTopic.id));
     expect(within(helpCard).getByText("Help & solutions")).toBeInTheDocument();
@@ -2286,7 +2286,7 @@ describe("DISCOVERY-01 generic public topic location", () => {
     expect(JSON.stringify(loaded)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
     expect(JSON.stringify(loaded)).not.toContain('"Questions"');
     renderRoute(UnansweredRoute, loaded, forumUnansweredPath("en"), "en", "ltr");
-    checkCards();
+    await checkCards();
   });
 
   it("keeps both kinds of topic discoverable through Search and Tag detail", async () => {
@@ -2301,7 +2301,7 @@ describe("DISCOVERY-01 generic public topic location", () => {
     });
     expect(JSON.stringify(loaded)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
     renderRoute(SearchRoute, loaded, forumSearchPath("en") + "?q=discovery", "en", "ltr");
-    checkCards();
+    await checkCards();
 
     cleanup();
     vi.spyOn(reader, "readTag").mockResolvedValue({
@@ -2314,10 +2314,10 @@ describe("DISCOVERY-01 generic public topic location", () => {
     const tagged = await tagLoader({ params: { locale: "en", tagKey: "discovery" }, context: context() });
     expect(JSON.stringify(tagged)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
     renderRoute(TagRoute, tagged, forumTagPath("en", "discovery"), "en", "ltr");
-    checkCards();
+    await checkCards();
   });
 
-  it("shows category-only Help identity in authenticated Unread/New cards", () => {
+  it("shows category-only Help identity in authenticated Unread/New cards", async () => {
     const loaded = { locale: "en", topics: [
       { ...publicHelp, state: "new" as const, firstUnreadPostId: helpTopic.posts[0]!.id,
         latestPostId: helpTopic.posts[0]!.id, unreadCount: 1, activityAt: helpTopic.createdAt },
@@ -2326,7 +2326,7 @@ describe("DISCOVERY-01 generic public topic location", () => {
     ] };
     expect(JSON.stringify(loaded)).not.toContain(HELP_SOLUTIONS_SERVICE_SECTION_ID);
     renderRoute(UnreadRoute, loaded, "/en/unread", "en", "ltr");
-    const helpCard = screen.getByRole("link", { name: /Why does my Worker lose auth state\?/u });
+    const helpCard = await screen.findByRole("link", { name: /Why does my Worker lose auth state\?/u });
     const normalCard = screen.getByRole("link", { name: /How do I type an API\?/u });
     expect(helpCard).toHaveAttribute("href", forumTopicPath("en", helpTopic.id) + "#post-help-question-post");
     expect(within(helpCard).getByText("Help & solutions")).toBeInTheDocument();
