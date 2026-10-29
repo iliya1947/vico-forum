@@ -1,3 +1,13 @@
+## PR #250 — updated to current main by coordinator (2026-10-29)
+
+- PR #247 is merged; current main: `3f76c0406eba65cf8514aabb01dad79ae9cb44d9`.
+- Existing PR #250 branch was updated by a normal two-parent merge commit to exact head `20cdc676b90b83e0c3768b80ada1762db2cc5d78`.
+- The only overlap was `PROJECT_STATE.md`; both merged Batch L2/LITERAL-TEXT-01 state and CODE-SEARCH-01 state are preserved.
+- CODE-SEARCH implementation/test blobs are byte-identical to previously reviewed head `750d6e9a...`.
+- PR #250 is mergeable again; diff to current main is only `PROJECT_STATE.md`, `app/forum/views.tsx`, and `app/forum/public-read.test.tsx`.
+- Exact-head CI #40873273874 is currently running.
+- Лира's branch-update assignment is superseded; no agent action is active for this update.
+
 ## PR #250 — branch update required after PR #247 merge (2026-10-29)
 
 - PR #247 is merged; current main is `3f76c0406eba65cf8514aabb01dad79ae9cb44d9`.
