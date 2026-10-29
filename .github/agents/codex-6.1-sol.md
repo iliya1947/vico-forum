@@ -1,5 +1,43 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #261 — RES-A11Y-01 / author implementation handoff / STOP (2026-10-30)
+
+Assignment #236/6510280618, confirmed verification #6508642269. Branch `fix/simple-editor-accessible-name`, base/main `d1bbd6144e787e69bcf605acf8315b4e292d80ec`, stable exact head `80ab24662992fd1b35e782f7a2597703619fcb57`.
+PR: https://github.com/iliya1947/vico-forum/pull/261 .
+
+### Implemented minimal boundary
+
+Production correction is exactly two added lines in VisualTextLeaf: consume the existing common translation runtime and assign aria-label=t(editorVisualSurface) to the actual role=textbox span. The existing localized name is now supplied directly by the author instead of relying on a named ancestor region or a different native textarea. No new translation key, dependency, idref protocol, DOM-label scraping, wrapper or widget model was added.
+
+The shared leaf creation path covers empty/trailing text, formatting fragments, paragraphs and nested spoilers. Name is independent of editable message content and reacts to the active runtime resource. Generic existing `Visual editor` semantics are used intentionally; new context-specific form labels are not introduced by this bounded fix. Source offsets, editing callbacks, history, selection, contentEditable ownership and disabled/paste guards are unchanged. Advanced native labels, table input labels and Preview behavior remain separate.
+
+Three changed files+95/-1:visual-markdown-editor.tsx+2;markdown-editor.test.tsx+77;PROJECT_STATE.md+16/-1 (includes current date and factual implementation state). Project state does not claim future CI or review acceptance.
+
+### Personally executed author checks
+
+Ten permanent focused regressions introduced before production fix:RED9 FAIL/1 PASS on original code (Advanced/table control passes). After fix full MarkdownEditor219/219 PASS,19.29s=209 existing+10 new. Final focused10/10 PASS,209 skipped,3.72s after removing unsupported query-option typing in new tests. Final full generated-type/typecheck PASS; full repository lint PASS,0 errors, one pre-existing unused-eslint-disable warning ui.test.tsx:174. Fresh standard UI Preview build and diff-check PASS. React checklist applied:translation hook and existing catalog used directly, no additional local state/effects/fetch/global listeners or unrelated redesign.
+
+Permanent tests cover empty/plain/formatted/multi-paragraph/trailing/nested leaves, exact source, multiple editor instances with independent native labels, active runtime language changes (he/ru/eo/en), stable name through edit/Undo/Redo/Simple-Advanced switching, disabled/Preview boundaries and existing native/table naming. Runtime locale tests supply controlled translation resources to verify propagation; they do not accept deployed language-pack quality. All original editor tests include EDITOR-05/08 source/selection/disabled boundaries.
+
+Fresh standalone engineering harness uses actual current shared MarkdownEditor, app styles/home-shell, existing translation runtime, native form labels and controlled source. Chromium/CDP Accessibility.getPartialAXTree across28 scenarios at390/1280:40 actual Simple textbox nodes have the expected localized names;38 enabled leaf focus observations plus2 disabled controls. Cases include empty/plain/formatted/multiple paragraphs/trailing/nested spoiler/table/two instances/disabled/Advanced/Preview and he/ru/eo runtime fixtures. Leaf AX name and editable AX value remain separate. Plain controls at both widths additionally exercise native Tab, browser text insertion, keyboard Undo/Redo, mode switches and source/name/value preservation. Native Advanced labels and table names remain correct.0 page errors/external or mutating requests. Browser name fixture values are controlled translations, not production locale rollout acceptance.
+
+No real screen-reader speech/axe/global WCAG conformance, network publication E2E or owner visual acceptance is claimed. Native text insertion in the final browser history control is one input event; the preliminary multi-character typing probe produced multiple pre-existing Undo steps, so the harness was corrected rather than changing the editor's history behavior.
+
+Local full application/PostgreSQL suites and application production build were not separately repeated. Full results below belong to CI, not personal additional local execution.
+
+### Exact-head CI
+
+Run https://github.com/iliya1947/vico-forum/actions/runs/40968848315 — SUCCESS. Completed steps/logs inspected personally: checks123780168478 passed1593 application tests/104files, lint/typecheck, application and UI Preview builds and all configured migration-history/metadata/schema checks; database123780168903 passed346 PostgreSQL17 tests/31files and all configured parity/privilege/provisioning/credential/Workers-smoke steps. Every listed step SUCCESS. These are CI observations, not additional personally executed local suites or external provider checks.
+
+Both logs identify CI merge529d4feced094b86883f2f712c884adb7b7ff615, merging stable80ab246 into assigned based1bbd61. Locally fetched CI merge and head have identical tree0745c90b7168d2e96fc8ae83c2563a63ff902c6b. Final metadata open/Draft/mergeable, base/head unchanged.
+
+### Cleanup / handoff
+
+Artifacts `/workspace/work/res-a11y01-implementation`:red.log,editor.log,focused-final.log,typecheck-final.log,lint.log,preview-build.log,harness-build.log,browser.py/browser.json/browser.log,temporary build and ui-preview-dist. Pinned Node24.21.0/existing dependencies used. Temporary harness source/config removed, dependency link removed, built output moved outside checkout. Own ephemeral loopback HTTP/Chromium closed. Final checkout clean at stable head; no app runtime/DB/container/external provider/production resources started.
+
+Implementation, author verification and exact-head CI complete. Coordinator whole-PR review stable exact head is next, followed by eligible independent non-authors. No whole-PR self-review/Ready/merge performed. This is author handoff, not team acceptance or merge approval. Лёва STOP after publication.
+
+
 ## RES-A11Y-01 — current-main accessible-name verification + minimal boundary / STOP (2026-10-29)
 
 Assignment #236/6508446017. Personally verified exact main `d1bbd6144e787e69bcf605acf8315b4e292d80ec`. Verification only: no implementation, branch or PR created.
