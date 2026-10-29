@@ -1,5 +1,108 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — PR #252 independent whole-PR review / PASS / published
+
+Date: 2026-10-29. Assignment: PR236 #6498377619.
+Exact head: afc5b3d8c7e0e656746296cefe11d8cbe72604d1.
+Base/main: f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96.
+Scope: DISCOVERY-01; all five changed files, +201/-19.
+
+## Verdict
+
+PASS. Confirmed current-Stage defects: 0. Future-only findings/blockers: 0.
+This is my independent whole-PR verdict, not team acceptance or merge approval.
+No implementation edits during review. Developer authorized publication of this completed verdict.
+
+## Complete source/diff review
+
+Read every changed line of db/forum-repository.ts, app/forum/views.tsx,
+app/forum/public-read.test.tsx, tests/database/stage4-core-e2e.test.ts and
+PROJECT_STATE.md, plus the relevant unmodified readers/loaders/wrappers/consumers.
+Checked the current Help contract, reserved identifiers and migration0027 against
+UI_UX_PASS and the accepted DISCOVERY-01 correction boundary.
+
+The shared private publicDiscoveryLocation function creates an explicit category
+object and either an explicit normal section object or null for the exact reserved
+HELP_SOLUTIONS_SERVICE_SECTION_ID. The original SQL row is not spread/serialized.
+It is called by all four generic readers: Unanswered, Search, Tag detail and Unread.
+The repository still selects private columns internally to identify the special
+section; these fields do not cross the reader return boundary.
+
+All changed query predicates, joins, ranking, ordering, grouping, limits and counts
+are unchanged: the production change is final result mapping plus nullable types.
+Public Help topics are retained, not excluded; public category is retained. Normal
+section identity is unaffected. Popular has no section/location projection; tag index
+contains tags/counts, so neither needs this nullable boundary. Home/direct-section,
+dedicated Help, topic breadcrumb and authoring/moderation were not expanded.
+
+All four views guard nullable section and only omit its markup/separator; links,
+counts, tags, read-state grouping and first-unread anchors remain unchanged. CSS
+contains no unconditional pseudo-separator that would expose an empty section label.
+Inspected all production consumers of the changed interfaces/read methods. The extra
+consumer in sectionLoader only uses topic id/state, not nullable section, and was
+also exercised with real PostgreSQL data below. Topic/thread section remains non-null
+and unchanged; it is a separate contract.
+
+Read all added tests. The three application regressions use a projected reader fixture;
+therefore they alone do not prove the repository boundary. The PostgreSQL test checks
+actual four-reader results and normal controls. Migration0023 is added only to the
+existing test schema list, enabling actual read-state tables; no production migration
+history changes. State text describes implementation without claiming external/browser
+acceptance or independent review in advance.
+
+## Personally executed evidence
+
+Pinned Node24.21.0, existing exact project dependencies:
+- public-read.test.tsx: 73/73 PASS,11.67s, including new route/presentation regressions.
+- Disposable local PostgreSQL17, actual stage4-core-e2e.test.ts plus one independent
+  diagnostic: 4/4 PASS,2.64s (three submitted tests plus my additional check).
+
+The additional diagnostic was temporarily appended, executed and restored byte-for-byte;
+source is saved separately as diagnostic.txt. It creates its own normal and Help topics,
+users and tag, deliberately names the normal section Questions and renames the reserved
+section to Private service marker in the disposable DB. This proves hiding is based on
+reserved identity, not visible-name matching, and normal Questions stays public.
+
+It exercises actual PostgreSQL -> createHyperdriveForumReader (local Client factory) ->
+real Unanswered/Search/Tag/Unread loaders for EN/RU/HE, without mocking reader results.
+Both topics stay present; Help section is null; normal category/section are retained;
+serialized loader payloads contain neither reserved section id nor renamed service label.
+Checks tag count2, search post count2 after reply, real Help new -> read -> unread -> read
+lifecycle, firstUnreadPostId/latestPostId/unreadCount, exclusion from Unanswered after a
+reply, sectionLoader normal read-state projection, hidden-section direct404 and guest
+Unread401. These are native server/data checks, not actual HTTP/Chromium/SSR E2E.
+
+## Exact-head CI independently checked
+
+CI40881203274 SUCCESS; completed steps and logs inspected:
+- checks123472871435:1549 application tests/104files, lint/typecheck/application and
+  UI-preview builds/history/migration/schema gates SUCCESS. One existing unused-eslint
+  disable warning, no errors.
+- database123472870906:346 native PostgreSQL17 tests/31files, schema parity/runtime
+  privilege/provisioning/credential probes and local Workers smoke SUCCESS.
+
+Full local suites, lint/typecheck/builds were not separately repeated; their full results
+above are CI observations. Git-fetched CI merge ab9077e871bfa1d4db1918cb39bfb6597e6a4e16
+has tree3ada2304d104820e8bf4ef6dd2c69cd2c2f8daef, identical to assigned implementation
+head. Final GitHub metadata still has assigned head/base, open/Draft/mergeable.
+
+## Limits / cleanup / stop
+
+No separate real Chromium or full application HTTP/SSR E2E, no real external services,
+production or owner visual acceptance performed or inferred. No broader Help/privacy
+policy change proposed. No independent result inferred from other auditors' conclusions.
+
+Temporary test edits restored; git diff empty and diff-check PASS. Dependency symlink
+removed. Own disposable leva-pr252-review-pg removed with volume; port55442 closed.
+No application server was started. Artifacts outside checkout: native.log,database.log,
+diagnostic.txt,stage4-original.ts and this report in /workspace/work/pr252-review.
+
+Independent review COMPLETE; developer authorized publication. This report is now published.
+Mira coordinator reconciliation is next; this personal verdict does not certify PR253 or team merge readiness. Лёва STOP.
+
+
+---
+
 ## PR #253 — responsive containment / author implementation handoff / STOP (2026-10-29)
 
 Assignment: PR236 #6497648909; accepted verification #6497466128 / reconciliation #6497607854.
