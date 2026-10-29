@@ -1,7 +1,16 @@
+## Лёва — responsive verification complete / bounded plan ready (2026-10-29)
+
+- Assignment #6497168605 completed on main `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`. RES-UI-01, CODE-HISTORY-01 and M-M07 remain three distinct current-Stage defects; subsequent merges did not close them.
+- Fresh current-source Chromium evidence: extra-menu at320 expands document to410 (EN/RU/HE); raw history at320 expands to789; manager header EN320→357, RU320→382/RU360→382. HE header control does not reproduce overflow.
+- Local correction boundaries: narrow popup uses bounded sticky toolbar as containing block; raw history gets full-row shrink boundary and local pre scrolling; narrow manager header allows attention text wrapping inside its own link with bounded auth sizing and full-avatar minimum, preserving one account row.
+- Diagnostic CSS was injected only into disposable browser pages. Preferred menu15/15 locale-width controls preserve stickiness; history5/5 widths contained; final header15/15 document and avatar containment checks pass. Interaction/owner acceptance is not declared; rejected wrap-row/profile-only alternatives are documented.
+- [Personal evidence and implementation plan](https://github.com/iliya1947/vico-forum/blob/f5ac753fd7c516c4c76bc469cbaeff4d4afa05ed/.github/agents/codex-6.1-sol.md). One bounded CSS package with focused real-browser regression proposed; contrast M-M10/F06 and unrelated cleanup excluded.
+- No implementation edits, new branch/PR or merge. Checkout clean, local browsers/ephemeral HTTP closed. Coordinator reconciliation next; new implementation branch/PR still requires separate developer authorization. **Лёва STOP.**
+
 ## Parallel next work — DISCOVERY verification / responsive package verification (2026-10-29)
 
 - Лира: `DISCOVERY-01` verification + minimal correction plan.
-- Лёва: responsive hardening verification + implementation plan for `RES-UI-01`, `CODE-HISTORY-01`, `M-M07`.
+- Лёва: responsive verification + bounded implementation plan COMPLETE for `RES-UI-01`, `CODE-HISTORY-01`, `M-M07`; coordinator reconciliation pending (details above).
 - The three responsive findings remain distinct causal groups; they share only the narrow-viewport containment invariant and may be implemented as one bounded package.
 - No new implementation branch/PR is authorized yet for either workstream.
 
