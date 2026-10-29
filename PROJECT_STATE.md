@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-28
+Последнее обновление: 2026-10-29
 
 ## Назначение
 
@@ -19,6 +19,20 @@
 
 История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
 цепочки фиксируются в `PROJECT_HISTORY.md`.
+
+## CODE-SEARCH-01 — search history field synchronization (2026-10-29)
+
+В отдельной implementation-ветке исправлена рассинхронизация формы публичного поиска
+при переходах по истории на том же `/:locale/search` route. URL `q`, loader и
+результаты уже следовали за навигацией, но неконтролируемый `input` сохранял
+значение предыдущего поиска из-за `defaultValue`, задающего только начальное
+значение. Identity поля теперь зависит от authoritative нормализованного
+`query`; изменение запроса перемонтирует только search input, не затрагивая
+GET-форму, loader, backend search, URL parsing или соседние UI-механизмы.
+Новый native route regression проверяет GET-поиски A→B, history Back/Forward,
+согласованность URL/результатов/input, редактирование до submit и пустой запрос.
+Выполнение CI и независимый whole-PR review фиксируются отдельно; external
+deployment и визуальная приёмка не заявляются.
 
 ## L8 — Durable localization / translation corrections (2026-10-28)
 
