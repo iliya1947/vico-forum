@@ -132,9 +132,10 @@ A deeper, more complete owner-only audit surface belongs to the future super-adm
 2. Add shared admin navigation and layout.
 3. Show the Admin panel entry point to an authenticated actor who has at least one applicable administrative capability.
 4. Each admin section independently rechecks its own server-side permission boundary.
-5. Implement the Overview with real statistics, available destinations and recent significant administrative activity when readable.
-6. Keep approved-but-unimplemented destinations truthful through the existing Under development mechanism.
-7. Do not move or duplicate Needs attention into the admin panel.
+5. Implement the Overview foundation with real forum statistics and available destinations.
+6. Do not fabricate recent administrative activity before Package 3 exists; Package 3 completes the Overview by adding the recent significant-action block from the real history store.
+7. Keep approved-but-unimplemented destinations truthful through the existing Under development mechanism.
+8. Do not move or duplicate Needs attention into the admin panel.
 
 ### Package 3 — significant administrative action history
 
@@ -152,6 +153,8 @@ Persist enough information to answer:
 Where practical, recording a significant action and applying that action should share the same transaction boundary.
 
 Reading history must have its own code-backed permission.
+
+After the real history store/read path exists, complete the Overview by showing recent significant administrative actions to actors allowed to read them.
 
 This package is not the future full super-admin audit system.
 
