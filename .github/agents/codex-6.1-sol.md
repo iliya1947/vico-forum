@@ -1,5 +1,128 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — root-cause / bounded redesign proposal — PROPOSED / STOP
+
+Дата: 2026-10-29. Автор: Лёва — Codex-6.1 Sol.
+Назначение: PR236 comment6484849949.
+Unchanged exact head: e1c8391d15e604dedfd525a2e8b1b1cfd26d1881.
+Base/main: ebdb482e8bb37cf18d7085beb2926930139b00d6.
+
+Статус: **техническое предложение к согласованию, не утверждённый implementation plan**. Implementation не менялась. Новый review/CI/E2E не запускались: использованы уже полученные exact-head browser artifacts, текущий source и профильные contracts. Новых findings сверх согласованных четырёх не вводится.
+
+## 1. Root cause и масштаб
+
+Четыре residual не являются четырьмя случайными независимыми regexp bugs. Общая неправильная модель helper: selected source substring считается literal rendered code content, а безопасная вставка — raw replacement плюс отдельные поправки delimiter длины.
+
+В действительности между source и code value есть несколько обязательных преобразований:
+
+- Vico table/spoiler задают локальные Markdown documents;
+- code span имеет delimiter/padding и CommonMark normalization;
+- block code внутри indentation/quote/list имеет structural continuation prefixes;
+- physical CR/LF/CRLF участвуют в определении code lines и closing candidates.
+
+Следовательно, баги имеют разные конкретные проявления, но один неверный контракт редактирования. Нужна **ограниченная замена модели pastePlainTextIntoExistingCode**, не четвёртый пакет исключений и не новый редактор/универсальный CST framework.
+
+Одного локального изменения только helper недостаточно для полного case1 с literal pipe: shared table-cell parsing также должен согласовать structural pipe escaping внутри code. Это часть уже подтверждённого case1, не новый fifth finding.
+
+## 2. Сравнение с существующей правильной основой
+
+- segmentTechnicalMarkdown уже задаёт реальные source spans table cells и spoiler bodies; использовать именно эти boundaries, без второй table/spoiler grammar.
+- ForumTable разбирает cell.text отдельно, ForumMarkdown разбирает spoiler body отдельно. Code context discovery обязан делать то же и сохранять global↔local source coordinates.
+- parseRenderedForumMarkdown соответствует semantic boundaries, но прямо предупреждает: позиции локальные, дерево не предназначено для source edits. Нельзя подать его позиции напрямую в replaceSourceRange или сериализовать всё дерево обратно.
+- inlineCodeAffixes/inlineCodeMarkdown уже учитывают backtick delimiter и padding для крайних spaces/all-space content. Новый helper дублирует только часть этой логики, поэтому теряет spaces.
+- editableCodeRanges/codeNodeContentRange — primitives для разрешённых source keyboard edits, не полноценное представление rendered code value. Не расширять их молча так, чтобы поменять semantics Tab/Enter/IME вне этой команды.
+- commitSource/EditorSnapshot/recordEditorEdit уже дают одну undoable transaction, selection и exact source edits. Сохранить этот механизм.
+- encodeTableCell/decodeTableCell предназначены для literal visual-cell input и снимают/добавляют escapes всей ASCII punctuation. **Не применять decodeTableCell ко всей authored Markdown cell до parsing**: это превратит экранированную literal punctuation в formatting.
+
+## 3. Предлагаемая минимальная граница решения
+
+Заменить внутренность существующей plain-code operation на три последовательных действия:
+
+**A. Locate actual code unit → B. Replace its logical content → C. Encode bounded source edit.**
+
+Не строить новую универсальную paste subsystem. Public command остаётся прежней, clipboardPlainToMarkdown остаётся prose path. Native Advanced source paste, Simple input, rich HTML/TSV и прочие editor commands не переводятся на новую модель.
+
+### A. Один read-only source-positioned locator
+
+- Обойти реальные renderer units: root prose/protected, spoiler body, header/body table cell. Внутри — существующий parser с ancestor path quote/list и code/inlineCode nodes.
+- Вернуть target code unit, его envelope/source spans, map source offsets↔code-content boundaries и container projection (cell/spoiler/quote/list/indent).
+- Structural padding/indentation не считать частью logical code content; собственные spaces/tabs пользователя не считать structural prefix. Для CRLF и Unicode сохранять корректные JS UTF-16 source coordinates.
+- Определить container prefixes по parser/container structure и actual source spans, а не копировать первый raw indent на все случаи.
+- Различать not-code и known-code-but-unrepresentable/ambiguous selection. Только not-code идёт в prose serializer. Невозможность безопасно отобразить selection не должна незаметно превращаться в raw/prose fallback.
+
+### B. Вставка в code value
+
+Смысл операции: old logical prefix + clipboard content + old logical suffix. Это test oracle, а не raw source.slice equality.
+
+Для line handling использовать один code-specific physical-line iterator, распознающий CRLF, LF и CR, с сохранёнными terminator/source spans. Не нормализовать весь документ и не расширять глобальную Vico table/spoiler grammar на новые line endings без необходимости.
+
+### C. Bounded encoding
+
+1. **Inline code:** использовать одну существующую normalization/padding rule из inlineCodeAffixes; сохранять existing delimiter width как минимум, расширять только при необходимости. Structural padding отделяется от content. Крайние literal spaces и backticks должны пройти parse→value round-trip. Меняется только target inline unit и необходимые delimiters, не paragraph/table целиком.
+2. **Indented / quote / list code:** новые physical lines получают required structural code/container continuation prefix. Clipboard semantic indentation не срезается. Existing unselected code prefix/suffix и outer paragraph/table/spoiler сохраняются. Не сериализовать весь list/blockquote ради вставки одного фрагмента.
+3. **Fenced code:** анализировать closing hazards на logical code lines после container projection, используя тот же CR/LF/CRLF line view. При matching/longer candidate согласованно расширять actual opener/closer, сохраняя marker type, info string/filename и окружающий source. Новый fragment также получает нужные quote/list prefixes.
+4. **Table code:** один shared узкий table-cell code transport codec для parser/renderer и encoder/source mapping. Минимальная предложенная semantics — обычный escaped pipe внутри table inline code представляет pipe, а не prose backslash (GFM example200). Существующие table dimensions/alignment и cell boundaries остаются authoritative. Не подключать весь GFM stack и не заменять table lexer на новую grammar ради этого case.
+
+Важная явная часть scope: current ForumTable и semantic consumers сейчас получают code value с literal backslash в \|. Исправление shared table-code semantics меняет этот ошибочный rendered value; это должно быть согласовано и отражено явно, а не спрятано в editor-only escaping. Один и тот же cell parsing/codec должен применяться в ForumTable, semantic consumer и code locator; existing clipboard cell parsing также должен видеть согласованную semantics. Не декодировать произвольно все backslashes/entities.
+
+Для pipe/backslash parity использовать спецификацию/reference behavior и round-trip tests, а не предположить, что один replace('|','\\|') достаточен. Подтверждённый текущий payload с pipe обязан успешно вставляться без отказа. Для действительно не представимых вне подтверждённого scope combinations — только явный безопасный отказ без изменения buffer/source, не silent data loss и не имитация успешного paste. Ни один из четырёх подтверждённых cases нельзя закрыть таким отказом.
+
+Результат операции — edit plan (source edits + final caret) или отдельный not-code/blocked outcome. Существующий command применяет successful plan одним commitSource/history step. Предупреждение использует existing UI mechanism с корректным generic wording, без новых диалогов или технических деталей для пользователя.
+
+## 4. Обязательные invariants
+
+- Actual parsed/rendered target code value равен logical prefix + payload + suffix с явно учтённой CommonMark normalization, structural prefixes и source EOL fidelity; source string совпадение само по себе не oracle.
+- Unselected visible text и его code/quote/list/table/spoiler membership сохранены; не появляются новые strong/headings/links вне code.
+- Source вне target code envelope и действительно необходимых structural edits остаётся побайтово неизменным. Whole-document AST serialization запрещена.
+- Нельзя иметь known code context → null → prose fallback.
+- Outer table shape/alignment, spoiler summary, code info/filename, соседние targets и direction не меняются от paste.
+- One Undo возвращает exact original source/selection, Redo — exact new source; caret остаётся в logical месте вставки после delimiter/prefix changes.
+
+## 5. Реализационный порядок
+
+1. Зафиксировать existing four failures и passing controls как acceptance tests, включая expected parsed value и surrounding structure. Не менять implementation до утверждения этой границы.
+2. Согласовать shared table-cell code transport rule; проверить представимость подтверждённого payload и round-trip pipe/backslash cases. Обновить только необходимую shared cell semantics и source mapping, не whole table grammar.
+3. Заменить внутренний raw-insertion контракт helper на locator/value/encoder. Сразу применять один line iterator для всех block encoders и одну inline padding rule.
+4. Подключить edit result к existing command/history, сохранив prose/native/TSV/HTML paths. Отдельно обработать blocked, не masquerade как not-code.
+5. Проверить shared-consumer regression effects: semantic Markdown/protected content, mentions/quotes, table source boundaries. Если меняется реально versioned semantic/protection contract, отразить это явно по текущим docs; не вводить LOC-09 recovery, migration или provider rollout. Не трогать соседний PR #249.
+6. Новый stable exact head, applicable full CI и browser/application acceptance, затем новый independent whole-PR cycle. Автор не выдаёт self-verdict.
+
+## 6. Regression matrix — конечная, с конкретными пересечениями
+
+Не бесконечный Cartesian product. Обязательны все шесть failed browser executions из четырёх cases + перечисленные controls. Остальная matrix — targeted pairwise coverage между axes с обязательными intersections ниже.
+
+| Context/boundary | Обязательные values и controls |
+| --- | --- |
+| Inline root, spoiler, table header/body cell | sensitive ASCII/entities, pipe/backslashes с проверкой parity, leading/trailing/both spaces, all-space content, существующий padding, backtick runs1/2/longer, Unicode |
+| Indented root/spoiler | single/multiline, blank lines, tabs/spaces, content indentation vs structural indentation, unselected Before/After, supplied-prefix control |
+| Fenced root/spoiler | backtick/tilde, shorter/equal/longer/opposite candidates, CR/LF/CRLF и mixed endings, 0–3-space indentation, info/filename, unselected Outside |
+| Quote/list containers | fenced и indented code, continuation prefixes, одна nested quote/list representative комбинация, multiline payload, невыделенный suffix остаётся code |
+| Selection/source mapping | caret insertion, partial replacement, entire code value, edge spaces/padding, multiline source selection, UTF-16/CRLF offset boundaries; cross-container selection не имеет silent fallback |
+| Integration controls | prose plain command; native Advanced raw paste; Simple input; HTML/TSV; spoiler closer; tabbed table-shaped paste; mentions/LOC-03/LOC-06 existing regressions |
+
+Обязательные intersections: table cell×pipe/backslashes×inline padding/backtick widening; indented/quote/list×multiline×unselected suffix; fenced×все3EOL×marker/relative width; UTF-16/source selection×prefix/delimiter edits.
+
+Уровни evidence:
+1. Pure source-map/encode→actual parse/value tests, целостность outside source/structure.
+2. Mounted actual command→FormData→ForumMarkdown, selection и single-step Undo/Redo.
+3. Chromium с настоящим clipboard/UI command для каждого failure и основных controls. Representative plain-code inserts пройти через настоящий forum POST/DB revision/public topic page на новом head, не выдавать прежние E2E за новый результат.
+4. Full app/native PG/lint/typecheck/build/Workers CI exact head. Green helper-string tests или CI не заменяют invariants и browser evidence.
+
+## 7. Что не предлагается
+
+Новый editor engine, общий CST всей системы, whole-document serialization, новая library/dependency по умолчанию, wholesale GFM table rewrite, изменение native Advanced typing/paste, production/provider/external rollout, LOC-09 recovery. Это bounded замена одного неверного literal-code edit boundary и необходимое согласование table-cell code semantics.
+
+## Sources / limits
+
+Текущий source и артефакты /workspace/work/pr247-review-e1c8391d/advanced-expanded.json, advanced-controls.json, fence-controls.json; source contracts docs/EDITOR.md §2/§3.3/§10.
+Official GFM: https://github.github.com/gfm/#code-spans и https://github.github.com/gfm/#example-200. Проверены relevant normalization/table-pipe sections. Reference mdast-util-gfm-table source показывает отдельный inTable code-text handler; библиотека не установлена и dependency не добавлялась.
+Документы/reference copies сохранены в /workspace/work/pr247-literal-redesign/. Candidate design не реализован и не объявлен проверенным решением. Repo чистый, новые tests/servers/DB не запускались.
+
+**Мире:** согласовать proposed helper/model boundary и узкую shared table-code semantics, затем выдать отдельное implementation assignment. До этого implementation не менять. STOP.
+
+
+---
+
 ## PR #247 — independent whole-PR review / REQUEST CHANGES / STOP (2026-10-29)
 
 Дата: 2026-10-29. Назначение: PR236 comment6484190656.
