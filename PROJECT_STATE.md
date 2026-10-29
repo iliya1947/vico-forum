@@ -26,11 +26,15 @@
 при переходах по истории на том же `/:locale/search` route. URL `q`, loader и
 результаты уже следовали за навигацией, но неконтролируемый `input` сохранял
 значение предыдущего поиска из-за `defaultValue`, задающего только начальное
-значение. Identity поля теперь зависит от authoritative нормализованного
-`query`; изменение запроса перемонтирует только search input, не затрагивая
-GET-форму, loader, backend search, URL parsing или соседние UI-механизмы.
-Новый native route regression проверяет GET-поиски A→B, history Back/Forward,
-согласованность URL/результатов/input, редактирование до submit и пустой запрос.
+значение. При одинаковом нормализованном `query` разные raw URL/history
+entries не меняли прежний `key={query}`, оставляя dirty input. Теперь identity
+поля зависит от ключа закоммиченной записи React Router location, а не от
+нормализованного запроса. Изменение записи истории перемонтирует только search
+input; редактирование до submit остаётся неконтролируемым. GET-форма, loader,
+backend search, URL parsing и соседние UI-механизмы не изменены.
+Native route regressions проверяют GET-поиски A→B, Back/Forward,
+normalized-equivalent raw queries, dirty draft, empty/whitespace-equivalent
+history entries, согласованность URL/результатов/input и редактирование до submit.
 Выполнение CI и независимый whole-PR review фиксируются отдельно; external
 deployment и визуальная приёмка не заявляются.
 
