@@ -2,6 +2,7 @@ import { forumReadLoader } from "../forum/read-availability.server";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
+import { registryForRequest } from "../localization/request-context";
 import { ForumRouteError } from "../forum/ui";
 import { SearchView } from "../forum/views";
 
@@ -19,13 +20,21 @@ export const loader = forumReadLoader(async function loader({ request, params, c
   const queryTooLong = normalizedQuery.length > 200;
   const query = queryTooLong ? normalizedQuery.slice(0, 200) : normalizedQuery;
 
+  const results = query && !queryTooLong
+    ? await forumReaderForRequest(context).search(query)
+    : [];
+  const registry = results.length > 0 ? (await registryForRequest(context)).registry : null;
+
   return {
     locale: params.locale ?? "en",
     query,
     queryTooLong,
-    results: query && !queryTooLong
-      ? await forumReaderForRequest(context).search(query)
-      : [],
+    results: results.map((result) => ({
+      ...result,
+      titleDirection: result.sourceLocale === "und"
+        ? "auto"
+        : (registry?.find(result.sourceLocale)?.locale.direction ?? "auto"),
+    })),
   };
 });
 
