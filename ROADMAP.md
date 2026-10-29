@@ -10,6 +10,7 @@ Source of truth:
 - продуктовый и технический baseline — `PROJECT.md`;
 - текущее фактическое состояние — `PROJECT_STATE.md`;
 - application authorization — `docs/auth/AUTHORIZATION.md`;
+- обычная админ-панель и её bounded delivery contract — `docs/ADMIN_PANEL.md`;
 - мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
 - database rollout/operations — `docs/database/*`;
 - завершённый Stage 1 scaffold plan — `SCAFFOLD_PLAN.md`.
@@ -436,9 +437,12 @@ infrastructure diagnostics в production прекращаются; рисков�
   reply/quote relationships без tree layout и полноценный editor/code presentation;
 - целевой Light/Dark UX с first-use system preference и persisted manual choice.
 
-Жалобы, блокировки, reputation/audit log, social-network profile mechanics и другие возможности,
-которые владелец отдельно не утвердил, не входят в обязательный объём без нового продуктового
-решения.
+Жалобы, reputation, полный owner-only audit, social-network profile mechanics и другие
+возможности, которые владелец отдельно не утвердил, не входят в обязательный объём без нового
+продуктового решения. Отдельно утверждённый ordinary-admin scope, включая временные/постоянные
+блокировки и историю значимых административных действий, зафиксирован в
+[`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). AP-01 добавляет только постоянный контракт;
+реализация идёт последующими bounded PR, а эффект блокировки остаётся явным решением до её пакета.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.

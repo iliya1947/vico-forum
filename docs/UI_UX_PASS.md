@@ -55,6 +55,12 @@ bundle, чтобы GitHub Pages не мог после deploy отдать ifram
 
 ## Source-of-truth boundaries
 
+The ordinary admin-panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md): its global structure,
+admission/action boundaries, shared Quick actions and separation from Needs attention and
+future super-admin UI. AP-01 establishes that contract only; the global shell and later
+capabilities remain separate implementation packages. Earlier topic-level Admin panel wording
+in this document describes existing contextual controls, not an implemented global workspace.
+
 The pass must preserve these existing constraints:
 
 - the information architecture remains `category → section → topic → messages`;
