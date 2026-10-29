@@ -236,8 +236,10 @@ export function UnansweredView({
 
                   <span className="unanswered-topic-location">
                     <span>{topic.category.name}</span>
-                    <span aria-hidden="true"> / </span>
-                    <span>{topic.section.name}</span>
+                    {topic.section ? <>
+                      <span aria-hidden="true"> / </span>
+                      <span>{topic.section.name}</span>
+                    </> : null}
                   </span>
 
                   <span className="unanswered-topic-status">{t("unansweredNoReplies")}</span>
@@ -297,7 +299,7 @@ export function UnreadView({
 
             <span className="unanswered-topic-location">
               <span>{topic.category.name}</span>
-              <span>{topic.section.name}</span>
+              {topic.section ? <span>{topic.section.name}</span> : null}
             </span>
 
             <span className="unanswered-topic-enter unread-topic-enter" aria-hidden="true">
@@ -502,8 +504,10 @@ export function SearchView({
                   </span>
                   <span className="tag-topic-location">
                     <span>{topic.category.name}</span>
-                    <span aria-hidden="true"> / </span>
-                    <span>{topic.section.name}</span>
+                    {topic.section ? <>
+                      <span aria-hidden="true"> / </span>
+                      <span>{topic.section.name}</span>
+                    </> : null}
                   </span>
                   <span className="section-topic-count" aria-label={t("messageCount", { count: topic.postCount })}>
                     <strong aria-hidden="true">{topic.postCount}</strong>
@@ -598,8 +602,10 @@ export function TagView({
                   </span>
                   <span className="tag-topic-location">
                     <span>{topic.category.name}</span>
-                    <span aria-hidden="true"> / </span>
-                    <span>{topic.section.name}</span>
+                    {topic.section ? <>
+                      <span aria-hidden="true"> / </span>
+                      <span>{topic.section.name}</span>
+                    </> : null}
                   </span>
                   <span className="section-topic-count" aria-label={t("messageCount", { count: topic.postCount })}>
                     <strong aria-hidden="true">{topic.postCount}</strong>
