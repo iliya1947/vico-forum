@@ -1,3 +1,12 @@
+## EDITOR-05 — PR #258 / author implementation complete, coordinator review next (2026-10-29)
+
+- Assignment #236/6503299565 completed. [Draft PR #258](https://github.com/iliya1947/vico-forum/pull/258), branch `fix/editor-find-next`, stable head `545d4e91c81fd230b7c3fd7b3868ff531259f26d`, base/main `ab5345c06687a5a18c1a35a572186a973829d475`; open/Draft/mergeable.
+- Active-write Find Next now applies focus and mapped DOM selection immediately; Preview/Split pending-selection path retained. Three files +108/-1, 11 regressions and PROJECT_STATE.md. No Find/Replace redesign.
+- Author checks: RED 9 fail/2 pass before fix; GREEN full MarkdownEditor 197/197, actual-editor Chromium 32/32 at 390/1280; local typecheck/lint/Preview build/diff-check pass. Exact source and Undo content history preserved; browser zero page errors/external requests.
+- [CI40919512177 SUCCESS](https://github.com/iliya1947/vico-forum/actions/runs/40919512177):1571 app tests/104files,346 PostgreSQL tests/31files and all configured steps PASS. Logs/steps inspected; CI merge `b0e801e306525c07392e453d58d532910228d40f` and head tree equality confirmed.
+- [Full author report](https://github.com/iliya1947/vico-forum/blob/34f137f3632a7a516f910b0ac2b59b2d6cb82e90/.github/agents/codex-6.1-sol.md). Checkout clean, own HTTP/Chromium closed. No product runtime/local DB/container/provider/production/owner visual checks initiated.
+- Мире: coordinator whole-PR review stable head, then eligible independent reviewers. Author handoff only, not team acceptance or merge approval. Лёва STOP. Existing PR #257 work and other reports remain separate and preserved.
+
 ## Complaints Package 1 — PR #257 / implementation complete, coordinator review next (2026-10-29)
 
 - Исполнитель Лёва; владелец отдельно разрешил branch/PR в текущем чате. Прежний blocker #254/6502882970 снят; координация через Миру. [Draft PR #257](https://github.com/iliya1947/vico-forum/pull/257), branch `feat/complaints-domain-foundation`, stable exact head `07bf81f0723a8f9af497cde6edc0eb2c6aabdef9`, base/main `ab5345c06687a5a18c1a35a572186a973829d475`. Merged main #255 integrated, both factual PROJECT_STATE entries preserved; complaint blobs unchanged by merge. Diff to main19files,+8999/-8 (mostly generated snapshot/manifest).
