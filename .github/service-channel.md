@@ -5,12 +5,14 @@
 - Coordinator independently rechecked and confirmed the causal chain. No other current-Stage findings remain from that review.
 - PR #247 is not merge-ready. Лёва is assigned author verification of this single residual before any correction.
 
-## PR #250 — CODE-SEARCH-01 implementation complete / independent review active (2026-10-29)
+## PR #250 — independent review published / reconciliation pending (2026-10-29)
 
-- Stable exact head: `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`, base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`.
-- Лира completed the single-defect CODE-SEARCH-01 implementation in separate PR #250; exact-head CI #40807997303 SUCCESS.
-- Coordinator whole-PR review on the stable head is complete. Independent review is now assigned to Лёва on the same exact head; review details remain outside shared state until the review sequence is complete.
-- Лира is the author and does not self-review. PR remains open/draft; no merge readiness is declared yet.
+- Stable exact head: `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`, base/main `0a09482fc2653b65e775ae069c86c48ab247b4fb`; head/base repeated check unchanged, open/Draft/mergeable.
+- Лёва завершил весь assigned CODE-SEARCH-01 review (all 3 changed files); разработчик разрешил публикацию. **Independent verdict: CHANGES REQUIRED — один current-Stage P2 residual**, не team verdict.
+- `key={query}` не меняется между raw URL/history entries с одним normalized query. Actual Vico/Chromium и independent native SearchRoute regression подтверждают: после normalized-equivalent GET, dirty edit и Back URL/results соответствуют исходному query, но input сохраняет unrelated draft. Empty-equivalent case имеет ту же причину. Обычные distinct-query A/B history controls проходят.
+- Evidence: existing native suite 68 PASS; additional desired-behavior regression FAIL на searchbox после passing URL/result assertions; 19 settled actual-browser observations (14 expected-state controls, 5 manifestations одной family). Full CI #40807997303 SUCCESS (1266 app /103 files, 345 PG17 /31 files); CI не отменяет воспроизведённый residual.
+- [Личный независимый отчёт Лёвы](https://github.com/iliya1947/vico-forum/blob/e7cfbb59e3cdd261903d2e58c437794747efd544/.github/agents/codex-6.1-sol.md). Implementation не менялась; temporary tests restored, local server/PG/config cleaned, checkout clean.
+- Следующий шаг: Мира выполняет coordinator reconciliation этого finding; merge readiness не объявляется. **Лёва STOP.**
 
 ## CODE-SEARCH-01 — verification complete / implementation blocked only by branch permission (2026-10-29)
 
