@@ -1,19 +1,18 @@
-## PR #249 — final team reconciliation PASS / ready for developer merge (2026-10-29)
+## PR #247 — accepted root-cause correction implemented / coordinator review next (2026-10-29)
 
-- Stable exact head `ae501c80fb20ce3108e5da2136f9cbfc1d402c61`, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`; PR open, non-draft, mergeable/clean.
-- Coordinator whole-PR review PASS; independent Лира PASS; independent Мишаня review of Лёва work PASS. No confirmed current-Stage defects remain.
-- Accepted scope: LOC-01, LOC-02, LOC-05, LOC-08, I18N-UI-POLICY-01. LOC-09 remains future-only and is not a blocker.
-- Exact-head CI #40791016237 SUCCESS. No independent visual/browser acceptance initiated; developer rules reserve such checks for explicit request and this correction has no current visual acceptance requirement.
-- Team status: ready for developer merge.
+- По назначению [#6485551587](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6485551587) implementation выполнена Лёвой в existing branch `chatgpt6/batch-l2-20261027`; прежнее назначение Лиры снято. Новая ветка/PR не создавались.
+- Stable exact head: `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`; base/current main: `0a09482fc2653b65e775ae069c86c48ab247b4fb`. PR open/Draft/mergeable; merge не выполнялся.
+- Принятая boundary [#6485172583](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6485172583) реализована: actual parser code-unit location → logical content replacement → bounded source edits. Охвачены table-cell code, inline edge spaces, multiline indented/quoted/list continuation, CR/LF/CRLF fenced hazards; shared узкая escaped-pipe semantics применяется renderer/editor/semantic consumer. Whole-document serialization и known-code→prose fallback отсутствуют.
+- Merged main/#249 интегрирован; direction contract сохранён, content protection policy объединена в `cnt06-table-code-direction-v4`. PROJECT_STATE.md/EDITOR.md синхронизированы; schema/dependencies/provider/recovery scope не расширен.
+- Author evidence: 126 pure model cases; post-integration focused332/4files PASS; 11 actual Chromium application publications + independent exact SQL/caret/Undo/Redo assertions PASS на новых application blobs. Final configuration-only commit не меняет эти blobs. Local full app1514/103files относится к pre-integration tree и не выдаётся за final count.
+- [Exact-head CI40804856322](https://github.com/iliya1947/vico-forum/actions/runs/40804856322) SUCCESS: **1529 app /104files,345 PostgreSQL17 /31files**, lint/typecheck/builds/schema/runtime/Workers PASS. Completed logs обеих jobs прочитаны; test-merge tree совпадает с implementation head. Предыдущий CI упал на отсутствующем explicit Node include; configuration исправлена, full local tsc-b и final CI проходят.
+- [Личный author report](https://github.com/iliya1947/vico-forum/blob/5992a9eb648edd235695f15f8abdc08fe91d9912/.github/agents/codex-6.1-sol.md). Checkout clean; local server/PG/config cleaned. External/production/owner visual не выполнялись.
+- Это author handoff, **не whole-PR self-review и не team acceptance**. Старый independent cycle относится к e1c8391d. Следующий шаг: Мира начинает новый coordinator whole-PR review stable2105c10, затем eligible non-author independent reviewers. **Лёва STOP.**
 
-## PR #247 — LITERAL-TEXT-01 root-cause plan accepted / implementation next (2026-10-29)
+## PR #249 — merged in current main (2026-10-29)
 
-- Baseline stable exact head: `e1c8391d15e604dedfd525a2e8b1b1cfd26d1881`, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
-- Team-confirmed current-Stage P2 residuals: table-cell inline-code context; inline boundary-space loss; multiline indented/quoted code continuation loss; CR-only matching-fence bypass.
-- Лёва root-cause review #6485172583 accepted: common issue is the current raw source-substring replacement model with compensating delimiter fixes.
-- Approved technical boundary: locate the actual rendered code unit → replace logical code content → encode bounded source edits using renderer-compatible local contexts. Include the required narrow shared table-cell code semantics; do not reserialize the whole document or broaden native Advanced/Simple/HTML/TSV behavior.
-- Regression boundary: confirmed failure executions plus table/spoiler/root inline controls, multiline container-prefix cases, fence CR/LF/CRLF cases, mapping/caret and single-step Undo/Redo; representative mounted/public-render and application path evidence on the new head.
-- Next step: Лира implements this bounded correction in existing PR #247, then records a new stable exact head and applicable checks/CI. Author does not whole-PR self-review.
+- Ранее принятый team PASS на `ae501c8` реализован в main commit `0a09482fc2653b65e775ae069c86c48ab247b4fb` (PR #249).
+- Accepted scope LOC-01/02/05/08/I18N-UI-POLICY-01 сохранён при интеграции в #247; LOC-09 остаётся future-only. Новый review #249 автором не выполнялся.
 
 # Shared service channel
 
