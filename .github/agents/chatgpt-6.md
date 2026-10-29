@@ -1,3 +1,26 @@
+## I18N-UGC-META-01 — PR #260 author implementation handoff / COMPLETE / STOP (2026-10-29)
+
+**Назначение:** [Мира #6507951789](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6507951789). Исходный base `main e37314b63fc77825cad3209811676e0627a2851c`. После merge чужого PR #259 в main выполнена интеграция с `d1bbd6144e787e69bcf605acf8315b4e292d80ec` без изменения семи code/test blob SHA исходного исправления. **[Implementation PR #260](https://github.com/iliya1947/vico-forum/pull/260)** — Draft, mergeable; **stable exact head `df5fde2b2979a075a81e02b30b813802ffef6b90`**. Author Лира; независимую whole-PR проверку не выполняла.
+
+### Исправление и регрессии
+
+- `db/forum-repository.ts`: `sourceLocale` authoritative current topic-title revision возвращается из Search/Unanswered reader без изменения query ranking, фильтра Unanswered, location projection или схемы.
+- `app/routes/search.tsx`, `app/routes/unanswered.tsx`: loader сохраняет metadata и определяет `titleDirection` по request-scoped LocaleRegistry, fallback `auto` для `und`/неизвестного направления.
+- `app/forum/views.tsx`: оригинальный title получает собственные `lang/dir` независимо от UI locale; `und` не создаёт фиктивного языка.
+- `app/ui-preview/preview-app.tsx`: fixture metadata обновлена; `app/forum/public-read.test.tsx`, `tests/database/stage4-core-e2e.test.ts`: focused mounted DOM/loader и native PostgreSQL regressions (EN/HE, `und`, registry-unknown, смена title revision, match по body и public location).
+- `PROJECT_STATE.md` синхронизирован. Итоговый diff против актуального main содержит **ровно 8 ожидаемых файлов**. Не изменялись schema, зависимости, provider/runtime и другие UGC surfaces.
+
+### Verification trail
+
+1. Первый PR CI [#40956883183](https://github.com/iliya1947/vico-forum/actions/runs/40956883183): Typecheck FAIL — widening поля `titleDirection` до `string` в двух loaders/Preview. Исправлена типизация `auto as const` без изменения runtime semantics.
+2. Второй CI [#40957177136](https://github.com/iliya1947/vico-forum/actions/runs/40957177136): Typecheck и application tests SUCCESS; database 346 PASS/1 FAIL. Existing Stage4 E2E ожидал `sourceLocale=en` для двух тем, тогда как штатный writer `db/hyperdrive-forum.ts` на публикации задаёт `und`. Исправлены только два неверных expected values; отдельный explicit he→en revision test сохранён.
+3. **Финальный exact-head CI [#40957538113](https://github.com/iliya1947/vico-forum/actions/runs/40957538113) SUCCESS**, обе jobs: `checks` и `database`, все configured steps SUCCESS. Лично прочитаны их step summaries и logs: **104 application test files / 1587 tests PASS**, **31 PostgreSQL17 test files / 347 tests PASS**; lint, typecheck, application build, UI Preview build, migration/schema/privilege checks и Workers smoke — PASS.
+4. Main/head: `d1bbd6144e787e69bcf605acf8315b4e292d80ec` / `df5fde2b2979a075a81e02b30b813802ffef6b90`; PR open/Draft/mergeable. Локальная native DB, реальный браузер, external providers/production, owner visual acceptance, independent whole-PR review и merge **не выполнялись**.
+
+**Авторский handoff:** реализация и применимые CI/checks завершены; **Мире** — coordinator whole-PR review PR #260 exact head после установленных review gates, затем независимые non-author reviewers. Это не self-review/не team acceptance. **Лира STOP.**
+
+---
+
 ## I18N-UGC-META-01 — current-main verification + minimal correction boundary / COMPLETE / STOP (2026-10-29)
 
 **Назначение:** [Мира, PR #236 comment #6499648279](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6499648279). **Exact baseline:** `main a4d552a4ce57986d97c02e2695f4546cffccecfd` (последний проверенный main). Scope — только сохранение известных source language/direction metadata для оригинальных заголовков тем в **Search и Unanswered**. Это отдельная current-main verification + correction plan, **не независимый whole-PR review**. Implementation, branch/PR, merge не выполнялись.
