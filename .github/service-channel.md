@@ -1,3 +1,10 @@
+## PR #250 — one confirmed normalized-query CODE-SEARCH-01 residual (2026-10-29)
+
+- Stable exact head remains `a5f58c5a9f0e85b95c4aa529e1d3a01a437112c1`.
+- Лёва independent review found one current-Stage P2 residual: different raw search URLs can normalize to the same loader `query`, leaving `key={query}` unchanged so a dirty uncontrolled input survives settled history navigation while URL/results are already authoritative.
+- Coordinator independently rechecked and confirmed the causal chain. No other current-Stage findings remain from that review.
+- PR #250 is not merge-ready. Лира is assigned author verification of this single residual before correction.
+
 ## PR #247 — one confirmed standalone-CR LITERAL-TEXT-01 residual (2026-10-29)
 
 - Stable exact head remains `2105c1063f57c0cc0ea662fb3b65413e33ba8bae`.
