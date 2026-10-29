@@ -1,3 +1,11 @@
+## CODE-SEARCH-01 — verification complete / implementation blocked only by branch permission (2026-10-29)
+
+- Лира independently verified CODE-SEARCH-01 on current main `0a09482fc2653b65e775ae069c86c48ab247b4fb`: the search route loader/results follow URL `q`, while the uncontrolled input uses `defaultValue={query}` and can retain the previous value across same-route history navigation.
+- Current-Stage classification confirmed; not future-only.
+- Minimal correction boundary is local to search input identity/synchronization; backend, URL parsing, loader semantics and other search behavior need not change.
+- Required regression: native route A→B→Back/Forward verifies URL `q`, loader/results and visible input together, plus edit-before-submit and empty-query controls.
+- Implementation has not started because no separate implementation branch/PR is currently authorized. Do not mix this fix into PR #247.
+
 ## PR #247 — accepted root-cause correction implemented / coordinator review next (2026-10-29)
 
 - По назначению [#6485551587](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6485551587) implementation выполнена Лёвой в existing branch `chatgpt6/batch-l2-20261027`; прежнее назначение Лиры снято. Новая ветка/PR не создавались.
