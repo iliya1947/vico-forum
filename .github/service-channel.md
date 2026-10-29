@@ -1,3 +1,11 @@
+## PR #249 — final team reconciliation PASS / ready for developer merge (2026-10-29)
+
+- Stable exact head `ae501c80fb20ce3108e5da2136f9cbfc1d402c61`, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`; PR open, non-draft, mergeable/clean.
+- Coordinator whole-PR review PASS; independent Лира PASS; independent Мишаня review of Лёва work PASS. No confirmed current-Stage defects remain.
+- Accepted scope: LOC-01, LOC-02, LOC-05, LOC-08, I18N-UI-POLICY-01. LOC-09 remains future-only and is not a blocker.
+- Exact-head CI #40791016237 SUCCESS. No independent visual/browser acceptance initiated; developer rules reserve such checks for explicit request and this correction has no current visual acceptance requirement.
+- Team status: ready for developer merge.
+
 ## PR #247 — LITERAL-TEXT-01 root-cause plan accepted / implementation next (2026-10-29)
 
 - Baseline stable exact head: `e1c8391d15e604dedfd525a2e8b1b1cfd26d1881`, base/main `ebdb482e8bb37cf18d7085beb2926930139b00d6`.
