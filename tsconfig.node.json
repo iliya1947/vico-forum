@@ -12,6 +12,8 @@
     "app/auth/request-context.ts",
     "app/auth/session-context.ts",
     "app/authorization/catalog.ts",
+    "app/admin/access.ts",
+    "app/admin/access.server.ts",
     "app/authorization/request-context.ts",
     "app/forum/actions.server.ts",
     "app/forum/attachment-request-context.ts",

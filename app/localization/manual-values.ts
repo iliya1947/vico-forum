@@ -4,6 +4,24 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  adminPanelTitle: "Админ-панель",
+  adminOverview: "Обзор",
+  adminForum: "Форум",
+  adminUsers: "Пользователи",
+  adminRoles: "Роли и права",
+  adminHistory: "История",
+  adminSettings: "Настройки",
+  adminNavigation: "Разделы админ-панели",
+  adminStatsTitle: "Статистика форума",
+  adminCategoryCount: "Категории",
+  adminSectionCount: "Публичные разделы",
+  adminTopicCount: "Темы",
+  adminPostCount: "Сообщения",
+  adminStatsUnavailable: "Статистика форума временно недоступна.",
+  adminRetry: "Обновить статистику",
+  adminInDevelopment: "В разработке",
+  adminOverviewIntro: "Выберите раздел для управления форумом.",
+
   authLinkGoogle: "Подключить Google",
   authLinkGoogleHint: "Уже зарегистрированы с паролем? Сначала войдите с ним, затем подключите Google в своём профиле.",
   profileHeading: "Форумный профиль",
@@ -581,6 +599,24 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  adminPanelTitle: "לוח ניהול",
+  adminOverview: "סקירה",
+  adminForum: "פורום",
+  adminUsers: "משתמשים",
+  adminRoles: "תפקידים והרשאות",
+  adminHistory: "היסטוריה",
+  adminSettings: "הגדרות",
+  adminNavigation: "ניווט בניהול",
+  adminStatsTitle: "נתוני הפורום",
+  adminCategoryCount: "קטגוריות",
+  adminSectionCount: "מדורים ציבוריים",
+  adminTopicCount: "נושאים",
+  adminPostCount: "הודעות",
+  adminStatsUnavailable: "נתוני הפורום אינם זמינים כרגע.",
+  adminRetry: "רענון הנתונים",
+  adminInDevelopment: "בפיתוח",
+  adminOverviewIntro: "בחרו אזור לניהול הפורום.",
+
   authLinkGoogle: "קישור Google",
   authLinkGoogleHint: "כבר נרשמתם עם סיסמה? היכנסו איתה תחילה, ואז קשרו את Google מהפרופיל שלכם.",
   profileHeading: "פרופיל בפורום",

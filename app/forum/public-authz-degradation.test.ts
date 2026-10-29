@@ -64,6 +64,7 @@ const topic = {
 };
 
 const reader: ForumReader = {
+  readAdminOverviewCounts: async () => ({categories:0,sections:0,topics:0,posts:0}),
   searchMentionableUsers: async () => [],
   readOnlinePresence: async () => ({ count: 0, members: [] }),
   readProfile: async () => undefined,

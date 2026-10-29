@@ -362,7 +362,12 @@ export interface ForumOnlinePresence {
   members: { id: string; name: string; image: string | null }[];
 }
 
+export interface ForumAdminOverviewCounts {
+  categories: number; sections: number; topics: number; posts: number;
+}
+
 export interface ForumReader {
+  readAdminOverviewCounts(): Promise<ForumAdminOverviewCounts>;
   searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>>;
   readOnlinePresence(): Promise<ForumOnlinePresence>;
   readProfile(userId: string): Promise<ForumProfile | undefined>;
@@ -886,6 +891,17 @@ export class DrizzleForumRepository {
         asc(forumCategories.createdAt),
         asc(forumCategories.id),
       );
+  }
+
+  async readAdminOverviewCounts(): Promise<ForumAdminOverviewCounts> {
+    // Four scalar aggregates in one statement/snapshot, independent of bounded public lists.
+    const result = await this.database.execute<ForumAdminOverviewCounts & Record<string, unknown>>(sql`
+      select (select count(*)::int from ${forumCategories}) as categories,
+        (select count(*)::int from ${forumSections} where ${forumSections.id} <> ${HELP_SOLUTIONS_SERVICE_SECTION_ID}) as sections,
+        (select count(*)::int from ${forumTopics}) as topics,
+        (select count(*)::int from ${forumPosts}) as posts
+    `);
+    return result.rows[0]!;
   }
 
   async readHomepage(): Promise<ForumHomepageCategorySummary[]> {

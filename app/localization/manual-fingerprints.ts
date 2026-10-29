@@ -8,6 +8,24 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  adminPanelTitle: "7b85d9fe2bdad8f059fd4c325aa3bfee5dc8960f3eff053c0e8bd0303182b587",
+  adminOverview: "275ed7f2dcacf8d93af6a02a5582d02f5807ce69b24a072a5826336f93e605c8",
+  adminForum: "45bbabb95c370eb5540c4af954a6ce7d2d31642d1e8dd37956f30f2baae0d2ee",
+  adminUsers: "e73b78e341580df78d2b4a9d80badfa961e3fa3ea8a64da7bfc06fc7c5e0996e",
+  adminRoles: "fc122300f9cf398590e5e2818597e1efa79a484db285524fca453a5bf9195ae1",
+  adminHistory: "92cc40f91ba7bed11fbab1f9ff6965e547e90e9c5c41b7887b6177e5b4d60f55",
+  adminSettings: "2ffe8ae29e11aebb4e462e82d944cd050e461f836b799b0525addfd5277b08dd",
+  adminNavigation: "c1f570a32164643d6417bfe06d0e8645c1e99d1697261ba8f7f7afe59fac8c48",
+  adminStatsTitle: "f8d0b4b45206b51860f00e7b51ea771f0f1cce14fb82dc316d43cc1d96d09a86",
+  adminCategoryCount: "e8c079364717cdcad1b58416800344ea4c6691f22ff1f6a834a713dd42a16e41",
+  adminSectionCount: "364bd66c2369552555c9021b8ec1290dc5fec2353b287e0472881f84cfa7a8b7",
+  adminTopicCount: "d400fe18aeafd5513750729e72f862aec0713dfc06a4c22d6c8f5306d4750d39",
+  adminPostCount: "a53419afebd6f7d3ce4096b2be5a7696a23357e050ec81919eaed17dcd4f5a18",
+  adminStatsUnavailable: "9f1a63fddf3d5fed8fea222f9dc84a49a196468c843ac6a29bc8ea54cd314b0f",
+  adminRetry: "ef288116d8708698426943b9d26e7da74ea5276975393b0e1a7fa4242f1afc3f",
+  adminInDevelopment: "f127d366a81dd11826f4935eb6392190fa9c285df5c6206fe0a818504adba764",
+  adminOverviewIntro: "5c4259ac94a706623076b85599048b4091ea3552bb9193f8dc1936bbe6b5df37",
+
   forumWriteError_unexpected: "1faa421142d7ef4d5b4b3aff1fba78aa4460b3679e8eac26268e488e9d470628",
   postEditConflict: "889f7a33e4618f9bc8631e60c7e55dcf11f6fa750d0bcdaa18c73acf8610485c",
   authLinkGoogle: "f76b1b3f666c22c6db8b082ad61af25b8e6d18ae0d3574edbd90ee186b6e362b",

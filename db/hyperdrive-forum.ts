@@ -83,6 +83,7 @@ export function createHyperdriveForumReader(
     readOnlinePresence: () => read((repository) => repository.readOnlinePresence()),
     readProfile: (userId) => read((repository) => repository.readProfile(userId)),
     listCategories: () => read((repository) => repository.listCategories()),
+    readAdminOverviewCounts: () => read((repository) => repository.readAdminOverviewCounts()),
     readHomepage: () => read((repository) => repository.readHomepage()),
     readPopular: (referenceTime, limitPerPeriod) => read((repository) => repository.readPopular(referenceTime, limitPerPeriod)),
     readUnanswered: () => read((repository) => repository.readUnanswered()),

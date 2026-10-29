@@ -16,6 +16,24 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    adminPanelTitle: message("adminPanelTitle", "Admin panel", "Admin shell: adminPanelTitle."),
+    adminOverview: message("adminOverview", "Overview", "Admin shell: adminOverview."),
+    adminForum: message("adminForum", "Forum", "Admin shell: adminForum."),
+    adminUsers: message("adminUsers", "Users", "Admin shell: adminUsers."),
+    adminRoles: message("adminRoles", "Roles & permissions", "Admin shell: adminRoles."),
+    adminHistory: message("adminHistory", "History", "Admin shell: adminHistory."),
+    adminSettings: message("adminSettings", "Settings", "Admin shell: adminSettings."),
+    adminNavigation: message("adminNavigation", "Admin navigation", "Admin shell: adminNavigation."),
+    adminStatsTitle: message("adminStatsTitle", "Forum statistics", "Admin shell: adminStatsTitle."),
+    adminCategoryCount: message("adminCategoryCount", "Categories", "Admin shell: adminCategoryCount."),
+    adminSectionCount: message("adminSectionCount", "Public sections", "Admin shell: adminSectionCount."),
+    adminTopicCount: message("adminTopicCount", "Topics", "Admin shell: adminTopicCount."),
+    adminPostCount: message("adminPostCount", "Messages", "Admin shell: adminPostCount."),
+    adminStatsUnavailable: message("adminStatsUnavailable", "Forum statistics are temporarily unavailable.", "Admin shell: adminStatsUnavailable."),
+    adminRetry: message("adminRetry", "Refresh statistics", "Admin shell: adminRetry."),
+    adminInDevelopment: message("adminInDevelopment", "Under development", "Admin shell: adminInDevelopment."),
+    adminOverviewIntro: message("adminOverviewIntro", "Choose a section to manage the forum.", "Admin shell: adminOverviewIntro."),
+
     authLinkGoogle: message("authLinkGoogle", "Connect Google", "Explicitly link Google to the signed-in account from its own profile."),
     authLinkGoogleHint: message("authLinkGoogleHint", "Already registered with a password? Sign in with it first, then connect Google from your profile.", "Safe linking guidance for an existing unverified local-email account."),
     profileHeading: message("profileHeading", "Forum profile", "Forum profile: profileHeading."),
