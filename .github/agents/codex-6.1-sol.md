@@ -1,5 +1,68 @@
 # Лёва — Codex-6.1 Sol
 
+## EDITOR-08 — current-main verification + minimal correction boundary / STOP (2026-10-29)
+
+Assignment: #236/6503924468. Personally verified exact main `a79ae7278a02c5bf029a97859afc241c564858ca`. Verification only: no implementation branch, commit or PR created.
+
+**Verdict: EDITOR-08 is confirmed as one current-Stage P2 functional disabled-state defect, with three independently demonstrated entry paths.** Find Next itself changes selection/view metadata, not content; Replace all and paste change exact source and content history. This is not a server authorization finding or evidence of altered submitted request payloads.
+
+### Reachability and expected boundary
+
+The shared editor already accepts disabled, disables its textarea, hidden body field, formatting/history/menu command buttons and Simple contentEditable. Actual mounted forum flows pass disabled during submission/busy states: Help question views.tsx:1316, create topic:2000, published edit:2896, reply:3126. The issue is current behavior in those states, not a future read-only feature. The loopback harness uses the actual current MarkdownEditor and English translation runtime, with an external harness toggle reproducing the same React prop transition. No real publication/server/identity/DB was used.
+
+### 1. Retained Advanced Find/Replace panel
+
+markdown-editor.tsx:1103-1110 renders inputs/Find next/Replace all without disabled. Opening the panel while enabled, then setting disabled=true leaves these controls active. findNext:656 has no disabled guard before rememberEditorSelection/pending ref/DOM range/mode changes. replaceAllMatches:679 has no guard before replaceSourceRange:511 -> recordEditorEdit -> setValue. The disabled textarea does not disable sibling controls or these React functions.
+
+Observed normal browser clicks: source `one two one`, query `one`, replacement `X`; after disable, Replace all produces `X two X`. Re-enable -> Undo restores original -> Redo restores replacement, demonstrating a content-history edit during disabled. Find next from caret0 selects0..3 while source stays exact; native disabled focus remains unavailable (focus stays outside textarea). No claim that Find Next itself edits content.
+
+### 2. In-flight clipboard command
+
+pasteFromClipboard:619 awaits navigator.clipboard.readText and then calls commitSource/replaceSourceRange/insertTechnicalBlock without validating current disabled state. Its initiating toolbar buttons correctly have disabled attributes; they prevent starting a new read while disabled, but do not cancel an already awaited read. An async handler retains its originating render snapshot, so simply adding a check of captured `disabled` after await is insufficient.
+
+Controlled deferred Clipboard API results in Chromium and mounted tests:
+- Advanced plain: selection0..3, enabled command -> disable -> resolve `PASTED`: `PASTED two one`;
+- Advanced code: same sequence inserts fenced PASTED;
+- Simple plain: same sequence appends PASTED.
+In every case the button and textarea are already disabled when source changes. Re-enable + Undo restores exact original. Clipboard Promise completion is deliberately controlled in this diagnostic; OS permission-dialog timing was not tested.
+
+### 3. Native Simple paste
+
+visual-markdown-editor.tsx:583 onPaste checks input/textarea target and clipboard contents/selection, but never disabled. It dispatches callbacks for plain, forced plain, spreadsheet and HTML/multiline -> MarkdownEditor replaceSourceRange/pasteSpreadsheet -> recordEditorEdit/setValue. contentEditable=false prevents native editing, not this custom paste handler.
+
+Chromium trusted sequence: Simple, disable through harness button, double-click the middle word of `one two one`, native Ctrl+V with actual system clipboard `TRUSTEDPASTE`. Paste event isTrusted=true, target SPAN, contentEditable=false; resulting source is `one TRUSTEDPASTE one`. Re-enable + Undo restores original. No synthetic ClipboardEvent was used for this final browser reproduction; no DOM Range injection was used to select the word. Additional mounted synthetic paste diagnostics cover plain/HTML/tabular/forced-plain branches, all mutating while initially disabled.
+
+### Correctly blocked neighboring paths / limits
+
+- Initially disabled formatting/Undo/Redo/Find-panel-open/Paste command buttons are native-disabled. Mounted Simple/Advanced controls show Bold and new clipboard command do not change source or call readText. Chromium confirms toolbar buttons disabled; no need for a global toolbar redesign.
+- The textarea is native-disabled; Simple leaves have contentEditable=false. Dispatched synthetic key/input events on those elements would not alone prove normal-user reachability and are not used as the defect evidence.
+- Root formatting/publication shortcuts return for disabled/publicationPending; code-key path checks !disabled. Attachment image paste/drop goes through startUpload's canAdd guard (canAdd includes !disabled); no provider/upload execution performed.
+- A preliminary triple-click selected paragraph text plus boundary newlines, outside a valid surface range; handler took no source edit. The final word selection removes that alternate explanation and reaches the real mutation.
+- Hidden disabled body field is omitted from FormData by native HTML rules. Diagnostics inspect its exact DOM value and history after re-enable; they do not misinterpret FormData null as source loss. In-flight network submission outcome/payloads not exercised.
+- publicationPending-only behavior, imperative Reply/Quote insertion, generic unmount/stale-value races and unrelated disabled/read-only redesign are outside this bounded finding.
+
+### Minimal correction boundary
+
+1. Bind retained Find/Replace inputs and action buttons to disabled, and guard findNext/replaceAllMatches before any selection/ref/mode/source/history changes. Keep panel state/query for re-enable; preserve enabled literal/wrap behavior and EDITOR-05 Preview/Split selection path. Whether closing the panel is desired is not needed to solve the defect.
+2. Guard synchronous VisualMarkdownEditor paste entry before any mutation callback, covering normal/forced plain, HTML/multiline and spreadsheet branches. Avoid global changes to source storage/history or all imperative editor APIs.
+3. Guard clipboard command before starting and after completion using the latest committed disabled state (e.g. a narrowly scoped current-state ref or request invalidation), not the initiating render's captured false. Disabled completion must neither write source/history/pending selection nor publish a stale notice. Check reject/failure completion too. No new clipboard subsystem or dependency required.
+4. Update PROJECT_STATE.md only with actual authorized implementation. No changes were made during this verification.
+
+Focused desired regressions for an implementation: enabled->disabled with panel retained (Find Next/Replace all no source/DOM-selection/history changes); re-enable restores normal commands and Undo/Redo; initial disabled Simple native paste with valid word selection and plain/HTML/tabular/forced-plain branches all no-op; deferred Advanced plain/code and Simple plain resolve/reject after disable (no content/history/pending/notice write); new disabled command must not call readText; enabled controls still work. Re-run existing EOL/Unicode/source/Undo and Replace all/Find Next tests plus focused Chromium on390/1280; broader applicable checks/CI belong to implementation.
+
+### Personally executed evidence and cleanup
+
+- Initial seven temporary mounted diagnostics:7 PASS,197 existing skipped.
+- Full MarkdownEditor with those seven:204/204 PASS (197 existing +7 current-behavior diagnostics),19.85s.
+- Final focused diagnostics including four Simple paste branches:11/11 PASS,197 existing skipped,3.38s. These tests intentionally assert the observed defect, not a corrected implementation.
+- Fresh standalone Vite build imports actual current editor:PASS. Chromium:14 completed observations (12 defect-path observations +2 initially-disabled toolbar controls), widths390/1280;0 page errors/external or mutating network requests. Browser matrix English; not an all-locale or owner visual acceptance claim.
+- No full app/PG suite, typecheck/lint or new CI claimed for this code-unchanged verification.
+- Official documentation checked: MDN Clipboard.readText (Promise), MDN disabled (supported controls/focus; no disabling arbitrary sibling divs), React State as a Snapshot (async closures retain render snapshot): https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/readText ; https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/disabled ; https://react.dev/learn/state-as-a-snapshot . Local code and actual-browser evidence determine the verdict.
+- Artifacts `/workspace/work/editor08-verification`: REPORT.md, diagnostic-tests.tsx, diagnostics*.log, full-editor.log, browser.py/browser.json/browser.log, temporary built harness. Temporary checkout test edits restored, harness/config removed, dependency symlink removed. Final checkout clean at exact assigned main; diff-check PASS. Own loopback HTTP/Chromium closed; no application runtime/DB/container/external services/production used.
+
+Verification + minimal plan complete. Coordinator reconciliation/implementation assignment is next. No implementation performed; Лёва STOP.
+
+
 ## PR #258 — EDITOR-05 / author implementation handoff / STOP (2026-10-29)
 
 Assignment:#6503299565; accepted verification:#6503251938.
