@@ -1,5 +1,46 @@
 # Лёва — Codex-6.1 Sol
 
+## PR #247 — bounded plain serializer correction / author handoff / STOP (2026-10-29)
+
+Assignment: PR236 comment6495447379. Existing PR247 and branch chatgpt6/batch-l2-20261027.
+Baseline:2105c1063f57c0cc0ea662fb3b65413e33ba8bae.
+Stable implementation head:d0574225f6b0fc8285e69268441b989927d7e1db.
+Base/main:0a09482fc2653b65e775ae069c86c48ab247b4fb.
+
+### Implemented causal scope
+
+Both confirmed LITERAL-TEXT-01 residuals are corrected in the existing plain serializer boundary. clipboardPlainToMarkdown normalizes the incoming fragment through existing textareaMarkdown before any line escaping or contextual code classification. The private textAsMarkdown and tab gate now receive the same LF input; initial conversion, physical-line indices and repeated codeLines conversion cannot disagree about standalone CR. The existing source document is not normalized.
+
+Marker neutralization escapes the final punctuation, preserving any preceding digits. Thus1. becomes1\\. and1) becomes1\\), while single-character markers keep their prior escaping. No heading-specific or CR-specific compensating parser was added. Existing Advanced raw input, dedicated existing-code insertion, rich HTML/TSV conversion and contextual literal tab-code semantics retain their boundaries. Schema, dependencies, parser and translation protection policy are unchanged.
+
+PROJECT_STATE.md and docs/EDITOR.md describe the implemented LF input view and source/code EOL boundary. Change from baseline:5files,+111/-5; one production module, two test files and two state/contract documents. No new branch/PR or merge.
+
+### Regression evidence
+
+- New tests ran against the old implementation before the production edit:12 FAIL /2 PASS /220 skipped. Failures cover ordered markers under all3 EOLs, standalone-CR/mixed contextual-code classification and mounted literal publishing. The two passing cases are genuine LF/CRLF tab-code controls.
+- After correction:360 tests /3files PASS,17.10s:clipboard serializer, actual MarkdownEditor component and existing source-positioned code-paste suite. Includes all14 new tests and the126 existing dedicated-code model tests.
+-6 new mounted Simple Ctrl+Shift+V → actual onPastePlain/context → hidden body/FormData → actual ForumMarkdown → single Undo/Redo cases cover LF/CR/CRLF in root/outer spoiler. Existing CRLF document bytes outside insertion remain exact; public heading/ordered-list/nested-spoiler activation is absent; displayed digits/punctuation are literal with no extra backslash; original source returns on Undo and encoded source on Redo.
+- Pure permanent controls cover heading/quote/bullet/ordered/rules/entities/tilde, multi-digit ordered marker, intended raw-tab code in root/spoiler and a mixed-EOL mid-paragraph tab insertion. Existing HTML/TSV and native/code controls remain in focused suites.
+- Actual ForumMarkdown SSR/DOM matrix:120/120 PASS on current implementation.4 EOL modes LF/CR/CRLF/mixed × root/spoiler ×14 marker payloads, plus intended tab-code cases. Covers Vico opener/closer/table/direction, backticks, literal entities and punctuation. Prose whitespace is assessed with ordinary Markdown rendering normalization; intended code content is checked literally. This is a converter/public-render matrix, not Chromium or HTTP/DB publication.
+- Local full tsc-b:PASS. Source/test ESLint:0 errors/0 warnings. git diff --check:PASS.
+
+### Exact-head CI
+
+CI40866592828 SUCCESS on d0574225f6b0fc8285e69268441b989927d7e1db. Completed logs and every job step read/checked: checks123422794815 and database123422794287 both SUCCESS. Full application1543 tests/104files and native PostgreSQL17 345tests/31files PASS; lint, full typecheck, app/UI-preview builds, migration/history/schema parity, runtime privilege/provisioning/credential probes and local Workers smoke PASS. These are actual new CI results, not reused old-head checks.
+
+CI checkout8f2862a4ec3f0ac064c4b98b5e43f85be993ca5b merges exact head/base. Its tree609b2bd40e9a31b5d8aa6fd6245d466f111a91c9 matches implementation head, checked through Git fetch. Remote exact head/base unchanged; PR open/Draft/mergeable. No merge performed.
+
+### Limits / cleanup / handoff
+
+No new actual Chromium, HTTP/DB application publication, local full app/native PG or local builds were run for this small serializer correction. Their success is not inferred from earlier heads; applicable full checks are supplied by the new exact-head CI. New mounted public-render/history evidence is specific to this implementation.
+
+Dependency symlink removed; checkout clean. No local server/container was started. Artifacts live outside tracked source in /workspace/work/pr247-serializer-correction: red.log,focused.log,matrix.tsx,matrix.json,matrix.log,typecheck.log,lint.log. The standalone SSR fixture emits an i18next missing-provider warning; the mounted component tests use the real test runtime and pass. The fixture's literal structure/content assertions do not depend on translated UI labels.
+
+This is author implementation verification only, not whole-PR self-review or team acceptance. Previous reviews refer to2105c10. Mira must begin a new whole-PR coordinator cycle on d057422, followed by eligible non-author reviewers on the same stable head. STOP after implementation handoff.
+
+
+---
+
 ## PR #247 — standalone-CR author verification / CONFIRMED / STOP (2026-10-29)
 
 Назначение: [#6486554293](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6486554293).
