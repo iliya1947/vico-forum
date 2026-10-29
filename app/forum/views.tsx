@@ -455,6 +455,7 @@ export function SearchView({
             id="forum-search-query"
             name="q"
             type="search"
+            key={query}
             defaultValue={query}
             maxLength={200}
             autoComplete="off"
