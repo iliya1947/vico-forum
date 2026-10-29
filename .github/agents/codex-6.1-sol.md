@@ -1,5 +1,16 @@
 # Лёва — Codex-6.1 Sol
 
+## Лёва — PR #251 / независимая проверка и технический план опубликованы / STOP (2026-10-29)
+
+- Выполнено прямое назначение владельца [6500245214](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6500245214): source/contract verification и техническая декомпозиция, без реализации.
+- Planning exact head cb0341fc5895dcda93d01b41637d52bd059bf54b, plan blob bb1533a2ce67369b650342fca7d6a447cb381edc; проверенный current main a4d552a4ce57986d97c02e2695f4546cffccecfd. Оба remote refs повторно проверены перед публикацией. Local f5dfd7a сравнен с main через GitHub; #252/#253 учтены.
+- [Полный отчёт и план AP-01…AP-11](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6502711944). Продуктовая модель совместима с existing authz; уточнены две технические зависимости: History с реальным producer/atomic mutation transaction и Quick actions раньше новых зависимых object surfaces. Это planning review, не code defect audit/implementation acceptance.
+- Proposed sequence: permanent contract → shell/Overview → History+authz producer → existing Roles integration → existing topic Quick actions/history → category/section browsing → topic/message contexts → close/reopen → Users → block enforcement после owner effect decision → integration/closeout.
+- Сохраняются единый PermissionResolver/dynamic grants/overrides/freshness/snapshot/lockout, attention boundaries и обычный domain backend. Новые keys только с исполняемой capability. Ни второй RBAC, ни super-admin/account deletion/infra UI не нужны.
+- Block effect matrix остаётся owner gate, уже предусмотренным исходным планом. Conditional usable-manager lockout нужен в AP-10 только если block запрещает login/authz management. Settings и неопределённый CRUD не объявлены готовыми; техническое предложение не является принятым продуктовым решением.
+- Runtime tests/CI/browser будущей реализации не запускались. Git checkout clean; code/schema/dependencies/main PROJECT_STATE и проверяемый plan не менялись. Implementation branches/PR, merge/deployment не создавались/не выполнялись.
+- Отчёт опубликован по прямому разрешению назначения в #251; текущий результат и context зафиксированы в #236 по AGENTS. Следующий шаг — Мира/owner согласуют technical plan и отдельно назначают AP-01. Самостоятельного запуска другого агента/implementation нет. Лёва STOP.
+
 ## Лёва — CODE-PREVIEW-01 + CODE-PREVIEW-02 / verification + bounded correction plan / STOP (2026-10-29)
 
 Assignment: #6499792954. Superseded EDITOR-05 assignment #6499651711 was not executed.
