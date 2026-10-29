@@ -1,3 +1,10 @@
+## Current state after PR #250 merge — DISCOVERY-01 next (2026-10-29)
+
+- PR #250 is merged; current main is `f5dfd7a48093745ba216ec0e8d5c2e08c3cc9d96`.
+- Next approved Lira queue item is `DISCOVERY-01`.
+- Coordinator rechecked current main: `readUnanswered()` includes the hidden Help service section, the route forwards section/category metadata, and `UnansweredView` renders those names publicly. Direct service-section access remains separately hidden.
+- Лира is assigned verification + minimal correction planning only. No implementation branch/PR is authorized or active yet.
+
 ## PR #250 — post-sync CI passed / merge-ready (2026-10-29)
 
 - Exact head `20cdc676b90b83e0c3768b80ada1762db2cc5d78` on current main `3f76c0406eba65cf8514aabb01dad79ae9cb44d9`.
