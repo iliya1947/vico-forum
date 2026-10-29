@@ -135,8 +135,8 @@ with tempfile.TemporaryDirectory(prefix='vico-responsive-') as temporary:
                                         before = contained(page)
                                         details = editor.locator('.markdown-editor-formatting > .markdown-editor-extra-menu')
                                         summary = details.locator(':scope > summary')
-                                        summary.focus()
-                                        page.keyboard.press('Enter')
+                                        hit(summary)
+                                        summary.click()
                                         assert details.get_attribute('open') is not None
                                         opened = contained(page)
                                         popup = details.locator(':scope > .markdown-editor-extra-options')
@@ -148,6 +148,16 @@ with tempfile.TemporaryDirectory(prefix='vico-responsive-') as temporary:
                                         for control in popup.locator('button,input,summary').all():
                                             if control.is_visible() and control.is_enabled():
                                                 hit(control)
+                                        if width == 320:
+                                            # Nested native disclosure and a real source-changing click.
+                                            emoji = popup.locator('details').filter(has=page.locator('summary', has_text='☺'))
+                                            emoji.locator('summary').click()
+                                            emoji.get_by_role('button', name='😀', exact=True).click()
+                                            assert '😀' in editor.locator('input[type=hidden][name=body]').input_value()
+                                            emoji.locator('summary').click()
+                                            for resized in [390, 320]:
+                                                page.set_viewport_size({'width': resized, 'height': 900})
+                                                contained(page)
                                         toolbar = editor.locator('.markdown-editor-toolbar')
                                         assert toolbar.evaluate("e=>getComputedStyle(e).position==='sticky'")
                                         # Use native keyboard toggle to close again; no source-changing command.
@@ -155,6 +165,10 @@ with tempfile.TemporaryDirectory(prefix='vico-responsive-') as temporary:
                                         page.keyboard.press('Space')
                                         assert details.get_attribute('open') is None
                                         after = contained(page)
+                                        page.keyboard.press('Enter')
+                                        assert details.get_attribute('open') is not None
+                                        page.keyboard.press('Space')
+                                        assert details.get_attribute('open') is None
                                         if width == 320 and locale == 'en':
                                             page.screenshot(path=str(args.output / f'menu-{mode}-{fullscreen}.png'))
                                         return {'before': before, 'opened': opened, 'closed': after}

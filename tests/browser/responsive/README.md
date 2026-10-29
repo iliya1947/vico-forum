@@ -21,6 +21,8 @@ python tests/browser/responsive/check.py --output /tmp/vico-responsive-results
 `--smoke` runs the three original EN/320 reproductions. The full matrix includes
 320/360/390, both sides of 480/704/768 breakpoints and desktop1280, guest/user/manager header,
 long identity, Simple/Advanced in-page/fullscreen menus and two raw history revisions.
+More is opened by a native click and keyboard; 320px cases also click a nested emoji
+and resize the viewport while the menu is open.
 The script builds a disposable fixture with existing Vite, starts only a loopback HTTP
 server, rejects external/mutating requests and closes browser/server/temp build afterward.
 JSON records every case; failures produce screenshots and a nonzero exit status.

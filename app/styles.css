@@ -9351,6 +9351,12 @@ a.topic-tag:focus-visible {
   .home-shell .markdown-editor-formatting > .markdown-editor-extra-menu > .markdown-editor-extra-options {
     inline-size: min(18rem, 100%);
   }
+
+  /* Preserve the trigger's positioned paint order beside fullscreen controls;
+     the popup still resolves its containing block against the toolbar. */
+  .home-shell .markdown-editor-formatting > .markdown-editor-extra-menu > summary {
+    position: relative;
+  }
 }
 
 .home-shell .markdown-editor-direction {
