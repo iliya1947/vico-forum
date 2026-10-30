@@ -1,7 +1,9 @@
 import {readFile,readdir} from "node:fs/promises";
 import {Client,Pool} from "pg";
-import {beforeAll,afterAll,describe,it,expect} from "vitest";
+import {beforeAll,afterAll,describe,it,expect,vi} from "vitest";
 import {PostgresAuthorizationRepository,AuthorizationLockoutError,AuthorizationForbiddenError} from "../../db/authorization-repository";
+import {historyPagePath} from "../../app/admin/history-path";
+import {parseHistoryCursor} from "../../app/admin/history.server";
 import {PostgresAdminHistoryReader} from "../../db/admin-history";
 const url=process.env.DATABASE_URL!;
 if(!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) || !new URL(url).pathname.endsWith("_test")) throw new Error("Disposable loopback *_test DB required");
@@ -55,6 +57,7 @@ describe("atomic authorization History",()=>{
  });
  it("rolls back the mutation when append fails, then permits one retry",async()=>{
   const before=await count();
+  const previousPosition=(await client.query("select max(position)::text position from admin_history")).rows[0].position;
   await client.query(`create function reject_history() returns trigger language plpgsql as $$begin raise exception 'synthetic append failure'; end$$;
     create trigger reject_history before insert on admin_history for each row execute function reject_history()`);
   try {
@@ -65,16 +68,60 @@ describe("atomic authorization History",()=>{
   await auth.renameCustomRole("manager","retry-role",{displayName:"Succeeded"});
   await auth.renameCustomRole("manager","retry-role",{displayName:"Succeeded"});
   expect(await count()).toBe(before+1);
+  const nextPosition=(await client.query("select max(position)::text position from admin_history")).rows[0].position;
+  expect(BigInt(nextPosition)).toBeGreaterThan(BigInt(previousPosition)+1n);
  });
- it("pages equal timestamps by immutable UUID without duplicates; newer inserts do not shift older pages",async()=>{
-  await client.query("update admin_history set occurred_at='2030-01-01T00:00:00.123Z'");
-  const first=await reader.read(undefined,3);expect(first.next).not.toBeNull();
-  const seen=first.events.map(e=>e.id);let next=first.next;
-  await auth.renameCustomRole("manager","retry-role",{displayName:"Newer"});
-  // Force this additional fixture to be newer than the fixed historical test timestamp.
-  await client.query("update admin_history set occurred_at='2031-01-01' where target_label='Newer'");
-  while(next){const page=await reader.read(next,3);seen.push(...page.events.map(e=>e.id));next=page.next;}
-  expect(new Set(seen).size).toBe(seen.length);expect(seen.length).toBe((await count())-1);
-  expect((await reader.read()).events[0].change.targetLabel).toBe("Newer");
+ it("excludes a later committed equal-time event with a lower UUID from an issued page25 cursor",async()=>{
+  const fixed="2030-01-01T00:00:00.123Z";
+  await client.query(`alter table admin_history alter column occurred_at set default '${fixed}'::timestamptz`);
+  try {
+   for(let n=0;n<30;n++)await auth.renameCustomRole("manager","retry-role",{displayName:`Page ${n}`});
+   const beforeIds=(await client.query("select id from admin_history")).rows.map(r=>r.id).sort();
+   const first=await reader.read();expect(first.events).toHaveLength(25);expect(first.next).not.toBeNull();
+   const last=first.events.at(-1)!;
+   const lowest="00000000-0000-0000-0000-000000000000";
+   const random=vi.spyOn(crypto,"randomUUID").mockReturnValue(lowest);
+   try{await auth.renameCustomRole("manager","retry-role",{displayName:"Late equal millisecond"});}finally{random.mockRestore();}
+   const newest=(await reader.read()).events[0];
+   expect(newest.id).toBe(lowest);expect(newest.id<last.id).toBe(true);expect(newest.at).toBe(last.at);
+   const seen=first.events.map(e=>e.id);let next=first.next;
+   while(next){
+    const parsed=parseHistoryCursor("https://vico.test"+historyPagePath("he",next));
+    expect(parsed).toEqual(next);
+    const page=await reader.read(parsed);seen.push(...page.events.map(e=>e.id));next=page.next;
+   }
+   expect(new Set(seen).size).toBe(seen.length);
+   expect(seen.sort()).toEqual(beforeIds);expect(seen).not.toContain(lowest);
+  } finally {await client.query("alter table admin_history alter column occurred_at set default clock_timestamp()");}
  });
+ it("keeps bigint positions exact through URL and PostgreSQL beyond the JS safe-integer limit",async()=>{
+  await client.query("select setval(pg_get_serial_sequence('admin_history','position'), 9007199254740992, false)");
+  await auth.renameCustomRole("manager","retry-role",{displayName:"Big position one"});
+  await auth.renameCustomRole("manager","retry-role",{displayName:"Big position two"});
+  const first=await reader.read(undefined,1);
+  expect(first.next).toEqual({position:"9007199254740993"});
+  const cursor=parseHistoryCursor("https://vico.test"+historyPagePath("ru",first.next));
+  const older=await reader.read(cursor,1);
+  expect(older.events[0].change.targetLabel).toBe("Big position one");
+  expect(older.next).toEqual({position:"9007199254740992"});
+ });
+ it("generates an identity with SELECT/INSERT table grants and no sequence privileges",async()=>{
+  const role="history_identity_probe";
+  await client.query(`create role ${role} nologin;grant usage on schema ${schema} to ${role};grant select,insert on admin_history to ${role}`);
+  await client.query("begin");
+  try{
+   await client.query(`set local role ${role}`);
+   const rights=await client.query("select has_sequence_privilege(current_user,pg_get_serial_sequence('admin_history','position'),'USAGE') usage,has_sequence_privilege(current_user,pg_get_serial_sequence('admin_history','position'),'UPDATE') update");
+   expect(rights.rows[0]).toEqual({usage:false,update:false});
+   const sequence=await client.query("select cache_size::text,increment_by::text,cycle from pg_sequences where schemaname=$1 and sequencename='admin_history_position_seq'",[schema]);
+   expect(sequence.rows[0]).toEqual({cache_size:"1",increment_by:"1",cycle:false});
+   const insert=await client.query(`insert into admin_history(id,actor_id,actor_label,action,target_type,target_id,target_label,context)
+    values('ffffffff-ffff-4fff-bfff-ffffffffffff','manager','Manager','role.created','role','probe','Probe','{"slug":"probe"}') returning position`);
+   expect(typeof insert.rows[0].position).toBe("string");
+   expect(BigInt(insert.rows[0].position)).toBeGreaterThan(0n);
+   const identity=await client.query("select is_identity,identity_generation from information_schema.columns where table_schema=$1 and table_name='admin_history' and column_name='position'",[schema]);
+   expect(identity.rows[0]).toEqual({is_identity:"YES",identity_generation:"ALWAYS"});
+  }finally{await client.query("rollback");await client.query(`drop owned by ${role};drop role ${role}`);}
+ });
+
 });

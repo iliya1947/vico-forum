@@ -1,5 +1,5 @@
 {
-  "id": "614b9fe1-e6d2-4299-9f40-a87a7bbf1af7",
+  "id": "df8dac46-79a9-4cb9-a9cd-147879745e81",
   "prevId": "e8eb5ade-6c33-497f-b2a9-b9e64580e398",
   "version": "7",
   "dialect": "postgresql",
@@ -136,6 +136,23 @@
           "primaryKey": true,
           "notNull": true
         },
+        "position": {
+          "name": "position",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "admin_history_position_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
         "occurred_at": {
           "name": "occurred_at",
           "type": "timestamp (3) with time zone",
@@ -197,19 +214,13 @@
           "name": "admin_history_order_idx",
           "columns": [
             {
-              "expression": "occurred_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
+              "expression": "position",
               "isExpression": false,
               "asc": false,
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

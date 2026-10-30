@@ -6828,6 +6828,12 @@
           "defaultSha256": null
         },
         {
+          "name": "position",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
           "name": "occurred_at",
           "type": "timestamp(3) with time zone",
           "nullable": false,
@@ -6927,16 +6933,11 @@
       "indexes": [
         {
           "name": "admin_history_order_idx",
-          "unique": false,
+          "unique": true,
           "method": "btree",
           "columns": [
             {
-              "name": "occurred_at",
-              "nulls": "last",
-              "order": "desc"
-            },
-            {
-              "name": "id",
+              "name": "position",
               "nulls": "last",
               "order": "desc"
             }

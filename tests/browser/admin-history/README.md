@@ -13,7 +13,8 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55473/vico_ap03_browser_te
 
 The harness uses real Better Auth sessions and six real management POST intents,
 checks no-op/retry/lockout/denial event suppression, deleted-role context, independently
-permissioned History and Overview, next-request revocation, keyset navigation, and
+permissioned History and Overview, next-request revocation, keyset navigation (including a late equal-timestamp/lower-UUID event in a controlled
+fixture), and
 EN/RU/HE keyboard/mobile/tablet/desktop presentation. A local table lock checks true
 History timeout/degradation/recovery. Fixture setup/cleanup SQL is restricted to the
 explicit disposable database; it removes only this run's rows. Screenshots/results

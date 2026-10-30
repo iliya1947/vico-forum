@@ -28,7 +28,12 @@ translation generation/provider/runtime или архитектура. CI, brows
 management operations записывают реальные typed deltas внутри authoritative transaction;
 lockout/rejected/rollback/no-op не создают событий. Labels bounded, контекст удалённой
 custom role сохраняется без target FK, private emails/requests/sessions не копируются.
-Keyset paging и UTC timestamps, EN/RU/HE, private/no-store, classified outage boundaries.
+AP03-MIRA-01 correction: keyset paging использует generated bigint position вместо
+пары timestamp/random UUID; поздние события с тем же timestamp не попадают на older pages.
+UUID и actual DB display time сохранены, cursor — decimal string без Number-conversion.
+Allocation идёт под прежним authorization mutation lock; rollback gaps допустимы.
+Runtime History privileges остаются SELECT/INSERT без sequence grants. UTC timestamps,
+EN/RU/HE, private/no-store и classified outage boundaries сохранены.
 Forward migration `0049_admin_history`, Drizzle metadata, schema manifest и runtime
 SELECT/INSERT contract обновляются вместе. AP-04+, Quick actions и super-admin audit не
 реализуются. Фактические tests/CI/browser результаты и author handoff фиксируются в #251;

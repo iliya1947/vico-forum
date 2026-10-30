@@ -194,8 +194,16 @@ context. These six operations require no reason; the nullable bounded reason col
 empty. Passwords, emails, sessions, full authorization snapshots and request bodies are excluded.
 The runtime has only SELECT/INSERT on History, without UPDATE/DELETE or sequence privileges.
 
-Read order is `(occurred_at DESC, id DESC)` with a matching index and validated keyset cursor;
-pages contain 25 events, Overview reads the newest 5. New inserts do not shift older pages.
+Authoritative read order is a unique generated bigint `position DESC` with a matching
+index. UUID remains event identity, and `occurred_at` remains actual DB display time.
+The validated cursor carries positive PostgreSQL bigint position as a decimal string,
+without conversion to JavaScript Number. Pages contain 25 events; Overview reads the newest 5.
+All current AP-03 producers allocate identity while holding the existing authorization
+mutation lock through COMMIT/ROLLBACK. Later committed events therefore sort before an
+issued cursor even when timestamps tie, and do not enter older pages. Rollback gaps are
+valid; position is an ordering key, not a gapless event count. Generated identity needs
+no additional runtime sequence privileges. This guarantee covers the current serialized
+AP-03 producers; future producer integration must preserve the ordering contract.
 Without History permission Overview does not query or serialize recent activity. A classified
 History outage gives a protected 503 on History and an explicit unavailable recent-actions
 state on Overview; unexpected failures propagate. Private document/data responses are no-store.

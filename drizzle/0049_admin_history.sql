@@ -1,5 +1,6 @@
 CREATE TABLE "admin_history" (
 	"id" uuid PRIMARY KEY NOT NULL,
+	"position" bigint GENERATED ALWAYS AS IDENTITY (sequence name "admin_history_position_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
 	"occurred_at" timestamp (3) with time zone DEFAULT clock_timestamp() NOT NULL,
 	"actor_id" text NOT NULL,
 	"actor_label" text NOT NULL,
@@ -18,7 +19,7 @@ CREATE TABLE "admin_history" (
 );
 --> statement-breakpoint
 ALTER TABLE "authz_permissions" DROP CONSTRAINT "authz_permissions_catalog_check";--> statement-breakpoint
-CREATE INDEX "admin_history_order_idx" ON "admin_history" USING btree ("occurred_at" DESC NULLS LAST,"id" DESC NULLS LAST);--> statement-breakpoint
+CREATE UNIQUE INDEX "admin_history_order_idx" ON "admin_history" USING btree ("position" DESC NULLS LAST);--> statement-breakpoint
 ALTER TABLE "authz_permissions" ADD CONSTRAINT "authz_permissions_catalog_check" CHECK ("authz_permissions"."key" in (
   'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',

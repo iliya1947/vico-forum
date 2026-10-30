@@ -4,13 +4,12 @@ export const adminHistoryContext = createContext<AdminHistoryReader>();
 export function historyForRequest(context: RouterContextProvider) { return context.get(adminHistoryContext); }
 export function parseHistoryCursor(url: string): HistoryCursor | undefined {
   const params = new URL(url).searchParams;
-  const at = params.get("before"); const id = params.get("id");
-  if (at === null && id === null) return;
-  if (!at || !id || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(at)
-    || !Number.isFinite(Date.parse(at)) || new Date(at).toISOString() !== at
-    || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(id)
-    || params.getAll("before").length !== 1 || params.getAll("id").length !== 1) {
+  const position = params.get("before");
+  if (position === null && !params.has("id")) return;
+  if (!position || !/^[1-9][0-9]{0,18}$/.test(position)
+    || BigInt(position) > 9223372036854775807n
+    || params.getAll("before").length !== 1 || params.has("id")) {
     throw new Response("Invalid cursor", { status: 400, headers: { "Cache-Control": "private, no-store" } });
   }
-  return { at, id };
+  return { position };
 }

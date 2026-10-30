@@ -13,7 +13,7 @@ export type AuthorizationHistoryChange =
 export interface AdminHistoryEvent {
   id: string; at: string; actorId: string; actorLabel: string; change: AuthorizationHistoryChange;
 }
-export interface HistoryCursor { at: string; id: string }
+export interface HistoryCursor { position: string }
 export interface AdminHistoryPage { events: AdminHistoryEvent[]; next: HistoryCursor | null }
 export interface AdminHistoryReader { read(cursor?: HistoryCursor, limit?: number): Promise<AdminHistoryPage> }
 export function historyLabel(value: string): string { return Array.from(value).slice(0, 200).join(""); }
@@ -31,17 +31,18 @@ export class PostgresAdminHistoryReader implements AdminHistoryReader {
   async read(cursor?: HistoryCursor, limit = 25): Promise<AdminHistoryPage> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Invalid history page size");
     const result = await this.database.query<{
-      id: string; occurred_at: Date; actor_id: string; actor_label: string;
+      position: string; id: string; occurred_at: Date; actor_id: string; actor_label: string;
       action: AuthorizationHistoryChange["action"]; target_type: "role" | "user"; target_id: string; target_label: string;
       context: AuthorizationHistoryChange["context"];
-    }>(`select id, occurred_at, actor_id, actor_label, action, target_type, target_id, target_label, context
-      from admin_history where ($1::timestamptz is null or (occurred_at, id) < ($1::timestamptz, $2::uuid))
-      order by occurred_at desc nulls last, id desc nulls last limit $3`, [cursor?.at ?? null, cursor?.id ?? null, limit + 1]);
-    const events = result.rows.slice(0, limit).map(row => ({
+    }>(`select position, id, occurred_at, actor_id, actor_label, action, target_type, target_id, target_label, context
+      from admin_history where ($1::bigint is null or position < $1::bigint)
+      order by position desc nulls last limit $2`, [cursor?.position ?? null, limit + 1]);
+    const rows = result.rows.slice(0, limit);
+    const events = rows.map(row => ({
       id: row.id, at: row.occurred_at.toISOString(), actorId: row.actor_id, actorLabel: row.actor_label,
       change: { action: row.action, targetType: row.target_type, targetId: row.target_id, targetLabel: row.target_label, context: row.context } as AuthorizationHistoryChange,
     }));
-    const last = events.at(-1);
-    return { events, next: result.rows.length > limit && last ? { at: last.at, id: last.id } : null };
+    const last = rows.at(-1);
+    return { events, next: result.rows.length > limit && last ? { position: last.position } : null };
   }
 }

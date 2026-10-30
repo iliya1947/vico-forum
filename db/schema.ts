@@ -1747,6 +1747,7 @@ export const forumComplaintEvidenceAttachments = pgTable("forum_complaint_eviden
 // Append-only for the web capability: INSERT/SELECT only; no target FK or deletion cascade.
 export const adminHistory = pgTable("admin_history", {
   id: uuid("id").primaryKey(),
+  position: bigint("position", {mode: "bigint"}).generatedAlwaysAsIdentity(),
   occurredAt: timestamp("occurred_at", {withTimezone: true, precision: 3}).notNull().default(sql`clock_timestamp()`),
   actorId: text("actor_id").notNull(),
   actorLabel: text("actor_label").notNull(),
@@ -1757,7 +1758,7 @@ export const adminHistory = pgTable("admin_history", {
   context: jsonb("context").notNull(),
   reason: text("reason"),
 }, table => [
-  index("admin_history_order_idx").on(table.occurredAt.desc(), table.id.desc()),
+  uniqueIndex("admin_history_order_idx").on(table.position.desc()),
   check("admin_history_action_target_check", sql`(
     ${table.action} in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and ${table.targetType} = 'role'
   ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')`),

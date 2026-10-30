@@ -2,6 +2,7 @@ import {RouterContextProvider} from "react-router";
 import {describe,it,expect,vi} from "vitest";
 import {authSessionContext} from "../auth/request-context";
 import {authorizationContext} from "../authorization/request-context";
+import {historyPagePath} from "../admin/history-path";
 import {adminHistoryContext} from "../admin/history.server";
 import {ForumStorageUnavailableError} from "../../db/hyperdrive-forum";
 import {AdminHistoryUnavailableError} from "../../db/hyperdrive-admin-history";
@@ -31,11 +32,15 @@ describe("independent History boundary and recent actions",()=>{
   expect(e.read).toHaveBeenCalledWith(undefined);
  });
  it("validates keyset cursors before DB reads and after authorization",async()=>{
-  for(const query of ["?id=bad","?before=2030-01-01&id=bad","?before=2030-02-30T00:00:00.000Z&id=00000000-0000-0000-0000-000000000001"]){
+  for(const query of ["?id=bad","?before=2030-01-01&id=bad","?before=0","?before=-1","?before=01","?before=1&before=2","?before=9223372036854775808","?before=99999999999999999999"]){
    const e=environment(["admin.history.read"]);await expect(loader(args(e.context,query))).rejects.toMatchObject({status:400});expect(e.read).not.toHaveBeenCalled();
   }
-  const e=environment(["admin.history.read"]);await loader(args(e.context,"?before=2030-01-01T00%3A00%3A00.123Z&id=00000000-0000-0000-0000-000000000001"));
-  expect(e.read).toHaveBeenCalledWith({at:"2030-01-01T00:00:00.123Z",id:"00000000-0000-0000-0000-000000000001"});
+  for(const position of ["1","9007199254740993","9223372036854775807"]){
+   const e=environment(["admin.history.read"]);
+   const path=historyPagePath("he",{position});
+   await loader(args(e.context,new URL("https://vico.test"+path).search));
+   expect(e.read).toHaveBeenCalledWith({position});
+  }
  });
  it("fails closed for typed auth/history outages and propagates unexpected errors",async()=>{
   const e=environment(["admin.history.read"]);e.has.mockRejectedValue(new AuthorizationUnavailableError());

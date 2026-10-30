@@ -132,18 +132,28 @@ try:
         paging = sql('select id from authz_roles where slug=$1', [prefix + '-paging'])[0]['id']
         for n in range(1, 28):
             mutate(manager, {'intent': 'renameRole', 'roleId': paging, 'displayName': 'Page ' + str(n)})
+        # Controlled clock tie in this disposable fixture only. UUID is forced below
+        # the old page boundary after a real committed mutation; position stays generated.
+        sql("update admin_history set occurred_at='2030-01-01T00:00:00.123Z'")
+        sql("alter table admin_history alter column occurred_at set default '2030-01-01T00:00:00.123Z'::timestamptz")
         document(page, '/en/admin/history')
         texts = page.locator('.admin-history-events li').all_text_contents()
         assert len(texts) == 25
+        late_label = 'Late equal-time ' + prefix
+        mutate(manager, {'intent': 'renameRole', 'roleId': paging, 'displayName': late_label})
+        sql("update admin_history set id='00000000-0000-0000-0000-000000000000' where target_label=$1", [late_label])
         page.locator('.admin-history-paging a').last.click()
         page.wait_for_url('**/admin/history?before=*')
         page.get_by_role('link', name='Newest actions', exact=True).wait_for()
         older = page.locator('.admin-history-events li').all_text_contents()
+        assert not any(late_label in text for text in older)
         assert older and not set(texts).intersection(older), {'firstCount': len(texts), 'olderCount': len(older), 'overlap': list(set(texts).intersection(older)), 'url': page.url}
         page.locator('.admin-history-paging a').first.click()
         page.wait_for_url('**/en/admin/history')
         page.get_by_role('link', name='Newest actions', exact=True).wait_for(state='detached')
-        record('actual-keyset-older-and-newest-navigation')
+        assert late_label in page.locator('.admin-history-events li').first.inner_text()
+        sql("alter table admin_history alter column occurred_at set default clock_timestamp()")
+        record('equal-time-lower-uuid-excluded-from-old-cursor-visible-on-newest')
         lockcode = """import pg from './node_modules/pg/lib/index.js';const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();await c.query('begin;lock table admin_history in access exclusive mode');console.log('LOCKED');process.stdin.once('data',async()=>{await c.query('rollback');await c.end();});"""
         locker = subprocess.Popen([node, '--input-type=module', '-e', lockcode], cwd=repo, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         try:
