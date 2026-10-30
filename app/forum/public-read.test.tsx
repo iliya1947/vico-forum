@@ -1533,7 +1533,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Add reply" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByText("Admin panel"));
+    fireEvent.click(await screen.findByText("Quick actions"));
     expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
@@ -1647,7 +1647,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(data.canUseAdminPanel).toBe(false);
 
     renderRoute(TopicRoute, data, forumTopicPath("en", topic.id), "en", "ltr");
-    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
+    expect(screen.queryByText("Quick actions")).not.toBeInTheDocument();
   });
 
   it("shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists", async () => {
@@ -1785,7 +1785,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(within(bestAnswer).getByText("The provider removed the API used by this workaround.")).toBeVisible();
     expect(bestAnswer.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
     expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Admin panel"));
+    fireEvent.click(screen.getByText("Quick actions"));
     expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" }))
       .toHaveValue("The provider removed the API used by this workaround.");
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
@@ -1962,7 +1962,7 @@ describe("Help & solutions modes and authoring", () => {
       </div>,
     );
 
-    fireEvent.click(await screen.findByText("Admin panel"));
+    fireEvent.click(await screen.findByText("Quick actions"));
     expect(document.querySelectorAll<HTMLInputElement>(
       'input[name="expectedBestAnswerPostId"][value="help-answer"]',
     )).toHaveLength(3);
@@ -3543,7 +3543,7 @@ describe("forum read states", () => {
       "ltr",
     );
 
-    const adminPanel = await screen.findByText("Admin panel");
+    const adminPanel = await screen.findByText("Quick actions");
     expect(adminPanel.closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(adminPanel.closest("details"));
     expect(screen.getByRole("button", { name: /Pin topic|Unpin topic/ }).closest("details")).toBe(adminPanel.closest("details"));
@@ -3556,7 +3556,7 @@ describe("forum read states", () => {
       "en",
       "ltr",
     );
-    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
+    expect(screen.queryByText("Quick actions")).not.toBeInTheDocument();
   });
 
   it("shows solution controls only to the topic author behind progressive disclosure", async () => {

@@ -51,6 +51,24 @@ Heading hierarchy/CSS и shared preview согласованы; применяю
 browser/CI и author handoff фиксируются в #251; review/merge/owner visual/rollout заранее
 не заявляются.
 
+## AP-05 — shared topic Quick actions и forum History (2026-10-30)
+
+Существующие contextual topic controls используют reusable typed descriptors и
+TopicQuickActions; формы отправляют прежние intents на canonical topic endpoint. Pin/unpin,
+administrative solved/best-answer, Help solution/duplicate/appeal и source-locale paths
+сохраняют server gates, own-only controls, reason validation и прежние stale/CAS identities.
+History append выполняется внутри тех же Drizzle transactions; failure откатывает mutation,
+actual no-op/replay/denied не создаёт events. Help signal review пишет один outcome с effect,
+без дублирования inner operation и private case explanation. Own-scope операции не становятся
+административными по роли автора. Для общего порядка pg и Drizzle producers используют
+transaction advisory lock непосредственно перед последним append и держат его до commit;
+существующие domain/authorization locks остаются. Forward migration 0050 расширяет только
+History action/target constraint; Drizzle metadata и schema manifest согласованы, runtime
+SELECT/INSERT и permission catalog прежние. EN/RU/HE History и Quick actions локализованы.
+AP-06+, новые admin pages, closure/blocking и production rollout не входят в пакет.
+Фактические checks/browser/CI и author handoff фиксируются в #251. Whole-PR independent
+review, owner visual acceptance и merge этой записью не объявляются завершёнными.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -2522,7 +2540,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0049`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0050`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

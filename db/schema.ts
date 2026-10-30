@@ -1761,7 +1761,11 @@ export const adminHistory = pgTable("admin_history", {
   uniqueIndex("admin_history_order_idx").on(table.position.desc()),
   check("admin_history_action_target_check", sql`(
     ${table.action} in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and ${table.targetType} = 'role'
-  ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')`),
+  ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')
+  or (${table.action} in ('topic.pinned', 'topic.unpinned', 'topic.solved', 'topic.bestAnswerChanged',
+    'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',
+    'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected') and ${table.targetType} = 'topic')
+  or (${table.action} = 'post.sourceLocaleCorrected' and ${table.targetType} = 'post')`),
   check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
   check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),
   check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),

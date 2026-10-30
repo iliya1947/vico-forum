@@ -7,7 +7,8 @@ admin panel. AP-01 established the documentation contract. AP-02 implements
 `/:locale/admin`: a protected reusable shell/navigation and Overview with real public
 aggregate counts. The existing `/:locale/admin/authorization` UI remains independently
 protected at its original URL and, in AP-04, reuses the common shell/navigation.
-AP-03 adds authorization-change History and protected Overview recent actions. New object
+AP-03 adds authorization-change History and protected Overview recent actions. AP-05 reuses
+existing topic operations in shared Quick actions and connects their forum/Help History producers. New object
 pages, topic closure and user blocking remain unimplemented. AP-02 itself added no schema
 or permission keys; AP-03 adds the independent `admin.history.read` capability.
 
@@ -198,12 +199,15 @@ Authoritative read order is a unique generated bigint `position DESC` with a mat
 index. UUID remains event identity, and `occurred_at` remains actual DB display time.
 The validated cursor carries positive PostgreSQL bigint position as a decimal string,
 without conversion to JavaScript Number. Pages contain 25 events; Overview reads the newest 5.
-All current AP-03 producers allocate identity while holding the existing authorization
-mutation lock through COMMIT/ROLLBACK. Later committed events therefore sort before an
+All current pg authorization and Drizzle forum producers allocate identity under the same
+transaction advisory lock (`1447641935, 1`) through COMMIT/ROLLBACK. Append is the final write
+after domain locks/mutations; no later domain lock may be acquired while holding this order
+lock. The existing authorization mutation lock and topic/Help/revision boundaries still
+protect their respective operations. Later committed events therefore sort before an
 issued cursor even when timestamps tie, and do not enter older pages. Rollback gaps are
 valid; position is an ordering key, not a gapless event count. Generated identity needs
-no additional runtime sequence privileges. This guarantee covers the current serialized
-AP-03 producers; future producer integration must preserve the ordering contract.
+no additional runtime sequence privileges. This guarantee covers the connected AP-03/AP-05
+producers; future producer integration must preserve the ordering contract.
 Without History permission Overview does not query or serialize recent activity. A classified
 History outage gives a protected 503 on History and an explicit unavailable recent-actions
 state on Overview; unexpected failures propagate. Private document/data responses are no-store.
@@ -247,9 +251,16 @@ from object type, current authoritative object state and the actor's effective p
   Forum/User screens. Add supported object types incrementally; do not build speculative
   dispatch or domain subsystems in advance.
 
-The existing topic-level disclosure labelled Admin panel is contextual administration; it
-does not imply that the global panel already exists. Its later Quick actions integration
-preserves authoritative operations and is separate from the global shell entry point.
+AP-05 replaces the existing topic-level Admin panel disclosure with localized Quick actions.
+`TopicQuickActions` and its typed descriptors consume already resolved capabilities and the
+current topic snapshot; every form explicitly targets the canonical topic URL and existing
+intent. Connected controls include pin/unpin, administrative solved/best-answer selection,
+Help solution moderation, duplicate confirmation/removal/appeal resolution, and title
+source-locale correction. Expected revision/answer/relationship/appeal IDs and required
+outdated-reason validation are preserved. Best-answer candidates keep original post IDs and
+permanent numbers despite visual promotion. Own-only controls remain separate. Attention
+case presentation is unchanged and uses the same authoritative producers; no new full pages,
+admin-only endpoint, permission catalog or speculative dispatcher is introduced.
 
 ## Significant administrative actions and reasons
 
@@ -258,8 +269,9 @@ applicable reason and minimal useful change context. It is distinct from post re
 security-upload events, notification inboxes and the future full owner audit surface.
 
 The following matrix defines coverage to connect with the relevant implementation packages.
-AP-03 records the authorization-management rows only; the remaining rows await their
-producer packages. A reason marked “not required” preserves the
+AP-03 records the authorization-management rows. AP-05 connects the existing topic/Help
+rows through administrative source-locale correction, including both topic-title and post
+correction service paths. Closure/blocking rows await their respective producer packages. A reason marked “not required” preserves the
 current operation contract; it does not introduce a new reason form or persistence field.
 
 | Operation | Significant event when coverage is connected | Administrative reason rule |
@@ -293,6 +305,19 @@ introduce an independent log commit, generic event bus or speculative outbox. Th
 slice includes an actual authorization-management producer, protected reader and Overview
 integration. Further significant operations connect their producers with their own package.
 Do not fabricate pre-existing history or claim coverage before a producer is connected.
+
+AP-05 forum events retain stable topic/post/revision and relevant relationship/appeal IDs,
+minimal before/after state and bounded current topic-title labels. Direct outdated moderation
+retains its validated reason. A Help signal review records one `help.signalReviewed` event
+for the requested case's actual accepted/rejected/superseded outcome, with any applied effect
+inside that event; it does not also emit an inner moderation/duplicate event. Automatic
+supersession of sibling cases remains a side effect, without fabricated separate review
+actors/events. Signal/appeal submission text and private case explanations are not copied.
+Ordinary own-scope solved/answer/source corrections do not emit administrative events even
+when the actor also holds administrative capabilities. Unpin forwards the session actor to
+the authoritative transaction. Actual insert/delete/state/revision results decide emission;
+no-op or rejected/stale requests do not append. Forward migration 0050 extends only the
+History action/target constraint; existing SELECT/INSERT runtime grants remain sufficient.
 
 Persist only bounded useful context, sufficient to retain event meaning if its target later
 ceases to exist. Do not copy passwords, tokens, sessions, full requests, complete authorization

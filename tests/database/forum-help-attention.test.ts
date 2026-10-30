@@ -37,6 +37,8 @@ const migrations = [
   "0040_post_edit_history_permissions.sql",
   "0041_published_mentions.sql",
   "0042_attachment_edit_snapshots.sql",
+  "0049_admin_history.sql",
+  "0050_forum_admin_history.sql",
 ] as const;
 let clock = Date.parse("2026-10-01T00:00:00Z");
 const forum = new DrizzleForumRepository(drizzle(client), {

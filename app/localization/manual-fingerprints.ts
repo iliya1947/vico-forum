@@ -8,6 +8,25 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  historySignalReviewed: "425a2d94db13b32b423b95cb0c384ea2207456111722ae0eef7b2895adaf9b4b",
+  historySuperseded: "7c47baef78f3ffcaa531c2cc3347eb383522c4a2ebf81d7ad25bec050eceb0dc",
+
+  quickActions: "6d336ab52f96c460bff2e046e58b6a507ee02ec369d437861376b224fbb150cf",
+  historyTopicPinned: "5408d1a4b6cc8a4ae5d182875745d67679c17ec5a977d628763dfc209173e062",
+  historyTopicUnpinned: "8faf98c29aa495969e090f3f3604bcfe8c3c18b1f0f9ecdefe021c676f7469b8",
+  historyTopicSolved: "0a9713972e7b10fdbbed00786c6341a09a9ec09960fdf818ffcf9f6db348ecae",
+  historyBestAnswerChanged: "f5563b66a2746d004ae9af83b74632fca0f5b7ae990902e2cbbc72e922f2c4e2",
+  historySolutionModerationChanged: "87cc350cf164636bef9d1acfc623f1f725639c75f89dc3eed0b550f080d04d9b",
+  historyDuplicateConfirmed: "1f99c03af92153629f7a42e86dd95f98c6382cc870afd1fde71ddb88a6cdadc8",
+  historyDuplicateRemoved: "99eceff0f63d88de9fd7baf94bee75325039b88d316d065d920a6761faf5a270",
+  historyDuplicateAppealResolved: "c40a29f12c62605b23cd306c479c914341536bea7427a42b207015af1ad0d0a1",
+  historySourceLocaleCorrected: "43b769c2f8a5ddd92154d657b5fdd04c875963e3ff937a5ec218e207035b5e4f",
+  historyReason: "e51eabd2515385c5a429b09684e9286a143ee78df111d52d9ef468416de1c6e3",
+  historyNoValue: "2a5e914514bfe90debabd74007e57f541c9886c679b8fe18276d866a9f8f87ce",
+  historyAccepted: "cc60cdc377451ea0435286f181ddbdb26db9b1a152108fd1b3a2c4d4c848b48e",
+  historyRejected: "d5915e03e7214d869b720c1b1cc6df9b38f4e04ed5277ecbaf91587e355695bf",
+  historyCoverage: "a20f95c43bfaff59200426d0ba516c61ceeb978f581d99eeb33d73798f7b3d12",
+
   historyRoleCreated: "73af6ec37622af91e67106d043605612b4b50b15bf6b6cb68431ac334f016ab3",
   historyRoleRenamed: "d22a0fdd5a89745b301fe673ab1cf398a0d5c2666c11535f30e5cabca89cfee3",
   historyRoleDeleted: "0ff4a9cf73e43ccb727a39e4b7fcc07ddd99457f95d605bfd0ad220cf458c977",
@@ -26,7 +45,6 @@ export const reviewedCommonFingerprints = {
   historyRecent: "4e2913e8a1363c3fd56ce3d5a8b84c58ecd3005bf12e5348f1a818bda010728a",
   historyUnavailable: "bf6f221fad818a44a1ccca9f47fdab1affec6ae19cd471ec4bfb7ace0b0fea1e",
   historyViewAll: "9b33cea30b2732fd8e3ca98c0448472e336f8d904c0d05568fde01f7a1907f1a",
-  historyCoverage: "75b39ef7315223bf0c66614bf09af7fb58b9cf1e7d705fe8bdfd02e438d300bc",
   historyPaging: "6ab4385b1a30a0a97c164d5c8cd5ead296201d3adff7cdd7f8b0a29309c9453c",
   historyNewest: "648304e216d344dfdb854d772a576f00a50bee86c1aea49a76c676a2f74b6a48",
   historyOlder: "a3de42db9578bebb4e50d4ba8b4720a657152f7eee9e4c1e4cb8a2901c1342c5",
