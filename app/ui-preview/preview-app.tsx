@@ -1807,7 +1807,7 @@ function previewElement(scenario: Scenario) {
         : scenario.variant === "admin-conflict"
           ? { error: "conflict" as const }
           : undefined;
-      return <AuthorizationAdminView {...data} result={result} />;
+      return <AuthorizationAdminView {...data} access={{canEnter:true,canManageAuthorization:true,canReadForum:true,canReadHistory:true}} result={result} />;
     }
     case "not-found":
       throw new Error("not-found is handled by previewRouter");

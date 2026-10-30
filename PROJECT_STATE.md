@@ -39,6 +39,18 @@ SELECT/INSERT contract обновляются вместе. AP-04+, Quick action
 реализуются. Фактические tests/CI/browser результаты и author handoff фиксируются в #251;
 review, merge, owner visual acceptance и production rollout этой записью не заявляются.
 
+## AP-04 — Roles & permissions внутри admin shell (2026-10-30)
+
+В отдельной implementation-ветке единственный AuthorizationAdminView встроен в общий
+AdminShell с active Roles navigation, без вложенного ForumShell/main и второго h1.
+Canonical `/admin/authorization`, формы/intents/fields и независимые GET/POST gates
+`access.authorization.manage` сохранены. Loader использует тот же resolver handle для
+permission gate и effective navigation; service/repository/History/lockout path не меняется.
+Heading hierarchy/CSS и shared preview согласованы; применяются общие localized metadata
+и private/no-store headers. Новых permissions/schema/API и AP-05+ нет. Фактические checks,
+browser/CI и author handoff фиксируются в #251; review/merge/owner visual/rollout заранее
+не заявляются.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -83,6 +95,13 @@ lint (0 errors/одно прежнее warning), Worker/UI Preview builds и run
 provisioning/credential rollback probes, 18 infrastructure guard suites и полный
 application run (1634 tests) прошли. Новый exact-head CI фиксируется после
 выполнения; требуется новый review-cycle.
+
+Дополнение после merge #267: ветка обновлена также поверх main `bb18442` с AP-04
+Roles & permissions внутри AdminShell. Merge прошёл без конфликтов; принятые
+AP-04 view/loader/forms/heading hierarchy/CSS и расширенный browser harness
+сохранены. Новых schema/migrations AP-04 не добавляет: последовательность
+0049_admin_history → 0050_complaint_submission и schema manifest не меняются.
+Результаты проверок объединённого exact head фиксируются в author handoff #254.
 
 Correction после review: у complaint explanation textarea удалён native UTF-16
 `maxlength`, обрезавший допустимый non-BMP ввод. Серверная проверка 2000 Unicode
