@@ -192,10 +192,12 @@ The submission path uses the forum's existing authenticated, same-origin/server-
 The first version must:
 
 1. prevent meaningless duplicate complaint spam by the same reporter against the same revision;
-2. rate-limit abusive complaint submission without treating normal rapid reports of different content as duplicates;
-3. never auto-punish content or users only because a report count threshold was reached;
-4. keep report counts private from ordinary public users;
-5. preserve rejected complaints as normal good-faith outcomes unless separate evidence shows abuse.
+2. rate-limit complaint submission per authenticated user to **10 complaints in any 10-minute window** and **50 complaints in any 24-hour window**;
+3. apply those limits to new complaint submissions without converting them into duplicate semantics; the existing lifetime reporter+revision duplicate rule remains separate;
+4. when a limit is exceeded, reject only further complaint submissions until the applicable window allows them again; no automatic sanction is created from hitting the limit;
+5. never auto-punish content or users only because a report count threshold was reached;
+6. keep report counts private from ordinary public users;
+7. preserve rejected complaints as normal good-faith outcomes unless separate evidence shows abuse.
 
 ## 13. Implementation sequence
 
@@ -222,7 +224,7 @@ Implementation is split into separate bounded implementation PRs. Each dependent
 5. Validate target identity and authoritative current revision server-side.
 6. Create a new Case or append a Complaint to the applicable open case. A newer revision never joins the Case of an older revision; if the older-revision Case is still open, create a separate Case for the newer revision with an explicit link to that prior Case.
 7. Prevent duplicate spam by the same reporter on the same revision.
-8. Add complaint-specific rate limiting.
+8. Add complaint-specific rate limiting: **10 complaints per authenticated user per 10 minutes** and **50 per 24 hours**; exceeding either limit temporarily rejects new submissions only and does not create a sanction.
 9. Keep the user in topic context after successful submission and show confirmation.
 
 **Done when:** authenticated users can submit valid complaints against posts or topic titles and the correct Complaint/Case records are produced.
