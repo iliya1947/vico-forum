@@ -3,7 +3,8 @@ import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   ComplaintConflictError, ComplaintForbiddenError, ComplaintNotFoundError,
-  ComplaintPolicyRequiredError, type ComplaintOutcome, type ComplaintReason, type ComplaintTarget,
+  ComplaintPolicyRequiredError, ComplaintRateLimitError, COMPLAINT_SUBMISSION_LIMITS,
+  type ComplaintOutcome, type ComplaintReason, type ComplaintTarget,
 } from "./complaints-domain";
 
 type Tx = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
@@ -36,7 +37,25 @@ interface ReplayRow extends Record<string, unknown> { fingerprint: string; entit
 
 /** Trusted DB adapter; application callers use ComplaintsService, never browser-supplied access flags. */
 export class DrizzleComplaintsRepository {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(private readonly database: NodePgDatabase,
+    private readonly limits: { tenMinutes: number; day: number } = COMPLAINT_SUBMISSION_LIMITS) {}
+
+  private async submissionBudget(tx: Tx, actorId: string) {
+    // The caller holds the actor mutex across this read and the complaint INSERT.
+    const recent = await tx.execute<{ createdAt: number; now: number }>(sql`
+      select extract(epoch from created_at)::double precision*1000 as "createdAt",
+        extract(epoch from statement_timestamp())::double precision*1000 as now from forum_complaints
+      where reporter_user_id=${actorId} and created_at > statement_timestamp() - interval '24 hours'
+      order by created_at desc,id desc limit ${Math.max(this.limits.tenMinutes,this.limits.day)}`);
+    const now = recent.rows[0]?.now;
+    if (now === undefined) return;
+    const burst = recent.rows[this.limits.tenMinutes - 1];
+    const daily = recent.rows[this.limits.day - 1];
+    const retryAfterMs = Math.max(0,
+      burst ? burst.createdAt + 600_000 - now : 0,
+      daily ? daily.createdAt + 86_400_000 - now : 0);
+    if (retryAfterMs > 0) throw new ComplaintRateLimitError(retryAfterMs);
+  }
 
   private async actorMutex(tx: Tx, actorId: string) {
     // Compatible with FK KEY SHARE; never use FOR UPDATE on this user mutex.
@@ -106,19 +125,21 @@ export class DrizzleComplaintsRepository {
         if (d.reason !== input.reason || d.explanation !== input.explanation) throw new ComplaintConflictError("report already submitted");
         return { complaintId: d.id, caseId: d.caseId };
       }
+      await this.submissionBudget(tx, actorId);
       const cases = await tx.execute<{ id: string }>(sql`select id from forum_complaint_cases where target_id=${targetId} and state='open' for update`);
       let caseId = cases.rows[0]?.id;
       const existingCase = Boolean(caseId);
       if (!caseId) {
         const previous = await tx.execute<{ id: string }>(sql`select id from forum_complaint_cases
           where target_id=${targetId} and state='resolved' order by resolved_at desc,created_at desc,id desc limit 1`);
-        const otherRevisionOpen = await tx.execute(sql`select c.id from forum_complaint_cases c
-          join forum_complaint_targets t on t.id=c.target_id where c.state='open' and t.kind=${t.kind}
-          and t.topic_id=${t.topicId} and t.post_id is not distinct from ${t.kind === "post" ? t.postId : null} limit 1`);
-        if (otherRevisionOpen.rows.length) throw new ComplaintPolicyRequiredError("incident grouping policy required");
+        const otherRevision = previous.rows.length ? previous : await tx.execute<{ id: string }>(sql`
+          select c.id from forum_complaint_cases c join forum_complaint_targets t on t.id=c.target_id
+          where t.id <> ${targetId} and t.kind=${t.kind} and t.topic_id=${t.topicId}
+          and t.post_id is not distinct from ${t.kind === "post" ? t.postId : null}
+          order by c.created_at desc,c.id desc limit 1`);
         caseId = randomUUID();
         await tx.execute(sql`insert into forum_complaint_cases (id,target_id,previous_case_id,created_at)
-          values (${caseId},${targetId},${previous.rows[0]?.id ?? null},statement_timestamp())`);
+          values (${caseId},${targetId},${otherRevision.rows[0]?.id ?? null},statement_timestamp())`);
         if (t.kind === "post") {
           // Content lock serializes capture with edits. Active-ref trigger serializes with cleanup.
           await tx.execute(sql`insert into forum_complaint_evidence_attachments(target_id,attachment_id,created_at)

@@ -1,4 +1,5 @@
 import { ForumAttachmentDisplay } from "./attachment-presentation";
+import { ComplaintSubmissionForm } from "../complaints/submission-form";
 import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation } from "react-router";
@@ -2072,6 +2073,7 @@ export function TopicView({
   canReply,
   editablePostIds = [],
   canReadPostHistory = false,
+  canSubmitComplaint = false,
   canManageSolution,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
@@ -2094,6 +2096,7 @@ export function TopicView({
   canReply: boolean;
   editablePostIds?: readonly string[];
   canReadPostHistory?: boolean;
+  canSubmitComplaint?: boolean;
   canManageSolution: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
@@ -2605,6 +2608,7 @@ export function TopicView({
           ) : null}
         </div>
 
+        {canSubmitComplaint && <ComplaintSubmissionForm locale={locale} topicId={topic.id} revisionId={topic.title.id} />}
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
         {forumWriteError && <p className="topic-page-alert" role="alert">{t(forumWriteError === "conflict" && actionData && (
           ("operation" in actionData && actionData.operation === "postEdit")
@@ -3054,6 +3058,7 @@ export function TopicView({
                       </details>
                     ) : null}
 
+                    {canSubmitComplaint && <ComplaintSubmissionForm locale={locale} topicId={topic.id} postId={post.id} revisionId={post.body.id} />}
                     {outdatedReason ? (
                       <div className="solution-outdated-reason">
                         <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>

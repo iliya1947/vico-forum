@@ -5,13 +5,19 @@ import { Client, Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
-import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintPolicyRequiredError, type ComplaintTarget } from "../../db/complaints-domain";
+import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintPolicyRequiredError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
 import type { PermissionKey } from "../../app/authorization/catalog";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
+import { RouterContextProvider } from "react-router";
+import { authSessionContext } from "../../app/auth/request-context";
+import { authorizationContext } from "../../app/authorization/request-context";
+import { complaintSubmissionContext } from "../../app/complaints/request-context";
+import { createHyperdriveComplaintSubmission } from "../../db/hyperdrive-complaints";
+import { action as submitAction } from "../../app/routes/complaint-submit";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL required");
@@ -22,7 +28,9 @@ const options = `-c search_path=${schema}`;
 const client = new Client({ connectionString: databaseUrl, options });
 const pool = new Pool({ connectionString: databaseUrl, options });
 const authorization = createAuthorizationCapability(new PostgresAuthorizationRepository(pool));
-const service = (connection = client) => new ComplaintsService(new DrizzleComplaintsRepository(drizzle(connection)), authorization);
+// Lifecycle fixtures share actors across tests; quota tests below use production limits.
+const service = (connection = client) => new ComplaintsService(new DrizzleComplaintsRepository(drizzle(connection), { tenMinutes:10000, day:10000 }), authorization);
+const limitedService = (connection = client) => new ComplaintsService(new DrizzleComplaintsRepository(drizzle(connection)), authorization);
 const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
 const report = (target: ComplaintTarget, explanation: string | null = null) => ({ target, explanation, reason: "spam" as const, operationId: randomUUID() });
 async function content() {
@@ -307,15 +315,134 @@ describe("linked Cases for a previously resolved revision", () => {
     await expectCode(client.query("update forum_complaint_cases set previous_case_id=null where id=$1", [next.caseId]), "55000");
   });
 
-  it("keeps only the newer-revision-with-open-predecessor grouping gate", async () => {
+  it.each(["post","title"] as const)("links a new %s revision immediately while the previous Case stays open", async kind => {
     const c = await content();
-    await service().submit("reporter-one", report(c.post));
-    await forum.editPublishedPost({ topicId:c.post.topicId, postId:c.post.postId, actorId:"content-author",
-      expectedRevisionId:c.post.revisionId, body:"Newer revision", draftId:randomUUID(), attachmentIds:[] });
-    const row = await client.query("select current_revision_id from forum_posts where id=$1", [c.post.postId]);
-    await expect(service().submit("reporter-two", report({ ...c.post, revisionId:row.rows[0].current_revision_id })))
-      .rejects.toBeInstanceOf(ComplaintPolicyRequiredError);
+    const first = await service().submit("reporter-one", report(c[kind]));
+    const revisionId = randomUUID();
+    if (kind === "post") {
+      await forum.editPublishedPost({ topicId:c.post.topicId, postId:c.post.postId, actorId:"content-author",
+        expectedRevisionId:c.post.revisionId, body:"Newer revision", draftId:randomUUID(), attachmentIds:[] });
+    } else {
+      await client.query(`insert into forum_topic_title_revisions(id,topic_id,author_id,original_content,source_locale)
+        values($1,$2,'content-author','Newer title','en')`,[revisionId,c.title.topicId]);
+      await client.query("update forum_topics set current_title_revision_id=$1 where id=$2",[revisionId,c.title.topicId]);
+    }
+    const row = kind === "post" ? await client.query("select current_revision_id as id from forum_posts where id=$1",[c.post.postId]) : {rows:[{id:revisionId}]};
+    const before = await service().readCase("reviewer",first.caseId);
+    const next = await service().submit("reporter-one", report({ ...c[kind], revisionId:row.rows[0].id }));
+    expect(next.caseId).not.toBe(first.caseId);
+    expect((await service().readCase("reviewer",next.caseId)).previousCaseId).toBe(first.caseId);
+    expect(await service().readCase("reviewer",first.caseId)).toEqual(before);
   });
+});
+
+async function quotaActor() {
+  const id=randomUUID();
+  await client.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,id+'@quota.test']);
+  return id;
+}
+
+describe("production complaint submission windows", () => {
+  it("allows ten new reports, rejects the eleventh, and accepts a duplicate without spending budget", async () => {
+    const actor=await quotaActor();let first: Awaited<ReturnType<ComplaintsService["submit"]>> | undefined;
+    let input: ReturnType<typeof report> | undefined;
+    for(let n=0;n<10;n++) {
+      const c=await content(), next=report(c.post);
+      const saved=await limitedService().submit(actor,next);
+      if(!n){first=saved;input=next;}
+    }
+    const c=await content();
+    const error=await limitedService().submit(actor,report(c.title)).then(()=>null,e=>e);
+    expect(error).toBeInstanceOf(ComplaintRateLimitError);
+    expect(error.retryAfterMs).toBeGreaterThan(590_000);
+    expect(await limitedService().submit(actor,{...input!,operationId:randomUUID()})).toEqual(first);
+    expect((await client.query("select count(*)::int n from forum_complaints where reporter_user_id=$1",[actor])).rows[0].n).toBe(10);
+    expect((await client.query("select id from forum_complaint_targets where title_revision_id=$1",[c.title.revisionId])).rows).toHaveLength(0);
+  });
+
+  it("enforces fifty per 24 hours and ignores expired history", async () => {
+    const actor=await quotaActor(), expired=await quotaActor();
+    // Historical fixtures are inserted with their original timestamps; append-only
+    // production records are never edited to simulate time passing.
+    for(let n=0;n<50;n++) {
+      const c=await content(), seeded=await service().submit("reporter-one",report(c.post));
+      const target=(await service().readCase("reviewer",seeded.caseId)).targetId;
+      for(const [id,seconds] of [[actor,1200],[expired,90_000]] as const) {
+        await client.query(`insert into forum_complaints(id,case_id,target_id,reporter_user_id,reason,created_at)
+          values($1,$2,$3,$4,'spam',statement_timestamp()-($5::double precision*interval '1 second'))`,[randomUUID(),seeded.caseId,target,id,seconds]);
+      }
+    }
+    const c=await content();
+    const error=await limitedService().submit(actor,report(c.post)).then(()=>null,e=>e);
+    expect(error).toBeInstanceOf(ComplaintRateLimitError);
+    expect(error.retryAfterMs).toBeGreaterThan(85_000_000);
+    await limitedService().submit(expired,report(c.post));
+  });
+
+  it("serializes concurrent last-slot submissions to different targets", async () => {
+    const actor=await quotaActor();
+    for(let n=0;n<9;n++)await limitedService().submit(actor,report((await content()).post));
+    const a=await content(),b=await content();
+    const connection=new Client({connectionString:databaseUrl,options});await connection.connect();
+    try {
+      const results=await Promise.allSettled([limitedService().submit(actor,report(a.post)),limitedService(connection).submit(actor,report(b.title))]);
+      expect(results.filter(r=>r.status==="fulfilled")).toHaveLength(1);
+      const rejected=results.find(r=>r.status==="rejected");
+      expect(rejected?.status==="rejected"&&rejected.reason).toBeInstanceOf(ComplaintRateLimitError);
+      expect((await client.query("select count(*)::int n from forum_complaints where reporter_user_id=$1",[actor])).rows[0].n).toBe(10);
+    } finally {await connection.end();}
+  });
+});
+
+it("submits through actual HTTP guard, authorization and PostgreSQL adapter without exposing Case IDs", async () => {
+  const actor=await quotaActor(),c=await content();
+  const context=new RouterContextProvider();context.set(authSessionContext,{user:{id:actor}} as never);
+  const auth=createAuthorizationCapability(new PostgresAuthorizationRepository(pool));
+  context.set(authorizationContext,auth as never);
+  context.set(complaintSubmissionContext,createHyperdriveComplaintSubmission(databaseUrl!,auth,()=>new Client({connectionString:databaseUrl,options})));
+  const send=(revisionId:string)=>submitAction({params:{topicId:c.post.topicId},context,
+    request:new Request(`https://forum.test/en/topics/${c.post.topicId}/complaints`,{method:"POST",headers:{Origin:"https://forum.test"},
+      body:new URLSearchParams({kind:"post",postId:c.post.postId,revisionId,reason:"spam",operationId:randomUUID()})})});
+  const saved=await send(c.post.revisionId);
+  expect(saved).toMatchObject({data:{ok:true}});
+  if(!(saved instanceof Response))expect(Object.keys(saved.data).sort()).toEqual(["ok","operationId"]);
+  expect(await send(randomUUID())).toMatchObject({data:{error:"conflict"},init:{status:409}});
+  expect((await client.query("select count(*)::int n from forum_complaints where reporter_user_id=$1",[actor])).rows[0].n).toBe(1);
+});
+
+it("enforces normalized Unicode code-point explanation bounds through the actual HTTP service", async () => {
+  const actor=await quotaActor();
+  const context=new RouterContextProvider();context.set(authSessionContext,{user:{id:actor}} as never);
+  const auth=createAuthorizationCapability(new PostgresAuthorizationRepository(pool));
+  context.set(authorizationContext,auth as never);
+  context.set(complaintSubmissionContext,createHyperdriveComplaintSubmission(databaseUrl!,auth,()=>new Client({connectionString:databaseUrl,options})));
+  for(const [acceptedBefore,text] of ["😀".repeat(2000),"a".repeat(1000)+"😀".repeat(1000)].entries()) {
+    const c=await content(),operationId=randomUUID();
+    const send=(explanation:string)=>submitAction({params:{topicId:c.post.topicId},context,
+      request:new Request(`https://forum.test/en/topics/${c.post.topicId}/complaints`,{method:"POST",headers:{Origin:"https://forum.test"},
+        body:new URLSearchParams({kind:"post",postId:c.post.postId,revisionId:c.post.revisionId,reason:"other",operationId,explanation})})});
+    expect(await send(text+"x")).toMatchObject({data:{error:"invalid"},init:{status:400}});
+    expect((await client.query("select count(*)::int n from forum_complaints where reporter_user_id=$1",[actor])).rows[0].n).toBe(acceptedBefore);
+    expect(await send("  "+text+"  ")).toMatchObject({data:{ok:true,operationId}});
+    expect((await client.query("select explanation from forum_complaints c join forum_complaint_targets t on t.id=c.target_id where reporter_user_id=$1 and post_id=$2",[actor,c.post.postId])).rows[0].explanation).toBe(text);
+  }
+});
+
+it("classifies actual wrapped database lock timeout as unavailable and permits retry", async () => {
+  const actor=await quotaActor(),c=await content();
+  const context=new RouterContextProvider();context.set(authSessionContext,{user:{id:actor}} as never);
+  const auth=createAuthorizationCapability(new PostgresAuthorizationRepository(pool));context.set(authorizationContext,auth as never);
+  context.set(complaintSubmissionContext,createHyperdriveComplaintSubmission(databaseUrl!,auth,
+    ()=>new Client({connectionString:databaseUrl,options:options+" -c lock_timeout=100ms -c statement_timeout=200ms"})));
+  const send=()=>submitAction({params:{topicId:c.title.topicId},context,
+    request:new Request(`https://forum.test/en/topics/${c.title.topicId}/complaints`,{method:"POST",headers:{Origin:"https://forum.test"},
+      body:new URLSearchParams({kind:"topic-title",revisionId:c.title.revisionId,reason:"spam",operationId:randomUUID()})})});
+  const holder=new Client({connectionString:databaseUrl,options});await holder.connect();
+  try {
+    await holder.query("begin");await holder.query("lock table forum_complaints in access exclusive mode");
+    expect(await send()).toMatchObject({data:{error:"unavailable"},init:{status:503}});
+    await holder.query("rollback");expect(await send()).toMatchObject({data:{ok:true}});
+  } finally {await holder.query("rollback");await holder.end();}
 });
 
 async function waitForLock(name: string) {
