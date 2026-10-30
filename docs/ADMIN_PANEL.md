@@ -7,11 +7,12 @@ admin panel. AP-01 established the documentation contract. AP-02 implements
 `/:locale/admin`: a protected reusable shell/navigation and Overview with real public
 aggregate counts. The existing `/:locale/admin/authorization` UI remains independently
 protected at its original URL; its full composition into the shell remains AP-04.
-Administrative History/recent actions, new object pages, topic closure and user blocking
-are not implemented by AP-02. No permission keys, schema or migrations are added.
+AP-03 adds authorization-change History and protected Overview recent actions. New object
+pages, topic closure and user blocking remain unimplemented. AP-02 itself added no schema
+or permission keys; AP-03 adds the independent `admin.history.read` capability.
 
 Other routes and capabilities described below as delivery targets become available only
-through their respective bounded implementation PRs. Unfinished Forum/Users/History/Settings
+through their respective bounded implementation PRs. Unfinished Forum/Users/Settings
 links explicitly use the shared Under development surface and grant no future read/action
 permission. Forum navigation is shown for Forum capabilities; the Users placeholder is
 shown with the existing authorization-user-management subset, not a new general user read.
@@ -99,7 +100,7 @@ grant global admission either. Each section and action independently checks its 
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`; later the implemented topic-closure capability | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` | Same existing permission, management validation and atomic lockout invariants |
 | Users | Future independent administrative-user-read capability for general index/detail; `access.authorization.manage` for its existing authorization subset; future block-management capability for minimal target/block lookup | Authorization controls only with `access.authorization.manage`; block/lift only with the implemented block capability |
-| History / Overview recent actions | Future independent administrative-history-read capability | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
+| History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
 
 Future capability labels in this document are requirements, not executable permission keys.
@@ -166,9 +167,40 @@ Authorization failure remains fail-closed; unexpected SQL/configuration/programm
 propagate normally. Both document and data responses use private/no-store headers.
 
 Navigation keeps the approved section order and marks unfinished destinations explicitly.
-History and Settings placeholders expose no private data. History will acquire its independent
-permission and real producer/read boundary in AP-03; placeholder visibility does not pre-grant
-that authority. No recent actions, attention queues or fabricated events are shown.
+Settings remains a placeholder exposing no private data. History is a real destination only
+with `admin.history.read`; it is omitted without that permission. Attention queues and
+fabricated events are never shown. AP-03 recent actions follow the same History-read gate.
+
+## History implementation (AP-03)
+
+`/:locale/admin/history` independently requires a session and effective `admin.history.read`
+before cursor parsing or private reads. That capability alone admits the global shell; it
+does not grant authorization management. Initial seed grants it only to built-in admin.
+Existing custom roles, moderator grants and personal overrides remain unchanged.
+
+Coverage begins with this migration, without backfill: create/rename/delete custom role,
+replace role grants, explicit user-role assignment and per-user allow/deny/inherit changes.
+An implicit default → explicit assignment is a configuration change even if the effective
+role remains the same; setting an already identical explicit assignment is a no-op. Grants
+record only added/removed permissions. Successful identical retries do not add events;
+rejected/rolled-back changes do not either. The existing mutation serialization and lockout
+check stay authoritative; event insertion uses the same transaction/client, and insertion
+failure rolls back the mutation.
+
+`admin_history` retains immutable event UUID, database time at millisecond precision,
+actor ID/display label, action/target identity and bounded typed context. Labels are limited
+to 200 Unicode characters; JSON context to 16 KiB. No target FK/cascade destroys deleted-role
+context. These six operations require no reason; the nullable bounded reason column remains
+empty. Passwords, emails, sessions, full authorization snapshots and request bodies are excluded.
+The runtime has only SELECT/INSERT on History, without UPDATE/DELETE or sequence privileges.
+
+Read order is `(occurred_at DESC, id DESC)` with a matching index and validated keyset cursor;
+pages contain 25 events, Overview reads the newest 5. New inserts do not shift older pages.
+Without History permission Overview does not query or serialize recent activity. A classified
+History outage gives a protected 503 on History and an explicit unavailable recent-actions
+state on Overview; unexpected failures propagate. Private document/data responses are no-store.
+UI timestamps explicitly use UTC with a visible zone, keeping SSR/hydration deterministic.
+This is ordinary significant-action History, not complete owner audit or AP-04+ integration.
 
 ## Shared Quick actions contract
 
@@ -202,7 +234,8 @@ applicable reason and minimal useful change context. It is distinct from post re
 security-upload events, notification inboxes and the future full owner audit surface.
 
 The following matrix defines coverage to connect with the relevant implementation packages.
-It does not claim events are recorded today. A reason marked “not required” preserves the
+AP-03 records the authorization-management rows only; the remaining rows await their
+producer packages. A reason marked “not required” preserves the
 current operation contract; it does not introduce a new reason form or persistence field.
 
 | Operation | Significant event when coverage is connected | Administrative reason rule |

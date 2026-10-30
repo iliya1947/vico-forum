@@ -628,7 +628,7 @@ export const authzPermissions = pgTable("authz_permissions", {
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
-  'access.authorization.manage', 'forum.complaint.create', 'forum.complaint.review',
+  'access.authorization.manage', 'admin.history.read', 'forum.complaint.create', 'forum.complaint.review',
   'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review'
 )`)]);
 
@@ -1742,4 +1742,26 @@ export const forumComplaintEvidenceAttachments = pgTable("forum_complaint_eviden
 }, t => [
   primaryKey({ name: "complaint_evidence_pk", columns: [t.targetId, t.attachmentId] }),
   index("complaint_evidence_attachment_idx").on(t.attachmentId),
+]);
+
+// Append-only for the web capability: INSERT/SELECT only; no target FK or deletion cascade.
+export const adminHistory = pgTable("admin_history", {
+  id: uuid("id").primaryKey(),
+  occurredAt: timestamp("occurred_at", {withTimezone: true, precision: 3}).notNull().default(sql`clock_timestamp()`),
+  actorId: text("actor_id").notNull(),
+  actorLabel: text("actor_label").notNull(),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id").notNull(),
+  targetLabel: text("target_label").notNull(),
+  context: jsonb("context").notNull(),
+  reason: text("reason"),
+}, table => [
+  index("admin_history_order_idx").on(table.occurredAt.desc(), table.id.desc()),
+  check("admin_history_action_target_check", sql`(
+    ${table.action} in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and ${table.targetType} = 'role'
+  ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')`),
+  check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
+  check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),
+  check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),
 ]);

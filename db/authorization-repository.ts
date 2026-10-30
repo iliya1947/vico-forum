@@ -1,6 +1,8 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { AUTHORIZATION_MANAGE_PERMISSION, type PermissionKey } from "../app/authorization/catalog";
 
+import { appendAuthorizationHistory, historyLabel, type AuthorizationHistoryChange, type HistoryRole } from "./admin-history";
+
 export type OverrideEffect = "allow" | "deny";
 export interface AuthorizationRole { id: string; slug: string; displayName: string; isSystem: boolean }
 export interface UserAuthorization {
@@ -154,33 +156,43 @@ export class PostgresAuthorizationRepository {
         }
         throw error;
       }
+      return { action: "role.created", targetType: "role", targetId: role.id, targetLabel: historyLabel(role.displayName), context: { slug: role.slug } };
     });
   }
 
   renameCustomRole(actorId: string, roleId: string, input: { displayName: string }) {
     return this.mutate(actorId, async (client) => {
+      const before = await this.historyRole(client, roleId);
       const result = await client.query(
         "update authz_roles set display_name = $2, updated_at = now() where id = $1 and not is_system",
         [roleId, input.displayName],
       );
       if (result.rowCount === 0) throw new AuthorizationNotFoundError("custom role does not exist");
+      if (before.rawName === input.displayName) return;
+      return { action: "role.renamed", targetType: "role", targetId: roleId, targetLabel: historyLabel(input.displayName),
+        context: { slug: before.slug, before: before.name, after: historyLabel(input.displayName) } };
     });
   }
 
   replaceRoleGrants(actorId: string, roleId: string, permissions: readonly PermissionKey[]) {
     return this.mutate(actorId, async (client) => {
-      if (!(await client.query("select 1 from authz_roles where id = $1", [roleId])).rowCount) {
-        throw new AuthorizationNotFoundError("role does not exist");
-      }
+      const role = await this.historyRole(client, roleId);
+      const before = await this.readRoleGrants(roleId, client);
+      const added = [...new Set(permissions)].filter(key => !before.includes(key)).sort();
+      const removed = before.filter(key => !permissions.includes(key));
+      if (!added.length && !removed.length) return;
       await client.query("delete from authz_role_permissions where role_id = $1", [roleId]);
       for (const permission of permissions) {
         await client.query("insert into authz_role_permissions (role_id, permission_key) values ($1, $2)", [roleId, permission]);
       }
+      return { action: "role.grantsChanged", targetType: "role", targetId: roleId, targetLabel: role.name,
+        context: { slug: role.slug, added, removed } };
     });
   }
 
   deleteCustomRole(actorId: string, roleId: string) {
     return this.mutate(actorId, async (client) => {
+      const role = await this.historyRole(client, roleId);
       try {
         const result = await client.query("delete from authz_roles where id = $1 and not is_system", [roleId]);
         if (result.rowCount === 0) throw new AuthorizationNotFoundError("custom role does not exist");
@@ -188,21 +200,30 @@ export class PostgresAuthorizationRepository {
         if (isDatabaseCode(error, "23503")) throw new AuthorizationRoleAssignedError("role is assigned to users");
         throw error;
       }
+      return { action: "role.deleted", targetType: "role", targetId: roleId, targetLabel: role.name, context: { slug: role.slug } };
     });
   }
 
   assignUserRole(actorId: string, userId: string, roleId: string) {
     return this.mutate(actorId, async (client) => {
-      if (!(await client.query("select 1 from authz_roles where id = $1 for key share", [roleId])).rowCount) {
-        throw new AuthorizationNotFoundError("role does not exist");
-      }
+      const role = await this.historyRole(client, roleId);
+      const user = await this.historyUser(client, userId);
+      const previous = await client.query<{role_id: string}>("select role_id from authz_user_roles where user_id = $1", [userId]);
+      if (previous.rows[0]?.role_id === roleId) return;
+      const old = previous.rows[0] ? await this.historyRole(client, previous.rows[0].role_id) : null;
       await client.query(`insert into authz_user_roles (user_id, role_id) values ($1, $2)
         on conflict (user_id) do update set role_id = excluded.role_id, assigned_at = now()`, [userId, roleId]);
+      return { action: "user.roleAssigned", targetType: "user", targetId: userId, targetLabel: user,
+        context: { before: old ? this.roleContext(old) : null, after: this.roleContext(role) } };
     });
   }
 
   setUserOverride(actorId: string, userId: string, permission: PermissionKey, effect: OverrideEffect | null) {
     return this.mutate(actorId, async (client) => {
+      const user = await this.historyUser(client, userId);
+      const previous = await client.query<{effect: OverrideEffect}>("select effect from authz_user_permission_overrides where user_id = $1 and permission_key = $2", [userId, permission]);
+      const before = previous.rows[0]?.effect ?? null;
+      if (before === effect) return;
       if (effect === null) {
         await client.query("delete from authz_user_permission_overrides where user_id = $1 and permission_key = $2", [userId, permission]);
       } else {
@@ -210,7 +231,22 @@ export class PostgresAuthorizationRepository {
           on conflict (user_id, permission_key) do update set effect = excluded.effect, updated_at = now()`,
         [userId, permission, effect]);
       }
+      return { action: "user.overrideChanged", targetType: "user", targetId: userId, targetLabel: user,
+        context: { permission, before, after: effect } };
     });
+  }
+
+  private roleContext(role: HistoryRole): HistoryRole { return { id: role.id, slug: role.slug, name: role.name }; }
+  private async historyRole(client: PoolClient, id: string) {
+    const result = await client.query<{id: string; slug: string; display_name: string}>("select id, slug, display_name from authz_roles where id = $1 for key share", [id]);
+    const role = result.rows[0];
+    if (!role) throw new AuthorizationNotFoundError("role does not exist");
+    return { id: role.id, slug: role.slug, name: historyLabel(role.display_name), rawName: role.display_name };
+  }
+  private async historyUser(client: PoolClient, id: string) {
+    const result = await client.query<{name: string}>('select name from "user" where id = $1 for key share', [id]);
+    if (!result.rows[0]) throw new AuthorizationNotFoundError("user does not exist");
+    return historyLabel(result.rows[0].name);
   }
 
   private async readRoles(database: Queryable): Promise<AuthorizationRole[]> {
@@ -255,7 +291,7 @@ export class PostgresAuthorizationRepository {
     }
   }
 
-  private async mutate(actorId: string, operation: (client: PoolClient) => Promise<void>): Promise<void> {
+  private async mutate(actorId: string, operation: (client: PoolClient) => Promise<AuthorizationHistoryChange | void>): Promise<void> {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
@@ -267,7 +303,7 @@ export class PostgresAuthorizationRepository {
       if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
       }
-      await operation(client);
+      const change = await operation(client);
       const after = await countManagers(client);
       if ((state.rows[0].managers_ever_existed || before > 0) && after === 0) {
         throw new AuthorizationLockoutError("mutation would remove the last access manager");
@@ -275,6 +311,7 @@ export class PostgresAuthorizationRepository {
       if (!state.rows[0].managers_ever_existed && (before > 0 || after > 0)) {
         await client.query("update authz_mutation_lock set managers_ever_existed = true where id = 1");
       }
+      if (change) await appendAuthorizationHistory(client, actorId, change);
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");

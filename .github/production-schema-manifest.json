@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0048_complaint_case_links",
+  "targetMigration": "0049_admin_history",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "5fda586b4371aa90ee2ca6e25e95b9709f26618e8a4db9117aa4aa5ff4c49140"
+          "definitionSha256": "d0d31adb377d80e4db5cfb3b514c35d583a409330a37d63f12f05cdaf4b105bc"
         }
       ],
       "indexes": []
@@ -6813,6 +6813,132 @@
               "name": "id",
               "nulls": "last",
               "order": "asc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "admin_history": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "actor_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "actor_label",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_type",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_label",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "context",
+          "type": "jsonb",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "admin_history_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "admin_history_action_target_check",
+          "columns": [
+            "action",
+            "target_type"
+          ],
+          "definitionSha256": "0ee9817b170a65985f8a1bdd6d9e392e9665dc68aeec1abe1f119e771ac87b45"
+        },
+        {
+          "name": "admin_history_context_check",
+          "columns": [
+            "context"
+          ],
+          "definitionSha256": "9abcb38accfffc3275f85968c466fb92d72ac1322c928615440809208de59429"
+        },
+        {
+          "name": "admin_history_labels_check",
+          "columns": [
+            "actor_label",
+            "target_label"
+          ],
+          "definitionSha256": "f4f2160742f05127d8c4efb4ba481759164c5a46cf83a2dea1e1e915f72a4306"
+        },
+        {
+          "name": "admin_history_reason_check",
+          "columns": [
+            "reason"
+          ],
+          "definitionSha256": "55220f569b0309129fcb88100790160ed6baa5f63740dc36e3a3ba8ab446b676"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "admin_history_order_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "occurred_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
             }
           ],
           "predicateSha256": null
