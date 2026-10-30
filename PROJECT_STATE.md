@@ -18,7 +18,8 @@ source locale без registry direction сохраняется известны�
 изменённым presentation contract. Не меняются схема БД, SQL ranking/query semantics,
 Unanswered filtering, public Help location projection, другие UGC списки,
 translation generation/provider/runtime или архитектура. CI, browser acceptance,
-независимый review и merge на момент этой записи не объявляются завершёнными.
+независимый review и merge на момент первоначальной записи не объявлялись завершёнными.
+Впоследствии PR #260 проверен и merged 2026-10-29.
 
 ## Назначение
 
@@ -35,8 +36,19 @@ translation generation/provider/runtime или архитектура. CI, brows
 - `docs/auth/AUTHORIZATION.md` — application authorization;
 - `docs/database/*` — migrations, Hyperdrive и external rollout.
 
-История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
-цепочки фиксируются в `PROJECT_HISTORY.md`.
+Значимые исторические/corrective цепочки подробно фиксируются в `PROJECT_HISTORY.md`.
+Датированные implementation/CI/review-срезы ниже сохраняют **состояние на дату записи**.
+Их тогдашние «in progress», «следующая задача», «проверка/merge ожидаются» не
+являются текущими gates. Актуальные контракты определяются профильными
+source-of-truth; фактический baseline и открытые ограничения — разделами
+«Реализованный foundation», «Forum core», «Translation system» и «Ближайший маршрут».
+Merge feature PR не означает production rollout.
+
+На 2026-10-30 PR #171 (global Search), #210, #215, #227, #232 и
+corrections #259/#260/#261 уже объединены в `main`. Черновики/автосохранение
+отложены решением владельца и не являются текущими задачами Editor 2.0.
+Stage 6 external/production gates, не реализованные admin/complaints функции
+и соответствующие owner acceptance остаются отдельной незавершённой работой.
 
 ## RES-A11Y-01 — accessible name Simple textbox (2026-10-30)
 
@@ -51,7 +63,8 @@ Source/history/selection, Simple/Advanced переключения, native texta
 table inputs, Preview и disabled/paste boundaries не меняются. Добавлены focused
 mounted regressions для имени, нескольких instances, runtime localization,
 редактирования/Undo/Redo и соседних корректных controls. Фактические checks/CI
-и независимый whole-PR review фиксируются отдельно после выполнения.
+и независимый whole-PR review на момент первоначальной записи ожидались.
+Впоследствии PR #261 проверен и merged 2026-10-30.
 
 ## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
 
@@ -70,7 +83,8 @@ Simple paste проверяет disabled до передачи plain/HTML/spread
 
 Добавлены focused mounted regressions для трёх причин, re-enable, соседних
 заблокированных команд и enabled history controls. Фактические проверки/CI и
-независимый whole-PR review фиксируются отдельно после выполнения.
+независимый whole-PR review на момент первоначальной записи ожидались.
+Впоследствии PR #259 проверен и merged 2026-10-29.
 
 ## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
 
@@ -858,12 +872,12 @@ Exact-head CI первого пакета прошёл; независимый r
 Production/external rollout и visual acceptance не запускались. Остальные audit findings
 этим пакетом не исправляются.
 
-## Editor 2.0 — removal drafts/autosave (2026-10-20, PR #232)
+## Editor 2.0 — removal drafts/autosave (исторический срез 2026-10-20; PR #232 merged 2026-10-21)
 
 По решению владельца пользовательские черновики/автосохранение перенесены в возможные
 будущие функции (`Under development: drafts`). Runtime local/server text persistence,
 60-second autosave, recovery/discovery, межвкладочные конфликты, My Drafts и status UI
-удаляются в существующем #232. Прежний snapshot correction scope отменён.
+удалены в PR #232. Прежний snapshot correction scope отменён.
 
 Текущая реализация использует in-memory editor buffer и отдельную upload/publication
 operation без текста. Private refs, terminal markers и publication receipts используют
@@ -871,7 +885,7 @@ operation без текста. Private refs, terminal markers и publication rec
 post-edit сохраняет expectedRevisionId, Save/Cancel и историю. Abandoned uploads имеют
 технический 24-hour idle cleanup cutoff; durable claims и published-ref protection
 сохраняются. Merged migrations не переписываются, unmerged snapshot migration 0045 удалена.
-F7 исправляется в visual surface и editable whitespace range.
+F7 был исправлен в visual surface и editable whitespace range.
 
 На исходном removal head targeted component/application проверки (93 теста) и publication/operation
 PostgreSQL проверки (12 тестов) проходят с нулём failed suites и unhandled errors.
@@ -890,8 +904,8 @@ late ACK/commit, точный manifest, rebase/removals/uploads и повтор�
 с success=true и без failed suites. Typecheck, lint (одно прежнее warning) и обе сборки
 прошли. Результат нового exact-head CI фиксируется в служебном канале после завершения.
 Нового Chromium/Worker/private-R2 прогона для L1–L3 не выполнялось: изменённые
-переходы проверены component/PostgreSQL regressions. Новый whole-PR cycle correction
-head ещё не запускался.
+переходы проверены component/PostgreSQL regressions. На указанном тогда correction head новый whole-PR cycle ещё не запускался;
+это исторический статус, а не текущий review gate.
 Отдельный visual/Pages gate отменён владельцем; visual review — только по его запросу.
 Подробный действующий контракт — docs/EDITOR.md.
 Production/external migrations/deployment не выполнялись. Ниже сохранены исторические
@@ -899,8 +913,8 @@ Production/external migrations/deployment не выполнялись. Ниже 
 
 ## Editor 2.0 — завершение реализации в PR #215 (2026-10-15)
 
-Follow-up PR #232 исправляет четыре подтверждённых current-Stage boundary-дефекта поверх
-смёрженного Editor 2.0. Cleanup теперь учитывает unresolved attachment-version membership и
+Впоследствии PR #232 исправил четыре подтверждённых тогда current-Stage
+boundary-дефекта поверх Editor 2.0. Cleanup теперь учитывает unresolved attachment-version membership и
 не claim/delete-ит объект до завершения conflict resolution; после снятия boundary обычная
 очистка сохраняется. Simple table input оставляет native paste внутри выбранной ячейки, а
 surface paste продолжает обслуживать body/cross-leaf сценарии. Межвкладочный выбор cached
@@ -924,9 +938,8 @@ live refs) и server-fenced новый draft при скрытом >30d terminal
 Exact code/test head `0c6c7c58afbdcd65d486e1462e6eca24dc653b70` прошёл
 GitHub Actions #39176074057: `checks` SUCCESS (1064 application tests / 96 files,
 typecheck, lint, build/guards) и `database` SUCCESS (315 PostgreSQL 17 tests /
-27 files, schema/privilege/Workers checks). Повторный независимый whole-PR review
-нового head ещё не выполнялся; новых browser/runtime прогонов для двух follow-up
-коррекций здесь не заявлено.
+27 files, schema/privilege/Workers checks). На этом промежуточном head повторный independent whole-PR review ещё не выполнялся;
+новых browser/runtime прогонов для двух follow-up коррекций эта запись не заявляет.
 
 По прямому назначению владельца Codex принимает implementation ownership;
 обычная схема Codex → Sol → GPT-6 для этого пакета заменяется реализацией Codex
@@ -1035,23 +1048,25 @@ overlap/interception; обязательные direct controls, More, mode switc
 Новых browser-observable дефектов в этом bounded correction path не выявлено.
 
 Owner visual acceptance текущего Editor 2.0 состояния подтверждён 2026-10-16 как достаточный
-для закрытия текущего implementation PR без дальнейшей косметической полировки. Цель теперь —
-завершить Editor 2.0 без расширения scope: пройти обязательный последовательный
-четырёхагентный review-цикл и исправлять только подтверждённые дефекты текущего Stage.
+для закрытия тогдашнего implementation PR без дальнейшей косметической полировки.
+На тот момент оставалось пройти назначенный review-цикл и исправить только
+подтверждённые дефекты без расширения Editor 2.0.
 
 Отдельная визуальная/UX-доработка Editor 2.0 перенесена решением владельца на финальный
 общепроектный refinement-pass после завершения основной функциональной работы и external
-integration, перед первым публичным production-релизом. Этот будущий pass не блокирует
+integration, перед первым публичным production-релизом. Этот будущий pass не блокировал
 завершение и merge PR #215.
 
-PR #215 остаётся открыт. Перед merge требуется последовательный четырёхагентный review-цикл
-по актуальному `AGENTS.md`; отдельный GitHub Codex Code Review для #215 владельцем запрещён.
+На дату этого среза PR #215 ещё был открыт и ожидал назначенный review-цикл;
+отдельный GitHub Codex Code Review был запрещён владельцем.
+PR #215 впоследствии merged в `main` 2026-10-18.
 
-## Текущая фаза
+## Текущая фаза и датированные срезы реализации
 
-Vico Forum находится в ранней pre-release разработке.
+Vico Forum находится в ранней pre-release разработке. Промежуточные PR/CI
+checkpoints ниже сохраняются как датированная история, не как очередь действий.
 
-- PR #227 (in progress) исправляет подтверждённый test-suite audit reliability defect
+- PR #227 (merged 2026-10-16) исправляет подтверждённый test-suite audit reliability defect
   controlled locale writer без schema/migration/public-contract изменений. Graph-wide
   desired-state mutations теперь в существующей короткой `SERIALIZABLE` transaction берут
   `LOCK TABLE locales IN SHARE ROW EXCLUSIVE MODE` после transaction-local deadlines и до
@@ -1235,9 +1250,9 @@ Vico Forum находится в ранней pre-release разработке.
   transactionally. Drizzle snapshot, manifest and runtime web-role grants
   include the new table. Integration regression tests exercise all three
   real action→writer→PostgreSQL paths, exact replay and altered retries.
-  Browser/test-bucket and owner visual acceptance are not yet recorded;
-  no infrastructure rollout, merge or Codex Code Review occurred.
-  Whole Editor 2.0 remains incomplete.
+  At that interim package checkpoint, browser/test-bucket and owner visual acceptance
+  were not recorded; infrastructure rollout, merge and Codex Code Review had not
+  occurred. Whole Editor 2.0 was still incomplete at that time.
 
 - Editor 2.0 published-post editing package (2026-10-14, PR #215):
   post authors with effective `forum.post.editOwn` can open the same Simple/Advanced
@@ -1259,17 +1274,18 @@ Vico Forum находится в ранней pre-release разработке.
   of all text from attachment-bearing posts.
   Unit/route/PostgreSQL regression tests exercise authorization, separate
   drafts, history, CAS/stale edit, attached and text-only revisions and retry.
-  Browser/visual acceptance, final whole-Editor review and subsequent Editor
-  packages are still outstanding; no merge, production migrations or rollout.
-  CI for the final exact head must be verified independently.
+  At that interim package checkpoint, browser/visual acceptance, final whole-Editor
+  review and subsequent packages were still outstanding; no merge, production migrations
+  or rollout had occurred. Final-head CI still needed independent verification then.
 
-- Editor 2.0: PR #215 открыт в обычном режиме и ещё не готов к merge. После merge #217 в `main`
+- Editor 2.0: на момент этого раннего среза PR #215 был открыт и ещё
+  не готов к merge; позже merged 2026-10-18. После merge #217 в `main`
   в первом foundation-срезе добавлены lossless Markdown document/history utilities,
   ограниченное текстовыми AST-диапазонами безопасное visual-edit API (без пересериализации
   исходника и без изменения сложных блоков) и единая Undo/Redo история к существующему
   shared Markdown editor, включая клавиатурные сочетания и обработку Reply/Quote insertion.
-  Первый CI первого этапа (checks/database) успешен. Следующий visual-authoring срез
-  реализует source-positioned визуальные редактируемые plain-text leaf spans, read-only
+  Первый CI первого этапа (checks/database) был успешен. Последующий visual-authoring срез
+  реализовал source-positioned визуальные редактируемые plain-text leaf spans, read-only
   technical/unsupported constructs с переходом в Advanced Markdown, common exact-source
   undo/redo, localized Simple/Advanced controls, Preview menu (Markdown/Preview/Split),
   синхронный Split-scroll и Fullscreen, account-scoped local mode preference, RU/EN/HE,
@@ -1284,7 +1300,7 @@ Vico Forum находится в ранней pre-release разработке.
   RU/EN/HE, RTL/responsive стили и регрессионные тесты добавлены.
   Кодовый head `f63b364` прошёл CI #38129324769: lint, typecheck,
   application tests, builds и native PostgreSQL DB проверки успешны.
-  Pages/owner visual acceptance этапа и финальное whole-PR review ещё предстоят.
+  Pages/owner visual acceptance этапа и финальное whole-PR review тогда ещё предстояли.
   Сложные/нестандартные таблицы остаются защищёнными для Markdown-редактирования;
   четвёртый срез реализует account/context-scoped локальное сохранение после
   Space/Enter/paste/форматирования/ухода со страницы, 60-секундную синхронизацию
@@ -1895,8 +1911,8 @@ Vico Forum находится в ранней pre-release разработке.
   вместе с темой, доступны через public locale-aware `/:locale/tags` и
   `/:locale/tags/:tagKey`, показываются в section/topic/tag presentation; forward migration
   `0021_forum_tags` добавлена без Stage 6 rollout. Repository CI и GitHub Pages preview прошли,
-  owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
-  product-функция — global Search: текущая implementation-ветка добавляет public
+  owner visual acceptance подтверждён 2026-10-02. Следующей bounded product-функцией тогда был global Search:
+  implementation-ветка добавила public
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
   migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Последующая hierarchy correction в PR #182
   заменяет topic-oriented homepage blocks на category → section map и переносит прежнюю rich
@@ -2179,8 +2195,9 @@ Vico Forum находится в ранней pre-release разработке.
   работающий механизм и пригодный для дальнейшего развития фундамент; текущая presentation
   намеренно provisional и позже должна получить отдельную UX/визуальную доработку. Это deferred
   polish, а не дефект текущего PR #209.
-- PR #210: после review на `e30a988` исправлены RTL-isolation для технических language IDs (в текущем head) и inline margins у figure blocks. Дальнейшие exact-head CI, Pages и Codex review требуют подтверждения.
-- PR #210: после Codex review устранены пять текущих editor/code findings: ограничение подсветки больших/токеноёмких блоков, корректные границы выделенных строк, исключение скрытого textarea из Tab-порядка Preview, локализованная подпись ссылки и LTR только для кода при RTL интерфейсе. Добавлены регрессионные тесты. Новые замечания повторного Codex review на `f72af07` касались позиции 0 при форматировании первой пустой строки, языка блока кода с `#` и сохранения состояния кнопок code preview в Split. Исправления и регрессионные тесты добавлены; CI и Pages на `29af5e7` прошли. Последующий Codex review обнаружил реальный дополнительный дефект: per-block ограничение подсветки допускает суммарно неограниченную подсветку множества блоков. Введено ограничение подсветки по размеру всего Markdown-сообщения с безопасным отображением кода без подсветки сверх порога; добавлен тест. CI на `e30a988` прошёл со второй попытки после несвязанного нестабильного теста навигации переводов; Pages успешен. Codex review выявил P2-дефект направления технических идентификаторов `c#`/`f#` в RTL — исправлена изоляция подписи языка и поля его ввода с регрессионными тестами. Отступы figure являются отложенной косметической доработкой редактора, а не блокером текущего Stage. Проверки и review после исправления RTL ещё не завершены.
+- PR #210: после review на `e30a988` исправлены RTL-isolation для технических language IDs (в текущем head) и inline margins у figure blocks. На том промежуточном head дальнейшие exact-head CI, Pages и Codex review ещё требовали подтверждения.
+- PR #210: после Codex review устранены пять текущих editor/code findings: ограничение подсветки больших/токеноёмких блоков, корректные границы выделенных строк, исключение скрытого textarea из Tab-порядка Preview, локализованная подпись ссылки и LTR только для кода при RTL интерфейсе. Добавлены регрессионные тесты. Новые замечания повторного Codex review на `f72af07` касались позиции 0 при форматировании первой пустой строки, языка блока кода с `#` и сохранения состояния кнопок code preview в Split. Исправления и регрессионные тесты добавлены; CI и Pages на `29af5e7` прошли. Последующий Codex review обнаружил реальный дополнительный дефект: per-block ограничение подсветки допускает суммарно неограниченную подсветку множества блоков. Введено ограничение подсветки по размеру всего Markdown-сообщения с безопасным отображением кода без подсветки сверх порога; добавлен тест. CI на `e30a988` прошёл со второй попытки после несвязанного нестабильного теста навигации переводов; Pages успешен. Codex review выявил P2-дефект направления технических идентификаторов `c#`/`f#` в RTL — исправлена изоляция подписи языка и поля его ввода с регрессионными тестами. Отступы figure являются отложенной косметической доработкой редактора, а не блокером текущего Stage. На том промежуточном head проверки и review после исправления RTL ещё не были
+  завершены; позднее PR #210 merged 2026-10-10.
 - PR #210 реализует ранее отложенный **full editor/code tooling** поверх текущих authoring
   boundaries без изменения server mutation contracts. Один shared Markdown editor используется
   обычным create-topic, reply и Help & solutions question authoring; Write / Preview / Split и
@@ -2741,10 +2758,10 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 5. `Tags` реализован и merged через PR #170: free-form topic tags, canonical
    normalization/reuse, migration `0021_forum_tags`, public tag index/filter routes, topic creation
    и presentation integration; owner visual acceptance подтверждён 2026-10-02.
-6. По выбору владельца следующая bounded product subtask — global Search. Текущая
-   implementation-ветка использует existing current topic-title/post revisions и tags, без новой
-   migration или отдельного search-index subsystem. Repository CI и GitHub Pages preview проходят;
-   owner visual acceptance подтверждён 2026-10-03.
+6. Global Search реализован и merged через PR #171 (2026-10-02), используя
+   existing current topic-title/post revisions и tags без отдельного search-index
+   subsystem. Repository CI/Pages и owner visual acceptance среза были подтверждены
+   2026-10-03.
 7. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
@@ -2756,11 +2773,10 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
 12. Message links реализован и merged через PR #172: permanent message anchor + public Copy link + localized success/failure feedback; owner visual acceptance подтверждён 2026-10-03.
 13. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03.
-14. Full editor/code tooling реализуется в PR #210 на одном shared editor для create-topic,
-    reply и Help question authoring; current implementation сохраняет existing body/mutation
-    contracts, Reply/Quote integration и optional similar-question flow. Drafts/autosave остаются
-    следующим отдельным authoring subsystem, а visual polish editor не расширяет текущий
-    функциональный scope.
+14. Full editor/code tooling реализован и merged через PR #210 (2026-10-10) на одном shared editor для create-topic,
+    reply и Help question authoring; действующий механизм сохраняет existing body/mutation
+    contracts, Reply/Quote integration и optional similar-question flow. Drafts/autosave отложены по решению владельца 2026-10-20 в возможные
+    будущие функции; visual polish Editor остаётся отдельным pre-release refinement.
 15. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
@@ -2791,19 +2807,21 @@ allowance/anti-abuse values, final preview isolation, deployed smoke и backup/r
 Stage 6 работой и не входят в UI/UX product pass.
 
 
-### Editor 2.0 edit lifecycle E1 — 2026-10-14 (in progress)
+### Editor 2.0 edit lifecycle E1 — исторический in-progress checkpoint 2026-10-14
 
-PR #215: targeted change at `f6539ff` keeps the published-post edit controls and draft publication barrier pending during React Router `loading` after an `editPost` submission, rather than unlocking immediately after `submitting`. Independent Codex diagnosis records the underlying loss-of-late-input scenario in shared service PR #147. The gated `submitting → loading → idle` success regression passed in CI #38609692082, while the failed-save regression exposed a separately confirmed owner-subtree remount on same-topic POST. A structural correction at `fd7eb7e` retains same-page editor/draft runtime and resets the translation manager's own navigation lifecycle; the status-bearing 400/storage-failure/retry regression was added at `961c730`. The exact code+test head `619105a` passed both `checks` (955 application tests / 93 files; lint, typecheck, builds, schema checks) and `database` (293 native PostgreSQL tests / 27 files) in CI #38619373836. The E1 current-scope published-edit lock/failed-save/runtime-retention correction is verified within repository CI; standalone live-browser acceptance and whole-Editor final review remain outstanding. Related E2/E3 findings remain open, and whole-Editor acceptance/review is not complete.
+PR #215: targeted change at `f6539ff` keeps the published-post edit controls and draft publication barrier pending during React Router `loading` after an `editPost` submission, rather than unlocking immediately after `submitting`. Independent Codex diagnosis records the underlying loss-of-late-input scenario in shared service PR #147. The gated `submitting → loading → idle` success regression passed in CI #38609692082, while the failed-save regression exposed a separately confirmed owner-subtree remount on same-topic POST. A structural correction at `fd7eb7e` retains same-page editor/draft runtime and resets the translation manager's own navigation lifecycle; the status-bearing 400/storage-failure/retry regression was added at `961c730`. The exact code+test head `619105a` passed both `checks` (955 application tests / 93 files; lint, typecheck, builds, schema checks) and `database` (293 native PostgreSQL tests / 27 files) in CI #38619373836. The E1 current-scope published-edit lock/failed-save/runtime-retention correction is verified within repository CI; standalone live-browser acceptance and whole-Editor final review remained outstanding
+at that checkpoint; E2/E3 findings were still open then, not current unmerged PR #215 gates.
 
 
 ### Editor 2.0 E2 — edit-resume URL consumption (2026-10-14)
 
-PR #215: fixed confirmed re-opening of a cancelled published-message editor after same-topic revalidation. Cancel and acknowledged successful Save now consume only the `editPost` URL command via same-path `replace` navigation, preserving other query parameters and hash; this does not delete or auto-publish the recoverable edit draft. A fresh explicit resume URL can still open the authorized form. Added actual TopicRoute/router regressions for Cancel → revalidate → remain closed → explicit resume and for Save completion consuming the resume parameter. Code commit `bac86a7`, tests `c89f38c`. The exact code/test head `c89f38c` passed both `checks` and `database` in CI #38623649760; documentation-only follow-up heads do not change runtime behavior. E3 and whole-Editor acceptance remain open.
+PR #215: fixed confirmed re-opening of a cancelled published-message editor after same-topic revalidation. Cancel and acknowledged successful Save now consume only the `editPost` URL command via same-path `replace` navigation, preserving other query parameters and hash; this does not delete or auto-publish the recoverable edit draft. A fresh explicit resume URL can still open the authorized form. Added actual TopicRoute/router regressions for Cancel → revalidate → remain closed → explicit resume and for Save completion consuming the resume parameter. Code commit `bac86a7`, tests `c89f38c`. The exact code/test head `c89f38c` passed both `checks` and `database` in CI #38623649760; documentation-only follow-up heads do not change runtime behavior. At this checkpoint E3 and whole-Editor acceptance were still open.
 
 
 ### Editor 2.0 E3 — published revision fence bound to recoverable edit draft (2026-10-14)
 
-PR #215 addresses the confirmed current-scope E3 stale-edit overwrite scenario: the previously mutable hidden `expectedRevisionId` tracked the latest loader post even when a locally or remotely restored edit draft belonged to an older published revision. A post-edit draft now retains its `publishedRevisionId` in the existing JSONB/local draft payload (optional for backward compatibility; no schema migration), and the live edit form submits that draft-owned fence, not the latest loader revision. The editor is not remounted solely by a changed published revision. When a published revision differs or a legacy draft lacks a recorded baseline, Save is blocked and the existing working text remains available until the author explicitly reconciles with the current published revision. Server post revision CAS is unchanged. TopicRoute/MarkdownEditor regressions cover R1→R2 revalidation, local versioned/legacy recovery, and restoration of a server-synced draft on another device. Exact code+test head `d607bd7` passed `checks` (960 application tests, 93 files; lint/typecheck/build and validation) and `database` (293 native PostgreSQL tests, 27 files) in CI #38626401557. The E3 client overwrite cause is corrected and repository-CI verified; independent final whole-Editor/browser acceptance is not implied. E1/E2 remain previously corrected; whole-Editor acceptance and merge remain outstanding.
+PR #215 addresses the confirmed current-scope E3 stale-edit overwrite scenario: the previously mutable hidden `expectedRevisionId` tracked the latest loader post even when a locally or remotely restored edit draft belonged to an older published revision. A post-edit draft now retains its `publishedRevisionId` in the existing JSONB/local draft payload (optional for backward compatibility; no schema migration), and the live edit form submits that draft-owned fence, not the latest loader revision. The editor is not remounted solely by a changed published revision. When a published revision differs or a legacy draft lacks a recorded baseline, Save is blocked and the existing working text remains available until the author explicitly reconciles with the current published revision. Server post revision CAS is unchanged. TopicRoute/MarkdownEditor regressions cover R1→R2 revalidation, local versioned/legacy recovery, and restoration of a server-synced draft on another device. Exact code+test head `d607bd7` passed `checks` (960 application tests, 93 files; lint/typecheck/build and validation) and `database` (293 native PostgreSQL tests, 27 files) in CI #38626401557. The E3 client overwrite cause is corrected and repository-CI verified; independent final whole-Editor/browser acceptance is not implied. E1/E2 were previously corrected; whole-Editor acceptance and merge remained
+outstanding at that checkpoint (PR #215 later merged 2026-10-18).
 
 
 ### Editor 2.0 — @mentions authoring suggestions (2026-10-14)
@@ -2812,7 +2830,8 @@ PR #215 now supports an initial, bounded user-facing @mention authoring slice. A
 
 Exact implementation/test head `22c3d3b4123960ef22bf2be097813dcaef1489be` passed `checks` (968 application tests across 95 files; lint/typecheck/build/standard guards) and `database` (294 native PostgreSQL tests across 27 files) in CI #38629891041. Unit/integration tests cover literal-name search and API authorization, escaping and private data; Unicode mention fragment detection; and stable profile-link insertion in both editor modes.
 
-**Remaining Editor 2.0 Stage 6 scope:** durable mention-notification generation on successful publish/edit, duplicate suppression against reply notifications, quoted/code exclusions, edit-history notified-set semantics, plus other approved editor completion/acceptance work. This authoring slice does **not** claim those behaviors are implemented. No live browser/owner visual acceptance, final whole-Editor independent review or merge has occurred.
+**Remaining Editor 2.0 scope at the 2026-10-14 authoring checkpoint (historical):** durable mention-notification generation on successful publish/edit, duplicate suppression against reply notifications, quoted/code exclusions, edit-history notified-set semantics, plus other approved editor completion/acceptance work. This authoring slice does **not** claim those behaviors are implemented. No live browser/owner visual acceptance, final whole-Editor independent review or merge
+was claimed for that checkpoint.
 
 
 ### Editor 2.0 — published @mention notifications (2026-10-14)
@@ -2845,13 +2864,15 @@ PR #215 implements the remaining agreed §9 manual direction override on an exis
 
 GPT-5.6 Sol's independent review of PR #215 head `0235a898` confirmed a current-scope Markdown semantic regression: applying a manual paragraph direction to Setext headings appended `{:vico-dir=...}` after the underline, invalidating the heading; for ATX headings with optional closing hashes, it appended after the hashes and turned them into visible text. GPT-6's bounded correction changes `setParagraphDirection` to insert/replace/remove the marker at the last positioned heading child before closing heading syntax, while retaining the existing paragraph/list path. The shared Markdown direction transformer recognizes the marker at the end of the original last text child's source span rather than at the end of the whole heading source, without treating escaped tokens as formatting. Untouched content and line endings remain unchanged, and Auto removes only the explicit marker. Focused source and rendered-output regressions exercise Setext H1/H2 (including CRLF), ATX closing hashes (including inline formatting), and plain ATX with RTL/LTR/Auto round trips. Exact implementation code/test head `1deb4a516719126cce4bcbab207c2d2d0c271d2b` passed [CI #38718058956](https://github.com/iliya1947/vico-forum/actions/runs/38718058956): checks SUCCESS (993 application tests / 95 files, including lint/typecheck/build guards) and database SUCCESS (297 PostgreSQL tests / 27 files). This is the bounded correction submitted for Sol's independent re-check; it is not whole-Editor acceptance, deployed/browser validation, Codex Code Review or merge.
 
-### Editor 2.0 — attributed quote correction (2026-10-15, verification pending)
+### Editor 2.0 — attributed quote correction (исторический checkpoint 2026-10-15; verification тогда pending)
 
 PR #215 implements a bounded correction after Sol/Codex diagnosis of the attributed-quote renderer. The ReactMarkdown HAST blockquote attribution recognizer now skips incidental whitespace and identifies only the first semantic quote-header paragraph/link. Generated Markdown quote labels entity-escape ampersands so author spellings such as `&copy;` and `&amp;` survive visible rendering. The existing ordinary Markdown source representation, reply relationship and Range/ResizeObserver presentation remain unchanged.
 
 CNT-04 now omits only recognized attribution-label text nodes from machine-translation segments while leaving quoted body text and other link labels translatable. The shared post-body current-translation selector rejects same-revision translated content when its recognized quote-author/number/permalink sequence differs from the source. Post-body task preflight and serialized PostgreSQL planning apply that selector rather than treating every stored row as valid; conditional publication replaces invalid quote-attribution rows atomically while preserving valid manual-translation precedence. The protection policy advances to `cnt06-quote-attribution-v1` for new task identity/policy checks. Focused source/renderer, selection/presentation, planner and native PostgreSQL regressions were added.
 
-The implementation requires exact-head CI and real integrated browser/owner acceptance before it can be accepted by Sol; no CI pass, browser matrix, final whole-Editor review, formal Codex Code Review, merge or external rollout is claimed by this initial record.
+At this initial checkpoint exact-head CI and applicable acceptance required verification;
+no CI pass, browser matrix, final whole-Editor review, formal Codex Code Review, merge
+or external rollout was claimed for this intermediate revision.
 
 ### Editor 2.0 attributed quote correction — exact-head repository CI (2026-10-15)
 
