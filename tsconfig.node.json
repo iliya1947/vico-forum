@@ -14,6 +14,8 @@
     "app/authorization/catalog.ts",
     "app/admin/access.ts",
     "app/admin/access.server.ts",
+    "app/admin/history.server.ts",
+    "app/admin/history-path.ts",
     "app/authorization/request-context.ts",
     "app/forum/actions.server.ts",
     "app/forum/attachment-request-context.ts",

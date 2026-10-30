@@ -14,6 +14,7 @@ export const PERMISSION_CATALOG = [
   "forum.sourceLocale.correctAny",
   "forum.translation.generate",
   "access.authorization.manage",
+  "admin.history.read",
   "forum.complaint.create",
   "forum.complaint.review",
   "forum.complaint.reporterIdentity.read",

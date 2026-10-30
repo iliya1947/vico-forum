@@ -9770,3 +9770,10 @@ a.topic-tag:focus-visible {
 @media (max-width: 30rem) {
   .admin-panel-nav a { flex: 1 1 8rem; }
 }
+
+.admin-history-events { display: grid; gap: 1rem; padding-inline-start: 1.5rem; }
+.admin-history-events li { min-inline-size: 0; overflow-wrap: anywhere; border-block-end: 1px solid var(--border); padding-block-end: 1rem; }
+.admin-history-events code { unicode-bidi: isolate; overflow-wrap: anywhere; }
+.admin-history-events dd { margin-inline-start: 1rem; }
+.admin-history-paging { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1rem; }
+.admin-history-paging a { min-block-size: 44px; display: inline-flex; align-items: center; }

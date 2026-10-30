@@ -21,6 +21,24 @@ translation generation/provider/runtime или архитектура. CI, brows
 независимый review и merge на момент первоначальной записи не объявлялись завершёнными.
 Впоследствии PR #260 проверен и merged 2026-10-29.
 
+## AP-03 — authorization-change History (2026-10-30)
+
+В отдельной implementation-ветке добавлены History и Overview recent actions с независимым
+`admin.history.read` (initial grant только built-in admin). Шесть существующих authorization
+management operations записывают реальные typed deltas внутри authoritative transaction;
+lockout/rejected/rollback/no-op не создают событий. Labels bounded, контекст удалённой
+custom role сохраняется без target FK, private emails/requests/sessions не копируются.
+AP03-MIRA-01 correction: keyset paging использует generated bigint position вместо
+пары timestamp/random UUID; поздние события с тем же timestamp не попадают на older pages.
+UUID и actual DB display time сохранены, cursor — decimal string без Number-conversion.
+Allocation идёт под прежним authorization mutation lock; rollback gaps допустимы.
+Runtime History privileges остаются SELECT/INSERT без sequence grants. UTC timestamps,
+EN/RU/HE, private/no-store и classified outage boundaries сохранены.
+Forward migration `0049_admin_history`, Drizzle metadata, schema manifest и runtime
+SELECT/INSERT contract обновляются вместе. AP-04+, Quick actions и super-admin audit не
+реализуются. Фактические tests/CI/browser результаты и author handoff фиксируются в #251;
+review, merge, owner visual acceptance и production rollout этой записью не заявляются.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -2492,7 +2510,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0048`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0049`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

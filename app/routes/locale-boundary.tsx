@@ -96,7 +96,7 @@ export async function loader(args: LocaleBoundaryArgs) {
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead] = await Promise.all([
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead, adminHistoryRead] = await Promise.all([
         resolver.has("access.authorization.manage"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
@@ -105,6 +105,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         resolver.has("forum.topic.pin"),
         resolver.has("forum.sourceLocale.correctAny"),
         resolver.has("forum.post.history.read"),
+        resolver.has("admin.history.read"),
       ]);
       canManageAuthorization = authorizationManage;
       canViewAdminPanel = adminAccess(new Set([
@@ -114,6 +115,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         ...(pin ? ["forum.topic.pin" as const] : []),
         ...(sourceAny ? ["forum.sourceLocale.correctAny" as const] : []),
         ...(historyRead ? ["forum.post.history.read" as const] : []),
+        ...(adminHistoryRead ? ["admin.history.read" as const] : []),
       ])).canEnter;
       canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead;
     } catch (error) {
