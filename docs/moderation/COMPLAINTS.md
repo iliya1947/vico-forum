@@ -27,8 +27,10 @@ No routes or Worker runtime capability are enabled by this package.
 ## Reported target and evidence
 
 Targets are `post` or `topic-title`, including separate first-post/title identities.
-Composite foreign keys bind the target to its exact topic, content owner and existing
-immutable forum revision. An unconstrained polymorphic ID is not used.
+Composite foreign keys bind each immutable revision to its owning post/topic and
+bind a post to its topic. The affected-author field has a foreign key to the user
+identity; the trusted repository derives it from the locked authoritative content
+row at submission. This author equality is enforced by that server boundary.
 
 Submission takes the authoritative content row lock and compares the observed
 revision with the current revision. It rejects a fresh stale report rather than
@@ -64,13 +66,20 @@ Complaints in that Case. The same reporter/target is lifetime unique, regardless
 of reason, retry or closure. An identical duplicate returns the existing record;
 a changed duplicate payload conflicts. Reports cannot be withdrawn.
 
-The approved path of a later revision after resolution creates a new Case.
-Two incident-grouping choices are deliberately unresolved: a new reporter on the
-same revision after closure, and a newer revision while its predecessor is open.
-The service returns `ComplaintPolicyRequiredError` for these paths, without writes.
-Storage uses a partial open-target unique index, not an irreversible one-Case-ever
-constraint. These guards require a product decision in Package 2. They are not
-represented as a permanent product rejection policy.
+After resolution, a different reporter on the same current revision creates a new
+Case linked by `previous_case_id` to the most recently resolved Case of that target
+(ordered by resolution time, creation time and ID). The old Case and Decision are
+untouched. The same reporter/target lifetime duplicate still returns its original
+record, even when a successor exists. Later reporters join the successor while it
+is open. Repeated resolutions form a chain of explicit predecessor links.
+The link is immutable; a composite self-FK binds it to the same target, and an
+insertion guard requires a resolved predecessor. Protected reviewer Case reads
+include the link; participant/public projections do not expand.
+
+A later revision after resolution can also create a new Case, with its own target.
+Only the newer-revision-while-an-earlier-Case-is-open grouping choice remains
+unresolved and returns `ComplaintPolicyRequiredError` without writes. Storage uses
+a partial open-target unique index, not an irreversible one-Case-ever constraint.
 
 Package 2 must add a complaint-specific durable burst/window budget before exposing
 submission. No per-actor 5-second forum cooldown or guessed quota is installed here.

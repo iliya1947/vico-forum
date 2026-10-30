@@ -192,9 +192,8 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     await expectCode(insert(3),"23505");
     await expectCode(insert(1,c.caseId,other.decisionId),"23503");
   });
-  it("defers ambiguous incident grouping but permits a later revision after resolution", async () => {
+  it("permits a later revision after resolution", async () => {
     const c = await decision();
-    await expect(service().submit("reporter-two",report(c.post))).rejects.toBeInstanceOf(ComplaintPolicyRequiredError);
     await forum.editPublishedPost({topicId:c.post.topicId,postId:c.post.postId,actorId:"content-author",expectedRevisionId:c.post.revisionId,
       body:"Later incident",draftId:randomUUID(),attachmentIds:[]});
     const row = await client.query("select current_revision_id from forum_posts where id=$1",[c.post.postId]);
@@ -222,6 +221,100 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     const data = await service().readCase("reviewer",saved.caseId), attachmentId = await asset();
     await client.query(`update forum_attachments set cleanup_status='deleting',cleanup_claim_token=$1,cleanup_claimed_at=now() where id=$2`,[randomUUID(),attachmentId]);
     await expectCode(client.query("insert into forum_complaint_evidence_attachments(target_id,attachment_id) values ($1,$2)",[data.targetId,attachmentId]),"23514");
+  });
+});
+
+describe("linked Cases for a previously resolved revision", () => {
+  it.each(["post", "title"] as const)("uses authoritative %s author rather than the revision editor", async kind => {
+    const c = await content(), revisionId = randomUUID();
+    if (kind === "post") {
+      await client.query(`insert into forum_post_revisions(id,post_id,author_id,original_content,source_locale)
+        values ($1,$2,'reporter-two','Revised body','en')`, [revisionId,c.post.postId]);
+      await client.query("update forum_posts set current_revision_id=$1 where id=$2", [revisionId,c.post.postId]);
+    } else {
+      await client.query(`insert into forum_topic_title_revisions(id,topic_id,author_id,original_content,source_locale)
+        values ($1,$2,'reporter-two','Revised title','en')`, [revisionId,c.title.topicId]);
+      await client.query("update forum_topics set current_title_revision_id=$1 where id=$2", [revisionId,c.title.topicId]);
+    }
+    const saved = await service().submit("reporter-one", report({ ...c[kind], revisionId }));
+    expect((await service().readCase("reviewer", saved.caseId)).affectedAuthorId).toBe("content-author");
+    const decisionId = await service().decide("reviewer", { caseId:saved.caseId, operationId:randomUUID(),
+      expectedVersion:1, outcome:"confirmed", reasoning:"Author boundary" });
+    await expect(service().readOwnResult("reporter-two", saved.caseId)).rejects.toThrow("result not found");
+    const input = { caseId:saved.caseId, decisionId, operationId:randomUUID(), argument:"Author appeal" };
+    await expect(service().appeal("reporter-two", input)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await service().appeal("content-author", input);
+  });
+
+  it.each(["post", "title"] as const)("links successive %s Cases and preserves lifetime duplicates", async kind => {
+    const c = await content(), target = c[kind], input = report(target);
+    const first = await service().submit("reporter-one", input);
+    await service().decide("reviewer", { caseId: first.caseId, operationId: randomUUID(), expectedVersion: 1,
+      outcome: "not-confirmed", reasoning: "First resolution" });
+    const before = await service().readCase("reviewer", first.caseId);
+    expect(before.previousCaseId).toBeNull();
+    const next = await service().submit("reporter-two", report(target));
+    expect(next.caseId).not.toBe(first.caseId);
+    const linked = await service().readCase("reviewer", next.caseId);
+    expect(linked.previousCaseId).toBe(first.caseId);
+    expect(linked.targetId).toBe(before.targetId);
+    expect(linked.reports.items[0]).not.toHaveProperty("reporter");
+    expect(await service().submit("reporter-one", { ...input, operationId: randomUUID() })).toEqual(first);
+    await expect(service().submit("reporter-one", { ...input, operationId: randomUUID(), explanation: "Changed" }))
+      .rejects.toBeInstanceOf(ComplaintConflictError);
+    const joined = await service().submit("outsider", report(target));
+    expect(joined.caseId).toBe(next.caseId);
+    expect((await service().readCase("reviewer", next.caseId)).independentReporterCount).toBe(2);
+    expect(await service().readCase("reviewer", first.caseId)).toEqual(before);
+    expect(await service().readOwnResult("reporter-one", first.caseId)).not.toHaveProperty("previousCaseId");
+    await service().decide("reviewer", { caseId: next.caseId, operationId: randomUUID(), expectedVersion: 2,
+      outcome: "not-confirmed", reasoning: "Second resolution" });
+    const third = await service().submit("admin", report(target));
+    expect((await service().readCase("reviewer", third.caseId)).previousCaseId).toBe(next.caseId);
+  });
+
+  it.each(["post", "title"] as const)("serializes concurrent new reporters for a closed %s target", async kind => {
+    const c = await content(), target = c[kind];
+    const first = await service().submit("reporter-one", report(target));
+    await service().decide("reviewer", { caseId: first.caseId, operationId: randomUUID(), expectedVersion: 1,
+      outcome: "confirmed", reasoning: "Resolved" });
+    const a = new Client({ connectionString: databaseUrl, options });
+    const b = new Client({ connectionString: databaseUrl, options });
+    await Promise.all([a.connect(), b.connect()]);
+    try {
+      const [one, two] = await Promise.all([
+        service(a).submit("reporter-two", report(target)), service(b).submit("outsider", report(target)),
+      ]);
+      expect(one.caseId).toBe(two.caseId);
+      expect(one.caseId).not.toBe(first.caseId);
+      const data = await service().readCase("reviewer", one.caseId);
+      expect(data.previousCaseId).toBe(first.caseId);
+      expect(data.independentReporterCount).toBe(2);
+      expect(data.events.items.map(e => e.kind)).toEqual(["submitted", "submitted"]);
+    } finally { await Promise.all([a.end(), b.end()]); }
+  });
+
+  it("rejects cross-target, open, self and rewritten predecessor links", async () => {
+    const first = await decision(), other = await decision();
+    const row = await service().readCase("reviewer", first.caseId);
+    const insert = (id: string, target: string, previous: string) => client.query(`insert into forum_complaint_cases
+      (id,target_id,previous_case_id) values ($1,$2,$3)`, [id,target,previous]);
+    await expectCode(insert(randomUUID(), row.targetId, other.caseId), "23514");
+    const self = randomUUID();
+    await expectCode(insert(self, row.targetId, self), "23514");
+    const next = await service().submit("reporter-two", report(first.post));
+    await expectCode(insert(randomUUID(), row.targetId, next.caseId), "23514");
+    await expectCode(client.query("update forum_complaint_cases set previous_case_id=null where id=$1", [next.caseId]), "55000");
+  });
+
+  it("keeps only the newer-revision-with-open-predecessor grouping gate", async () => {
+    const c = await content();
+    await service().submit("reporter-one", report(c.post));
+    await forum.editPublishedPost({ topicId:c.post.topicId, postId:c.post.postId, actorId:"content-author",
+      expectedRevisionId:c.post.revisionId, body:"Newer revision", draftId:randomUUID(), attachmentIds:[] });
+    const row = await client.query("select current_revision_id from forum_posts where id=$1", [c.post.postId]);
+    await expect(service().submit("reporter-two", report({ ...c.post, revisionId:row.rows[0].current_revision_id })))
+      .rejects.toBeInstanceOf(ComplaintPolicyRequiredError);
   });
 });
 

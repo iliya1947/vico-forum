@@ -30,6 +30,7 @@ export interface ComplaintAppealRecord {
 }
 interface CaseRow extends Record<string, unknown> {
   id: string; targetId: string; state: string; version: number; initialDecisionId: string | null;
+  previousCaseId: string | null;
 }
 interface ReplayRow extends Record<string, unknown> { fingerprint: string; entityId: string; caseId: string }
 
@@ -63,7 +64,7 @@ export class DrizzleComplaintsRepository {
 
   private async lockCase(tx: Tx, caseId: string): Promise<CaseRow> {
     const r = await tx.execute<CaseRow>(sql`select id,target_id as "targetId",state,version,
-      initial_decision_id as "initialDecisionId" from forum_complaint_cases where id=${caseId} for update`);
+      initial_decision_id as "initialDecisionId",previous_case_id as "previousCaseId" from forum_complaint_cases where id=${caseId} for update`);
     if (!r.rows[0]) throw new ComplaintNotFoundError("case not found");
     return r.rows[0];
   }
@@ -109,13 +110,15 @@ export class DrizzleComplaintsRepository {
       let caseId = cases.rows[0]?.id;
       const existingCase = Boolean(caseId);
       if (!caseId) {
-        const previous = await tx.execute(sql`select id from forum_complaint_cases where target_id=${targetId} limit 1`);
+        const previous = await tx.execute<{ id: string }>(sql`select id from forum_complaint_cases
+          where target_id=${targetId} and state='resolved' order by resolved_at desc,created_at desc,id desc limit 1`);
         const otherRevisionOpen = await tx.execute(sql`select c.id from forum_complaint_cases c
           join forum_complaint_targets t on t.id=c.target_id where c.state='open' and t.kind=${t.kind}
           and t.topic_id=${t.topicId} and t.post_id is not distinct from ${t.kind === "post" ? t.postId : null} limit 1`);
-        if (previous.rows.length || otherRevisionOpen.rows.length) throw new ComplaintPolicyRequiredError("incident grouping policy required");
+        if (otherRevisionOpen.rows.length) throw new ComplaintPolicyRequiredError("incident grouping policy required");
         caseId = randomUUID();
-        await tx.execute(sql`insert into forum_complaint_cases (id,target_id,created_at) values (${caseId},${targetId},statement_timestamp())`);
+        await tx.execute(sql`insert into forum_complaint_cases (id,target_id,previous_case_id,created_at)
+          values (${caseId},${targetId},${previous.rows[0]?.id ?? null},statement_timestamp())`);
         if (t.kind === "post") {
           // Content lock serializes capture with edits. Active-ref trigger serializes with cleanup.
           await tx.execute(sql`insert into forum_complaint_evidence_attachments(target_id,attachment_id,created_at)
@@ -218,7 +221,7 @@ export class DrizzleComplaintsRepository {
   async readCase(caseId: string, identities: boolean, pages: { reports: number; notes: number; events: number }) {
     return this.database.transaction(async tx => {
       const c = await tx.execute<CaseRow & { kind: string; topicId: string; postId: string | null; reportedContent: string; currentContent: string; affectedAuthorId: string }>(sql`
-        select c.id,c.target_id as "targetId",c.state,c.version,c.initial_decision_id as "initialDecisionId",
+        select c.id,c.target_id as "targetId",c.previous_case_id as "previousCaseId",c.state,c.version,c.initial_decision_id as "initialDecisionId",
         t.kind,t.topic_id as "topicId",t.post_id as "postId",t.affected_author_id as "affectedAuthorId",
         coalesce(pr.original_content,tr.original_content) as "reportedContent",
         coalesce(cp.original_content,ct.original_content) as "currentContent"

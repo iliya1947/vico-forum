@@ -1628,6 +1628,7 @@ export const forumComplaintTargets = pgTable("forum_complaint_targets", {
 export const forumComplaintCases = pgTable("forum_complaint_cases", {
   id: text("id").primaryKey(),
   targetId: text("target_id").notNull().references(() => forumComplaintTargets.id, { onDelete: "restrict" }),
+  previousCaseId: text("previous_case_id"),
   state: text("state").notNull().default("open"),
   version: integer("version").notNull().default(1),
   initialDecisionId: text("initial_decision_id"),
@@ -1635,7 +1636,10 @@ export const forumComplaintCases = pgTable("forum_complaint_cases", {
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 }, t => [
   unique("complaint_case_target_unique").on(t.id, t.targetId),
+  foreignKey({ name: "complaint_case_previous_target_fk", columns: [t.previousCaseId, t.targetId], foreignColumns: [t.id, t.targetId] }).onDelete("restrict"),
+  check("complaint_case_previous_not_self", sql`${t.previousCaseId} is null or ${t.previousCaseId} <> ${t.id}`),
   uniqueIndex("complaint_case_open_target_unique").on(t.targetId).where(sql`${t.state} = 'open'`),
+  index("complaint_case_target_resolved_idx").on(t.targetId, t.resolvedAt.desc(), t.createdAt.desc(), t.id.desc()).where(sql`${t.state} = 'resolved'`),
   index("complaint_case_state_created_idx").on(t.state, t.createdAt, t.id),
   check("complaint_case_lifecycle", sql`${t.version} > 0 and ((${t.state} = 'open' and ${t.initialDecisionId} is null and ${t.resolvedAt} is null) or (${t.state} = 'resolved' and ${t.initialDecisionId} is not null and ${t.resolvedAt} is not null and ${t.resolvedAt} >= ${t.createdAt}))`),
 ]);

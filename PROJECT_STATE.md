@@ -52,6 +52,16 @@ Stage 6 external/production gates, не реализованные admin/complai
 
 ## Complaints — Package 1 domain foundation (2026-10-29)
 
+Correction 2026-10-30: другой reporter после resolution той же current revision
+создаёт новый Case с immutable previous_case_id на последний закрытый Case того же
+target. Составной self-FK и insertion guard проверяют same-target/resolved predecessor;
+старый Case/Decision не меняются, lifetime reporter+target duplicate barrier сохранён.
+Ссылка входит только в protected reviewer projection. Forward migration 0048 и native
+post/title/concurrency/chain/negative regressions добавлены. Формулировка affected-author
+contract уточнена: user FK плюс authoritative repository capture под content lock;
+нового content-author DB invariant нет. Checks и новый independent review фиксируются
+после выполнения; Package 2+ и external rollout не добавлены.
+
 Correction 2026-10-30: Case/Appeal reads вычисляют review admission и дополнительную
 reporter/appellant identity projection из одного consistent authorization snapshot.
 Обычный capability ограничивает resolution cache отдельным handle операции, сохраняя
@@ -77,7 +87,7 @@ permission freshness, revision/evidence retention, rollback и concurrency.
 Permanent contract: `docs/moderation/COMPLAINTS.md`.
 
 Новых HTTP routes, user/queue/appeals UI, rate-limit thresholds, priority/presence,
-notifications или Quick actions нет. Спорная same-revision/new-open-revision
+notifications или Quick actions нет. Спорная new-revision-while-previous-Case-open
 admission и subsequent appeal transitions возвращают explicit policy-required
 без writes до решений Packages 2/6. Storage поддерживает максимум 3 appeals без
 необратимого unique-pending ограничения; initial Decision не переписывается.
@@ -2454,7 +2464,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0047`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0048`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 
