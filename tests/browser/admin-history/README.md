@@ -1,4 +1,4 @@
-# AP-03 real application verification
+# AP-03/AP-04 real application verification
 
 Run only against an isolated built Worker and a disposable loopback PostgreSQL 17
 `*_test` database migrated through 0049, with synthetic local auth configuration.
@@ -11,11 +11,12 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55473/vico_ap03_browser_te
   --output /tmp/vico-ap03-browser
 ```
 
-The harness uses real Better Auth sessions and six real management POST intents,
+The harness uses real Better Auth sessions and all six real management Forms inside AdminShell (plus direct POST gates),
 checks no-op/retry/lockout/denial event suppression, deleted-role context, independently
 permissioned History and Overview, next-request revocation, keyset navigation (including a late equal-timestamp/lower-UUID event in a controlled
 fixture), and
-EN/RU/HE keyboard/mobile/tablet/desktop presentation. A local table lock checks true
+EN/RU/HE keyboard/mobile/tablet/desktop History and Roles presentation, single-shell
+composition, active navigation and controlled stale/invalid/lockout feedback. A local table lock checks true
 History timeout/degradation/recovery. Fixture setup/cleanup SQL is restricted to the
 explicit disposable database; it removes only this run's rows. Screenshots/results
 stay outside tracked source. Stop the task-owned Worker/database afterward.

@@ -1,6 +1,7 @@
 import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
+import { adminAccess } from "../admin/access";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
 import { AuthorizationForbiddenError, AuthorizationLockoutError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
@@ -11,13 +12,16 @@ import {
 } from "../authorization/admin-view";
 import { ForumRouteError } from "../forum/ui";
 
+export { headers, meta } from "./admin";
+
 type Failure = AuthorizationFailure;
 async function manager(context: RouterContextProvider) {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthenticated", { status: 401 });
   const capability = authorizationForRequest(context);
+  const resolver = capability.forUser(session.user.id);
   try {
-    if (!(await capability.forUser(session.user.id).has("access.authorization.manage"))) {
+    if (!(await resolver.has("access.authorization.manage"))) {
       throw new Response("Forbidden", { status: 403 });
     }
   } catch (error) {
@@ -27,14 +31,15 @@ async function manager(context: RouterContextProvider) {
     }
     throw error;
   }
-  return { actorId: session.user.id, capability };
+  return { actorId: session.user.id, capability, resolver };
 }
 
 export async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
-  const { capability } = await manager(context);
+  const { capability, resolver } = await manager(context);
   try {
-    const state = await capability.readManagementState();
-    return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG };
+    const [state, resolved] = await Promise.all([capability.readManagementState(), resolver.resolve()]);
+    return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG,
+      access: adminAccess(new Set(resolved.effectivePermissions)) };
   } catch (error) {
     if (error instanceof Response) throw error;
     if (error instanceof AuthorizationUnavailableError) {

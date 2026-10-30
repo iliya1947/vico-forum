@@ -6,7 +6,7 @@ This document is the permanent product and technical contract for the ordinary V
 admin panel. AP-01 established the documentation contract. AP-02 implements
 `/:locale/admin`: a protected reusable shell/navigation and Overview with real public
 aggregate counts. The existing `/:locale/admin/authorization` UI remains independently
-protected at its original URL; its full composition into the shell remains AP-04.
+protected at its original URL and, in AP-04, reuses the common shell/navigation.
 AP-03 adds authorization-change History and protected Overview recent actions. New object
 pages, topic closure and user blocking remain unimplemented. AP-02 itself added no schema
 or permission keys; AP-03 adds the independent `admin.history.read` capability.
@@ -208,7 +208,23 @@ Without History permission Overview does not query or serialize recent activity.
 History outage gives a protected 503 on History and an explicit unavailable recent-actions
 state on Overview; unexpected failures propagate. Private document/data responses are no-store.
 UI timestamps explicitly use UTC with a visible zone, keeping SSR/hydration deterministic.
-This is ordinary significant-action History, not complete owner audit or AP-04+ integration.
+This is ordinary significant-action History, not complete owner audit or later action integration.
+
+## Roles & permissions composition (AP-04)
+
+The existing `/:locale/admin/authorization` route renders its single management view inside
+AdminShell, with Roles marked current and capability-derived Overview/Forum/History navigation.
+There is one forum shell/main landmark and one admin-panel h1. Management headings nest below
+it without changing the forms, intents or field names. UI Preview reuses that same view.
+
+Direct loader and action retain independent `access.authorization.manage` gates; neither a
+parent loader nor shell admission replaces them. The loader derives presentation flags from
+the same resolver handle as its management gate, using the existing internally consistent
+resolution/cache and next-request freshness. History-read is not required for management.
+The six existing intents continue through the same service/repository transaction, lockout
+and AP-03 event producer. Invalid/not-found/assigned-role/lockout/unavailable feedback stays
+controlled. Canonical URL and built-in/custom rules are retained; shared localized metadata and
+no-store headers apply to the composed route; no new keys, schema, permission or API is introduced.
 
 ## Shared Quick actions contract
 

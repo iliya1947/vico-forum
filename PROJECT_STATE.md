@@ -39,6 +39,18 @@ SELECT/INSERT contract обновляются вместе. AP-04+, Quick action
 реализуются. Фактические tests/CI/browser результаты и author handoff фиксируются в #251;
 review, merge, owner visual acceptance и production rollout этой записью не заявляются.
 
+## AP-04 — Roles & permissions внутри admin shell (2026-10-30)
+
+В отдельной implementation-ветке единственный AuthorizationAdminView встроен в общий
+AdminShell с active Roles navigation, без вложенного ForumShell/main и второго h1.
+Canonical `/admin/authorization`, формы/intents/fields и независимые GET/POST gates
+`access.authorization.manage` сохранены. Loader использует тот же resolver handle для
+permission gate и effective navigation; service/repository/History/lockout path не меняется.
+Heading hierarchy/CSS и shared preview согласованы; применяются общие localized metadata
+и private/no-store headers. Новых permissions/schema/API и AP-05+ нет. Фактические checks,
+browser/CI и author handoff фиксируются в #251; review/merge/owner visual/rollout заранее
+не заявляются.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
