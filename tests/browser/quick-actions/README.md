@@ -1,7 +1,7 @@
 # AP-05 real application verification
 
 Run only on an isolated built Worker and a disposable loopback PostgreSQL 17
-`*_test` database migrated through 0050, with synthetic local auth configuration.
+`*_test` database migrated through 0051, with synthetic local auth configuration.
 Use pinned Node/pnpm, Python Playwright and Chromium (`CHROMIUM` override supported).
 
 ```sh

@@ -9770,6 +9770,20 @@ a.topic-tag:focus-visible {
 @media (max-width: 30rem) {
   .admin-panel-nav a { flex: 1 1 8rem; }
 }
+:where(.complaint-form) {
+  inline-size: 100%; max-inline-size: 42rem; min-inline-size: 0;
+  margin-block: .75rem; padding: 1rem;
+  border: 1px solid var(--color-border); border-radius: .5rem;
+  background: var(--color-surface-muted); overflow-wrap: anywhere;
+}
+.complaint-form fieldset { border: 0; padding: 0; margin: 0; min-inline-size: 0; display: grid; gap: .75rem; }
+.complaint-form label { display: grid; gap: .35rem; min-inline-size: 0; }
+.complaint-form :is(select,textarea) { inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; font: inherit; padding: .5rem; }
+.complaint-form-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.complaint-form h3 { margin-block: 0 .75rem; }
+.complaint-form [role="alert"] { color: var(--color-danger); }
+.complaint-confirmation { color: var(--color-text); margin-block: .75rem; }
+.complaint-open { margin-block: .5rem; }
 
 .admin-history-events { display: grid; gap: 1rem; padding-inline-start: 1.5rem; }
 .admin-history-events li { min-inline-size: 0; overflow-wrap: anywhere; border-block-end: 1px solid var(--border); padding-block-end: 1rem; }

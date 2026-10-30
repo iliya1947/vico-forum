@@ -1,5 +1,5 @@
 {
-  "id": "5e147b90-eba3-44b4-834d-1f4a7bf0a7f3",
+  "id": "75b650c5-24c6-4280-994b-b193cc639af7",
   "prevId": "df8dac46-79a9-4cb9-a9cd-147879745e81",
   "version": "7",
   "dialect": "postgresql",
@@ -233,7 +233,7 @@
       "checkConstraints": {
         "admin_history_action_target_check": {
           "name": "admin_history_action_target_check",
-          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')\n  or (\"admin_history\".\"action\" in ('topic.pinned', 'topic.unpinned', 'topic.solved', 'topic.bestAnswerChanged',\n    'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',\n    'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected') and \"admin_history\".\"target_type\" = 'topic')\n  or (\"admin_history\".\"action\" = 'post.sourceLocaleCorrected' and \"admin_history\".\"target_type\" = 'post')"
+          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')"
         },
         "admin_history_context_check": {
           "name": "admin_history_context_check",
@@ -2169,17 +2169,15 @@
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
-        "complaint_case_previous_target_fk": {
-          "name": "complaint_case_previous_target_fk",
+        "complaint_case_previous_fk": {
+          "name": "complaint_case_previous_fk",
           "tableFrom": "forum_complaint_cases",
           "tableTo": "forum_complaint_cases",
           "columnsFrom": [
-            "previous_case_id",
-            "target_id"
+            "previous_case_id"
           ],
           "columnsTo": [
-            "id",
-            "target_id"
+            "id"
           ],
           "onDelete": "restrict",
           "onUpdate": "no action"
@@ -2946,6 +2944,33 @@
         }
       },
       "indexes": {
+        "complaint_reporter_created_idx": {
+          "name": "complaint_reporter_created_idx",
+          "columns": [
+            {
+              "expression": "reporter_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "complaint_case_created_idx": {
           "name": "complaint_case_created_idx",
           "columns": [

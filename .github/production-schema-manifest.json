@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0050_forum_admin_history",
+  "targetMigration": "0051_forum_admin_history",
   "tables": {
     "account": {
       "columns": [
@@ -5838,15 +5838,13 @@
           "initiallyDeferred": true
         },
         {
-          "name": "complaint_case_previous_target_fk",
+          "name": "complaint_case_previous_fk",
           "columns": [
-            "previous_case_id",
-            "target_id"
+            "previous_case_id"
           ],
           "referencedTable": "forum_complaint_cases",
           "referencedColumns": [
-            "id",
-            "target_id"
+            "id"
           ],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
@@ -6816,6 +6814,29 @@
             }
           ],
           "predicateSha256": null
+        },
+        {
+          "name": "complaint_reporter_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "reporter_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -6970,7 +6991,7 @@
     },
     {
       "name": "guard_complaint_case_identity",
-      "definitionSha256": "db098d28b234db36a2e934b9767d1410c2cf387ebf215ae57a1654fae5e0e146"
+      "definitionSha256": "c277b9476a48dd22d453a4d7b624d8b02459301e8be48ca9b4d0507f4a5c2b99"
     },
     {
       "name": "reject_complaint_evidence_change",

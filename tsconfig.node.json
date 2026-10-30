@@ -84,7 +84,10 @@
     "app/localization/persistent-registry.ts",
     "app/localization/request-context.ts",
     "app/localization/registry.ts",
-    "app/localization/locale.ts"
+    "app/localization/locale.ts",
+    "app/complaints/request-context.ts",
+    "app/complaints/response.ts",
+    "app/routes/complaint-submit.ts"
   ],
   "compilerOptions": {
     "composite": true,

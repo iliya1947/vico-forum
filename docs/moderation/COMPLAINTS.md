@@ -2,7 +2,7 @@
 
 This is the permanent complaints-domain contract. Product decisions and staged
 delivery are recorded in service PR #254; this document records implemented
-Package 1 behavior. It does not claim a submission, queue, notification or appeal UI.
+Packages 1–2 behavior. Queue, review/decision, notification and appeal UI remain deferred.
 
 ## Domain and boundaries
 
@@ -18,11 +18,14 @@ Shared Admin Quick actions belong to a later package and retain their own author
 
 `db/complaints-service.ts` is the server application boundary. It accepts a trusted
 authenticated actor identity, resolves current effective permissions and validates
-input before calling the trusted PostgreSQL repository. It is not an HTTP API.
+input before calling the trusted PostgreSQL repository.
 No browser-provided role, boolean access flag, author identity or reporter identity
-may be forwarded as authority. Future HTTP writes must independently require
-session, current permission, same origin, request bounds and the submission budget.
-No routes or Worker runtime capability are enabled by this package.
+may be forwarded as authority. The POST-only `/:locale/topics/:topicId/complaints`
+action requires a session, current permission and same origin, bounds URL-encoded
+input to 32768 bytes and calls the submission-only Worker capability. The topic
+loader's permission flag controls presentation only; the write rechecks authority.
+Responses are `private, no-store` and expose only success/client operation nonce or
+a classified error, never report/Case IDs, reporter identities or aggregate counts.
 
 ## Reported target and evidence
 
@@ -72,18 +75,31 @@ Case linked by `previous_case_id` to the most recently resolved Case of that tar
 untouched. The same reporter/target lifetime duplicate still returns its original
 record, even when a successor exists. Later reporters join the successor while it
 is open. Repeated resolutions form a chain of explicit predecessor links.
-The link is immutable; a composite self-FK binds it to the same target, and an
-insertion guard requires a resolved predecessor. Protected reviewer Case reads
+The link is immutable; a self-FK and insertion guard bind it to the same content
+unit. A same-revision predecessor must be resolved. Protected reviewer Case reads
 include the link; participant/public projections do not expand.
 
-A later revision after resolution can also create a new Case, with its own target.
-Only the newer-revision-while-an-earlier-Case-is-open grouping choice remains
-unresolved and returns `ComplaintPolicyRequiredError` without writes. Storage uses
-a partial open-target unique index, not an irreversible one-Case-ever constraint.
+A newer revision always gets its own target and Case immediately, including when
+an earlier revision's Case is open. If no same-revision resolved predecessor exists,
+it links to the latest created Case of that same post or topic title (creation time,
+then ID). The previous Case, Decision and evidence are untouched. A post and its
+topic title never share this predecessor chain. Storage retains its partial
+open-target unique index.
 
-Package 2 must add a complaint-specific durable burst/window budget before exposing
-submission. No per-actor 5-second forum cooldown or guessed quota is installed here.
-The domain is currently server-only; it must not be exposed without this gate.
+New reports are limited to 10 per rolling 10 minutes and 50 per rolling 24 hours
+per authenticated actor. Under the existing actor-row mutex, persisted immutable
+reports and database statement time determine both budgets and the earliest retry.
+The reporter/time index bounds this lookup; there is no process-local counter.
+Exact replay and lifetime duplicates return before spending budget, rejected writes
+roll back, and concurrent submissions cannot over-admit. HTTP returns 429 with
+`Retry-After`; no sanction or forum-write cooldown is applied.
+
+Topic context exposes separate title and post report forms in English, Russian and
+Hebrew. They capture the observed revision and a fresh operation nonce on opening,
+retain input/nonce for retry, and show inline confirmation without navigating away.
+Other requires explanation; the remaining reasons allow it. Stale revisions receive
+a conflict instead of silently reporting the newer text. Known authorization/storage
+availability failures fail closed with 503; unexpected errors still propagate.
 Automatic priority, manual override and expiring reviewer presence are Package 3.
 
 ## Transactions and replay
@@ -107,7 +123,7 @@ There are no implicit sanctions or after-commit notification promises.
 Timestamps use database statement time after lock acquisition. Failed evidence or
 event persistence rolls back the whole command. Unknown transport/commit failures
 are propagated; callers may retry the same operation key, never blindly create a
-new command. Availability adapters can classify known dependency failures later;
+new command. The submission adapter classifies known dependency failures;
 arbitrary database/programming errors must not become empty data or permission denial.
 
 ## Permissions and projections

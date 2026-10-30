@@ -1636,7 +1636,7 @@ export const forumComplaintCases = pgTable("forum_complaint_cases", {
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 }, t => [
   unique("complaint_case_target_unique").on(t.id, t.targetId),
-  foreignKey({ name: "complaint_case_previous_target_fk", columns: [t.previousCaseId, t.targetId], foreignColumns: [t.id, t.targetId] }).onDelete("restrict"),
+  foreignKey({ name: "complaint_case_previous_fk", columns: [t.previousCaseId], foreignColumns: [t.id] }).onDelete("restrict"),
   check("complaint_case_previous_not_self", sql`${t.previousCaseId} is null or ${t.previousCaseId} <> ${t.id}`),
   uniqueIndex("complaint_case_open_target_unique").on(t.targetId).where(sql`${t.state} = 'open'`),
   index("complaint_case_target_resolved_idx").on(t.targetId, t.resolvedAt.desc(), t.createdAt.desc(), t.id.desc()).where(sql`${t.state} = 'resolved'`),
@@ -1655,6 +1655,7 @@ export const forumComplaints = pgTable("forum_complaints", {
 }, t => [
   foreignKey({ name: "complaint_case_target_fk", columns: [t.caseId, t.targetId], foreignColumns: [forumComplaintCases.id, forumComplaintCases.targetId] }).onDelete("restrict"),
   unique("complaint_reporter_target_unique").on(t.reporterUserId, t.targetId),
+  index("complaint_reporter_created_idx").on(t.reporterUserId, t.createdAt.desc(), t.id.desc()),
   unique("complaint_case_id_unique").on(t.caseId, t.id),
   index("complaint_case_created_idx").on(t.caseId, t.createdAt, t.id),
   check("complaint_reason_check", sql`${t.reason} in ('spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other')`),

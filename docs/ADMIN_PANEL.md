@@ -316,7 +316,7 @@ actors/events. Signal/appeal submission text and private case explanations are n
 Ordinary own-scope solved/answer/source corrections do not emit administrative events even
 when the actor also holds administrative capabilities. Unpin forwards the session actor to
 the authoritative transaction. Actual insert/delete/state/revision results decide emission;
-no-op or rejected/stale requests do not append. Forward migration 0050 extends only the
+no-op or rejected/stale requests do not append. Forward migration 0051 extends only the
 History action/target constraint; existing SELECT/INSERT runtime grants remain sufficient.
 
 Persist only bounded useful context, sufficient to retain event meaning if its target later

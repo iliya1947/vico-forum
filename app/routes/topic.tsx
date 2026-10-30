@@ -88,6 +88,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let correctablePostIds: string[] = [];
   let editablePostIds: string[] = [];
   let canReadPostHistory = false;
+  let canSubmitComplaint = false;
   let topicReadState: ForumTopicReadState | null = null;
   if (session) {
     try {
@@ -98,7 +99,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, editOwn, historyRead] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, editOwn, historyRead, complaintCreate] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -109,10 +110,12 @@ export const loader = forumReadLoader(async function loader({ params, context }:
         resolver.has("forum.topic.pin"),
         resolver.has("forum.post.editOwn"),
         resolver.has("forum.post.history.read"),
+        resolver.has("forum.complaint.create"),
       ]);
       canReply = reply;
       editablePostIds = editOwn ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
       canReadPostHistory = historyRead;
+      canSubmitComplaint = complaintCreate;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
       canManageAnySolution = solutionAny;
       canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
@@ -204,6 +207,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     correctablePostIds,
     editablePostIds,
     canReadPostHistory,
+    canSubmitComplaint,
     topicReadState,
   };
 });
