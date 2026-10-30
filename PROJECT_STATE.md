@@ -21,6 +21,24 @@ translation generation/provider/runtime или архитектура. CI, brows
 независимый review и merge на момент первоначальной записи не объявлялись завершёнными.
 Впоследствии PR #260 проверен и merged 2026-10-29.
 
+## AP-03 — authorization-change History (2026-10-30)
+
+В отдельной implementation-ветке добавлены History и Overview recent actions с независимым
+`admin.history.read` (initial grant только built-in admin). Шесть существующих authorization
+management operations записывают реальные typed deltas внутри authoritative transaction;
+lockout/rejected/rollback/no-op не создают событий. Labels bounded, контекст удалённой
+custom role сохраняется без target FK, private emails/requests/sessions не копируются.
+AP03-MIRA-01 correction: keyset paging использует generated bigint position вместо
+пары timestamp/random UUID; поздние события с тем же timestamp не попадают на older pages.
+UUID и actual DB display time сохранены, cursor — decimal string без Number-conversion.
+Allocation идёт под прежним authorization mutation lock; rollback gaps допустимы.
+Runtime History privileges остаются SELECT/INSERT без sequence grants. UTC timestamps,
+EN/RU/HE, private/no-store и classified outage boundaries сохранены.
+Forward migration `0049_admin_history`, Drizzle metadata, schema manifest и runtime
+SELECT/INSERT contract обновляются вместе. AP-04+, Quick actions и super-admin audit не
+реализуются. Фактические tests/CI/browser результаты и author handoff фиксируются в #251;
+review, merge, owner visual acceptance и production rollout этой записью не заявляются.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -52,6 +70,20 @@ Stage 6 external/production gates, не реализованные admin/complai
 
 ## Complaints — Package 2 user submission (2026-10-30)
 
+Интеграция после merge AP-03 (#265): implementation-ветка обновлена поверх main
+`269783d`. Принятые `0049_admin_history`, snapshot 0049 и journal prefix сохранены
+без изменений; Complaints SQL перенумерован в `0050_complaint_submission` без
+изменения содержимого, snapshot 0050 сгенерирован поверх объединённой схемы.
+Сохранены оба набора localization/CSS, routes и request-scoped Worker capabilities.
+Clean 51 migrations/manifest parity (58 таблиц) и upgrade 0049→0050 с существующим
+AP-03 History event/position прошли. Авторские native checks: 399 tests; actual
+browser: 20 Complaints и 16 AP-03 History cases без JS errors/external requests,
+включая Unicode/retry/quota и History producer/paging/outage/recovery. Typecheck,
+lint (0 errors/одно прежнее warning), Worker/UI Preview builds и runtime privilege/
+provisioning/credential rollback probes, 18 infrastructure guard suites и полный
+application run (1634 tests) прошли. Новый exact-head CI фиксируется после
+выполнения; требуется новый review-cycle.
+
 Correction после review: у complaint explanation textarea удалён native UTF-16
 `maxlength`, обрезавший допустимый non-BMP ввод. Серверная проверка 2000 Unicode
 code points после trim, Other required и request byte bound сохранены. Уточнён
@@ -79,7 +111,7 @@ submissions не превышают лимит. Новый reporter/time index �
 Новая revision всегда создаёт отдельный Case, включая открытую предыдущую revision,
 с immutable previous_case_id на последний Case того же post/title. Same-revision
 successor по-прежнему ссылается на последний resolved Case; старые evidence/Decision
-сохраняются. Forward migration 0049 обновляет predecessor FK/guard и добавляет индекс;
+сохраняются. Forward migration 0050 обновляет predecessor FK/guard и добавляет индекс;
 Drizzle metadata и structural manifest согласованы с этой схемой.
 
 Авторские проверки: 392 native PostgreSQL 17 tests, 1627 application tests и затем
@@ -2540,7 +2572,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0049`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0050`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

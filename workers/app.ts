@@ -18,6 +18,8 @@ import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 import { AuthSessionUnavailableError } from "../app/auth/request-context";
+import { adminHistoryContext } from "../app/admin/history.server";
+import { createHyperdriveAdminHistory } from "../db/hyperdrive-admin-history";
 import { authorizationContext } from "../app/authorization/request-context";
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
 import { createHyperdriveComplaintSubmission } from "../db/hyperdrive-complaints";
@@ -57,6 +59,7 @@ export default {
         createHyperdriveContentTranslationBatchReader(webConnectionString),
       ),
     );
+    context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
     const authorization = createHyperdriveAuthorization(webConnectionString);
     context.set(authorizationContext, authorization);
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));

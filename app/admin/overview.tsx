@@ -1,10 +1,12 @@
+import type { AdminHistoryPage } from "../../db/admin-history";
+import { RecentHistory } from "./history";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { ForumAdminOverviewCounts } from "../../db/forum-repository";
 import { AdminShell, adminDestinations } from "./shell";
 import type { AdminAccess } from "./access";
 
-export function AdminOverview({locale,access,counts}: {locale: string; access: AdminAccess; counts: ForumAdminOverviewCounts | null}) {
+export function AdminOverview({locale,access,counts,recent}: {locale: string; access: AdminAccess; counts: ForumAdminOverviewCounts | null; recent?: AdminHistoryPage | null}) {
   const {t}=useTranslation("common");
   const number=new Intl.NumberFormat(locale);
   return <AdminShell locale={locale} access={access}>
@@ -29,6 +31,7 @@ export function AdminOverview({locale,access,counts}: {locale: string; access: A
           <p>{t("adminStatsUnavailable")}</p><Link reloadDocument to={`/${encodeURIComponent(locale)}/admin`}>{t("adminRetry")}</Link>
         </div>}
       </section>
+      {access.canReadHistory ? <RecentHistory locale={locale} recent={recent ?? null}/> : null}
     </section>
   </AdminShell>;
 }

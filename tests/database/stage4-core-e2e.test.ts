@@ -64,7 +64,8 @@ const migrationFiles = [
   "0044_attachment_draft_conflict_boundaries.sql",
   "0047_complaints_domain_foundation.sql",
   "0048_complaint_case_links.sql",
-  "0049_complaint_submission.sql",
+  "0049_admin_history.sql",
+  "0050_complaint_submission.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });

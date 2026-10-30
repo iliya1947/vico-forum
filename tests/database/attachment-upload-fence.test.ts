@@ -43,7 +43,8 @@ const migrations = [
   "0046_attachment_upload_fences",
   "0047_complaints_domain_foundation",
   "0048_complaint_case_links",
-  "0049_complaint_submission",
+  "0049_admin_history",
+  "0050_complaint_submission",
 ];
 
 const ownerId = "attachment-owner";

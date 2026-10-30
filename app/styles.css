@@ -9784,3 +9784,10 @@ a.topic-tag:focus-visible {
 .complaint-form [role="alert"] { color: var(--color-danger); }
 .complaint-confirmation { color: var(--color-text); margin-block: .75rem; }
 .complaint-open { margin-block: .5rem; }
+
+.admin-history-events { display: grid; gap: 1rem; padding-inline-start: 1.5rem; }
+.admin-history-events li { min-inline-size: 0; overflow-wrap: anywhere; border-block-end: 1px solid var(--border); padding-block-end: 1rem; }
+.admin-history-events code { unicode-bidi: isolate; overflow-wrap: anywhere; }
+.admin-history-events dd { margin-inline-start: 1rem; }
+.admin-history-paging { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1rem; }
+.admin-history-paging a { min-block-size: 44px; display: inline-flex; align-items: center; }

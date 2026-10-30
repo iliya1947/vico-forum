@@ -1,5 +1,5 @@
 {
-  "id": "e7ee08f3-dd14-428a-9277-c0aac5c8157e",
+  "id": "df8dac46-79a9-4cb9-a9cd-147879745e81",
   "prevId": "e8eb5ade-6c33-497f-b2a9-b9e64580e398",
   "version": "7",
   "dialect": "postgresql",
@@ -126,6 +126,130 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.admin_history": {
+      "name": "admin_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "admin_history_position_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "clock_timestamp()"
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_label": {
+          "name": "actor_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_type": {
+          "name": "target_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_label": {
+          "name": "target_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context": {
+          "name": "context",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "admin_history_order_idx": {
+          "name": "admin_history_order_idx",
+          "columns": [
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "admin_history_action_target_check": {
+          "name": "admin_history_action_target_check",
+          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')"
+        },
+        "admin_history_context_check": {
+          "name": "admin_history_context_check",
+          "value": "jsonb_typeof(\"admin_history\".\"context\") = 'object' and octet_length(\"admin_history\".\"context\"::text) <= 16384"
+        },
+        "admin_history_labels_check": {
+          "name": "admin_history_labels_check",
+          "value": "char_length(\"admin_history\".\"actor_label\") <= 200 and char_length(\"admin_history\".\"target_label\") <= 200"
+        },
+        "admin_history_reason_check": {
+          "name": "admin_history_reason_check",
+          "value": "\"admin_history\".\"reason\" is null or (char_length(\"admin_history\".\"reason\") <= 2000 and btrim(\"admin_history\".\"reason\") <> '')"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.authz_mutation_lock": {
       "name": "authz_mutation_lock",
       "schema": "",
@@ -176,7 +300,7 @@
       "checkConstraints": {
         "authz_permissions_catalog_check": {
           "name": "authz_permissions_catalog_check",
-          "value": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',\n  'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',\n  'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',\n  'access.authorization.manage', 'forum.complaint.create', 'forum.complaint.review',\n  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review'\n)"
+          "value": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',\n  'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',\n  'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',\n  'access.authorization.manage', 'admin.history.read', 'forum.complaint.create', 'forum.complaint.review',\n  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review'\n)"
         }
       },
       "isRLSEnabled": false
@@ -2045,15 +2169,17 @@
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
-        "complaint_case_previous_fk": {
-          "name": "complaint_case_previous_fk",
+        "complaint_case_previous_target_fk": {
+          "name": "complaint_case_previous_target_fk",
           "tableFrom": "forum_complaint_cases",
           "tableTo": "forum_complaint_cases",
           "columnsFrom": [
-            "previous_case_id"
+            "previous_case_id",
+            "target_id"
           ],
           "columnsTo": [
-            "id"
+            "id",
+            "target_id"
           ],
           "onDelete": "restrict",
           "onUpdate": "no action"
@@ -2820,33 +2946,6 @@
         }
       },
       "indexes": {
-        "complaint_reporter_created_idx": {
-          "name": "complaint_reporter_created_idx",
-          "columns": [
-            {
-              "expression": "reporter_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "complaint_case_created_idx": {
           "name": "complaint_case_created_idx",
           "columns": [

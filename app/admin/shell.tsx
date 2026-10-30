@@ -15,12 +15,12 @@ export function adminDestinations(locale: string, access: AdminAccess) {
       { id: "users", label: "adminUsers" as const, href: underDevelopmentPath(locale,"admin-users"), pending: true },
       { id: "roles", label: "adminRoles" as const, href: `${base}/authorization`, pending: false },
     ] : []),
-    { id: "history", label: "adminHistory" as const, href: underDevelopmentPath(locale,"admin-history"), pending: true },
+    ...(access.canReadHistory ? [{ id: "history", label: "adminHistory" as const, href: `${base}/history`, pending: false }] : []),
     { id: "settings", label: "adminSettings" as const, href: underDevelopmentPath(locale,"admin-settings"), pending: true },
   ];
 }
 
-export function AdminShell({locale,access,children}: {locale: string; access: AdminAccess; children: ReactNode}) {
+export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history"}) {
   const {t} = useTranslation("common");
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel">
@@ -28,7 +28,7 @@ export function AdminShell({locale,access,children}: {locale: string; access: Ad
       <header className="admin-panel-heading"><h1>{t("adminPanelTitle")}</h1></header>
       <nav className="admin-panel-nav" aria-label={t("adminNavigation")}>
         {adminDestinations(locale,access).map(item=><Link key={item.id} to={item.href}
-          aria-current={item.id === "overview" ? "page" : undefined}>
+          aria-current={item.id === current ? "page" : undefined}>
           <span>{t(item.label)}</span>
           {item.pending ? <span className="admin-panel-pending">{t("adminInDevelopment")}</span> : null}
         </Link>)}

@@ -6,10 +6,12 @@ import { forumReaderContext } from "../forum/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { ADMIN_ADMISSION_PERMISSIONS } from "../admin/access";
+import { adminHistoryContext } from "../admin/history.server";
 import { loader } from "./admin";
 
 function environment(permissions: readonly string[]=[], counts: unknown={categories:1,sections:2,topics:3,posts:4}, signedIn=true) {
   const context=new RouterContextProvider();
+  context.set(adminHistoryContext,{read:vi.fn(async()=>({events:[],next:null}))});
   context.set(authSessionContext,signedIn ? {user:{id:"actor",name:"Unusual custom role",email:"private@test.invalid"}} as never : null);
   const has=vi.fn(async (key:string)=>permissions.includes(key));
   const authorization={forUser:vi.fn(()=>({has})),readManagementState:vi.fn(),listUsers:vi.fn()};

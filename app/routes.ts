@@ -26,6 +26,7 @@ export default [
     route("attention", "routes/attention.tsx"),
     route("tags", "routes/tags.tsx"),
     route("tags/:tagKey", "routes/tag.tsx"),
+    route("admin/history", "routes/admin-history.tsx"),
     route("admin", "routes/admin.tsx"),
     route("admin/authorization", "routes/authorization-admin.tsx"),
     route("under-development", "routes/under-development.tsx"),

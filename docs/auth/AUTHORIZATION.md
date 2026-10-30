@@ -52,6 +52,7 @@ Permission key означает существующую capability прилож
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
 - `access.authorization.manage`;
+- `admin.history.read`;
 - `forum.complaint.create`;
 - `forum.complaint.review`;
 - `forum.complaint.reporterIdentity.read`;
@@ -149,10 +150,17 @@ review, identity and appeal HTTP/UI remain deferred.
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
-- `access.authorization.manage`.
+- `access.authorization.manage`;
+- `admin.history.read`.
 
 После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
 любой роли, включая built-in roles, с учётом lockout invariant ниже.
+
+`admin.history.read` independently admits ordinary admin History and Overview recent actions.
+AP-03 initially grants it only to built-in admin; custom roles, moderator grants and personal
+overrides stay explicit. It grants no management authority. Significant authorization changes
+append a minimal event in the same transaction after lockout validation; no-op and rejected
+changes do not create events. See `../ADMIN_PANEL.md` for coverage and read semantics.
 
 ## Per-user overrides
 
