@@ -231,3 +231,9 @@ Before implementation of blocking, explicitly decide what a block prevents in Vi
 ## 5. Open product decision before Package 7
 
 Define the exact effect of a user block: which authenticated capabilities remain readable/usable and which write or participation actions are denied for temporary and permanent blocks.
+
+## 6. Current coordination status
+
+AP-05 is active in implementation PR #268. On exact head `c6aef294e9cb04ab6d0aa565110ad48ef20333c0`, correction A/B passed CI and independent whole-PR review, but a later targeted diagnosis confirmed one remaining current-scope defect in the operation-scope/History boundary: an actor with only an Any capability can submit `operationScope=own` on an owned resource and avoid ordinary Admin History. The accepted correction requires explicit own semantics to require the corresponding current Own permission; explicit any continues to require Any and remains administrative. Own+Any real own-controls remain own; an opened own-form must fail after Own is revoked even if Any remains. First-party presentation must not offer an Any-only actor a usable own-control. No permission-catalog, endpoint, migration-prefix, Complaints or AP-06+ expansion is authorized.
+
+Current next step: Leva applies the bounded correction in #268, runs applicable checks/CI, and publishes a new stable exact head. Any implementation change restarts the coordinator-first whole-PR review cycle.
