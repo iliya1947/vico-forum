@@ -40,6 +40,16 @@ translation generation/provider/runtime или архитектура. CI, brows
 
 ## Complaints — Package 1 domain foundation (2026-10-29)
 
+Correction 2026-10-30: Case/Appeal reads вычисляют review admission и дополнительную
+reporter/appellant identity projection из одного consistent authorization snapshot.
+Обычный capability ограничивает resolution cache отдельным handle операции, сохраняя
+свежесть следующего service call при повторном использовании capability; Hyperdrive
+сохраняет существующий request-local snapshot. Добавлены native regressions для обоих
+read methods/adapter-ов с committed переходом review-only → neither → identity-only,
+next-call freshness, allow/deny/inherit и fail-closed при authorization failure.
+Schema/permissions/UI не меняются. Фактические проверки и новый independent review
+фиксируются отдельно после выполнения; acceptance заранее не заявляется.
+
 В отдельной implementation-ветке реализован server-only complaints foundation:
 отдельные Complaint/Case/immutable initial Decision/Appeal/notes/lifecycle events,
 post/title revision targets с owner-matching FKs, atomic replay/CAS и bounded

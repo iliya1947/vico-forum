@@ -13,6 +13,12 @@ export class ComplaintsService {
     complaintId(actor);
     if (!(await this.authorization.forUser(actor).has(key))) throw new ComplaintForbiddenError("complaint permission denied");
   }
+  private async reviewIdentity(actor: string, key: PermissionKey) {
+    complaintId(actor);
+    const { effectivePermissions } = await this.authorization.forUser(actor).resolve();
+    if (!effectivePermissions.includes(key)) throw new ComplaintForbiddenError("complaint permission denied");
+    return effectivePermissions.includes("forum.complaint.reporterIdentity.read");
+  }
   async submit(actor: string, input: SubmitComplaint) {
     await this.require(actor, "forum.complaint.create");
     const t = input.target;
@@ -25,14 +31,12 @@ export class ComplaintsService {
       explanation: complaintText(input.explanation, 2000, reason === "other") });
   }
   async readCase(actor: string, caseId: string, pages = { reports: 0, notes: 0, events: 0 }) {
-    await this.require(actor, "forum.complaint.review");
+    const elevated = await this.reviewIdentity(actor, "forum.complaint.review");
     for (const value of Object.values(pages)) if (!Number.isSafeInteger(value) || value < 0 || value > 10000) throw new ComplaintInputError("invalid page");
-    const elevated = await this.authorization.forUser(actor).has("forum.complaint.reporterIdentity.read");
     return this.repository.readCase(complaintId(caseId), elevated, pages);
   }
   async readAppealCase(actor: string, caseId: string) {
-    await this.require(actor, "forum.complaint.appeal.review");
-    const elevated = await this.authorization.forUser(actor).has("forum.complaint.reporterIdentity.read");
+    const elevated = await this.reviewIdentity(actor, "forum.complaint.appeal.review");
     const result = await this.repository.readCase(complaintId(caseId), elevated, { reports: 0, notes: 0, events: 0 });
     if (!result.appeals.length) throw new ComplaintForbiddenError("no appeal in this case");
     return result;

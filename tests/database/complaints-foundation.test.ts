@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client, Pool } from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { Client, Pool, type PoolClient } from "pg";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintPolicyRequiredError, type ComplaintTarget } from "../../db/complaints-domain";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
-import { createAuthorizationCapability } from "../../db/authorization-service";
+import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
+import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
+import type { PermissionKey } from "../../app/authorization/catalog";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 
@@ -57,7 +59,7 @@ beforeAll(async () => {
   for (const file of (await readdir("drizzle")).filter(f => /^\d{4}_.+\.sql$/.test(f)).sort()) {
     await client.query((await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schema}".`));
   }
-  for (const id of ["content-author","reporter-one","reporter-two","reviewer","appeal-reviewer","outsider","admin"])
+  for (const id of ["content-author","reporter-one","reporter-two","reviewer","appeal-reviewer","outsider","admin","snapshot-reader"])
     await client.query('insert into "user" (id,name,email) values ($1,$1,$2)', [id,`${id}@test.invalid`]);
   await client.query(`insert into authz_user_roles(user_id,role_id) values ('reviewer','builtin-moderator'),('admin','builtin-admin')`);
   await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
@@ -348,4 +350,138 @@ it("keeps report counts independent of bounded report pages", async () => {
   expect(next.reports.items).toHaveLength(1);expect(next.reports.hasMore).toBe(false);
   expect(first.independentReporterCount).toBe(51);expect(next.independentReporterCount).toBe(51);
   expect(first.reports.items.map(r=>r.id)).not.toContain(next.reports.items[0]!.id);
+});
+
+// Observe actual authorization SQL without changing its result or transaction boundaries.
+// Commits on the independent management connection happen before the reader continues.
+function observedAuthorizationPool(afterQuery: (sql: string) => Promise<void>): Pool {
+  type QueryTarget = { query(sql: string, values?: unknown[]): Promise<unknown> };
+  const query = async (target: QueryTarget, sql: string, values?: unknown[]) => {
+    const result = await target.query(sql, values);
+    await afterQuery(sql);
+    return result;
+  };
+  return {
+    query: (sql: string, values?: unknown[]) => query(pool as unknown as QueryTarget, sql, values),
+    connect: async () => {
+      const connection = await pool.connect();
+      return {
+        query: (sql: string, values?: unknown[]) => query(connection as unknown as QueryTarget, sql, values),
+        release: () => connection.release(),
+      } as unknown as PoolClient;
+    },
+    // The shared native pool belongs to this test file, not the request adapter.
+    end: async () => {},
+  } as unknown as Pool;
+}
+
+const identityPermission = "forum.complaint.reporterIdentity.read" as const;
+const snapshotActor = "snapshot-reader";
+const authorizationRepository = new PostgresAuthorizationRepository(pool);
+const management = new AuthorizationService(authorizationRepository);
+function readAuthorization(adapter: "postgres" | "hyperdrive", database = pool) {
+  return adapter === "postgres"
+    ? createAuthorizationCapability(new PostgresAuthorizationRepository(database))
+    : createHyperdriveAuthorization(databaseUrl!, () => database === pool
+      ? observedAuthorizationPool(async () => {}) : database);
+}
+async function readerPermissions(primary: PermissionKey, review: boolean, identity: boolean) {
+  for (const key of ["forum.complaint.review", "forum.complaint.appeal.review", identityPermission] as const)
+    await management.setUserOverride("admin", snapshotActor, key, "deny");
+  if (review) await management.setUserOverride("admin", snapshotActor, primary, "allow");
+  if (identity) await management.setUserOverride("admin", snapshotActor, identityPermission, "allow");
+}
+async function appealedCase() {
+  const c = await decision();
+  await service().appeal("reporter-one", { caseId: c.caseId, decisionId: c.decisionId,
+    argument: "Snapshot review", operationId: randomUUID() });
+  return c.caseId;
+}
+
+describe.each(["postgres", "hyperdrive"] as const)("complaint authorization snapshot / %s", (adapter) => {
+  describe.each(["readCase", "readAppealCase"] as const)("%s", (method) => {
+    const primary = method === "readCase" ? "forum.complaint.review" : "forum.complaint.appeal.review";
+
+    it("never combines review-only and identity-only committed states", async () => {
+      const caseId = await appealedCase();
+      await readerPermissions(primary, true, false);
+      const states: string[][] = [];
+      const capture = async () => {
+        const state = await authorizationRepository.resolveUser(snapshotActor);
+        states.push(state.effectivePermissions.filter(key => key === primary || key === identityPermission));
+      };
+      await capture();
+      let switched = false;
+      const database = observedAuthorizationPool(async sql => {
+        // Old has() path: one completed permission SELECT. Snapshot path: role SELECT
+        // pins the transaction snapshot before grants/overrides are fetched.
+        if (switched || !(sql.startsWith("select case") || sql.includes("explicit_assignment"))) return;
+        switched = true;
+        await management.setUserOverride("admin", snapshotActor, primary, "deny");
+        await capture();
+        await management.setUserOverride("admin", snapshotActor, identityPermission, "allow");
+        await capture();
+      });
+      const capability = readAuthorization(adapter, database);
+      const reader = new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client)), capability);
+      const data = await reader[method](snapshotActor, caseId);
+      expect(switched).toBe(true);
+      expect(states).toEqual([[primary], [], [identityPermission]]);
+      expect(data.reports.items[0]).not.toHaveProperty("reporter");
+      expect(data.appeals[0]).not.toHaveProperty("appellant");
+      const next = adapter === "postgres" ? reader
+        : new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client)), readAuthorization(adapter));
+      await expect(next[method](snapshotActor, caseId)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    });
+
+    it("keeps projection and next-call freshness across allow, deny and inherit", async () => {
+      const caseId = await appealedCase();
+      const capability = readAuthorization(adapter);
+      const repository = new DrizzleComplaintsRepository(drizzle(client));
+      const projected = vi.spyOn(repository, "readCase");
+      // Reuse the ordinary capability across service calls; Hyperdrive is request-local.
+      const reader = () => new ComplaintsService(repository, adapter === "postgres" ? capability : readAuthorization(adapter));
+      for (const [review, identity] of [[true, false], [false, true], [true, true], [false, false]] as const) {
+        await readerPermissions(primary, review, identity);
+        projected.mockClear();
+        if (!review) {
+          await expect(reader()[method](snapshotActor, caseId)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+          expect(projected).not.toHaveBeenCalled();
+        } else {
+          const data = await reader()[method](snapshotActor, caseId);
+          expect(data.reports.items[0]?.reporter?.id).toBe(identity ? "reporter-one" : undefined);
+          expect(data.appeals[0]?.appellant?.id).toBe(identity ? "reporter-one" : undefined);
+        }
+      }
+      await management.assignUserRole("admin", snapshotActor, "builtin-moderator");
+      try {
+        await management.setUserOverride("admin", snapshotActor, primary, null);
+        const data = await reader()[method](snapshotActor, caseId);
+        expect(data.reports.items[0]).not.toHaveProperty("reporter");
+        await management.setUserOverride("admin", snapshotActor, primary, "deny");
+        await expect(reader()[method](snapshotActor, caseId)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+      } finally {
+        await management.assignUserRole("admin", snapshotActor, "builtin-user");
+        projected.mockRestore();
+      }
+    });
+
+    it("propagates authorization failure before any case projection", async () => {
+      const failure = Object.assign(new Error("connection lost"), { code: "08006" });
+      const database = {
+        query: async () => { throw failure; },
+        connect: async () => { throw failure; },
+        end: async () => {},
+      } as unknown as Pool;
+      const repository = new DrizzleComplaintsRepository(drizzle(client));
+      const projected = vi.spyOn(repository, "readCase");
+      try {
+        const reader = new ComplaintsService(repository, readAuthorization(adapter, database));
+        const result = reader[method](snapshotActor, randomUUID());
+        if (adapter === "hyperdrive") await expect(result).rejects.toBeInstanceOf(AuthorizationUnavailableError);
+        else await expect(result).rejects.toBe(failure);
+        expect(projected).not.toHaveBeenCalled();
+      } finally { projected.mockRestore(); }
+    });
+  });
 });

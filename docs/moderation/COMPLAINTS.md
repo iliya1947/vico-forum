@@ -119,6 +119,13 @@ Identity permission alone does not grant Case access. Help/Security/admin-action
 permissions do not imply complaint permissions. Role grants, custom roles and user
 `allow | deny | inherit` changes apply on the next service call/request.
 
+Case and Appeal reads derive both the required review permission and the additional
+identity flag from one internally consistent effective-permission snapshot. The
+ordinary authorization capability creates a fresh resolution handle per operation,
+even when the capability is reused between service calls. The Hyperdrive adapter
+retains its request-local snapshot; a new request creates a new capability. Neither
+path combines separate permission reads across committed authorization states.
+
 Ordinary reviewer SQL selects no reporter/appellant account fields. Elevated SQL
 explicitly joins the identity projection only after the separate permission check.
 Reports expose report ID/reason/explanation/time; events expose ID/kind/time, not
