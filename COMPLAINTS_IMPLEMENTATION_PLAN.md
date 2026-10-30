@@ -61,9 +61,11 @@ A submitted complaint cannot be withdrawn by the reporter. It remains in the sys
 
 Multiple complaints about the same open incident are kept as separate Complaint records but are grouped into one Case.
 
-The initial grouping boundary is the concrete reported content revision. A later revision may therefore create a new incident/case after an earlier case has been resolved.
+The grouping boundary is the concrete reported content revision. Different revisions of the same post/topic title therefore use separate Cases rather than mixing complaints about different content states.
 
 If a Case for the same concrete revision has already been resolved and another user later submits a complaint about that same revision, the complaint creates a **new Case**. The earlier Case remains closed and immutable. The new Case must keep an explicit link/reference to the related closed Case so the moderation team can see the prior handling of the same revision without reopening or mutating the earlier Case.
+
+If a newer revision is reported while a Case for the previous revision of that same content unit is still open, the newer revision also creates a **separate new Case immediately**. The new Case must keep an explicit link/reference to that previous-revision Case. The earlier Case stays open and unchanged; complaints about the newer revision are not appended to it and are not blocked until it closes.
 
 The case must preserve enough state to review:
 
@@ -218,7 +220,7 @@ Implementation is split into separate bounded implementation PRs. Each dependent
 3. Add the approved reason/explanation form.
 4. Require authentication and current effective submit permission.
 5. Validate target identity and authoritative current revision server-side.
-6. Create a new Case or append a Complaint to the applicable open case.
+6. Create a new Case or append a Complaint to the applicable open case. A newer revision never joins the Case of an older revision; if the older-revision Case is still open, create a separate Case for the newer revision with an explicit link to that prior Case.
 7. Prevent duplicate spam by the same reporter on the same revision.
 8. Add complaint-specific rate limiting.
 9. Keep the user in topic context after successful submission and show confirmation.
@@ -285,7 +287,7 @@ Replace the Complaints Appeals placeholder with the real appeal workflow.
 1. Verify topic-title and first-post complaints remain separate.
 2. Verify multiple reporters produce separate Complaints but one applicable open Case.
 3. Verify later content edits do not destroy reported revision evidence.
-4. Verify a later incident/revision can create a new Case after an earlier one closes.
+4. Verify a later incident/revision creates a separate linked Case both after an earlier Case closes and while a previous-revision Case is still open; the prior Case is not mutated or reused.
 5. Verify reporter identities never leak without the elevated permission.
 6. Verify role grants and per-user overrides for every complaint capability.
 7. Verify anti-abuse rules do not block valid complaints about different content.
