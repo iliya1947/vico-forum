@@ -68,12 +68,13 @@ export class AuthorizationService {
 }
 
 export function createAuthorizationCapability(repository: PostgresAuthorizationRepository): AuthorizationCapability {
-  const cache = new Map<string, Promise<UserAuthorization>>();
   return { forUser(userId) {
     const validUserId = text(userId, "user id");
+    // A new operation gets a fresh handle even when the capability is reused.
+    // Repeated resolve() calls on this handle share one consistent snapshot.
+    let current: Promise<UserAuthorization> | undefined;
     const resolve = () => {
-      let current = cache.get(validUserId);
-      if (!current) { current = repository.resolveUser(validUserId); cache.set(validUserId, current); }
+      if (!current) current = repository.resolveUser(validUserId);
       return current;
     };
     return {

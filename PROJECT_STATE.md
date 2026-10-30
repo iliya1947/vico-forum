@@ -50,6 +50,50 @@ corrections #259/#260/#261 уже объединены в `main`. Чернови
 Stage 6 external/production gates, не реализованные admin/complaints функции
 и соответствующие owner acceptance остаются отдельной незавершённой работой.
 
+## Complaints — Package 1 domain foundation (2026-10-29)
+
+Correction 2026-10-30: другой reporter после resolution той же current revision
+создаёт новый Case с immutable previous_case_id на последний закрытый Case того же
+target. Составной self-FK и insertion guard проверяют same-target/resolved predecessor;
+старый Case/Decision не меняются, lifetime reporter+target duplicate barrier сохранён.
+Ссылка входит только в protected reviewer projection. Forward migration 0048 и native
+post/title/concurrency/chain/negative regressions добавлены. Формулировка affected-author
+contract уточнена: user FK плюс authoritative repository capture под content lock;
+нового content-author DB invariant нет. Checks и новый independent review фиксируются
+после выполнения; Package 2+ и external rollout не добавлены.
+
+Correction 2026-10-30: Case/Appeal reads вычисляют review admission и дополнительную
+reporter/appellant identity projection из одного consistent authorization snapshot.
+Обычный capability ограничивает resolution cache отдельным handle операции, сохраняя
+свежесть следующего service call при повторном использовании capability; Hyperdrive
+сохраняет существующий request-local snapshot. Добавлены native regressions для обоих
+read methods/adapter-ов с committed переходом review-only → neither → identity-only,
+next-call freshness, allow/deny/inherit и fail-closed при authorization failure.
+Schema/permissions/UI не меняются. Фактические проверки и новый independent review
+фиксируются отдельно после выполнения; acceptance заранее не заявляется.
+
+В отдельной implementation-ветке реализован server-only complaints foundation:
+отдельные Complaint/Case/immutable initial Decision/Appeal/notes/lifecycle events,
+post/title revision targets с owner-matching FKs, atomic replay/CAS и bounded
+reviewer/participant reads. Reporter/appellant identity не выбирается обычной
+SQL projection; дополнительный elevated permission не выдаётся initial admin.
+Новые code-backed permissions используют существующий PermissionResolver.
+
+Forward migration `0047_complaints_domain_foundation` сохраняет evidence refs
+вложений reported post revision; active-ref gate и все стадии cleanup учитывают
+эти refs. Append-only evidence/events и deferred Case→Decision FK защищают
+историю. Native tests покрывают grouping/title-first-post separation, privacy,
+permission freshness, revision/evidence retention, rollback и concurrency.
+Permanent contract: `docs/moderation/COMPLAINTS.md`.
+
+Новых HTTP routes, user/queue/appeals UI, rate-limit thresholds, priority/presence,
+notifications или Quick actions нет. Спорная new-revision-while-previous-Case-open
+admission и subsequent appeal transitions возвращают explicit policy-required
+без writes до решений Packages 2/6. Storage поддерживает максимум 3 appeals без
+необратимого unique-pending ограничения; initial Decision не переписывается.
+Проверки/CI и independent whole-PR acceptance фиксируются отдельно после
+фактического выполнения; production migration/GRANT/deploy не выполнялись.
+
 ## RES-A11Y-01 — accessible name Simple textbox (2026-10-30)
 
 В отдельной implementation-ветке каждый VisualTextLeaf с role=textbox получает
@@ -2448,7 +2492,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0046`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0048`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 
