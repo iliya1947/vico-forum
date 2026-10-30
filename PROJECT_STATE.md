@@ -98,9 +98,23 @@ Attention header и попадает в settings без Case reads; глобал
 Forward `0052_complaint_priority_settings`, schema/journal/snapshot, manifest и runtime
 SELECT/UPDATE ACL согласованы; repository history 53 migrations / 60 tables.
 
-Focused checks: 62 native Complaints tests и 8 новых HTTP/UI tests прошли; lint 0 errors
-(одно прежнее warning), typecheck прошёл. Полные CI/browser результаты будут зафиксированы
-после завершения. Новый coordinator-first exact-head review и merge пока не завершены.
+Авторские проверки дополнения: полный PostgreSQL17 suite — 417 tests, включая 62
+Complaints; 8 новых HTTP/UI tests и focused route-shape 2/2. В полном application запуске
+1656 tests прошли, один прежний route-shape expectation требовал добавления нового route;
+expectation исправлен без runtime change. Final exact-head CI и author handoff фиксируются
+в #254. Lint 0 errors (одно прежнее warning), typecheck, Worker/UI Preview builds,
+18 infrastructure guard suites, Drizzle metadata/schema parity, manifest 60 tables,
+runtime privilege/provisioning/credential probes прошли. Upgrade 0051→0052 сохранил
+existing Case/event и применил configured priority при следующем чтении.
+
+Финальная actual Chromium→Worker→PostgreSQL проверка runtime 73e64d9 прошла 33 scenarios:
+Queue/triage регрессии, actual full-map Form save/persistence, current automatic priority,
+manual override/Automatic, stale CAS и integer bounds, management-only admission,
+next-request deny, EN/RU/HE 320/390/768/1280 keyboard/layout, genuine timeout/recovery.
+JS errors/external requests — 0; complaint history от настройки не меняется, admin History,
+Signals/Security effects отсутствуют. Evidence — `/workspace/work/pkg3-mapping-results/`;
+воспроизводимый harness — `tests/browser/complaints-queue/`.
+Новый coordinator-first exact-head review и merge пока не завершены.
 Package 4+, production migration/deployment/secrets не выполняются.
 
 ## Complaints — Package 3 open Queue / triage (2026-10-30)
