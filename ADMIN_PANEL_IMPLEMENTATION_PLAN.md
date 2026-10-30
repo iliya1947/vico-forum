@@ -234,6 +234,8 @@ Define the exact effect of a user block: which authenticated capabilities remain
 
 ## 6. Current coordination status
 
-AP-05 is active in implementation PR #268. On exact head `c6aef294e9cb04ab6d0aa565110ad48ef20333c0`, correction A/B passed CI and independent whole-PR review, but a later targeted diagnosis confirmed one remaining current-scope defect in the operation-scope/History boundary: an actor with only an Any capability can submit `operationScope=own` on an owned resource and avoid ordinary Admin History. The accepted correction requires explicit own semantics to require the corresponding current Own permission; explicit any continues to require Any and remains administrative. Own+Any real own-controls remain own; an opened own-form must fail after Own is revoked even if Any remains. First-party presentation must not offer an Any-only actor a usable own-control. No permission-catalog, endpoint, migration-prefix, Complaints or AP-06+ expansion is authorized.
+AP-05 is complete and merged as PR #268 into `main` at `e564948492a500984340ecbd462bfea8e7174605`. Its final stable head `23a36c50928e0ae459d7e7bcb7b8ba252235badf` passed coordinator and independent whole-PR review with no remaining current-scope defects.
 
-Current next step: Leva applies the bounded correction in #268, runs applicable checks/CI, and publishes a new stable exact head. Any implementation change restarts the coordinator-first whole-PR review cycle.
+AP-06 is now active. Leva has been assigned category/section administrative browsing from current main in #251 comment #6536111802. Scope is limited to the Forum category/section layer defined by `docs/ADMIN_PANEL.md`; AP-07+ topic/message administration, topic closure, structural mutations, Users/blocks and unrelated work are not part of this package.
+
+Current next step: Leva implements AP-06 in a separate implementation PR, runs applicable checks/CI/browser verification, and publishes a stable exact head in #251 for coordinator-first whole-PR review.
