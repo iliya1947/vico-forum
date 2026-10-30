@@ -44,7 +44,7 @@ export async function loader({ request, params, context }: {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
-  let permissions: [boolean, boolean, boolean, boolean, boolean];
+  let permissions: [boolean, boolean, boolean, boolean, boolean, boolean];
   try {
     const authorization = authorizationForRequest(context).forUser(session.user.id);
     permissions = await Promise.all([
@@ -53,6 +53,7 @@ export async function loader({ request, params, context }: {
       authorization.has("forum.helpNeedsDetails.manage"),
       authorization.has("forum.attachmentSecurity.read"),
       authorization.has("forum.complaint.review"),
+      authorization.has("forum.complaint.priority.manage"),
     ]);
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
@@ -60,18 +61,20 @@ export async function loader({ request, params, context }: {
     }
     throw error;
   }
-  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments, canReviewComplaints] = permissions;
+  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities] = permissions;
   const canViewHelpAttention = canViewSolutionModeration || canViewDuplicateDispute || canManageNeedsDetails;
 
   const query = new URL(request.url).searchParams;
   const requestedMode = query.get("mode");
   const mode: AttentionMode = requestedMode === "signals" || requestedMode === "complaints" || requestedMode === "security"
-    ? requestedMode : canViewHelpAttention ? "signals" : canReviewComplaints ? "complaints" : "security";
+    ? requestedMode : canViewHelpAttention ? "signals" : canReviewComplaints || canManageComplaintPriorities ? "complaints" : "security";
   const requestedGroup = query.get("group") as AttentionGroup | null;
   const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : COMPLAINT_GROUPS;
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
     : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : "group1";
+  if(mode === "complaints" && !canReviewComplaints && canManageComplaintPriorities)
+    throw redirect(`/${encodeURIComponent(params.locale??"en")}/attention/complaints/settings`);
   // Each mode checks its own capability before reading a protected queue.
   if (mode === "security" ? !canReadSecurityAttachments : mode === "complaints" ? !canReviewComplaints : !canViewHelpAttention) {
     throw new Response("Forbidden", { status: 403 });
@@ -154,7 +157,7 @@ export async function loader({ request, params, context }: {
   }
 
   return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue,
-    canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, referenceTime: new Date().toISOString() };
+    canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {

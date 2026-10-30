@@ -1,9 +1,9 @@
 import type { AuthorizationCapability } from "./authorization-service";
 import type { PermissionKey } from "../app/authorization/catalog";
-import type { ComplaintPriorityCommand } from "../app/complaints/queue-contract";
+import type { ComplaintPrioritySettingsCommand, ComplaintPriorityWeights, ComplaintPriorityCommand } from "../app/complaints/queue-contract";
 import {
   ComplaintForbiddenError, ComplaintInputError, complaintId, complaintOutcome,
-  complaintReason, complaintText, type ComplaintTarget,
+  COMPLAINT_REASONS, complaintReason, complaintText, type ComplaintTarget,
 } from "./complaints-domain";
 import { DrizzleComplaintsRepository, type AppealComplaint, type DecideComplaint, type ResolveComplaintAppeal, type SubmitComplaint } from "./complaints-repository";
 
@@ -19,6 +19,20 @@ export class ComplaintsService {
     const { effectivePermissions } = await this.authorization.forUser(actor).resolve();
     if (!effectivePermissions.includes(key)) throw new ComplaintForbiddenError("complaint permission denied");
     return effectivePermissions.includes("forum.complaint.reporterIdentity.read");
+  }
+  async readPrioritySettings(actor: string) {
+    await this.require(actor,"forum.complaint.priority.manage");
+    return this.repository.readPrioritySettings();
+  }
+  async savePrioritySettings(actor: string, input: ComplaintPrioritySettingsCommand) {
+    await this.require(actor,"forum.complaint.priority.manage");
+    if (!input || !Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1 || input.expectedVersion > 2147483647 ||
+      !input.weights || typeof input.weights !== "object" || Array.isArray(input.weights) ||
+      Object.keys(input.weights).length !== COMPLAINT_REASONS.length ||
+      !COMPLAINT_REASONS.every(reason => Object.hasOwn(input.weights,reason) && [1,2,3].includes(input.weights[reason])))
+      throw new ComplaintInputError("invalid priority settings");
+    const weights = Object.fromEntries(COMPLAINT_REASONS.map(reason => [reason,input.weights[reason]])) as ComplaintPriorityWeights;
+    return this.repository.savePrioritySettings({expectedVersion:input.expectedVersion,weights});
   }
   async readQueue(actor: string, page: number) {
     await this.require(actor,"forum.complaint.review");

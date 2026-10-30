@@ -629,7 +629,7 @@ export const authzPermissions = pgTable("authz_permissions", {
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
   'access.authorization.manage', 'admin.history.read', 'forum.complaint.create', 'forum.complaint.review',
-  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review'
+  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review', 'forum.complaint.priority.manage'
 )`)]);
 
 export const authzRolePermissions = pgTable("authz_role_permissions", {
@@ -1779,4 +1779,25 @@ export const forumComplaintActivity = pgTable("forum_complaint_activity", {
 }, t => [
   primaryKey({ columns: [t.caseId, t.reviewerUserId] }),
   index("complaint_activity_case_expiry_idx").on(t.caseId,t.expiresAt),
+]);
+
+// Domain-specific singleton, not a second configuration or authorization framework.
+export const forumComplaintPrioritySettings = pgTable("forum_complaint_priority_settings", {
+  id: integer("id").primaryKey(),
+  version: integer("version").notNull().default(1),
+  weights: jsonb("weights").notNull(),
+}, t => [
+  check("complaint_priority_settings_singleton", sql`${t.id} = 1`),
+  check("complaint_priority_settings_version", sql`${t.version} > 0`),
+  check("complaint_priority_settings_weights", sql`jsonb_typeof(${t.weights}) = 'object'
+    and ${t.weights} - array['spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other'] = '{}'::jsonb
+    and ${t.weights}->'spam' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'harassment' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'threats' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'fraud-phishing' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'malicious-content' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'personal-data' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'impersonation' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights}->'other' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
+    and ${t.weights} ?& array['spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other']`),
 ]);

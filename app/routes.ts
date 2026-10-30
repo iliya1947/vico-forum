@@ -12,6 +12,7 @@ export default [
     route("sections/:sectionId", "routes/section.tsx"),
     route("topics/:topicId", "routes/topic.tsx"),
     route("topics/:topicId/complaints", "routes/complaint-submit.ts"),
+    route("attention/complaints/settings", "routes/complaint-priority-settings.tsx"),
     route("attention/complaints/:caseId", "routes/complaint-triage.tsx"),
     route("attention/complaints/:caseId/activity", "routes/complaint-activity.ts"),
     route("posts/:postId/edit", "routes/post-edit.ts"),

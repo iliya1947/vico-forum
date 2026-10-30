@@ -20,6 +20,8 @@ export function createHyperdriveComplaintQueue(connectionString: string, authori
     } finally {bestEffortDiscardClient(client);}
   }
   return {
+    readPrioritySettings:actor=>run(s=>s.readPrioritySettings(actor)),
+    savePrioritySettings:(actor,input)=>run(s=>s.savePrioritySettings(actor,input)),
     readQueue:(actor,page)=>run(s=>s.readQueue(actor,page)),
     readTriage:(actor,id)=>run(s=>s.readTriage(actor,id)),
     changePriority:(actor,input)=>run(s=>s.changePriority(actor,input)),

@@ -1,6 +1,6 @@
 import type { ComplaintReason } from "../../db/complaints-domain";
 
-export const COMPLAINT_REASON_PRIORITY = {
+export const DEFAULT_COMPLAINT_REASON_PRIORITY = {
   spam: 1, harassment: 2, threats: 3, "fraud-phishing": 3,
   "malicious-content": 3, "personal-data": 3, impersonation: 2, other: 1,
 } as const satisfies Record<ComplaintReason, number>;
@@ -23,3 +23,7 @@ export interface ComplaintQueuePage {
 export interface ComplaintPriorityCommand {
   caseId: string; operationId: string; expectedVersion: number; priority: number | null;
 }
+
+export type ComplaintPriorityWeights = Record<ComplaintReason, ComplaintPriority>;
+export interface ComplaintPrioritySettings { version: number; weights: ComplaintPriorityWeights }
+export interface ComplaintPrioritySettingsCommand { expectedVersion: number; weights: ComplaintPriorityWeights }

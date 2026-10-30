@@ -16,6 +16,11 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    "complaintPrioritySettingsHeading": message("complaintPrioritySettingsHeading", "Reason priorities", "Complaint priority settings: complaintPrioritySettingsHeading."),
+    "complaintPrioritySettingsDescription": message("complaintPrioritySettingsDescription", "Global priorities apply to all existing and new open cases. Case overrides take precedence.", "Complaint priority settings: complaintPrioritySettingsDescription."),
+    "complaintPrioritySettingsSaved": message("complaintPrioritySettingsSaved", "Reason priorities saved.", "Complaint priority settings: complaintPrioritySettingsSaved."),
+    "complaintPrioritySettingsConflict": message("complaintPrioritySettingsConflict", "These settings changed. Reload and check the current values before saving again.", "Complaint priority settings: complaintPrioritySettingsConflict."),
+    "complaintPrioritySettingsReload": message("complaintPrioritySettingsReload", "Reload settings", "Complaint priority settings: complaintPrioritySettingsReload."),
     "complaintQueueHeading": message("complaintQueueHeading", "Queue", "Complaints triage: complaintQueueHeading."),
     "complaintAppealsHeading": message("complaintAppealsHeading", "Appeals", "Complaints triage: complaintAppealsHeading."),
     "complaintHistoryHeading": message("complaintHistoryHeading", "History", "Complaints triage: complaintHistoryHeading."),

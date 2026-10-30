@@ -4,6 +4,11 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  "complaintPrioritySettingsHeading": "Приоритеты причин",
+  "complaintPrioritySettingsDescription": "Глобальные приоритеты применяются ко всем существующим и новым открытым Cases. Ручной приоритет Case имеет преимущество.",
+  "complaintPrioritySettingsSaved": "Приоритеты причин сохранены.",
+  "complaintPrioritySettingsConflict": "Настройки изменились. Перезагрузите и проверьте актуальные значения перед повторным сохранением.",
+  "complaintPrioritySettingsReload": "Перезагрузить настройки",
   "complaintQueueHeading": "Очередь",
   "complaintAppealsHeading": "Апелляции",
   "complaintHistoryHeading": "История",
@@ -673,6 +678,11 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  "complaintPrioritySettingsHeading": "עדיפויות לפי סיבה",
+  "complaintPrioritySettingsDescription": "העדיפויות הכלליות חלות על כל המקרים הפתוחים, הקיימים והחדשים. עדיפות שנקבעה ידנית למקרה גוברת עליהן.",
+  "complaintPrioritySettingsSaved": "העדיפויות לפי סיבה נשמרו.",
+  "complaintPrioritySettingsConflict": "ההגדרות השתנו. יש לטעון מחדש ולבדוק את הערכים הנוכחיים לפני שמירה חוזרת.",
+  "complaintPrioritySettingsReload": "טעינת ההגדרות מחדש",
   "complaintQueueHeading": "תור",
   "complaintAppealsHeading": "ערעורים",
   "complaintHistoryHeading": "היסטוריה",

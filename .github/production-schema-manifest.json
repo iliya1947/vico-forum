@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0051_complaints_queue",
+  "targetMigration": "0052_complaint_priority_settings",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "d0d31adb377d80e4db5cfb3b514c35d583a409330a37d63f12f05cdaf4b105bc"
+          "definitionSha256": "eb79d309c18570f407bdfe00f1883ce14e653d4e27123bc73e293bbdd3bf82dd"
         }
       ],
       "indexes": []
@@ -7076,6 +7076,62 @@
           "predicateSha256": null
         }
       ]
+    },
+    "forum_complaint_priority_settings": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "weights",
+          "type": "jsonb",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_complaint_priority_settings_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "complaint_priority_settings_singleton",
+          "columns": [
+            "id"
+          ],
+          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
+        },
+        {
+          "name": "complaint_priority_settings_version",
+          "columns": [
+            "version"
+          ],
+          "definitionSha256": "ead4c32a9354da34bc9fcfc3256e203ca5c57f24d0a7e4cac58c9a7bf974868b"
+        },
+        {
+          "name": "complaint_priority_settings_weights",
+          "columns": [
+            "weights"
+          ],
+          "definitionSha256": "fd07fb0e2580922e30425256b5442a77c327ead25185f0b0d59cbf5b2815dfcd"
+        }
+      ],
+      "indexes": []
     }
   },
   "triggerFunctions": [

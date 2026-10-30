@@ -184,6 +184,61 @@ console.log(JSON.stringify({cases,title:title.caseId,closed:cases[27]}));}finall
         for table in ['forum_help_signals', 'forum_attachment_security_events']:
             assert sql('select count(*)::int n from ' + table)[0]['n'] == 0
         record('recovery-no-signals-security-or-admin-history-effects')
+        # Separate global settings permission; reviewer alone cannot read/write mapping.
+        settings_path = '/en/attention/complaints/settings'
+        document(page, settings_path, 403)
+        assert a.request.post(base + settings_path, headers={'Origin': base}, form={'expectedVersion': '1'}).status == 403
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'forum.complaint.priority.manage','allow')", [other_actor])
+        document(other, '/en/attention')
+        assert other.url.endswith('/attention/complaints/settings')
+        assert other.locator('.complaint-priority-form select').count() == 8
+        assert other.get_by_role('link', name='Queue', exact=True).count() == 0
+        document(other, '/en/attention/complaints/' + case, 403)
+        document(other, settings_path)
+        initial = sql('select version,weights from forum_complaint_priority_settings where id=1')[0]
+        assert b.request.post(base + settings_path, headers={'Origin': base}, form={'expectedVersion': '9999999999', **{k: str(v) for k, v in initial['weights'].items()}}).status == 400
+        history = sql('select count(*)::int n from forum_complaint_events')[0]['n']
+        command(a, case, {'priority': '2', 'expectedVersion': str(sql('select version from forum_complaint_cases where id=$1', [case])[0]['version']), 'operationId': uuid4().hex})
+        history += 1
+        weights = {reason: 1 for reason in initial['weights']}
+        weights['spam'] = 3
+        for reason, priority in weights.items():
+            other.locator('select[name="' + reason + '"]').select_option(str(priority))
+        with other.expect_response(lambda r: 'complaints/settings' in r.url and r.request.method == 'POST') as pending:
+            other.locator('.complaint-priority-form button').click()
+        assert pending.value.status == 200
+        other.get_by_text('Reason priorities saved.', exact=True).wait_for()
+        assert sql('select version,weights from forum_complaint_priority_settings where id=1')[0] == {'version': initial['version'] + 1, 'weights': weights}
+        assert sql('select count(*)::int n from forum_complaint_events')[0]['n'] == history
+        document(page, '/en/attention/complaints/' + fixture['cases'][1])
+        assert page.locator('.attention-case-heading').inner_text().endswith('Low priority')
+        document(page, '/en/attention/complaints/' + case)
+        assert page.locator('.attention-case-heading').inner_text().endswith('Normal priority')
+        page.locator('.complaint-priority-form select').select_option('auto')
+        page.locator('.complaint-priority-form button').click()
+        page.get_by_text('Priority saved.', exact=True).wait_for()
+        expect(page.locator('.attention-case-heading')).to_contain_text('High priority')
+        stale = b.request.post(base + settings_path, headers={'Origin': base}, form={'expectedVersion': str(initial['version']), **{k: str(v) for k, v in weights.items()}})
+        assert stale.status == 409
+        record('global-mapping-persistence-recalculation-override-stale-history-isolation')
+        for locale, direction in [('en', 'ltr'), ('ru', 'ltr'), ('he', 'rtl')]:
+            for width in [320, 390, 768, 1280]:
+                other.set_viewport_size({'width': width, 'height': 900})
+                document(other, '/' + locale + '/attention/complaints/settings')
+                assert other.locator('html').get_attribute('dir') == direction
+                assert other.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+                assert other.locator('.complaint-priority-form select').count() == 8
+                other.locator('.complaint-priority-form select').last.focus()
+                other.keyboard.press('Tab')
+                assert other.locator('.complaint-priority-form button').evaluate('e=>e===document.activeElement')
+                if width == 320:
+                    other.screenshot(path=str(args.output / ('settings-' + locale + '-320.png')), full_page=True)
+                record('settings-layout-' + locale + '-' + str(width), direction=direction)
+        sql("update authz_user_permission_overrides set effect='deny' where user_id=$1 and permission_key='forum.complaint.priority.manage'", [other_actor])
+        document(other, settings_path, 403)
+        assert b.request.post(base + settings_path, headers={'Origin': base}, form={'expectedVersion': '2', **{k: str(v) for k, v in weights.items()}}).status == 403
+        assert sql('select count(*)::int n from admin_history')[0]['n'] == 0
+        record('settings-next-request-revocation-and-separate-review-permission')
         a.close()
         b.close()
         browser.close()

@@ -1446,7 +1446,7 @@ type SecurityAttachmentQueuePresentation = {
 };
 
 export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
-  complaintQueue = null, canReviewComplaints = false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
+  complaintQueue = null, canManageComplaintPriorities = false, canReviewComplaints = false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
@@ -1456,6 +1456,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
   canViewHelpAttention?: boolean;
   canReadSecurityAttachments?: boolean;
   canReviewComplaints?: boolean;
+  canManageComplaintPriorities?: boolean;
   complaintQueue?: ComplaintQueuePage | null;
   referenceTime?: string;
   actionData?: ForumMutationError;
@@ -1494,7 +1495,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
           <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
           <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
             {(["signals", "complaints", "security"] as const)
-              .filter(item => item === "security" ? canReadSecurityAttachments : item === "complaints" ? canReviewComplaints : canViewHelpAttention)
+              .filter(item => item === "security" ? canReadSecurityAttachments : item === "complaints" ? canReviewComplaints || canManageComplaintPriorities : canViewHelpAttention)
               .map(item => (
               <Link key={item}
                 className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
@@ -1525,6 +1526,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
                 ? "attentionCaseNoLongerPending" : "attentionCaseActionFailed")}
             </p>
           ) : null}
+          {mode === "complaints" && canManageComplaintPriorities && <Link to={`/${encodeURIComponent(locale)}/attention/complaints/settings`}>{t("complaintPrioritySettingsHeading")}</Link>}
           {mode === "complaints" && group === "group1" && complaintQueue ? (
             <ComplaintQueueList locale={locale} queue={complaintQueue}/>
           ) : mode === "security" && group === "attachments" ? (

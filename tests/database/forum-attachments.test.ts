@@ -55,6 +55,7 @@ const migrations = [
   "0049_admin_history",
   "0050_complaint_submission",
   "0051_complaints_queue",
+  "0052_complaint_priority_settings",
 ];
 
 const ownerId = "attachment-owner";

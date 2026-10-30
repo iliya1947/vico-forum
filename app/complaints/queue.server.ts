@@ -1,3 +1,4 @@
+import type { PermissionKey } from "../authorization/catalog";
 import { data, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -7,10 +8,10 @@ import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints
 import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError } from "../../db/complaints-domain";
 
 export const complaintPrivateHeaders = {"Cache-Control":"private, no-store"};
-export async function complaintReviewer(context: RouterContextProvider): Promise<string> {
+export async function complaintReviewer(context: RouterContextProvider, permission: PermissionKey = "forum.complaint.review"): Promise<string> {
   const session=authSessionForRequest(context);
   if(!session)throw new Response("Unauthorized",{status:401,headers:complaintPrivateHeaders});
-  if(!(await authorizationForRequest(context).forUser(session.user.id).has("forum.complaint.review")))
+  if(!(await authorizationForRequest(context).forUser(session.user.id).has(permission)))
     throw new ComplaintForbiddenError();
   return session.user.id;
 }
@@ -31,9 +32,9 @@ export function complaintCommandFailure(error: unknown): ReturnType<typeof data<
   if(key)return data({error:key},{status,headers:complaintPrivateHeaders});
   throw error;
 }
-export async function complaintCommand(request: Request, context: RouterContextProvider): Promise<{actor:string;form:URLSearchParams}> {
+export async function complaintCommand(request: Request, context: RouterContextProvider, permission: PermissionKey = "forum.complaint.review"): Promise<{actor:string;form:URLSearchParams}> {
   if(request.method!=="POST")throw new Response("Method Not Allowed",{status:405,headers:{...complaintPrivateHeaders,Allow:"POST"}});
-  const actor=await complaintReviewer(context);
+  const actor=await complaintReviewer(context,permission);
   if(!requireSameOrigin(request))throw new ComplaintForbiddenError();
   if(!request.headers.get("Content-Type")?.toLowerCase().startsWith("application/x-www-form-urlencoded"))throw new ComplaintInputError();
   const reader=request.body?.getReader();if(!reader)throw new ComplaintInputError();

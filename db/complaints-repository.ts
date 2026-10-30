@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { readComplaintQueue } from "./complaint-queue-read";
-import { COMPLAINT_ACTIVITY_SECONDS, type ComplaintPriorityCommand } from "../app/complaints/queue-contract";
+import { COMPLAINT_ACTIVITY_SECONDS, type ComplaintPrioritySettings, type ComplaintPrioritySettingsCommand, type ComplaintPriorityCommand } from "../app/complaints/queue-contract";
 import {
   ComplaintConflictError, ComplaintForbiddenError, ComplaintNotFoundError,
   ComplaintPolicyRequiredError, ComplaintRateLimitError, COMPLAINT_SUBMISSION_LIMITS,
@@ -89,6 +89,21 @@ export class DrizzleComplaintsRepository {
       initial_decision_id as "initialDecisionId",previous_case_id as "previousCaseId",priority_override as "priorityOverride" from forum_complaint_cases where id=${caseId} for update`);
     if (!r.rows[0]) throw new ComplaintNotFoundError("case not found");
     return r.rows[0];
+  }
+
+  async readPrioritySettings(): Promise<ComplaintPrioritySettings> {
+    const result = await this.database.execute<ComplaintPrioritySettings & Record<string, unknown>>(sql`
+      select version,weights from forum_complaint_priority_settings where id=1`);
+    if (!result.rows[0]) throw new Error("Missing complaint priority settings");
+    return result.rows[0];
+  }
+
+  async savePrioritySettings(input: ComplaintPrioritySettingsCommand) {
+    // One atomic full-map CAS: concurrent managers cannot partially overwrite a configuration.
+    const result = await this.database.execute(sql`update forum_complaint_priority_settings
+      set weights=${JSON.stringify(input.weights)}::jsonb,version=version+1
+      where id=1 and version=${input.expectedVersion} returning id`);
+    if (!result.rows.length) throw new ComplaintConflictError("priority settings changed");
   }
 
   async readQueue(actorId: string, page: number) { return readComplaintQueue(this.database,actorId,page); }

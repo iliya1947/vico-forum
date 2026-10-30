@@ -67,6 +67,7 @@ const migrationFiles = [
   "0049_admin_history.sql",
   "0050_complaint_submission.sql",
   "0051_complaints_queue.sql",
+  "0052_complaint_priority_settings.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });

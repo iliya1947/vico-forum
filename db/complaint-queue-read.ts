@@ -1,10 +1,9 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { COMPLAINT_REASON_PRIORITY, COMPLAINT_QUEUE_PAGE_SIZE, type ComplaintQueuePage } from "../app/complaints/queue-contract";
+import { COMPLAINT_QUEUE_PAGE_SIZE, type ComplaintQueuePage } from "../app/complaints/queue-contract";
 
 /** Ordinary triage projection: no reporter IDs, explanations, notes or identity joins. */
 export async function readComplaintQueue(database: NodePgDatabase, actorId: string, page: number, caseId: string | null = null): Promise<ComplaintQueuePage> {
-  const weights = sql.join(Object.entries(COMPLAINT_REASON_PRIORITY).map(([reason, rank]) => sql`when ${reason} then ${rank}::int`), sql` `);
   const result = await database.execute<{ total: number; items: ComplaintQueuePage["cases"] }>(sql`
     with eligible as (
       select c.* from forum_complaint_cases c where c.state='open' and (${caseId}::text is null or c.id=${caseId}::text)
@@ -13,8 +12,8 @@ export async function readComplaintQueue(database: NodePgDatabase, actorId: stri
       from forum_complaints r join eligible c on c.id=r.case_id group by r.case_id,r.reason
     ), stats as (
       select case_id,jsonb_object_agg(reason,n) as reasons,sum(n)::int as n,
-        min(first_at) as first_at,max(last_at) as last_at,max(case reason ${weights} else 1 end)::int as automatic
-      from reasons group by case_id
+        min(first_at) as first_at,max(last_at) as last_at,max((settings.weights->>reason)::int)::int as automatic
+      from reasons cross join forum_complaint_priority_settings settings where settings.id=1 group by case_id
     ), ranked as (
       select c.id,c.version,c.state,t.kind,t.topic_id as "topicId",t.post_id as "postId",
         coalesce(t.post_revision_id,t.title_revision_id) as "revisionId",

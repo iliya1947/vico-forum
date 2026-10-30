@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-30
+Последнее обновление: 2026-10-31
 
 ## I18N-UGC-META-01 — original topic-title metadata in Search/Unanswered (2026-10-29)
 
@@ -79,6 +79,29 @@ corrections #259/#260/#261 уже объединены в `main`. Чернови
 отложены решением владельца и не являются текущими задачами Editor 2.0.
 Stage 6 external/production gates, не реализованные admin/complaints функции
 и соответствующие owner acceptance остаются отдельной незавершённой работой.
+
+## Complaints — Package 3 configurable reason priorities (2026-10-31)
+
+По дополнению #254/#6530944971 PR #269 теперь хранит глобальную mapping всех восьми
+причин в domain singleton `forum_complaint_priority_settings` (initial values прежние).
+Queue/triage используют актуальную persisted mapping в том же SQL snapshot: существующие
+и новые open Cases пересчитываются при чтении; manual override имеет преимущество,
+Automatic использует текущую mapping. Complaint history и Case versions от изменения
+настройки не переписываются; admin History producer не добавлен.
+
+Реальный localized UI `/:locale/attention/complaints/settings` позволяет читать/изменять
+все восемь уровней. Независимый `forum.complaint.priority.manage` проверяется на GET/POST
+и в service; initial admin grant, review-only не допускается. Management-only actor видит
+Attention header и попадает в settings без Case reads; глобальный admin admission не меняется.
+Один atomic full-map version CAS защищает concurrent/stale save; 409 требует reload и
+повторной проверки значений. Нет process cache или второго configuration/RBAC framework.
+Forward `0052_complaint_priority_settings`, schema/journal/snapshot, manifest и runtime
+SELECT/UPDATE ACL согласованы; repository history 53 migrations / 60 tables.
+
+Focused checks: 62 native Complaints tests и 8 новых HTTP/UI tests прошли; lint 0 errors
+(одно прежнее warning), typecheck прошёл. Полные CI/browser результаты будут зафиксированы
+после завершения. Новый coordinator-first exact-head review и merge пока не завершены.
+Package 4+, production migration/deployment/secrets не выполняются.
 
 ## Complaints — Package 3 open Queue / triage (2026-10-30)
 
@@ -2637,7 +2660,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0051`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0052`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

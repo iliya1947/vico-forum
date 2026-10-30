@@ -2,7 +2,7 @@
 
 Opt-in Chromium → built Worker → Better Auth → PermissionResolver → PostgreSQL check.
 Use an isolated loopback PostgreSQL 17 database ending in `_test`, migrate it through
-0051, and point both local Hyperdrive overrides at it. Configure task-owned dummy auth
+0052, and point both local Hyperdrive overrides at it. Configure task-owned dummy auth
 vars with BETTER_AUTH_URL matching the preview URL. Keep proxy/CA settings; never copy
 existing credential files. Requires pinned Node/pnpm, Python Playwright and Chromium.
 
@@ -18,7 +18,7 @@ repositories/service with default submission budgets. It checks multi-page globa
 priority/reason aggregation, privacy, independent Signals/Security admission, real priority
 Form/clear/stale rejection, non-exclusive activity, next-request revocation/lease expiry,
 EN/RU/HE keyboard and 320/390/768/1280 layouts, a real bounded DB lock timeout and recovery.
-No responses are mocked. Existing foundation decisions are used only to seed a closed Case;
+Also checks global reason-priority settings, separate management-only access, actual full-map save, stale configuration rejection, recalculation/manual override semantics and EN/RU/HE settings layouts. No responses are mocked. Existing foundation decisions are used only to seed a closed Case;
 no decision/review/notes/history UI is implemented here. Destroy the whole fixture database
 (immutable evidence), stop preview/PostgreSQL and remove task-owned dummy vars afterward.
 Evidence stays outside tracked source. Owner acceptance/production rollout are separate.

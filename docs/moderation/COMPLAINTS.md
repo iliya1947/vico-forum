@@ -119,13 +119,37 @@ priority descending, first report time ascending, then Case ID. Offset pages are
 bounded to 0–10000; concurrent submissions/priority changes can move Cases between
 requests, so pagination does not claim a cross-request snapshot.
 
-Automatic priority is the maximum of the reason weights of all reports in the Case:
+Automatic priority is the maximum of the **current persisted global reason weights** of
+all reports in the Case. Initial/default values are:
 
 | Priority | Reasons |
 | --- | --- |
 | Low (1) | Spam / advertising, Other |
 | Normal (2) | Harassment, Impersonation |
 | High (3) | Threats, Fraud / phishing, Malicious content, Personal data |
+
+`/:locale/attention/complaints/settings` is a real localized read/edit form for all eight
+weights, each Low / Normal / High. Both read and write independently require current
+`forum.complaint.priority.manage`; Case review alone does not grant settings access.
+Initial grant is built-in admin only; custom roles and per-user overrides use the existing
+authorization model. The Attention header entry admits management-only actors and sends
+them to settings without querying Cases. Reviewers with management permission also get a
+settings link in Complaints. Management does not grant Case, Signals, Security or admin
+shell admission.
+
+The domain-specific singleton `forum_complaint_priority_settings` stores the complete
+JSON weights and a positive version. SQL and service validation require exactly all eight
+known reasons and integer levels 1–3. One atomic full-map UPDATE compares the expected
+version and advances it; concurrent/stale saves (including a retry after an acknowledged
+or ambiguous successful commit) return 409. Reload settings to inspect current values
+before saving again. A failed command cannot partially change the map. There is no
+process-local cache, generic settings framework or automatic history rewrite.
+
+Queue/triage aggregate the persisted weights in their single read snapshot; existing and
+new open Cases use the updated maximum and ordering on the next read. Settings changes
+leave reports, Case versions/overrides and immutable complaint events untouched; they do
+not create admin History events. These are current configuration values, not a historical
+priority record. Runtime ACL is SELECT/UPDATE only; migration seeds the singleton.
 
 Report volume never increases priority by itself. A reviewer may choose any of the
 three levels or return to Automatic. The nullable override persists when later
@@ -190,12 +214,13 @@ arbitrary database/programming errors must not become empty data or permission d
 ## Permissions and projections
 
 The existing DB-backed PermissionResolver and role/user overrides remain authoritative.
-All four new keys have real server service capabilities:
+All five complaint keys have real server service capabilities:
 
 | Key | Authority | Initial grants |
 | --- | --- | --- |
 | `forum.complaint.create` | Submit a report | user, moderator, admin |
 | `forum.complaint.review` | Case read, note, initial decision | moderator, admin |
+| `forum.complaint.priority.manage` | Read/change global reason priorities | admin |
 | `forum.complaint.reporterIdentity.read` | Additional identity projection on an otherwise accessible Case/Appeal | None |
 | `forum.complaint.appeal.review` | Read relevant appeal Case and resolve Appeal | moderator, admin |
 
