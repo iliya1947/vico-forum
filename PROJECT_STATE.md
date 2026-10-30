@@ -109,9 +109,10 @@ GET не пишет presence, lease не меняет Case version и не на�
 
 Новых permissions, Signals/Security effects, admin History producer, full review/
 notes/decisions UI, Quick actions, notifications, appeals или complaints History UI
-нет. Авторские проверки: 1648 full application tests до последней source-direction
-regression, затем 13 focused Queue HTTP/UI/presentation tests; 412 full PostgreSQL17
-tests и повторные 57 Complaints native tests, typecheck, lint (0 errors/одно прежнее
+нет. Exact-head CI #41106124347 на implementation head bf546fc завершён SUCCESS:
+1649 application tests и 412 PostgreSQL17 tests. Локально также прошли 13 focused
+Queue HTTP/UI/presentation tests и повторные 57 Complaints native tests, typecheck,
+lint (0 errors/одно прежнее
 warning), Worker/UI Preview builds, 18 infrastructure guard suites, clean 52 migrations,
 manifest 59 tables, runtime privilege/provisioning/credential probes и Worker smoke.
 Upgrade 0050→0051 с существующей Complaint/event сохранил их без изменений;
@@ -119,8 +120,8 @@ Upgrade 0050→0051 с существующей Complaint/event сохранил
 Actual Chromium → built Worker → Better Auth → PostgreSQL: 19 scenarios PASS —
 global totals/paging, priority Form/CAS/auto reset, two-reviewer presence, revocation/
 expiry, EN/RU/HE keyboard/320/390/768/1280, actual storage timeout/recovery, без JS errors/
-external requests. Exact-head CI и handoff фиксируются после выполнения; production
-migration/GRANT/deploy и independent review не заявляются.
+external requests. Stable exact head и фактические CI/author evidence публикуются
+в handoff #254; production migration/GRANT/deploy и independent review не заявляются.
 
 ## Complaints — Package 2 user submission (2026-10-30)
 
