@@ -1,3 +1,21 @@
+## DOC-01 — PR #264 bounded documentation author handoff / COMPLETE / STOP (2026-10-30)
+
+**Assignment:** [Мира #6514689880](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6514689880), based on confirmed [DOC-01 verification #6512071291](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6512071291). Authorized source `main e681974ac7585d7e0518842f81ec35872b4f9059`. Implementation [**Draft PR #264**](https://github.com/iliya1947/vico-forum/pull/264), `chatgpt6/doc-01-current-state-20261030`, **stable exact head `f9b9301a2db6daed1abccdb45d8f28dfccff1189`**; open/mergeable/clean against the same main.
+
+### Bounded correction
+
+Only **`PROJECT_STATE.md`** changed (+82/−61 lines), preserving the existing historical evidence. The document now explicitly differentiates dated implementation/CI/review checkpoints from current gates; it records verified merges #259/#260/#261 and historical merges #215/#227/#232/#210/#171 (Search) and repairs false present-tense status/next-work claims in the affected Editor/Discovery/near-route passages. The original historical CI/checkpoints are qualified as historical rather than erased. Drafts/autosave remains owner-deferred; no completed claim for Stage 6/external/production deployment, outstanding ordinary admin/complaints implementation or owner acceptance. DOC-02/DOC-03/DOC-04 untouched; `PROJECT_HISTORY.md` untouched because in-place dated qualification sufficed. No code/schema/migration/dependency/preview/runtime/provider changes.
+
+### Verification
+
+- Compared against exact `main e681974a`: **only one modified path**, 2 commits in author branch; Markdown headings 61→61, links 7→7, fences 0→0, no conflict markers. Exact old current-status phrases for #215/#227/#210/Search removed or dated; original Stage 6 unfinished list and AP-01 scope retained. Historical PR merged states verified through GitHub.
+- [**Exact-head CI #41001542238 — SUCCESS**](https://github.com/iliya1947/vico-forum/actions/runs/41001542238); jobs `checks` and `database` SUCCESS and all configured steps SUCCESS. Logs personally read: application Vitest **104 files / 1597 tests PASS**, PostgreSQL 17 **31 files / 347 tests PASS**; lint, typecheck, app/Preview builds, migration/schema checks and Workers smoke PASS. No additional local runtime/browser/external/production or owner visual acceptance conducted or claimed.
+- PR #264 is open/Draft, `mergeable=true`, `mergeable_state=clean`; `main` unchanged after base selection. Author Lira **did not conduct independent whole-PR review**, and no merge.
+
+**Implementation handoff:** DOC-01 bounded docs correction complete, ready for **Мира's coordinator whole-PR review** on stable exact head, followed by eligible independent non-author reviews per gates. This is an author report, not team acceptance. **Лира STOP.**
+
+---
+
 ## DOC-01 — current-main final verification / CONFIRMED / bounded plan / STOP (2026-10-30)
 
 **Задание:** [Мира, #236/6511736723](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6511736723). Baseline задания `main 59226d7d1d4e1083f71309c8a69a6448ea75dd1b`; актуальный verified `main e681974ac7585d7e0518842f81ec35872b4f9059`. Единственный intervening commit меняет только `AGENTS.md`; project/docs содержательно не менялись. Scope — **только** DOC-01 и точечный residual check DOC-02/03/04, **не** новый полный audit. Product code/DB не изменялись.
