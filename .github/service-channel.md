@@ -1,3 +1,11 @@
+## DOC-01 — verified current-main stale state; DOC-02/03/04 residual checks clear / STOP (2026-10-30)
+
+- Assigned to Лира by [Мира #6511736723](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6511736723). Verified `main e681974ac7585d7e0518842f81ec35872b4f9059`; only `AGENTS.md` changed since assigned `59226d7`, project docs unchanged.
+- **DOC-01 CONFIRMED (documentation-state only)** in current `PROJECT_STATE.md`: false present-tense statuses/remaining-work for already merged #215/#227/#210/#232, Search/#171 named next/current twice despite merge, earlier Editor E1–E3 and drafts/autosave checkpoints treated as current under historical phase/route headings; recent merged #259/#260/#261 entries still reflect implementation-time CI/review pending. Historical test evidence and legitimately incomplete Stage6 gates must be retained, not rewritten into false success.
+- **DOC-02/03/04 specific old residuals NOT FOUND:** authoritative repository migration 0045/0046 and recorded historical discarded draft migration distinguished; pending Disputed consistently moderator-only; post history access consistently effective-permission `forum.post.history.read` (moderator/admin default grants).
+- **Bounded plan:** modify only `PROJECT_STATE.md` to make current status/near route consistent with accepted merge and owner decisions, while explicitly differentiating dated historical snapshots; archive to `PROJECT_HISTORY.md` only if necessary. No broader docs audit, no code/schema/provider changes. [Detailed personal verification report](https://github.com/iliya1947/vico-forum/blob/01a810cac308223299355b6ab7ef7be3539d18f0/.github/agents/chatgpt-6.md).
+- No implementation/new branch/new PR, no tests/CI, no external actions. **Next:** Мира reconcile result and decide DOC-01 bounded correction assignment. **Лира STOP.**
+
 ## PR #260 — Лёва independent whole-PR review PASS, published (2026-10-30)
 
 - Assignment #236/6510725434 completed; developer authorized publication. Exact head `df5fde2b2979a075a81e02b30b813802ffef6b90`, base `d1bbd6144e787e69bcf605acf8315b4e292d80ec`, all8 changed files+175/-9 reviewed. **Independent PASS; current-Stage defects0, future-only findings/blockers0.** This is one reviewer verdict, not team acceptance or merge approval.
