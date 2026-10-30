@@ -1,3 +1,5 @@
+import {appendForumHistory} from "./forum-history";
+import type {HelpSignalHistoryEffect} from "./admin-history";
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { publishedMentionRecipients } from "../app/forum/mentions";
 import { and, asc, count, desc, eq, gt, gte, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
@@ -1472,20 +1474,22 @@ export class DrizzleForumRepository {
         .where(eq(forumTopics.id, topicId))
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
-      await tx.insert(forumTopicPins)
+      const changed = await tx.insert(forumTopicPins)
         .values({ topicId, pinnedByUserId })
-        .onConflictDoNothing({ target: forumTopicPins.topicId });
+        .onConflictDoNothing({ target: forumTopicPins.topicId }).returning({topicId:forumTopicPins.topicId});
+      if (changed.length) await appendForumHistory(tx,pinnedByUserId,{action:"topic.pinned",targetType:"topic",targetId:topicId,context:{before:false,after:true}});
     });
   }
 
-  async unpinTopic(topicId: string): Promise<void> {
+  async unpinTopic(topicId: string, actorId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx.select({ id: forumTopics.id })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
-      await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId));
+      const changed=await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId)).returning({topicId:forumTopicPins.topicId});
+      if(changed.length)await appendForumHistory(tx,actorId,{action:"topic.unpinned",targetType:"topic",targetId:topicId,context:{before:true,after:false}});
     });
   }
 
@@ -3004,6 +3008,7 @@ export class DrizzleForumRepository {
           .select({
             id: forumHelpSignals.id,
             status: forumHelpSignals.status,
+            topicId: forumHelpSignals.topicId, kind: forumHelpSignals.kind,
           })
           .from(forumHelpSignals)
           .where(eq(forumHelpSignals.id, signalId))
@@ -3020,11 +3025,13 @@ export class DrizzleForumRepository {
             resolvedAt: sql`statement_timestamp()`,
           })
           .where(eq(forumHelpSignals.id, signalId));
+        await appendForumHistory(tx,actorId,{action:"help.signalReviewed",targetType:"topic",targetId:signal.topicId,context:{signalId,kind:signal.kind,resolution:"rejected"}});
         return "rejected" as const;
       });
     }
 
     return this.database.transaction(async (tx) => {
+      let effect: HelpSignalHistoryEffect | undefined;
       const [snapshot] = await tx
         .select({
           id: forumHelpSignals.id,
@@ -3081,6 +3088,10 @@ export class DrizzleForumRepository {
       }
 
       const resolvedAt = sql`statement_timestamp()`;
+      const recordReview = (resolution: "accepted" | "superseded") => appendForumHistory(tx,actorId,{
+        action:"help.signalReviewed",targetType:"topic",targetId:signal.topicId,
+        context:{signalId,kind:signal.kind,resolution,...(effect?{effect}:{})},
+      });
       const supersedeCurrent = async () => {
         await tx
           .update(forumHelpSignals)
@@ -3090,6 +3101,7 @@ export class DrizzleForumRepository {
             resolvedAt,
           })
           .where(eq(forumHelpSignals.id, signalId));
+        await recordReview("superseded");
         return "superseded" as const;
       };
 
@@ -3097,6 +3109,7 @@ export class DrizzleForumRepository {
 
       if (kind === "needs-details") {
         if (topic.needsDetails) return supersedeCurrent();
+        effect={action:"help.needsDetailsChanged",context:{before:false,after:true}};
         await tx
           .update(forumTopics)
           .set({ needsDetails: true })
@@ -3125,6 +3138,7 @@ export class DrizzleForumRepository {
               eq(forumHelpSignals.status, "pending"),
               inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
             ));
+          await recordReview("superseded");
           return "superseded";
         }
         const [answer] = await tx
@@ -3155,6 +3169,7 @@ export class DrizzleForumRepository {
               eq(forumHelpSignals.status, "pending"),
               inArray(forumHelpSignals.kind, staleKinds),
             ));
+          await recordReview("superseded");
           return "superseded";
         }
 
@@ -3170,6 +3185,7 @@ export class DrizzleForumRepository {
             eq(forumPosts.id, signal.targetPostId),
           ));
 
+        effect={action:"help.solutionModerationChanged",context:{postId:signal.targetPostId,before:answer.status,after:kind==="needs-review"?"needs-review":"outdated"}};
         const kindsToSupersede: HelpSignalKind[] = kind === "solution-outdated"
           ? ["needs-review", "solution-outdated"]
           : ["needs-review"];
@@ -3199,6 +3215,7 @@ export class DrizzleForumRepository {
               eq(forumHelpSignals.kind, "duplicate"),
               eq(forumHelpSignals.status, "pending"),
             ));
+          await recordReview("superseded");
           return "superseded";
         }
         const active = await tx
@@ -3227,6 +3244,7 @@ export class DrizzleForumRepository {
               eq(forumHelpSignals.kind, "duplicate"),
               eq(forumHelpSignals.status, "pending"),
             ));
+          await recordReview("superseded");
           return "superseded";
         }
         if (proposedOriginalIsDuplicate) {
@@ -3239,14 +3257,17 @@ export class DrizzleForumRepository {
               eq(forumHelpSignals.kind, "duplicate"),
               eq(forumHelpSignals.status, "pending"),
             ));
+          await recordReview("superseded");
           return "superseded";
         }
+        const relationshipId=crypto.randomUUID();
         await tx.insert(forumHelpDuplicateRelationships).values({
-          id: crypto.randomUUID(),
+          id: relationshipId,
           duplicateTopicId: signal.topicId,
           originalTopicId,
           confirmedByUserId: actorId,
         });
+        effect={action:"help.duplicateConfirmed",context:{relationshipId,originalTopicId}};
         await tx
           .update(forumHelpSignals)
           .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
@@ -3270,6 +3291,7 @@ export class DrizzleForumRepository {
           resolvedAt,
         })
         .where(eq(forumHelpSignals.id, signal.id));
+      await recordReview("accepted");
       return "accepted";
     });
   }
@@ -3304,6 +3326,7 @@ export class DrizzleForumRepository {
       if (topic.bestAnswerPostId !== expectedBestAnswerPostId) {
         throw new ForumStateConflictError("best answer is no longer the expected moderation target");
       }
+      const [previous]=await tx.select({status:forumPosts.solutionModerationStatus,reason:forumPosts.solutionOutdatedReason,kind:forumPosts.solutionOutdatedReasonKind}).from(forumPosts).where(eq(forumPosts.id,topic.bestAnswerPostId));
       await tx.update(forumPosts)
         .set({
           solutionModerationStatus: status,
@@ -3332,6 +3355,9 @@ export class DrizzleForumRepository {
             inArray(forumHelpSignals.kind, staleKinds),
           ));
       }
+      if(previous && (previous.status!==status || previous.reason!==(status==="outdated"?outdatedReason:null) || previous.kind!==null))
+        await appendForumHistory(tx,actorId,{action:"help.solutionModerationChanged",targetType:"topic",targetId:topicId,
+          context:{postId:topic.bestAnswerPostId,before:previous.status,after:status},reason:status==="outdated"?outdatedReason:null});
     });
   }
 
@@ -3388,8 +3414,9 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("a canonical original cannot become a duplicate while active duplicates point to it");
       }
 
+      const relationshipId=crypto.randomUUID();
       await tx.insert(forumHelpDuplicateRelationships).values({
-        id: crypto.randomUUID(),
+        id: relationshipId,
         duplicateTopicId: topicId,
         originalTopicId,
         confirmedByUserId: actorId,
@@ -3409,6 +3436,7 @@ export class DrizzleForumRepository {
             eq(forumHelpSignals.proposedOriginalTopicId, topicId),
           ),
         ));
+      await appendForumHistory(tx,actorId,{action:"help.duplicateConfirmed",targetType:"topic",targetId:topicId,context:{relationshipId,originalTopicId}});
     });
   }
 
@@ -3424,7 +3452,7 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("duplicate relationships are only available for Help & solutions questions");
       }
       const [relationship] = await tx
-        .select({ id: forumHelpDuplicateRelationships.id })
+        .select({ id: forumHelpDuplicateRelationships.id, originalTopicId:forumHelpDuplicateRelationships.originalTopicId })
         .from(forumHelpDuplicateRelationships)
         .where(and(
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
@@ -3437,15 +3465,16 @@ export class DrizzleForumRepository {
       }
 
       const resolvedAt = sql`statement_timestamp()`;
-      await tx.update(forumHelpDuplicateAppeals)
+      const [resolvedAppeal] = await tx.update(forumHelpDuplicateAppeals)
         .set({ status: "accepted", resolvedByUserId: actorId, resolvedAt })
         .where(and(
           eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
           eq(forumHelpDuplicateAppeals.status, "pending"),
-        ));
+        )).returning({ id: forumHelpDuplicateAppeals.id });
       await tx.update(forumHelpDuplicateRelationships)
         .set({ removedByUserId: actorId, removedAt: resolvedAt })
         .where(eq(forumHelpDuplicateRelationships.id, relationship.id));
+      await appendForumHistory(tx,actorId,{action:"help.duplicateRemoved",targetType:"topic",targetId:topicId,context:{relationshipId:relationship.id,originalTopicId:relationship.originalTopicId,...(resolvedAppeal?{resolvedAppeal:{id:resolvedAppeal.id,outcome:"accepted" as const}}:{})}});
     });
   }
 
@@ -3511,7 +3540,7 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
       }
       const [relationship] = await tx
-        .select({ id: forumHelpDuplicateRelationships.id })
+        .select({ id: forumHelpDuplicateRelationships.id, originalTopicId:forumHelpDuplicateRelationships.originalTopicId })
         .from(forumHelpDuplicateRelationships)
         .where(and(
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
@@ -3540,6 +3569,7 @@ export class DrizzleForumRepository {
           .set({ removedByUserId: actorId, removedAt: resolvedAt })
           .where(eq(forumHelpDuplicateRelationships.id, relationship.id));
       }
+      await appendForumHistory(tx,actorId,{action:"help.duplicateAppealResolved",targetType:"topic",targetId:topicId,context:{relationshipId:relationship.id,originalTopicId:relationship.originalTopicId,appealId:appeal.id,resolution}});
     });
   }
 
@@ -3579,6 +3609,7 @@ export class DrizzleForumRepository {
             eq(forumHelpSignals.status, "pending"),
           ));
       }
+      if(scope === "any")await appendForumHistory(tx,actorId,{action:"topic.solved",targetType:"topic",targetId:topicId,context:{before:false,after:true}});
     });
   }
 
@@ -3669,6 +3700,7 @@ export class DrizzleForumRepository {
           ));
       }
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
+      if(scope === "any" && topic.bestAnswerPostId !== postId)await appendForumHistory(tx,actorId,{action:"topic.bestAnswerChanged",targetType:"topic",targetId:topicId,context:{before:topic.bestAnswerPostId,after:postId}});
       return { topicAuthorId: topic.authorId, isSolved: topic.isSolved };
     });
   }
@@ -3705,26 +3737,33 @@ export class DrizzleForumRepository {
     };
   }
 
-  async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
+  async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumTopicTitleRevisions.sourceLocale}).from(forumTopicTitleRevisions).where(eq(forumTopicTitleRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumTopicTitleRevisions).values({ ...revision, topicId, authorId });
       const updated = await tx.update(forumTopics)
         .set({ currentTitleRevisionId: revision.id })
         .where(and(eq(forumTopics.id, topicId), eq(forumTopics.currentTitleRevisionId, expectedRevisionId)))
         .returning({ id: forumTopics.id });
       if (updated.length === 0) throw new ConcurrentRevisionError("topic title current revision changed");
+      if(previous && previous.sourceLocale!==revision.sourceLocale)await appendForumHistory(tx,authorId,{action:"topic.sourceLocaleCorrected",targetType:"topic",targetId:topicId,context:{before:previous.sourceLocale,after:revision.sourceLocale,previousRevisionId:expectedRevisionId,revisionId:revision.id}});
       return revision;
     });
   }
 
-  async revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
+  async revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumPostRevisions.sourceLocale}).from(forumPostRevisions).where(eq(forumPostRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumPostRevisions).values({ ...revision, postId, authorId });
       const updated = await tx.update(forumPosts)
         .set({ currentRevisionId: revision.id })
         .where(and(eq(forumPosts.id, postId), eq(forumPosts.currentRevisionId, expectedRevisionId)))
         .returning({ id: forumPosts.id });
       if (updated.length === 0) throw new ConcurrentRevisionError("post body current revision changed");
+      if(previous && previous.sourceLocale!==revision.sourceLocale){
+        const [post]=await tx.select({topicId:forumPosts.topicId}).from(forumPosts).where(eq(forumPosts.id,postId));
+        await appendForumHistory(tx,authorId,{action:"post.sourceLocaleCorrected",targetType:"post",targetId:postId,context:{topicId:post.topicId,before:previous.sourceLocale,after:revision.sourceLocale,previousRevisionId:expectedRevisionId,revisionId:revision.id}});
+      }
       return revision;
     });
   }

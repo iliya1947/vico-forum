@@ -16,6 +16,23 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    historySuperseded: message("historySuperseded", "Superseded", "Administrative History review outcome."),
+    historySignalReviewed: message("historySignalReviewed", "Help signal reviewed", "Administrative History review outcome."),
+    quickActions: message("quickActions", "Quick actions", "Administrative quick actions and History."),
+    historyTopicPinned: message("historyTopicPinned", "Topic pinned", "Administrative quick actions and History."),
+    historyTopicUnpinned: message("historyTopicUnpinned", "Topic unpinned", "Administrative quick actions and History."),
+    historyTopicSolved: message("historyTopicSolved", "Topic marked solved", "Administrative quick actions and History."),
+    historyBestAnswerChanged: message("historyBestAnswerChanged", "Best answer changed", "Administrative quick actions and History."),
+    historySolutionModerationChanged: message("historySolutionModerationChanged", "Solution status changed", "Administrative quick actions and History."),
+    historyDuplicateConfirmed: message("historyDuplicateConfirmed", "Duplicate confirmed", "Administrative quick actions and History."),
+    historyDuplicateRemoved: message("historyDuplicateRemoved", "Duplicate removed", "Administrative quick actions and History."),
+    historyDuplicateAppealResolved: message("historyDuplicateAppealResolved", "Duplicate dispute resolved", "Administrative quick actions and History."),
+    historySourceLocaleCorrected: message("historySourceLocaleCorrected", "Source language corrected", "Administrative quick actions and History."),
+    historyReason: message("historyReason", "Reason", "Administrative quick actions and History."),
+    historyNoValue: message("historyNoValue", "None", "Administrative quick actions and History."),
+    historyAccepted: message("historyAccepted", "Accepted", "Administrative quick actions and History."),
+    historyRejected: message("historyRejected", "Rejected", "Administrative quick actions and History."),
+
     "complaintReportPost": message("complaintReportPost", "Report message", "Complaint submission: complaintReportPost."),
     "complaintReportTitle": message("complaintReportTitle", "Report topic title", "Complaint submission: complaintReportTitle."),
     "complaintReasonLabel": message("complaintReasonLabel", "Reason", "Complaint submission: complaintReasonLabel."),
@@ -58,7 +75,7 @@ export const canonicalEnglishCatalog = {
     historyRecent: message("historyRecent", "Recent administrative actions", "Administrative History: historyRecent."),
     historyUnavailable: message("historyUnavailable", "Administrative history is temporarily unavailable.", "Administrative History: historyUnavailable."),
     historyViewAll: message("historyViewAll", "View administrative history", "Administrative History: historyViewAll."),
-    historyCoverage: message("historyCoverage", "Records role creation, rename and deletion, role permissions, user role assignments and personal permission overrides from the start of recording.", "Administrative History: historyCoverage."),
+    historyCoverage: message("historyCoverage", "Records role and permission changes, administrative pin, solution, Help duplicate and source-language corrections from the start of recording. Own-only actions and private case discussions are not included.", "Administrative History coverage."),
     historyPaging: message("historyPaging", "History pages", "Administrative History: historyPaging."),
     historyNewest: message("historyNewest", "Newest actions", "Administrative History: historyNewest."),
     historyOlder: message("historyOlder", "Older actions", "Administrative History: historyOlder."),

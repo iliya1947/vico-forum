@@ -83,6 +83,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   const session = authSessionForRequest(context);
   let canReply = false, canManageSolution = false, canModerateHelpSolution = false;
   let canManageHelpDuplicate = false;
+  let canConfirmOwnSolution = false;
   let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
@@ -117,6 +118,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       canReadPostHistory = historyRead;
       canSubmitComplaint = complaintCreate;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
+      canConfirmOwnSolution = solutionOwn && session.user.id === topic.authorId;
       canManageAnySolution = solutionAny;
       canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
       canManageHelpDuplicate = duplicateManage && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
@@ -193,6 +195,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     generationUnits,
     canReply,
     canManageSolution,
+    canConfirmOwnSolution,
     canManageAnySolution,
     canModerateHelpSolution,
     canManageHelpDuplicate,

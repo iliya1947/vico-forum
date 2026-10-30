@@ -126,6 +126,7 @@ export class ForumService {
         input.expectedRevisionId,
         { id: crypto.randomUUID(), originalContent: topic.title.originalContent, sourceLocale },
         input.actorId,
+        input.scope,
       );
     } catch (error) {
       if (error instanceof ConcurrentRevisionError) {
@@ -163,6 +164,7 @@ export class ForumService {
         input.expectedRevisionId,
         { id: crypto.randomUUID(), originalContent: post.body.originalContent, sourceLocale },
         input.actorId,
+        input.scope,
       );
     } catch (error) {
       if (error instanceof ConcurrentRevisionError) {
@@ -218,7 +220,7 @@ export class ForumService {
 
   unpinTopic(topicId: string, actorId: string) {
     validateEntity(topicId, actorId);
-    return this.repository.unpinTopic(topicId);
+    return this.repository.unpinTopic(topicId, actorId);
   }
 
   readTopic(id: string) { return this.repository.readTopic(id); }
