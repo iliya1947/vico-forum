@@ -20,6 +20,8 @@ import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/sessi
 import { AuthSessionUnavailableError } from "../app/auth/request-context";
 import { authorizationContext } from "../app/authorization/request-context";
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
+import { createHyperdriveComplaintSubmission } from "../db/hyperdrive-complaints";
+import { complaintSubmissionContext } from "../app/complaints/request-context";
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
 
 const requestHandler = createRequestHandler(
@@ -55,7 +57,9 @@ export default {
         createHyperdriveContentTranslationBatchReader(webConnectionString),
       ),
     );
-    context.set(authorizationContext, createHyperdriveAuthorization(webConnectionString));
+    const authorization = createHyperdriveAuthorization(webConnectionString);
+    context.set(authorizationContext, authorization);
+    context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);

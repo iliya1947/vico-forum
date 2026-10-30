@@ -13,6 +13,10 @@ export class ComplaintInputError extends Error {}
 export class ComplaintForbiddenError extends Error {}
 export class ComplaintNotFoundError extends Error {}
 export class ComplaintConflictError extends Error {}
+export class ComplaintRateLimitError extends Error {
+  constructor(readonly retryAfterMs: number) { super("complaint submission limit reached"); }
+}
+export const COMPLAINT_SUBMISSION_LIMITS = { tenMinutes: 10, day: 50 } as const;
 /** Product policy must be supplied by the later package, not guessed by foundation. */
 export class ComplaintPolicyRequiredError extends Error {}
 

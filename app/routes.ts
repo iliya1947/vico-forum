@@ -11,6 +11,7 @@ export default [
     route("categories/:categoryId", "routes/category.tsx"),
     route("sections/:sectionId", "routes/section.tsx"),
     route("topics/:topicId", "routes/topic.tsx"),
+    route("topics/:topicId/complaints", "routes/complaint-submit.ts"),
     route("posts/:postId/edit", "routes/post-edit.ts"),
     route("search", "routes/search.tsx"),
     route("popular", "routes/popular.tsx"),

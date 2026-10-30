@@ -50,7 +50,43 @@ corrections #259/#260/#261 уже объединены в `main`. Чернови
 Stage 6 external/production gates, не реализованные admin/complaints функции
 и соответствующие owner acceptance остаются отдельной незавершённой работой.
 
+## Complaints — Package 2 user submission (2026-10-30)
+
+В отдельной implementation-ветке поверх merged Package 1 добавлены независимые формы
+жалобы на post и topic title в контексте темы. EN/RU/HE форма проверяет Other explanation,
+сохраняет observed revision и operation nonce для retry, показывает inline confirmation
+без перехода. POST-only action требует реальную session, same origin и текущий effective
+`forum.complaint.create`, ограничивает вход и вызывает submission-only Worker capability.
+Ответ `private, no-store` не раскрывает Case/report IDs, reporter identity или counts;
+stale revision даёт conflict, известные dependency failures — 503, quota — 429/Retry-After.
+
+Durable budget: 10 новых жалоб за rolling 10 минут и 50 за rolling 24 часа на actor.
+Под actor-row mutex проверяются immutable persisted reports по DB statement time;
+replay/lifetime duplicate budget не расходуют, rejected writes rollback, concurrent
+submissions не превышают лимит. Новый reporter/time index ограничивает чтение.
+Новая revision всегда создаёт отдельный Case, включая открытую предыдущую revision,
+с immutable previous_case_id на последний Case того же post/title. Same-revision
+successor по-прежнему ссылается на последний resolved Case; старые evidence/Decision
+сохраняются. Forward migration 0049 обновляет predecessor FK/guard и добавляет индекс;
+Drizzle metadata и structural manifest согласованы с этой схемой.
+
+Авторские проверки: 392 native PostgreSQL 17 tests, 1627 application tests и затем
+14 focused tests исправленного endpoint/form (включая перенос Retry-After из action
+в framework headers), lint без ошибок (одно существующее warning), typecheck,
+Worker/UI Preview builds, Drizzle metadata/parity и 18 infrastructure guard tests.
+Полный actual Worker/Better Auth/PermissionResolver/PostgreSQL browser flow прошёл:
+post/title, Other, inline confirmation, stale conflict, next-request deny, реальная
+квота/Retry-After/duplicate/retry; EN/RU/HE keyboard/layout в 320/390/768/1280,
+без JS errors и внешних запросов. Structural manifest и native ACL/provisioning/
+credential rollback probes, built Worker smoke прошли. CI и stable-head handoff
+фиксируются отдельно после выполнения. Package 3+ queue/priority/presence/review UI,
+notifications/appeals UI/Quick actions не добавлены. Production migration/GRANT/deploy,
+owner visual acceptance и independent whole-PR review не заявляются.
+
 ## Complaints — Package 1 domain foundation (2026-10-29)
+
+Ниже сохранён исторический срез Package 1. Ограничения submission и новой revision
+заменены реализованным Package 2 выше; subsequent appeal policy остаётся отложенной.
 
 Correction 2026-10-30: другой reporter после resolution той же current revision
 создаёт новый Case с immutable previous_case_id на последний закрытый Case того же
@@ -2492,7 +2528,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0048`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0049`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 
