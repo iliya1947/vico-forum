@@ -3,13 +3,18 @@
 ## Status and source-of-truth boundary
 
 This document is the permanent product and technical contract for the ordinary Vico Forum
-admin panel. AP-01 establishes documentation only. It does not implement the global shell,
-administrative History, object pages, topic closure or user blocking, and does not add
-runtime permissions, schema, migrations or API endpoints.
+admin panel. AP-01 established the documentation contract. AP-02 implements
+`/:locale/admin`: a protected reusable shell/navigation and Overview with real public
+aggregate counts. The existing `/:locale/admin/authorization` UI remains independently
+protected at its original URL; its full composition into the shell remains AP-04.
+Administrative History/recent actions, new object pages, topic closure and user blocking
+are not implemented by AP-02. No permission keys, schema or migrations are added.
 
-The existing `/:locale/admin/authorization` UI and contextual forum operations remain the
-implemented baseline. Routes and capabilities described below as delivery targets become
-available only through their respective bounded implementation PRs.
+Other routes and capabilities described below as delivery targets become available only
+through their respective bounded implementation PRs. Unfinished Forum/Users/History/Settings
+links explicitly use the shared Under development surface and grant no future read/action
+permission. Forum navigation is shown for Forum capabilities; the Users placeholder is
+shown with the existing authorization-user-management subset, not a new general user read.
 
 Related sources of truth:
 
@@ -142,6 +147,28 @@ Protected paths fail closed and may return controlled 503 only for classified un
 errors. Public optional controls may be hidden for that typed failure. Unexpected schema,
 configuration and programming errors follow normal error handling; do not swallow them.
 Private responses use the existing no-store boundary.
+
+## Overview foundation (AP-02)
+
+Global admission is evaluated from the implemented union above, including a custom role or
+per-user grant of only one capability. The header links to the global panel using a fresh
+server presentation boolean; the protected loader independently rechecks access before its
+count query. Attention-only and own-only capabilities do not grant entry. Existing direct
+Roles & permissions loader/actions keep `access.authorization.manage` and are not gated by
+an additional global permission.
+
+One PostgreSQL statement reads scalar totals for categories, public sections (excluding the
+reserved internal Help service section), topics and messages. Help content remains included
+in topic/message totals. These are public aggregate statistics, not a user-management,
+private-case or bounded public-list snapshot. Zero is a real count; classified statistics
+storage unavailability renders an explicit unavailable state with usable navigation/retry.
+Authorization failure remains fail-closed; unexpected SQL/configuration/programming errors
+propagate normally. Both document and data responses use private/no-store headers.
+
+Navigation keeps the approved section order and marks unfinished destinations explicitly.
+History and Settings placeholders expose no private data. History will acquire its independent
+permission and real producer/read boundary in AP-03; placeholder visibility does not pre-grant
+that authority. No recent actions, attention queues or fabricated events are shown.
 
 ## Shared Quick actions contract
 

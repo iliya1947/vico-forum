@@ -66,6 +66,34 @@ mounted regressions для имени, нескольких instances, runtime l
 и независимый whole-PR review на момент первоначальной записи ожидались.
 Впоследствии PR #261 проверен и merged 2026-10-30.
 
+## AP-02 — admin shell и Overview foundation (2026-10-30)
+
+В отдельной implementation-ветке реализован `/:locale/admin`: общий reusable
+admin shell/navigation и Overview. Admission — union существующих applicable
+Forum capabilities и `access.authorization.manage`, без нового общего permission.
+Header получает server-resolved presentation flag, loader повторно проверяет
+актуальный effective access до чтения данных. Own-only/attention-only grants
+входа не дают; existing `admin/authorization` сохраняет свой независимый gate.
+Browser title нового admin route использует уже resolved UI translation snapshot
+locale boundary и существующий catalog с canonical-English fallback, включая
+обновление при client-side смене locale. Literal title AP02-LIRA-01 устранён;
+результаты повторных проверок и нового review фиксируются отдельно в #251.
+
+Новый scalar aggregate reader в одном SQL statement считает categories/public
+sections/topics/messages, не использует capped lists и не читает пользователей
+или attention queues. Zero и classified-unavailable различаются; недоступность
+counts не убирает navigation, неожиданные ошибки не скрываются. Document/data
+responses private/no-store. Незавершённые Forum/Users/History/Settings ведут на
+общий Under development; новых section-read/mutation authority они не дают.
+
+Добавлены canonical EN/RU/HE strings/fingerprints, logical responsive CSS,
+route/view/native PostgreSQL и actual-browser regression harness. Permanent
+contract обновлён в `docs/ADMIN_PANEL.md`. History/recent actions, Quick actions,
+полная композиция Roles, новые object pages, schema/migrations/permission keys
+и AP-03+ не добавлялись. Фактические checks/CI/browser evidence и independent
+review фиксируются отдельно после выполнения; owner visual и production rollout
+не заявляются. Координация этого пакета — только #251.
+
 ## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
 
 В отдельной implementation-ветке отключённый редактор блокирует inputs и команды

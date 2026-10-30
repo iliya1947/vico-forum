@@ -22,6 +22,7 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { OnlinePresenceHeartbeat } from "../forum/online-presence-heartbeat";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest } from "../authorization/request-context";
+import { adminAccess } from "../admin/access";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -90,18 +91,30 @@ export async function loader(args: LocaleBoundaryArgs) {
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;
   let canViewModerationAttention = false;
+  let canViewAdminPanel = false;
   let unreadNotificationCount: number | undefined;
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead] = await Promise.all([
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead] = await Promise.all([
         resolver.has("access.authorization.manage"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
         resolver.has("forum.helpNeedsDetails.manage"),
         resolver.has("forum.attachmentSecurity.read"),
+        resolver.has("forum.topic.pin"),
+        resolver.has("forum.sourceLocale.correctAny"),
+        resolver.has("forum.post.history.read"),
       ]);
       canManageAuthorization = authorizationManage;
+      canViewAdminPanel = adminAccess(new Set([
+        ...(authorizationManage ? ["access.authorization.manage" as const] : []),
+        ...(helpModeration ? ["forum.solution.manageAny" as const] : []),
+        ...(duplicateManage ? ["forum.helpDuplicate.manage" as const] : []),
+        ...(pin ? ["forum.topic.pin" as const] : []),
+        ...(sourceAny ? ["forum.sourceLocale.correctAny" as const] : []),
+        ...(historyRead ? ["forum.post.history.read" as const] : []),
+      ])).canEnter;
       canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead;
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
@@ -128,6 +141,7 @@ export async function loader(args: LocaleBoundaryArgs) {
           image: session.user.image ?? null,
           name: session.user.name,
           canManageAuthorization,
+          canViewAdminPanel,
           canViewModerationAttention,
           ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
         }

@@ -9687,3 +9687,86 @@ a.topic-tag:focus-visible {
   overflow-wrap: anywhere;
   color: var(--color-accent);
 }
+
+/* Ordinary admin shell: the forum's shared surfaces, with bounded logical sizing. */
+.admin-panel,
+.admin-overview {
+  min-inline-size: 0;
+}
+.admin-panel-heading h1 {
+  margin-block: 0.65rem 1rem;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+.admin-panel-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 1.4rem;
+}
+.admin-panel-nav a,
+.admin-destination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.admin-panel-nav a[aria-current="page"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+.admin-panel-nav a:hover,
+.admin-destination:hover {
+  border-color: var(--color-accent);
+}
+.admin-panel-pending {
+  color: var(--color-text-muted);
+  font-size: 0.73rem;
+}
+.admin-destinations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.65rem;
+  margin-block: 1rem 1.5rem;
+}
+.admin-overview-stats {
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+.admin-overview-stats h2 {
+  margin-block: 0 1rem;
+  font-size: 1.1rem;
+}
+.admin-stat-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+.admin-stat-list > div {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.admin-stat-list dt { color: var(--color-text-muted); }
+.admin-stat-list dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.admin-stats-unavailable p { margin-block-start: 0; }
+@media (max-width: 30rem) {
+  .admin-panel-nav a { flex: 1 1 8rem; }
+}
