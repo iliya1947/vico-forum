@@ -93,8 +93,8 @@ browser: 20 Complaints и 16 AP-03 History cases без JS errors/external reque
 включая Unicode/retry/quota и History producer/paging/outage/recovery. Typecheck,
 lint (0 errors/одно прежнее warning), Worker/UI Preview builds и runtime privilege/
 provisioning/credential rollback probes, 18 infrastructure guard suites и полный
-application run (1634 tests) прошли. Новый exact-head CI фиксируется после
-выполнения; требуется новый review-cycle.
+application run (1634 tests) прошли. Exact-head CI #41091012168 на `39161be` прошёл; coordinator review и
+independent whole-PR reviews Лиры/Марка завершены PASS, current-scope defects — 0.
 
 Дополнение после merge #267: ветка обновлена также поверх main `bb18442` с AP-04
 Roles & permissions внутри AdminShell. Merge прошёл без конфликтов; принятые
@@ -112,8 +112,8 @@ input/operation nonce при retry. Авторские correction checks про�
 native tests, 14 form/HTTP tests, typecheck, lint (0 errors/одно прежнее warning),
 Worker build и 20 actual browser cases без JS errors/external requests, включая
 keyboard input 2000 non-BMP/mixed и 2001 → HTTP 400 → correction/retry с тем же nonce.
-CI фиксируется отдельно после выполнения; новый coordinator-first whole-PR cycle
-требуется на новом exact head.
+На текущем exact head `39161be` correction сохранена; exact-head CI #41091012168
+и новый coordinator-first whole-PR cycle завершены PASS.
 
 В отдельной implementation-ветке поверх merged Package 1 добавлены независимые формы
 жалобы на post и topic title в контексте темы. EN/RU/HE форма проверяет Other explanation,
