@@ -87,6 +87,49 @@ finally{await c.end();}"""
         assert guest_page.locator('.complaint-open').count() == 0
         guest.close()
         record('guest-hidden-and-post-denied-current-user-admitted')
+        # Separate real reporter keeps Unicode checks independent of the quota fixture.
+        unicode_context = browser.new_context()
+        unicode_context.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base + '/') else (external.append(route.request.url), route.abort())[-1])
+        signup = unicode_context.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={
+            'name': 'Unicode reporter', 'email': prefix + '-unicode@test.invalid',
+            'password': 'local-only-' + uuid4().hex,
+        })
+        assert signup.status == 200, signup.text()
+        unicode_actor = signup.json()['user']['id']
+        unicode_page = unicode_context.new_page()
+        unicode_page.on('pageerror', lambda error: errors.append(str(error)))
+        for index, text in enumerate(['😀' * 2000, 'a' * 1000 + '😀' * 1000, '😀' * 2001]):
+            t = prefix + '-' + str(10 + index)
+            unicode_page.goto(base + '/en/topics/' + t, wait_until='networkidle')
+            unicode_page.locator('.complaint-open').last.click()
+            form = unicode_page.locator('.complaint-form')
+            form.locator('select').select_option('other')
+            form.locator('textarea').focus()
+            # User-input path: native maxlength must not truncate astral characters.
+            unicode_page.keyboard.insert_text(text)
+            assert form.locator('textarea').input_value() == text
+            operation = form.locator('[name=operationId]').input_value()
+            with unicode_page.expect_response(lambda r: '/complaints' in r.url and r.request.method == 'POST') as pending:
+                form.locator('button[type=submit]').click()
+            if index == 2:
+                assert pending.value.status == 400
+                form.locator('[role=alert]').wait_for()
+                assert form.locator('textarea').input_value() == text
+                assert form.locator('[name=operationId]').input_value() == operation
+                assert sql('select count(*)::int as n from forum_complaints where reporter_user_id=$1', [unicode_actor])[0]['n'] == 2
+                form.locator('textarea').focus()
+                unicode_page.keyboard.press('ControlOrMeta+A')
+                text = '😀' * 2000
+                unicode_page.keyboard.insert_text(text)
+                assert form.locator('[name=operationId]').input_value() == operation
+                with unicode_page.expect_response(lambda r: '/complaints' in r.url and r.request.method == 'POST') as pending:
+                    form.locator('button[type=submit]').click()
+            assert pending.value.status == 200, pending.value.status
+            unicode_page.locator('.complaint-confirmation').wait_for()
+            saved = sql('select c.explanation from forum_complaints c join forum_complaint_targets t on t.id=c.target_id where reporter_user_id=$1 and topic_id=$2', [unicode_actor, t])
+            assert saved == [{'explanation': text}], saved
+            record('unicode-codepoints-' + str(index), persistedCodePoints=len(text), rejected2001AndRetried=index == 2)
+        unicode_context.close()
         # Layout and keyboard in every canonical language, including narrow RTL.
         for locale, direction in [('en', 'ltr'), ('ru', 'ltr'), ('he', 'rtl')]:
             for width in [320, 390, 768, 1280]:

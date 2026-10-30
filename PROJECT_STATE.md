@@ -52,6 +52,18 @@ Stage 6 external/production gates, не реализованные admin/complai
 
 ## Complaints — Package 2 user submission (2026-10-30)
 
+Correction после review: у complaint explanation textarea удалён native UTF-16
+`maxlength`, обрезавший допустимый non-BMP ввод. Серверная проверка 2000 Unicode
+code points после trim, Other required и request byte bound сохранены. Уточнён
+устаревший source comment domain module. Добавлены focused native HTTP и actual
+keyboard browser regressions для 2000 non-BMP/mixed, 2001 rejection и сохранения
+input/operation nonce при retry. Авторские correction checks прошли: 44 Complaints
+native tests, 14 form/HTTP tests, typecheck, lint (0 errors/одно прежнее warning),
+Worker build и 20 actual browser cases без JS errors/external requests, включая
+keyboard input 2000 non-BMP/mixed и 2001 → HTTP 400 → correction/retry с тем же nonce.
+CI фиксируется отдельно после выполнения; новый coordinator-first whole-PR cycle
+требуется на новом exact head.
+
 В отдельной implementation-ветке поверх merged Package 1 добавлены независимые формы
 жалобы на post и topic title в контексте темы. EN/RU/HE форма проверяет Other explanation,
 сохраняет observed revision и operation nonce для retry, показывает inline confirmation

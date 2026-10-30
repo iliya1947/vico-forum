@@ -1,4 +1,4 @@
-/** Server-side complaints contract. There are deliberately no HTTP/UI entry points yet. */
+/** Shared complaints domain types and authoritative server input validation. */
 export const COMPLAINT_REASONS = [
   "spam", "harassment", "threats", "fraud-phishing", "malicious-content",
   "personal-data", "impersonation", "other",

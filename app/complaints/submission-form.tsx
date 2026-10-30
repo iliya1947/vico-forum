@@ -33,7 +33,7 @@ export function ComplaintSubmissionForm({ locale, topicId, postId, revisionId }:
         {COMPLAINT_REASONS.map(key => <option key={key} value={key}>{t(`complaintReason_${key}`)}</option>)}
       </select></label>
       <label>{t(reason === "other" ? "complaintExplanationRequired" : "complaintExplanationOptional")}
-        <textarea name="explanation" rows={3} maxLength={2000} required={reason === "other"} dir="auto" />
+        <textarea name="explanation" rows={3} required={reason === "other"} dir="auto" />
       </label>
       <div className="complaint-form-actions">
         <button type="submit">{t(pending ? "complaintSubmitting" : "complaintSubmit")}</button>

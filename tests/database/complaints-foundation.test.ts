@@ -410,6 +410,24 @@ it("submits through actual HTTP guard, authorization and PostgreSQL adapter with
   expect((await client.query("select count(*)::int n from forum_complaints where reporter_user_id=$1",[actor])).rows[0].n).toBe(1);
 });
 
+it("enforces normalized Unicode code-point explanation bounds through the actual HTTP service", async () => {
+  const actor=await quotaActor();
+  const context=new RouterContextProvider();context.set(authSessionContext,{user:{id:actor}} as never);
+  const auth=createAuthorizationCapability(new PostgresAuthorizationRepository(pool));
+  context.set(authorizationContext,auth as never);
+  context.set(complaintSubmissionContext,createHyperdriveComplaintSubmission(databaseUrl!,auth,()=>new Client({connectionString:databaseUrl,options})));
+  for(const [acceptedBefore,text] of ["😀".repeat(2000),"a".repeat(1000)+"😀".repeat(1000)].entries()) {
+    const c=await content(),operationId=randomUUID();
+    const send=(explanation:string)=>submitAction({params:{topicId:c.post.topicId},context,
+      request:new Request(`https://forum.test/en/topics/${c.post.topicId}/complaints`,{method:"POST",headers:{Origin:"https://forum.test"},
+        body:new URLSearchParams({kind:"post",postId:c.post.postId,revisionId:c.post.revisionId,reason:"other",operationId,explanation})})});
+    expect(await send(text+"x")).toMatchObject({data:{error:"invalid"},init:{status:400}});
+    expect((await client.query("select count(*)::int n from forum_complaints where reporter_user_id=$1",[actor])).rows[0].n).toBe(acceptedBefore);
+    expect(await send("  "+text+"  ")).toMatchObject({data:{ok:true,operationId}});
+    expect((await client.query("select explanation from forum_complaints c join forum_complaint_targets t on t.id=c.target_id where reporter_user_id=$1 and post_id=$2",[actor,c.post.postId])).rows[0].explanation).toBe(text);
+  }
+});
+
 it("classifies actual wrapped database lock timeout as unavailable and permits retry", async () => {
   const actor=await quotaActor(),c=await content();
   const context=new RouterContextProvider();context.set(authSessionContext,{user:{id:actor}} as never);

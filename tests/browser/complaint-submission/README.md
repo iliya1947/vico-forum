@@ -5,6 +5,8 @@ PermissionResolver and PostgreSQL. It verifies guest admission, separate post/ti
 forms, Other validation, inline confirmation, private response, revision conflict,
 next-request denial, the real ten-report budget and retry preservation, keyboard
 and English/Russian/Hebrew layouts at 320/390/768/1280 pixels. Responses are not mocked.
+It also uses real keyboard input for 2000 non-BMP/mixed code points, checks server
+rejection of 2001, and retries corrected text with the same nonce after rejection.
 
 Use a dedicated loopback PostgreSQL 17 database ending in `_test`, apply all migrations,
 and configure both local Hyperdrive overrides to it. In a task-owned checkout create
