@@ -355,6 +355,7 @@ function topicRenderData(
     generationUnits: [],
     canReply: false,
     canManageSolution: false,
+    canConfirmOwnSolution: false,
     canManageAnySolution: false,
     isTopicAuthor: false,
     canCorrectTitleSourceLocale: false,
@@ -3607,7 +3608,7 @@ describe("forum read states", () => {
     const unsolvedWithBest = { ...topic, isSolved: false, bestAnswerPostId: "answer", posts: [question, answer] };
     const authorView = renderRoute(
       TopicRoute,
-      topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: true }),
+      topicRenderData(unsolvedWithBest, { canManageSolution: true, canConfirmOwnSolution: true, isTopicAuthor: true }),
       "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation",
       "en",
       "ltr",
@@ -3629,6 +3630,17 @@ describe("forum read states", () => {
     );
     expect(await screen.findByText("Best answer")).toBeInTheDocument();
     expect(screen.queryByText("Problem solved?")).not.toBeInTheDocument();
+  });
+
+  it("does not offer own confirmation to an Any-only author even with a prompt URL", async () => {
+    const question={...topic.posts[0]!,id:"question",authorId:"ada"};
+    const answer={...topic.posts[0]!,id:"answer"};
+    renderRoute(TopicRoute,topicRenderData({...topic,bestAnswerPostId:"answer",posts:[question,answer]}, {
+      canManageSolution:true,canManageAnySolution:true,canConfirmOwnSolution:false,isTopicAuthor:true,canUseAdminPanel:true,
+    }),"/en/topics/typed-api?solutionPrompt=answer","en","ltr");
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+    expect(screen.queryByText("Problem solved?")).not.toBeInTheDocument();
+    expect(document.querySelector('.topic-admin-tools input[value="markSolved"]')).not.toBeNull();
   });
 
   it("keeps title source-locale correction while message-level correction waits for the admin-panel redesign", async () => {

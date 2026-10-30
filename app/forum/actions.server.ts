@@ -431,7 +431,7 @@ export async function topicAction({ request, params, context }: {
     if ("error" in authorization) return authorization.error;
     return runForumMutation(request, context, async (writer, actorId) => {
       const selection = await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
-      const shouldPromptSolvedConfirmation = !selection.isSolved && selection.topicAuthorId === actorId;
+      const shouldPromptSolvedConfirmation = authorization.canConfirmOwn && !selection.isSolved && selection.topicAuthorId === actorId;
       if (!shouldPromptSolvedConfirmation) {
         return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
       }

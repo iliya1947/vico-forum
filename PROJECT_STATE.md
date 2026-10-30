@@ -62,6 +62,14 @@ snapshot 0051 сгенерирован поверх объединённой с�
 на `7664ea9` больше не является актуальным. Результаты повторных checks/CI/browser
 и test-merge фиксируются в #251 после их фактического завершения.
 
+Correction C после diagnosis на `c6aef29`: explicit own требует текущий Own permission,
+Any→own fallback удалён. Revoked/absent Own даёт controlled denial без mutation/event,
+даже если Any сохраняется. Явный any и legacy scope choice сохранены. Отдельный server
+presentation flag и redirect admission не предлагают Any-only автору own confirmation;
+administrative self-action остаётся в Quick actions. Scope/resource/CAS и History ordering
+прежние; schema/permissions/migration prefix/Complaints не меняются. Correction требует
+нового coordinator-first review на новом head; проверки фиксируются в #251 по факту.
+
 Correction A/B после diagnosis/review на `b427800`: текущие own solution/source controls
 явно передают `operationScope=own`, scoped administrative Quick actions — `any` в прежние
 intents. Сервер проверяет marker/capabilities и прежний ownership/state/CAS; выдача Any

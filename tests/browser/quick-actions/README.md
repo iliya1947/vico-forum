@@ -14,7 +14,9 @@ The harness uses real Better Auth sessions and canonical topic Forms for pin/unp
 answer selection, solved, all three moderation actions, source-locale correction,
 duplicate confirmation/removal and both appeal resolutions. Correction regressions cover
 dual-capability author confirmation, explicit admin self-action, an opened own source
-form followed by an Any grant, and pending-appeal removal identity/outcome in one event. It checks resulting
+form followed by an Any grant, and pending-appeal removal identity/outcome in one event.
+C covers Any-only own denial for solution/title/post source operations, administrative
+self-actions, author redirect/forced prompt URL, and Own revocation with opened forms. It checks resulting
 PostgreSQL History, repeated no-ops, stale answer/revision/relationship rejection,
 own controls, permission revocation and forged actor rejection. EN/RU/HE ×
 320/768/1280 checks cover keyboard disclosure, RTL, overflow and actual History;

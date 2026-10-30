@@ -2076,6 +2076,7 @@ export function TopicView({
   canReadPostHistory = false,
   canSubmitComplaint = false,
   canManageSolution,
+  canConfirmOwnSolution = false,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
   canManageHelpDuplicate = false,
@@ -2099,6 +2100,7 @@ export function TopicView({
   canReadPostHistory?: boolean;
   canSubmitComplaint?: boolean;
   canManageSolution: boolean;
+  canConfirmOwnSolution?: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
   canManageHelpDuplicate?: boolean;
@@ -2178,7 +2180,7 @@ export function TopicView({
   const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
   const promptedBestAnswerPostId =
     isTopicAuthor
-    && canManageSolution
+    && canConfirmOwnSolution
     && !topic.isSolved
     && topic.bestAnswerPostId
     && topic.bestAnswerPostId === solutionPromptPostId

@@ -285,6 +285,92 @@ try:
         assert 'Accepted' in appeal_event.inner_text()
         record('correction-accepted-appeal-history-presentation')
 
+        # C: independently assigned Any does not authorize explicit own semantics.
+        any_context = browser.new_context(viewport={'width':1280,'height':900})
+        revoke_context = browser.new_context(viewport={'width':1280,'height':900})
+        for context, name in [(any_context,'AnyOnly'),(revoke_context,'OwnRevoked')]:
+            context.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base + '/') else (external.append(route.request.url), route.abort())[-1])
+            response = context.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':name,'email':prefix+name+'@test.invalid','password':prefix+'-local-only'})
+            assert response.status == 200
+            accounts.append(response.json()['user']['id'])
+        any_actor, revoke_actor = accounts[-2:]
+        any_role = prefix+'-c-any'
+        sql('insert into authz_roles(id,slug,display_name) values($1,$1,$1)',[any_role])
+        for permission in ['forum.solution.manageAny','forum.sourceLocale.correctAny']:
+            sql('insert into authz_role_permissions(role_id,permission_key) values($1,$2)',[any_role,permission])
+        sql('insert into authz_user_roles(user_id,role_id) values($1,$2)',[any_actor,any_role])
+        for intent in ['markSolved','selectBestAnswer','correctTitleSourceLocale','correctPostSourceLocale']:
+            tid = seed_topic('c-'+intent.lower(),any_actor)
+            topics.append(tid)
+            fields = {'intent':intent,'operationScope':'own'}
+            if intent == 'selectBestAnswer':
+                fields['postId'] = tid+'-p1'
+            elif intent == 'correctTitleSourceLocale':
+                fields.update(expectedRevisionId=tid+'-title',sourceLocale='he')
+            elif intent == 'correctPostSourceLocale':
+                fields.update(postId=tid+'-p0',expectedRevisionId=tid+'-p0-body',sourceLocale='he')
+            before = sql('select is_solved,best_answer_post_id,current_title_revision_id from forum_topics where id=$1',[tid])
+            target = tid+'-p0' if intent == 'correctPostSourceLocale' else tid
+            post(any_context,tid,fields,403)
+            assert sql('select is_solved,best_answer_post_id,current_title_revision_id from forum_topics where id=$1',[tid]) == before
+            if intent == 'correctPostSourceLocale':
+                assert sql('select current_revision_id from forum_posts where id=$1',[target])[0]['current_revision_id'] == tid+'-p0-body'
+            assert not history(target)
+            fields['operationScope'] = 'any'
+            post(any_context,tid,fields)
+            assert len(history(target)) == 1
+            record('correction-C-any-only-own-denied-admin-recorded-'+intent)
+        any_page = any_context.new_page()
+        any_page.on('pageerror', lambda e: errors.append(str(e)))
+        any_topic = seed_topic('c-any-author-ui',any_actor)
+        topics.append(any_topic)
+        submit(any_page,any_topic,'selectBestAnswer',{'postId':any_topic+'-p1'})
+        any_page.wait_for_url(base+'/en/topics/'+any_topic+'#post-'+any_topic+'-p1')
+        assert 'solutionPrompt' not in any_page.url
+        any_page.goto(base+'/en/topics/'+any_topic+'?solutionPrompt='+any_topic+'-p1',wait_until='networkidle')
+        assert any_page.locator('#solution-confirmation').count() == 0
+        assert any_page.locator('input[name="operationScope"][value="own"]').count() == 0
+        submit(any_page,any_topic,'markSolved')
+        assert [e['action'] for e in history(any_topic)] == ['topic.bestAnswerChanged','topic.solved']
+        record('correction-C-any-only-author-ui-and-redirect-no-own-control')
+        revoke_page = revoke_context.new_page()
+        revoke_page.on('pageerror', lambda e: errors.append(str(e)))
+        revoke_topic = seed_topic('c-source-revoked',revoke_actor)
+        topics.append(revoke_topic)
+        goto(revoke_page,revoke_topic)
+        revoke_page.locator('.topic-question-tools summary').click()
+        form = revoke_page.locator('.topic-question-tools form:has(input[name="intent"][value="correctTitleSourceLocale"])')
+        form.locator('[name="sourceLocale"]').fill('ru')
+        for permission,effect in [('forum.sourceLocale.correctAny','allow'),('forum.sourceLocale.correctOwn','deny')]:
+            sql('insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,$2,$3)',[revoke_actor,permission,effect])
+        with revoke_page.expect_response(lambda r:r.request.method=='POST' and '/topics/' in r.url) as response:
+            form.locator('button[type="submit"]').click()
+        assert response.value.status == 403
+        assert sql('select current_title_revision_id from forum_topics where id=$1',[revoke_topic])[0]['current_title_revision_id'] == revoke_topic+'-title'
+        assert not history(revoke_topic)
+        record('correction-C-opened-own-source-revoked-denied')
+        solution_topic = seed_topic('c-solution-revoked',revoke_actor)
+        topics.append(solution_topic)
+        goto(revoke_page,solution_topic)
+        own_choice = revoke_page.locator('form:has(input[name="intent"][value="selectBestAnswer"]):has(input[name="postId"][value="'+solution_topic+'-p1"])')
+        own_choice.locator('xpath=ancestor::details[1]').locator('summary').click()
+        actual_click(revoke_page,own_choice)
+        revoke_page.wait_for_url('**/*solutionPrompt=*')
+        confirm = revoke_page.locator('#solution-confirmation form')
+        assert confirm.is_visible()
+        for permission,effect in [('forum.solution.manageAny','allow'),('forum.solution.manageOwn','deny')]:
+            sql('insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,$2,$3)',[revoke_actor,permission,effect])
+        with revoke_page.expect_response(lambda r:r.request.method=='POST' and '/topics/' in r.url) as response:
+            confirm.locator('button[type="submit"]').click()
+        assert response.value.status == 403
+        assert not sql('select is_solved from forum_topics where id=$1',[solution_topic])[0]['is_solved']
+        assert not history(solution_topic)
+        submit(revoke_page,solution_topic,'markSolved')
+        assert len(history(solution_topic)) == 1
+        record('correction-C-opened-own-confirmation-revoked-denied-admin-still-works')
+        any_context.close()
+        revoke_context.close()
+
         # Keyboard, EN/RU/HE and narrow/wide layout on the actual changed surface and History.
         for locale, label in [('en', 'Quick actions'), ('ru', 'Быстрые действия'), ('he', 'פעולות מהירות')]:
             for width in [320, 768, 1280]:
@@ -317,4 +403,5 @@ finally:
     if accounts:
         sql('delete from admin_history where actor_id=any($1::text[])', [accounts])
         sql('delete from "user" where id=any($1::text[])', [accounts])
+    sql('delete from authz_roles where slug like $1',[prefix+'-c-%'])
     (a.output / 'results.json').write_text(json.dumps({'cases': records, 'pageErrors': errors, 'external': external}, ensure_ascii=False, indent=2))

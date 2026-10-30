@@ -266,11 +266,14 @@ Own solution/title-source controls explicitly submit `operationScope=own`; scope
 administrative Quick actions submit `operationScope=any` to the same canonical intents.
 The marker selects operation semantics, never authority: the server validates it, rechecks
 current capabilities, and retains authoritative ownership/state/CAS checks. An explicit
-own request may use existing Own or Any authority but remains restricted to the actor's
-own resource; an explicit any request requires Any and never falls back to own. An opened
-own form stays own after an Any grant. Author solved-confirmation stays own even when
+own request requires the current corresponding Own permission and the actor's own resource.
+Any does not substitute for Own; explicit any requires Any and remains administrative. An
+opened own form stays own after an Any grant while Own is retained; revoked Own causes
+controlled denial on the next submit even if Any remains. Author solved-confirmation stays own even when
 its preceding answer-selection Quick action was administrative. Omitted markers retain
 legacy request scope selection; all current first-party scoped controls send a marker.
+Any-only authors use administrative Quick actions; neither the answer-selection redirect
+nor the topic view offers them an own solved-confirmation.
 
 ## Significant administrative actions and reasons
 

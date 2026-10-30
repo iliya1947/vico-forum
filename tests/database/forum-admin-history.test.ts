@@ -44,9 +44,45 @@ beforeAll(async()=>{
  for(const f of(await readdir("drizzle")).filter(f=>/^\d{4}_.+\.sql$/.test(f)).sort())await client.query((await readFile(`drizzle/${f}`,"utf8")).replaceAll('"public".',`"${schema}".`));
  await client.query(`insert into "user"(id,name,email) values('manager','Manager עברית','private-manager@test.invalid'),('author','Author','private-author@test.invalid'),('other','Other','private-other@test.invalid');
  insert into authz_user_roles(user_id,role_id) values('manager','builtin-admin')`);
+ await client.query(`insert into "user"(id,name,email) values('any-absent','Any absent','any-absent@test.invalid'),('any-denied','Any denied','any-denied@test.invalid'),('own-revoked','Own revoked','own-revoked@test.invalid');
+ insert into authz_roles(id,slug,display_name) values('only-any','only-any','Only Any');
+ insert into authz_role_permissions(role_id,permission_key) values('only-any','forum.solution.manageAny'),('only-any','forum.sourceLocale.correctAny');
+ insert into authz_user_roles(user_id,role_id) values('any-absent','only-any'),('any-denied','only-any'),('own-revoked','builtin-admin');
+ insert into authz_user_permission_overrides(user_id,permission_key,effect) values('any-denied','forum.solution.manageOwn','deny'),('any-denied','forum.sourceLocale.correctOwn','deny')`);
 });
 afterAll(async()=>{await pool.end();await client.query(`drop schema ${schema} cascade`);await client.end();});
 describe("ordinary History from authoritative forum transactions",()=>{
+ const scopedIntents=['markSolved','selectBestAnswer','correctTitleSourceLocale','correctPostSourceLocale'] as const;
+ function scopeFields(intent:typeof scopedIntents[number],id:string,scope:string):Record<string,string>{
+  return {intent,operationScope:scope,postId:intent==='selectBestAnswer'?`${id}-answer`:`${id}-first`,expectedRevisionId:intent==='correctPostSourceLocale'?`${id}-body`:`${id}-title`,sourceLocale:'he'};
+ }
+ it.each(['any-absent','any-denied','manager'].flatMap(actor=>scopedIntents.map(intent=>({actor,intent}))))('enforces scope for $actor / $intent with actual route and History',async({actor,intent})=>{
+  const id=`c-${actor}-${intent}`;await topic(id,actor);
+  const before=await repository.readTopicPage(id);
+  const own=await route(actor,id,scopeFields(intent,id,'own'));
+  if(actor==='manager')expect(own).toMatchObject({status:302});
+  else{
+   expect(own).toMatchObject({init:{status:403}});
+   expect(await repository.readTopicPage(id)).toEqual(before);
+  }
+  expect(await events(id)).toHaveLength(0);expect(await events(`${id}-first`)).toHaveLength(0);
+  const anyId=`${id}-admin`;await topic(anyId,actor);
+  const admin=await route(actor,anyId,scopeFields(intent,anyId,'any'));
+  expect(admin).toMatchObject({status:302});
+  if(actor!=='manager'&&intent==='selectBestAnswer')expect((admin as Response).headers.get('Location')).not.toContain('solutionPrompt');
+  const target=intent==='correctPostSourceLocale'?`${anyId}-first`:anyId;
+  expect(await events(target)).toHaveLength(1);
+ });
+ it.each(scopedIntents)('denies an opened own $intent after Own revocation even with Any',async intent=>{
+  await client.query("delete from authz_user_permission_overrides where user_id='own-revoked'");
+  const id=`c-revoked-${intent}`;await topic(id,'own-revoked');
+  const opened=scopeFields(intent,id,'own');const before=await repository.readTopicPage(id);
+  const permission=intent.includes('SourceLocale')?'forum.sourceLocale.correctOwn':'forum.solution.manageOwn';
+  await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values('own-revoked',$1,'deny')",[permission]);
+  expect(await route('own-revoked',id,opened)).toMatchObject({init:{status:403}});
+  expect(await repository.readTopicPage(id)).toEqual(before);
+  expect(await events(id)).toHaveLength(0);expect(await events(`${id}-first`)).toHaveLength(0);
+ });
  it("retains explicit own/admin route semantics and rejects forged own resources",async()=>{
   await topic("route-own","manager");await topic("route-admin","manager");await topic("route-foreign");
   expect(await route("manager","route-own",{intent:"markSolved",operationScope:"own"})).toMatchObject({status:302});

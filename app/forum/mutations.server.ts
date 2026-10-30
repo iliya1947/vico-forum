@@ -172,9 +172,8 @@ export async function sourceLocaleCorrectionScope(context: RouterContextProvider
   if (requested === "invalid") return { error: sourceLocaleCorrectionFailure("invalid", 400) } as const;
   try {
     const resolver = authorizationForRequest(context).forUser(session.user.id);
-    // Any already permits this resource set; own still narrows it to actual ownership below.
     if (requested === "own") {
-      if (await resolver.has("forum.sourceLocale.correctOwn") || await resolver.has("forum.sourceLocale.correctAny")) return { scope: "own" as const };
+      if (await resolver.has("forum.sourceLocale.correctOwn")) return { scope: "own" as const };
       return { error: sourceLocaleCorrectionFailure("forbidden", 403) } as const;
     }
     if (await resolver.has("forum.sourceLocale.correctAny")) return { scope: "any" as const };
@@ -196,14 +195,13 @@ export async function solutionScope(context: RouterContextProvider, form?: FormD
   if (requested === "invalid") return { error: mutationFailure("invalid", 400) } as const;
   try {
     const resolver = authorizationForRequest(context).forUser(session.user.id);
-    // Any already permits this resource set; own still narrows it to actual ownership below.
     if (requested === "own") {
-      if (await resolver.has("forum.solution.manageOwn") || await resolver.has("forum.solution.manageAny")) return { scope: "own" as const };
+      if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const, canConfirmOwn: true };
       return { error: mutationFailure("forbidden", 403) } as const;
     }
-    if (await resolver.has("forum.solution.manageAny")) return { scope: "any" as const };
+    if (await resolver.has("forum.solution.manageAny")) return { scope: "any" as const, canConfirmOwn: await resolver.has("forum.solution.manageOwn") };
     if (requested === "any") return { error: mutationFailure("forbidden", 403) } as const;
-    if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const };
+    if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const, canConfirmOwn: true };
     return { error: mutationFailure("forbidden", 403) } as const;
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
