@@ -137,10 +137,12 @@ try:
         assert len(texts) == 25
         page.locator('.admin-history-paging a').last.click()
         page.wait_for_url('**/admin/history?before=*')
+        page.get_by_role('link', name='Newest actions', exact=True).wait_for()
         older = page.locator('.admin-history-events li').all_text_contents()
-        assert older and not set(texts).intersection(older)
+        assert older and not set(texts).intersection(older), {'firstCount': len(texts), 'olderCount': len(older), 'overlap': list(set(texts).intersection(older)), 'url': page.url}
         page.locator('.admin-history-paging a').first.click()
         page.wait_for_url('**/en/admin/history')
+        page.get_by_role('link', name='Newest actions', exact=True).wait_for(state='detached')
         record('actual-keyset-older-and-newest-navigation')
         lockcode = """import pg from './node_modules/pg/lib/index.js';const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();await c.query('begin;lock table admin_history in access exclusive mode');console.log('LOCKED');process.stdin.once('data',async()=>{await c.query('rollback');await c.end();});"""
         locker = subprocess.Popen([node, '--input-type=module', '-e', lockcode], cwd=repo, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
