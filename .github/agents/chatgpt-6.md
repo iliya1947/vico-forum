@@ -1,3 +1,39 @@
+## DOC-01 — current-main final verification / CONFIRMED / bounded plan / STOP (2026-10-30)
+
+**Задание:** [Мира, #236/6511736723](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6511736723). Baseline задания `main 59226d7d1d4e1083f71309c8a69a6448ea75dd1b`; актуальный verified `main e681974ac7585d7e0518842f81ec35872b4f9059`. Единственный intervening commit меняет только `AGENTS.md`; project/docs содержательно не менялись. Scope — **только** DOC-01 и точечный residual check DOC-02/03/04, **не** новый полный audit. Product code/DB не изменялись.
+
+### Verdict: DOC-01 CONFIRMED current documentation/SOT defect
+
+`PROJECT_STATE.md` позиционируется как текущий factual state / nearest route (§Назначение, строки25–39), но содержит non-historical, unqualified current/remaining claims, которые противоречат смёрженному состоянию:
+
+1. `PROJECT_STATE.md:861–894`: dated PR232 removal slice говорит «удаляются в существующем #232», «whole-PR cycle correction head ещё не запускался». PR #232 merged 2026-10-21 (`d72b27c`). Dated implementation evidence можно сохранить как историю, но нельзя оставлять его действующим next-step status.
+2. `PROJECT_STATE.md:1037–1048`: явные актуальные «цель теперь ... review», «PR #215 остаётся открыт» / «перед merge требуется». PR #215 merged 2026-10-18 (`c098912e`).
+3. `PROJECT_STATE.md:1050–1065`, заголовок «Текущая фаза»: `PR #227 (in progress)`; PR #227 merged 2026-10-16 (`0fc92f97`).
+4. `PROJECT_STATE.md:1238–1275`: исторический Editor/#215 package продолжает утверждать «Whole Editor incomplete», «Browser/visual acceptance, final whole-Editor review ... outstanding», «PR #215 ... открыт ... ещё не готов к merge» и будущий visual-authoring slice. Эти statuses уже не являются текущим execution gate после merge #215 и удаления drafts.
+5. `PROJECT_STATE.md:1898–1901`: Search называется «следующая bounded product-функция / текущая implementation-ветка», при том что тот же абзац сообщает «Search merged через PR #171» (GitHub: 2026-10-02, `49b8be3`).
+6. `PROJECT_STATE.md:2182–2183`: дальнейшие exact-head CI/Pages/review PR #210 ещё «требуют подтверждения» / «ещё не завершены», хотя PR #210 merged 2026-10-10 (`7c99a6c`); конкретные исторические pass/fail/checkpoint можно сохранить.
+7. `PROJECT_STATE.md:2729–2764` («Ближайший маршрут»): пункт6 снова называет Search будущей задачей, пункт14 `PR #210` «реализуется», `drafts/autosave` — следующей подсистемой, хотя PR #210/#171 merged, а drafts по owner decision удалены/перенесены в возможные future features. Остальные явно незакрытые Stage6 rollout gates не переобъявлять завершёнными.
+8. `PROJECT_STATE.md:2794–2858`: датированные Editor E1/E2/E3 и последующие snapshots с «in progress», «whole editor review incomplete», «no merge», «verification pending» — исторический материал, не текущий рабочий статус; сделать это однозначным, без стирания фактов старых CI и незавершённой на тот момент приемки.
+9. Top current-state blocks `PROJECT_STATE.md:5–21`, `:41–54`, `:56–73` зафиксировали I18N-UGC-META-01/#260, RES-A11Y-01/#261, EDITOR-08/#259 на implementation-time до соответствующих CI/review/merge. Все три PR теперь merged (#259 2026-10-29, #260 2026-10-29, #261 2026-10-30). Квалификатор «на момент этой записи» допустим как история, но текущий SOT должен отличать такие checkpoints от final merged status.
+
+**Отделение истории:** дата среза, точный старый code/test SHA, результат CI «на тот момент», ограничения локального проверки и прежние промежуточные plans должны сохраняться как historical evidence; сами по себе они не defects и не причина переписывать всю историю. Противоречие — выдача прежних current/next-step statements за нынешнее состояние в текущем SOT. Реальные Stage6 external/prod/owner acceptance остаются незавершёнными, пока не подтверждены.
+
+### Проверка residual DOC-02/03/04
+
+- **DOC-02:** `PROJECT_STATE.md:677–689` ссылается на принятую `0045_audit_database_notifications_read_state`; реальный `drizzle` содержит SQL и snapshot до `0046_attachment_upload_fences`. `docs/EDITOR.md:424–428` отделяет удалённую прежнюю draft snapshot proposal от принятой migration 0045. `docs/database/MIGRATIONS.md`, `docs/database/HYPERDRIVE.md` сохраняют отдельный production-applied ledger contract `0000–0020`, не объявляя его полной repository/CI migration history. Исходное расхождение «0043 vs 0044» не воспроизводится.
+- **DOC-03:** `PROJECT_STATE.md:2082–2105` и `:671`, `docs/UI_UX_PASS.md:441–450`, `app/localization/catalog.ts:192` однозначно определяют pending Disputed как moderator-only; appealing author видит отдельное приватное appeal сообщение, без badge. Старый public-badge residual отсутствует.
+- **DOC-04:** `docs/EDITOR.md:301–309` и `docs/auth/AUTHORIZATION.md:38–56,135–151` согласованы с owner option A — access по effective `forum.post.history.read`, moderator/admin являются default grants; custom roles/overrides authoritative. Role-exclusive residual отсутствует.
+
+**Новых подтверждённых residual findings в DOC-02/03/04 нет.** Это spot check конкретных canonical defects, не declaration о безупречности всех docs.
+
+### Минимальный bounded correction plan (implementation NOT authorized)
+
+**Exact project file: только `PROJECT_STATE.md`.** Согласовать единый действующий current-status/remaining-work summary, убрать или явно переобозначить у названных выше locations false present-tense and next-step claims; dated editor/discovery historical evidence обозначить архивом/перенести в существующий `PROJECT_HISTORY.md` только если без этого невозможно однозначно разграничить current vs history. Сопоставлять уже accepted merge state и принятый owner decision удалить drafts/autosave; реальные unfinished Stage6/production/browser/visual gates не закрывать по предположению. Не переписывать unrelated исторические записи и не проводить новый полный documentation audit.
+
+**Статус:** verification+bounded plan complete. No implementation branch/PR, source edits, tests or CI for this verification. Мира — reconciliation and bounded DOC-01 correction assignment decision. **Лира STOP.**
+
+---
+
 ## I18N-UGC-META-01 — PR #260 author implementation handoff / COMPLETE / STOP (2026-10-29)
 
 **Назначение:** [Мира #6507951789](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6507951789). Исходный base `main e37314b63fc77825cad3209811676e0627a2851c`. После merge чужого PR #259 в main выполнена интеграция с `d1bbd6144e787e69bcf605acf8315b4e292d80ec` без изменения семи code/test blob SHA исходного исправления. **[Implementation PR #260](https://github.com/iliya1947/vico-forum/pull/260)** — Draft, mergeable; **stable exact head `df5fde2b2979a075a81e02b30b813802ffef6b90`**. Author Лира; независимую whole-PR проверку не выполняла.
