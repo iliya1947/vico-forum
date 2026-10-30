@@ -93,7 +93,9 @@ which is not seeded to any built-in role, including admin. Identity permission a
 never grants Case access. Participant result/first-appeal calls separately recheck actual
 content-author/reporter membership and direction. Package 2 enables only the topic-context
 submission UI and authenticated same-origin POST action using `forum.complaint.create`;
-review, identity and appeal HTTP/UI remain deferred.
+Package 3 additionally enables protected open Queue/triage, priority override and
+non-exclusive activity using `forum.complaint.review`, with independent loader/action
+checks. Full review/notes/decisions, identity and appeal HTTP/UI remain deferred.
 
 ## Initial role defaults
 

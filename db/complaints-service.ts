@@ -1,5 +1,6 @@
 import type { AuthorizationCapability } from "./authorization-service";
 import type { PermissionKey } from "../app/authorization/catalog";
+import type { ComplaintPriorityCommand } from "../app/complaints/queue-contract";
 import {
   ComplaintForbiddenError, ComplaintInputError, complaintId, complaintOutcome,
   complaintReason, complaintText, type ComplaintTarget,
@@ -18,6 +19,27 @@ export class ComplaintsService {
     const { effectivePermissions } = await this.authorization.forUser(actor).resolve();
     if (!effectivePermissions.includes(key)) throw new ComplaintForbiddenError("complaint permission denied");
     return effectivePermissions.includes("forum.complaint.reporterIdentity.read");
+  }
+  async readQueue(actor: string, page: number) {
+    await this.require(actor,"forum.complaint.review");
+    if(!Number.isSafeInteger(page)||page<0||page>10000)throw new ComplaintInputError("invalid page");
+    return this.repository.readQueue(actor,page);
+  }
+  async readTriage(actor: string, caseId: string) {
+    await this.require(actor,"forum.complaint.review");
+    return this.repository.readTriage(actor,complaintId(caseId));
+  }
+  async changePriority(actor: string, input: ComplaintPriorityCommand) {
+    await this.require(actor,"forum.complaint.review");
+    if(!Number.isSafeInteger(input.expectedVersion)||input.expectedVersion<1||
+      (input.priority!==null&&![1,2,3].includes(input.priority)))throw new ComplaintInputError("invalid priority/version");
+    return this.repository.changePriority(actor,{caseId:complaintId(input.caseId),operationId:complaintId(input.operationId),
+      expectedVersion:input.expectedVersion,priority:input.priority});
+  }
+  async activity(actor: string, caseId: string, active: boolean) {
+    await this.require(actor,"forum.complaint.review");
+    if(typeof active!=="boolean")throw new ComplaintInputError("invalid activity");
+    return this.repository.activity(actor,complaintId(caseId),active);
   }
   async submit(actor: string, input: SubmitComplaint) {
     await this.require(actor, "forum.complaint.create");

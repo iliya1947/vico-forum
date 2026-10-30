@@ -80,7 +80,52 @@ corrections #259/#260/#261 уже объединены в `main`. Чернови
 Stage 6 external/production gates, не реализованные admin/complaints функции
 и соответствующие owner acceptance остаются отдельной незавершённой работой.
 
+## Complaints — Package 3 open Queue / triage (2026-10-30)
+
+В отдельной implementation-ветке поверх merged Package 2 (#266, main 5ac2a18)
+первый Complaints placeholder в Needs attention заменён Queue открытых Cases.
+`forum.complaint.review` независимо открывает Queue/header link и bounded triage;
+Signals/Security capabilities не дают complaint access и обратно. Ordinary SQL
+не выбирает reporter accounts/explanations/notes; elevated identity key не расширяет
+Queue projection. Бounded current topic title/reported-revision excerpt сохраняют
+source locale/direction из runtime registry (und/unknown → auto); UI даёт ссылку
+на topic/post context и отдельную triage-страницу.
+
+Один SQL snapshot возвращает полный total и 25 Cases + lookahead; сортировка —
+effective priority DESC, first report ASC, Case ID. Пустая страница не обнуляет total.
+Автоприоритет — максимум reason weights: spam/other low, harassment/impersonation
+normal, threats/fraud-phishing/malicious-content/personal-data high. Volume сам по
+себе priority не повышает. Nullable moderator override и возврат к automatic
+защищены actor mutex/Case lock/version CAS/operation replay; immutable priority
+event пишется атомарно, event failure rollback сохраняет прежний Case.
+
+Non-exclusive activity использует отдельные (Case,reviewer) leases: heartbeat POST
+раз в 30 секунд только на видимой triage-странице, DB TTL 90 секунд, best-effort
+expiry при уходе. Projection — boolean других активных reviewers, без identity;
+GET не пишет presence, lease не меняет Case version и не назначает владельца.
+Прекращение renewal/revocation не оставляет permanently-stuck marker. Forward
+0051_complaints_queue, schema/journal/snapshot/manifest и runtime INSERT/SELECT/UPDATE
+контракт activity table согласованы. Permanent contract: docs/moderation/COMPLAINTS.md.
+
+Новых permissions, Signals/Security effects, admin History producer, full review/
+notes/decisions UI, Quick actions, notifications, appeals или complaints History UI
+нет. Авторские проверки: 1648 full application tests до последней source-direction
+regression, затем 13 focused Queue HTTP/UI/presentation tests; 412 full PostgreSQL17
+tests и повторные 57 Complaints native tests, typecheck, lint (0 errors/одно прежнее
+warning), Worker/UI Preview builds, 18 infrastructure guard suites, clean 52 migrations,
+manifest 59 tables, runtime privilege/provisioning/credential probes и Worker smoke.
+Upgrade 0050→0051 с существующей Complaint/event сохранил их без изменений;
+существующий open Case попал в Queue с automatic priority по его причине.
+Actual Chromium → built Worker → Better Auth → PostgreSQL: 19 scenarios PASS —
+global totals/paging, priority Form/CAS/auto reset, two-reviewer presence, revocation/
+expiry, EN/RU/HE keyboard/320/390/768/1280, actual storage timeout/recovery, без JS errors/
+external requests. Exact-head CI и handoff фиксируются после выполнения; production
+migration/GRANT/deploy и independent review не заявляются.
+
 ## Complaints — Package 2 user submission (2026-10-30)
+
+Package 2 merged через PR #266. Ниже сохранены его датированные implementation/
+correction snapshots; актуальное Queue поведение описано в Package 3 выше.
 
 Интеграция после merge AP-03 (#265): implementation-ветка обновлена поверх main
 `269783d`. Принятые `0049_admin_history`, snapshot 0049 и journal prefix сохранены
@@ -2591,7 +2636,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0050`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0051`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

@@ -1631,6 +1631,7 @@ export const forumComplaintCases = pgTable("forum_complaint_cases", {
   previousCaseId: text("previous_case_id"),
   state: text("state").notNull().default("open"),
   version: integer("version").notNull().default(1),
+  priorityOverride: integer("priority_override"),
   initialDecisionId: text("initial_decision_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
@@ -1638,6 +1639,7 @@ export const forumComplaintCases = pgTable("forum_complaint_cases", {
   unique("complaint_case_target_unique").on(t.id, t.targetId),
   foreignKey({ name: "complaint_case_previous_fk", columns: [t.previousCaseId], foreignColumns: [t.id] }).onDelete("restrict"),
   check("complaint_case_previous_not_self", sql`${t.previousCaseId} is null or ${t.previousCaseId} <> ${t.id}`),
+  check("complaint_case_priority_check", sql`${t.priorityOverride} is null or ${t.priorityOverride} between 1 and 3`),
   uniqueIndex("complaint_case_open_target_unique").on(t.targetId).where(sql`${t.state} = 'open'`),
   index("complaint_case_target_resolved_idx").on(t.targetId, t.resolvedAt.desc(), t.createdAt.desc(), t.id.desc()).where(sql`${t.state} = 'resolved'`),
   index("complaint_case_state_created_idx").on(t.state, t.createdAt, t.id),
@@ -1717,6 +1719,7 @@ export const forumComplaintEvents = pgTable("forum_complaint_events", {
   id: text("id").primaryKey(),
   caseId: text("case_id").notNull().references(() => forumComplaintCases.id, { onDelete: "restrict" }),
   kind: text("kind").notNull(),
+  priorityOverride: integer("priority_override"),
   actorUserId: text("actor_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
   operationId: text("operation_id").notNull(),
   fingerprint: text("fingerprint").notNull(),
@@ -1733,7 +1736,8 @@ export const forumComplaintEvents = pgTable("forum_complaint_events", {
   foreignKey({ name: "complaint_event_note_fk", columns: [t.caseId,t.noteId], foreignColumns: [forumComplaintNotes.caseId,forumComplaintNotes.id] }).onDelete("restrict"),
   foreignKey({ name: "complaint_event_appeal_fk", columns: [t.caseId,t.appealId], foreignColumns: [forumComplaintAppeals.caseId,forumComplaintAppeals.id] }).onDelete("restrict"),
   check("complaint_event_fingerprint_check", sql`${t.fingerprint} ~ '^[0-9a-f]{64}$' and btrim(${t.operationId}) <> '' and char_length(${t.operationId}) <= 200`),
-  check("complaint_event_shape_check", sql`(${t.kind} = 'submitted' and ${t.complaintId} is not null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'decided' and ${t.decisionId} is not null and ${t.complaintId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'noted' and ${t.noteId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.appealId} is null) or (${t.kind} in ('appealed','appeal-resolved') and ${t.appealId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null)`),
+  check("complaint_event_priority_check", sql`(${t.priorityOverride} is null or ${t.priorityOverride} between 1 and 3) and (${t.kind} = 'priority-changed' or ${t.priorityOverride} is null)`),
+  check("complaint_event_shape_check", sql`(${t.kind} = 'submitted' and ${t.complaintId} is not null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'decided' and ${t.decisionId} is not null and ${t.complaintId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'noted' and ${t.noteId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.appealId} is null) or (${t.kind} in ('appealed','appeal-resolved') and ${t.appealId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null) or (${t.kind} = 'priority-changed' and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null)`),
 ]);
 
 export const forumComplaintEvidenceAttachments = pgTable("forum_complaint_evidence_attachments", {
@@ -1766,4 +1770,13 @@ export const adminHistory = pgTable("admin_history", {
   check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
   check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),
   check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),
+]);
+
+export const forumComplaintActivity = pgTable("forum_complaint_activity", {
+  caseId: text("case_id").notNull().references(() => forumComplaintCases.id, { onDelete: "restrict" }),
+  reviewerUserId: text("reviewer_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, t => [
+  primaryKey({ columns: [t.caseId, t.reviewerUserId] }),
+  index("complaint_activity_case_expiry_idx").on(t.caseId,t.expiresAt),
 ]);

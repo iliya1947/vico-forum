@@ -10,11 +10,18 @@ import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-foru
 import { forumMutationGuard, mutationFailure, requireForumPermission, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
 import { AttentionCenterView, type AttentionGroup, type AttentionMode } from "../forum/views";
 import { ForumRouteError } from "../forum/ui";
+import { complaintQueueContext } from "../complaints/queue-context";
+import type { ComplaintQueuePage } from "../complaints/queue-contract";
+import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints";
+import { ComplaintForbiddenError } from "../../db/complaints-domain";
+import { presentComplaintCases } from "../complaints/queue-presentation.server";
+
+export function headers(){return {"Cache-Control":"private, no-store"};}
 
 const SIGNAL_GROUPS = new Set<AttentionGroup>([
   "needs-details", "needs-review", "solution-outdated", "duplicate", "appeals", "mixed",
 ]);
-const PLACEHOLDER_GROUPS = new Set<AttentionGroup>(["group1", "group2", "group3"]);
+const COMPLAINT_GROUPS = new Set<AttentionGroup>(["group1", "group2", "group3"]);
 const SECURITY_GROUPS = new Set<AttentionGroup>(["attachments", "group2", "group3"]);
 
 export function meta() {
@@ -37,7 +44,7 @@ export async function loader({ request, params, context }: {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
-  let permissions: [boolean, boolean, boolean, boolean];
+  let permissions: [boolean, boolean, boolean, boolean, boolean];
   try {
     const authorization = authorizationForRequest(context).forUser(session.user.id);
     permissions = await Promise.all([
@@ -45,6 +52,7 @@ export async function loader({ request, params, context }: {
       authorization.has("forum.helpDuplicate.manage"),
       authorization.has("forum.helpNeedsDetails.manage"),
       authorization.has("forum.attachmentSecurity.read"),
+      authorization.has("forum.complaint.review"),
     ]);
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
@@ -52,20 +60,20 @@ export async function loader({ request, params, context }: {
     }
     throw error;
   }
-  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments] = permissions;
+  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments, canReviewComplaints] = permissions;
   const canViewHelpAttention = canViewSolutionModeration || canViewDuplicateDispute || canManageNeedsDetails;
 
   const query = new URL(request.url).searchParams;
   const requestedMode = query.get("mode");
   const mode: AttentionMode = requestedMode === "signals" || requestedMode === "complaints" || requestedMode === "security"
-    ? requestedMode : canViewHelpAttention ? "signals" : "security";
+    ? requestedMode : canViewHelpAttention ? "signals" : canReviewComplaints ? "complaints" : "security";
   const requestedGroup = query.get("group") as AttentionGroup | null;
-  const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : PLACEHOLDER_GROUPS;
+  const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : COMPLAINT_GROUPS;
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
     : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : "group1";
-  // Independent security access: deny before reading any protected queue.
-  if (mode === "security" ? !canReadSecurityAttachments : !canViewHelpAttention) {
+  // Each mode checks its own capability before reading a protected queue.
+  if (mode === "security" ? !canReadSecurityAttachments : mode === "complaints" ? !canReviewComplaints : !canViewHelpAttention) {
     throw new Response("Forbidden", { status: 403 });
   }
   const pageParam = query.get("page") ?? "0";
@@ -92,6 +100,16 @@ export async function loader({ request, params, context }: {
     page: number;
   } | null = null;
   let counts: ForumAttentionQueueCounts | null = null;
+  let complaintQueue: ComplaintQueuePage | null = null;
+  if(mode==="complaints"&&group==="group1"){
+    try{complaintQueue=await context.get(complaintQueueContext).readQueue(session.user.id,pageIndex);
+      complaintQueue={...complaintQueue,cases:await presentComplaintCases(context,complaintQueue.cases)};}
+    catch(error){
+      if(error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError)throw new Response("Unavailable",{status:503});
+      if(error instanceof ComplaintForbiddenError)throw new Response("Forbidden",{status:403});
+      throw error;
+    }
+  }
   if (mode === "signals") {
     const kinds: HelpSignalKind[] = [
       ...(canManageNeedsDetails ? ["needs-details" as const] : []),
@@ -135,8 +153,8 @@ export async function loader({ request, params, context }: {
     }
   }
 
-  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts,
-    canViewHelpAttention, canReadSecurityAttachments, referenceTime: new Date().toISOString() };
+  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue,
+    canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {

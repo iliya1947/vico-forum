@@ -12,6 +12,7 @@ import {
 } from "../../db/forum-identifiers";
 import { authSessionContext } from "../auth/request-context";
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
+import { complaintQueueContext } from "../complaints/queue-context";
 import { authorizationContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -1113,6 +1114,11 @@ describe("Help & solutions modes and authoring", () => {
     view.unmount();
 
     const calls = readQueue.mock.calls.length;
+    const priorAuthorization=managerContext.get(authorizationContext);
+    managerContext.set(authorizationContext,{...priorAuthorization,forUser:(id:string)=>{
+      const resolver=priorAuthorization.forUser(id);return {...resolver,has:async(key: Parameters<typeof resolver.has>[0])=>key==="forum.complaint.review"||await resolver.has(key)};
+    }});
+    managerContext.set(complaintQueueContext,{readQueue:vi.fn(async()=>({cases:[],total:0,page:0,hasMore:false}))} as never);
     const complaints = await attentionLoader({
       request: new Request("https://forum.example/en/attention?mode=complaints&group=group2"),
       params: { locale: "en" }, context: managerContext,
@@ -1122,7 +1128,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(readQueueCounts).toHaveBeenCalledTimes(calls);
     expect(readQueueCounts).toHaveBeenCalledTimes(calls);
     const complaintView = renderRoute(AttentionRoute, complaints, "/en/attention?mode=complaints&group=group2", "en", "ltr");
-    expect(await screen.findByRole("link", { name: "Group 2" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("link", { name: "Appeals" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("This section is not connected yet.")).toBeVisible();
     complaintView.unmount();
 

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0050_complaint_submission",
+  "targetMigration": "0051_complaints_queue",
   "tables": {
     "account": {
       "columns": [
@@ -5800,6 +5800,12 @@
           "type": "text",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "priority_override",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -5885,6 +5891,13 @@
             "previous_case_id"
           ],
           "definitionSha256": "6af3bbdce94bf078c1fbc7bf1d5687a11665a9739820e64039485d46e95295fa"
+        },
+        {
+          "name": "complaint_case_priority_check",
+          "columns": [
+            "priority_override"
+          ],
+          "definitionSha256": "637eb47aeabe72c22cde35dfadd65e78ac8818d01d5d35e8cfeac480267177db"
         }
       ],
       "indexes": [
@@ -6133,6 +6146,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "priority_override",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -6257,6 +6276,14 @@
           "definitionSha256": "f2f6f5dd09c3902a56ec86873d03640947933a6bc92b201fb96826dbef2daab0"
         },
         {
+          "name": "complaint_event_priority_check",
+          "columns": [
+            "kind",
+            "priority_override"
+          ],
+          "definitionSha256": "22412686dd68a159749afa5a5844d1d7836b9ef6ae22df26c3910875351854a5"
+        },
+        {
           "name": "complaint_event_shape_check",
           "columns": [
             "appeal_id",
@@ -6265,7 +6292,7 @@
             "kind",
             "note_id"
           ],
-          "definitionSha256": "927650087b1296b34ace0fc7b72980b4f6db94a1a5c19b009afe697a8c8c77a3"
+          "definitionSha256": "7efec3bd8ee0cd6fab691066b7e0644f12fc07920aaa8b4ec70b61b39f0bba2e"
         }
       ],
       "indexes": [
@@ -6961,6 +6988,89 @@
               "name": "position",
               "nulls": "last",
               "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "forum_complaint_activity": {
+      "columns": [
+        {
+          "name": "case_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "reviewer_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_complaint_activity_case_id_reviewer_user_id_pk",
+          "columns": [
+            "case_id",
+            "reviewer_user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_complaint_activity_case_id_forum_complaint_cases_id_fk",
+          "columns": [
+            "case_id"
+          ],
+          "referencedTable": "forum_complaint_cases",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_complaint_activity_reviewer_user_id_user_id_fk",
+          "columns": [
+            "reviewer_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "complaint_activity_case_expiry_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "case_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "expires_at",
+              "nulls": "last",
+              "order": "asc"
             }
           ],
           "predicateSha256": null

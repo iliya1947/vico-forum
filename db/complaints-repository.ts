@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { readComplaintQueue } from "./complaint-queue-read";
+import { COMPLAINT_ACTIVITY_SECONDS, type ComplaintPriorityCommand } from "../app/complaints/queue-contract";
 import {
   ComplaintConflictError, ComplaintForbiddenError, ComplaintNotFoundError,
   ComplaintPolicyRequiredError, ComplaintRateLimitError, COMPLAINT_SUBMISSION_LIMITS,
@@ -32,6 +34,7 @@ export interface ComplaintAppealRecord {
 interface CaseRow extends Record<string, unknown> {
   id: string; targetId: string; state: string; version: number; initialDecisionId: string | null;
   previousCaseId: string | null;
+  priorityOverride: number | null;
 }
 interface ReplayRow extends Record<string, unknown> { fingerprint: string; entityId: string; caseId: string }
 
@@ -73,19 +76,49 @@ export class DrizzleComplaintsRepository {
   }
 
   private async event(tx: Tx, actorId: string, input: ComplaintCaseCommand, fingerprint: string,
-    kind: "submitted" | "decided" | "noted" | "appealed" | "appeal-resolved", entityId: string) {
+    kind: "submitted" | "decided" | "noted" | "appealed" | "appeal-resolved" | "priority-changed", entityId: string, priority: number | null = null) {
     await tx.execute(sql`insert into forum_complaint_events
-      (id,case_id,kind,actor_user_id,operation_id,fingerprint,complaint_id,decision_id,note_id,appeal_id,created_at)
+      (id,case_id,kind,actor_user_id,operation_id,fingerprint,complaint_id,decision_id,note_id,appeal_id,priority_override,created_at)
       values (${randomUUID()},${input.caseId},${kind},${actorId},${input.operationId},${fingerprint},
       ${kind === "submitted" ? entityId : null},${kind === "decided" ? entityId : null},
-      ${kind === "noted" ? entityId : null},${kind === "appealed" || kind === "appeal-resolved" ? entityId : null},statement_timestamp())`);
+      ${kind === "noted" ? entityId : null},${kind === "appealed" || kind === "appeal-resolved" ? entityId : null},${priority},statement_timestamp())`);
   }
 
   private async lockCase(tx: Tx, caseId: string): Promise<CaseRow> {
     const r = await tx.execute<CaseRow>(sql`select id,target_id as "targetId",state,version,
-      initial_decision_id as "initialDecisionId",previous_case_id as "previousCaseId" from forum_complaint_cases where id=${caseId} for update`);
+      initial_decision_id as "initialDecisionId",previous_case_id as "previousCaseId",priority_override as "priorityOverride" from forum_complaint_cases where id=${caseId} for update`);
     if (!r.rows[0]) throw new ComplaintNotFoundError("case not found");
     return r.rows[0];
+  }
+
+  async readQueue(actorId: string, page: number) { return readComplaintQueue(this.database,actorId,page); }
+
+  async readTriage(actorId: string, caseId: string) {
+    const result=await readComplaintQueue(this.database,actorId,0,caseId);
+    if(!result.cases[0])throw new ComplaintNotFoundError("open case not found");
+    return result.cases[0];
+  }
+
+  async changePriority(actorId: string, input: ComplaintPriorityCommand) {
+    const fingerprint=digest("priority",input);
+    await this.database.transaction(async tx=>{
+      await this.actorMutex(tx,actorId);
+      const c=await this.lockCase(tx,input.caseId);
+      if(await this.replay(tx,actorId,input.operationId,fingerprint))return;
+      if(c.state!=="open"||c.version!==input.expectedVersion)throw new ComplaintConflictError("case changed");
+      await tx.execute(sql`update forum_complaint_cases set priority_override=${input.priority},version=version+1 where id=${c.id}`);
+      await this.event(tx,actorId,input,fingerprint,"priority-changed",c.id,input.priority);
+    });
+  }
+
+  async activity(actorId: string, caseId: string, active: boolean) {
+    await this.database.transaction(async tx=>{
+      const c=await tx.execute(sql`select id from forum_complaint_cases where id=${caseId} and state='open' for share`);
+      if(!c.rows.length)throw new ComplaintNotFoundError("open case not found");
+      await tx.execute(sql`insert into forum_complaint_activity(case_id,reviewer_user_id,expires_at)
+        values(${caseId},${actorId},statement_timestamp()+${active?COMPLAINT_ACTIVITY_SECONDS:0}*interval '1 second')
+        on conflict(case_id,reviewer_user_id) do update set expires_at=excluded.expires_at`);
+    });
   }
 
   async submit(actorId: string, input: SubmitComplaint) {
@@ -242,7 +275,7 @@ export class DrizzleComplaintsRepository {
   async readCase(caseId: string, identities: boolean, pages: { reports: number; notes: number; events: number }) {
     return this.database.transaction(async tx => {
       const c = await tx.execute<CaseRow & { kind: string; topicId: string; postId: string | null; reportedContent: string; currentContent: string; affectedAuthorId: string }>(sql`
-        select c.id,c.target_id as "targetId",c.previous_case_id as "previousCaseId",c.state,c.version,c.initial_decision_id as "initialDecisionId",
+        select c.id,c.target_id as "targetId",c.previous_case_id as "previousCaseId",c.priority_override as "priorityOverride",c.state,c.version,c.initial_decision_id as "initialDecisionId",
         t.kind,t.topic_id as "topicId",t.post_id as "postId",t.affected_author_id as "affectedAuthorId",
         coalesce(pr.original_content,tr.original_content) as "reportedContent",
         coalesce(cp.original_content,ct.original_content) as "currentContent"

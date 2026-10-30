@@ -96,7 +96,7 @@ export async function loader(args: LocaleBoundaryArgs) {
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead, adminHistoryRead] = await Promise.all([
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead, adminHistoryRead, complaintReview] = await Promise.all([
         resolver.has("access.authorization.manage"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
@@ -106,6 +106,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         resolver.has("forum.sourceLocale.correctAny"),
         resolver.has("forum.post.history.read"),
         resolver.has("admin.history.read"),
+        resolver.has("forum.complaint.review"),
       ]);
       canManageAuthorization = authorizationManage;
       canViewAdminPanel = adminAccess(new Set([
@@ -117,7 +118,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         ...(historyRead ? ["forum.post.history.read" as const] : []),
         ...(adminHistoryRead ? ["admin.history.read" as const] : []),
       ])).canEnter;
-      canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead;
+      canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead || complaintReview;
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // The header link is presentation-only; the protected admin route checks permission independently.
