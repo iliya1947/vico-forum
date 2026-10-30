@@ -1,3 +1,10 @@
+## DOC-01 — implementation PR #264 exact-head CI SUCCESS; coordinator review next (2026-10-30)
+
+- Лира выполнила bounded DOC-01 documentation correction по assignment [#6514689880](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6514689880) в [Draft PR #264](https://github.com/iliya1947/vico-forum/pull/264). Base `main e681974ac7585d7e0518842f81ec35872b4f9059`, **stable exact head `f9b9301a2db6daed1abccdb45d8f28dfccff1189`**; open/mergeable/clean.
+- Изменён исключительно `PROJECT_STATE.md` (+82/−61): отделены historical checkpoint statuses от действующего current/next-step state, устранены ложные in-progress/not-merged/next claims по #215/#227/#210/#232/Search/#171 и зафиксированы фактические merge #259/#260/#261. Открытые Stage6 external/production gates, future admin/complaints/owner visual acceptance сохранены; DOC-02/03/04 и `PROJECT_HISTORY.md` не менялись. Runtime/code/schema/dependencies/CI config не тронуты.
+- Static diff check: 1 path; Markdown headings 61/61, links 7/7, fences 0/0, no conflict markers; merged PR states checked. [**Exact-head CI #41001542238 SUCCESS**](https://github.com/iliya1947/vico-forum/actions/runs/41001542238): `checks` + `database`, all steps PASS; **1597 application** and **347 PostgreSQL17** tests PASS, lint/typecheck/builds/schema/Workers smoke PASS. Detailed [personal author report](https://github.com/iliya1947/vico-forum/blob/3c3e4edad74d8d6e11349ace6b70c4731c4036da/.github/agents/chatgpt-6.md).
+- Лира — implementation author, no whole-PR self-review/browser/external/production/owner acceptance/merge; **STOP**. Next: **Мира coordinator whole-PR review PR #264** stable exact head; eligible independent non-author reviewers per gates.
+
 ## DOC-01 — verified current-main stale state; DOC-02/03/04 residual checks clear / STOP (2026-10-30)
 
 - Assigned to Лира by [Мира #6511736723](https://github.com/iliya1947/vico-forum/pull/236#issuecomment-6511736723). Verified `main e681974ac7585d7e0518842f81ec35872b4f9059`; only `AGENTS.md` changed since assigned `59226d7`, project docs unchanged.
