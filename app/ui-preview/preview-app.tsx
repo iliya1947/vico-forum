@@ -690,12 +690,15 @@ function popularPeriods(locale: PreviewLocale): ForumPopularPage {
 function unansweredTopics(locale: PreviewLocale) {
   const rtl = locale === "he";
   const russian = locale === "ru";
+  const titleDirection = localeRegistry.find(locale)?.locale.direction ?? ("auto" as const);
   const categoryName = rtl ? "פיתוח" : russian ? "Разработка" : "Development";
   const aiCategoryName = rtl ? "Vibe Coding וכלי AI" : russian ? "Vibe Coding и AI-инструменты" : "Vibe Coding & AI tools";
 
   return [
     {
       id: "worker-auth",
+      sourceLocale: locale,
+      titleDirection,
       title: rtl ? "איך להפריד session מ-permissions ב-Worker?" : russian ? "Как разделить session и permissions в Worker?" : "How should session and permissions be separated in a Worker?",
       authorName: rtl ? "סם צ'ן" : "Sam Chen",
       category: { id: "development", name: categoryName },
@@ -703,6 +706,8 @@ function unansweredTopics(locale: PreviewLocale) {
     },
     {
       id: "agent-context",
+      sourceLocale: locale,
+      titleDirection,
       title: rtl ? "איך להעביר הקשר בין כמה סוכני AI?" : russian ? "Как передавать контекст между несколькими AI-агентами?" : "How should context be passed between several AI agents?",
       authorName: rtl ? "נועה לוי" : "Noa Levi",
       category: { id: "vibe-ai", name: aiCategoryName },
@@ -710,6 +715,8 @@ function unansweredTopics(locale: PreviewLocale) {
     },
     {
       id: "database-timeouts",
+      sourceLocale: locale,
+      titleDirection,
       title: rtl ? "איזה timeout לבחור לשאילתות PostgreSQL?" : russian ? "Какой timeout выбрать для запросов PostgreSQL?" : "What timeout should I use for PostgreSQL queries?",
       authorName: "Maya Cohen",
       category: { id: "development", name: categoryName },
@@ -733,9 +740,12 @@ function unreadTopics(locale: PreviewLocale) {
 function previewSearchResults(locale: PreviewLocale) {
   const rtl = locale === "he";
   const russian = locale === "ru";
+  const titleDirection = localeRegistry.find(locale)?.locale.direction ?? ("auto" as const);
   return [
     {
       id: "typed-api",
+      sourceLocale: locale,
+      titleDirection,
       title: rtl ? "איך כדאי לבנות לקוח API עם טיפוסים?" : russian ? "Как лучше построить типизированный API-клиент?" : "How should I structure a typed API client?",
       authorName: rtl ? "אלכס ריברה" : "Alex Rivera",
       postCount: 3,
@@ -746,6 +756,8 @@ function previewSearchResults(locale: PreviewLocale) {
     },
     {
       id: "rtl-markdown",
+      sourceLocale: locale,
+      titleDirection,
       title: rtl ? "תוכן RTL מעורב עם בלוקי קוד" : russian ? "Смешанный RTL-контент с блоками кода" : "Mixed RTL content with code blocks",
       authorName: rtl ? "נועה לוי" : "Noa Levi",
       postCount: 4,

@@ -74,6 +74,7 @@ export type ForumPopularPage = Record<ForumPopularPeriod, ForumPopularTopicSumma
 export interface ForumUnansweredTopicSummary {
   id: string;
   title: string;
+  sourceLocale: string;
   authorName: string;
   createdAt: Date;
   section: { id: string; name: string } | null;
@@ -108,6 +109,7 @@ export interface ForumTagPage {
 export interface ForumSearchResult {
   id: string;
   title: string;
+  sourceLocale: string;
   authorName: string;
   postCount: number;
   activityAt: Date;
@@ -1042,6 +1044,7 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
+        sourceLocale: forumTopicTitleRevisions.sourceLocale,
         authorName: user.name,
         createdAt: forumTopics.createdAt,
         sectionId: forumSections.id,
@@ -1074,6 +1077,7 @@ export class DrizzleForumRepository {
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
+      sourceLocale: row.sourceLocale,
       authorName: row.authorName,
       createdAt: row.createdAt,
       ...publicDiscoveryLocation(row),
@@ -1178,6 +1182,7 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
+        sourceLocale: forumTopicTitleRevisions.sourceLocale,
         authorName: user.name,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         activityAt,
@@ -1219,6 +1224,7 @@ export class DrizzleForumRepository {
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
+      sourceLocale: row.sourceLocale,
       authorName: row.authorName,
       postCount: row.postCount,
       activityAt: row.activityAt,
