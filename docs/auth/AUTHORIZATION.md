@@ -8,6 +8,11 @@ Better Auth отвечает за authentication/session и authoritative identi
 Права доступа форума не определяются Better Auth role claim, client input или долгоживущим
 session snapshot: effective permissions разрешаются сервером из application PostgreSQL state.
 
+Продуктовый контракт обычной админ-панели, admission/section/action matrix и границы будущих
+пакетов находятся в [`../ADMIN_PANEL.md`](../ADMIN_PANEL.md). Он переиспользует эту модель,
+не добавляет второй RBAC и сам по себе не регистрирует новые permissions. Текущий catalog
+ниже описывает реализованные capabilities; новые права появляются только с их реализацией.
+
 ## Базовая модель
 
 1. Authorization permission-based: код проверяет capability/permission, а не названия ролей.
@@ -303,6 +308,10 @@ a changed account and trigger loader revalidation. Server session and current ef
 permissions remain authoritative for every mutation.
 
 ## Stage 4E2 scope
+
+Этот раздел фиксирует границы Stage 4E2 foundation. Отдельно утверждённые последующие
+ordinary-admin пакеты описаны в [`../ADMIN_PANEL.md`](../ADMIN_PANEL.md); документационный
+контракт AP-01 не реализует блокировки или administrative History и не расширяет этот catalog.
 
 Stage 4E2 реализует этот authorization foundation, management UI, migration/integration tests,
 перевод solved/best-answer authorization на PermissionResolver и core Stage 4 E2E.

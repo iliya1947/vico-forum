@@ -304,6 +304,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(unanswered).toMatchObject([{
       id: newerTopicId,
       title: "Newer but inactive topic",
+      sourceLocale: "und",
       authorName: "Author",
       section: { id: "e2e-section", name: "E2E Section" },
       category: { id: "e2e-category", name: "E2E Category" },
@@ -313,6 +314,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(searchByTitle).toMatchObject([{
       id: topicId,
       title: "Core E2E topic",
+      sourceLocale: "und",
       authorName: "Author",
       postCount: 2,
       section: { id: "e2e-section", name: "E2E Section" },
@@ -532,5 +534,50 @@ describe("DISCOVERY-01 public Help location projection", () => {
     expect((await forum.readHomepage()).find((category) => category.id === "help-solutions")?.sections)
       .not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "help-solutions-questions" })]));
     await expect(forum.readSection("help-solutions-questions")).resolves.toBeUndefined();
+  });
+});
+
+describe("I18N-UGC-META-01 current title revision locale", () => {
+  it("returns source locale of the authoritative title revision, not a matching post", async () => {
+    await insertUser("meta-author", "Meta Author");
+    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
+    await forum.createCategory({ id: "meta-category", name: "Meta Category" });
+    await forum.createSection({ id: "meta-section", categoryId: "meta-category", name: "Meta Section" });
+
+    await forum.createTopicWithInitialPost({
+      id: "meta-topic",
+      sectionId: "meta-section",
+      authorId: "meta-author",
+      titleRevision: { id: "meta-title-r1", originalContent: "שאלת TypeScript", sourceLocale: "he" },
+      initialPost: {
+        id: "meta-post",
+        topicId: "meta-topic",
+        authorId: "meta-author",
+        parentPostId: null,
+        bodyRevision: { id: "meta-body-r1", originalContent: "Find by this English body phrase", sourceLocale: "en" },
+      },
+      tags: [],
+    });
+
+    const originalSearch = (await forum.search("English body phrase")).find(({ id }) => id === "meta-topic");
+    expect(originalSearch).toMatchObject({ title: "שאלת TypeScript", sourceLocale: "he" });
+    expect((await forum.readUnanswered()).find(({ id }) => id === "meta-topic"))
+      .toMatchObject({ title: "שאלת TypeScript", sourceLocale: "he" });
+
+    // Move the authoritative pointer to a new immutable title revision.
+    await client.query(
+      `insert into forum_topic_title_revisions (id, topic_id, author_id, original_content, source_locale)
+       values ('meta-title-r2', 'meta-topic', 'meta-author', 'Updated English title', 'en')`,
+    );
+    await client.query(
+      `update forum_topics set current_title_revision_id = 'meta-title-r2' where id = 'meta-topic'`,
+    );
+
+    expect((await forum.search("Updated English title")).find(({ id }) => id === "meta-topic"))
+      .toMatchObject({ title: "Updated English title", sourceLocale: "en" });
+    expect((await forum.search("English body phrase")).find(({ id }) => id === "meta-topic"))
+      .toMatchObject({ title: "Updated English title", sourceLocale: "en" });
+    expect((await forum.readUnanswered()).find(({ id }) => id === "meta-topic"))
+      .toMatchObject({ title: "Updated English title", sourceLocale: "en" });
   });
 });

@@ -207,6 +207,7 @@ const reader: ForumReader = {
   readUnanswered: async () => [{
     id: topic.id,
     title: topic.title.originalContent,
+    sourceLocale: topic.title.sourceLocale,
     authorName: topic.authorName,
     createdAt: topic.createdAt,
     section: topic.section,
@@ -265,6 +266,7 @@ const reader: ForumReader = {
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
+    sourceLocale: topic.title.sourceLocale,
     authorName: topic.authorName,
     postCount: topic.posts.length,
     activityAt: topic.posts[0]!.createdAt,
@@ -2254,6 +2256,7 @@ describe("DISCOVERY-01 generic public topic location", () => {
   const publicHelp = {
     id: helpTopic.id,
     title: helpTopic.title.originalContent,
+    sourceLocale: helpTopic.title.sourceLocale,
     authorName: helpTopic.authorName,
     section: null,
     category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
@@ -2261,6 +2264,7 @@ describe("DISCOVERY-01 generic public topic location", () => {
   const publicNormal = {
     id: topic.id,
     title: topic.title.originalContent,
+    sourceLocale: topic.title.sourceLocale,
     authorName: topic.authorName,
     section: { id: section.id, name: section.name },
     category: section.category,
@@ -2345,6 +2349,8 @@ describe("Unanswered topics", () => {
     expect(data.topics).toEqual([{
       id: topic.id,
       title: topic.title.originalContent,
+      sourceLocale: topic.title.sourceLocale,
+      titleDirection: "ltr",
       authorName: topic.authorName,
       section: topic.section,
       category: topic.section.category,
@@ -2358,6 +2364,68 @@ describe("Unanswered topics", () => {
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /How do I type an API\?/ }))
       .toHaveAttribute("href", forumTopicPath("en", topic.id));
+  });
+});
+
+describe("I18N-UGC-META-01 original title language/direction", () => {
+  const cases = [
+    { uiLocale: "en", uiDirection: "ltr", sourceLocale: "he", title: "שאלת TypeScript", titleDirection: "rtl", expectedLang: "he" },
+    { uiLocale: "he", uiDirection: "rtl", sourceLocale: "en", title: "TypeScript question", titleDirection: "ltr", expectedLang: "en" },
+    { uiLocale: "he", uiDirection: "rtl", sourceLocale: "und", title: "Unknown source language", titleDirection: "auto", expectedLang: null },
+    { uiLocale: "en", uiDirection: "ltr", sourceLocale: "zz", title: "Unregistered source language", titleDirection: "auto", expectedLang: "zz" },
+  ] as const;
+
+  it.each(cases)("preserves $sourceLocale title metadata on Search and Unanswered with $uiLocale UI", async ({
+    uiLocale, uiDirection, sourceLocale, title, titleDirection, expectedLang,
+  }) => {
+    const location = {
+      section: { id: topic.section.id, name: topic.section.name },
+      category: topic.section.category,
+    };
+    vi.spyOn(reader, "search").mockResolvedValue([{
+      id: topic.id,
+      title,
+      sourceLocale,
+      authorName: topic.authorName,
+      postCount: topic.posts.length,
+      activityAt: topic.createdAt,
+      ...location,
+      tags: topic.tags,
+    }]);
+    const searched = await searchLoader({
+      request: new Request(`https://forum.example/${uiLocale}/search?q=TypeScript`),
+      params: { locale: uiLocale },
+      context: context(uiLocale, uiDirection),
+    });
+    expect(searched.results).toMatchObject([{ title, sourceLocale, titleDirection }]);
+    renderRoute(SearchRoute, searched, forumSearchPath(uiLocale) + "?q=TypeScript", uiLocale, uiDirection);
+    const searchTitle = await screen.findByText(title);
+    expect(searchTitle).toHaveAttribute("dir", titleDirection);
+    if (expectedLang) expect(searchTitle).toHaveAttribute("lang", expectedLang);
+    else expect(searchTitle).not.toHaveAttribute("lang");
+    expect(searchTitle.closest("a")).toHaveAttribute("href", forumTopicPath(uiLocale, topic.id));
+
+    cleanup();
+
+    vi.spyOn(reader, "readUnanswered").mockResolvedValue([{
+      id: topic.id,
+      title,
+      sourceLocale,
+      authorName: topic.authorName,
+      createdAt: topic.createdAt,
+      ...location,
+    }]);
+    const unanswered = await unansweredLoader({
+      params: { locale: uiLocale },
+      context: context(uiLocale, uiDirection),
+    });
+    expect(unanswered.topics).toMatchObject([{ title, sourceLocale, titleDirection }]);
+    renderRoute(UnansweredRoute, unanswered, forumUnansweredPath(uiLocale), uiLocale, uiDirection);
+    const unansweredTitle = await screen.findByText(title);
+    expect(unansweredTitle).toHaveAttribute("dir", titleDirection);
+    if (expectedLang) expect(unansweredTitle).toHaveAttribute("lang", expectedLang);
+    else expect(unansweredTitle).not.toHaveAttribute("lang");
+    expect(unansweredTitle.closest("a")).toHaveAttribute("href", forumTopicPath(uiLocale, topic.id));
   });
 });
 

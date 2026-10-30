@@ -1544,6 +1544,87 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveValue("## Bold and link with `code`");
   });
 
+  it.each(["write", "preview", "split"] as const)("Find Next applies consecutive matches and wrap from %s", async (view) => {
+    const source = "one two one three";
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(0, 0);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    if (view !== "write") await chooseView(view);
+    const next = screen.getByRole("button", { name: "Find next" });
+    for (const [start, end] of [[0, 3], [8, 11], [0, 3]]) {
+      await userEvent.click(next);
+      expect(document.querySelector(".markdown-editor")).toHaveAttribute("data-mode", "write");
+      expect(document.activeElement).toBe(textarea);
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([start, end]);
+      expect(new FormData(textarea.closest("form")!).get("body")).toBe(source);
+    }
+  });
+
+  it.each([4, 17])("Find Next honors initial caret %s without a source edit", async (caret) => {
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue="one two one three" /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(caret, caret);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+    expect(document.activeElement).toBe(textarea);
+    expect([textarea.selectionStart, textarea.selectionEnd]).toEqual(caret === 4 ? [8, 11] : [0, 3]);
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe("one two one three");
+  });
+
+  it.each(["\n", "\r\n", "\r"])("Find Next maps UTF16 source offsets across %j without normalizing source", async (eol) => {
+    const source = `😀 one${eol}שלום one`;
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(0, 0);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "one");
+    for (const range of [[3, 6], [12, 15], [3, 6]]) {
+      await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+      expect(document.activeElement).toBe(textarea);
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual(range);
+      expect(new FormData(textarea.closest("form")!).get("body")).toBe(source);
+    }
+  });
+
+  it.each(["", "absent"])("Find Next is a no-op for query %j", async (query) => {
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue="one two one" /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus(); textarea.setSelectionRange(4, 7);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    if (query) await userEvent.type(screen.getByRole("textbox", { name: "Find" }), query);
+    const next = screen.getByRole("button", { name: "Find next" });
+    await userEvent.click(next);
+    expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([4, 7]);
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe("one two one");
+  });
+
+  it("Find Next searches a single literal match without adding Undo content history", async () => {
+    const source = "before **one** after";
+    renderEditor(<form><label htmlFor="find-body">Body</label><MarkdownEditor id="find-body" name="body"
+      defaultAuthoringMode="advanced" defaultValue={source} /></form>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: source + "!", selectionStart: source.length + 1, selectionEnd: source.length + 1 } });
+    textarea.focus(); textarea.setSelectionRange(0, 0);
+    fireEvent.keyDown(textarea, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByRole("textbox", { name: "Find" }), "**one**");
+    for (let count = 0; count < 2; count += 1) {
+      await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([7, 14]);
+      expect(document.activeElement).toBe(textarea);
+    }
+    fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe(source);
+    fireEvent.keyDown(textarea, { key: "y", ctrlKey: true });
+    expect(new FormData(textarea.closest("form")!).get("body")).toBe(source + "!");
+  });
+
   it("finds and replaces literal source text without changing unrelated Markdown", async () => {
     renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body"
       defaultAuthoringMode="advanced" defaultValue="one **one**" /></>);
@@ -2572,4 +2653,202 @@ describe("final serializer mounted plain-paste boundary", () => {
       expect(new FormData(form).get("body")).toBe(expected);
     });
   }
+});
+
+
+describe("disabled editor command boundaries", () => {
+  function mount(mode: "simple" | "advanced" = "advanced", disabled = false) {
+    const i18n = runtime();
+    const tree = (off: boolean) => <I18nextProvider i18n={i18n}><form><label htmlFor="disabled-commands">Body</label>
+      <MarkdownEditor id="disabled-commands" name="body" defaultValue="one two one" defaultAuthoringMode={mode} disabled={off} />
+    </form></I18nextProvider>;
+    const rendered = render(tree(disabled));
+    const input = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const source = () => rendered.container.querySelector<HTMLInputElement>('input[name="body"]')!.value;
+    return { ...rendered, input, source, setDisabled: (off: boolean) => rendered.rerender(tree(off)) };
+  }
+
+  it.each(["write", "preview", "split"] as const)("freezes retained Find/Replace in disabled %s and resumes without losing history", async view => {
+    const m = mount();
+    fireEvent.change(m.input, { target: { value: "one two one!" } });
+    m.input.focus(); m.input.setSelectionRange(0, 0);
+    fireEvent.keyDown(m.input, { key: "f", ctrlKey: true });
+    await userEvent.type(screen.getByLabelText("Find", { exact: true }), "one");
+    await userEvent.type(screen.getByLabelText("Replace with"), "X");
+    if (view !== "write") await chooseView(view);
+    const before = [m.input.selectionStart, m.input.selectionEnd];
+    m.setDisabled(true);
+    for (const label of ["Find", "Replace with"]) expect(screen.getByLabelText(label, { exact: true })).toBeDisabled();
+    for (const name of ["Find next", "Replace all"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toBeDisabled(); await userEvent.click(button);
+    }
+    expect(m.source()).toBe("one two one!");
+    expect([m.input.selectionStart, m.input.selectionEnd]).toEqual(before);
+    expect(m.container.querySelector('.markdown-editor')).toHaveAttribute('data-mode', view);
+    m.setDisabled(false);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(m.source()).toBe("one two one");
+    await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(m.source()).toBe("one two one!");
+    await userEvent.click(screen.getByRole("button", { name: "Find next" }));
+    expect(m.input).toHaveFocus();
+    expect(m.input.value.slice(m.input.selectionStart, m.input.selectionEnd)).toBe("one");
+    await userEvent.click(screen.getByRole("button", { name: "Replace all" }));
+    expect(m.source()).toBe("X two X!");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(m.source()).toBe("one two one!");
+  });
+
+  const commands = [["advanced", "plain"], ["advanced", "code"], ["simple", "plain"]] as const;
+  it.each(commands)("ignores late %s/%s clipboard success and failure while disabled", async (mode, format) => {
+    let resolve!: (text: string) => void;
+    let reject!: (error: Error) => void;
+    const readText = vi.fn(() => new Promise<string>((yes, no) => { resolve = yes; reject = no; }));
+    const previous = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText } });
+    try {
+      const m = mount(mode);
+      const label = format === "plain" ? "Paste without formatting" : "Paste as code";
+      await userEvent.click(screen.getByLabelText("More tools"));
+      for (const outcome of ["success", "failure"] as const) {
+        m.setDisabled(false);
+        if (mode === "advanced") { m.input.focus(); m.input.setSelectionRange(0, 3); }
+        await userEvent.click(screen.getByRole("button", { name: label }));
+        m.setDisabled(true);
+        const before = [m.input.selectionStart, m.input.selectionEnd];
+        await act(async () => { if (outcome === "success") resolve("PASTED"); else reject(new Error("Denied")); });
+        expect(m.source()).toBe("one two one");
+        expect([m.input.selectionStart, m.input.selectionEnd]).toEqual(before);
+        expect(m.container.querySelector('.markdown-editor-paste-warning')).toBeNull();
+        m.setDisabled(false);
+        await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+        expect(m.source()).toBe("one two one");
+        await userEvent.click(screen.getByRole("button", { name: "Redo" }));
+        expect(m.source()).toBe("one two one");
+      }
+      expect(readText).toHaveBeenCalledTimes(2);
+      // A fresh enabled command still commits exactly one Undo/Redo step.
+      if (mode === "advanced") { m.input.focus(); m.input.setSelectionRange(0, 3); }
+      await userEvent.click(screen.getByRole("button", { name: label }));
+      await act(async () => resolve("PASTED"));
+      const pasted = m.source(); expect(pasted).toContain("PASTED");
+      await userEvent.click(screen.getByRole("button", { name: "Undo" })); expect(m.source()).toBe("one two one");
+      await userEvent.click(screen.getByRole("button", { name: "Redo" })); expect(m.source()).toBe(pasted);
+    } finally {
+      if (previous) Object.defineProperty(navigator, "clipboard", previous);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it.each(["simple", "advanced"] as const)("does not start a clipboard command in initially disabled %s", async mode => {
+    const previous = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    const readText = vi.fn(async () => "PASTED");
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText } });
+    try {
+      const m = mount(mode, true);
+      await userEvent.click(screen.getByLabelText("More tools"));
+      await userEvent.click(screen.getByRole("button", { name: "Paste without formatting" }));
+      expect(readText).not.toHaveBeenCalled(); expect(m.source()).toBe("one two one");
+    } finally {
+      if (previous) Object.defineProperty(navigator, "clipboard", previous);
+      else Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it.each(["plain", "html", "table", "forced"] as const)("blocks disabled Simple %s paste and preserves enabled paste/history", async kind => {
+    const m = mount("simple", true);
+    const paste = () => {
+      const leaf = m.container.querySelector<HTMLElement>('[data-visual-text=true]')!;
+      const range = document.createRange(); range.selectNodeContents(leaf);
+      window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+      if (kind === "forced") fireEvent.keyDown(leaf, { key: "v", ctrlKey: true, shiftKey: true });
+      fireEvent.paste(leaf, { clipboardData: { getData: (format: string) => format === "text/plain"
+        ? (kind === "table" ? "a\tb\nc\td" : "PASTED") : kind === "html" ? "<b>PASTED</b>" : "" } });
+      fireEvent.keyUp(leaf, { key: "v" });
+    };
+    paste(); expect(m.source()).toBe("one two one");
+    m.setDisabled(false);
+    await userEvent.click(screen.getByRole("button", { name: "Undo" })); expect(m.source()).toBe("one two one");
+    paste(); const pasted = m.source(); expect(pasted).not.toBe("one two one");
+    await userEvent.click(screen.getByRole("button", { name: "Undo" })); expect(m.source()).toBe("one two one");
+    await userEvent.click(screen.getByRole("button", { name: "Redo" })); expect(m.source()).toBe(pasted);
+  });
+});
+
+describe("Simple textbox accessible names", () => {
+  it.each([
+    "", "Alpha", "Alpha **bold** and _italic_\n\nSecond paragraph", "Alpha\n\n",
+    "Before\n\n:::spoiler Details\nInside **nested** text\n:::\n\nAfter",
+  ])("names every editable leaf without changing source %j", async source => {
+    const m = renderEditor(<form><label htmlFor="named-simple">Reply body</label>
+      <MarkdownEditor id="named-simple" name="body" defaultValue={source} /></form>);
+    for (const summary of m.container.querySelectorAll('.forum-markdown-spoiler > summary')) await userEvent.click(summary);
+    const leaves = m.container.querySelectorAll<HTMLElement>('[data-visual-text=true]');
+    expect(leaves.length).toBeGreaterThan(0);
+    for (const leaf of leaves) {
+      expect(leaf).toHaveAttribute("role", "textbox");
+      expect(leaf).toHaveAccessibleName("Visual editor");
+      expect(leaf).toHaveAttribute("contenteditable", "true");
+    }
+    expect(new FormData(m.container.querySelector('form')!).get('body')).toBe(source);
+  });
+
+  it("names leaves in separate instances while keeping native field labels", () => {
+    const m = renderEditor(<form><label htmlFor="named-reply">Reply body</label>
+      <MarkdownEditor id="named-reply" name="reply" defaultValue="Alpha" />
+      <label htmlFor="named-question">Question body</label>
+      <MarkdownEditor id="named-question" name="question" defaultValue="Beta" /></form>);
+    const editors = m.container.querySelectorAll('.markdown-editor'); expect(editors).toHaveLength(2);
+    for (const editor of editors) expect(editor.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+    expect(m.container.querySelector('#named-reply')).toHaveAccessibleName('Reply body');
+    expect(m.container.querySelector('#named-question')).toHaveAccessibleName('Question body');
+  });
+
+  it("updates the leaf name from the active translation runtime without changing text", async () => {
+    const i18n = runtime();
+    const m = render(<I18nextProvider i18n={i18n}><MarkdownEditor id="named-localized" name="body" defaultValue="Alpha" /></I18nextProvider>);
+    for (const [locale, name] of [['he', 'עורך חזותי'], ['ru', 'Визуальный редактор'], ['eo', 'Vida redaktilo'], ['en', 'Visual editor']]) {
+      i18n.addResourceBundle(locale!, 'common', { ...canonicalCommonResources(), editorVisualSurface: name });
+      await act(async () => { await i18n.changeLanguage(locale); });
+      const leaf = m.container.querySelector('[data-visual-text=true]')!;
+      expect(leaf).toHaveAccessibleName(name!); expect(leaf.textContent).toBe('Alpha');
+    }
+  });
+
+  it("keeps a stable name and source history through edit, Undo/Redo and mode switches", async () => {
+    const m = renderEditor(<form><MarkdownEditor id="named-history" name="body" defaultValue="Alpha" /></form>);
+    const source = () => new FormData(m.container.querySelector('form')!).get('body');
+    const leaf = m.container.querySelector<HTMLElement>('[data-visual-text=true]')!;
+    leaf.focus(); leaf.textContent = 'Beta'; fireEvent.input(leaf);
+    expect(source()).toBe('Beta'); expect(leaf).toHaveAccessibleName('Visual editor');
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' })); expect(source()).toBe('Alpha');
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+    await userEvent.click(screen.getByRole('button', { name: 'Redo' })); expect(source()).toBe('Beta');
+    await userEvent.click(screen.getByRole('button', { name: 'Advanced' })); expect(source()).toBe('Beta');
+    await userEvent.click(screen.getByRole('button', { name: 'Simple' })); expect(source()).toBe('Beta');
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+  });
+
+  it("keeps disabled and Preview focus boundaries", async () => {
+    const i18n = runtime();
+    const tree = (disabled: boolean) => <I18nextProvider i18n={i18n}><MarkdownEditor id="named-states" name="body" disabled={disabled} defaultValue="Alpha" /></I18nextProvider>;
+    const m = render(tree(true));
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAttribute('contenteditable', 'false');
+    m.rerender(tree(false));
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(m.container.querySelector('[data-visual-text=true]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(m.container.querySelector('[data-visual-text=true]')).toHaveAccessibleName('Visual editor');
+  });
+
+  it("preserves independent Advanced and table names", () => {
+    const m = renderEditor(<form><label htmlFor="named-advanced">Reply body</label>
+      <MarkdownEditor id="named-advanced" name="body" defaultAuthoringMode="advanced" defaultValue="Alpha" />
+      <MarkdownEditor id="named-table" name="table" defaultValue={'| A | B |\n| --- | --- |\n| c | d |'} /></form>);
+    expect(m.container.querySelector('#named-advanced')).toHaveAccessibleName('Reply body');
+    const cells = m.container.querySelectorAll('.markdown-editor-visual-table input'); expect(cells).toHaveLength(4);
+    for (const cell of cells) expect(cell).toHaveAccessibleName(/Table (header cell|cell)/);
+  });
 });

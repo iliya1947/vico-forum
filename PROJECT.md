@@ -47,6 +47,10 @@ application permissions разрешаются отдельно server-side.
 
 Полный source of truth для authorization — [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
 
+Постоянный контракт обычной админ-панели — [`docs/ADMIN_PANEL.md`](./docs/ADMIN_PANEL.md).
+Он задаёт утверждённую структуру, permission boundaries и последовательность будущих
+bounded реализаций; наличие контракта не означает, что глобальная админ-панель уже реализована.
+
 ## Техническая основа
 
 Принятый baseline проекта:

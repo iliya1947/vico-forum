@@ -1,6 +1,24 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-29
+Последнее обновление: 2026-10-30
+
+## I18N-UGC-META-01 — original topic-title metadata in Search/Unanswered (2026-10-29)
+
+В отдельной implementation-ветке устранена потеря source-locale metadata текущей ревизии
+заголовка темы между repository и Search/Unanswered presentation. `readUnanswered()` и
+`search()` теперь возвращают `sourceLocale` из current topic-title revision; loaders
+сохраняют его и получают `titleDirection` из request-scoped LocaleRegistry.
+Заголовки на обеих страницах имеют собственные `lang/dir` независимо от UI locale;
+для `und` атрибут `lang` не выдумывается, направление — `auto`, для известного
+source locale без registry direction сохраняется известный `lang` и `dir="auto"`.
+
+Добавлены focused repository/PostgreSQL и mounted route/DOM регрессии: противоположные
+направления source/UI, неизвестные метаданные, смена актуальной ревизии и совпадение
+по тексту сообщения. UI Preview fixtures для этих двух карточек синхронизированы с
+изменённым presentation contract. Не меняются схема БД, SQL ranking/query semantics,
+Unanswered filtering, public Help location projection, другие UGC списки,
+translation generation/provider/runtime или архитектура. CI, browser acceptance,
+независимый review и merge на момент этой записи не объявляются завершёнными.
 
 ## Назначение
 
@@ -43,6 +61,74 @@ admission и subsequent appeal transitions возвращают explicit policy-
 необратимого unique-pending ограничения; initial Decision не переписывается.
 Проверки/CI и independent whole-PR acceptance фиксируются отдельно после
 фактического выполнения; production migration/GRANT/deploy не выполнялись.
+
+## RES-A11Y-01 — accessible name Simple textbox (2026-10-30)
+
+В отдельной implementation-ветке каждый VisualTextLeaf с role=textbox получает
+собственное author-supplied accessible name через существующий локализованный
+ключ editorVisualSurface. Имя не вычисляется из текста сообщения и не зависит
+от наличия имени у ancestor region или отдельного native textarea.
+Общий leaf path покрывает пустой/trailing текст, formatted fragments и nested
+spoiler. Новые translation keys, зависимости или общая ARIA widget model не добавлены.
+
+Source/history/selection, Simple/Advanced переключения, native textarea labels,
+table inputs, Preview и disabled/paste boundaries не меняются. Добавлены focused
+mounted regressions для имени, нескольких instances, runtime localization,
+редактирования/Undo/Redo и соседних корректных controls. Фактические checks/CI
+и независимый whole-PR review фиксируются отдельно после выполнения.
+
+## EDITOR-08 — disabled Find/Replace и paste boundaries (2026-10-29)
+
+В отдельной implementation-ветке отключённый редактор блокирует inputs и команды
+сохранённой Advanced Find/Replace панели. Find Next/Replace all проверяют disabled
+до изменения selection, view, source или history; состояние панели сохраняется
+для повторного включения. Ранее исправленный EDITOR-05 active-write и
+Preview/Split pending-selection path не меняются.
+
+Simple paste проверяет disabled до передачи plain/HTML/spreadsheet/forced-plain
+в mutation callbacks. Clipboard-команды проверяют актуальное committed disabled
+состояние перед запуском и после завершения readText; поздний success/rejection
+в отключённом редакторе не изменяет source/history/pending selection или notice.
+Обычные enabled paste, точный source и Undo/Redo сохраняют прежнюю семантику.
+Изменение не вводит общий read-only redesign или новые внешние зависимости.
+
+Добавлены focused mounted regressions для трёх причин, re-enable, соседних
+заблокированных команд и enabled history controls. Фактические проверки/CI и
+независимый whole-PR review фиксируются отдельно после выполнения.
+
+## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
+
+Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой
+структуры, admission/section/action matrix, общего Quick actions, significant-action/reason
+matrix и отдельных границ «Требуют внимания» и будущей super-admin UI. Согласованы необходимые
+ссылки и scope формулировки в product, authorization, UI/UX и roadmap документах.
+
+Этот пакет меняет только документацию. Глобальный shell, administrative History, новые
+object pages, закрытие тем и блокировки не реализованы; runtime catalog, код, schema,
+миграции и зависимости не меняются. Эффект блокировки и ещё не выбранные reason/reopen rules
+сохранены как явные условия перед соответствующими implementation пакетами. Координация
+admin-panel работы ведётся в PR #251 по прямому указанию разработчика, без дублирования в #236.
+Checks и независимый review этого документационного пакета фиксируются после их выполнения;
+runtime/browser/owner acceptance будущей админ-панели не заявляется.
+
+
+
+
+## EDITOR-05 — Advanced Find Next selection/focus (2026-10-29)
+
+В отдельной implementation-ветке Find Next применяет найденный source range
+непосредственно к уже активному Advanced write textarea, используя существующее
+source-to-textarea offset mapping, и очищает consumed pending selection.
+Переход из Preview/Split сохраняет прежний pending-selection/layout-effect path.
+Поиск остаётся буквальным, идёт от selectionEnd и wraps к первому совпадению;
+empty/no-match не меняют selection/source. Поиск запоминает только selection,
+не создаёт Markdown edit или отдельный Undo content step.
+
+Добавлены mounted regressions для последовательных matches/wrap, исходных caret
+positions, Preview/Split, single literal match, LF/CRLF/CR и Unicode/UTF16 mapping,
+точного FormData source и Undo/Redo. Replace all и остальной Find/Replace UI
+не менялись; regex/highlighting/counters не добавлялись. Фактические проверки/CI
+и независимый whole-PR review фиксируются отдельно после выполнения.
 
 ## Preview scenario correctness — confirmation and Appeals (2026-10-29)
 
