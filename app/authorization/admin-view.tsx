@@ -6,7 +6,8 @@ import type {
   AuthorizationRoleDetails,
   AuthorizationUserDetails,
 } from "../../db/authorization-repository";
-import { ForumShell } from "../forum/ui";
+import { AdminShell } from "../admin/shell";
+import type { AdminAccess } from "../admin/access";
 
 export type AuthorizationFailure =
   | "invalid"
@@ -17,12 +18,14 @@ export type AuthorizationFailure =
 
 export function AuthorizationAdminView({
   locale,
+  access,
   permissions,
   roles,
   users,
   result,
 }: {
   locale: string;
+  access: AdminAccess;
   permissions: readonly PermissionKey[];
   roles: readonly AuthorizationRoleDetails[];
   users: readonly AuthorizationUserDetails[];
@@ -31,11 +34,11 @@ export function AuthorizationAdminView({
   const { t } = useTranslation("common");
 
   return (
-    <ForumShell locale={locale} variant="admin">
+    <AdminShell locale={locale} access={access} current="roles">
       <section className="admin-heading">
         <div>
           <p className="eyebrow">{t("authorizationNav")}</p>
-          <h1>{t("authorizationHeading")}</h1>
+          <h2>{t("authorizationHeading")}</h2>
         </div>
         {result?.ok ? (
           <p className="admin-result admin-result-success" role="status">
@@ -54,7 +57,7 @@ export function AuthorizationAdminView({
           <div className="admin-section-heading">
             <div>
               <p className="eyebrow">{t("rolesHeading")}</p>
-              <h2 id="authorization-roles-heading">{t("rolesHeading")}</h2>
+              <h3 id="authorization-roles-heading">{t("rolesHeading")}</h3>
             </div>
             <span className="admin-section-count" aria-label={t("rolesHeading")}>
               {roles.length}
@@ -81,7 +84,7 @@ export function AuthorizationAdminView({
               <article className="admin-card admin-role-card" key={role.id}>
                 <header className="admin-card-heading">
                   <div className="admin-card-title">
-                    <h3>{role.displayName}</h3>
+                    <h4>{role.displayName}</h4>
                     <code>{role.slug}</code>
                   </div>
                   <div className="admin-card-badges">
@@ -149,7 +152,7 @@ export function AuthorizationAdminView({
           <div className="admin-section-heading">
             <div>
               <p className="eyebrow">{t("usersHeading")}</p>
-              <h2 id="authorization-users-heading">{t("usersHeading")}</h2>
+              <h3 id="authorization-users-heading">{t("usersHeading")}</h3>
             </div>
             <span className="admin-section-count" aria-label={t("usersHeading")}>
               {users.length}
@@ -165,7 +168,7 @@ export function AuthorizationAdminView({
                       {user.name.trim().slice(0, 1).toUpperCase()}
                     </span>
                     <div>
-                      <h3>{user.name}</h3>
+                      <h4>{user.name}</h4>
                       <small>{user.email}</small>
                     </div>
                   </div>
@@ -174,7 +177,7 @@ export function AuthorizationAdminView({
 
                 <div className="admin-user-body">
                   <section className="admin-user-panel">
-                    <h4>{t("assignedRole")}</h4>
+                    <h5>{t("assignedRole")}</h5>
                     <Form method="post" className="admin-role-assignment">
                       <input type="hidden" name="intent" value="assignRole" />
                       <input type="hidden" name="userId" value={user.id} />
@@ -194,7 +197,7 @@ export function AuthorizationAdminView({
                   </section>
 
                   <section className="admin-user-panel admin-user-permissions">
-                    <h4>{t("permissionsHeading")}</h4>
+                    <h5>{t("permissionsHeading")}</h5>
                     <div className="admin-override-list">
                       {permissions.map((permission) => (
                         <Form method="post" className="admin-override-row" key={permission}>
@@ -218,7 +221,7 @@ export function AuthorizationAdminView({
                   </section>
 
                   <section className="admin-user-panel">
-                    <h4>{t("effectivePermissions")}</h4>
+                    <h5>{t("effectivePermissions")}</h5>
                     <ul className="admin-effective-permissions">
                       {user.authorization.effectivePermissions.map((permission) => (
                         <li key={permission}><code>{permission}</code></li>
@@ -231,6 +234,6 @@ export function AuthorizationAdminView({
           </div>
         </section>
       </div>
-    </ForumShell>
+    </AdminShell>
   );
 }

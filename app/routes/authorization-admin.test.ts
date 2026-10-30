@@ -14,7 +14,7 @@ function capability(manage: boolean | Error = true) {
         if (manage instanceof Error) throw manage;
         return manage;
       }),
-      resolve: vi.fn(),
+      resolve: vi.fn(async () => ({role:{id:"manager-role",slug:"custom-manager",displayName:"Manager",isSystem:false},explicitAssignment:true,grants:[],overrides:{},effectivePermissions: ["access.authorization.manage" as const]})),
     }),
     listRoles: vi.fn(async () => []), listUsers: vi.fn(async () => []), readRole: vi.fn(), resolveUser: vi.fn(),
     readManagementState: vi.fn(async () => ({ roles: [], users: [] })),
@@ -58,6 +58,18 @@ describe("authorization management route", () => {
     expect(state.value.readRole).not.toHaveBeenCalled();
     expect(state.value.resolveUser).not.toHaveBeenCalled();
   });
+  it("derives navigation from the same resolver handle as the independent management gate", async () => {
+    const state=context();
+    const resolver=state.value.forUser();
+    resolver.resolve.mockResolvedValue({role:{id:"custom",slug:"different-label",displayName:"Custom",isSystem:false},explicitAssignment:true,grants:[],overrides:{},effectivePermissions:["access.authorization.manage"]});
+    const forUser=vi.spyOn(state.value,"forUser").mockReturnValue(resolver);
+    const result=await loader({params:{locale:"he"},context:state.context});
+    expect(forUser).toHaveBeenCalledExactlyOnceWith("manager");
+    expect(resolver.has).toHaveBeenCalledExactlyOnceWith("access.authorization.manage");
+    expect(resolver.resolve).toHaveBeenCalledOnce();
+    expect(result.access).toEqual({canEnter:true,canReadForum:false,canManageAuthorization:true});
+  });
+
   it("uses the session actor and ignores forged authorization fields", async () => {
     const state = context(); await action({ request: request({ intent: "assignRole", userId: "target", roleId: "role", actorId: "forged", permission: "access.authorization.manage" }), context: state.context });
     expect(state.value.assignUserRole).toHaveBeenCalledWith("manager", "target", "role");

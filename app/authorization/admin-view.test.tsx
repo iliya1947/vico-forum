@@ -8,6 +8,7 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { PermissionKey } from "./catalog";
+import { adminAccess } from "../admin/access";
 import { AuthorizationAdminView } from "./admin-view";
 
 afterEach(cleanup);
@@ -80,13 +81,14 @@ const users = [{
   },
 }];
 
-function renderView(result?: { ok?: boolean; error?: "conflict" }) {
+function renderView(result?: { ok?: boolean; error?: "conflict" }, grants: PermissionKey[] = ["access.authorization.manage"]) {
   const router = createMemoryRouter([{
     path: "*",
     element: (
       <HeaderAuthProvider initialUser={{ id: "fixture-user", name: "Manager", canManageAuthorization: true }}>
         <AuthorizationAdminView
           locale="en"
+          access={adminAccess(new Set(grants))}
           permissions={permissions}
           roles={[systemRole, customRole]}
           users={users}
@@ -113,7 +115,12 @@ describe("authorization management presentation", () => {
   it("keeps every existing management mutation intent and field contract visible", async () => {
     const { container } = renderView();
 
-    expect(await screen.findByRole("heading", { name: "Authorization management" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Authorization management", level: 2 })).toBeVisible();
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(container.querySelectorAll("h1")).toHaveLength(1);
+    expect(container.querySelectorAll(".admin-panel-nav")).toHaveLength(1);
+    expect(container.querySelector('.admin-panel-nav [aria-current="page"]')).toHaveAttribute("href", "/en/admin/authorization");
+    expect(container.querySelector('.admin-panel-nav a[href$="/history"]')).toBeNull();
     expect(screen.getByRole("heading", { name: "Roles" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Users" })).toBeVisible();
 
@@ -129,6 +136,14 @@ describe("authorization management presentation", () => {
     expect(formByIntent(container, "roleGrants")?.querySelector('[name="permission"]')).toBeTruthy();
     expect(formByIntent(container, "assignRole")?.querySelector('[name="roleId"]')).toBeTruthy();
     expect(formByIntent(container, "override")?.querySelector('[name="effect"]')).toBeTruthy();
+  });
+
+  it("shares Overview/History destinations from the actor's effective access", async () => {
+    const {container}=renderView(undefined,["access.authorization.manage","admin.history.read","forum.topic.pin"]);
+    expect(await screen.findByRole("heading",{name:"Admin panel",level:1})).toBeVisible();
+    expect(container.querySelector('.admin-panel-nav a[href="/en/admin"]')).toHaveTextContent("Overview");
+    expect(container.querySelector('.admin-panel-nav a[href="/en/admin/history"]')).toHaveTextContent("History");
+    expect(container.querySelector('.admin-panel-nav a[href*="admin-forum"]')).toBeTruthy();
   });
 
   it("keeps custom-role deletion visually distinct and never offers it for built-in roles", async () => {

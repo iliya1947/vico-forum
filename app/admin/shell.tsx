@@ -20,7 +20,7 @@ export function adminDestinations(locale: string, access: AdminAccess) {
   ];
 }
 
-export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history"}) {
+export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles"}) {
   const {t} = useTranslation("common");
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel">

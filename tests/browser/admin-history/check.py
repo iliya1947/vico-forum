@@ -1,4 +1,4 @@
-"""Opt-in loopback Worker/Better Auth/PostgreSQL History verification; see README."""
+"""Opt-in AP-03/AP-04 Worker/auth/PostgreSQL management and History checks; see README."""
 import argparse
 import json
 import os
@@ -43,14 +43,51 @@ def count():
 def document(page, path, status=200):
     r = page.goto(base + path, wait_until='networkidle')
     assert r.status == status, (path, r.status)
-    if '/admin/authorization' not in path:
-        assert 'no-store' in r.headers.get('cache-control', ''), r.headers
+    assert 'no-store' in r.headers.get('cache-control', ''), r.headers
     return r
 
 
 def mutate(context, form, status=200):
     r = context.request.post(base + '/en/admin/authorization', headers={'Origin': base}, form=form)
     assert r.status == status, (form['intent'], r.status, r.text()[:150])
+
+
+def management(page, locale='en'):
+    document(page, '/' + locale + '/admin/authorization')
+    assert page.locator('main').count() == 1
+    assert page.locator('h1').count() == 1
+    assert page.locator('.admin-panel-nav').count() == 1
+    assert page.locator('.admin-panel-nav [aria-current="page"]').get_attribute('href') == '/' + locale + '/admin/authorization'
+
+
+def submit_management(page, fields, status=200):
+    management(page)
+    intent = fields['intent']
+    form = page.locator('form:has(input[name="intent"][value="' + intent + '"])')
+    for name in ['roleId', 'userId']:
+        if name in fields and not (intent == 'assignRole' and name == 'roleId'):
+            form = form.filter(has=page.locator('input[type="hidden"][name="' + name + '"][value="' + fields[name] + '"]'))
+    if intent == 'override':
+        form = form.filter(has=page.locator('input[name="permission"][value="' + fields['permission'] + '"]'))
+    assert form.count() == 1, (intent, form.count())
+    for name in ['slug', 'displayName']:
+        if name in fields:
+            form.locator('input[name="' + name + '"]').fill(fields[name])
+    if intent == 'roleGrants':
+        for checkbox in form.locator('input[type="checkbox"]').all():
+            checkbox.uncheck()
+        form.locator('input[name="permission"][value="' + fields['permission'] + '"]').check()
+    if intent == 'assignRole':
+        form.locator('select[name="roleId"]').select_option(fields['roleId'])
+    if intent == 'override':
+        form.locator('select[name="effect"]').select_option(fields['effect'])
+    with page.expect_response(lambda r: r.request.method == 'POST' and '/admin/authorization' in r.url) as pending:
+        form.locator('button[type="submit"]').click()
+    assert pending.value.status == status, (intent, pending.value.status)
+    assert 'no-store' in pending.value.headers.get('cache-control', '')
+    page.locator('.admin-result-success' if status == 200 else '.admin-result-error').wait_for()
+    assert page.locator('.admin-panel-nav [aria-current="page"]').get_attribute('href').endswith('/admin/authorization')
+    record('real-shell-form-' + intent + ('-rejected' if status != 200 else ''))
 
 
 try:
@@ -73,21 +110,29 @@ try:
         sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'admin.history.read','deny')", [actor])
         document(page, '/en/admin/history', 403)
         before = count()
-        mutate(manager, {'intent': 'createRole', 'slug': prefix, 'displayName': 'Before ' + prefix})
+        submit_management(page, {'intent': 'createRole', 'slug': prefix, 'displayName': 'Before ' + prefix})
         role = sql('select id from authz_roles where slug=$1', [prefix])[0]['id']
+        submit_management(page, {'intent': 'renameRole', 'roleId': role, 'displayName': 'Deleted role עברית ' + prefix})
         mutate(manager, {'intent': 'renameRole', 'roleId': role, 'displayName': 'Deleted role עברית ' + prefix})
-        mutate(manager, {'intent': 'renameRole', 'roleId': role, 'displayName': 'Deleted role עברית ' + prefix})
+        submit_management(page, {'intent': 'roleGrants', 'roleId': role, 'permission': 'forum.topic.pin'})
         mutate(manager, {'intent': 'roleGrants', 'roleId': role, 'permission': 'forum.topic.pin'})
-        mutate(manager, {'intent': 'roleGrants', 'roleId': role, 'permission': 'forum.topic.pin'})
+        submit_management(page, {'intent': 'assignRole', 'userId': target, 'roleId': 'builtin-moderator'})
         mutate(manager, {'intent': 'assignRole', 'userId': target, 'roleId': 'builtin-moderator'})
-        mutate(manager, {'intent': 'assignRole', 'userId': target, 'roleId': 'builtin-moderator'})
+        submit_management(page, {'intent': 'override', 'userId': target, 'permission': 'forum.reply.create', 'effect': 'deny'})
         mutate(manager, {'intent': 'override', 'userId': target, 'permission': 'forum.reply.create', 'effect': 'deny'})
-        mutate(manager, {'intent': 'override', 'userId': target, 'permission': 'forum.reply.create', 'effect': 'deny'})
-        mutate(manager, {'intent': 'deleteRole', 'roleId': role})
+        submit_management(page, {'intent': 'deleteRole', 'roleId': role})
         assert count() == before + 6
-        mutate(manager, {'intent': 'override', 'userId': actor, 'permission': 'access.authorization.manage', 'effect': 'deny'}, 409)
+        submit_management(page, {'intent': 'override', 'userId': actor, 'permission': 'access.authorization.manage', 'effect': 'deny'}, 409)
         mutate(reader, {'intent': 'createRole', 'slug': prefix + '-denied', 'displayName': 'Denied'}, 403)
+        mutate(manager, {'intent': 'renameRole', 'roleId': role, 'displayName': 'Stale deleted role'}, 404)
+        mutate(manager, {'intent': 'createRole', 'slug': 'invalid slug', 'displayName': 'Invalid'}, 400)
+        cross = manager.request.post(base + '/en/admin/authorization', headers={'Origin': 'https://untrusted.invalid'}, form={'intent': 'createRole', 'slug': prefix + '-cross', 'displayName': 'Cross origin'})
+        # React Router can reject the Origin before the route action (400);
+        # the route's own same-origin boundary returns403 when reached directly.
+        assert cross.status in [400, 403], (cross.status, cross.text()[:150])
+        record('cross-origin-rejected-' + str(cross.status))
         assert count() == before + 6
+        record('controlled-stale-invalid-lockout-cross-origin-states')
         record('six-real-management-producers-noop-retry-lockout-denial')
         document(page, '/en/admin')
         assert page.locator('.admin-history-events').count() == 0
@@ -100,6 +145,11 @@ try:
         document(page, '/en/admin')
         assert page.locator('.admin-history-events li').count() == 5
         record('deleted-role-context-and-five-real-overview-events')
+        management(page)
+        page.locator('.admin-panel-nav a[href$="/history"]').click()
+        page.locator('#admin-history-heading').wait_for()
+        assert page.locator('.admin-panel-nav [aria-current="page"]').get_attribute('href').endswith('/admin/history')
+        record('roles-to-history-shared-shell-navigation')
         # Provision a history-only reader using the same existing role/override state.
         sql("update authz_user_roles set role_id='builtin-user' where user_id=$1", [target])
         sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'admin.history.read','allow')", [target])
@@ -127,6 +177,15 @@ try:
                 if width == 320:
                     page.screenshot(path=str(a.output / (locale + '-320.png')), full_page=True)
                 record('localized-history-' + locale + '-' + str(width))
+                management(page, locale)
+                assert page.locator('html').get_attribute('dir') == direction
+                assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+                page.locator('.admin-panel-nav a').first.focus()
+                page.keyboard.press('Tab')
+                assert page.locator('.admin-panel-nav').evaluate('e=>e.contains(document.activeElement)')
+                if width == 320:
+                    page.screenshot(path=str(a.output / (locale + '-roles-320.png')))
+                record('localized-roles-shell-' + locale + '-' + str(width))
         # Real operations generate enough history to cross the 25-item page boundary.
         mutate(manager, {'intent': 'createRole', 'slug': prefix + '-paging', 'displayName': 'Page 0'})
         paging = sql('select id from authz_roles where slug=$1', [prefix + '-paging'])[0]['id']

@@ -1077,7 +1077,7 @@ select {
   background: var(--color-surface);
 }
 
-.admin-card h3 {
+.admin-card h4 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
@@ -6234,14 +6234,14 @@ p {
   text-transform: uppercase;
 }
 
-.admin-heading h1,
-.admin-section-heading h2 {
+.admin-heading h2,
+.admin-section-heading h3 {
   margin: 0.12rem 0 0;
   color: var(--color-text);
   line-height: 1.2;
 }
 
-.admin-heading h1 {
+.admin-heading h2 {
   font-size: clamp(1.35rem, 3vw, 1.85rem);
 }
 
@@ -6285,7 +6285,7 @@ p {
   margin-block-end: 0.55rem;
 }
 
-.admin-section-heading h2 {
+.admin-section-heading h3 {
   font-size: 1.15rem;
 }
 
@@ -6447,8 +6447,8 @@ p {
   gap: 0.45rem;
 }
 
-.admin-card-title h3,
-.admin-user-identity h3 {
+.admin-card-title h4,
+.admin-user-identity h4 {
   margin: 0;
   color: var(--color-text);
   font-size: 0.9rem;
@@ -6482,7 +6482,7 @@ p {
 }
 
 .admin-permissions-form legend,
-.admin-user-panel h4 {
+.admin-user-panel h5 {
   margin: 0 0 0.55rem;
   padding: 0;
   color: var(--color-text);
