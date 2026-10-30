@@ -9,6 +9,7 @@ import { loader, middleware } from "./locale-boundary";
 import { authSessionContext } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { meta as adminMeta } from "./admin";
 
 function contextWithFixtureRegistry() {
   const context = new RouterContextProvider();
@@ -151,6 +152,32 @@ function localeLoaderContext(authorizationError: Error) {
 }
 
 describe("locale boundary loader", () => {
+  it.each([
+    ["en", "Admin panel · Vico Forum"],
+    ["ru", "Админ-панель · Vico Forum"],
+    ["he", "לוח ניהול · Vico Forum"],
+  ])("uses the resolved %s UI snapshot for the admin browser title", async (locale, title) => {
+    const context = localeLoaderContext(new AuthorizationUnavailableError());
+    const args = {
+      request: new Request(`https://vico.test/${locale}/admin`), params: { locale }, context,
+    };
+    await middleware[0](args, async () => new Response());
+    const snapshot = await loader(args);
+    const matches: Parameters<typeof adminMeta>[0]["matches"] = [
+      { id: "root", loaderData: undefined, pathname: "/", params: { locale }, meta: [] },
+      { id: "routes/locale-boundary", loaderData: snapshot, pathname: `/${locale}`, params: { locale }, meta: [] },
+      { id: "routes/admin", loaderData: { locale, access: { canEnter: true, canReadForum: true, canManageAuthorization: false }, counts: null },
+        pathname: `/${locale}/admin`, params: { locale }, meta: [] },
+    ];
+    expect(adminMeta({ matches })).toEqual([{ title }]);
+
+    // Partial target resources use the same canonical-English fallback as the visible UI.
+    if (locale !== "en") {
+      delete snapshot.resourcesByLocale[locale]?.common?.adminPanelTitle;
+      expect(adminMeta({ matches })).toEqual([{ title: "Admin panel · Vico Forum" }]);
+    }
+  });
+
   it("keeps public pages available for a classified optional authorization outage", async () => {
     const context = localeLoaderContext(new AuthorizationUnavailableError());
     const snapshot = await loader({

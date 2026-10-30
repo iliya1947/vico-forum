@@ -93,8 +93,10 @@ try:
         for locale, heading, direction in [('en', 'Admin panel', 'ltr'), ('ru', 'Админ-панель', 'ltr'), ('he', 'לוח ניהול', 'rtl')]:
             for width in [320, 390, 768, 1280]:
                 page.set_viewport_size({'width': width, 'height': 900})
-                document(page, '/' + locale + '/admin')
+                response = document(page, '/' + locale + '/admin')
+                assert '<title>' + heading + ' · Vico Forum</title>' in response.text()
                 assert page.locator('h1').inner_text() == heading
+                assert page.title() == heading + ' · Vico Forum'
                 assert page.locator('html').get_attribute('dir') == direction
                 geometry = page.evaluate('({document:document.documentElement.scrollWidth,client:document.documentElement.clientWidth})')
                 assert geometry['document'] <= geometry['client'] + 1, geometry
@@ -111,6 +113,7 @@ try:
         page.locator('.language-switcher select').select_option('he')
         page.wait_for_url('**/he/admin')
         assert page.locator('h1').inner_text() == 'לוח ניהול'
+        assert page.title() == 'לוח ניהול · Vico Forum'
         page.locator('.admin-panel-nav a[href*="admin-forum"]').focus()
         page.keyboard.press('Enter')
         page.wait_for_url('**/he/under-development?feature=admin-forum')

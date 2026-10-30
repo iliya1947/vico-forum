@@ -74,6 +74,10 @@ Forum capabilities и `access.authorization.manage`, без нового общ�
 Header получает server-resolved presentation flag, loader повторно проверяет
 актуальный effective access до чтения данных. Own-only/attention-only grants
 входа не дают; existing `admin/authorization` сохраняет свой независимый gate.
+Browser title нового admin route использует уже resolved UI translation snapshot
+locale boundary и существующий catalog с canonical-English fallback, включая
+обновление при client-side смене locale. Literal title AP02-LIRA-01 устранён;
+результаты повторных проверок и нового review фиксируются отдельно в #251.
 
 Новый scalar aggregate reader в одном SQL statement считает categories/public
 sections/topics/messages, не использует capped lists и не читает пользователей
