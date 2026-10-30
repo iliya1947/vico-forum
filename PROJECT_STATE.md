@@ -1698,7 +1698,7 @@ checkpoints ниже сохраняются как датированная ис
   path. Editor UI не выдаёт private object key и не скачивает file content при restore.
   Следующие части Stage 5: publication/download integration и orphan cleanup.
   Реальное R2 provisioning/binding/live acceptance остаётся Stage 6.
-- Editor Stage 5 package 1 — implementation in progress (2026-10-14, PR #215):
+- Editor Stage 5 package 1 — исторический in-progress срез (2026-10-14, PR #215):
   Existing topic/Help/reply publication transactions now validate an explicit snapshot
   of selected draft attachment IDs against authoritative owner/context/canonical generation
   refs under the existing scope lock; the same transaction moves confirmed refs to
@@ -1741,7 +1741,7 @@ checkpoints ниже сохраняются как датированная ис
   All three package implementation changes are present in PR #215; this is NOT an
   independent whole-Editor/owner browser acceptance. The real browser upload→publish
   →navigate→download and failure-preservation path with a test bucket is still
-  unverified. Editor 2.0 PR is open and unmerged.
+  unverified. Editor 2.0 PR was open and unmerged at this checkpoint; it later merged 2026-10-18.
 - Stage 5 attachment/draft concurrency correction (2026-10-13): Codex выполняет реализацию
   по прямому назначению владельца. Stale GET restore отсекается cleanup fence; выполняющиеся
   upload/retry/remove сохраняют исходную identity при retained переходах A→B→C.
@@ -1798,8 +1798,8 @@ checkpoints ниже сохраняются как датированная ис
   существующих экранов, включая профиль, — отдельный последующий проход, не критерий
   готовности отдельных MVP-срезов. Финальная real-runtime acceptance перед публичным
   выпуском по-прежнему обязательна.
-- Online presence («Кто сейчас на форуме») реализован в текущем bounded
-  MVP implementation PR #213: вошедший пользователь с видимой вкладкой посылает
+- Online presence («Кто сейчас на форуме») реализован и merged в bounded
+  MVP PR #213 (2026-10-10): вошедший пользователь с видимой вкладкой посылает
   same-origin POST heartbeat; сервер идентифицирует участника только по текущей
   сессии, не доверяя ID из формы. Отдельная таблица хранит последний heartbeat
   без IP/session token, максимум одну строку на пользователя; окно активности
@@ -1886,7 +1886,7 @@ checkpoints ниже сохраняются как датированная ис
   approved shell/homepage foundation и общая локализованная страница `Under development`.
   Merged PR #182 перенёс rich `Pinned / Latest topics / statistics` presentation с homepage на
   category pages: runtime homepage читает реальные categories + sections + aggregate counts, а
-  category reader — bounded latest-topic activity по каждому section. Текущий PR #181 добавляет к
+  category reader — bounded latest-topic activity по каждому section. Впоследствии merged PR #181 добавил к
   этому же category-reader boundary persisted pins, bounded DB-side rank/limit по section и
   pin/unpin management; online-presence capability по-прежнему не имитируется real data. Exact-head
   CI/Pages проходят, а owner visual acceptance PR #181 подтверждён 2026-10-06. Это не означает
@@ -1918,7 +1918,7 @@ checkpoints ниже сохраняются как датированная ис
   заменяет topic-oriented homepage blocks на category → section map и переносит прежнюю rich
   section presentation на category pages. Owner visual acceptance реализации подтверждён
   2026-10-05; schema/migration/auth/permission/Stage 6 изменений нет.
-- Текущий Unread/new slice подключает repository/database foundation к runtime/UI:
+- Реализованный Unread/new slice подключает repository/database foundation к runtime/UI:
   forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
   authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
   Repository semantics выводят `new / unread / read`, deterministic first-unread по authoritative
@@ -2229,7 +2229,7 @@ checkpoints ниже сохраняются как датированная ис
   responsive/RTL/empty-category states сохранены. PR #182 supersede-ит только section-card
   composition: category page теперь переиспользует прежний rich section block с
   `Pinned / Latest topics / statistics / entry`; bounded latest-topic data читается реально по
-  каждому section, а текущий PR #181 подключает к той же section-card surface persisted pins.
+  каждому section, а merged PR #181 подключил к той же section-card surface persisted pins.
   Homepage остаётся прямым category → section map. Owner visual acceptance hierarchy correction
   подтверждён 2026-10-05; persisted-pinning slice owner visual acceptance подтверждён 2026-10-06.
 - Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
