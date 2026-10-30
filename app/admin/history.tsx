@@ -31,7 +31,11 @@ function ChangeDetails({change}: {change: AdminHistoryChange}) {
     case "topic.pinned": case "topic.unpinned": case "topic.solved": return null;
     case "topic.bestAnswerChanged": return <p><code dir="ltr">{change.context.before ?? t("historyNoValue")}</code> → <code dir="ltr">{change.context.after}</code></p>;
     case "help.solutionModerationChanged": return <ModerationDetails context={change.context}/>;
-    case "help.duplicateConfirmed": case "help.duplicateRemoved": return <p><code dir="ltr">{change.context.originalTopicId}</code>{" · "}<code dir="ltr">{change.context.relationshipId}</code></p>;
+    case "help.duplicateRemoved": return <>
+      <p><code dir="ltr">{change.context.originalTopicId}</code>{" · "}<code dir="ltr">{change.context.relationshipId}</code></p>
+      {change.context.resolvedAppeal ? <p>{t("historyDuplicateAppealResolved")}{" · "}{t("historyAccepted")}{" · "}<code dir="ltr">{change.context.resolvedAppeal.id}</code></p> : null}
+    </>;
+    case "help.duplicateConfirmed": return <p><code dir="ltr">{change.context.originalTopicId}</code>{" · "}<code dir="ltr">{change.context.relationshipId}</code></p>;
     case "help.duplicateAppealResolved": return <p>{t(change.context.resolution === "accepted" ? "historyAccepted" : "historyRejected")}{" · "}<code dir="ltr">{change.context.appealId}</code></p>;
     case "topic.sourceLocaleCorrected": case "post.sourceLocaleCorrected": return <p><code dir="ltr">{change.context.before}</code> → <code dir="ltr">{change.context.after}</code></p>;
     case "role.created": case "role.deleted": return <code dir="ltr">{change.context.slug}</code>;

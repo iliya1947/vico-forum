@@ -1673,3 +1673,24 @@ describe("forum write route actions", () => {
   });
 
 });
+
+describe("explicit operation scope is validated independently of capability priority", () => {
+  it.each(["markSolved", "selectBestAnswer"])("keeps explicit own semantics for %s with both capabilities", async intent => {
+    const writer = {markTopicSolved:vi.fn(async()=>{}),selectBestAnswer:vi.fn(async()=>({topicAuthorId:session.user.id,isSolved:false}))} as unknown as ForumWriter;
+    await topicAction({request:request('/en/topics/t',{intent,postId:'p',operationScope:'own'}),params:{locale:'en',topicId:'t'},context:context(writer)});
+    expect(intent==='markSolved'?writer.markTopicSolved:writer.selectBestAnswer).toHaveBeenCalledWith(expect.objectContaining({scope:'own',actorId:session.user.id}));
+  });
+  it("rejects explicit any without the permission and rejects malformed markers before writes", async () => {
+    const writer={markTopicSolved:vi.fn(async()=>{})} as unknown as ForumWriter;
+    for(const [scope,code] of [['any',403],['bogus',400]] as const){
+      const response=await topicAction({request:request('/en/topics/t',{intent:'markSolved',operationScope:scope}),params:{locale:'en',topicId:'t'},context:context(writer,true,['forum.solution.manageOwn'])});
+      expect(response).toMatchObject({init:{status:code}});
+    }
+    expect(writer.markTopicSolved).not.toHaveBeenCalled();
+  });
+  it.each(['correctTitleSourceLocale','correctPostSourceLocale'])("retains own scope for %s after Any has been granted",async intent=>{
+    const writer={correctTopicTitleSourceLocale:vi.fn(async()=>{}),correctPostBodySourceLocale:vi.fn(async()=>{})} as unknown as ForumWriter;
+    await topicAction({request:request('/en/topics/t',{intent,operationScope:'own',expectedRevisionId:'r',sourceLocale:'he',postId:'p'}),params:{locale:'en',topicId:'t'},context:context(writer)});
+    expect(intent==='correctTitleSourceLocale'?writer.correctTopicTitleSourceLocale:writer.correctPostBodySourceLocale).toHaveBeenCalledWith(expect.objectContaining({scope:'own',actorId:session.user.id}));
+  });
+});

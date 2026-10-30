@@ -27,11 +27,11 @@ export interface TopicQuickActionDescriptor {
 export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQuickActionDescriptor[]{
   const {topic,pendingDuplicateAppeal}=input;
   const actions:TopicQuickActionDescriptor[]=[];
-  const add=(intent:TopicIntent,label:UiKey<"common">,fields:Record<string,string>={})=>actions.push({key:intent,intent,label,fields});
+  const add=(intent:TopicIntent,label:UiKey<"common">,fields:Record<string,string>={})=>actions.push({key:intent,intent,label,fields:{...(intent==="markSolved"||intent==="correctTitleSourceLocale"?{operationScope:"any"}:{}),...fields}});
   if(input.canManagePin)add(topic.isPinned?"unpinTopic":"pinTopic",topic.isPinned?"unpinTopic":"pinTopic");
   if(input.canManageAnySolution&&!topic.isSolved&&!topic.duplicateOf)add("markSolved","markSolved");
   if(input.canManageAnySolution&&!topic.duplicateOf)topic.posts.slice(1).forEach((post,index)=>{
-    if(post.id!==topic.bestAnswerPostId)actions.push({key:`selectBestAnswer:${post.id}`,intent:"selectBestAnswer",label:"postNumber",fields:{postId:post.id},postNumber:index+2});
+    if(post.id!==topic.bestAnswerPostId)actions.push({key:`selectBestAnswer:${post.id}`,intent:"selectBestAnswer",label:"postNumber",fields:{postId:post.id,operationScope:"any"},postNumber:index+2});
   });
   if(input.canManageHelpDuplicate&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID){
     if(topic.duplicateOf){

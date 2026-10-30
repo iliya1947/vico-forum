@@ -1,3 +1,10 @@
+import {RouterContextProvider} from "react-router";
+import {authSessionContext} from "../../app/auth/request-context";
+import {authorizationContext} from "../../app/authorization/request-context";
+import {forumWriterContext} from "../../app/forum/request-context";
+import {topicAction} from "../../app/forum/actions.server";
+import {createHyperdriveForumWriter} from "../../db/hyperdrive-forum";
+import {createHyperdriveAuthorization} from "../../db/hyperdrive-authorization";
 import {readFile,readdir} from "node:fs/promises";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {Client,Pool} from "pg";
@@ -24,6 +31,14 @@ async function topic(id:string,authorId="author"){
   initialPost:{id:`${id}-first`,topicId:id,authorId,bodyRevision:{id:`${id}-body`,originalContent:"PRIVATE body",sourceLocale:"en"}}});
  await forum.createPost({id:`${id}-answer`,topicId:id,authorId:"other",bodyRevision:{id:`${id}-answer-body`,originalContent:"PRIVATE answer",sourceLocale:"en"}});
 }
+async function route(actorId:string,topicId:string,fields:Record<string,string>){
+ const context=new RouterContextProvider();const now=new Date();
+ context.set(authSessionContext,{user:{id:actorId,name:actorId,email:`${actorId}@test.invalid`,emailVerified:true,createdAt:now,updatedAt:now},session:{id:"test",token:"test",userId:actorId,expiresAt:new Date(now.getTime()+60000),createdAt:now,updatedAt:now}});
+ context.set(authorizationContext,createHyperdriveAuthorization(url,()=>new Pool({connectionString:url,options:`-c search_path=${schema}`})));
+ context.set(forumWriterContext,createHyperdriveForumWriter(url,()=>new Client({connectionString:url,options:`-c search_path=${schema}`})));
+ const body=new FormData();for(const [key,value] of Object.entries(fields))body.set(key,value);
+ return topicAction({request:new Request(`https://forum.test/en/topics/${topicId}`,{method:"POST",headers:{Origin:"https://forum.test"},body}),params:{locale:"en",topicId},context});
+}
 beforeAll(async()=>{
  await client.connect();await client.query(`drop schema if exists ${schema} cascade;create schema ${schema}`);
  for(const f of(await readdir("drizzle")).filter(f=>/^\d{4}_.+\.sql$/.test(f)).sort())await client.query((await readFile(`drizzle/${f}`,"utf8")).replaceAll('"public".',`"${schema}".`));
@@ -32,6 +47,49 @@ beforeAll(async()=>{
 });
 afterAll(async()=>{await pool.end();await client.query(`drop schema ${schema} cascade`);await client.end();});
 describe("ordinary History from authoritative forum transactions",()=>{
+ it("retains explicit own/admin route semantics and rejects forged own resources",async()=>{
+  await topic("route-own","manager");await topic("route-admin","manager");await topic("route-foreign");
+  expect(await route("manager","route-own",{intent:"markSolved",operationScope:"own"})).toMatchObject({status:302});
+  expect(await events("route-own")).toHaveLength(0);
+  expect(await route("manager","route-admin",{intent:"markSolved",operationScope:"any"})).toMatchObject({status:302});
+  expect((await events("route-admin"))[0].change.action).toBe("topic.solved");
+  expect(await route("manager","route-foreign",{intent:"markSolved",operationScope:"own"})).toMatchObject({init:{status:403}});
+  expect(await route("author","route-foreign",{intent:"markSolved",operationScope:"any"})).toMatchObject({init:{status:403}});
+  expect(await events("route-foreign")).toHaveLength(0);
+ });
+ it("keeps an opened own source operation own after an Any grant and checks revision identity",async()=>{
+  await topic("route-source");
+  const opened={intent:"correctTitleSourceLocale",operationScope:"own",expectedRevisionId:"route-source-title",sourceLocale:"he"};
+  await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect) values('author','forum.sourceLocale.correctAny','allow')`);
+  expect(await route("author","route-source",opened)).toMatchObject({status:302});
+  expect(await events("route-source")).toHaveLength(0);
+  expect(await route("author","route-source",{...opened,sourceLocale:"ru"})).toMatchObject({init:{status:409}});
+  const revision=(await repository.readTopicPage("route-source"))!.title.id;
+  expect(await route("author","route-source",{...opened,expectedRevisionId:revision,operationScope:"any",sourceLocale:"ru"})).toMatchObject({status:302});
+  expect((await events("route-source"))[0].change.action).toBe("topic.sourceLocaleCorrected");
+ });
+ it("rolls back pending-appeal removal with a failed append, then records its identity once",async()=>{
+  await topic("pending-remove");await topic("pending-original");
+  await forum.confirmHelpDuplicate("pending-remove","pending-original","manager");
+  const relationship=(await repository.readTopicPage("pending-remove"))!.duplicateRelationshipId!;
+  await forum.appealHelpDuplicate("pending-remove","author","PRIVATE removal appeal",relationship);
+  const appeal=(await client.query("select id from forum_help_duplicate_appeals where relationship_id=$1",[relationship])).rows[0].id;
+  const before=(await events("pending-remove")).length;
+  await client.query(`create function reject_pending_history() returns trigger language plpgsql as $$begin raise exception 'synthetic append failure';end$$;create trigger reject_pending_history before insert on admin_history for each row execute function reject_pending_history()`);
+  try{
+   await expect(forum.removeHelpDuplicate("pending-remove","manager",relationship)).rejects.toThrow();
+   expect((await client.query("select status from forum_help_duplicate_appeals where id=$1",[appeal])).rows[0].status).toBe("pending");
+   expect((await repository.readTopicPage("pending-remove"))!.duplicateRelationshipId).toBe(relationship);
+   expect(await events("pending-remove")).toHaveLength(before);
+  }finally{await client.query("drop trigger reject_pending_history on admin_history;drop function reject_pending_history()");}
+  await expect(forum.removeHelpDuplicate("pending-remove","manager","stale")).rejects.toBeInstanceOf(ForumStateConflictError);
+  await forum.removeHelpDuplicate("pending-remove","manager",relationship);
+  const after=await events("pending-remove");expect(after).toHaveLength(before+1);
+  expect(after[0].change).toMatchObject({action:"help.duplicateRemoved",context:{relationshipId:relationship,originalTopicId:"pending-original",resolvedAppeal:{id:appeal,outcome:"accepted"}}});
+  expect(JSON.stringify(after)).not.toContain("PRIVATE");
+  await expect(forum.removeHelpDuplicate("pending-remove","manager",relationship)).rejects.toBeInstanceOf(ForumStateConflictError);
+  expect(await events("pending-remove")).toHaveLength(before+1);
+ });
  it("records only actual pin transitions with the unpin actor",async()=>{
   await topic("pins");
   await forum.pinTopic("pins","manager");await forum.pinTopic("pins","manager");
@@ -89,7 +147,8 @@ describe("ordinary History from authoritative forum transactions",()=>{
   expect((await events("duplicate")).map(e=>e.change.action)).toEqual(["help.duplicateAppealResolved","help.duplicateConfirmed"]);
   await forum.confirmHelpDuplicate("duplicate","original","manager");
   await forum.removeHelpDuplicate("duplicate","manager",(await repository.readTopicPage("duplicate"))!.duplicateRelationshipId!);
-  expect((await events("duplicate"))[0].change.action).toBe("help.duplicateRemoved");
+  expect((await events("duplicate"))[0].change).toMatchObject({action:"help.duplicateRemoved"});
+  expect(Object.keys((await events("duplicate"))[0].change.context).sort()).toEqual(["originalTopicId","relationshipId"]);
  });
  it("records signal review outcome and effect once, excluding private explanations",async()=>{
   await topic("signals");await forum.selectBestAnswer("signals","signals-answer","author","own");await forum.markTopicSolved("signals","author","own");

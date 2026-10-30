@@ -2471,6 +2471,7 @@ export function TopicView({
                     {selectableBestAnswerPosts.map((post) => (
                       <Form method="post" className="solution-form topic-best-answer-form" key={post.id}>
                         <input type="hidden" name="intent" value="selectBestAnswer" />
+                        <input type="hidden" name="operationScope" value="own" />
                         <input type="hidden" name="postId" value={post.id} />
                         <button type="submit">{t("postNumber", { number: messageNumberById.get(post.id)! })}</button>
                       </Form>
@@ -2547,6 +2548,7 @@ export function TopicView({
             <div className="solution-confirmation-actions">
               <Form method="post" className="solution-form">
                 <input type="hidden" name="intent" value="markSolved" />
+                <input type="hidden" name="operationScope" value="own" />
                 <button type="submit">{t("problemSolvedYes")}</button>
               </Form>
               <Link
@@ -2915,6 +2917,7 @@ export function TopicView({
                           {canManageSolution && !canManageAnySolution && !topic.isSolved ? (
                             <Form method="post" className="solution-form secondary-tools-form">
                               <input type="hidden" name="intent" value="markSolved" />
+                              <input type="hidden" name="operationScope" value="own" />
                               <button type="submit">{t("markSolved")}</button>
                             </Form>
                           ) : null}
@@ -2922,6 +2925,7 @@ export function TopicView({
                           {canCorrectTitleSourceLocale && !canCorrectAnySourceLocale ? (
                             <Form method="post" className="source-locale-form secondary-tools-form">
                               <input type="hidden" name="intent" value="correctTitleSourceLocale" />
+                              <input type="hidden" name="operationScope" value="own" />
                               <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
                               <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
                               <label>

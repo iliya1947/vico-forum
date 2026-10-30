@@ -12,7 +12,9 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55473/vico_ap05_browser_te
 
 The harness uses real Better Auth sessions and canonical topic Forms for pin/unpin,
 answer selection, solved, all three moderation actions, source-locale correction,
-duplicate confirmation/removal and both appeal resolutions. It checks resulting
+duplicate confirmation/removal and both appeal resolutions. Correction regressions cover
+dual-capability author confirmation, explicit admin self-action, an opened own source
+form followed by an Any grant, and pending-appeal removal identity/outcome in one event. It checks resulting
 PostgreSQL History, repeated no-ops, stale answer/revision/relationship rejection,
 own controls, permission revocation and forged actor rejection. EN/RU/HE ×
 320/768/1280 checks cover keyboard disclosure, RTL, overflow and actual History;

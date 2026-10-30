@@ -21,10 +21,10 @@ afterEach(cleanup);
 describe("shared topic Quick actions presentation",()=>{
  it("preserves stable reply IDs/numbers despite best-answer promotion and carries CAS targets",()=>{
   const actions=topicQuickActionDescriptors(input);
-  expect(actions.find(a=>a.intent==="selectBestAnswer")).toMatchObject({postNumber:2,fields:{postId:"second"}});
+  expect(actions.find(a=>a.intent==="selectBestAnswer")).toMatchObject({postNumber:2,fields:{postId:"second",operationScope:"any"}});
   expect(actions.filter(a=>a.intent==="selectBestAnswer")).toHaveLength(1);
   expect(actions.find(a=>a.intent==="markSolutionOutdated")?.fields).toEqual({expectedBestAnswerPostId:"third"});
-  expect(actions.find(a=>a.intent==="correctTitleSourceLocale")?.fields).toEqual({expectedRevisionId:"title-r1"});
+  expect(actions.find(a=>a.intent==="correctTitleSourceLocale")?.fields).toEqual({expectedRevisionId:"title-r1",operationScope:"any"});
   expect(actions.some(a=>a.intent==="markSolved"||a.intent==="confirmHelpDuplicate")).toBe(false);
  });
  it("shows no administrative controls with only own capabilities and excludes invalid moderation state",()=>{

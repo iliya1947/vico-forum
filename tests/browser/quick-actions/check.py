@@ -82,6 +82,40 @@ def post(context, tid, fields, status=200, origin=None):
     assert response.status == status, (fields, response.status, response.text()[:200])
 
 
+def actual_click(page, form):
+    fields = form.evaluate("f=>Object.fromEntries(new FormData(f))")
+    with page.expect_response(lambda r: r.request.method == 'POST' and '/topics/' in r.url) as pending:
+        form.locator('button[type="submit"]').click()
+    assert pending.value.status in [200, 202, 302], pending.value.status
+    page.wait_for_load_state('networkidle')
+    return fields
+
+
+def choose_and_confirm(page, tid):
+    goto(page, tid)
+    choice = page.locator('form:has(input[name="intent"][value="selectBestAnswer"]):has(input[name="postId"][value="' + tid + '-p1"])')
+    assert choice.count() == 1
+    disclosure = choice.locator('xpath=ancestor::details[1]')
+    if disclosure.get_attribute('open') is None:
+        disclosure.locator('summary').click()
+    actual_click(page, choice)
+    page.wait_for_url('**/*solutionPrompt=*')
+    assert 'solutionPrompt=' in page.url, page.url
+    opened = page.locator('.topic-admin-tools[open]')
+    if opened.count():
+        opened.locator('summary').click()
+    prompt = page.locator('#solution-confirmation')
+    assert prompt.is_visible()
+    before = history(tid)
+    fields = actual_click(page, prompt.locator('form'))
+    state = sql('select is_solved from forum_topics where id=$1', [tid])[0]
+    assert state['is_solved']
+    return fields, before, history(tid)
+
+def record_correction(name, **_data):
+    record("correction-" + name)
+
+
 topics = []
 try:
     with sync_playwright() as p:
@@ -161,6 +195,96 @@ try:
         post(manager, main, {'intent': 'pinTopic', 'actorId': owner}, 403)
         assert len(history(main)) == before
         record('permission-revocation-forged-actor-denied')
+        # A: the ordinary owner confirmation after actual answer-selection redirect.
+        only_topic = seed_topic('solved-author-only', owner)
+        topics.append(only_topic)
+        fields, before, after = choose_and_confirm(ownpage, only_topic)
+        assert not before and not after
+        record_correction('A-author-only-owner-confirmation', fields=fields, history=after)
+        dual_topic = seed_topic('solved-both', actor)
+        topics.append(dual_topic)
+        fields, before, after = choose_and_confirm(page, dual_topic)
+        assert [e['action'] for e in before] == ['topic.bestAnswerChanged']
+        assert after == before
+        assert fields['operationScope'] == 'own'
+        record_correction('A-manager-owner-confirmation', fields=fields, before=before, after=after)
+
+        # Source locale: current manager-capability page exposes admin Quick action only.
+        fresh = seed_topic('source-manager-fresh', actor)
+        topics.append(fresh)
+        details = goto(page, fresh)
+        own_count = page.locator('.topic-question-tools form:has(input[name="intent"][value="correctTitleSourceLocale"])').count()
+        assert own_count == 0
+        assert details.locator('input[name="intent"][value="correctTitleSourceLocale"]').count() == 1
+        submit(page, fresh, 'correctTitleSourceLocale', {'sourceLocale': 'he'})
+        assert [e['action'] for e in history(fresh)] == ['topic.sourceLocaleCorrected']
+        record_correction('source-fresh-manager-is-admin-control', ownForms=own_count, history=history(fresh))
+
+        # Own-only source form is real and produces no administrative History.
+        stable = seed_topic('source-author-only', owner)
+        topics.append(stable)
+        goto(ownpage, stable)
+        ownpage.locator('.topic-question-tools summary').click()
+        form = ownpage.locator('.topic-question-tools form:has(input[name="intent"][value="correctTitleSourceLocale"])')
+        form.locator('[name="sourceLocale"]').fill('he')
+        fields = actual_click(ownpage, form)
+        assert not history(stable)
+        record_correction('source-author-only-control', fields=fields, history=history(stable))
+
+        # A second author form remains open while the actor gains correctAny.
+        stale_form = seed_topic('source-author-grant-any', owner)
+        topics.append(stale_form)
+        goto(ownpage, stale_form)
+        ownpage.locator('.topic-question-tools summary').click()
+        form = ownpage.locator('.topic-question-tools form:has(input[name="intent"][value="correctTitleSourceLocale"])')
+        form.locator('[name="sourceLocale"]').fill('ru')
+        assert form.count() == 1
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'forum.sourceLocale.correctAny','allow')", [owner])
+        fields = actual_click(ownpage, form)
+        assert not history(stale_form)
+        assert fields['operationScope'] == 'own'
+        record_correction('source-original-author-form-after-grant-any', fields=fields, history=history(stale_form))
+
+        # B: authoritative removal auto-accepts the actual pending appeal and retains its ID/outcome once.
+        original = seed_topic('correction-original', actor)
+        topics.append(original)
+        duplicate = seed_topic('duplicate-pending', owner)
+        topics.append(duplicate)
+        submit(page, duplicate, 'confirmHelpDuplicate', {'originalTopicId': original})
+        relationship = sql('select id from forum_help_duplicate_relationships where duplicate_topic_id=$1 and removed_at is null', [duplicate])[0]['id']
+        post(author, duplicate, {'intent': 'appealHelpDuplicate', 'expectedRelationshipId': relationship, 'explanation': 'PRIVATE diagnostic appeal'})
+        pending = sql('select id,status from forum_help_duplicate_appeals where relationship_id=$1', [relationship])[0]
+        before = history(duplicate)
+        post(manager, duplicate, {'intent': 'removeHelpDuplicate', 'expectedRelationshipId': 'stale'}, 409)
+        assert history(duplicate) == before
+        submit(page, duplicate, 'removeHelpDuplicate')
+        accepted = sql('select id,status,resolved_by_user_id,resolved_at from forum_help_duplicate_appeals where id=$1', [pending['id']])[0]
+        removed = sql('select id,removed_by_user_id,removed_at from forum_help_duplicate_relationships where id=$1', [relationship])[0]
+        after = history(duplicate)
+        assert pending['status'] == 'pending' and accepted['status'] == 'accepted'
+        assert accepted['resolved_by_user_id'] == actor and removed['removed_by_user_id'] == actor
+        assert accepted['resolved_at'] and removed['removed_at']
+        assert len(after) == len(before) + 1 and after[-1]['action'] == 'help.duplicateRemoved'
+        assert after[-1]['context'] == {'relationshipId': relationship, 'originalTopicId': original, 'resolvedAppeal': {'id': pending['id'], 'outcome': 'accepted'}}
+        assert pending['id'] in json.dumps(after[-1])
+        assert 'PRIVATE diagnostic appeal' not in json.dumps(after[-1])
+        post(manager, duplicate, {'intent': 'removeHelpDuplicate', 'expectedRelationshipId': relationship}, 409)
+        assert history(duplicate) == after
+        record_correction('B-remove-retains-accepted-appeal-identity', pending=pending, accepted=accepted, removed=removed, event=after[-1], newEvents=len(after)-len(before), staleAndRetryNoEvent=True)
+        nopending = seed_topic('duplicate-no-appeal', owner)
+        topics.append(nopending)
+        submit(page, nopending, 'confirmHelpDuplicate', {'originalTopicId': original})
+        submit(page, nopending, 'removeHelpDuplicate')
+        assert set(history(nopending)[-1]['context']) == {'relationshipId', 'originalTopicId'}
+        record_correction('B-no-appeal-preserves-context', event=history(nopending)[-1])
+
+        page.goto(base + '/en/admin/history', wait_until='networkidle')
+        appeal_event = page.locator('.admin-history-events li').filter(has_text=pending['id'])
+        assert appeal_event.count() == 1
+        assert 'Duplicate dispute resolved' in appeal_event.inner_text()
+        assert 'Accepted' in appeal_event.inner_text()
+        record('correction-accepted-appeal-history-presentation')
+
         # Keyboard, EN/RU/HE and narrow/wide layout on the actual changed surface and History.
         for locale, label in [('en', 'Quick actions'), ('ru', 'Быстрые действия'), ('he', 'פעולות מהירות')]:
             for width in [320, 768, 1280]:

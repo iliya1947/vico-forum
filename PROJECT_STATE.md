@@ -62,6 +62,18 @@ snapshot 0051 сгенерирован поверх объединённой с�
 на `7664ea9` больше не является актуальным. Результаты повторных checks/CI/browser
 и test-merge фиксируются в #251 после их фактического завершения.
 
+Correction A/B после diagnosis/review на `b427800`: текущие own solution/source controls
+явно передают `operationScope=own`, scoped administrative Quick actions — `any` в прежние
+intents. Сервер проверяет marker/capabilities и прежний ownership/state/CAS; выдача Any
+после открытия own-формы её смысл не меняет. Author confirmation остаётся own, явный admin
+Quick action на собственном объекте — admin. Legacy calls без marker сохраняют прежний
+выбор scope. Remove duplicate получает ID реально принятого pending appeal через RETURNING
+и включает его accepted outcome в то же History event/presentation, без private текста и
+дополнительного event. No-appeal context прежний. Schema/permissions/migrations не меняются.
+Добавлены targeted route/native/browser regressions, включая stale/retry/atomic rollback.
+Фактические checks/CI/handoff записываются в #251 после выполнения; correction требует
+нового coordinator-first review cycle.
+
 Существующие contextual topic controls используют reusable typed descriptors и
 TopicQuickActions; формы отправляют прежние intents на canonical topic endpoint. Pin/unpin,
 administrative solved/best-answer, Help solution/duplicate/appeal и source-locale paths

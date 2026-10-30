@@ -3465,16 +3465,16 @@ export class DrizzleForumRepository {
       }
 
       const resolvedAt = sql`statement_timestamp()`;
-      await tx.update(forumHelpDuplicateAppeals)
+      const [resolvedAppeal] = await tx.update(forumHelpDuplicateAppeals)
         .set({ status: "accepted", resolvedByUserId: actorId, resolvedAt })
         .where(and(
           eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
           eq(forumHelpDuplicateAppeals.status, "pending"),
-        ));
+        )).returning({ id: forumHelpDuplicateAppeals.id });
       await tx.update(forumHelpDuplicateRelationships)
         .set({ removedByUserId: actorId, removedAt: resolvedAt })
         .where(eq(forumHelpDuplicateRelationships.id, relationship.id));
-      await appendForumHistory(tx,actorId,{action:"help.duplicateRemoved",targetType:"topic",targetId:topicId,context:{relationshipId:relationship.id,originalTopicId:relationship.originalTopicId}});
+      await appendForumHistory(tx,actorId,{action:"help.duplicateRemoved",targetType:"topic",targetId:topicId,context:{relationshipId:relationship.id,originalTopicId:relationship.originalTopicId,...(resolvedAppeal?{resolvedAppeal:{id:resolvedAppeal.id,outcome:"accepted" as const}}:{})}});
     });
   }
 

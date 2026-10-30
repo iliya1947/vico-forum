@@ -387,7 +387,7 @@ export async function topicAction({ request, params, context }: {
     });
   }
   if (intent === "markSolved") {
-    const authorization = await solutionScope(context);
+    const authorization = await solutionScope(context, formData);
     if ("error" in authorization) return authorization.error;
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.markTopicSolved({ topicId, actorId, scope: authorization.scope });
@@ -427,7 +427,7 @@ export async function topicAction({ request, params, context }: {
   if (intent === "selectBestAnswer") {
     const postId = requiredFormText(formData, "postId");
     if (!postId) return mutationFailure("invalid", 400);
-    const authorization = await solutionScope(context);
+    const authorization = await solutionScope(context, formData);
     if ("error" in authorization) return authorization.error;
     return runForumMutation(request, context, async (writer, actorId) => {
       const selection = await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
@@ -443,7 +443,7 @@ export async function topicAction({ request, params, context }: {
     const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
     const sourceLocale = requiredFormText(formData, "sourceLocale");
     if (!expectedRevisionId || !sourceLocale) return sourceLocaleCorrectionFailure("invalid", 400);
-    const authorization = await sourceLocaleCorrectionScope(context);
+    const authorization = await sourceLocaleCorrectionScope(context, formData);
     if ("error" in authorization) return authorization.error;
     return runSourceLocaleCorrection(request, context, async (writer, actorId) => {
       await writer.correctTopicTitleSourceLocale({
@@ -461,7 +461,7 @@ export async function topicAction({ request, params, context }: {
     const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
     const sourceLocale = requiredFormText(formData, "sourceLocale");
     if (!postId || !expectedRevisionId || !sourceLocale) return sourceLocaleCorrectionFailure("invalid", 400);
-    const authorization = await sourceLocaleCorrectionScope(context);
+    const authorization = await sourceLocaleCorrectionScope(context, formData);
     if ("error" in authorization) return authorization.error;
     return runSourceLocaleCorrection(request, context, async (writer, actorId) => {
       await writer.correctPostBodySourceLocale({

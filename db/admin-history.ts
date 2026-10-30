@@ -20,7 +20,8 @@ export type ForumHistoryChange =
   | (TopicTarget & { action: "topic.pinned" | "topic.unpinned" | "topic.solved"; context: { before: boolean; after: boolean } })
   | (TopicTarget & { action: "topic.bestAnswerChanged"; context: { before: string | null; after: string } })
   | (TopicTarget & { action: "help.solutionModerationChanged"; context: { postId: string; before: string | null; after: string | null; viaSignalId?: string } })
-  | (TopicTarget & { action: "help.duplicateConfirmed" | "help.duplicateRemoved"; context: { relationshipId: string; originalTopicId: string; viaSignalId?: string } })
+  | (TopicTarget & { action: "help.duplicateConfirmed"; context: { relationshipId: string; originalTopicId: string; viaSignalId?: string } })
+  | (TopicTarget & { action: "help.duplicateRemoved"; context: { relationshipId: string; originalTopicId: string; resolvedAppeal?: { id: string; outcome: "accepted" } } })
   | (TopicTarget & { action: "help.duplicateAppealResolved"; context: { relationshipId: string; appealId: string; resolution: "accepted" | "rejected"; originalTopicId: string } })
   | (TopicTarget & { action: "topic.sourceLocaleCorrected"; context: { before: string; after: string; previousRevisionId: string; revisionId: string } })
   | { targetType: "post"; targetId: string; targetLabel: string; reason?: string | null; action: "post.sourceLocaleCorrected"; context: { topicId: string; before: string; after: string; previousRevisionId: string; revisionId: string } };

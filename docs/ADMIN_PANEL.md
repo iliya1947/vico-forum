@@ -262,6 +262,16 @@ permanent numbers despite visual promotion. Own-only controls remain separate. A
 case presentation is unchanged and uses the same authoritative producers; no new full pages,
 admin-only endpoint, permission catalog or speculative dispatcher is introduced.
 
+Own solution/title-source controls explicitly submit `operationScope=own`; scoped
+administrative Quick actions submit `operationScope=any` to the same canonical intents.
+The marker selects operation semantics, never authority: the server validates it, rechecks
+current capabilities, and retains authoritative ownership/state/CAS checks. An explicit
+own request may use existing Own or Any authority but remains restricted to the actor's
+own resource; an explicit any request requires Any and never falls back to own. An opened
+own form stays own after an Any grant. Author solved-confirmation stays own even when
+its preceding answer-selection Quick action was administrative. Omitted markers retain
+legacy request scope selection; all current first-party scoped controls send a marker.
+
 ## Significant administrative actions and reasons
 
 Ordinary History answers who acted, what changed, which object was affected, when, the
@@ -310,7 +320,11 @@ AP-05 forum events retain stable topic/post/revision and relevant relationship/a
 minimal before/after state and bounded current topic-title labels. Direct outdated moderation
 retains its validated reason. A Help signal review records one `help.signalReviewed` event
 for the requested case's actual accepted/rejected/superseded outcome, with any applied effect
-inside that event; it does not also emit an inner moderation/duplicate event. Automatic
+inside that event; it does not also emit an inner moderation/duplicate event.
+When duplicate removal accepts a pending appeal, the same `help.duplicateRemoved` event
+contains `resolvedAppeal: {id, outcome: "accepted"}` from the actual updated row and shows
+that outcome/identity in History. Removal without a pending appeal retains the original
+context; neither path copies appeal explanation or emits a second event. Automatic
 supersession of sibling cases remains a side effect, without fabricated separate review
 actors/events. Signal/appeal submission text and private case explanations are not copied.
 Ordinary own-scope solved/answer/source corrections do not emit administrative events even
