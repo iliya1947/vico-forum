@@ -9791,3 +9791,16 @@ a.topic-tag:focus-visible {
 .admin-history-events dd { margin-inline-start: 1rem; }
 .admin-history-paging { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1rem; }
 .admin-history-paging a { min-block-size: 44px; display: inline-flex; align-items: center; }
+
+.complaint-triage { max-inline-size: 64rem; margin-inline: auto; padding: 1rem; }
+.complaint-triage-metadata { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(14rem,100%),1fr)); gap: .75rem; }
+.complaint-triage-metadata div, .complaint-case { min-inline-size: 0; overflow-wrap: anywhere; }
+.complaint-triage-metadata dt { font-weight: 600; }
+.complaint-triage-metadata dd { margin-inline-start: 0; }
+.complaint-excerpt { white-space: pre-wrap; overflow-wrap: anywhere; }
+.complaint-priority-form fieldset { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; border: 0; padding: 0; min-inline-size: 0; max-inline-size: 100%; }
+.complaint-priority-form label { display: grid; gap: .4rem; min-inline-size: 0; max-inline-size: 100%; }
+.complaint-priority-form select { inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; }
+.complaint-priority-form :is(button,select),.complaint-open-case { min-block-size: 44px; padding: .6rem; border: 1px solid var(--color-border); border-radius: .4rem; font: inherit; }
+.complaint-open-case { display: inline-flex; align-items: center; }
+.complaint-reason-summary { padding-inline-start: 1.3rem; }

@@ -365,6 +365,20 @@
       "when": 1793381731629,
       "tag": "0051_forum_admin_history",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1793405614301,
+      "tag": "0052_complaints_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793405615325,
+      "tag": "0053_complaint_priority_settings",
+      "breakpoints": true
     }
   ]
 }

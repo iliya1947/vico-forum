@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-30
+Последнее обновление: 2026-10-31
 
 ## I18N-UGC-META-01 — original topic-title metadata in Search/Unanswered (2026-10-29)
 
@@ -127,7 +127,109 @@ corrections #259/#260/#261 уже объединены в `main`. Чернови
 Stage 6 external/production gates, не реализованные admin/complaints функции
 и соответствующие owner acceptance остаются отдельной незавершённой работой.
 
+## Complaints Package 3 — integration with AP-05 / main e564948 (2026-10-31)
+
+По назначению #254/#6536295319 PR #269 интегрирован с принятым main `e564948`
+после merge #268. Принятые AP-05 Quick actions, own/any operationScope, permission/resource/CAS
+и transactional forum History producers сохранены вместе с Complaints Queue/triage,
+configurable reason mapping и activity. Обе группы canonical/localized keys и reviewed
+fingerprints объединены без изменения их значений.
+
+Принятый `0051_forum_admin_history` и его snapshot/journal prefix сохранены byte-for-byte.
+Непринятые Complaints SQL без изменения содержания перенумерованы в
+`0052_complaints_queue` и `0053_complaint_priority_settings`; snapshots 0052/0053
+пересобраны поверх принятого AP-05 snapshot 0051. Explicit fixture migration lists,
+manifest и clean migration count согласуются с 54 migrations / 60 tables.
+Ссылки на прежние номера в датированных author-check sections ниже исторические.
+
+Применимые checks, upgrade и browser/CI результаты записываются в #254 по завершении;
+прежний review на 5601aab не закрывает новый integration head. Нужен новый
+coordinator-first whole-PR cycle. Package 4+, merge и production rollout не выполняются.
+
+## Complaints — Package 3 configurable reason priorities (2026-10-31)
+
+По дополнению #254/#6530944971 PR #269 теперь хранит глобальную mapping всех восьми
+причин в domain singleton `forum_complaint_priority_settings` (initial values прежние).
+Queue/triage используют актуальную persisted mapping в том же SQL snapshot: существующие
+и новые open Cases пересчитываются при чтении; manual override имеет преимущество,
+Automatic использует текущую mapping. Complaint history и Case versions от изменения
+настройки не переписываются; admin History producer не добавлен.
+
+Реальный localized UI `/:locale/attention/complaints/settings` позволяет читать/изменять
+все восемь уровней. Независимый `forum.complaint.priority.manage` проверяется на GET/POST
+и в service; initial admin grant, review-only не допускается. Management-only actor видит
+Attention header и попадает в settings без Case reads; глобальный admin admission не меняется.
+Один atomic full-map version CAS защищает concurrent/stale save; 409 требует reload и
+повторной проверки значений. Нет process cache или второго configuration/RBAC framework.
+Forward `0052_complaint_priority_settings`, schema/journal/snapshot, manifest и runtime
+SELECT/UPDATE ACL согласованы; repository history 53 migrations / 60 tables.
+
+Авторские проверки дополнения: полный PostgreSQL17 suite — 417 tests, включая 62
+Complaints; 8 новых HTTP/UI tests и focused route-shape 2/2. В полном application запуске
+1656 tests прошли, один прежний route-shape expectation требовал добавления нового route;
+expectation исправлен без runtime change. Final exact-head CI и author handoff фиксируются
+в #254. Lint 0 errors (одно прежнее warning), typecheck, Worker/UI Preview builds,
+18 infrastructure guard suites, Drizzle metadata/schema parity, manifest 60 tables,
+runtime privilege/provisioning/credential probes прошли. Upgrade 0051→0052 сохранил
+existing Case/event и применил configured priority при следующем чтении.
+
+Финальная actual Chromium→Worker→PostgreSQL проверка runtime 73e64d9 прошла 33 scenarios:
+Queue/triage регрессии, actual full-map Form save/persistence, current automatic priority,
+manual override/Automatic, stale CAS и integer bounds, management-only admission,
+next-request deny, EN/RU/HE 320/390/768/1280 keyboard/layout, genuine timeout/recovery.
+JS errors/external requests — 0; complaint history от настройки не меняется, admin History,
+Signals/Security effects отсутствуют. Evidence — `/workspace/work/pkg3-mapping-results/`;
+воспроизводимый harness — `tests/browser/complaints-queue/`.
+Новый coordinator-first exact-head review и merge пока не завершены.
+Package 4+, production migration/deployment/secrets не выполняются.
+
+## Complaints — Package 3 open Queue / triage (2026-10-30)
+
+В отдельной implementation-ветке поверх merged Package 2 (#266, main 5ac2a18)
+первый Complaints placeholder в Needs attention заменён Queue открытых Cases.
+`forum.complaint.review` независимо открывает Queue/header link и bounded triage;
+Signals/Security capabilities не дают complaint access и обратно. Ordinary SQL
+не выбирает reporter accounts/explanations/notes; elevated identity key не расширяет
+Queue projection. Бounded current topic title/reported-revision excerpt сохраняют
+source locale/direction из runtime registry (und/unknown → auto); UI даёт ссылку
+на topic/post context и отдельную triage-страницу.
+
+Один SQL snapshot возвращает полный total и 25 Cases + lookahead; сортировка —
+effective priority DESC, first report ASC, Case ID. Пустая страница не обнуляет total.
+Автоприоритет — максимум reason weights: spam/other low, harassment/impersonation
+normal, threats/fraud-phishing/malicious-content/personal-data high. Volume сам по
+себе priority не повышает. Nullable moderator override и возврат к automatic
+защищены actor mutex/Case lock/version CAS/operation replay; immutable priority
+event пишется атомарно, event failure rollback сохраняет прежний Case.
+
+Non-exclusive activity использует отдельные (Case,reviewer) leases: heartbeat POST
+раз в 30 секунд только на видимой triage-странице, DB TTL 90 секунд, best-effort
+expiry при уходе. Projection — boolean других активных reviewers, без identity;
+GET не пишет presence, lease не меняет Case version и не назначает владельца.
+Прекращение renewal/revocation не оставляет permanently-stuck marker. Forward
+0051_complaints_queue, schema/journal/snapshot/manifest и runtime INSERT/SELECT/UPDATE
+контракт activity table согласованы. Permanent contract: docs/moderation/COMPLAINTS.md.
+
+Новых permissions, Signals/Security effects, admin History producer, full review/
+notes/decisions UI, Quick actions, notifications, appeals или complaints History UI
+нет. Exact-head CI #41106124347 на implementation head bf546fc завершён SUCCESS:
+1649 application tests и 412 PostgreSQL17 tests. Локально также прошли 13 focused
+Queue HTTP/UI/presentation tests и повторные 57 Complaints native tests, typecheck,
+lint (0 errors/одно прежнее
+warning), Worker/UI Preview builds, 18 infrastructure guard suites, clean 52 migrations,
+manifest 59 tables, runtime privilege/provisioning/credential probes и Worker smoke.
+Upgrade 0050→0051 с существующей Complaint/event сохранил их без изменений;
+существующий open Case попал в Queue с automatic priority по его причине.
+Actual Chromium → built Worker → Better Auth → PostgreSQL: 19 scenarios PASS —
+global totals/paging, priority Form/CAS/auto reset, two-reviewer presence, revocation/
+expiry, EN/RU/HE keyboard/320/390/768/1280, actual storage timeout/recovery, без JS errors/
+external requests. Stable exact head и фактические CI/author evidence публикуются
+в handoff #254; production migration/GRANT/deploy и independent review не заявляются.
+
 ## Complaints — Package 2 user submission (2026-10-30)
+
+Package 2 merged через PR #266. Ниже сохранены его датированные implementation/
+correction snapshots; актуальное Queue поведение описано в Package 3 выше.
 
 Интеграция после merge AP-03 (#265): implementation-ветка обновлена поверх main
 `269783d`. Принятые `0049_admin_history`, snapshot 0049 и journal prefix сохранены
@@ -2638,7 +2740,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0051`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0053`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

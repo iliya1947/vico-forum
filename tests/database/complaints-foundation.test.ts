@@ -5,7 +5,7 @@ import { Client, Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
-import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintPolicyRequiredError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
+import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError, ComplaintPolicyRequiredError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
@@ -703,5 +703,170 @@ describe.each(["postgres", "hyperdrive"] as const)("complaint authorization snap
         expect(projected).not.toHaveBeenCalled();
       } finally { projected.mockRestore(); }
     });
+  });
+});
+
+describe("complaints queue triage",()=>{
+  it.each([
+    ["spam",1],["harassment",2],["threats",3],["fraud-phishing",3],
+    ["malicious-content",3],["personal-data",3],["impersonation",2],["other",1],
+  ] as const)("assigns deterministic priority for %s and aggregates every independent report",async(reason,priority)=>{
+    const c=await content();
+    const first=await service().submit("reporter-one",{...report(c.post),reason,explanation:"Private explanation"});
+    await service().submit("reporter-two",{...report(c.post),reason,explanation:"Another private explanation"});
+    const triage=await service().readTriage("reviewer",first.caseId);
+    expect(triage).toMatchObject({kind:"post",state:"open",priority,automaticPriority:priority,priorityOverride:null,reportCount:2,reasons:{[reason]:2}});
+    expect(new Date(triage.firstReportedAt).getTime()).toBeLessThanOrEqual(new Date(triage.lastReportedAt).getTime());
+    const serialized=JSON.stringify(triage);
+    for(const hidden of ["reporter-one","reporter-two","Private explanation","Another private explanation","actorUserId","reporterUserId"])
+      expect(serialized).not.toContain(hidden);
+  });
+  it("keeps full totals across bounded pages, ordered by effective priority, and excludes resolved Cases",async()=>{
+    const before=(await service().readQueue("reviewer",0)).total;
+    for(let n=0;n<27;n++)await service().submit("reporter-one",report((await content()).title));
+    const closed=await decision();
+    await expect(service().readTriage("reviewer",closed.caseId)).rejects.toBeInstanceOf(ComplaintNotFoundError);
+    const total=before+27, ids:string[]=[],priorities:number[]=[];
+    for(let page=0;page<Math.ceil(total/25);page++){
+      const result=await service().readQueue("reviewer",page);
+      expect(result.total).toBe(total);expect(result.cases.length).toBeLessThanOrEqual(25);
+      expect(result.hasMore).toBe((page+1)*25<total);
+      ids.push(...result.cases.map(c=>c.id));priorities.push(...result.cases.map(c=>c.priority));
+    }
+    expect(new Set(ids).size).toBe(total);expect(ids).not.toContain(closed.caseId);
+    expect(priorities).toEqual([...priorities].sort((a,b)=>b-a));
+    const empty=await service().readQueue("reviewer",Math.ceil(total/25));
+    expect(empty).toMatchObject({total,cases:[],hasMore:false});
+  });
+  it("overrides automatic max priority with replay/CAS and can return to automatic",async()=>{
+    const c=await content(),saved=await service().submit("reporter-one",report(c.title));
+    const input={caseId:saved.caseId,operationId:randomUUID(),expectedVersion:1,priority:1};
+    await service().changePriority("reviewer",input);
+    await service().changePriority("reviewer",input);
+    await service().changePriority("reviewer",{priority:1,expectedVersion:1,operationId:input.operationId,caseId:saved.caseId});
+    await expect(service().changePriority("reviewer",{...input,priority:3})).rejects.toBeInstanceOf(ComplaintConflictError);
+    await expect(service().changePriority("reviewer",{...input,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
+    await service().submit("reporter-two",{...report(c.title),reason:"threats"});
+    expect(await service().readTriage("reviewer",saved.caseId)).toMatchObject({priority:1,automaticPriority:3,priorityOverride:1,version:3});
+    await service().changePriority("reviewer",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:3,priority:null});
+    expect(await service().readTriage("reviewer",saved.caseId)).toMatchObject({priority:3,priorityOverride:null,version:4});
+    const events=await client.query("select priority_override from forum_complaint_events where case_id=$1 and kind='priority-changed' order by created_at",[saved.caseId]);
+    expect(events.rows).toEqual([{priority_override:1},{priority_override:null}]);
+    await expectCode(client.query("update forum_complaint_events set priority_override=2 where case_id=$1 and kind='priority-changed'",[saved.caseId]),"55000");
+  });
+  it("serializes concurrent overrides and rolls back when priority event persistence fails",async()=>{
+    const c=await content(),saved=await service().submit("reporter-one",report(c.post));
+    const other=new Client({connectionString:databaseUrl,options});await other.connect();
+    try{
+      const commands=[service().changePriority("reviewer",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:1,priority:3}),
+        service(other).changePriority("admin",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:1,priority:2})];
+      const results=await Promise.allSettled(commands);
+      expect(results.filter(r=>r.status==="fulfilled")).toHaveLength(1);
+      const rejected=results.find(r=>r.status==="rejected");expect(rejected?.status==="rejected"&&rejected.reason).toBeInstanceOf(ComplaintConflictError);
+    }finally{await other.end();}
+    const before=await service().readTriage("reviewer",saved.caseId);
+    await client.query(`create function fail_queue_event() returns trigger language plpgsql as $$begin if new.kind='priority-changed' then raise exception 'priority event failure'; end if; return new; end$$;
+      create trigger fail_queue_event before insert on forum_complaint_events for each row execute function fail_queue_event()`);
+    try{
+      await expect(service().changePriority("reviewer",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:before.version,priority:null})).rejects.toThrow();
+      expect(await service().readTriage("reviewer",saved.caseId)).toEqual(before);
+    }finally{await client.query("drop trigger fail_queue_event on forum_complaint_events;drop function fail_queue_event()");}
+  });
+  it("allows non-exclusive activity, excludes oneself and expires by DB time without touching Case version",async()=>{
+    const c=await content(),saved=await service().submit("reporter-one",report(c.post));
+    const before=(await client.query("select * from forum_complaint_cases where id=$1",[saved.caseId])).rows;
+    await service().activity("reviewer",saved.caseId,true);await service().activity("admin",saved.caseId,true);
+    expect((await service().readTriage("reviewer",saved.caseId)).activeElsewhere).toBe(true);
+    expect((await service().readTriage("admin",saved.caseId)).activeElsewhere).toBe(true);
+    const expiry=await client.query("select extract(epoch from expires_at-statement_timestamp()) as seconds from forum_complaint_activity where case_id=$1",[saved.caseId]);
+    expect(expiry.rows.every(r=>Number(r.seconds)>85&&Number(r.seconds)<=90)).toBe(true);
+    await service().activity("admin",saved.caseId,false);
+    expect((await service().readTriage("reviewer",saved.caseId)).activeElsewhere).toBe(false);
+    await service().activity("admin",saved.caseId,true);
+    await client.query("update forum_complaint_activity set expires_at=statement_timestamp()-interval '1 second' where case_id=$1",[saved.caseId]);
+    expect((await service().readTriage("reviewer",saved.caseId)).activeElsewhere).toBe(false);
+    expect((await client.query("select * from forum_complaint_cases where id=$1",[saved.caseId])).rows).toEqual(before);
+  });
+  it("requires fresh review permission for all queue capabilities and rejects invalid/stale/closed writes",async()=>{
+    const c=await content(),saved=await service().submit("reporter-one",report(c.title));
+    await expect(service().readQueue("reporter-one",0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(service().activity("outsider",saved.caseId,true)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values('outsider','forum.complaint.review','allow')");
+    try{
+      await service().readQueue("outsider",0);await service().activity("outsider",saved.caseId,true);
+      await client.query("update authz_user_permission_overrides set effect='deny' where user_id='outsider' and permission_key='forum.complaint.review'");
+      await expect(service().readTriage("outsider",saved.caseId)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+      await expect(service().changePriority("outsider",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:1,priority:3})).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    }finally{await client.query("delete from authz_user_permission_overrides where user_id='outsider' and permission_key='forum.complaint.review'");}
+    for(const priority of [0,4,1.5])await expect(service().changePriority("reviewer",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:1,priority})).rejects.toBeInstanceOf(ComplaintInputError);
+    await expect(service().readQueue("reviewer",10001)).rejects.toBeInstanceOf(ComplaintInputError);
+    await service().decide("reviewer",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:1,outcome:"not-confirmed",reasoning:"Resolved"});
+    await expect(service().changePriority("reviewer",{caseId:saved.caseId,operationId:randomUUID(),expectedVersion:2,priority:3})).rejects.toBeInstanceOf(ComplaintConflictError);
+    await expect(service().activity("reviewer",saved.caseId,true)).rejects.toBeInstanceOf(ComplaintNotFoundError);
+  });
+});
+
+describe("global complaint reason priorities",()=>{
+  it("seeds all eight defaults, with management independent of Case review",async()=>{
+    const {DEFAULT_COMPLAINT_REASON_PRIORITY}=await import("../../app/complaints/queue-contract");
+    expect((await service().readPrioritySettings("admin")).weights).toEqual(DEFAULT_COMPLAINT_REASON_PRIORITY);
+    await expect(service().readPrioritySettings("reviewer")).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(service().savePrioritySettings("reviewer",{expectedVersion:1,weights:{...DEFAULT_COMPLAINT_REASON_PRIORITY}})).rejects.toBeInstanceOf(ComplaintForbiddenError);
+  });
+  it("persists all eight weights and recalculates existing/new Cases without rewriting history; manual override wins",async()=>{
+    const initial=await service().readPrioritySettings("admin");
+    const target=await content();const saved=await service().submit("reporter-one",report(target.post));
+    await service().submit("reporter-two",{...report(target.post),reason:"threats"});
+    const before=(await client.query("select * from forum_complaint_events where case_id=$1 order by id",[saved.caseId])).rows;
+    const version=(await service().readTriage("reviewer",saved.caseId)).version;
+    const weights={...initial.weights,spam:3 as const,threats:1 as const};
+    try{
+      await service().savePrioritySettings("admin",{expectedVersion:initial.version,weights});
+      const fresh=new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client),{tenMinutes:10000,day:10000}),authorization);
+      expect(await fresh.readPrioritySettings("admin")).toEqual({version:initial.version+1,weights});
+      expect((await fresh.readTriage("reviewer",saved.caseId))).toMatchObject({automaticPriority:3,priority:3,version});
+      expect((await client.query("select * from forum_complaint_events where case_id=$1 order by id",[saved.caseId])).rows).toEqual(before);
+      const another=await content();const newer=await fresh.submit("reporter-one",report(another.post));
+      expect((await fresh.readTriage("reviewer",newer.caseId)).priority).toBe(3);
+      await fresh.changePriority("reviewer",{caseId:saved.caseId,expectedVersion:version,operationId:randomUUID(),priority:2});
+      await fresh.savePrioritySettings("admin",{expectedVersion:initial.version+1,weights:{...weights,spam:1}});
+      expect(await fresh.readTriage("reviewer",saved.caseId)).toMatchObject({automaticPriority:1,priority:2,priorityOverride:2});
+      await fresh.changePriority("reviewer",{caseId:saved.caseId,expectedVersion:version+1,operationId:randomUUID(),priority:null});
+      expect(await fresh.readTriage("reviewer",saved.caseId)).toMatchObject({automaticPriority:1,priority:1,priorityOverride:null});
+      const page=await fresh.readQueue("reviewer",0);
+      expect(page.cases.map(c=>c.priority)).toEqual(page.cases.map(c=>c.priority).sort((a,b)=>b-a));
+    }finally{const current=await service().readPrioritySettings("admin");await service().savePrioritySettings("admin",{expectedVersion:current.version,weights:initial.weights});}
+  });
+  it("allows a custom management-only grant and rechecks personal deny on the next call",async()=>{
+    await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values('outsider','forum.complaint.priority.manage','allow')");
+    const initial=await service().readPrioritySettings("outsider");
+    try{
+      await expect(service().readQueue("outsider",0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+      await service().savePrioritySettings("outsider",{expectedVersion:initial.version,weights:initial.weights});
+      await client.query("update authz_user_permission_overrides set effect='deny' where user_id='outsider' and permission_key='forum.complaint.priority.manage'");
+      await expect(service().readPrioritySettings("outsider")).rejects.toBeInstanceOf(ComplaintForbiddenError);
+      await expect(service().savePrioritySettings("outsider",{expectedVersion:initial.version+1,weights:initial.weights})).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    }finally{await client.query("delete from authz_user_permission_overrides where user_id='outsider' and permission_key='forum.complaint.priority.manage'");}
+  });
+  it("serializes concurrent full-map saves using version CAS, rejecting stale retry",async()=>{
+    const initial=await service().readPrioritySettings("admin");
+    const a=await pool.connect(),b=await pool.connect();
+    try{
+      const weightsA={...initial.weights,spam:2 as const},weightsB={...initial.weights,spam:3 as const};
+      const results=await Promise.allSettled([service(a as never).savePrioritySettings("admin",{expectedVersion:initial.version,weights:weightsA}),service(b as never).savePrioritySettings("admin",{expectedVersion:initial.version,weights:weightsB})]);
+      expect(results.filter(r=>r.status==="fulfilled")).toHaveLength(1);
+      const rejected=results.find(r=>r.status==="rejected") as PromiseRejectedResult;
+      expect(rejected.reason).toBeInstanceOf(ComplaintConflictError);
+      expect((await service().readPrioritySettings("admin")).version).toBe(initial.version+1);
+      await expect(service().savePrioritySettings("admin",{expectedVersion:initial.version,weights:initial.weights})).rejects.toBeInstanceOf(ComplaintConflictError);
+    }finally{a.release();b.release();const current=await service().readPrioritySettings("admin");await service().savePrioritySettings("admin",{expectedVersion:current.version,weights:initial.weights});}
+  });
+  it("rejects partial/extra/invalid maps at service and SQL boundaries without mutation",async()=>{
+    const initial=await service().readPrioritySettings("admin");
+    for(const weights of [{...initial.weights,spam:0},{...initial.weights,spam:"3"},{spam:1},{...initial.weights,extra:2},null,[]]){
+      await expect(service().savePrioritySettings("admin",{expectedVersion:initial.version,weights} as never)).rejects.toBeInstanceOf(ComplaintInputError);
+      await expectCode(client.query("update forum_complaint_priority_settings set weights=$1::jsonb where id=1",[JSON.stringify(weights)]),"23514");
+    }
+    expect(await service().readPrioritySettings("admin")).toEqual(initial);
   });
 });

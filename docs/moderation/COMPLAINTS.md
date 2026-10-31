@@ -2,7 +2,7 @@
 
 This is the permanent complaints-domain contract. Product decisions and staged
 delivery are recorded in service PR #254; this document records implemented
-Packages 1–2 behavior. Queue, review/decision, notification and appeal UI remain deferred.
+Packages 1–3 behavior. Full review/decision, notification and appeal UI remain deferred.
 
 ## Domain and boundaries
 
@@ -100,7 +100,92 @@ retain input/nonce for retry, and show inline confirmation without navigating aw
 Other requires explanation; the remaining reasons allow it. Stale revisions receive
 a conflict instead of silently reporting the newer text. Known authorization/storage
 availability failures fail closed with 503; unexpected errors still propagate.
-Automatic priority, manual override and expiring reviewer presence are Package 3.
+Queue priority, manual override and expiring reviewer presence are implemented below.
+
+## Open Queue and triage (Package 3)
+
+The first Complaints group at `/:locale/attention?mode=complaints&group=group1`
+is the open-Case Queue. `forum.complaint.review` independently admits it and the
+header Attention link; Signals or Security permissions do not imply this capability,
+and complaint review does not grant their queues. Appeals/History groups remain
+explicit placeholders. Every private loader/action independently checks the current
+session and effective permission; presentation flags are not authority.
+
+One SQL statement aggregates all eligible open Cases, counts independent reports,
+summarizes all eight reasons and first/latest report times, and returns a bounded
+25-Case page plus one lookahead. Its total counts every eligible Case, including on
+empty/out-of-range pages; it is never derived from the page. Ordering is effective
+priority descending, first report time ascending, then Case ID. Offset pages are
+bounded to 0–10000; concurrent submissions/priority changes can move Cases between
+requests, so pagination does not claim a cross-request snapshot.
+
+Automatic priority is the maximum of the **current persisted global reason weights** of
+all reports in the Case. Initial/default values are:
+
+| Priority | Reasons |
+| --- | --- |
+| Low (1) | Spam / advertising, Other |
+| Normal (2) | Harassment, Impersonation |
+| High (3) | Threats, Fraud / phishing, Malicious content, Personal data |
+
+`/:locale/attention/complaints/settings` is a real localized read/edit form for all eight
+weights, each Low / Normal / High. Both read and write independently require current
+`forum.complaint.priority.manage`; Case review alone does not grant settings access.
+Initial grant is built-in admin only; custom roles and per-user overrides use the existing
+authorization model. The Attention header entry admits management-only actors and sends
+them to settings without querying Cases. Reviewers with management permission also get a
+settings link in Complaints. Management does not grant Case, Signals, Security or admin
+shell admission.
+
+The domain-specific singleton `forum_complaint_priority_settings` stores the complete
+JSON weights and a positive version. SQL and service validation require exactly all eight
+known reasons and integer levels 1–3. One atomic full-map UPDATE compares the expected
+version and advances it; concurrent/stale saves (including a retry after an acknowledged
+or ambiguous successful commit) return 409. Reload settings to inspect current values
+before saving again. A failed command cannot partially change the map. There is no
+process-local cache, generic settings framework or automatic history rewrite.
+
+Queue/triage aggregate the persisted weights in their single read snapshot; existing and
+new open Cases use the updated maximum and ordering on the next read. Settings changes
+leave reports, Case versions/overrides and immutable complaint events untouched; they do
+not create admin History events. These are current configuration values, not a historical
+priority record. Runtime ACL is SELECT/UPDATE only; migration seeds the singleton.
+
+Report volume never increases priority by itself. A reviewer may choose any of the
+three levels or return to Automatic. The nullable override persists when later
+reports arrive; clearing it uses the current automatic maximum. Priority affects
+processing order only, never a decision or sanction. The existing actor mutex,
+Case row lock, expected version and operation fingerprint/replay protect overrides.
+Each accepted command atomically advances Case version and appends an immutable
+`priority-changed` event retaining the chosen override (null means Automatic);
+event failure rolls back the change. Resolved Cases reject new overrides.
+
+Queue rows link to `/:locale/attention/complaints/:caseId`, a protected, open-only
+triage view with the same bounded summary, a topic/post context link and priority
+control. Context includes bounded current topic title and reported-revision excerpt
+with source-locale metadata. Registered source direction determines block `dir`;
+`und` or unknown direction falls back to `auto`, independently of UI locale.
+It does not expose report explanations, reporter IDs,
+notes, Decisions, evidence downloads or Quick actions. These require the later full
+Case review package. Queue projection never joins reporter accounts, even if the
+actor also has the separate identity-read permission.
+
+The triage view renews supplemental activity by authenticated same-origin POST every
+30 seconds while visible. `(case, reviewer)` rows expire after 90 seconds of database
+time. Multiple reviewers may renew simultaneously; activity changes neither Case
+version nor ownership. Only a boolean "other reviewers active" is projected, excluding
+the viewer. Hiding/leaving the view sends a best-effort expiry; lost requests, crashes
+or abandoned tabs still expire without a cleanup job or writes on GET. Permission
+revocation prevents renewal on the next request; any existing indication expires
+within its lease. No assignment or exclusive lock exists. Expired rows are ignored,
+not interpreted as permanent activity.
+
+Priority/activity writes bound URL-encoded input to 4096 bytes and derive actor/Case
+from session/path. Document/data responses are private/no-store. Known dependency
+failures fail closed as 503, distinct from 401/403/404/409; unexpected errors propagate.
+Activity is supplemental and cannot block authorized triage. No Signals/Security,
+ordinary admin History, notifications, review/decision/notes UI or appeals behavior
+is added by this package.
 
 ## Transactions and replay
 
@@ -129,12 +214,13 @@ arbitrary database/programming errors must not become empty data or permission d
 ## Permissions and projections
 
 The existing DB-backed PermissionResolver and role/user overrides remain authoritative.
-All four new keys have real server service capabilities:
+All five complaint keys have real server service capabilities:
 
 | Key | Authority | Initial grants |
 | --- | --- | --- |
 | `forum.complaint.create` | Submit a report | user, moderator, admin |
 | `forum.complaint.review` | Case read, note, initial decision | moderator, admin |
+| `forum.complaint.priority.manage` | Read/change global reason priorities | admin |
 | `forum.complaint.reporterIdentity.read` | Additional identity projection on an otherwise accessible Case/Appeal | None |
 | `forum.complaint.appeal.review` | Read relevant appeal Case and resolve Appeal | moderator, admin |
 

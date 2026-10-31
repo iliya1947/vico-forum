@@ -27,7 +27,7 @@ export function createHyperdriveComplaintSubmission(connectionString: string, au
   };
 }
 
-function isComplaintStorageUnavailable(error: unknown): boolean {
+export function isComplaintStorageUnavailable(error: unknown): boolean {
   const seen = new Set<unknown>();
   let current = error;
   while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
