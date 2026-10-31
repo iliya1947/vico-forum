@@ -143,7 +143,7 @@ describe("authorization management presentation", () => {
     expect(await screen.findByRole("heading",{name:"Admin panel",level:1})).toBeVisible();
     expect(container.querySelector('.admin-panel-nav a[href="/en/admin"]')).toHaveTextContent("Overview");
     expect(container.querySelector('.admin-panel-nav a[href="/en/admin/history"]')).toHaveTextContent("History");
-    expect(container.querySelector('.admin-panel-nav a[href*="admin-forum"]')).toBeTruthy();
+    expect(container.querySelector('.admin-panel-nav a[href$="/admin/forum"]')).toBeTruthy();
   });
 
   it("keeps custom-role deletion visually distinct and never offers it for built-in roles", async () => {

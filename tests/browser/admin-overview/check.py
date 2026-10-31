@@ -114,11 +114,11 @@ try:
         page.wait_for_url('**/he/admin')
         assert page.locator('h1').inner_text() == 'לוח ניהול'
         assert page.title() == 'לוח ניהול · Vico Forum'
-        page.locator('.admin-panel-nav a[href*="admin-forum"]').focus()
+        page.locator('.admin-panel-nav a[href$="/admin/forum"]').focus()
         page.keyboard.press('Enter')
-        page.wait_for_url('**/he/under-development?feature=admin-forum')
-        assert page.locator('.under-development-requested').inner_text().startswith('פורום')
-        record('keyboard-placeholder-and-language-navigation')
+        page.wait_for_url('**/he/admin/forum')
+        assert page.locator('#admin-forum-heading').inner_text() == 'פורום'
+        record('keyboard-forum-and-language-navigation')
         # A real locked forum relation makes the bounded counts query time out;
         # session and authorization remain available on their independent relations.
         lock_code = """import pg from './node_modules/pg/lib/index.js';const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();await c.query('begin;lock table forum_topics in access exclusive mode');console.log('LOCKED');process.stdin.once('data',async()=>{await c.query('rollback');await c.end();});"""

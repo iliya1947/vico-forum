@@ -115,3 +115,63 @@ jobs:
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           ./scripts/smoke-workers.sh http://127.0.0.1:4173
+
+  browser_ap06:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_ap06_browser_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_ap06_browser_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_ap06_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_ap06_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_ap06_browser_test
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare disposable browser database
+        run: pnpm db:migrate
+      - name: Configure synthetic auth and build Worker
+        run: |
+          printf '%s\n' \
+            'BETTER_AUTH_SECRET=ap06-browser-ci-only-secret-not-for-production' \
+            'BETTER_AUTH_URL=http://127.0.0.1:4187' \
+            'GOOGLE_CLIENT_ID=ap06-ci-dummy' \
+            'GOOGLE_CLIENT_SECRET=ap06-ci-dummy' > .dev.vars
+          pnpm build
+      - name: Run real AP-06 Chromium / Worker / PostgreSQL checks
+        run: |
+          python3 -m venv /tmp/vico-ap06-venv
+          /tmp/vico-ap06-venv/bin/python -m pip install playwright==1.64.1
+          export CHROMIUM="$(command -v chromium || command -v chromium-browser || command -v google-chrome)"
+          pnpm exec vite preview --host 127.0.0.1 --port 4187 > /tmp/vico-ap06-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 60); do
+            status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:4187/en/admin/forum || true)"
+            if [ "$status" = 401 ] || [ "$status" = 200 ]; then ready=1; break; fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then cat /tmp/vico-ap06-preview.log; exit 1; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/vico-ap06-preview.log; exit 1; fi
+          /tmp/vico-ap06-venv/bin/python tests/browser/admin-forum/check.py \
+            --url http://127.0.0.1:4187 --output /tmp/vico-ap06-browser
+          cat /tmp/vico-ap06-browser/results.json
