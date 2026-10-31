@@ -1,6 +1,8 @@
 import {TopicQuickActions} from "../admin/quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
+import { ComplaintQueueList } from "../complaints/queue-view";
+import type { ComplaintQueuePage } from "../complaints/queue-contract";
 import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation } from "react-router";
@@ -1445,7 +1447,7 @@ type SecurityAttachmentQueuePresentation = {
 };
 
 export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
-  canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
+  complaintQueue = null, canManageComplaintPriorities = false, canReviewComplaints = false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
@@ -1454,6 +1456,9 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
   counts?: ForumAttentionQueueCounts | null;
   canViewHelpAttention?: boolean;
   canReadSecurityAttachments?: boolean;
+  canReviewComplaints?: boolean;
+  canManageComplaintPriorities?: boolean;
+  complaintQueue?: ComplaintQueuePage | null;
   referenceTime?: string;
   actionData?: ForumMutationError;
   isPreview?: boolean;
@@ -1477,9 +1482,9 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
     { id: "group2", label: t("attentionPlaceholderGroup2") },
     { id: "group3", label: t("attentionPlaceholderGroup3") },
   ] : [
-    { id: "group1", label: t("attentionPlaceholderGroup1") },
-    { id: "group2", label: t("attentionPlaceholderGroup2") },
-    { id: "group3", label: t("attentionPlaceholderGroup3") },
+    { id: "group1", label: t("complaintQueueHeading") },
+    { id: "group2", label: t("complaintAppealsHeading") },
+    { id: "group3", label: t("complaintHistoryHeading") },
   ];
   const activeGroup = groups.find(item => item.id === group) ?? groups[0]!;
   const cases = queue?.cases ?? [];
@@ -1491,7 +1496,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
           <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
           <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
             {(["signals", "complaints", "security"] as const)
-              .filter(item => item === "security" ? canReadSecurityAttachments : canViewHelpAttention)
+              .filter(item => item === "security" ? canReadSecurityAttachments : item === "complaints" ? canReviewComplaints || canManageComplaintPriorities : canViewHelpAttention)
               .map(item => (
               <Link key={item}
                 className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
@@ -1522,7 +1527,10 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
                 ? "attentionCaseNoLongerPending" : "attentionCaseActionFailed")}
             </p>
           ) : null}
-          {mode === "security" && group === "attachments" ? (
+          {mode === "complaints" && canManageComplaintPriorities && <Link to={`/${encodeURIComponent(locale)}/attention/complaints/settings`}>{t("complaintPrioritySettingsHeading")}</Link>}
+          {mode === "complaints" && group === "group1" && complaintQueue ? (
+            <ComplaintQueueList locale={locale} queue={complaintQueue}/>
+          ) : mode === "security" && group === "attachments" ? (
             !securityQueue || securityQueue.events.length === 0 ? (
               <EmptyState>{t("attentionSecurityAttachmentsEmpty")}</EmptyState>
             ) : (

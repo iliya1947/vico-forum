@@ -1,0 +1,16 @@
+CREATE TABLE "forum_complaint_activity" (
+	"case_id" text NOT NULL,
+	"reviewer_user_id" text NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "forum_complaint_activity_case_id_reviewer_user_id_pk" PRIMARY KEY("case_id","reviewer_user_id")
+);
+--> statement-breakpoint
+ALTER TABLE "forum_complaint_events" DROP CONSTRAINT "complaint_event_shape_check";--> statement-breakpoint
+ALTER TABLE "forum_complaint_cases" ADD COLUMN "priority_override" integer;--> statement-breakpoint
+ALTER TABLE "forum_complaint_events" ADD COLUMN "priority_override" integer;--> statement-breakpoint
+ALTER TABLE "forum_complaint_activity" ADD CONSTRAINT "forum_complaint_activity_case_id_forum_complaint_cases_id_fk" FOREIGN KEY ("case_id") REFERENCES "public"."forum_complaint_cases"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "forum_complaint_activity" ADD CONSTRAINT "forum_complaint_activity_reviewer_user_id_user_id_fk" FOREIGN KEY ("reviewer_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "complaint_activity_case_expiry_idx" ON "forum_complaint_activity" USING btree ("case_id","expires_at");--> statement-breakpoint
+ALTER TABLE "forum_complaint_cases" ADD CONSTRAINT "complaint_case_priority_check" CHECK ("forum_complaint_cases"."priority_override" is null or "forum_complaint_cases"."priority_override" between 1 and 3);--> statement-breakpoint
+ALTER TABLE "forum_complaint_events" ADD CONSTRAINT "complaint_event_priority_check" CHECK (("forum_complaint_events"."priority_override" is null or "forum_complaint_events"."priority_override" between 1 and 3) and ("forum_complaint_events"."kind" = 'priority-changed' or "forum_complaint_events"."priority_override" is null));--> statement-breakpoint
+ALTER TABLE "forum_complaint_events" ADD CONSTRAINT "complaint_event_shape_check" CHECK (("forum_complaint_events"."kind" = 'submitted' and "forum_complaint_events"."complaint_id" is not null and "forum_complaint_events"."decision_id" is null and "forum_complaint_events"."note_id" is null and "forum_complaint_events"."appeal_id" is null) or ("forum_complaint_events"."kind" = 'decided' and "forum_complaint_events"."decision_id" is not null and "forum_complaint_events"."complaint_id" is null and "forum_complaint_events"."note_id" is null and "forum_complaint_events"."appeal_id" is null) or ("forum_complaint_events"."kind" = 'noted' and "forum_complaint_events"."note_id" is not null and "forum_complaint_events"."complaint_id" is null and "forum_complaint_events"."decision_id" is null and "forum_complaint_events"."appeal_id" is null) or ("forum_complaint_events"."kind" in ('appealed','appeal-resolved') and "forum_complaint_events"."appeal_id" is not null and "forum_complaint_events"."complaint_id" is null and "forum_complaint_events"."decision_id" is null and "forum_complaint_events"."note_id" is null) or ("forum_complaint_events"."kind" = 'priority-changed' and "forum_complaint_events"."complaint_id" is null and "forum_complaint_events"."decision_id" is null and "forum_complaint_events"."note_id" is null and "forum_complaint_events"."appeal_id" is null));

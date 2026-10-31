@@ -56,7 +56,8 @@ Permission key означает существующую capability прилож
 - `forum.complaint.create`;
 - `forum.complaint.review`;
 - `forum.complaint.reporterIdentity.read`;
-- `forum.complaint.appeal.review`.
+- `forum.complaint.appeal.review`;
+- `forum.complaint.priority.manage`.
 
 `forum.post.editOwn` применяется только к сообщениям с authoritative `author_id`, совпадающим с пользователем; `forum.post.history.read` открывает историю ревизий любому сообщению при наличии effective permission и не предоставляет права редактирования. По умолчанию editOwn получают все built-in роли, history.read — moderator/admin; изменяемые grants и overrides остаются authoritative.
 
@@ -87,13 +88,19 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 Complaint permissions protect the server-only domain capabilities documented in
 [`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits submission;
 `forum.complaint.review` permits Case review/notes/initial decisions;
-`forum.complaint.appeal.review` permits appeal Case review/resolution. Reporter/appellant
+`forum.complaint.appeal.review` permits appeal Case review/resolution.
+`forum.complaint.priority.manage` separately permits reading/changing the persisted global
+reason-priority mapping through the protected settings UI. It does not grant Case reads;
+Case review does not grant settings access. The Attention header admits management-only
+actors and directs them to settings without reading Cases; global admin admission is unchanged. Reporter/appellant
 structured identity requires the additional `forum.complaint.reporterIdentity.read` key,
 which is not seeded to any built-in role, including admin. Identity permission alone
 never grants Case access. Participant result/first-appeal calls separately recheck actual
 content-author/reporter membership and direction. Package 2 enables only the topic-context
 submission UI and authenticated same-origin POST action using `forum.complaint.create`;
-review, identity and appeal HTTP/UI remain deferred.
+Package 3 additionally enables protected open Queue/triage, priority override and
+non-exclusive activity using `forum.complaint.review`, with independent loader/action
+checks. Full review/notes/decisions, identity and appeal HTTP/UI remain deferred.
 
 ## Initial role defaults
 
@@ -138,6 +145,7 @@ review, identity and appeal HTTP/UI remain deferred.
 - `forum.complaint.create`;
 - `forum.complaint.review`;
 - `forum.complaint.appeal.review`;
+- `forum.complaint.priority.manage`;
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;

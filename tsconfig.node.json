@@ -88,6 +88,8 @@
     "app/localization/registry.ts",
     "app/localization/locale.ts",
     "app/complaints/request-context.ts",
+    "app/complaints/queue-contract.ts",
+    "app/complaints/queue-context.ts",
     "app/complaints/response.ts",
     "app/routes/complaint-submit.ts"
   ],
