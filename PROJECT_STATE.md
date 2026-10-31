@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-30
+Последнее обновление: 2026-10-31
 
 ## I18N-UGC-META-01 — original topic-title metadata in Search/Unanswered (2026-10-29)
 
@@ -97,6 +97,27 @@ SELECT/INSERT и permission catalog прежние. EN/RU/HE History и Quick ac
 AP-06+, новые admin pages, closure/blocking и production rollout не входят в пакет.
 Фактические checks/browser/CI и author handoff фиксируются в #251. Whole-PR independent
 review, owner visual acceptance и merge этой записью не объявляются завершёнными.
+
+## AP-06 — protected Forum category/section browsing (2026-10-31)
+
+В отдельной implementation-ветке Forum destination заменён реальным защищённым index
+`/:locale/admin/forum` и dedicated category/section pages
+`/:locale/admin/forum/categories/:categoryId`, `/:locale/admin/forum/sections/:sectionId`.
+Каждый flat loader независимо проверяет existing Forum boundary до private reads и input
+validation. Используется прежний request-scoped PermissionResolver, без нового RBAC/key.
+Отдельный bounded admin DTO содержит names/IDs/relationships/reserved flags и реальные
+aggregate counts. PostgreSQL фильтрует literal name/ID search до LIMIT, возвращает по 25
+объектов в стабильном ID order, keyset cursor и точный total для всего matching set.
+
+Reserved Help/service-section явно помечены только в защищённой admin projection;
+public Help `section: null`, public service-section exclusion и Overview counts сохранены.
+Общий AdminShell, active Forum navigation, private/no-store, controlled 400/401/403/404/503,
+EN/RU/HE и logical responsive CSS переиспользуются. Old Forum placeholder URL перенаправляет
+на новый index. Реализация read-only: section metadata/counts/public link; topic admin page,
+message administration, structural CRUD, closure, Users/blocks и AP-07+ не добавляются.
+Schema, migrations, catalog, grants и зависимости не меняются. Авторские tests/browser/CI
+результаты и stable-head handoff фиксируются в #251 после выполнения. Independent whole-PR
+review, owner acceptance, merge и production rollout этой записью не объявляются.
 
 ## Назначение
 

@@ -16,6 +16,22 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    adminForumSectionCount: message("adminForumSectionCount", "Sections", "Administrative category/section browsing: adminForumSectionCount."),
+    adminForumCategories: message("adminForumCategories", "Categories", "Administrative category/section browsing: adminForumCategories."),
+    adminForumSections: message("adminForumSections", "Sections", "Administrative category/section browsing: adminForumSections."),
+    adminForumSearch: message("adminForumSearch", "Search by name or ID", "Administrative category/section browsing: adminForumSearch."),
+    adminForumSearchSubmit: message("adminForumSearchSubmit", "Search", "Administrative category/section browsing: adminForumSearchSubmit."),
+    adminForumMatches: message("adminForumMatches", "Matching items", "Administrative category/section browsing: adminForumMatches."),
+    adminForumPaging: message("adminForumPaging", "Forum pages", "Administrative category/section browsing: adminForumPaging."),
+    adminForumFirst: message("adminForumFirst", "First page", "Administrative category/section browsing: adminForumFirst."),
+    adminForumNext: message("adminForumNext", "Next page", "Administrative category/section browsing: adminForumNext."),
+    adminForumServiceSection: message("adminForumServiceSection", "Internal Help service section", "Administrative category/section browsing: adminForumServiceSection."),
+    adminForumReservedCategory: message("adminForumReservedCategory", "Reserved Help category", "Administrative category/section browsing: adminForumReservedCategory."),
+    adminForumEmpty: message("adminForumEmpty", "No matching objects.", "Administrative category/section browsing: adminForumEmpty."),
+    adminForumLocation: message("adminForumLocation", "Forum location", "Administrative category/section browsing: adminForumLocation."),
+    adminForumPublicCategory: message("adminForumPublicCategory", "View public category", "Administrative category/section browsing: adminForumPublicCategory."),
+    adminForumPublicSection: message("adminForumPublicSection", "View public section", "Administrative category/section browsing: adminForumPublicSection."),
+
     historySuperseded: message("historySuperseded", "Superseded", "Administrative History review outcome."),
     historySignalReviewed: message("historySignalReviewed", "Help signal reviewed", "Administrative History review outcome."),
     quickActions: message("quickActions", "Quick actions", "Administrative quick actions and History."),

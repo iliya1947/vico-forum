@@ -8,6 +8,22 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  adminForumSectionCount: "f39a0f98cfaaecdd5f599de9da650b37b2bd6cd3860589b310d92558ec3ce7ac",
+  adminForumCategories: "ad4ca74c14d3dc15c2a22bb1274b2e168cff453b3e610f32f5e72508b9358766",
+  adminForumSections: "3016cba0c2bd7984f5597de8c61f9bb770defb96ae6958da4ec55099d77fb8b5",
+  adminForumSearch: "d9138d28bcb6c1ce735c954dba8227d7f35ee7d1c20e0f63686432254b7da1a8",
+  adminForumSearchSubmit: "8b193e981e4af11ea583035bcac32fdb934c2a5d0eba07c3d007166957c15060",
+  adminForumMatches: "fa00e7b468c962cee2485854daa74cd35c3b56ae7ade539ebbc38ec0695b9ae1",
+  adminForumPaging: "ae6168ae8bb209454d3f20108921a3607b758c4c9c3a5369e16a2648afbcaf9a",
+  adminForumFirst: "acacb195cef8a444755e0eac7303f50cddc1c3ecd3649d7043e9e2a4c6010bd8",
+  adminForumNext: "32fd00baa4b88f024b9fe0dfb1dd69d08d520929f6b4d105c914bc9577676f5d",
+  adminForumServiceSection: "b05e2fa7f78eefb703c747d178dc8100ae9640fb9858ee5b15ad9d4a99a9f3a8",
+  adminForumReservedCategory: "e5b669a35a46608d131455964ce92cbe3a685db06fa30d533c7c1572dc0d633b",
+  adminForumEmpty: "91725c2aabb0d8dd46c917c40989b8d32c78b6079c50258e44011dfaa0a6f3bb",
+  adminForumLocation: "f6165823cae0051b13aca507ae53a744146f976e7ed6a4a8e3cdc416c6b30334",
+  adminForumPublicCategory: "367d9f063a5b70924e0fbee03588674a1140f1d02ec06c8639dff1a4d1ad1002",
+  adminForumPublicSection: "e42e18a2074f4e00248872677115de6a86cde8db8b43860c581a7edaf277c558",
+
   historySignalReviewed: "425a2d94db13b32b423b95cb0c384ea2207456111722ae0eef7b2895adaf9b4b",
   historySuperseded: "7c47baef78f3ffcaa531c2cc3347eb383522c4a2ebf81d7ad25bec050eceb0dc",
 

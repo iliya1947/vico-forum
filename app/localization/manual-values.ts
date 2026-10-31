@@ -4,6 +4,22 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  adminForumSectionCount: "Разделы",
+  adminForumCategories: "Категории",
+  adminForumSections: "Разделы",
+  adminForumSearch: "Поиск по названию или ID",
+  adminForumSearchSubmit: "Найти",
+  adminForumMatches: "Найдено объектов",
+  adminForumPaging: "Страницы форума",
+  adminForumFirst: "Первая страница",
+  adminForumNext: "Следующая страница",
+  adminForumServiceSection: "Внутренний служебный раздел Help",
+  adminForumReservedCategory: "Зарезервированная категория Help",
+  adminForumEmpty: "Подходящих объектов нет.",
+  adminForumLocation: "Положение в форуме",
+  adminForumPublicCategory: "Открыть публичную категорию",
+  adminForumPublicSection: "Открыть публичный раздел",
+
   historySuperseded: "Потеряло актуальность",
   historySignalReviewed: "Сигнал Help рассмотрен",
   quickActions: "Быстрые действия",
@@ -663,6 +679,22 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  adminForumSectionCount: "מדורים",
+  adminForumCategories: "קטגוריות",
+  adminForumSections: "מדורים",
+  adminForumSearch: "חיפוש לפי שם או מזהה",
+  adminForumSearchSubmit: "חיפוש",
+  adminForumMatches: "פריטים תואמים",
+  adminForumPaging: "דפי הפורום",
+  adminForumFirst: "הדף הראשון",
+  adminForumNext: "הדף הבא",
+  adminForumServiceSection: "מדור שירות פנימי של עזרה",
+  adminForumReservedCategory: "קטגוריית עזרה שמורה",
+  adminForumEmpty: "לא נמצאו פריטים תואמים.",
+  adminForumLocation: "מיקום בפורום",
+  adminForumPublicCategory: "פתיחת הקטגוריה הציבורית",
+  adminForumPublicSection: "פתיחת המדור הציבורי",
+
   historySuperseded: "אינו רלוונטי עוד",
   historySignalReviewed: "דיווח בעזרה נבדק",
   quickActions: "פעולות מהירות",
