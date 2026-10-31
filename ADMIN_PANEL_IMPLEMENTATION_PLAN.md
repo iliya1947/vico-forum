@@ -234,8 +234,6 @@ Define the exact effect of a user block: which authenticated capabilities remain
 
 ## 6. Current coordination status
 
-AP-05 is complete and merged as PR #268 into `main` at `e564948492a500984340ecbd462bfea8e7174605`. Its final stable head `23a36c50928e0ae459d7e7bcb7b8ba252235badf` passed coordinator and independent whole-PR review with no remaining current-scope defects.
+AP-06 is implemented in PR #270. Functional review on exact head `b9f2539287ef3415c17cf3c73ea1822321e02e54` found no current-scope AP-06 defect, but the review cycle is obsolete because `main` advanced during review to `90dfa11b96c75cfd55b2d51625b8005e5edb65c7` with Complaints Package 3. PR #270 is currently non-mergeable against that main and requires integration sync preserving both accepted change sets.
 
-AP-06 is now active. Leva has been assigned category/section administrative browsing from current main in #251 comment #6536111802. Scope is limited to the Forum category/section layer defined by `docs/ADMIN_PANEL.md`; AP-07+ topic/message administration, topic closure, structural mutations, Users/blocks and unrelated work are not part of this package.
-
-Current next step: Leva implements AP-06 in a separate implementation PR, runs applicable checks/CI/browser verification, and publishes a stable exact head in #251 for coordinator-first whole-PR review.
+Leva has been assigned the sync in #251 comment #6538111056. Current next step: update #270 onto current main, preserve Complaints Package 3 and AP-06, run applicable combined checks/CI/browser/database verification, publish a new stable exact head and test-merge, then restart coordinator-first whole-PR review. AP-07+ remains out of scope until AP-06 is reviewed and merged.
