@@ -1,5 +1,5 @@
 {
-  "id": "a4c7bf5b-dd85-4971-b951-da26e14d2dca",
+  "id": "f895d33b-b9fd-4301-9f42-8fa50e02de39",
   "prevId": "75b650c5-24c6-4280-994b-b193cc639af7",
   "version": "7",
   "dialect": "postgresql",
@@ -233,7 +233,7 @@
       "checkConstraints": {
         "admin_history_action_target_check": {
           "name": "admin_history_action_target_check",
-          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')"
+          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')\n  or (\"admin_history\".\"action\" in ('topic.pinned', 'topic.unpinned', 'topic.solved', 'topic.bestAnswerChanged',\n    'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',\n    'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected') and \"admin_history\".\"target_type\" = 'topic')\n  or (\"admin_history\".\"action\" = 'post.sourceLocaleCorrected' and \"admin_history\".\"target_type\" = 'post')"
         },
         "admin_history_context_check": {
           "name": "admin_history_context_check",
@@ -1823,94 +1823,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.forum_complaint_activity": {
-      "name": "forum_complaint_activity",
-      "schema": "",
-      "columns": {
-        "case_id": {
-          "name": "case_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reviewer_user_id": {
-          "name": "reviewer_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "complaint_activity_case_expiry_idx": {
-          "name": "complaint_activity_case_expiry_idx",
-          "columns": [
-            {
-              "expression": "case_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "expires_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "forum_complaint_activity_case_id_forum_complaint_cases_id_fk": {
-          "name": "forum_complaint_activity_case_id_forum_complaint_cases_id_fk",
-          "tableFrom": "forum_complaint_activity",
-          "tableTo": "forum_complaint_cases",
-          "columnsFrom": [
-            "case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "forum_complaint_activity_reviewer_user_id_user_id_fk": {
-          "name": "forum_complaint_activity_reviewer_user_id_user_id_fk",
-          "tableFrom": "forum_complaint_activity",
-          "tableTo": "user",
-          "columnsFrom": [
-            "reviewer_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "forum_complaint_activity_case_id_reviewer_user_id_pk": {
-          "name": "forum_complaint_activity_case_id_reviewer_user_id_pk",
-          "columns": [
-            "case_id",
-            "reviewer_user_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.forum_complaint_appeals": {
       "name": "forum_complaint_appeals",
       "schema": "",
@@ -2144,12 +2056,6 @@
           "notNull": true,
           "default": 1
         },
-        "priority_override": {
-          "name": "priority_override",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "initial_decision_id": {
           "name": "initial_decision_id",
           "type": "text",
@@ -2294,10 +2200,6 @@
           "name": "complaint_case_previous_not_self",
           "value": "\"forum_complaint_cases\".\"previous_case_id\" is null or \"forum_complaint_cases\".\"previous_case_id\" <> \"forum_complaint_cases\".\"id\""
         },
-        "complaint_case_priority_check": {
-          "name": "complaint_case_priority_check",
-          "value": "\"forum_complaint_cases\".\"priority_override\" is null or \"forum_complaint_cases\".\"priority_override\" between 1 and 3"
-        },
         "complaint_case_lifecycle": {
           "name": "complaint_case_lifecycle",
           "value": "\"forum_complaint_cases\".\"version\" > 0 and ((\"forum_complaint_cases\".\"state\" = 'open' and \"forum_complaint_cases\".\"initial_decision_id\" is null and \"forum_complaint_cases\".\"resolved_at\" is null) or (\"forum_complaint_cases\".\"state\" = 'resolved' and \"forum_complaint_cases\".\"initial_decision_id\" is not null and \"forum_complaint_cases\".\"resolved_at\" is not null and \"forum_complaint_cases\".\"resolved_at\" >= \"forum_complaint_cases\".\"created_at\"))"
@@ -2428,12 +2330,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "priority_override": {
-          "name": "priority_override",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "actor_user_id": {
           "name": "actor_user_id",
@@ -2619,13 +2515,9 @@
           "name": "complaint_event_fingerprint_check",
           "value": "\"forum_complaint_events\".\"fingerprint\" ~ '^[0-9a-f]{64}$' and btrim(\"forum_complaint_events\".\"operation_id\") <> '' and char_length(\"forum_complaint_events\".\"operation_id\") <= 200"
         },
-        "complaint_event_priority_check": {
-          "name": "complaint_event_priority_check",
-          "value": "(\"forum_complaint_events\".\"priority_override\" is null or \"forum_complaint_events\".\"priority_override\" between 1 and 3) and (\"forum_complaint_events\".\"kind\" = 'priority-changed' or \"forum_complaint_events\".\"priority_override\" is null)"
-        },
         "complaint_event_shape_check": {
           "name": "complaint_event_shape_check",
-          "value": "(\"forum_complaint_events\".\"kind\" = 'submitted' and \"forum_complaint_events\".\"complaint_id\" is not null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"note_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null) or (\"forum_complaint_events\".\"kind\" = 'decided' and \"forum_complaint_events\".\"decision_id\" is not null and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"note_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null) or (\"forum_complaint_events\".\"kind\" = 'noted' and \"forum_complaint_events\".\"note_id\" is not null and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null) or (\"forum_complaint_events\".\"kind\" in ('appealed','appeal-resolved') and \"forum_complaint_events\".\"appeal_id\" is not null and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"note_id\" is null) or (\"forum_complaint_events\".\"kind\" = 'priority-changed' and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"note_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null)"
+          "value": "(\"forum_complaint_events\".\"kind\" = 'submitted' and \"forum_complaint_events\".\"complaint_id\" is not null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"note_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null) or (\"forum_complaint_events\".\"kind\" = 'decided' and \"forum_complaint_events\".\"decision_id\" is not null and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"note_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null) or (\"forum_complaint_events\".\"kind\" = 'noted' and \"forum_complaint_events\".\"note_id\" is not null and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"appeal_id\" is null) or (\"forum_complaint_events\".\"kind\" in ('appealed','appeal-resolved') and \"forum_complaint_events\".\"appeal_id\" is not null and \"forum_complaint_events\".\"complaint_id\" is null and \"forum_complaint_events\".\"decision_id\" is null and \"forum_complaint_events\".\"note_id\" is null)"
         }
       },
       "isRLSEnabled": false

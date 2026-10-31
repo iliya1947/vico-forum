@@ -1532,6 +1532,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
         canManageSolution={scenario.identity !== "guest"}
+        canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager"}
         canModerateHelpSolution={scenario.identity === "manager"}
         canManageHelpDuplicate={scenario.identity === "manager"}
@@ -1880,6 +1881,7 @@ function topicData(
     canManageAnySolution: identity === "manager",
     canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
+    canConfirmOwnSolution: solutionAuthor,
     canCorrectTitleSourceLocale: showSecondaryControls,
     canCorrectAnySourceLocale: identity === "manager",
     canManagePin: identity === "manager",

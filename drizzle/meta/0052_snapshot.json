@@ -1,6 +1,6 @@
 {
-  "id": "f97b6afe-d96f-4c8d-85cf-2c000b1e26d9",
-  "prevId": "a4c7bf5b-dd85-4971-b951-da26e14d2dca",
+  "id": "58ae77f3-6262-4901-afec-bddbbca953c3",
+  "prevId": "f895d33b-b9fd-4301-9f42-8fa50e02de39",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -233,7 +233,7 @@
       "checkConstraints": {
         "admin_history_action_target_check": {
           "name": "admin_history_action_target_check",
-          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')"
+          "value": "(\n    \"admin_history\".\"action\" in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and \"admin_history\".\"target_type\" = 'role'\n  ) or (\"admin_history\".\"action\" in ('user.roleAssigned', 'user.overrideChanged') and \"admin_history\".\"target_type\" = 'user')\n  or (\"admin_history\".\"action\" in ('topic.pinned', 'topic.unpinned', 'topic.solved', 'topic.bestAnswerChanged',\n    'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',\n    'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected') and \"admin_history\".\"target_type\" = 'topic')\n  or (\"admin_history\".\"action\" = 'post.sourceLocaleCorrected' and \"admin_history\".\"target_type\" = 'post')"
         },
         "admin_history_context_check": {
           "name": "admin_history_context_check",
@@ -300,7 +300,7 @@
       "checkConstraints": {
         "authz_permissions_catalog_check": {
           "name": "authz_permissions_catalog_check",
-          "value": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',\n  'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',\n  'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',\n  'access.authorization.manage', 'admin.history.read', 'forum.complaint.create', 'forum.complaint.review',\n  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review', 'forum.complaint.priority.manage'\n)"
+          "value": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',\n  'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',\n  'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',\n  'access.authorization.manage', 'admin.history.read', 'forum.complaint.create', 'forum.complaint.review',\n  'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review'\n)"
         }
       },
       "isRLSEnabled": false
@@ -2822,51 +2822,6 @@
         "complaint_note_body_check": {
           "name": "complaint_note_body_check",
           "value": "btrim(\"forum_complaint_notes\".\"body\") <> '' and char_length(\"forum_complaint_notes\".\"body\") <= 10000"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.forum_complaint_priority_settings": {
-      "name": "forum_complaint_priority_settings",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "version": {
-          "name": "version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "weights": {
-          "name": "weights",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "complaint_priority_settings_singleton": {
-          "name": "complaint_priority_settings_singleton",
-          "value": "\"forum_complaint_priority_settings\".\"id\" = 1"
-        },
-        "complaint_priority_settings_version": {
-          "name": "complaint_priority_settings_version",
-          "value": "\"forum_complaint_priority_settings\".\"version\" > 0"
-        },
-        "complaint_priority_settings_weights": {
-          "name": "complaint_priority_settings_weights",
-          "value": "jsonb_typeof(\"forum_complaint_priority_settings\".\"weights\") = 'object'\n    and \"forum_complaint_priority_settings\".\"weights\" - array['spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other'] = '{}'::jsonb\n    and \"forum_complaint_priority_settings\".\"weights\"->'spam' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'harassment' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'threats' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'fraud-phishing' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'malicious-content' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'personal-data' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'impersonation' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\"->'other' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)\n    and \"forum_complaint_priority_settings\".\"weights\" ?& array['spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other']"
         }
       },
       "isRLSEnabled": false

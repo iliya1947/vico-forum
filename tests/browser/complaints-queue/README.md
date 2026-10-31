@@ -2,7 +2,7 @@
 
 Opt-in Chromium → built Worker → Better Auth → PermissionResolver → PostgreSQL check.
 Use an isolated loopback PostgreSQL 17 database ending in `_test`, migrate it through
-0052, and point both local Hyperdrive overrides at it. Configure task-owned dummy auth
+0053, and point both local Hyperdrive overrides at it. Configure task-owned dummy auth
 vars with BETTER_AUTH_URL matching the preview URL. Keep proxy/CA settings; never copy
 existing credential files. Requires pinned Node/pnpm, Python Playwright and Chromium.
 

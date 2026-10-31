@@ -51,6 +51,53 @@ Heading hierarchy/CSS и shared preview согласованы; применяю
 browser/CI и author handoff фиксируются в #251; review/merge/owner visual/rollout заранее
 не заявляются.
 
+## AP-05 — shared topic Quick actions и forum History (2026-10-30)
+
+Синхронизация после merge Complaints Package 2 #266: ветка включает main `5ac2a18`.
+Принятые `0050_complaint_submission`, snapshot 0050 и journal prefix сохранены;
+AP-05 SQL без изменения содержимого перенумерован в `0051_forum_admin_history`,
+snapshot 0051 сгенерирован поверх объединённой схемы. Complaint forms/capability,
+обе группы localization/fingerprints и schema/manifest changes объединены.
+Новый exact head требует полного coordinator-first review заново; прежний handoff
+на `7664ea9` больше не является актуальным. Результаты повторных checks/CI/browser
+и test-merge фиксируются в #251 после их фактического завершения.
+
+Correction C после diagnosis на `c6aef29`: explicit own требует текущий Own permission,
+Any→own fallback удалён. Revoked/absent Own даёт controlled denial без mutation/event,
+даже если Any сохраняется. Явный any и legacy scope choice сохранены. Отдельный server
+presentation flag и redirect admission не предлагают Any-only автору own confirmation;
+administrative self-action остаётся в Quick actions. Scope/resource/CAS и History ordering
+прежние; schema/permissions/migration prefix/Complaints не меняются. Correction требует
+нового coordinator-first review на новом head; проверки фиксируются в #251 по факту.
+
+Correction A/B после diagnosis/review на `b427800`: текущие own solution/source controls
+явно передают `operationScope=own`, scoped administrative Quick actions — `any` в прежние
+intents. Сервер проверяет marker/capabilities и прежний ownership/state/CAS; выдача Any
+после открытия own-формы её смысл не меняет. Author confirmation остаётся own, явный admin
+Quick action на собственном объекте — admin. Legacy calls без marker сохраняют прежний
+выбор scope. Remove duplicate получает ID реально принятого pending appeal через RETURNING
+и включает его accepted outcome в то же History event/presentation, без private текста и
+дополнительного event. No-appeal context прежний. Schema/permissions/migrations не меняются.
+Добавлены targeted route/native/browser regressions, включая stale/retry/atomic rollback.
+Фактические checks/CI/handoff записываются в #251 после выполнения; correction требует
+нового coordinator-first review cycle.
+
+Существующие contextual topic controls используют reusable typed descriptors и
+TopicQuickActions; формы отправляют прежние intents на canonical topic endpoint. Pin/unpin,
+administrative solved/best-answer, Help solution/duplicate/appeal и source-locale paths
+сохраняют server gates, own-only controls, reason validation и прежние stale/CAS identities.
+History append выполняется внутри тех же Drizzle transactions; failure откатывает mutation,
+actual no-op/replay/denied не создаёт events. Help signal review пишет один outcome с effect,
+без дублирования inner operation и private case explanation. Own-scope операции не становятся
+административными по роли автора. Для общего порядка pg и Drizzle producers используют
+transaction advisory lock непосредственно перед последним append и держат его до commit;
+существующие domain/authorization locks остаются. Forward migration 0051 расширяет только
+History action/target constraint; Drizzle metadata и schema manifest согласованы, runtime
+SELECT/INSERT и permission catalog прежние. EN/RU/HE History и Quick actions локализованы.
+AP-06+, новые admin pages, closure/blocking и production rollout не входят в пакет.
+Фактические checks/browser/CI и author handoff фиксируются в #251. Whole-PR independent
+review, owner visual acceptance и merge этой записью не объявляются завершёнными.
+
 ## Назначение
 
 Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
@@ -79,6 +126,25 @@ corrections #259/#260/#261 уже объединены в `main`. Чернови
 отложены решением владельца и не являются текущими задачами Editor 2.0.
 Stage 6 external/production gates, не реализованные admin/complaints функции
 и соответствующие owner acceptance остаются отдельной незавершённой работой.
+
+## Complaints Package 3 — integration with AP-05 / main e564948 (2026-10-31)
+
+По назначению #254/#6536295319 PR #269 интегрирован с принятым main `e564948`
+после merge #268. Принятые AP-05 Quick actions, own/any operationScope, permission/resource/CAS
+и transactional forum History producers сохранены вместе с Complaints Queue/triage,
+configurable reason mapping и activity. Обе группы canonical/localized keys и reviewed
+fingerprints объединены без изменения их значений.
+
+Принятый `0051_forum_admin_history` и его snapshot/journal prefix сохранены byte-for-byte.
+Непринятые Complaints SQL без изменения содержания перенумерованы в
+`0052_complaints_queue` и `0053_complaint_priority_settings`; snapshots 0052/0053
+пересобраны поверх принятого AP-05 snapshot 0051. Explicit fixture migration lists,
+manifest и clean migration count согласуются с 54 migrations / 60 tables.
+Ссылки на прежние номера в датированных author-check sections ниже исторические.
+
+Применимые checks, upgrade и browser/CI результаты записываются в #254 по завершении;
+прежний review на 5601aab не закрывает новый integration head. Нужен новый
+coordinator-first whole-PR cycle. Package 4+, merge и production rollout не выполняются.
 
 ## Complaints — Package 3 configurable reason priorities (2026-10-31)
 
@@ -2674,7 +2740,7 @@ checkpoints ниже сохраняются как датированная ис
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0052`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0053`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

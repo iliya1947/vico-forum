@@ -157,12 +157,27 @@ export async function requireForumPermission(context: RouterContextProvider, per
   }
 }
 
-export async function sourceLocaleCorrectionScope(context: RouterContextProvider) {
+/** Untrusted operation choice, never an authority grant. Omitted markers retain legacy calls. */
+function requestedOperationScope(form?: FormData): "own" | "any" | null | "invalid" {
+  const values = form?.getAll("operationScope") ?? [];
+  if (!values.length) return null;
+  if (values.length !== 1 || (values[0] !== "own" && values[0] !== "any")) return "invalid";
+  return values[0];
+}
+
+export async function sourceLocaleCorrectionScope(context: RouterContextProvider, form?: FormData) {
   const session = authSessionForRequest(context);
   if (!session) return { error: sourceLocaleCorrectionFailure("unauthenticated", 401) } as const;
+  const requested = requestedOperationScope(form);
+  if (requested === "invalid") return { error: sourceLocaleCorrectionFailure("invalid", 400) } as const;
   try {
     const resolver = authorizationForRequest(context).forUser(session.user.id);
+    if (requested === "own") {
+      if (await resolver.has("forum.sourceLocale.correctOwn")) return { scope: "own" as const };
+      return { error: sourceLocaleCorrectionFailure("forbidden", 403) } as const;
+    }
     if (await resolver.has("forum.sourceLocale.correctAny")) return { scope: "any" as const };
+    if (requested === "any") return { error: sourceLocaleCorrectionFailure("forbidden", 403) } as const;
     if (await resolver.has("forum.sourceLocale.correctOwn")) return { scope: "own" as const };
     return { error: sourceLocaleCorrectionFailure("forbidden", 403) } as const;
   } catch (error) {
@@ -173,13 +188,20 @@ export async function sourceLocaleCorrectionScope(context: RouterContextProvider
   }
 }
 
-export async function solutionScope(context: RouterContextProvider) {
+export async function solutionScope(context: RouterContextProvider, form?: FormData) {
   const session = authSessionForRequest(context);
   if (!session) return { error: mutationFailure("unauthenticated", 401) } as const;
+  const requested = requestedOperationScope(form);
+  if (requested === "invalid") return { error: mutationFailure("invalid", 400) } as const;
   try {
     const resolver = authorizationForRequest(context).forUser(session.user.id);
-    if (await resolver.has("forum.solution.manageAny")) return { scope: "any" as const };
-    if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const };
+    if (requested === "own") {
+      if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const, canConfirmOwn: true };
+      return { error: mutationFailure("forbidden", 403) } as const;
+    }
+    if (await resolver.has("forum.solution.manageAny")) return { scope: "any" as const, canConfirmOwn: await resolver.has("forum.solution.manageOwn") };
+    if (requested === "any") return { error: mutationFailure("forbidden", 403) } as const;
+    if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const, canConfirmOwn: true };
     return { error: mutationFailure("forbidden", 403) } as const;
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {

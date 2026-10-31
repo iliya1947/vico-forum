@@ -1673,3 +1673,39 @@ describe("forum write route actions", () => {
   });
 
 });
+
+describe("explicit operation scope is validated independently of capability priority", () => {
+  it.each(["markSolved", "selectBestAnswer"])("keeps explicit own semantics for %s with both capabilities", async intent => {
+    const writer = {markTopicSolved:vi.fn(async()=>{}),selectBestAnswer:vi.fn(async()=>({topicAuthorId:session.user.id,isSolved:false}))} as unknown as ForumWriter;
+    await topicAction({request:request('/en/topics/t',{intent,postId:'p',operationScope:'own'}),params:{locale:'en',topicId:'t'},context:context(writer)});
+    expect(intent==='markSolved'?writer.markTopicSolved:writer.selectBestAnswer).toHaveBeenCalledWith(expect.objectContaining({scope:'own',actorId:session.user.id}));
+  });
+  it("rejects explicit any without the permission and rejects malformed markers before writes", async () => {
+    const writer={markTopicSolved:vi.fn(async()=>{})} as unknown as ForumWriter;
+    for(const [scope,code] of [['any',403],['bogus',400]] as const){
+      const response=await topicAction({request:request('/en/topics/t',{intent:'markSolved',operationScope:scope}),params:{locale:'en',topicId:'t'},context:context(writer,true,['forum.solution.manageOwn'])});
+      expect(response).toMatchObject({init:{status:code}});
+    }
+    expect(writer.markTopicSolved).not.toHaveBeenCalled();
+  });
+  it.each(['correctTitleSourceLocale','correctPostSourceLocale'])("retains own scope for %s after Any has been granted",async intent=>{
+    const writer={correctTopicTitleSourceLocale:vi.fn(async()=>{}),correctPostBodySourceLocale:vi.fn(async()=>{})} as unknown as ForumWriter;
+    await topicAction({request:request('/en/topics/t',{intent,operationScope:'own',expectedRevisionId:'r',sourceLocale:'he',postId:'p'}),params:{locale:'en',topicId:'t'},context:context(writer)});
+    expect(intent==='correctTitleSourceLocale'?writer.correctTopicTitleSourceLocale:writer.correctPostBodySourceLocale).toHaveBeenCalledWith(expect.objectContaining({scope:'own',actorId:session.user.id}));
+  });
+});
+
+describe("explicit own admission requires Own independently of Any",()=>{
+  it.each(['markSolved','selectBestAnswer','correctTitleSourceLocale','correctPostSourceLocale'])("denies Any-only own %s before a write",async intent=>{
+    const writer={markTopicSolved:vi.fn(),selectBestAnswer:vi.fn(),correctTopicTitleSourceLocale:vi.fn(),correctPostBodySourceLocale:vi.fn()} as unknown as ForumWriter;
+    const response=await topicAction({request:request('/en/topics/t',{intent,operationScope:'own',postId:'p',expectedRevisionId:'r',sourceLocale:'he'}),params:{locale:'en',topicId:'t'},context:context(writer,true,['forum.solution.manageAny','forum.sourceLocale.correctAny'])});
+    expect(response).toMatchObject({init:{status:403}});
+    for(const method of [writer.markTopicSolved,writer.selectBestAnswer,writer.correctTopicTitleSourceLocale,writer.correctPostBodySourceLocale])expect(method).not.toHaveBeenCalled();
+  });
+  it("does not redirect an Any-only author into own confirmation",async()=>{
+    const writer={selectBestAnswer:vi.fn(async()=>({topicAuthorId:session.user.id,isSolved:false}))} as unknown as ForumWriter;
+    const response=await topicAction({request:request('/en/topics/t',{intent:'selectBestAnswer',operationScope:'any',postId:'p'}),params:{locale:'en',topicId:'t'},context:context(writer,true,['forum.solution.manageAny'])});
+    expect((response as Response).headers.get('Location')).toBe('/en/topics/t#post-p');
+    expect(writer.selectBestAnswer).toHaveBeenCalledWith(expect.objectContaining({scope:'any'}));
+  });
+});

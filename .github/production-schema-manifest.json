@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0052_complaint_priority_settings",
+  "targetMigration": "0053_complaint_priority_settings",
   "tables": {
     "account": {
       "columns": [
@@ -6953,7 +6953,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "0ee9817b170a65985f8a1bdd6d9e392e9665dc68aeec1abe1f119e771ac87b45"
+          "definitionSha256": "c49804195352b8b9d8525be695cab4fa43d83af01da5205216c6754e01fcdf45"
         },
         {
           "name": "admin_history_context_check",

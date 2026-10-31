@@ -1,3 +1,4 @@
+import {TopicQuickActions} from "../admin/quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
 import { ComplaintQueueList } from "../complaints/queue-view";
@@ -2083,6 +2084,7 @@ export function TopicView({
   canReadPostHistory = false,
   canSubmitComplaint = false,
   canManageSolution,
+  canConfirmOwnSolution = false,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
   canManageHelpDuplicate = false,
@@ -2106,6 +2108,7 @@ export function TopicView({
   canReadPostHistory?: boolean;
   canSubmitComplaint?: boolean;
   canManageSolution: boolean;
+  canConfirmOwnSolution?: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
   canManageHelpDuplicate?: boolean;
@@ -2161,8 +2164,6 @@ export function TopicView({
   const bestAnswerPost = topic.bestAnswerPostId
     ? topic.posts.find((post) => post.id === topic.bestAnswerPostId)
     : undefined;
-  const currentSolutionModerationStatus = bestAnswerPost?.solutionModerationStatus ?? null;
-  const currentSolutionOutdatedReason = bestAnswerPost?.solutionOutdatedReason ?? null;
   const orderedPosts = originalPost
     ? [
         originalPost,
@@ -2171,7 +2172,7 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
-  const selectableBestAnswerPosts = canManageSolution && !topic.duplicateOf
+  const selectableBestAnswerPosts = canManageSolution && !canManageAnySolution && !topic.duplicateOf
     ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
     : [];
   const directRepliesByParent = new Map<string, string[]>();
@@ -2187,7 +2188,7 @@ export function TopicView({
   const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
   const promptedBestAnswerPostId =
     isTopicAuthor
-    && canManageSolution
+    && canConfirmOwnSolution
     && !topic.isSolved
     && topic.bestAnswerPostId
     && topic.bestAnswerPostId === solutionPromptPostId
@@ -2480,6 +2481,7 @@ export function TopicView({
                     {selectableBestAnswerPosts.map((post) => (
                       <Form method="post" className="solution-form topic-best-answer-form" key={post.id}>
                         <input type="hidden" name="intent" value="selectBestAnswer" />
+                        <input type="hidden" name="operationScope" value="own" />
                         <input type="hidden" name="postId" value={post.id} />
                         <button type="submit">{t("postNumber", { number: messageNumberById.get(post.id)! })}</button>
                       </Form>
@@ -2489,128 +2491,11 @@ export function TopicView({
               ) : null}
 
               {canUseAdminPanel ? (
-                <details className="topic-admin-tools">
-              <summary>{t("topicAdminPanel")}</summary>
-              <div className="topic-admin-panel">
-                {canManagePin ? (
-                  <Form method="post" className="pin-topic-form topic-admin-form">
-                    <input type="hidden" name="intent" value={topic.isPinned ? "unpinTopic" : "pinTopic"} />
-                    <button type="submit">{t(topic.isPinned ? "unpinTopic" : "pinTopic")}</button>
-                  </Form>
-                ) : null}
+                <TopicQuickActions locale={locale} topic={topic} canManagePin={canManagePin}
+                  canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
+                  canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
+                  pendingDuplicateAppeal={pendingDuplicateAppeal}/>
 
-                {canManageAnySolution && !topic.isSolved && !topic.duplicateOf ? (
-                  <Form method="post" className="solution-form topic-admin-form">
-                    <input type="hidden" name="intent" value="markSolved" />
-                    <button type="submit">{t("markSolved")}</button>
-                  </Form>
-                ) : null}
-
-                {canManageHelpDuplicate && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID ? (
-                  topic.duplicateOf ? (
-                    <>
-                      <Form method="post" className="topic-admin-form help-duplicate-admin-form">
-                        <input type="hidden" name="intent" value="removeHelpDuplicate" />
-                        <input
-                          type="hidden"
-                          name="expectedRelationshipId"
-                          value={topic.duplicateRelationshipId ?? ""}
-                        />
-                        <button type="submit">{t("helpDuplicateRemove")}</button>
-                      </Form>
-                      {pendingDuplicateAppeal ? (
-                        <section className="help-duplicate-appeal-review">
-                          <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
-                          <div className="help-duplicate-appeal-review-actions">
-                            <Form method="post" className="topic-admin-form">
-                              <input type="hidden" name="intent" value="acceptHelpDuplicateAppeal" />
-                              <input type="hidden" name="expectedAppealId" value={pendingDuplicateAppeal.id} />
-                              <button type="submit">{t("helpDuplicateAppealAccept")}</button>
-                            </Form>
-                            <Form method="post" className="topic-admin-form">
-                              <input type="hidden" name="intent" value="rejectHelpDuplicateAppeal" />
-                              <input type="hidden" name="expectedAppealId" value={pendingDuplicateAppeal.id} />
-                              <button type="submit">{t("helpDuplicateAppealReject")}</button>
-                            </Form>
-                          </div>
-                        </section>
-                      ) : null}
-                    </>
-                  ) : !topic.isSolved && !topic.bestAnswerPostId ? (
-                    <Form method="post" className="topic-admin-form help-duplicate-admin-form">
-                      <input type="hidden" name="intent" value="confirmHelpDuplicate" />
-                      <label>
-                        {t("helpDuplicateOriginalIdLabel")}
-                        <input name="originalTopicId" required autoComplete="off" />
-                      </label>
-                      <button type="submit">{t("helpDuplicateConfirm")}</button>
-                    </Form>
-                  ) : null
-                ) : null}
-
-                {canCorrectAnySourceLocale ? (
-                  <Form method="post" className="source-locale-form topic-admin-form">
-                    <input type="hidden" name="intent" value="correctTitleSourceLocale" />
-                    <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
-                    <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
-                    <label>
-                      {t("sourceLocaleCorrectionInput")}
-                      <input
-                        name="sourceLocale"
-                        required
-                        defaultValue={topic.title.sourceLocale === "und" ? "" : topic.title.sourceLocale}
-                        autoComplete="off"
-                      />
-                    </label>
-                    <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
-                  </Form>
-                ) : null}
-
-                {canModerateHelpSolution && topic.isSolved ? (
-                  <>
-                    {currentSolutionModerationStatus !== "needs-review" ? (
-                      <Form method="post" className="solution-form topic-admin-form">
-                        <input type="hidden" name="intent" value="markSolutionNeedsReview" />
-                        <input type="hidden" name="expectedBestAnswerPostId" value={topic.bestAnswerPostId ?? ""} />
-                        <button type="submit">{t("helpSolutionMarkNeedsReview")}</button>
-                      </Form>
-                    ) : null}
-
-                    <Form
-                      key={[
-                        bestAnswerPost?.id ?? "none",
-                        currentSolutionModerationStatus ?? "none",
-                        currentSolutionOutdatedReason ?? "",
-                      ].join("\u0000")}
-                      method="post"
-                      className="solution-form topic-admin-form"
-                    >
-                      <input type="hidden" name="intent" value="markSolutionOutdated" />
-                      <input type="hidden" name="expectedBestAnswerPostId" value={topic.bestAnswerPostId ?? ""} />
-                      <label>
-                        {t("helpSolutionOutdatedReasonInput")}
-                        <textarea
-                          name="outdatedReason"
-                          required
-                          maxLength={1000}
-                          rows={3}
-                          defaultValue={currentSolutionOutdatedReason ?? ""}
-                        />
-                      </label>
-                      <button type="submit">{t("helpSolutionMarkOutdated")}</button>
-                    </Form>
-
-                    {currentSolutionModerationStatus ? (
-                      <Form method="post" className="solution-form topic-admin-form">
-                        <input type="hidden" name="intent" value="clearSolutionModeration" />
-                        <input type="hidden" name="expectedBestAnswerPostId" value={topic.bestAnswerPostId ?? ""} />
-                        <button type="submit">{t("helpSolutionClearModeration")}</button>
-                      </Form>
-                    ) : null}
-                  </>
-                ) : null}
-                  </div>
-                </details>
               ) : null}
             </div>
           ) : null}
@@ -2673,6 +2558,7 @@ export function TopicView({
             <div className="solution-confirmation-actions">
               <Form method="post" className="solution-form">
                 <input type="hidden" name="intent" value="markSolved" />
+                <input type="hidden" name="operationScope" value="own" />
                 <button type="submit">{t("problemSolvedYes")}</button>
               </Form>
               <Link
@@ -3041,6 +2927,7 @@ export function TopicView({
                           {canManageSolution && !canManageAnySolution && !topic.isSolved ? (
                             <Form method="post" className="solution-form secondary-tools-form">
                               <input type="hidden" name="intent" value="markSolved" />
+                              <input type="hidden" name="operationScope" value="own" />
                               <button type="submit">{t("markSolved")}</button>
                             </Form>
                           ) : null}
@@ -3048,6 +2935,7 @@ export function TopicView({
                           {canCorrectTitleSourceLocale && !canCorrectAnySourceLocale ? (
                             <Form method="post" className="source-locale-form secondary-tools-form">
                               <input type="hidden" name="intent" value="correctTitleSourceLocale" />
+                              <input type="hidden" name="operationScope" value="own" />
                               <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
                               <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
                               <label>
