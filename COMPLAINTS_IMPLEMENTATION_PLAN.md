@@ -1,329 +1,329 @@
-# Complaints system implementation plan
+# План реализации системы жалоб
 
-> Service/planning document for the Vico Forum complaints system. The complaints system remains separate from Signals, Security and the global Admin panel. Implementation is delivered through separate bounded implementation PRs merged sequentially into `main`; this PR remains the working planning/service record for the complaints system.
+> Служебный/плановый документ системы жалоб Vico Forum. Система жалоб остаётся отдельной от Signals, Security и глобальной админ-панели. Реализация выполняется через отдельные ограниченные implementation PR, последовательно merge в `main`; этот PR остаётся рабочей плановой и служебной записью системы жалоб.
 
-## 1. Approved product model
+## 1. Утверждённая продуктовая модель
 
-A complaint is a report by one authenticated user about a possible violation. It is not itself proof of a violation and does not automatically cause an administrative action.
+Жалоба — это сообщение одного аутентифицированного пользователя о возможном нарушении. Сама по себе жалоба не является доказательством нарушения и не вызывает административное действие автоматически.
 
-The complaints domain separates:
+Домен жалоб разделяет:
 
-1. **Complaint** — one user's report.
-2. **Case** — the moderation work unit for one incident.
-3. **Decision** — whether the reported violation is confirmed.
-4. **Appeal** — a challenge to a concrete decision.
+1. **Complaint** — отдельную жалобу одного пользователя.
+2. **Case** — рабочее дело модерации по одному инциденту.
+3. **Decision** — решение о том, подтверждено ли заявленное нарушение.
+4. **Appeal** — апелляцию на конкретное решение.
 
-Administrative actions are **not** owned by the complaints domain. A complaint case exposes the same shared **Quick actions** that are available elsewhere in forum administration. Those actions keep their own authoritative backend operations, permissions, state validation and administrative-history behavior.
+Административные действия **не принадлежат** домену жалоб. В Case доступны те же общие **Quick actions**, которые используются в других местах администрирования форума. Эти действия сохраняют собственные авторитетные backend-операции, permissions, проверку состояния и поведение административной истории.
 
-The complaints system remains separate from:
+Система жалоб остаётся отдельной от:
 
-1. **Signals** — Help/content-quality workflows.
-2. **Security** — system/security events such as suspicious attachments.
-3. **Admin panel** — global forum administration planned in PR #251.
+1. **Signals** — workflows помощи и качества контента.
+2. **Security** — системных/безопасностных событий, например подозрительных вложений.
+3. **Admin panel** — глобального администрирования форума, планируемого в PR #251.
 
-## 2. Approved complaint submission rules
+## 2. Утверждённые правила подачи жалоб
 
-### 2.1 Who may submit
+### 2.1 Кто может отправлять
 
-Only authenticated users may submit ordinary complaints.
+Обычные жалобы могут отправлять только аутентифицированные пользователи.
 
-### 2.2 Complaint targets
+### 2.2 Объекты жалобы
 
-The first version supports complaints about:
+Первая версия поддерживает жалобы на:
 
-1. a **message/post**;
-2. a **topic title**.
+1. **сообщение/post**;
+2. **заголовок темы**.
 
-A topic's first message remains a normal post and is reported separately from the topic title. A complaint therefore targets exactly one content unit.
+Первое сообщение темы остаётся обычным post и подаётся отдельно от жалобы на заголовок темы. Одна жалоба всегда относится ровно к одной единице контента.
 
-The complaint is bound to the immutable revision that was current when the complaint was submitted. Later edits do not erase or replace the reported content.
+Жалоба привязывается к immutable revision, которая была актуальной в момент подачи. Последующие редактирования не удаляют и не заменяют зафиксированный объект жалобы.
 
-### 2.3 Complaint reasons
+### 2.3 Причины жалобы
 
-Approved reasons:
+Утверждённые причины:
 
-1. Spam / advertising.
-2. Insults / harassment.
-3. Threats.
-4. Fraud / phishing.
-5. Malicious content.
-6. Personal data.
-7. Impersonation.
-8. Other violation.
+1. Спам / реклама.
+2. Оскорбления / травля.
+3. Угрозы.
+4. Мошенничество / фишинг.
+5. Вредоносный контент.
+6. Персональные данные.
+7. Выдача себя за другого.
+8. Другое нарушение.
 
-An explanation is optional for the standard reasons and required for **Other violation**.
+Пояснение необязательно для стандартных причин и обязательно для **Другого нарушения**.
 
-### 2.4 Withdrawal
+### 2.4 Отзыв жалобы
 
-A submitted complaint cannot be withdrawn by the reporter. It remains in the system until the case is resolved.
+Отправленную жалобу нельзя отозвать. Она остаётся в системе до разрешения Case.
 
-## 3. Case model
+## 3. Модель Case
 
-Multiple complaints about the same open incident are kept as separate Complaint records but are grouped into one Case.
+Несколько жалоб на один и тот же открытый инцидент хранятся как отдельные Complaint, но группируются в один Case.
 
-The grouping boundary is the concrete reported content revision. Different revisions of the same post/topic title therefore use separate Cases rather than mixing complaints about different content states.
+Граница группировки — конкретная revision контента, на которую подана жалоба. Поэтому разные revision одного и того же post/заголовка темы используют отдельные Cases и не смешивают жалобы на разные состояния контента.
 
-If a Case for the same concrete revision has already been resolved and another user later submits a complaint about that same revision, the complaint creates a **new Case**. The earlier Case remains closed and immutable. The new Case must keep an explicit link/reference to the related closed Case so the moderation team can see the prior handling of the same revision without reopening or mutating the earlier Case.
+Если Case для той же конкретной revision уже разрешён, а другой пользователь позже отправляет жалобу на эту же revision, создаётся **новый Case**. Предыдущий Case остаётся закрытым и immutable. Новый Case должен хранить явную ссылку на связанный закрытый Case, чтобы команда модерации видела предыдущую обработку той же revision без повторного открытия или изменения старого Case.
 
-If a newer revision is reported while a Case for the previous revision of that same content unit is still open, the newer revision also creates a **separate new Case immediately**. The new Case must keep an explicit link/reference to that previous-revision Case. The earlier Case stays open and unchanged; complaints about the newer revision are not appended to it and are not blocked until it closes.
+Если на новую revision пожаловались, пока Case предыдущей revision той же единицы контента всё ещё открыт, новая revision также **немедленно создаёт отдельный новый Case**. Новый Case должен хранить явную ссылку на Case предыдущей revision. Предыдущий Case остаётся открытым и неизменным; жалобы на новую revision не добавляются в него и не блокируются до его закрытия.
 
-The case must preserve enough state to review:
+Case должен сохранять достаточно состояния для проверки:
 
-1. the reported revision;
-2. the current content state;
-3. all complaints grouped into the case;
-4. complaint reasons and explanations;
-5. case priority;
-6. moderation notes;
-7. decision history;
-8. appeals and appeal results.
+1. revision, на которую подана жалоба;
+2. текущее состояние контента;
+3. все Complaint, сгруппированные в Case;
+4. причины и пояснения жалоб;
+5. приоритет Case;
+6. заметки модераторов;
+7. историю решений;
+8. апелляции и результаты апелляций.
 
-The number of complaints is context for review, not a vote and not a trigger for automatic punishment.
+Количество жалоб — контекст для проверки, а не голосование и не триггер автоматического наказания.
 
-## 4. Reporter privacy
+## 4. Конфиденциальность автора жалобы
 
-Reporter identity is confidential from ordinary complaint reviewers by default.
+Личность автора жалобы по умолчанию скрыта от обычных reviewers жалоб.
 
-A separate elevated code-backed permission is required to read reporter identities. Ordinary reviewers receive only the complaint content needed for the case and aggregate/independent-reporter information, not hidden reporter identifiers.
+Для чтения личности авторов жалоб требуется отдельный повышенный code-backed permission. Обычные reviewers получают только содержимое жалобы, необходимое для Case, и агрегированную информацию/число независимых авторов жалоб, но не скрытые идентификаторы заявителей.
 
-Reporter identity must be filtered server-side; hiding it only in presentation is insufficient.
+Личность автора жалобы должна фильтроваться server-side; одного скрытия в UI недостаточно.
 
-## 5. Priority
+## 5. Приоритет
 
-Case priority is assigned automatically according to the complaint reason. A reviewer may override the resulting priority manually.
+Приоритет Case назначается автоматически по причине жалобы. Reviewer может вручную переопределить итоговый приоритет.
 
-Priority affects processing order only. It does not imply that a violation has been proven.
+Приоритет влияет только на порядок обработки. Он не означает, что нарушение доказано.
 
-The exact reason-to-priority mapping is part of the implementation contract and must remain simple and deterministic.
+Точная таблица reason → priority является частью implementation contract и должна оставаться простой и детерминированной.
 
-## 6. Moderator activity and notes
+## 6. Активность и заметки модераторов
 
-Cases are **not assigned** to one moderator.
+Cases **не назначаются** одному модератору.
 
-Any actor with the required effective permission may review the case. The moderation team must nevertheless see when another moderator is currently working with the case.
+Любой actor с необходимым effective permission может проверять Case. При этом команда модерации должна видеть, когда другой модератор в данный момент работает с этим Case.
 
-This is an activity/presence indicator, not an exclusive lock or ownership assignment. It must not remain permanently stuck after the reviewer leaves.
+Это индикатор activity/presence, а не эксклюзивная блокировка или назначение владельца. Он не должен навсегда зависать после ухода reviewer.
 
-Cases also support private internal moderator notes. These notes:
+Cases также поддерживают приватные внутренние заметки модераторов. Эти заметки:
 
-1. are visible only to authorized moderation actors;
-2. are separate from user-visible decision reasoning;
-3. record author and time;
-4. are not a general chat system.
+1. видимы только авторизованным участникам модерации;
+2. отделены от объяснения решения, видимого пользователю;
+3. сохраняют автора и время;
+4. не являются общей системой чата.
 
-## 7. Decision and Quick actions
+## 7. Decision и Quick actions
 
-The complaints domain owns only the complaint decision:
+Домен жалоб владеет только решением по жалобе:
 
-1. violation confirmed;
-2. violation not confirmed.
+1. нарушение подтверждено;
+2. нарушение не подтверждено.
 
-Administrative measures are separate.
+Административные меры существуют отдельно.
 
-Inside a complaint case, the moderator receives the shared **Quick actions** appropriate to:
+Внутри Case модератор получает общие **Quick actions**, соответствующие:
 
-1. the target object;
-2. its current authoritative state;
-3. the actor's current effective permissions.
+1. типу целевого объекта;
+2. его текущему авторитетному состоянию;
+3. текущим effective permissions actor.
 
-The complaints system must not create parallel complaint-specific hide/block/delete/etc. mutations.
+Система жалоб не должна создавать параллельные complaint-specific mutations для hide/block/delete и других административных действий.
 
-If a particular administrative operation from PR #251 is not yet implemented, the complaint system must not emulate or duplicate it merely to make the case UI appear complete.
+Если конкретная административная операция из PR #251 ещё не реализована, система жалоб не должна имитировать или дублировать её только ради визуальной полноты Case UI.
 
-## 8. Result notifications
+## 8. Уведомления о результате
 
-After a decision, the reporter is told:
+После решения автору жалобы сообщается:
 
-1. whether the complaint was confirmed or rejected;
-2. when applicable, a generic statement that administrative measures were taken.
+1. была ли жалоба подтверждена или отклонена;
+2. когда применимо — общее сообщение о том, что административные меры были приняты.
 
-The reporter is not shown specific sanctions applied to another user.
+Автору жалобы не показываются конкретные санкции, применённые к другому пользователю.
 
-The affected content author receives the decision information relevant to their content and the available appeal path.
+Автор затронутого контента получает информацию о решении, относящуюся к его контенту, и доступный путь апелляции.
 
-Moderation-result notifications should use the forum's common notification surface rather than a separate complaints-only inbox.
+Уведомления о результатах модерации должны использовать общую поверхность уведомлений форума, а не отдельный inbox только для жалоб.
 
-## 9. Appeals
+## 9. Апелляции
 
-Both sides may appeal in the applicable direction:
+Обе стороны могут подавать апелляцию в применимом направлении:
 
-1. the content author may appeal a confirmed violation;
-2. the reporter may appeal a rejected complaint.
+1. автор контента может обжаловать подтверждённое нарушение;
+2. автор жалобы может обжаловать отклонённую жалобу.
 
-A decision may receive up to **three appeals**.
+На одно решение допускается не более **трёх апелляций**.
 
-Each appeal is bound to the concrete case and decision. Review must preserve the original decision, appeal argument and prior appeal history.
+Каждая Appeal привязана к конкретным Case и Decision. Проверка должна сохранять исходное решение, аргумент апелляции и историю предыдущих апелляций.
 
-Where possible, a moderator should not review an appeal against their own decision. The system must not deadlock when no other eligible reviewer exists.
+По возможности модератор не должен проверять апелляцию на собственное решение. При этом система не должна блокироваться, если другого подходящего reviewer нет.
 
-Appeal results must be persisted into the case history and reflected in notifications.
+Результаты апелляции должны сохраняться в истории Case и отражаться в уведомлениях.
 
-## 10. Needs attention integration
+## 10. Интеграция с «Требуют внимания»
 
-The existing protected moderation center at `/:locale/attention` remains the complaints working surface.
+Существующий защищённый moderation center по адресу `/:locale/attention` остаётся рабочей поверхностью системы жалоб.
 
-The Complaints mode replaces the current placeholders with:
+Режим Complaints заменяет текущие заглушки на:
 
-1. **Queue** — open complaint cases.
-2. **Appeals** — complaint appeals awaiting review.
-3. **History** — resolved complaint cases and their lifecycle.
+1. **Queue** — открытые Cases жалоб.
+2. **Appeals** — апелляции по жалобам, ожидающие проверки.
+3. **History** — разрешённые Cases и их lifecycle.
 
-The queue displays Cases, not individual Complaint rows.
+Queue показывает Cases, а не отдельные строки Complaint.
 
-## 11. Authorization
+## 11. Авторизация
 
-The system reuses the existing dynamic permission model and server-side PermissionResolver.
+Система переиспользует существующую динамическую модель permissions и server-side `PermissionResolver`.
 
-New code-backed permissions are introduced only together with real complaint capabilities. The required capability families are:
+Новые code-backed permissions вводятся только вместе с реально реализуемыми возможностями жалоб. Необходимые группы возможностей:
 
-1. submit complaints;
-2. review complaint cases;
-3. read reporter identities;
-4. review complaint appeals.
+1. отправка жалоб;
+2. проверка Cases жалоб;
+3. чтение личности авторов жалоб;
+4. проверка апелляций по жалобам.
 
-Shared administrative Quick actions retain their own permissions and do not inherit authority merely because an actor may review complaints.
+Общие административные Quick actions сохраняют собственные permissions и не получают полномочия только потому, что actor может проверять жалобы.
 
-Role names are not authorization evidence. Role grants and per-user `allow | deny | inherit` overrides remain authoritative on the next request.
+Имена ролей не являются доказательством полномочий. Role grants и персональные overrides `allow | deny | inherit` остаются авторитетными со следующего запроса.
 
-## 12. Anti-abuse boundaries
+## 12. Границы защиты от злоупотреблений
 
-The submission path uses the forum's existing authenticated, same-origin/server-validated write principles with complaint-specific anti-abuse rules.
+Путь отправки жалобы использует существующие принципы форума для аутентифицированных, same-origin/server-validated записей и отдельные anti-abuse правила жалоб.
 
-The first version must:
+Первая версия должна:
 
-1. prevent meaningless duplicate complaint spam by the same reporter against the same revision;
-2. rate-limit complaint submission per authenticated user to **10 complaints in any 10-minute window** and **50 complaints in any 24-hour window**;
-3. apply those limits to new complaint submissions without converting them into duplicate semantics; the existing lifetime reporter+revision duplicate rule remains separate;
-4. when a limit is exceeded, reject only further complaint submissions until the applicable window allows them again; no automatic sanction is created from hitting the limit;
-5. never auto-punish content or users only because a report count threshold was reached;
-6. keep report counts private from ordinary public users;
-7. preserve rejected complaints as normal good-faith outcomes unless separate evidence shows abuse.
+1. предотвращать бессмысленный duplicate spam одним и тем же автором жалобы на одну и ту же revision;
+2. ограничивать отправку жалоб одним аутентифицированным пользователем до **10 жалоб в любые 10 минут** и **50 жалоб в любые 24 часа**;
+3. применять эти лимиты к новым отправкам жалоб, не превращая их в duplicate semantics; существующее lifetime-правило reporter+revision остаётся отдельным;
+4. при превышении лимита отклонять только дальнейшие новые жалобы до освобождения соответствующего окна; автоматическая санкция из факта превышения лимита не создаётся;
+5. никогда не наказывать контент или пользователей автоматически только из-за достижения порога количества жалоб;
+6. скрывать количество жалоб от обычных публичных пользователей;
+7. считать отклонённые жалобы нормальным добросовестным исходом, пока отдельные доказательства не подтверждают злоупотребление.
 
-## 13. Implementation sequence
+## 13. Последовательность реализации
 
-Implementation is split into separate bounded implementation PRs. Each dependent package begins after the preceding required package has been reviewed and merged into `main`.
+Реализация разбита на отдельные ограниченные implementation PR. Каждый зависимый пакет начинается после review и merge в `main` необходимого предыдущего пакета.
 
-### Package 1 — complaints contract and domain foundation
+### Пакет 1 — контракт жалоб и основа домена
 
-1. Add permanent source-of-truth documentation for the complaints system.
-2. Add the Complaint, Case, Decision, moderator-note and Appeal persistence/domain boundaries needed by the approved lifecycle.
-3. Support separate post and topic-title targets bound to immutable revisions.
-4. Add the approved complaint reasons and explanation rules.
-5. Add only the complaint permissions required by implemented capabilities.
-6. Add repository/service integration tests for grouping, revision identity, privacy and lifecycle invariants.
-7. Do not add user-facing complaint UI yet.
+1. Добавить постоянную source-of-truth документацию системы жалоб.
+2. Добавить необходимые для утверждённого lifecycle persistence/domain boundaries для Complaint, Case, Decision, moderator note и Appeal.
+3. Поддержать отдельные цели post и topic title, привязанные к immutable revisions.
+4. Добавить утверждённые причины жалоб и правила пояснений.
+5. Добавлять только те permissions жалоб, которые требуются реально реализуемым возможностям.
+6. Добавить repository/service integration tests для группировки, revision identity, privacy и lifecycle invariants.
+7. Пока не добавлять пользовательский UI жалоб.
 
-**Done when:** the complaint domain can persist and read the approved lifecycle safely, with permission boundaries and native database tests, without presentation dependencies.
+**Готово, когда:** домен жалоб может безопасно сохранять и читать утверждённый lifecycle с permission boundaries и native database tests без зависимостей от presentation layer.
 
-### Package 2 — user complaint submission
+### Пакет 2 — отправка жалоб пользователями
 
-1. Add **Report** next to each applicable post.
-2. Add a separate **Report** action for the topic title.
-3. Add the approved reason/explanation form.
-4. Require authentication and current effective submit permission.
-5. Validate target identity and authoritative current revision server-side.
-6. Create a new Case or append a Complaint to the applicable open case. A newer revision never joins the Case of an older revision; if the older-revision Case is still open, create a separate Case for the newer revision with an explicit link to that prior Case.
-7. Prevent duplicate spam by the same reporter on the same revision.
-8. Add complaint-specific rate limiting: **10 complaints per authenticated user per 10 minutes** and **50 per 24 hours**; exceeding either limit temporarily rejects new submissions only and does not create a sanction.
-9. Keep the user in topic context after successful submission and show confirmation.
+1. Добавить **Пожаловаться** рядом с каждым применимым post.
+2. Добавить отдельное действие **Пожаловаться** для заголовка темы.
+3. Добавить утверждённую форму причины/пояснения.
+4. Требовать аутентификацию и актуальный effective submit permission.
+5. Проверять target identity и авторитетную текущую revision server-side.
+6. Создавать новый Case или добавлять Complaint в подходящий открытый Case. Новая revision никогда не присоединяется к Case старой revision; если Case старой revision всё ещё открыт, создать отдельный Case для новой revision с явной ссылкой на предыдущий Case.
+7. Предотвращать duplicate spam одним автором жалобы на одну revision.
+8. Добавить complaint-specific rate limiting: **10 жалоб на аутентифицированного пользователя за 10 минут** и **50 за 24 часа**; превышение любого лимита только временно отклоняет новые жалобы и не создаёт санкцию.
+9. После успешной отправки сохранять пользователя в контексте темы и показывать подтверждение.
 
-**Done when:** authenticated users can submit valid complaints against posts or topic titles and the correct Complaint/Case records are produced.
+**Готово, когда:** аутентифицированные пользователи могут отправлять корректные жалобы на posts или заголовки тем, а система создаёт правильные Complaint/Case записи.
 
-### Package 3 — Complaints queue
+### Пакет 3 — Queue жалоб
 
-Replace the first Complaints placeholder in **Needs attention** with the real Queue.
+Заменить первую заглушку Complaints в **«Требуют внимания»** реальной Queue.
 
-1. Read only open Cases allowed by the actor's effective permissions.
-2. Show target type/context, reason summary, independent report count, first/last report time, priority and case state.
-3. Add automatic reason-based priority plus moderator override.
-4. Add the non-exclusive "someone is working on this case" activity indicator.
-5. Reuse bounded pagination/count patterns without page-bound count corruption.
-6. Keep Signals and Security isolated.
+1. Читать только открытые Cases, разрешённые effective permissions actor.
+2. Показывать тип/контекст цели, сводку причин, количество независимых заявителей, время первой/последней жалобы, приоритет и состояние Case.
+3. Добавить автоматический приоритет по причине и ручное переопределение модератором.
+4. Добавить неэксклюзивный индикатор активности «кто-то работает с этим Case».
+5. Переиспользовать bounded pagination/count patterns без искажения общего количества границами страницы.
+6. Сохранять изоляцию Signals и Security.
 
-**Done when:** the moderation team can triage and open real complaint cases from the protected queue.
+**Готово, когда:** команда модерации может проводить triage и открывать реальные Cases жалоб из защищённой Queue.
 
-### Package 4 — case review, notes and decision
+### Пакет 4 — проверка Case, заметки и решение
 
-1. Implement the full complaint Case view.
-2. Show the reported immutable revision and current content state.
-3. Show surrounding topic context required for review.
-4. Show all complaints, reasons and explanations grouped into the Case.
-5. Enforce reporter-identity projection server-side.
-6. Add internal moderator notes with author/time.
-7. Persist **confirmed / not confirmed** decisions separately from administrative actions.
-8. Connect the existing/shared Admin **Quick actions** surface from PR #251 where available.
-9. Never create complaint-specific copies of administrative mutations.
+1. Реализовать полный view Case жалобы.
+2. Показывать reported immutable revision и текущее состояние контента.
+3. Показывать surrounding topic context, необходимый для проверки.
+4. Показывать все Complaint, причины и пояснения, сгруппированные в Case.
+5. Обеспечить server-side projection личности автора жалобы.
+6. Добавить внутренние заметки модераторов с автором/временем.
+7. Сохранять решения **confirmed / not confirmed** отдельно от административных действий.
+8. Подключить существующую/общую поверхность Admin **Quick actions** из PR #251 там, где она доступна.
+9. Никогда не создавать complaint-specific копии административных mutations.
 
-**Dependency rule:** if the required shared Quick actions boundary has not yet been implemented, the complaint project must either wait for that dependency or integrate it later; it must not create a parallel temporary action system.
+**Правило зависимости:** если необходимая общая граница Quick actions ещё не реализована, проект жалоб должен либо дождаться этой зависимости, либо интегрировать её позже; создавать параллельную временную систему действий нельзя.
 
-**Done when:** a reviewer can inspect the complete case, collaborate through notes and resolve the complaint while administrative actions remain shared with the forum's general admin system.
+**Готово, когда:** reviewer может изучить полный Case, совместно работать через notes и разрешить жалобу, при этом административные действия остаются общими с основной системой администрирования форума.
 
-### Package 5 — history and notifications
+### Пакет 5 — история и уведомления
 
-1. Replace the Complaints History placeholder with resolved cases.
-2. Persist/present the complaint-specific lifecycle: incoming complaints, priority changes, review activity, notes, decisions and later appeals.
-3. Add moderation-result notifications to the common forum notification surface.
-4. Tell the reporter confirmed/rejected plus only the approved generic administrative-measures message.
-5. Notify the affected content author about the decision and available appeal path.
-6. Keep shared Quick-action administrative history in its existing admin-history domain rather than duplicating it inside complaint sanctions.
+1. Заменить заглушку Complaints History разрешёнными Cases.
+2. Сохранять/показывать complaint-specific lifecycle: входящие жалобы, изменения приоритета, review activity, notes, decisions и последующие appeals.
+3. Добавить уведомления о результатах модерации в общую поверхность уведомлений форума.
+4. Сообщать автору жалобы confirmed/rejected и только утверждённое общее сообщение об административных мерах.
+5. Уведомлять автора затронутого контента о решении и доступном пути апелляции.
+6. Сохранять историю административных Quick actions в существующем домене admin history, а не дублировать её внутри санкций Complaints.
 
-**Done when:** resolved complaint work is traceable and both affected sides receive the approved information.
+**Готово, когда:** разрешённые Cases можно проследить по истории, а обе затронутые стороны получают утверждённую информацию.
 
-### Package 6 — appeals
+### Пакет 6 — апелляции
 
-Replace the Complaints Appeals placeholder with the real appeal workflow.
+Заменить заглушку Complaints Appeals реальным workflow апелляций.
 
-1. Allow the content author to appeal a confirmed violation.
-2. Allow the reporter to appeal a rejected complaint.
-3. Enforce the maximum of three appeals per decision server-side.
-4. Show the original decision, current appeal argument and previous appeal history.
-5. Prefer a different reviewer from the original decision-maker without creating a no-reviewer deadlock.
-6. Persist appeal outcomes into the Case history.
-7. Send the corresponding common-surface notifications.
-8. Preserve the same reporter-identity privacy boundary.
+1. Разрешить автору контента обжаловать подтверждённое нарушение.
+2. Разрешить автору жалобы обжаловать отклонённую жалобу.
+3. Server-side обеспечить максимум три апелляции на Decision.
+4. Показывать исходное решение, текущий аргумент апелляции и историю предыдущих апелляций.
+5. По возможности использовать reviewer, отличного от автора исходного решения, не создавая deadlock при отсутствии другого reviewer.
+6. Сохранять результаты апелляций в истории Case.
+7. Отправлять соответствующие уведомления через общую поверхность.
+8. Сохранять ту же границу конфиденциальности личности автора жалобы.
 
-**Done when:** both sides can use the approved appeal lifecycle and the three-appeal limit cannot be bypassed.
+**Готово, когда:** обе стороны могут использовать утверждённый lifecycle апелляций, а ограничение в три апелляции нельзя обойти.
 
-### Package 7 — integration and closeout
+### Пакет 7 — интеграция и завершение
 
-1. Verify topic-title and first-post complaints remain separate.
-2. Verify multiple reporters produce separate Complaints but one applicable open Case.
-3. Verify later content edits do not destroy reported revision evidence.
-4. Verify a later incident/revision creates a separate linked Case both after an earlier Case closes and while a previous-revision Case is still open; the prior Case is not mutated or reused.
-5. Verify reporter identities never leak without the elevated permission.
-6. Verify role grants and per-user overrides for every complaint capability.
-7. Verify anti-abuse rules do not block valid complaints about different content.
-8. Verify automatic priority and manual override.
-9. Verify the activity indicator never becomes an assignment/lock and does not become permanently stale.
-10. Verify Quick actions in Cases use the authoritative shared admin operations.
-11. Verify complaint decisions do not implicitly create administrative sanctions.
-12. Verify the three-appeal limit and both appeal directions.
-13. Verify Queue, Appeals and History pagination/count behavior.
-14. Cover applicable EN/RU/HE, LTR/RTL and negative permission states.
-15. Update permanent documentation and `PROJECT_STATE.md` only with factual implemented state.
-16. Run the repository CI and required independent review cycle on each implementation PR.
+1. Проверить, что жалобы на заголовок темы и первое сообщение остаются отдельными.
+2. Проверить, что несколько авторов создают отдельные Complaint, но один применимый открытый Case.
+3. Проверить, что последующие редактирования контента не уничтожают evidence reported revision.
+4. Проверить, что более поздний инцидент/revision создаёт отдельный связанный Case как после закрытия предыдущего Case, так и пока Case предыдущей revision ещё открыт; предыдущий Case не изменяется и не переиспользуется.
+5. Проверить, что личности авторов жалоб никогда не раскрываются без повышенного permission.
+6. Проверить role grants и per-user overrides для каждой возможности жалоб.
+7. Проверить, что anti-abuse правила не блокируют корректные жалобы на другой контент.
+8. Проверить автоматический приоритет и ручное переопределение.
+9. Проверить, что индикатор активности никогда не становится assignment/lock и не остаётся навсегда stale.
+10. Проверить, что Quick actions в Cases используют авторитетные общие admin operations.
+11. Проверить, что complaint decisions не создают административные санкции неявно.
+12. Проверить лимит трёх апелляций и оба направления апелляции.
+13. Проверить pagination/count для Queue, Appeals и History.
+14. Покрыть применимые EN/RU/HE, LTR/RTL и negative permission states.
+15. Обновить постоянную документацию и `PROJECT_STATE.md` только фактически реализованным состоянием.
+16. Выполнить repository CI и обязательный independent review cycle для каждого implementation PR.
 
-**Done when:** the entire complaints lifecycle works end-to-end without duplicating Signals, Security or Admin-panel domain behavior.
+**Готово, когда:** весь lifecycle жалоб работает end-to-end без дублирования поведения доменов Signals, Security или Admin panel.
 
-## 14. Explicitly out of scope
+## 14. Явно вне scope
 
-1. Merging Complaints with Signals.
-2. Merging user complaints with Security events.
-3. A second role/permission system.
-4. Complaint-owned copies of administrative Quick actions.
-5. Automatic punishment based on complaint count.
-6. AI deciding whether a complaint is valid.
-7. Reputation/trust scores for reporters.
-8. Public complaint counts.
-9. Account deletion.
-10. A separate complaints notification inbox.
-11. Stage 6 external rollout merely because complaints are implemented.
+1. Объединение Complaints с Signals.
+2. Объединение пользовательских жалоб с Security events.
+3. Вторая система ролей/permissions.
+4. Собственные копии административных Quick actions внутри Complaints.
+5. Автоматическое наказание по количеству жалоб.
+6. Решение ИИ о том, является ли жалоба обоснованной.
+7. Reputation/trust scores для авторов жалоб.
+8. Публичное количество жалоб.
+9. Удаление аккаунта.
+10. Отдельный inbox уведомлений только для жалоб.
+11. Внешний rollout Stage 6 только потому, что система жалоб реализована.
 
-## 15. Service-PR usage
+## 15. Использование служебного PR
 
-This planning PR is the working service record for the complaints-system project.
+Этот planning PR является рабочей служебной записью проекта системы жалоб.
 
-1. Keep the approved product decisions and implementation sequence in this file.
-2. Use separate bounded implementation PRs for actual application/schema changes.
-3. After each implementation package is merged into `main`, update this plan's progress/status as needed.
-4. Do not merge this service/planning PR into `main` merely to deliver an implementation package.
+1. Хранить в этом файле утверждённые продуктовые решения и последовательность реализации.
+2. Использовать отдельные ограниченные implementation PR для фактических изменений application/schema.
+3. После merge каждого implementation package в `main` при необходимости обновлять progress/status этого плана.
+4. Не merge этот service/planning PR в `main` только ради доставки implementation package.
