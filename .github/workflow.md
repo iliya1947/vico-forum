@@ -4,6 +4,7 @@
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
 - Текущий этап: AP-06 — final independent review
 - Статус: blocked by current Codex weekly limit
+- Технический планировщик: для текущего AP-06 в служебном состоянии не зафиксирован
 - Implementation PR: #270
 - Stable exact head: `e019a8a11ef52a2b7f55adfc8fd66b0bc6c600d5`
 - Coordinator review: Мира — PASS
