@@ -1,233 +1,233 @@
-# Admin panel implementation plan
+# План реализации админ-панели
 
-> Umbrella plan and coordination record for the Vico Forum admin-panel project. For this task, PR #251 is the authoritative planning/coordination channel by direct developer instruction; do not duplicate admin-panel reports or status to PR #236 unless the developer explicitly asks. Implementation is delivered through separate bounded implementation PRs merged sequentially into `main`; this plan remains as the project-level record.
+> Общий план и координационный документ проекта админ-панели Vico Forum. По прямому указанию разработчика PR #251 является главным каналом планирования и координации этой задачи; не дублировать отчёты или статус админ-панели в PR #236 без явного запроса разработчика. Реализация выполняется через отдельные ограниченные implementation PR, последовательно merge в `main`; этот план остаётся проектной записью верхнего уровня.
 
-## 1. Approved product model
+## 1. Утверждённая продуктовая модель
 
-The global **Admin panel** is a separate protected service area for managing the forum itself.
+Глобальная **Админ-панель** — отдельная защищённая служебная область для управления самим форумом.
 
-It is distinct from:
+Она отделена от:
 
-1. **Needs attention** — a separate notification/action queue for moderators and administrators.
-2. **Contextual administration** — quick administrative actions on a category, section, topic, message, or user near the object itself.
-3. **Future super-admin UI** — owner-only capabilities designed separately near the end of the project.
+1. **Требуют внимания** — отдельной очереди уведомлений/действий для модераторов и администраторов.
+2. **Контекстного администрирования** — быстрых административных действий с категорией, разделом, темой, сообщением или пользователем рядом с самим объектом.
+3. **Будущего интерфейса супер-админа** — возможностей только для владельца, которые проектируются отдельно ближе к завершению проекта.
 
-The admin panel uses the existing dynamic permission model. Visibility and available actions depend on the actor's effective code-backed permissions, not on a hard-coded role name.
+Админ-панель использует существующую динамическую модель разрешений. Видимость и доступные действия зависят от эффективных code-backed permissions пользователя, а не от жёстко заданного имени роли.
 
-Approved top-level structure:
+Утверждённая структура верхнего уровня:
 
-1. **Overview**
-2. **Forum**
-3. **Users**
-4. **Roles & permissions**
-5. **History**
-6. **Settings**
+1. **Обзор**
+2. **Форум**
+3. **Пользователи**
+4. **Роли и разрешения**
+5. **История**
+6. **Настройки**
 
-Approved unfinished sections may remain visible during owner-only pre-release and route to the shared localized **Under development** page.
+Утверждённые, но ещё не реализованные разделы могут оставаться видимыми во время owner-only pre-release и вести на общую локализованную страницу **В разработке**.
 
-## 2. Approved interaction model
+## 2. Утверждённая модель взаимодействия
 
-### 2.1 Overview
+### 2.1 Обзор
 
-The Overview is a real landing page for the admin panel and contains:
+Обзор — полноценная стартовая страница админ-панели, содержащая:
 
-1. navigation to sections available to the current administrator;
-2. concise real forum statistics;
-3. recent significant administrative actions.
+1. навигацию к разделам, доступным текущему администратору;
+2. краткую реальную статистику форума;
+3. последние значимые административные действия.
 
-Needs attention is not embedded into the Overview.
+«Требуют внимания» не встраивается в Обзор.
 
-### 2.2 Forum
+### 2.2 Форум
 
-The Forum section follows one hierarchy:
+Раздел «Форум» следует единой иерархии:
 
-**category → section → topic → messages**
+**категория → раздел → тема → сообщения**
 
-Separate administrative object pages are required for:
+Отдельные административные страницы объектов нужны для:
 
-1. users;
-2. categories;
-3. sections;
-4. topics.
+1. пользователей;
+2. категорий;
+3. разделов;
+4. тем.
 
-Messages do not get a separate administrative page. They are administered through topic context and quick actions.
+Сообщения не получают отдельную административную страницу. Они администрируются в контексте темы и через быстрые действия.
 
-### 2.3 Users
+### 2.3 Пользователи
 
-The Users section uses:
+Раздел «Пользователи» использует:
 
-1. a searchable/listable user index;
-2. quick actions in the list;
-3. a dedicated administrative user page for full work.
+1. список пользователей с поиском;
+2. быстрые действия в списке;
+3. отдельную административную страницу пользователя для полной работы.
 
-Available information and actions depend on the current administrator's effective permissions.
+Доступная информация и действия зависят от эффективных разрешений текущего администратора.
 
-### 2.4 Quick actions
+### 2.4 Быстрые действия
 
-Use one shared **Quick actions** interaction concept.
+Использовать одну общую концепцию **Быстрых действий**.
 
-It must be usable where applicable:
+Она должна применяться там, где это уместно:
 
-1. inside admin-panel lists/pages;
-2. on a forum section page;
-3. on a topic page;
-4. next to each message;
-5. for users where appropriate.
+1. внутри списков/страниц админ-панели;
+2. на странице раздела форума;
+3. на странице темы;
+4. рядом с каждым сообщением;
+5. для пользователей, где применимо.
 
-The action set is derived from:
+Набор действий определяется:
 
-1. object type;
-2. current authoritative object state;
-3. the current actor's effective permissions.
+1. типом объекта;
+2. текущим авторитетным состоянием объекта;
+3. эффективными разрешениями текущего пользователя.
 
-Quick actions must invoke the same authoritative backend operations as full administrative pages; do not create parallel admin-only mutation semantics.
+Быстрые действия должны вызывать те же авторитетные backend-операции, что и полные административные страницы; не создавать параллельную admin-only семантику мутаций.
 
-### 2.5 Roles and permissions
+### 2.5 Роли и разрешения
 
-Reuse the existing authorization foundation and protected authorization-management UI.
+Переиспользовать существующую основу авторизации и защищённый UI управления авторизацией.
 
-Do not create a second role/permission system.
+Не создавать вторую систему ролей/разрешений.
 
-Existing dynamic roles, code-backed permissions, per-user allow/deny/inherit overrides, next-request freshness, lockout protection and server-side PermissionResolver remain authoritative.
+Существующие динамические роли, code-backed permissions, персональные overrides `allow/deny/inherit`, актуальность со следующего запроса, защита от lockout и серверный `PermissionResolver` остаются авторитетными.
 
-### 2.6 User blocking
+### 2.6 Блокировка пользователей
 
-Ordinary admin-panel scope includes temporary and permanent user blocking.
+Обычная админ-панель включает временную и постоянную блокировку пользователей.
 
-Temporary blocking supports:
+Временная блокировка поддерживает:
 
-1. common preset durations;
-2. an arbitrary duration or end date;
-3. automatic expiry after the configured end time.
+1. типовые предустановленные сроки;
+2. произвольную длительность или дату окончания;
+3. автоматическое прекращение действия после заданного времени.
 
-An administrator may lift a block created by another administrator when they have the corresponding permission.
+Администратор может снять блокировку, созданную другим администратором, если у него есть соответствующее разрешение.
 
-Account deletion is **not** part of the ordinary admin panel. It is reserved for the future owner-only super-admin UI.
+Удаление аккаунта **не** входит в обычную админ-панель. Оно зарезервировано для будущего owner-only интерфейса супер-админа.
 
-The exact product effect of a blocked account must be decided before implementing the blocking package.
+Точный продуктовый эффект заблокированного аккаунта должен быть определён до реализации пакета блокировок.
 
-### 2.7 Administrative reasons
+### 2.7 Причины административных действий
 
-Whether a reason is mandatory is defined separately for each administrative action. Do not impose one global rule.
+Обязательность причины определяется отдельно для каждого административного действия. Не вводить одно глобальное правило.
 
-### 2.8 Administrative history
+### 2.8 Административная история
 
-The ordinary admin panel records **significant administrative actions**.
+Обычная админ-панель записывает **значимые административные действия**.
 
-A deeper, more complete owner-only audit surface belongs to the future super-admin UI and is out of this implementation scope.
+Более глубокая и полная owner-only аудит-поверхность относится к будущему интерфейсу супер-админа и не входит в scope этой реализации.
 
-## 3. Implementation sequence
+## 3. Последовательность реализации
 
-### Package 1 — admin-panel contract
+### Пакет 1 — контракт админ-панели
 
-1. Add a source-of-truth document for the ordinary admin panel.
-2. Record the approved structure and boundaries above.
-3. Define the shared Quick actions contract.
-4. Define the boundary between the ordinary admin panel and the future super-admin UI.
-5. Define new code-backed permissions only together with real implemented capabilities; do not pre-create speculative permissions.
+1. Добавить source-of-truth документ для обычной админ-панели.
+2. Зафиксировать утверждённые выше структуру и границы.
+3. Определить общий контракт быстрых действий.
+4. Определить границу между обычной админ-панелью и будущим интерфейсом супер-админа.
+5. Определять новые code-backed permissions только вместе с реально реализуемыми возможностями; не создавать спекулятивные разрешения заранее.
 
-### Package 2 — global admin shell
+### Пакет 2 — глобальная оболочка админ-панели
 
-1. Add locale-aware protected route `/:locale/admin`.
-2. Add shared admin navigation and layout.
-3. Show the Admin panel entry point to an authenticated actor who has at least one applicable administrative capability.
-4. Each admin section independently rechecks its own server-side permission boundary.
-5. Implement the Overview foundation with real forum statistics and available destinations.
-6. Do not fabricate recent administrative activity before Package 3 exists; Package 3 completes the Overview by adding the recent significant-action block from the real history store.
-7. Keep approved-but-unimplemented destinations truthful through the existing Under development mechanism.
-8. Do not move or duplicate Needs attention into the admin panel.
+1. Добавить locale-aware защищённый маршрут `/:locale/admin`.
+2. Добавить общую навигацию и layout админ-панели.
+3. Показывать вход в админ-панель аутентифицированному пользователю, у которого есть хотя бы одна применимая административная возможность.
+4. Каждый раздел админ-панели независимо повторно проверяет собственную серверную границу разрешений.
+5. Реализовать основу Обзора с реальной статистикой форума и доступными направлениями.
+6. Не выдумывать недавнюю административную активность до появления Пакета 3; Пакет 3 завершает Обзор, добавляя блок последних значимых действий из реального хранилища истории.
+7. Утверждённые, но ещё не реализованные направления должны правдиво вести через существующий механизм «В разработке».
+8. Не переносить и не дублировать «Требуют внимания» в админ-панель.
 
-### Package 3 — significant administrative action history
+### Пакет 3 — история значимых административных действий
 
-Implement the ordinary administrative history before adding many new mutations so new actions can use it consistently.
+Реализовать обычную административную историю до добавления большого числа новых мутаций, чтобы новые действия могли использовать её единообразно.
 
-Persist enough information to answer:
+Хранить достаточно информации, чтобы ответить:
 
-1. who acted;
-2. what significant action occurred;
-3. which object was affected;
-4. when it happened;
-5. the reason, when that action requires one;
-6. the minimum useful change context.
+1. кто выполнил действие;
+2. какое значимое действие произошло;
+3. какой объект был затронут;
+4. когда это произошло;
+5. причину, если она требуется для этого действия;
+6. минимально полезный контекст изменения.
 
-Where practical, recording a significant action and applying that action should share the same transaction boundary.
+Где это практично, запись значимого действия и применение самого действия должны находиться в одной транзакционной границе.
 
-Reading history must have its own code-backed permission.
+Чтение истории должно иметь собственное code-backed permission.
 
-After the real history store/read path exists, complete the Overview by showing recent significant administrative actions to actors allowed to read them.
+После появления реального хранилища/пути чтения истории завершить Обзор показом последних значимых административных действий пользователям, которым разрешено их читать.
 
-This package is not the future full super-admin audit system.
+Этот пакет не является будущей полной системой аудита супер-админа.
 
-### Package 4 — Roles & permissions integration
+### Пакет 4 — интеграция ролей и разрешений
 
-1. Integrate the existing authorization-management surface into the global admin shell as **Roles & permissions**.
-2. Preserve the current authorization backend and lockout invariants.
-3. Do not duplicate role assignment, grants, overrides or effective-permission resolution.
-4. A user administrative page may expose authorization controls only when the current actor has `access.authorization.manage`.
+1. Интегрировать существующую поверхность управления авторизацией в глобальную оболочку админ-панели как **Роли и разрешения**.
+2. Сохранить текущий backend авторизации и инварианты защиты от lockout.
+3. Не дублировать назначение ролей, grants, overrides или вычисление эффективных разрешений.
+4. Административная страница пользователя может показывать элементы управления авторизацией только если у текущего пользователя есть `access.authorization.manage`.
 
-### Package 5 — Forum section
+### Пакет 5 — раздел «Форум»
 
-Build the global Forum administration area incrementally over the existing hierarchy.
+Постепенно построить глобальную область администрирования форума поверх существующей иерархии.
 
-Bounded slices:
+Ограниченные срезы:
 
-1. administrative browsing/search of forum objects;
-2. category administrative pages;
-3. section administrative pages;
-4. topic administrative pages;
-5. message administration through topic context and Quick actions;
-6. real administrative mutations, each with its server contract, permission, state validation and tests.
+1. административный просмотр/поиск объектов форума;
+2. административные страницы категорий;
+3. административные страницы разделов;
+4. административные страницы тем;
+5. администрирование сообщений в контексте темы и через быстрые действия;
+6. реальные административные мутации, каждая со своим серверным контрактом, permission, проверкой состояния и тестами.
 
-Approved forum capabilities include the ability to close a topic to new replies. Other category/section/topic/message actions are permission-controlled and should be implemented only when their concrete behavior is defined for the current package.
+Утверждённые возможности форума включают закрытие темы для новых ответов. Другие действия с категориями/разделами/темами/сообщениями контролируются разрешениями и должны реализовываться только когда их конкретное поведение определено для текущего пакета.
 
-### Package 6 — shared Quick actions
+### Пакет 6 — общие быстрые действия
 
-1. Introduce the shared Quick actions presentation/dispatch boundary without creating a second domain layer.
-2. Gradually move existing contextual topic administration into this common interaction model.
-3. Reuse existing authoritative operations such as pinning, solution moderation, duplicate handling and source-locale correction.
-4. Add new operations only through their normal domain/server boundaries.
-5. Apply object-state filtering and effective-permission filtering to presentation while retaining independent server-side authorization for every mutation.
+1. Ввести общую границу presentation/dispatch для быстрых действий, не создавая второй доменный слой.
+2. Постепенно перенести существующее контекстное администрирование темы в эту общую модель взаимодействия.
+3. Переиспользовать существующие авторитетные операции, такие как закрепление, модерация решений, обработка дублей и исправление source locale.
+4. Добавлять новые операции только через их обычные доменные/серверные границы.
+5. Фильтровать представление по состоянию объекта и эффективным разрешениям, сохраняя независимую серверную авторизацию для каждой мутации.
 
-### Package 7 — Users and blocking
+### Пакет 7 — пользователи и блокировки
 
-1. Implement the user list/search.
-2. Implement quick actions in the list.
-3. Implement the dedicated administrative user page.
-4. Show only information/actions allowed by the current actor's effective permissions.
-5. Add temporary and permanent blocking with code-backed permissions.
-6. Support preset and arbitrary temporary expiry.
-7. Make temporary blocking cease automatically by authoritative time comparison; do not require a separate unlock job merely to make an expired block inactive.
-8. Allow lifting another administrator's block when permission allows it.
-9. Define per-action reason requirements.
-10. Exclude account deletion and other owner-only super-admin capabilities.
+1. Реализовать список/поиск пользователей.
+2. Реализовать быстрые действия в списке.
+3. Реализовать отдельную административную страницу пользователя.
+4. Показывать только информацию/действия, разрешённые эффективными permissions текущего пользователя.
+5. Добавить временную и постоянную блокировку с code-backed permissions.
+6. Поддержать предустановленные и произвольные сроки временной блокировки.
+7. Временная блокировка должна автоматически становиться неактивной по авторитетному сравнению времени; отдельная задача разблокировки только ради истечения срока не требуется.
+8. Позволить снимать блокировку другого администратора, если разрешение это допускает.
+9. Определить требования к причине отдельно для каждого действия.
+10. Исключить удаление аккаунта и другие owner-only возможности супер-админа.
 
-Before implementation of blocking, explicitly decide what a block prevents in Vico Forum.
+До реализации блокировки явно определить, что именно блокировка запрещает в Vico Forum.
 
-### Package 8 — integration and closeout
+### Пакет 8 — интеграция и завершение
 
-1. Verify direct-route and mutation permission boundaries.
-2. Verify role grants and per-user overrides for all new capabilities.
-3. Verify forbidden direct URL access and fail-closed authorization behavior.
-4. Verify temporary/permanent blocks and unblock behavior.
-5. Verify significant-action history and required-reason rules.
-6. Verify Quick actions across supported object contexts.
-7. Cover localization, RTL/LTR and responsive behavior with applicable automated checks.
-8. Update `PROJECT_STATE.md` and permanent source-of-truth documentation only with factual implemented state.
-9. Run the full repository CI and the required whole-PR review cycle on a stable implementation head.
-10. Do not initiate owner visual acceptance unless the owner explicitly requests it.
-11. Keep this umbrella plan in PR #251 as the project-level implementation record; individual implementation work is completed and merged through separate bounded PRs.
+1. Проверить границы разрешений прямых маршрутов и мутаций.
+2. Проверить grants ролей и персональные overrides для всех новых возможностей.
+3. Проверить запрещённый прямой доступ по URL и fail-closed поведение авторизации.
+4. Проверить временные/постоянные блокировки и снятие блокировки.
+5. Проверить историю значимых действий и правила обязательности причин.
+6. Проверить быстрые действия во всех поддерживаемых контекстах объектов.
+7. Покрыть локализацию, RTL/LTR и responsive-поведение применимыми автоматизированными проверками.
+8. Обновлять `PROJECT_STATE.md` и постоянную source-of-truth документацию только фактически реализованным состоянием.
+9. Запустить полный CI репозитория и обязательный whole-PR review cycle на стабильном implementation head.
+10. Не инициировать owner visual acceptance без явного запроса владельца.
+11. Сохранять этот общий план в PR #251 как проектную запись реализации; отдельная implementation-работа завершается и merge через отдельные ограниченные PR.
 
-## 4. Explicitly out of scope
+## 4. Явно вне scope
 
-1. Needs attention redesign or migration into the admin panel.
-2. Complaint-system implementation merely because an admin panel exists.
-3. A second authorization/RBAC system.
-4. Infrastructure operations such as Cloudflare/Neon/deployment/secrets administration.
-5. Account deletion in the ordinary admin panel.
-6. The future owner-only super-admin UI and its deeper audit surface.
-7. Empty speculative backend systems solely to populate future admin navigation.
-8. Stage 6 external rollout unless separately authorized.
+1. Редизайн «Требуют внимания» или перенос его в админ-панель.
+2. Реализация системы жалоб только потому, что существует админ-панель.
+3. Вторая система авторизации/RBAC.
+4. Инфраструктурные операции вроде управления Cloudflare/Neon/deployment/secrets.
+5. Удаление аккаунта в обычной админ-панели.
+6. Будущий owner-only интерфейс супер-админа и его более глубокая аудит-поверхность.
+7. Пустые спекулятивные backend-системы только ради заполнения будущей навигации админ-панели.
+8. Внешний rollout Stage 6 без отдельного разрешения.
 
-## 5. Open product decision before Package 7
+## 5. Открытое продуктовое решение перед Пакетом 7
 
-Define the exact effect of a user block: which authenticated capabilities remain readable/usable and which write or participation actions are denied for temporary and permanent blocks.
+Определить точный эффект блокировки пользователя: какие аутентифицированные возможности остаются доступными для чтения/использования, а какие действия записи или участия запрещаются при временной и постоянной блокировке.
