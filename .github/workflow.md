@@ -3,10 +3,12 @@
 - Служебный PR: #254
 - План: `COMPLAINTS_IMPLEMENTATION_PLAN.md`
 - Текущий этап: Package 4 — Case review, notes and decision
-- Статус: назначено исполнителю
-- Исполнитель: Лёва — Codex-6.1 Sol
+- Статус: требуется технический план
 - Координатор: Мира — ChatGPT-5.6 Sol
-- Независимые reviewers после реализации: Лира — ChatGPT-6; Марк — Codex-6 Sol
+- Технический планировщик: Лёва — Codex-6.1 Sol
+- Исполнитель после технического плана: Лира — ChatGPT-6
+- Technical reviewer после coordinator PASS: Лёва — Codex-6.1 Sol
+- Резервный reviewer: Марк — Codex-6 Sol
 - Implementation PR: ещё не создан
 - Stable exact head: отсутствует
-- Следующий шаг: Лёва реализует Package 4 и публикует author handoff в #254
+- Следующий шаг: Лёва готовит технический план Package 4 в #254; реализацию не начинает без технической эскалации
