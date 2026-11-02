@@ -20,7 +20,7 @@ export interface ReviewTopic {
   id: string; title: ReviewSource; authorId: string; sectionId: string;
   isPinned: boolean; isSolved: boolean; bestAnswerPostId: string | null;
   duplicateRelationshipId: string | null; duplicateOf: { id: string } | null;
-  bestAnswer: { id: string; solutionModerationStatus: string | null; solutionOutdatedReason: string | null } | null;
+  bestAnswer: { id: string; solutionModerationStatus: "needs-review" | "outdated" | null; solutionOutdatedReason: string | null } | null;
   pendingHelpDuplicateAppeal: { id: string } | null;
 }
 export interface ReviewCapability {
