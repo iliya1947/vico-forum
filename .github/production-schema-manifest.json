@@ -3210,7 +3210,7 @@
             "post_id",
             "topic_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "5f6dbd51aa52c0e89b2520596252df0e8201c1cae2adc55546606afb5c441443"
         }
       ],
       "indexes": [
@@ -5821,7 +5821,7 @@
               "nulls": "last"
             }
           ],
-          "predicateSha256": "PENDING"
+          "predicateSha256": "e30b7393d8275a22b24ae598f3a49e69195cf6e267ddb0619fed49298df6d656"
         }
       ]
     },
