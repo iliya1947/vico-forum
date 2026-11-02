@@ -140,7 +140,7 @@ describe("Decision conflict revalidation with the real Router",()=>{
     expect(form?.querySelector<HTMLInputElement>('input[name="expectedVersion"]')?.value).toBe("3");
     expect((screen.getByRole("textbox",{name:i18n.t("complaintReviewReasoning")}) as HTMLTextAreaElement).value)
      .toBe("Keep this draft after conflict");
-    expect((screen.getByRole("combobox",{name:i18n.t("complaintReviewOutcome")}) as HTMLSelectElement).value)
+    expect(screen.getByRole("combobox",{name:i18n.t("complaintReviewOutcome")}).querySelector("option:checked")?.getAttribute("value"))
      .toBe("not-confirmed");
     expect((screen.getByRole("button",{name:i18n.t("complaintReviewResolve")}) as HTMLButtonElement).disabled).toBe(true);
     if(change==="report")expect(screen.getByText("New report")).toBeTruthy();
