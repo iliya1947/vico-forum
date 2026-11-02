@@ -10,7 +10,7 @@ const reviewUrl=(locale:string,id:string)=>complaintReviewPath(locale,id);
 const moment=(value:string)=>new Date(value).toISOString().replace("T"," ").slice(0,19)+" UTC";
 function OriginalText({source}:{source:ReviewSource}){
  return <div className="complaint-review-source" lang={source.sourceLocale==="und"?undefined:source.sourceLocale}
-  dir="auto"><pre>{source.originalContent}</pre><small>{source.sourceLocale} · {moment(source.createdAt)}</small></div>;
+  dir={source.direction??"auto"}><pre>{source.originalContent}</pre><small>{source.sourceLocale} · {moment(source.createdAt)}</small></div>;
 }
 function PageLinks<T>({locale,id,kind,value,pages}:{locale:string;id:string;kind:keyof ReviewPages;
  value:ReviewPage<T>;pages:ReviewPages}){
@@ -32,7 +32,7 @@ function ExpandPost({locale,id,post}:{locale:string;id:string;post:ReviewContext
  const path="/"+encodeURIComponent(locale)+"/attention/complaints/"+encodeURIComponent(id)+"/context/"+encodeURIComponent(post.id);
  return <li className="complaint-context-post">
   <strong>#{post.number} · {post.author.name}</strong> <time dateTime={post.createdAt}>{moment(post.createdAt)}</time>
-  <p dir="auto" lang={post.sourceLocale==="und"?undefined:post.sourceLocale}>{post.excerpt}{post.truncated?"…":""}</p>
+  <p dir={post.direction??"auto"} lang={post.sourceLocale==="und"?undefined:post.sourceLocale}>{post.excerpt}{post.truncated?"…":""}</p>
   <button type="button" onClick={()=>fetcher.load(path)} disabled={fetcher.state!=="idle"}>{t("complaintReviewExpand")}</button>
   {fetcher.data?.source?<OriginalText source={fetcher.data.source}/>:null}
  </li>;
