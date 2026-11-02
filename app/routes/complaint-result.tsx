@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState,type FormEvent} from "react";
-import {useFetcher,useLoaderData,type RouterContextProvider} from "react-router";
+import {useFetcher,useLoaderData,type RouterContextProvider,type ShouldRevalidateFunctionArgs} from "react-router";
 import {authSessionForRequest} from "../auth/request-context";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import {readAppealForm} from "../complaints/appeal.server";
@@ -8,6 +8,10 @@ import {complaintId,ComplaintInputError} from "../../db/complaints-domain";
 import {ForumShell,ForumRouteError} from "../forum/ui";
 import {useTranslation} from "react-i18next";
 export function headers(){return complaintPrivateHeaders;}
+export function shouldRevalidate({actionStatus,formData,defaultShouldRevalidate}:ShouldRevalidateFunctionArgs){
+ if(actionStatus===409&&formData?.get("intent")==="appeal")return true;
+ return defaultShouldRevalidate;
+}
 export async function loader({params,context}:{params:{caseId?:string;locale?:string};context:RouterContextProvider}){
  try{
   const session=authSessionForRequest(context);

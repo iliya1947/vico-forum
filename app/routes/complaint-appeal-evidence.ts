@@ -15,8 +15,9 @@ export async function loader({params,context}:{params:{caseId?:string;appealId?:
    const object=await bucket.get(item.objectKey,{range:{offset:0,length:item.byteSize}});
    if(!object?.body||object.size!==item.byteSize)return new Response(null,{status:503,headers:headersValue});
    const safe=item.fileName.replace(/[^\x20-\x7e]|["\\]/gu,"_").slice(0,180)||"attachment";
+   const encoded=encodeURIComponent(item.fileName).replace(/[!\u0027()*]/gu,ch=>"%"+ch.charCodeAt(0).toString(16).toUpperCase());
    return new Response(object.body,{headers:{...headersValue,"Content-Type":"application/octet-stream",
-     "Content-Disposition":`attachment; filename="${safe}"`}});
+     "Content-Disposition":`attachment; filename="${safe}"; filename*=UTF-8\u0027\u0027${encoded}`}});
   }catch(error){
    if(error instanceof AttachmentBucketUnavailableError)return new Response(null,{status:503,headers:headersValue});
    return new Response(null,{status:503,headers:headersValue});
