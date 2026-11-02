@@ -1,3 +1,4 @@
+import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-read";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -104,12 +105,22 @@ export async function loader({ request, params, context }: {
   } | null = null;
   let counts: ForumAttentionQueueCounts | null = null;
   let complaintQueue: ComplaintQueuePage | null = null;
+  let complaintHistory: ComplaintResolvedHistoryPage | null = null;
   if(mode==="complaints"&&group==="group1"){
     try{complaintQueue=await context.get(complaintQueueContext).readQueue(session.user.id,pageIndex);
       complaintQueue={...complaintQueue,cases:await presentComplaintCases(context,complaintQueue.cases)};}
     catch(error){
       if(error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError)throw new Response("Unavailable",{status:503});
       if(error instanceof ComplaintForbiddenError)throw new Response("Forbidden",{status:403});
+      throw error;
+    }
+  }
+  if(mode==="complaints"&&group==="group3"){
+    try{complaintHistory=await context.get(complaintQueueContext).readResolvedHistory(session.user.id,pageIndex);}
+    catch(error){
+      if(error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError)
+        throw new Response("Unavailable",{status:503,headers:{"Cache-Control":"private, no-store"}});
+      if(error instanceof ComplaintForbiddenError)throw new Response("Forbidden",{status:403,headers:{"Cache-Control":"private, no-store"}});
       throw error;
     }
   }
@@ -156,7 +167,7 @@ export async function loader({ request, params, context }: {
     }
   }
 
-  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue,
+  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue, complaintHistory,
     canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities, referenceTime: new Date().toISOString() };
 }
 

@@ -1,3 +1,6 @@
+import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-read";
+import { ComplaintResolvedHistoryList } from "../complaints/history-view";
+import type { ForumNotificationSummary } from "../../db/forum-repository";
 import {TopicQuickActions} from "../admin/quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
@@ -356,7 +359,7 @@ export function UnreadView({
   );
 }
 
-type NotificationPresentation = Omit<ForumReplyNotificationSummary, "createdAt" | "readAt"> & {
+type NotificationPresentation = Omit<ForumNotificationSummary, "createdAt" | "readAt"> & {
   createdAt: string;
   readAt: string | null;
 };
@@ -364,9 +367,14 @@ type NotificationPresentation = Omit<ForumReplyNotificationSummary, "createdAt" 
 export function NotificationsView({
   locale,
   notifications,
+  page=0,
+  hasMore=false,
 }: {
   locale: string;
   notifications: readonly NotificationPresentation[];
+  page?:number;
+  hasMore?:boolean;
+  total?:number;
 }) {
   const { t } = useTranslation("common");
   const formatter = new Intl.DateTimeFormat(locale, {
@@ -400,15 +408,17 @@ export function NotificationsView({
                     <button
                       className={unread ? "notification-card is-unread" : "notification-card"}
                       type="submit"
-                      aria-label={`${t("notificationOpen")}: ${notification.topicTitle}`}
+                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("complaintReviewDecision"):notification.topicTitle??""}`}
                     >
-                      <span className="notification-avatar" aria-hidden="true">
-                        {notification.actorName.trim().slice(0, 1).toUpperCase()}
-                      </span>
+                      {notification.kind!=="complaint-decision"?<span className="notification-avatar" aria-hidden="true">
+                        {(notification.actorName??"").trim().slice(0, 1).toUpperCase()}
+                      </span>:null}
                       <span className="notification-copy">
                         <span className="notification-summary">
-                          <span>{t(notification.kind === "mention" ? "notificationMentionBy" : "notificationReplyBy", { actor: notification.actorName })}</span>
-                          <strong dir="auto">{notification.topicTitle}</strong>
+                          {notification.kind==="complaint-decision"?
+                            <strong>{t("complaintReviewDecision")}</strong>:
+                            <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:notification.actorName??""})}</span>
+                            <strong dir="auto">{notification.topicTitle}</strong></>}
                         </span>
                         <time dateTime={notification.createdAt}>
                           {formatter.format(new Date(notification.createdAt))}
@@ -426,6 +436,10 @@ export function NotificationsView({
               );
             })}
           </ul>
+          {(page>0||hasMore)?<nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>
+            {page>0?<Link to={page===1?"?page=0":`?page=${page-1}`}>{t("attentionCasePrevious")}</Link>:null}
+            {hasMore?<Link to={`?page=${page+1}`}>{t("attentionCaseNext")}</Link>:null}
+          </nav>:null}
         </section>
       )}
     </ForumShell>
@@ -1447,7 +1461,7 @@ type SecurityAttachmentQueuePresentation = {
 };
 
 export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
-  complaintQueue = null, canManageComplaintPriorities = false, canReviewComplaints = false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
+  complaintQueue = null, complaintHistory = null, canManageComplaintPriorities = false, canReviewComplaints = false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
@@ -1459,6 +1473,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
   canReviewComplaints?: boolean;
   canManageComplaintPriorities?: boolean;
   complaintQueue?: ComplaintQueuePage | null;
+  complaintHistory?: ComplaintResolvedHistoryPage | null;
   referenceTime?: string;
   actionData?: ForumMutationError;
   isPreview?: boolean;
@@ -1530,6 +1545,8 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
           {mode === "complaints" && canManageComplaintPriorities && <Link to={`/${encodeURIComponent(locale)}/attention/complaints/settings`}>{t("complaintPrioritySettingsHeading")}</Link>}
           {mode === "complaints" && group === "group1" && complaintQueue ? (
             <ComplaintQueueList locale={locale} queue={complaintQueue}/>
+          ) : mode==="complaints" && group==="group3" && complaintHistory ? (
+            <ComplaintResolvedHistoryList locale={locale} history={complaintHistory}/>
           ) : mode === "security" && group === "attachments" ? (
             !securityQueue || securityQueue.events.length === 0 ? (
               <EmptyState>{t("attentionSecurityAttachmentsEmpty")}</EmptyState>

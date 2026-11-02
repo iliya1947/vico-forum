@@ -12,21 +12,24 @@ export function meta() {
   return [{ title: "Notifications · Vico Forum" }];
 }
 
-export async function loader({ params, context }: {
+export async function loader({ params, context, url }: {
   params: { locale?: string };
   context: RouterContextProvider;
+  url?:URL;
 }) {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
   try {
-    const notifications = await forumReaderForRequest(context).readReplyNotifications(session.user.id);
+    const value=url?.searchParams.get("page")??"0";
+    if(!/^(0|[1-9]\\d{0,4})$/.test(value)||Number(value)>10000)
+      throw new Response("Invalid page",{status:400,headers:{"Cache-Control":"private, no-store"}});
+    const result=await forumReaderForRequest(context).readNotifications(session.user.id,Number(value));
     return {
-      locale: params.locale ?? "en",
-      notifications: notifications.map((notification) => ({
-        ...notification,
-        createdAt: notification.createdAt.toISOString(),
-        readAt: notification.readAt?.toISOString() ?? null,
+      locale:params.locale??"en",page:result.page,total:result.total,hasMore:result.hasMore,
+      notifications:result.items.map(notification=>({
+        ...notification,createdAt:notification.createdAt.toISOString(),
+        readAt:notification.readAt?.toISOString()??null,
       })),
     };
   } catch (error) {
@@ -57,8 +60,8 @@ export async function action({ request, params, context }: {
   if (intent !== "open" || !notificationId) return mutationFailure("invalid", 400);
 
   return runForumMutation(request, context, async (writer, userId) => {
-    const target = await writer.markReplyNotificationRead({ userId, notificationId });
-    return redirect(
+    const target = await writer.markNotificationRead({ userId, notificationId });
+    return target.kind==="complaint-decision" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result`) : redirect(
       `${forumTopicPath(locale, target.topicId)}#post-${encodeURIComponent(target.postId)}`,
     );
   });
