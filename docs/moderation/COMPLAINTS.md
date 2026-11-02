@@ -247,8 +247,8 @@ event stream for one resolved Case, 50 events per page with separate total.
 Events cover report submission, priority overrides, notes, initial Decision,
 recorded review starts, and already-persisted Appeal submission/resolution
 (including explicit stored side and ordinal).
-Appeal events show only their recorded argument and review outcome, not a
-recomputed effective Decision. Later notes do not change Case resolution.
+Appeal events show their recorded argument, side, ordinal and localized review result,
+not a recomputed effective Decision. Later notes do not change Case resolution.
 The event projection does not expose operation keys/fingerprints. Submitted
 and appealed actors are not presented as generic moderators; reporter/appellant
 identity is selected only with both reviewer authority and the separate
@@ -277,7 +277,10 @@ whole command and exact successful replays do not create duplicates or reset
 
 `/:locale/notifications` remains the only inbox. It includes a mixed-kind
 unread-first 50-item page with independent total/unread count (all kinds), idempotent
-recipient-owned mark-read and old topic/post links for reply/mention. A Decision
+recipient-owned mark-read and old topic/post links for reply/mention. The shared
+open/read POST accepts only bounded (4096-byte) URL-encoded input with exactly one
+intent=open and one bounded notification ID; duplicate/unknown fields, other encodings
+and oversized bodies fail before any notification storage mutation. A Decision
 notification opens `/:locale/complaints/:caseId/result`, which independently
 checks the authenticated viewer's affected-author or reporter membership.
 Only initial outcome, public reasoning, timestamp, Decision/Case IDs and

@@ -25,6 +25,8 @@ export const canonicalEnglishCatalog = {
     complaintHistoryTotal: message("complaintHistoryTotal", "Resolved cases: {{total}}", "Complaints Package 5: total resolved Cases in protected History.", ["total"]),
     complaintHistoryAppealSideAuthor: message("complaintHistoryAppealSideAuthor", "Content author", "Complaints Package 5: author side of persisted Appeal."),
     complaintHistoryAppealSideReporter: message("complaintHistoryAppealSideReporter", "Reporter", "Complaints Package 5: reporter side of persisted Appeal."),
+    complaintHistoryAppealUpheld: message("complaintHistoryAppealUpheld", "Upheld", "Complaints Package 5: readonly persisted appeal review result upheld."),
+    complaintHistoryAppealOverturned: message("complaintHistoryAppealOverturned", "Overturned", "Complaints Package 5: readonly persisted appeal review result overturned."),
     complaintHistoryAppealOrdinal: message("complaintHistoryAppealOrdinal", "Appeal #{{number}}", "Complaints Package 5: persisted Appeal ordinal in readonly history.", ["number"]),
     complaintHistoryCoverageNotice: message("complaintHistoryCoverageNotice", "Earlier reviewer visits were not recorded.", "Complaints Package 5: review activity history begins with durable recording."),
     complaintReviewHeading: message("complaintReviewHeading", "Complaint review", "Complaints Package 4: complaintReviewHeading."),

@@ -4,6 +4,8 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  "complaintHistoryAppealUpheld": "Оставлено в силе",
+  "complaintHistoryAppealOverturned": "Отменено",
   "complaintHistoryTotal": "Закрытых дел: {{total}}",
   "complaintHistoryAppealSideAuthor": "Автор контента",
   "complaintHistoryAppealSideReporter": "Автор жалобы",
@@ -747,6 +749,8 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  "complaintHistoryAppealUpheld": "הערעור נדחה",
+  "complaintHistoryAppealOverturned": "ההחלטה בוטלה",
   "complaintHistoryTotal": "מקרים שטופלו: {{total}}",
   "complaintHistoryAppealSideAuthor": "מחבר התוכן",
   "complaintHistoryAppealSideReporter": "מגיש התלונה",

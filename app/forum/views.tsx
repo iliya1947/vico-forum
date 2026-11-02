@@ -406,7 +406,7 @@ export function NotificationsView({
                     <input type="hidden" name="intent" value="open" />
                     <input type="hidden" name="notificationId" value={notification.id} />
                     <button
-                      className={unread ? "notification-card is-unread" : "notification-card"}
+                      className={[ "notification-card", unread?"is-unread":null, notification.kind==="complaint-decision"?"is-system":null ].filter(Boolean).join(" ")}
                       type="submit"
                       aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.topicTitle??""}`}
                     >

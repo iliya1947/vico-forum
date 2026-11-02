@@ -50,7 +50,9 @@ export function ComplaintTimelineEventItem({event}:{event:ComplaintTimelineEvent
       {" · "}{t("complaintHistoryAppealOrdinal",{number:event.appealOrdinal})}</p>:null}
   {event.appealArgument?<p dir="auto">{event.appealArgument}</p>:null}
   {event.appellantName?<p>{event.appellantName} ({event.appellantId})</p>:null}
-  {event.kind==="appeal-resolved"&&event.appealOutcome?<p>{event.appealOutcome}</p>:null}
+  {event.kind==="appeal-resolved"&&event.appealOutcome?
+    <p>{event.appealOutcome==="upheld"?t("complaintHistoryAppealUpheld"):
+      event.appealOutcome==="overturned"?t("complaintHistoryAppealOverturned"):event.appealOutcome}</p>:null}
   {event.appealReasoning&&event.kind==="appeal-resolved"?<p dir="auto">{event.appealReasoning}</p>:null}
  </article></li>;
 }
