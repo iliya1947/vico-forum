@@ -17,9 +17,12 @@ function fixture(permissions=["forum.complaint.review"],actor=true) {
  const has=vi.fn(async(key:string)=>permissions.includes(key));
  context.set(authorizationContext,{forUser:()=>({has})} as never);
  context.set(registryLoaderContext,(async()=>({registry:{find:()=>({locale:{direction:"ltr"}})}})) as never);
+ const revision={revisionId:"rev",originalContent:"Original",sourceLocale:"en",createdAt:"2026-11-02T00:00:00Z"};
+ const emptyPage={items:[],total:0,page:0,hasMore:false};
  const cap={
-  read:vi.fn(async()=>({id:"case-1",reports:{items:[],total:0,page:0,hasMore:false}})),
-  context:vi.fn(async()=>({id:"post-1",source:{originalContent:"text"}})),
+  read:vi.fn(async()=>({id:"case-1",reported:revision,current:revision,currentTopicTitle:revision,
+   reports:emptyPage,notes:emptyPage,evidence:emptyPage,context:emptyPage})),
+  context:vi.fn(async()=>({id:"post-1",source:revision})),
   evidence:vi.fn(async()=>({objectKey:"private-key",fileName:"file.txt",byteSize:4})),
   addNote:vi.fn(async()=> "saved-note"),
   decide:vi.fn(async()=> "saved-decision"),
@@ -55,7 +58,7 @@ describe("Package 4 full Case HTTP boundary",()=>{
  it("rejects cross origin, unrecognized intents, field pollution and oversized body",async()=>{
   const f=fixture();
   const input={intent:"note",operationId:"nonce",body:"private"};
-  expect(await caseAction({request:post(input,"https://evil.test"),params:{caseId:"case-1"},context:f.context})).toMatchObject({init:{status:403}});
+  await expect(caseAction({request:post(input,"https://evil.test"),params:{caseId:"case-1"},context:f.context})).rejects.toMatchObject({status:403});
   for(const bad of [{...input,reporterId:"spoof"},{...input,intent:"appeal"},{...input,body:"x".repeat(270000)}]){
    expect(await caseAction({request:post(bad),params:{caseId:"case-1"},context:f.context})).toMatchObject({init:{status:400}});
   }
