@@ -2,13 +2,15 @@
 
 ## Текущие результаты
 
-1. Coordinator-first whole-PR review AP-06 PR #270 на прежнем stable head `e019a8a11ef52a2b7f55adfc8fd66b0bc6c600d5`: PASS.
-2. Подтверждённых current-scope дефектов реализации на том head: 0.
-3. Integration overlap с Complaints Package 3 был проверен; потери любого из двух принятых наборов изменений не подтверждены.
-4. Exact-head CI и database jobs прежнего head были успешны.
-5. После продвижения `main` до `ddffcb97b3864aea3e70f327627441682efd4f1d` проверен текущий test-merge #270. Он создаёт семантически противоречивый `PROJECT_STATE.md`: старый AP-06 implementation snapshot вставляется в новую current-state структуру, при этом раздел Ordinary admin panel продолжает фиксировать только AP-01–AP-05.
-6. Это подтверждённый текущий integration blocker, возникший из-за изменения `main`, а не дефект AP-06 implementation. До нового sync независимый review запускать нельзя.
+1. Повторный coordinator-first whole-PR review AP-06 PR #270 на stable head `71548fe5456c37d0965415d95967c6ff60c7233a`: PASS.
+2. Подтверждённых current-scope дефектов: 0.
+3. Проверено, что новый head является merge прежнего AP-06 `e019a8a11ef52a2b7f55adfc8fd66b0bc6c600d5` с актуальным `main` `ddffcb97b3864aea3e70f327627441682efd4f1d`.
+4. AP-06 implementation-файлы после sync не изменены; integration correction затронула новый current-state контракт `PROJECT_STATE.md`.
+5. GitHub test-merge `87f5adda4b8359fc034db7c3dd6523cedb64e173` и implementation head имеют одинаковый tree `c64ae36ea4e10abd262c20608f635357ce47c365`.
+6. Exact-head CI #41433266864 проверен: jobs `checks` и `database` SUCCESS.
+7. Admission/read boundary, protected category/section projection, literal search/keyset paging, Help semantics, read-only scope, routes, localization, Worker binding и документация соответствуют AP-06 и актуальным permanent contracts.
+8. Новый actual Chromium → Worker → Better Auth → PostgreSQL на exact head самостоятельно не выполнялся; предыдущий browser evidence не выдаётся за новый exact-head acceptance. Это не признано current blocker для данного sync согласно действующему ограничению.
 
 ## Текущая ответственность
 
-Поддерживать структуру и актуальное состояние служебного PR по действующему `AGENTS.md`, хранить активные назначения в `.github/workflow.md` и не выводить назначения из общих ролей, если уже есть конкретное назначение.
+После coordinator PASS следующий этап — независимый technical review Лёвы на том же exact head. Поддерживать служебный PR по действующему `AGENTS.md` и не запускать AP-07 до merge AP-06 и завершения текущего цикла «Системы жалоб».
