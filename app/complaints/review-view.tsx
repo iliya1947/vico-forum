@@ -5,7 +5,6 @@ import {ForumShell} from "../forum/ui";
 import {TopicQuickActions} from "../admin/quick-actions";
 import {ComplaintActivity,complaintQueuePath,complaintReviewPath} from "./queue-view";
 import type {ReviewCase,ReviewPages,ReviewPage,ReviewContextPost,ReviewSource,ReviewFullPost} from "./review-contract";
-import {COMPLAINT_REASONS} from "../../db/complaints-domain";
 
 const reviewUrl=(locale:string,id:string)=>complaintReviewPath(locale,id);
 const moment=(value:string)=>new Date(value).toISOString().replace("T"," ").slice(0,19)+" UTC";
