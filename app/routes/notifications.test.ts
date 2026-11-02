@@ -46,26 +46,27 @@ describe("notifications route", () => {
       .rejects.toMatchObject({ status: 401 });
   });
 
-  it("loads the current user's reply notifications with serialized timestamps", async () => {
+  it("loads the current user's unified notifications with serialized timestamps", async () => {
     const value = context();
-    const readReplyNotifications = vi.fn(async () => [{
+    const readNotifications = vi.fn(async () => ({page:0,total:1,hasMore:false,items:[{
       id: "notification-1",
+      kind:"reply" as const,
       actorName: "Grace",
       topicId: "topic-1",
       topicTitle: "Typed APIs",
       postId: "post-2",
       createdAt: new Date("2026-10-03T10:00:00Z"),
       readAt: null,
-    }]);
-    value.set(forumReaderContext, { readReplyNotifications } as never);
+    }]}));
+    value.set(forumReaderContext, { readNotifications } as never);
 
     const result = await loader({ params: { locale: "ru" }, context: value });
 
-    expect(readReplyNotifications).toHaveBeenCalledWith("user-1");
+    expect(readNotifications).toHaveBeenCalledWith("user-1",0);
     expect(result).toEqual({
-      locale: "ru",
+      locale: "ru",page:0,total:1,hasMore:false,
       notifications: [{
-        id: "notification-1",
+        id: "notification-1",kind:"reply",
         actorName: "Grace",
         topicId: "topic-1",
         topicTitle: "Typed APIs",
@@ -78,8 +79,8 @@ describe("notifications route", () => {
 
   it("rejects a guest action before reading notification storage", async () => {
     const value = context(false);
-    const markReplyNotificationRead = vi.fn();
-    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+    const markNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markNotificationRead } as never);
 
     const result = await action({
       request: openRequest(),
@@ -88,13 +89,13 @@ describe("notifications route", () => {
     });
 
     expect(responseStatus(result)).toBe(401);
-    expect(markReplyNotificationRead).not.toHaveBeenCalled();
+    expect(markNotificationRead).not.toHaveBeenCalled();
   });
 
   it("rejects a cross-origin action before reading notification storage", async () => {
     const value = context();
-    const markReplyNotificationRead = vi.fn();
-    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+    const markNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markNotificationRead } as never);
 
     const result = await action({
       request: openRequest({ origin: "https://evil.example" }),
@@ -103,13 +104,13 @@ describe("notifications route", () => {
     });
 
     expect(responseStatus(result)).toBe(403);
-    expect(markReplyNotificationRead).not.toHaveBeenCalled();
+    expect(markNotificationRead).not.toHaveBeenCalled();
   });
 
   it("rejects a missing notification ID before reading notification storage", async () => {
     const value = context();
-    const markReplyNotificationRead = vi.fn();
-    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+    const markNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markNotificationRead } as never);
 
     const result = await action({
       request: openRequest({ notificationId: null }),
@@ -118,15 +119,15 @@ describe("notifications route", () => {
     });
 
     expect(responseStatus(result)).toBe(400);
-    expect(markReplyNotificationRead).not.toHaveBeenCalled();
+    expect(markNotificationRead).not.toHaveBeenCalled();
   });
 
   it("returns not found for an invalid notification ID", async () => {
     const value = context();
-    const markReplyNotificationRead = vi.fn(async () => {
+    const markNotificationRead = vi.fn(async () => {
       throw new ForumEntityNotFoundError("notification does not exist");
     });
-    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+    value.set(forumWriterContext, { markNotificationRead } as never);
 
     const result = await action({
       request: openRequest({ notificationId: "missing-notification" }),
@@ -135,7 +136,7 @@ describe("notifications route", () => {
     });
 
     expect(responseStatus(result)).toBe(404);
-    expect(markReplyNotificationRead).toHaveBeenCalledExactlyOnceWith({
+    expect(markNotificationRead).toHaveBeenCalledExactlyOnceWith({
       userId: "user-1",
       notificationId: "missing-notification",
     });
@@ -143,8 +144,8 @@ describe("notifications route", () => {
 
   it("marks the selected notification read and redirects to its reply", async () => {
     const value = context();
-    const markReplyNotificationRead = vi.fn(async () => ({ topicId: "topic-1", postId: "post-2" }));
-    value.set(forumWriterContext, { markReplyNotificationRead } as never);
+    const markNotificationRead = vi.fn(async () => ({ kind:"reply" as const,topicId: "topic-1", postId: "post-2" }));
+    value.set(forumWriterContext, { markNotificationRead } as never);
 
     const request = new Request("https://forum.example/ru/notifications", {
       method: "POST",
@@ -160,12 +161,19 @@ describe("notifications route", () => {
 
     const response = await action({ request, params: { locale: "ru" }, context: value });
 
-    expect(markReplyNotificationRead).toHaveBeenCalledWith({
+    expect(markNotificationRead).toHaveBeenCalledWith({
       userId: "user-1",
       notificationId: "notification-1",
     });
     expect(response).toBeInstanceOf(Response);
     expect((response as Response).status).toBe(302);
     expect((response as Response).headers.get("Location")).toBe("/ru/topics/topic-1#post-post-2");
+  });it("opens a complaint result through the same private notification action",async()=>{
+    const value=context();
+    const markNotificationRead=vi.fn(async()=>({kind:"complaint-decision" as const,caseId:"case-7"}));
+    value.set(forumWriterContext,{markNotificationRead} as never);
+    const response=await action({request:openRequest(),params:{locale:"en"},context:value});
+    expect((response as Response).headers.get("Location")).toBe("/en/complaints/case-7/result");
+    expect(markNotificationRead).toHaveBeenCalledWith({userId:"user-1",notificationId:"notification-1"});
   });
 });

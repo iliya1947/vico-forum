@@ -10,7 +10,7 @@ ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notification
 ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notifications_complaint_decision_id_forum_complaint_decisions_id_fk"
   FOREIGN KEY ("complaint_decision_id") REFERENCES "public"."forum_complaint_decisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notifications_recipient_decision_unique" UNIQUE("recipient_user_id","complaint_decision_id");--> statement-breakpoint
-CREATE INDEX "complaint_case_history_idx" ON "forum_complaint_cases" USING btree ("resolved_at" DESC,"id" DESC) WHERE "forum_complaint_cases"."state" = 'resolved';--> statement-breakpoint
+CREATE INDEX "complaint_case_history_idx" ON "forum_complaint_cases" USING btree ("resolved_at" DESC NULLS LAST,"id" DESC NULLS LAST) WHERE "forum_complaint_cases"."state" = 'resolved';--> statement-breakpoint
 ALTER TABLE "forum_complaint_events" DROP CONSTRAINT "complaint_event_shape_check";--> statement-breakpoint
 ALTER TABLE "forum_complaint_events" ADD CONSTRAINT "complaint_event_shape_check" CHECK (
   (kind='submitted' and complaint_id is not null and decision_id is null and note_id is null and appeal_id is null)
