@@ -20,9 +20,9 @@
 - Первая CI попытка выявила только тестовый TypeScript excess-property contract при ручном вызове route loader; исправлено добавлением `request:Request` в тип входного объекта; финальный head CI green.
 - Независимый live built-Worker/Chromium прогон этого head и owner visual acceptance не проводились и не заявляются. Package 5+, архитектура, schema и permissions не затронуты.
 
-## Текущий этап
+## Ранний checkpoint Package 4
 
-Author handoff Мире; до нового coordinator review implementation не меняю. После coordinator PASS — independent technical review Лёвы того же head.
+Package 4 после коррекций прошёл coordinator/technical review и был merged в main; текущая работа Лиры — Package 5.
 
 ## Package 5 — implementation in progress (PR #277)
 
@@ -37,3 +37,13 @@ Author handoff Мире; до нового coordinator review implementation н�
 - [Draft PR #277](https://github.com/iliya1947/vico-forum/pull/277), implementation head `a97ef20fdde64b8e4c76160e16fb011f1024935a`.
 - [CI #41493212948](https://github.com/iliya1947/vico-forum/actions/runs/41493212948): SUCCESS, 1728 application tests / 120 files, 454 PostgreSQL tests / 36 files; schema manifest parity, migration checks, Worker smoke, lint/typecheck/build PASS.
 - Подзадача implementation завершена; следующий checkpoint — профильная документация, дополнительная проверка и author handoff. Coordinator/technical review не выполнены и не заявляются. PR остаётся Draft.
+
+## Package 5 — author completion и подготовка handoff
+
+- [Draft PR #277](https://github.com/iliya1947/vico-forum/pull/277), stable exact head `5ad59262ea6ef1c2cc5b917f4d03c94564112460`, main `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
+- [Exact-head CI #41495180494](https://github.com/iliya1947/vico-forum/actions/runs/41495180494): **SUCCESS**, оба jobs checks/database; 1728/1728 application и 454/454 PostgreSQL tests, schema manifest parity for 60 tables, migrations, Worker smoke, lint/typecheck/builds PASS.
+- Documentation committed in PR #277: `docs/moderation/COMPLAINTS.md`, `PROJECT_STATE.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY_08.md` и index. Последние commits после прохода CI #41493212948 только документационные.
+- Проверена корректность fingerprints восьми новых/изменённых i18n descriptors по актуальному canonical source: совпадают.
+- Утверждённый P5 реализован в bounded PR: resolved History/timeline и persisted Appeals readonly; без новых workflow/permissions; notifications через общий inbox и atomic Decision fanout; member-only result; review-started coverage с явным ограничением истории.
+- Авторская проверка и CI **не** равны независимому whole-PR review. Chromium→built Worker→PostgreSQL interactive acceptance и owner visual acceptance отсутствуют; не заявлять gate как пройденный. Coordinator review Миры начинается после соответствующих acceptance gates, технический review Лёвы — после coordinator PASS.
+- Package 6+, unrelated domains и production не затрагиваются. Новых implementation commits не делать без новой подтверждённой current-scope задачи.

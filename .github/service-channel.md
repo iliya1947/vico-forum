@@ -5,7 +5,7 @@
 ## Актуальное состояние
 
 - Packages 1–4 завершены и merged в `main`.
-- Текущий этап: **Package 5 — History + notifications**.
+- Текущий этап: **Package 5 — реализация/документация завершена на stable head; ожидаются browser/owner acceptance gates до coordinator review**.
 - Лёва подготовил технический план Package 5 от main `1ad8a6402111928c0f08e6f15aba624ba18a4426`; Мира независимо проверила ключевые предпосылки и **утвердила план**.
 - Подтверждено по текущему main:
   1. Existing `forum_reply_notifications` допускает только reply/mention и требует actor/topic/post; для complaint Decision без dummy references нужна forward schema extension.
@@ -22,6 +22,8 @@
   - participant result route/DTO;
   - сохранить admin History отдельно и не копировать Quick actions/sanctions в Complaints.
 - Package 6+, Signals/Security, unrelated admin work и Stage 6/production rollout вне scope.
+- Draft implementation PR #277: exact head `5ad59262ea6ef1c2cc5b917f4d03c94564112460`. [CI #41495180494](https://github.com/iliya1947/vico-forum/actions/runs/41495180494) SUCCESS: checks/database, 1728 application и 454 PostgreSQL tests; миграции/manifest/Worker smoke PASS. Обновлены профильная документация и PROJECT_STATE.
+- Авторская реализация закончена. Independent coordinator/technical review, targeted browser scenario, owner visual acceptance, merge и production не выполнялись и не заявляются.
 
 ## Назначения
 
