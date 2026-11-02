@@ -9821,3 +9821,17 @@ a.topic-tag:focus-visible {
 .admin-forum-reserved { color: var(--color-text-muted); }
 .admin-forum-paging, .admin-forum-trail { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1rem; }
 .admin-forum-paging a { min-block-size: 2.75rem; display: inline-flex; align-items: center; }
+
+/* Package 4: protected, text-only complaint review; safe for LTR/RTL. */
+.complaint-review{max-inline-size:80rem;margin-inline:auto;padding:1rem;display:grid;gap:1.25rem;min-inline-size:0}
+.complaint-review>section{min-inline-size:0;border:1px solid var(--color-border);border-radius:.6rem;padding:1rem}
+.complaint-review-source{max-inline-size:100%;min-inline-size:0;overflow-wrap:anywhere}
+.complaint-review-source pre{white-space:pre-wrap;overflow-wrap:anywhere;max-inline-size:100%;font:inherit;padding:.75rem;background:var(--color-surface);border-radius:.4rem}
+.complaint-review ul{list-style:none;padding:0;display:grid;gap:.7rem}
+.complaint-review li{min-inline-size:0;border-block-end:1px solid var(--color-border);padding-block:.6rem;overflow-wrap:anywhere}
+.complaint-review form{display:grid;gap:.7rem;max-inline-size:54rem}
+.complaint-review form label{display:grid;gap:.35rem}
+.complaint-review textarea,.complaint-review select{max-inline-size:100%;min-inline-size:0;font:inherit}
+.complaint-review button,.complaint-review a{min-block-size:44px}
+.complaint-review-pagination{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;padding-block:.5rem}
+.complaint-review-source small{display:block;padding-block:.3rem}

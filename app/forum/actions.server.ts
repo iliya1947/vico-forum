@@ -196,13 +196,17 @@ export async function topicAction({ request, params, context }: {
   const changedIdentity = editorIdentityGuard(formData, context);
   if (changedIdentity) return changedIdentity;
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  const inlineMarker=formData.get("inlineQuickAction");
+  if(inlineMarker!==null&&inlineMarker!=="1")return mutationFailure("invalid",400);
+  const inline=inlineMarker==="1";
+  const completed=(path:string)=>inline?data({ok:true},{headers:{"Cache-Control":"private, no-store"}}):redirect(path);
   if (intent === "pinTopic" || intent === "unpinTopic") {
     const forbidden = await requireForumPermission(context, "forum.topic.pin");
     if (forbidden) return forbidden;
     return runForumMutation(request, context, async (writer, actorId) => {
       if (intent === "pinTopic") await writer.pinTopic({ topicId, actorId });
       else await writer.unpinTopic({ topicId, actorId });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "markTopicRead") {
@@ -303,7 +307,7 @@ export async function topicAction({ request, params, context }: {
         explanation,
         proposedOriginalTopicId,
       });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "withdrawHelpSignal") {
@@ -311,7 +315,7 @@ export async function topicAction({ request, params, context }: {
     if (!signalId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.withdrawHelpSignal({ signalId, topicId, actorId });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
@@ -338,7 +342,7 @@ export async function topicAction({ request, params, context }: {
         actorId,
         resolution: intent === "acceptHelpSignal" ? "accepted" : "rejected",
       });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
 
@@ -349,7 +353,7 @@ export async function topicAction({ request, params, context }: {
     if (forbidden) return forbidden;
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.confirmHelpDuplicate({ topicId, originalTopicId, actorId });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "removeHelpDuplicate") {
@@ -359,7 +363,7 @@ export async function topicAction({ request, params, context }: {
     if (!expectedRelationshipId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.removeHelpDuplicate({ topicId, actorId, expectedRelationshipId });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "appealHelpDuplicate") {
@@ -368,7 +372,7 @@ export async function topicAction({ request, params, context }: {
     if (!explanation || !expectedRelationshipId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.appealHelpDuplicate({ topicId, actorId, explanation, expectedRelationshipId });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "acceptHelpDuplicateAppeal" || intent === "rejectHelpDuplicateAppeal") {
@@ -383,7 +387,7 @@ export async function topicAction({ request, params, context }: {
         resolution: intent === "acceptHelpDuplicateAppeal" ? "accepted" : "rejected",
         expectedAppealId,
       });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "markSolved") {
@@ -391,7 +395,7 @@ export async function topicAction({ request, params, context }: {
     if ("error" in authorization) return authorization.error;
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.markTopicSolved({ topicId, actorId, scope: authorization.scope });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (
@@ -421,7 +425,7 @@ export async function topicAction({ request, params, context }: {
         actorId,
         expectedBestAnswerPostId,
       });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "selectBestAnswer") {
@@ -433,10 +437,10 @@ export async function topicAction({ request, params, context }: {
       const selection = await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
       const shouldPromptSolvedConfirmation = authorization.canConfirmOwn && !selection.isSolved && selection.topicAuthorId === actorId;
       if (!shouldPromptSolvedConfirmation) {
-        return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
+        return completed(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
       }
       const solutionPrompt = new URLSearchParams({ solutionPrompt: postId });
-      return redirect(`${forumTopicPath(locale, topicId)}?${solutionPrompt.toString()}#solution-confirmation`);
+      return completed(`${forumTopicPath(locale, topicId)}?${solutionPrompt.toString()}#solution-confirmation`);
     });
   }
   if (intent === "correctTitleSourceLocale") {
@@ -453,7 +457,7 @@ export async function topicAction({ request, params, context }: {
         actorId,
         scope: authorization.scope,
       });
-      return redirect(forumTopicPath(locale, topicId));
+      return completed(forumTopicPath(locale, topicId));
     });
   }
   if (intent === "correctPostSourceLocale") {

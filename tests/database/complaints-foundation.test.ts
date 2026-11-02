@@ -82,6 +82,79 @@ afterAll(async () => {
 });
 
 describe("complaints domain foundation / real PostgreSQL", () => {
+
+  it("reads protected full Case evidence and topic context through a bounded private projection", async () => {
+    const c = await content();
+    const attachmentId = await asset(c.post.postId);
+    const one = await service().submit("reporter-one",report(c.post,"Private explanation"));
+    await service().submit("reporter-two",report(c.post,"Another report"));
+    await service().addNote("reviewer",{caseId:one.caseId,operationId:randomUUID(),body:"Internal reviewer note"});
+    await forum.editPublishedPost({topicId:c.post.topicId,postId:c.post.postId,actorId:"content-author",
+      expectedRevisionId:c.post.revisionId,body:"Updated source",draftId:randomUUID(),attachmentIds:[],retainedAttachmentIds:[]});
+    const pages={reports:0,notes:0,evidence:0,context:0};
+    const full=await service().readReview("reviewer",one.caseId,pages);
+    expect(full).toMatchObject({id:one.caseId,state:"open",kind:"post",
+      reported:{revisionId:c.post.revisionId,originalContent:"Reported body"},
+      current:{originalContent:"Updated source"},
+      reports:{total:2,page:0,hasMore:false},
+      notes:{total:1,items:[{body:"Internal reviewer note",author:{id:"reviewer"}}]},
+      evidence:{total:1,items:[{id:attachmentId,fileName:"evidence.txt"}]},
+      context:{total:1,items:[{id:c.post.postId,number:1}]}});
+    expect(full.reports.items[0]).not.toHaveProperty("reporter");
+    expect(JSON.stringify(full)).not.toContain("reporter-one");
+    expect(JSON.stringify(full)).not.toContain("objectKey");
+    expect(JSON.stringify(full)).not.toContain("operationId");
+    expect((await service().readReviewContext("reviewer",one.caseId,c.post.postId)).source.originalContent)
+      .toBe("Updated source");
+    expect(await service().readReviewEvidence("reviewer",one.caseId,attachmentId))
+      .toMatchObject({fileName:"evidence.txt",byteSize:4,objectKey:`private/${attachmentId}`});
+    const other = await content();
+    await expect(service().readReviewContext("reviewer",one.caseId,other.post.postId))
+      .rejects.toBeInstanceOf(ComplaintNotFoundError);
+    await expect(service().readReviewEvidence("reviewer",one.caseId,randomUUID()))
+      .rejects.toBeInstanceOf(ComplaintNotFoundError);
+    await expect(service().readReview("outsider",one.caseId,pages)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+  });
+  it("scopes reporter identities independently and validates protected Case page bounds", async () => {
+    const c=await content();
+    const record=await service().submit("reporter-one",report(c.title,"Private text"));
+    const pages={reports:0,notes:0,evidence:0,context:0};
+    const reader=service();
+    await expect(reader.readReview("reviewer",record.caseId,{...pages,notes:-1}))
+      .rejects.toBeInstanceOf(ComplaintInputError);
+    await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+      values ('reviewer','forum.complaint.reporterIdentity.read','allow')
+      on conflict (user_id,permission_key) do update set effect='allow'`);
+    try {
+      const elevated=await reader.readReview("reviewer",record.caseId,pages);
+      expect(elevated.reports.items[0]?.reporter?.id).toBe("reporter-one");
+      await client.query(`update authz_user_permission_overrides set effect='deny'
+        where user_id='reviewer' and permission_key='forum.complaint.reporterIdentity.read'`);
+      const ordinary=await reader.readReview("reviewer",record.caseId,pages);
+      expect(ordinary.reports.items[0]).not.toHaveProperty("reporter");
+      expect(JSON.stringify(ordinary)).not.toContain("Private text from another Case");
+    } finally {
+      await client.query(`delete from authz_user_permission_overrides
+        where user_id='reviewer' and permission_key='forum.complaint.reporterIdentity.read'`);
+    }
+  });
+  it("keeps independent 50-item note pages and real totals beyond the first page", async () => {
+    const c=await content();
+    const record=await service().submit("reporter-one",report(c.post));
+    const prefix=randomUUID();
+    await client.query(`insert into forum_complaint_notes(id,case_id,author_user_id,body,created_at)
+      select $1::text || '-' || n,$2::text,'reviewer','note ' || n,now()
+      from generate_series(1,51) as n`,[prefix,record.caseId]);
+    const pages={reports:0,notes:0,evidence:0,context:0};
+    const first=await service().readReview("reviewer",record.caseId,pages);
+    const second=await service().readReview("reviewer",record.caseId,{...pages,notes:1});
+    expect(first.notes).toMatchObject({total:51,page:0,hasMore:true});
+    expect(first.notes.items).toHaveLength(50);
+    expect(second.notes).toMatchObject({total:51,page:1,hasMore:false});
+    expect(second.notes.items).toHaveLength(1);
+    expect(second.reports.total).toBe(1);
+    expect(second.context.total).toBe(1);
+  });
   it("groups independent reports but separates topic title and first post", async () => {
     const c = await content();
     const one = await service().submit("reporter-one", report(c.post));

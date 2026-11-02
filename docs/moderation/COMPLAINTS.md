@@ -2,7 +2,7 @@
 
 This is the permanent complaints-domain contract. Product decisions and staged
 delivery are recorded in service PR #254; this document records implemented
-Packages 1–3 behavior. Full review/decision, notification and appeal UI remain deferred.
+Packages 1–4 behavior. Notifications, History list and appeal UI remain deferred.
 
 ## Domain and boundaries
 
@@ -14,7 +14,7 @@ Lifecycle events are persisted atomically with the command that produces them.
 
 Complaints never mutate Help Signals, Security events, user blocking, content
 visibility or administrative history. There is no assignment/ownership lock.
-Shared Admin Quick actions belong to a later package and retain their own authority.
+Shared Admin Quick actions are reused by Package 4 through the canonical topic handler and retain their own authority.
 
 `db/complaints-service.ts` is the server application boundary. It accepts a trusted
 authenticated actor identity, resolves current effective permissions and validates
@@ -47,8 +47,7 @@ creation. Private asset references are retained independently of mutable publish
 post refs. The active-ref trigger fences insertion against a cleanup claim. Cleanup
 checks complaint refs at candidate selection, fresh locked recheck and final delete.
 This includes recovery of already-claimed cleanup work. Retained evidence never
-grants public download access or exposes object keys. A protected evidence download
-surface is a later review-UI responsibility; existing download semantics are intact.
+grants public download access or exposes object keys. Package 4 provides the protected evidence download surface; existing public download semantics are intact.
 
 Reported targets, reports, decisions, notes, events and evidence refs reject
 UPDATE/DELETE. Appeal identity/argument is immutable; a pending Appeal can acquire
@@ -166,8 +165,7 @@ control. Context includes bounded current topic title and reported-revision exce
 with source-locale metadata. Registered source direction determines block `dir`;
 `und` or unknown direction falls back to `auto`, independently of UI locale.
 It does not expose report explanations, reporter IDs,
-notes, Decisions, evidence downloads or Quick actions. These require the later full
-Case review package. Queue projection never joins reporter accounts, even if the
+notes, Decisions, evidence downloads or Quick actions. Package 4 exposes them only through protected full Case review. Queue projection never joins reporter accounts, even if the
 actor also has the separate identity-read permission.
 
 The triage view renews supplemental activity by authenticated same-origin POST every
@@ -183,9 +181,56 @@ not interpreted as permanent activity.
 Priority/activity writes bound URL-encoded input to 4096 bytes and derive actor/Case
 from session/path. Document/data responses are private/no-store. Known dependency
 failures fail closed as 503, distinct from 401/403/404/409; unexpected errors propagate.
-Activity is supplemental and cannot block authorized triage. No Signals/Security,
-ordinary admin History, notifications, review/decision/notes UI or appeals behavior
-is added by this package.
+Activity is supplemental and cannot block authorized triage. No Signals/Security, ordinary admin History, notifications or appeals behavior is added by Package 3.
+
+
+## Full Case review, notes and initial Decision (Package 4)
+
+The protected `/:locale/attention/complaints/:caseId/review` view is available for both
+open and resolved Cases. The open Queue links directly to it; the existing triage
+priority route remains separate. Protected Case context and retained-only evidence
+resources require a current authenticated `forum.complaint.review` capability on
+every request. The queue and public topic loader never expose reports or notes.
+
+The read-only repeatable-read projection separates the immutable reported revision
+from current source and topic context, and bounds reports, notes and retained
+attachment metadata independently to 50 items per page plus lookahead. Context is
+paged independently at 25 messages, retaining original post ordering and permanent
+numbers. Out-of-range pages retain correct independent totals. A protected context
+resource checks Case-to-topic membership before disclosing a full message.
+Cross-request pagination does not promise a stable snapshot.
+
+Reporter identity remains absent from ordinary SQL and payloads: only an actor
+with both `forum.complaint.review` and `forum.complaint.reporterIdentity.read`
+receives separately selected reporter IDs and display names. Email and session
+fields are never selected. Help duplicate pending appeal identity is selected only
+with the separate current `forum.helpDuplicate.manage` permission. Moderator-note
+authors and content authors are not reporter identities.
+
+The retained-evidence download route validates the Case/asset membership before
+retrieving the private storage key. The key never enters a response; bytes are
+delivered only as `application/octet-stream` with attachment disposition,
+`nosniff`, sandbox and private/no-store. Missing foreign assets return 404;
+known storage unavailability returns 503. Public attachment access remains unchanged.
+
+A Case POST accepts one of `note` and `decision`, with same-origin/session
+authorization, strictly validated URL-encoded fields and a 256 KiB request limit.
+Existing domain `addNote` and `decide` remain the sole authoritative commands:
+trimmed text, NUL rejection and up to 10000 Unicode code points; operation-key
+replay, actor/Case locks, expected-version Decision CAS and atomic event/Case updates.
+Notes are append-only and permitted after resolution. Decisions store a single
+`confirmed | not-confirmed` result separately from administrative measures;
+no notifications or sanctions are triggered. Decision drafts keep the reviewed
+version until a deliberate acknowledgement of a changed Case, and form retries
+retain their operation nonce.
+
+The Case reuses shared `TopicQuickActions` descriptors and existing canonical
+`/:locale/topics/:topicId` admin/Help mutations, with an opt-in private inline
+success transport that avoids navigating away. Normal topic forms retain redirect
+behavior; all actions independently recheck their native permission, ownership,
+state and CAS boundary. These actions are not Complaints Decisions and do not
+write Complaints notes, reports or outcomes. Only already implemented AP-05 actions
+are displayed. Resolved Case links are not a History UI.
 
 ## Transactions and replay
 

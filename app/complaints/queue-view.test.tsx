@@ -17,7 +17,7 @@ it.each(["en","ru","he"])("renders actual Case context, global totals and bounde
     firstReportedAt:"2026-10-30T00:00:00Z",lastReportedAt:"2026-10-30T01:00:00Z",automaticPriority:3,priority:3,priorityOverride:null,activeElsewhere:true};
   render(<I18nextProvider i18n={i18n}><MemoryRouter><ComplaintQueueList locale={locale} queue={{cases:[item],total:52,page:1,hasMore:true}}/></MemoryRouter></I18nextProvider>);
   expect(screen.getByText(i18n.t("complaintQueueTotal",{total:new Intl.NumberFormat(locale).format(52)}))).toBeTruthy();
-  expect(screen.getByRole("link",{name:i18n.t("complaintOpenCase")}).getAttribute("href")).toBe(`/${locale}/attention/complaints/case`);
+  expect(screen.getByRole("link",{name:i18n.t("complaintOpenCase")}).getAttribute("href")).toBe(`/${locale}/attention/complaints/case/review`);
   expect(screen.getByRole("link",{name:i18n.t("attentionCaseNext")}).getAttribute("href")).toContain("page=2");
   expect(screen.getByRole("status").textContent).toBe(i18n.t("complaintActivityOther"));
   expect(screen.getByText("Topic עברית").getAttribute("lang")).toBe("he");

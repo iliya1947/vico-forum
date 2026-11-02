@@ -7,6 +7,7 @@ import { COMPLAINT_REASONS } from "../../db/complaints-domain";
 import type { ComplaintQueueCase, ComplaintQueuePage } from "./queue-contract";
 
 export const complaintQueuePath=(locale:string)=>`/${encodeURIComponent(locale)}/attention?mode=complaints&group=group1`;
+export const complaintReviewPath=(locale:string,id:string)=>`/${encodeURIComponent(locale)}/attention/complaints/${encodeURIComponent(id)}/review`;
 export const complaintTriagePath=(locale:string,id:string)=>`/${encodeURIComponent(locale)}/attention/complaints/${encodeURIComponent(id)}`;
 
 export function ComplaintCaseSummary({locale,item,openLink=true}:{locale:string;item:ComplaintQueueCase;openLink?:boolean}) {
@@ -29,7 +30,7 @@ export function ComplaintCaseSummary({locale,item,openLink=true}:{locale:string;
     <ul className="complaint-reason-summary">{COMPLAINT_REASONS.filter(reason=>item.reasons[reason]).map(reason=>
       <li key={reason}>{t(`complaintReason_${reason}`)}: {number.format(item.reasons[reason]!)}</li>)}</ul>
     <p className="complaint-activity" role="status">{t(item.activeElsewhere?"complaintActivityOther":"complaintActivityNone")}</p>
-    {openLink&&<Link className="complaint-open-case" to={complaintTriagePath(locale,item.id)}>{t("complaintOpenCase")}</Link>}
+    {openLink&&<Link className="complaint-open-case" to={complaintReviewPath(locale,item.id)}>{t("complaintOpenCase")}</Link>}
   </article>;
 }
 
@@ -47,7 +48,7 @@ export function ComplaintQueueList({locale,queue}:{locale:string;queue:Complaint
   </div>;
 }
 
-function ComplaintActivity({locale,caseId}:{locale:string;caseId:string}) {
+export function ComplaintActivity({locale,caseId}:{locale:string;caseId:string}) {
   const {revalidate}=useRevalidator();
   useEffect(()=>{
     const url=complaintTriagePath(locale,caseId)+"/activity";
@@ -73,6 +74,7 @@ export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQ
   return <ForumShell locale={locale} variant="attention"><section className="complaint-triage">
     <Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link>
     <h1>{t("complaintTriageHeading")}</h1>
+    <Link to={complaintReviewPath(locale,item.id)}>{t("complaintOpenCase")}</Link>
     <ComplaintActivity locale={locale} caseId={item.id}/>
     <ComplaintCaseSummary locale={locale} item={item} openLink={false}/>
     <fetcher.Form key={item.version} method="post" className="complaint-priority-form" onSubmit={event=>{

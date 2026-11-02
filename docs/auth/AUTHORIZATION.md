@@ -100,7 +100,7 @@ content-author/reporter membership and direction. Package 2 enables only the top
 submission UI and authenticated same-origin POST action using `forum.complaint.create`;
 Package 3 additionally enables protected open Queue/triage, priority override and
 non-exclusive activity using `forum.complaint.review`, with independent loader/action
-checks. Full review/notes/decisions, identity and appeal HTTP/UI remain deferred.
+checks. Package 4 exposes protected full review, internal notes and initial Decisions, with separately gated reporter identity; appeals, notifications and History UI remain deferred.
 
 ## Initial role defaults
 
