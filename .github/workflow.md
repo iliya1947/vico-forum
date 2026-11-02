@@ -12,3 +12,4 @@
 - Coordinator review старого integration head: Мира — PASS
 - Independent review: ещё не запускать
 - Следующий шаг: Лира синхронизирует #270 с текущим `main`, сохраняет AP-06 и новую структуру `PROJECT_STATE.md`, публикует новый stable exact head; затем Мира начинает новый coordinator review
+- После merge #270: админ-панель ставится на паузу; AP-07 не начинать до завершения текущего цикла «Системы жалоб»
