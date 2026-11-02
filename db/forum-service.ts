@@ -192,6 +192,19 @@ export class ForumService {
     return this.repository.advanceTopicReadState(userId, topicId, postId);
   }
 
+  readNotifications(userId:string,page:number){
+    requireText(userId,"user id");
+    return this.repository.readNotifications(userId,page);
+  }
+  countUnreadNotifications(userId:string){
+    requireText(userId,"user id");
+    return this.repository.countUnreadNotifications(userId);
+  }
+  markNotificationRead(userId:string,notificationId:string){
+    requireText(userId,"user id");requireText(notificationId,"notification id");
+    return this.repository.markNotificationRead(userId,notificationId);
+  }
+
   readReplyNotifications(userId: string, limit?: number) {
     requireText(userId, "user id");
     return this.repository.readReplyNotifications(userId, limit);

@@ -158,6 +158,18 @@ function publicDiscoveryLocation(row: {
   };
 }
 
+export interface ForumNotificationSummary {
+  id:string;kind:"reply"|"mention"|"complaint-decision";actorName:string|null;
+  topicId:string|null;topicTitle:string|null;postId:string|null;caseId:string|null;
+  createdAt:Date;readAt:Date|null;
+}
+export interface ForumNotificationPage {
+  items:ForumNotificationSummary[];total:number;page:number;hasMore:boolean;
+}
+export type ForumNotificationTarget =
+  | {kind:"complaint-decision";caseId:string}
+  | {kind:"reply"|"mention";topicId:string;postId:string};
+
 export interface ForumReplyNotificationSummary {
   id: string;
   kind: "reply" | "mention";
@@ -384,6 +396,8 @@ export interface ForumReader {
   search(query: string, limit?: number): Promise<ForumSearchResult[]>;
   readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
+  readNotifications(userId:string,page:number):Promise<ForumNotificationPage>;
+  countUnreadNotifications(userId:string):Promise<number>;
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
   countUnreadReplyNotifications(userId: string): Promise<number>;
   readTopicPinState(topicId: string): Promise<boolean>;
@@ -1395,12 +1409,62 @@ export class DrizzleForumRepository {
     return state;
   }
 
+  async readNotifications(userId:string,page:number):Promise<ForumNotificationPage>{
+    if(!Number.isSafeInteger(page)||page<0||page>10000)throw new RangeError("invalid page");
+    return this.database.transaction(async tx=>{
+      const total=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_reply_notifications where recipient_user_id=${userId}`);
+      const rows=await tx.execute<ForumNotificationSummary>(sql`
+        select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
+          actor.name as "actorName",n.topic_id as "topicId",title.original_content as "topicTitle",
+          n.post_id as "postId",d.case_id as "caseId"
+        from forum_reply_notifications n
+        left join "user" actor on actor.id=n.actor_user_id and n.kind in ('reply','mention')
+        left join forum_topics topic on topic.id=n.topic_id
+        left join forum_topic_title_revisions title on title.topic_id=topic.id and title.id=topic.current_title_revision_id
+        left join forum_complaint_decisions d on d.id=n.complaint_decision_id and n.kind='complaint-decision'
+        where n.recipient_user_id=${userId}
+        order by case when n.read_at is null then 0 else 1 end,n.created_at desc,n.id desc
+        limit 51 offset ${page*50}`);
+      return {items:rows.rows.slice(0,50),page,total:total.rows[0]?.total??0,hasMore:rows.rows.length>50};
+    },{isolationLevel:"repeatable read",accessMode:"read only"});
+  }
+
+  async countUnreadNotifications(userId:string):Promise<number>{
+    return this.countUnreadReplyNotifications(userId);
+  }
+
+  async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
+    return this.database.transaction(async tx=>{
+      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;topicId:string|null;postId:string|null}>(sql`
+        select n.kind,d.case_id as "caseId",n.topic_id as "topicId",n.post_id as "postId"
+        from forum_reply_notifications n
+        left join forum_complaint_decisions d on d.id=n.complaint_decision_id
+        where n.id=${notificationId} and n.recipient_user_id=${userId}
+        for update of n`);
+      const n=row.rows[0];
+      if(!n)throw new ForumEntityNotFoundError("notification not found");
+      if(n.kind==="complaint-decision"){
+        if(!n.caseId)throw new ForumEntityNotFoundError("notification target missing");
+        const member=await tx.execute(sql`select 1 from forum_complaint_cases c
+          join forum_complaint_targets t on t.id=c.target_id
+          where c.id=${n.caseId} and (t.affected_author_id=${userId} or exists(
+            select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${userId}))`);
+        if(!member.rows.length)throw new ForumEntityNotFoundError("notification not found");
+        await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
+        return {kind:"complaint-decision" as const,caseId:n.caseId};
+      }
+      if(!n.topicId||!n.postId)throw new ForumEntityNotFoundError("notification target missing");
+      await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
+      return {kind:n.kind,topicId:n.topicId,postId:n.postId};
+    });
+  }
+
   async readReplyNotifications(userId: string, limit = 50): Promise<ForumReplyNotificationSummary[]> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       throw new RangeError("notification limit must be an integer between 1 and 100");
     }
     const actor = alias(user, "notification_actor");
-    return this.database
+    const rows = await this.database
       .select({
         id: forumReplyNotifications.id,
         actorName: actor.name,
@@ -1418,7 +1482,7 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .where(eq(forumReplyNotifications.recipientUserId, userId))
+      .where(and(eq(forumReplyNotifications.recipientUserId, userId),inArray(forumReplyNotifications.kind,["reply","mention"])))
       // Keep every unread row reachable even when the bounded inbox contains
       // more than `limit` notifications. Read history remains newest-first.
       .orderBy(
@@ -1427,6 +1491,7 @@ export class DrizzleForumRepository {
         desc(forumReplyNotifications.id),
       )
       .limit(limit);
+    return rows.map(row=>({...row,topicId:row.topicId!,postId:row.postId!,kind:row.kind as "reply"|"mention"}));
   }
 
   async countUnreadReplyNotifications(userId: string): Promise<number> {
@@ -1450,13 +1515,14 @@ export class DrizzleForumRepository {
       .where(and(
         eq(forumReplyNotifications.id, notificationId),
         eq(forumReplyNotifications.recipientUserId, userId),
+        inArray(forumReplyNotifications.kind,["reply","mention"]),
       ))
       .returning({
         topicId: forumReplyNotifications.topicId,
         postId: forumReplyNotifications.postId,
       });
-    if (!notification) throw new ForumEntityNotFoundError("notification does not exist for user");
-    return notification;
+    if (!notification?.topicId || !notification.postId) throw new ForumEntityNotFoundError("notification does not exist for user");
+    return {topicId:notification.topicId,postId:notification.postId};
   }
 
   async readTopicPinState(topicId: string): Promise<boolean> {
