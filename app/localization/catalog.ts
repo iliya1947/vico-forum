@@ -16,6 +16,19 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    complaintHistoryReviewStarted: message("complaintHistoryReviewStarted", "Reviewer opened this case", "Complaints Package 5: recorded start of a review activity period."),
+    complaintHistoryAppealSubmitted: message("complaintHistoryAppealSubmitted", "Appeal submitted", "Complaints Package 5: immutable appeal submission event."),
+    complaintHistoryAppealResolved: message("complaintHistoryAppealResolved", "Appeal reviewed", "Complaints Package 5: recorded appeal review result."),
+    complaintResultAppealUnavailable: message("complaintResultAppealUnavailable", "Appeals are not available yet.", "Complaints Package 5: future appeal route is not active."),
+    notificationDecisionResult: message("notificationDecisionResult", "Complaint decision", "Complaints Package 5: system notification for an initial decision."),
+    complaintResultPublicReasoningNotice: message("complaintResultPublicReasoningNotice", "Both the affected author and reporters can read this reasoning.", "Complaints Package 5: initial decision reasoning audience notice."),
+    complaintHistoryTotal: message("complaintHistoryTotal", "Resolved cases: {{total}}", "Complaints Package 5: total resolved Cases in protected History.", ["total"]),
+    complaintHistoryAppealSideAuthor: message("complaintHistoryAppealSideAuthor", "Content author", "Complaints Package 5: author side of persisted Appeal."),
+    complaintHistoryAppealSideReporter: message("complaintHistoryAppealSideReporter", "Reporter", "Complaints Package 5: reporter side of persisted Appeal."),
+    complaintHistoryAppealUpheld: message("complaintHistoryAppealUpheld", "Upheld", "Complaints Package 5: readonly persisted appeal review result upheld."),
+    complaintHistoryAppealOverturned: message("complaintHistoryAppealOverturned", "Overturned", "Complaints Package 5: readonly persisted appeal review result overturned."),
+    complaintHistoryAppealOrdinal: message("complaintHistoryAppealOrdinal", "Appeal #{{number}}", "Complaints Package 5: persisted Appeal ordinal in readonly history.", ["number"]),
+    complaintHistoryCoverageNotice: message("complaintHistoryCoverageNotice", "Earlier reviewer visits were not recorded.", "Complaints Package 5: review activity history begins with durable recording."),
     complaintReviewHeading: message("complaintReviewHeading", "Complaint review", "Complaints Package 4: complaintReviewHeading."),
     complaintReviewPrevious: message("complaintReviewPrevious", "Previous related case", "Complaints Package 4: complaintReviewPrevious."),
     complaintReviewResolved: message("complaintReviewResolved", "Resolved", "Complaints Package 4: complaintReviewResolved."),
@@ -253,7 +266,7 @@ export const canonicalEnglishCatalog = {
     ),
     notifications: message("notifications", "Notifications", "Authenticated notification entry point."),
     notificationsUnreadLabel: message("notificationsUnreadLabel", "Notifications, {{count}} unread", "Accessible header notification label including the unread count.", ["count"]),
-    notificationIntro: message("notificationIntro", "Replies to your topics and messages, and mentions of your account.", "Short explanation of the authenticated notification inbox."),
+    notificationIntro: message("notificationIntro", "Replies, mentions, and decisions on your complaints.", "Short explanation of the authenticated notification inbox."),
     notificationEmpty: message("notificationEmpty", "You have no notifications.", "Empty-state message for the authenticated notification inbox."),
     notificationReplyBy: message("notificationReplyBy", "Reply from {{actor}}", "Notification summary identifying the reply author.", ["actor"]),
     notificationMentionBy: message("notificationMentionBy", "Mention from {{actor}}", "Notification summary identifying the author who mentioned the recipient.", ["actor"]),

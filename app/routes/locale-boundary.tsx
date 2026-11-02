@@ -127,7 +127,7 @@ export async function loader(args: LocaleBoundaryArgs) {
 
     try {
       unreadNotificationCount = await forumReaderForRequest(args.context)
-        .countUnreadReplyNotifications(session.user.id);
+        .countUnreadNotifications(session.user.id);
     } catch (error) {
       if (
         !(error instanceof ForumStorageUnavailableError)

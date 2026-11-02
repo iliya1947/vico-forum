@@ -8,6 +8,19 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  "complaintHistoryAppealUpheld": "422007dcfe984f094461bf36dea6cffcdb0d6b6173d014e58235a608a44cd85b",
+  "complaintHistoryAppealOverturned": "bdb253c32edf1929a3be76fdd3448ef5410a28e779b5302bb6534f9e2b0aac2f",
+  "complaintHistoryTotal": "703543470d22debca18ed08500c9a011817b134741d1adadc2ae5bbe5fcbeb7b",
+  "complaintHistoryAppealSideAuthor": "d22651ae15e22d7941bceb355ed1b260ded26ceab44d94c672ff23b848287060",
+  "complaintHistoryAppealSideReporter": "5128f0babd8caf510f4f5816986eb77864b052ae892300aa53dc512851931e3b",
+  "complaintHistoryAppealOrdinal": "fee900b6ad1c1176a82889b13be81c81d92380e4d14c0e4f5f5fbb331faf3f7b",
+  "complaintHistoryReviewStarted": "596aa12af6c359f2a7fdc8d86693c8f0bbce812dab0bc60e92725488836e35dc",
+  "complaintHistoryAppealSubmitted": "62d3b6ba97fc656fc980e4acffb03cf805b97451a076f6231fbc7dc7e0a46d81",
+  "complaintHistoryAppealResolved": "307adeaea8b95ae85950c886376f8bc9b274abae2002e0db526e61ba63071d37",
+  "complaintResultAppealUnavailable": "513f2de59af2d0cf84138484850d68d3cfbeb6420106d620fca5b6dfd7e2ecb1",
+  "notificationDecisionResult": "17e45c3b51d6d43167afbde6b436b706fdf7a1ece5123b8eba54368557995449",
+  "complaintResultPublicReasoningNotice": "94b9ac868daa12e0468d2ddfe8a4334d3feeab9881f963e75228225736347a88",
+  "complaintHistoryCoverageNotice": "06305830268b84409ebed15cd373e2948d1fe1d955bf0bfbe5a09629899d8782",
   "complaintReviewHeading": "0c7c9a978a8f4cf33c0767f9eb774f234e80592a5127b258fbfa5ea562e35899",
   "complaintReviewPrevious": "6b452e8e52ece418938f1f6e41665c1cc46860b99f0ced3ff857a666730bffed",
   "complaintReviewResolved": "88b9b23c03d66f90c76da8aadc2ba51606e514b0d623b42d192eb471bc2888f6",
@@ -221,7 +234,7 @@ export const reviewedCommonFingerprints = {
   searchResultCount: "9d88817b7ce11121f125820fb843f719fc39c0f43216004f387a982f7589f9b4",
   notifications: "94807270c53e77c0f80551f454efe7d7551d789390a2e2d120163129a97234fa",
   notificationsUnreadLabel: "b5285dcdf3b5c0acef7aba6dd13acb7a22e3f50cffa29b829e8e31f8ec27f9ea",
-  notificationIntro: "d76917a3bf6350a9cb9dd3cf4fff4bd237d7330ce390e815bc44d701354ad67a",
+  notificationIntro: "ad55800b7ae5fadbb701e4676a0342c68763f3bd74534ce4861a8010f0295c8f",
   notificationEmpty: "b009333b9f07dd710421f8f21203ac5a28bf66204faccac7a4c3a404de185d7c",
   notificationReplyBy: "65a50faf2bdd2c40f7ccdda3dd74a346dc9fe98cebdfa549a4ebb2dc57e0195d",
   notificationMentionBy: "603fc830178cc4f5f8dca1a92b53cb7066a5aa379d18d1c46668db48bb2f5051",

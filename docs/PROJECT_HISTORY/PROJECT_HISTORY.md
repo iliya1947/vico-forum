@@ -23,3 +23,4 @@ Git history и PR остаются первичными историческим
 ## Архивные снимки
 
 Каталог [`doc_old/`](../../doc_old/) сохраняется отдельно как набор старых полных снимков документов. Он не входит в последовательность `PROJECT_HISTORY_##.md` и используется только когда нужен конкретный исторический snapshot.
+8. [`PROJECT_HISTORY_08.md`](./PROJECT_HISTORY_08.md) — 2026-11-02: Complaints Package 5 implementation/CI checkpoint; independent review still pending.

@@ -135,6 +135,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
        <option value="confirmed">{t("complaintReviewConfirmed")}</option>
        <option value="not-confirmed">{t("complaintReviewNotConfirmed")}</option>
       </select></label>
+      <p>{t("complaintResultPublicReasoningNotice")}</p>
       <label>{t("complaintReviewReasoning")}<textarea required name="reasoning" rows={5} value={reasoning} onChange={e=>setReasoning(e.currentTarget.value)}/></label>
       {stale?<p role="alert">{t("complaintReviewChanged")} <button type="button" onClick={()=>{setReviewedVersion(item.version);decisionNonce.current="";}}>{t("complaintReviewAcceptChanges")}</button></p>:null}
       <button type="submit" disabled={stale||decision.state!=="idle"}>{t("complaintReviewResolve")}</button>

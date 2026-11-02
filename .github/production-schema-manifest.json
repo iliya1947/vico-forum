@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0053_complaint_priority_settings",
+  "targetMigration": "0054_complaint_history_notifications",
   "tables": {
     "account": {
       "columns": [
@@ -3031,19 +3031,19 @@
         {
           "name": "actor_user_id",
           "type": "text",
-          "nullable": false,
+          "nullable": true,
           "defaultSha256": null
         },
         {
           "name": "topic_id",
           "type": "text",
-          "nullable": false,
+          "nullable": true,
           "defaultSha256": null
         },
         {
           "name": "post_id",
           "type": "text",
-          "nullable": false,
+          "nullable": true,
           "defaultSha256": null
         },
         {
@@ -3063,6 +3063,12 @@
           "type": "timestamp with time zone",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "complaint_decision_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -3074,6 +3080,14 @@
         }
       ],
       "uniqueConstraints": [
+        {
+          "name": "forum_reply_notifications_recipient_decision_unique",
+          "columns": [
+            "recipient_user_id",
+            "complaint_decision_id"
+          ],
+          "nullsNotDistinct": false
+        },
         {
           "name": "forum_reply_notifications_recipient_post_unique",
           "columns": [
@@ -3090,6 +3104,20 @@
             "actor_user_id"
           ],
           "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_decision_fk",
+          "columns": [
+            "complaint_decision_id"
+          ],
+          "referencedTable": "forum_complaint_decisions",
           "referencedColumns": [
             "id"
           ],
@@ -3147,9 +3175,13 @@
         {
           "name": "forum_reply_notifications_kind_check",
           "columns": [
-            "kind"
+            "actor_user_id",
+            "complaint_decision_id",
+            "kind",
+            "post_id",
+            "topic_id"
           ],
-          "definitionSha256": "39a07de9c42344eb2d5e429022d873ec13392d386f6d12a767e0df1de5ba57c1"
+          "definitionSha256": "bf57fde6bd364c2319871be19d986fed6ebf0ab0269d24427975ae50c296df89"
         }
       ],
       "indexes": [
@@ -5902,6 +5934,24 @@
       ],
       "indexes": [
         {
+          "name": "complaint_case_history_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "resolved_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": "e3d203fa955b9b9a7b4e08203d6b02a137caca414badad096e5468f8e8cee9cc"
+        },
+        {
           "name": "complaint_case_open_target_unique",
           "unique": true,
           "method": "btree",
@@ -6292,7 +6342,7 @@
             "kind",
             "note_id"
           ],
-          "definitionSha256": "7efec3bd8ee0cd6fab691066b7e0644f12fc07920aaa8b4ec70b61b39f0bba2e"
+          "definitionSha256": "cbf0cc89f5e6ee0c83fbd819d693c21543e5f82669bd10ac8255899091d313dd"
         }
       ],
       "indexes": [

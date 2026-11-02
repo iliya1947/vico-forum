@@ -15,6 +15,8 @@ describe("localized route shape", () => {
       expect.objectContaining({ path: "attention/complaints/:caseId", file: "routes/complaint-triage.tsx" }),
       expect.objectContaining({ path: "attention/complaints/:caseId/activity", file: "routes/complaint-activity.ts" }),
       expect.objectContaining({ path: "attention/complaints/:caseId/review", file: "routes/complaint-review.tsx" }),
+      expect.objectContaining({ path: "attention/complaints/:caseId/history", file: "routes/complaint-history.tsx" }),
+      expect.objectContaining({ path: "complaints/:caseId/result", file: "routes/complaint-result.tsx" }),
       expect.objectContaining({ path: "attention/complaints/:caseId/context/:postId", file: "routes/complaint-review-context.ts" }),
       expect.objectContaining({ path: "attention/complaints/:caseId/evidence/:attachmentId", file: "routes/complaint-review-evidence.ts" }),
       expect.objectContaining({ path: "posts/:postId/edit", file: "routes/post-edit.ts" }),

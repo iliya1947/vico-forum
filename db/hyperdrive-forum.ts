@@ -45,6 +45,7 @@ export interface ForumWriter {
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
   markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<{ topicId: string; postId: string }>;
+  markNotificationRead(input:{userId:string;notificationId:string}):Promise<import("./forum-repository").ForumNotificationTarget>;
   pinTopic(input: { topicId: string; actorId: string }): Promise<void>;
   unpinTopic(input: { topicId: string; actorId: string }): Promise<void>;
 }
@@ -92,6 +93,8 @@ export function createHyperdriveForumReader(
     search: (query, limit) => read((repository) => repository.search(query, limit)),
     readUnreadForUser: (userId) => read((repository) => repository.readUnreadForUser(userId)),
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
+    readNotifications:(userId,page)=>read(repo=>repo.readNotifications(userId,page)),
+    countUnreadNotifications:userId=>read(repo=>repo.countUnreadNotifications(userId)),
     readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
     countUnreadReplyNotifications: (userId) => read((repository) => repository.countUnreadReplyNotifications(userId)),
     readTopicPinState: (topicId) => read((repository) => repository.readTopicPinState(topicId)),
@@ -239,6 +242,7 @@ export function createHyperdriveForumWriter(
     advanceTopicReadState: ({ userId, topicId, postId }) => writeCorrection(async (forum) => {
       await forum.advanceTopicReadState(userId, topicId, postId);
     }),
+    markNotificationRead:({userId,notificationId})=>writeCorrection(forum=>forum.markNotificationRead(userId,notificationId)),
     markReplyNotificationRead: ({ userId, notificationId }) => writeCorrection(
       (forum) => forum.markReplyNotificationRead(userId, notificationId),
     ),

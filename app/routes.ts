@@ -16,6 +16,8 @@ export default [
     route("attention/complaints/:caseId", "routes/complaint-triage.tsx"),
     route("attention/complaints/:caseId/activity", "routes/complaint-activity.ts"),
     route("attention/complaints/:caseId/review", "routes/complaint-review.tsx"),
+    route("attention/complaints/:caseId/history", "routes/complaint-history.tsx"),
+    route("complaints/:caseId/result", "routes/complaint-result.tsx"),
     route("attention/complaints/:caseId/context/:postId", "routes/complaint-review-context.ts"),
     route("attention/complaints/:caseId/evidence/:attachmentId", "routes/complaint-review-evidence.ts"),
     route("posts/:postId/edit", "routes/post-edit.ts"),
