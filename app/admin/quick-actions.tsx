@@ -2,7 +2,8 @@ import type {ReactNode} from "react";
 import {Form,useFetcher} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {ForumTopicPage} from "../../db/forum-repository";
-type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateOf"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> & {
+type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> & {
+  duplicateOf:{id:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
   posts:Array<Pick<ForumTopicPage["posts"][number],"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
 };
