@@ -1,3 +1,4 @@
+import type { ReviewPages, ReviewCase } from "../app/complaints/review-contract";
 import type { AuthorizationCapability } from "./authorization-service";
 import type { PermissionKey } from "../app/authorization/catalog";
 import type { ComplaintPrioritySettingsCommand, ComplaintPriorityWeights, ComplaintPriorityCommand } from "../app/complaints/queue-contract";
@@ -70,6 +71,30 @@ export class ComplaintsService {
     const elevated = await this.reviewIdentity(actor, "forum.complaint.review");
     for (const value of Object.values(pages)) if (!Number.isSafeInteger(value) || value < 0 || value > 10000) throw new ComplaintInputError("invalid page");
     return this.repository.readCase(complaintId(caseId), elevated, pages);
+  }
+
+  /** One consistent effective-permission snapshot controls all optional Case projections. */
+  async readReview(actor: string, caseId: string, pages: ReviewPages) {
+    complaintId(actor);
+    for(const n of Object.values(pages))if(!Number.isSafeInteger(n)||n<0||n>10000)throw new ComplaintInputError("invalid page");
+    const resolved=await this.authorization.forUser(actor).resolve();
+    const has=(key:PermissionKey)=>resolved.effectivePermissions.includes(key);
+    if(!has("forum.complaint.review"))throw new ComplaintForbiddenError();
+    const permissions:ReviewCase["permissions"]={
+      identity:has("forum.complaint.reporterIdentity.read"),
+      pin:has("forum.topic.pin"),solution:has("forum.solution.manageAny"),
+      duplicate:has("forum.helpDuplicate.manage"),sourceLocale:has("forum.sourceLocale.correctAny"),
+      solutionModeration:has("forum.solution.manageAny"),
+    };
+    return this.repository.readReview(complaintId(caseId),pages,permissions,has("forum.helpDuplicate.manage"));
+  }
+  async readReviewContext(actor:string,caseId:string,postId:string){
+    await this.require(actor,"forum.complaint.review");
+    return this.repository.readReviewContext(complaintId(caseId),complaintId(postId));
+  }
+  async readReviewEvidence(actor:string,caseId:string,attachmentId:string){
+    await this.require(actor,"forum.complaint.review");
+    return this.repository.readReviewEvidence(complaintId(caseId),complaintId(attachmentId));
   }
   async readAppealCase(actor: string, caseId: string) {
     const elevated = await this.reviewIdentity(actor, "forum.complaint.appeal.review");
