@@ -15,7 +15,7 @@
 
 ## Текущий этап
 
-Independent technical whole-PR review Package 5 / PR #277 завершён на exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f`: **CHANGES REQUIRED — 2 P2 и 2 P3**. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672). Implementation не менял. Следующий шаг — координация bounded correction Мирой; технический план ниже остаётся основанием Package 5.
+Independent technical whole-PR review corrected Package 5 / PR #277 завершён на exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`: **PASS, 0 подтверждённых current-scope дефектов**. Все 4 previous findings закрыты actual Chromium/Worker/PG verification. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6587539354). Implementation не менял. Следующий шаг — coordinator closeout Миры; merge/production/Package 6 не выполнялись.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -367,3 +367,12 @@ Migration **реально необходима** из-за notification shape �
 - Native upgrade/backfill/dual-role dedup/idempotence, concurrent activity и fanout failure rollback PASS; actual participant/identity grant/revoke boundaries PASS.
 - Full local suites: 1735+1 timeout / 454+1 timeout, соответствующие isolated files 14/14 и 12/12 PASS; причины initial timing failures окончательно не установлены. Build/diff PASS, exact-head CI/jobs/tree parity независимо проверены. Implementation чист; свои временные ресурсы остановлены/удалены.
 - Полный опубликованный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672 ; evidence `/workspace/work/review277-evidence/`.
+
+
+## Package 5 corrected-head technical review — 2026-11-02
+
+- Head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`, current main `fb35519fec2520617e0db5c81837782a740e7613`: PASS, findings 0. Main delta от исходного base — только AGENTS, новый регламент применён.
+- Actual Worker/Chromium/PG: Next page1 после 50 events → 200/последние 8, desktop label/copy широкие и читаемые, mixed legacy/system layout+redirect, оба readonly Appeal outcomes EN/RU/HE, строгий invalid POST → 400/private-no-store без изменения read state, valid own open →302. Identity grant/revoke и participant boundaries сохранены.
+- Локальные tests 124/124 (15 files), build/diff PASS; exact-head CI/jobs независимо проверены API. DB/migration/fanout/activity код идентичен прежнему fully-reviewed head; native/full suites в этом correction pass повторно не запускались и не заявляются.
+- Полный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6587539354 ; evidence `/workspace/work/review277-corrected-evidence/`.
+- Implementation чист; свои temporary preview/PG/symlink остановлены/удалены. Следующий шаг — Мира фиксирует coordinator closeout того же unchanged head и дальнейший маршрут владельцу.
