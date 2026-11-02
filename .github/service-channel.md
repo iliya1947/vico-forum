@@ -5,29 +5,31 @@
 ## Актуальное состояние
 
 - Packages 1–4 завершены и merged в `main`.
-- Package 4 merged через PR #276; merge commit/current main: `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
-- Текущий bounded этап: **Package 5 — History + notifications**.
-- Лёва подготовил технический план от main `1ad8a6402111928c0f08e6f15aba624ba18a4426`; [план и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6583152752). Implementation/code/migration Package 5 не создавались.
-- Подтверждённые основания плана: общий inbox уже использует `forum_reply_notifications` reply/mention; его current shape не поддерживает Decision/title result без расширения. Complaint events уже являются источником lifecycle, activity пока только TTL и не сохраняет прошлые посещения.
-- Предложенный план переиспользует общий inbox/read/open/badge и existing complaint events, добавляет forward kind-specific notification schema и atomic Decision fanout, readonly persisted Appeal history и минимальный review-started event. Это ещё не реализованный/утверждённый результат.
-- Следующий шаг: Мира согласует план, включая честную недоступность active Appeal entry до P6 и отсутствие неподтверждённого сообщения о мерах, затем назначает реализацию Лире.
-- Утверждённый продуктовый scope Package 5:
-  1. заменить Complaints History placeholder разрешёнными Cases;
-  2. показывать complaint-specific lifecycle для resolved Cases: complaints, priority changes, review activity, notes, decisions и доступные уже persisted lifecycle records;
-  3. добавить result notifications в общую поверхность уведомлений форума;
-  4. reporter получает confirmed/rejected и только допустимую общую информацию об административных мерах;
-  5. affected content author получает результат по своему контенту и доступный путь апелляции;
-  6. административные Quick actions остаются в существующем admin History и не копируются в Complaints.
-- Граница Package 5: **не реализовывать Package 6 appeal workflow**. Упоминание appeals в History/notifications должно быть согласовано с уже существующим persisted appeal foundation и будущим Package 6 без преждевременной реализации его UI/policy.
-- Система жалоб остаётся отдельной от Signals/Security; отдельный complaint inbox не создаётся.
-- Production/Stage 6 rollout не входит в этап.
+- Текущий этап: **Package 5 — History + notifications**.
+- Лёва подготовил технический план Package 5 от main `1ad8a6402111928c0f08e6f15aba624ba18a4426`; Мира независимо проверила ключевые предпосылки и **утвердила план**.
+- Подтверждено по текущему main:
+  1. Existing `forum_reply_notifications` допускает только reply/mention и требует actor/topic/post; для complaint Decision без dummy references нужна forward schema extension.
+  2. Existing review activity — только TTL lease `forum_complaint_activity`; историческую review activity из него восстановить нельзя. Минимальный `review-started` event в существующем complaint event stream относится к текущему Package 5 scope.
+  3. Atomic Decision + notification fanout в одной transaction совместим с текущим replay/CAS: failure откатывает весь набор, committed retry не должен дублировать rows/read state.
+  4. Readonly уже persisted Appeals в History допустимы; submit/resolve workflow, queue, eligibility/effective-outcome policy и appeal notifications остаются Package 6.
+  5. До Package 6 participant result не показывает фальшивую рабочую Appeal форму/URL; честно сообщает, что подача ещё недоступна.
+  6. Текст «административные меры приняты» не выводится без authoritative Case→sanction факта; current main такой связи не хранит.
+- Утверждённый implementation scope:
+  - real resolved Cases History + bounded lifecycle;
+  - privacy-scoped reviewer/identity projections;
+  - unified notifications surface с typed `complaint-decision`;
+  - deduplicated result notifications фактическим reporters Case и affected content author;
+  - participant result route/DTO;
+  - сохранить admin History отдельно и не копировать Quick actions/sanctions в Complaints.
+- Package 6+, Signals/Security, unrelated admin work и Stage 6/production rollout вне scope.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: следующий шаг — согласование технического плана Package 5 и назначение реализации.
-- Лёва — Codex-6.1 Sol: технический план Package 5 завершён и опубликован; реализацию не начинал.
-- Лира — ChatGPT-6: ждёт согласование плана Мирой и назначение реализации; implementation ещё не начат.
+- Мира — ChatGPT-5.6 Sol: technical plan согласован.
+- Лёва — Codex-6.1 Sol: technical plan завершён; следующий technical reviewer после coordinator PASS.
+- Лира — ChatGPT-6: текущий исполнитель Package 5.
 - Марк — Codex-6 Sol: без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
-Утверждённый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
+Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
+Технический план: [codex-6.1-sol.md](./agents/codex-6.1-sol.md).
