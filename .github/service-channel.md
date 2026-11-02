@@ -5,20 +5,27 @@
 ## Актуальное состояние
 
 - Packages 1–3 завершены и merged в `main`.
-- Package 4 находится в Draft [PR #276](https://github.com/iliya1947/vico-forum/pull/276), новый stable exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`, baseline main `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`.
-- По independent technical review Лёвы на предыдущем head `12d94f308e25f579310b1cf18663697230c10354` найден один current-scope P2, затем подтверждённый Мирой: React Router 8.3.1 Framework single-fetch отправляет targeted `.data?_routes=...`; `reviewPages(request.url)` отвергает внутренний `_routes`, из-за чего Decision 409 reread завершается 400, скрывая Case/draft.
-- Лира исправила только эту границу: `app/routes/complaint-review.tsx` читает normalized route argument `url.href` вместо raw `request.url`. React Router исключает framework-owned `.data`, `index`, `_routes` из этого application URL. `reviewPages` и его строгая проверка пользовательских pagination/unknown/duplicate параметров не изменялись.
-- `app/complaints/review-http.test.ts`: дополнительная HTTP/loader регрессия с raw Framework-style `.data?_routes=...` и отдельным normalized application URL проверяет успешный protected Case read, private/no-store и сохранение 400 для реальных unknown/duplicate/out-of-range application query. Предыдущие четыре реальные Memory Router/UI регрессии Decision conflict recovery остаются.
-- От предыдущего review head изменены **только два файла**: Case route и HTTP test. Schema, domain, permission, public API, Package 5+, production и unrelated refactor не затронуты.
-- **Exact-head CI [#41478096937](https://github.com/iliya1947/vico-forum/actions/runs/41478096937) — SUCCESS:** `checks` + `database` SUCCESS, 1727/1727 application tests (120 files), 452/452 PostgreSQL tests (36 files), typecheck/lint/build/preview/migration/schema checks PASS.
-- Авторский runtime browser/Worker прогон **не выполнялся**; CI и HTTP/loader test не выдаются за independent built-Worker browser acceptance. Новый coordinator и technical whole-PR review ещё не выполнены.
-- Следующий шаг: coordinator whole-PR review Миры на head `7d64933d47c257267d1fa4c6aec63685e9d27344`; после PASS — independent technical review Лёвы того же stable head.
+- Package 4 находится в Draft [PR #276](https://github.com/iliya1947/vico-forum/pull/276), stable exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`, current main/base `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`.
+- Предыдущий technical review выявил current-scope P2 в Framework targeted reread: raw `request.url` содержал `_routes`, а strict `reviewPages` отвечал 400.
+- Лира исправила только эту границу: Case loader валидирует pagination по React Router 8.3.1 normalized `url.href`; raw request framework metadata больше не участвует в application query validation.
+- Мира завершила новый coordinator whole-PR review exact head `7d64933d...`: **PASS, подтверждённых current-scope дефектов — 0**.
+- Проверено:
+  1. Framework-style raw `.data?_routes=...` не попадает в `reviewPages`; normalized application URL сохраняет реальные pagination fields.
+  2. Unknown/duplicate/out-of-range application query по-прежнему отклоняется 400; authorization/private-no-store не ослаблены.
+  3. Первая correction Decision 409 recovery остаётся неизменной: forced reread, frozen reviewedVersion, сохранение draft/outcome/nonce, explicit acknowledgement, без auto-retry; concurrently resolved Case показывает фактический Decision.
+  4. От первоначального fully-reviewed head `0de025e...` после обеих corrections изменены только три файла: `app/routes/complaint-review.tsx`, `app/complaints/review-view.test.tsx`, `app/complaints/review-http.test.ts`. Остальные 27 файлов Package 4 неизменны.
+  5. Exact-head CI #41478096937 — SUCCESS: 1727/1727 application tests (120 files), 452/452 PostgreSQL tests (36 files), lint/typecheck/build/UI preview/migration/schema/runtime/Worker checks SUCCESS.
+  6. CI test-merge `0d435b1b445374670c42cffb5d93372d8d155318` и implementation head имеют одинаковый Git tree `a47613b51aee7716d570562b89228ae8c4c83186`.
+  7. Schema/domain/public API/permissions/Package 5+ не затронуты; docs/PROJECT_STATE остаются согласованы.
+- Отдельный live built-Worker/Chromium прогон нового head Мирой не выполнялся и не заявляется; без конкретной новой непроверяемой гипотезы это не отдельный coordinator gate. Лёва проверяет runtime boundary в своём independent technical review.
+- Следующий шаг: independent technical whole-PR review Лёвы того же exact head. Implementation в рамках review не менять.
+- Production rollout и merge вне текущего review scope.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: следующий coordinator whole-PR reviewer.
-- Лира — ChatGPT-6: bounded runtime correction завершена; до новых подтверждённых findings изменений не вносит.
-- Лёва — Codex-6.1 Sol: technical reviewer после coordinator PASS.
+- Мира — ChatGPT-5.6 Sol: coordinator PASS завершён.
+- Лира — ChatGPT-6: corrections завершены; новых изменений не выполняет.
+- Лёва — Codex-6.1 Sol: текущий independent technical reviewer PR #276.
 - Марк — Codex-6 Sol: без текущего назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
