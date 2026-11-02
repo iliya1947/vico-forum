@@ -113,6 +113,15 @@ export class ComplaintsService {
     if (!result.appeals.length) throw new ComplaintForbiddenError("no appeal in this case");
     return result;
   }
+  async readAppealQueue(actor:string,page:number){
+    await this.require(actor,"forum.complaint.appeal.review");
+    if(!Number.isSafeInteger(page)||page<0||page>10000)throw new ComplaintInputError("invalid page");
+    return this.repository.readAppealQueue(actor,page);
+  }
+  async readAppealCaseForReviewer(actor:string,caseId:string,appealId:string){
+    const identities=await this.reviewIdentity(actor,"forum.complaint.appeal.review");
+    return this.repository.readAppealCaseForReviewer(complaintId(caseId),complaintId(appealId),identities);
+  }
   async readOwnResult(actor: string, caseId: string) {
     return this.repository.readOwnResult(complaintId(actor), complaintId(caseId));
   }

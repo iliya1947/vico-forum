@@ -1,5 +1,6 @@
+import {deriveAppealPolicy,type AppealState} from "./complaint-appeal-policy";
 import { readComplaintResolvedHistory, readComplaintTimeline } from "./complaint-history-read";
-import { insertComplaintDecisionNotifications } from "./forum-notifications";
+import { insertComplaintDecisionNotifications,insertComplaintAppealResultNotifications } from "./forum-notifications";
 import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject} from "./complaint-review-read";
 import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
 import { createHash, randomUUID } from "node:crypto";
@@ -257,51 +258,60 @@ export class DrizzleComplaintsRepository {
     });
   }
 
-  async appeal(actorId: string, input: AppealComplaint) {
-    const fingerprint = digest("appeal", input);
-    return this.database.transaction(async tx => {
-      await this.actorMutex(tx, actorId);
-      const c = await this.lockCase(tx, input.caseId);
-      const replay = await this.replay(tx, actorId, input.operationId, fingerprint);
-      if (replay) return replay.entityId;
-      if (c.state !== "resolved" || c.initialDecisionId !== input.decisionId) throw new ComplaintConflictError("decision changed");
-      const r = await tx.execute<{ outcome: ComplaintOutcome; author: string }>(sql`select d.outcome,t.affected_author_id as author
+  async appeal(actorId:string,input:AppealComplaint){
+    const fingerprint=digest("appeal",input);
+    return this.database.transaction(async tx=>{
+      await this.actorMutex(tx,actorId);
+      const c=await this.lockCase(tx,input.caseId);
+      const replay=await this.replay(tx,actorId,input.operationId,fingerprint);
+      if(replay)return replay.entityId;
+      if(c.state!=="resolved"||c.initialDecisionId!==input.decisionId)
+        throw new ComplaintConflictError("decision changed");
+      const result=await tx.execute<{outcome:ComplaintOutcome;author:string}>(sql`
+        select d.outcome,t.affected_author_id as author
         from forum_complaint_decisions d join forum_complaint_cases c on c.id=d.case_id
-        join forum_complaint_targets t on t.id=c.target_id where d.id=${input.decisionId} and c.id=${c.id}`);
-      const decision = r.rows[0]!;
-      let side: "author" | "reporter";
-      if (decision.outcome === "confirmed" && decision.author === actorId) side = "author";
-      else if (decision.outcome === "not-confirmed") {
-        const own = await tx.execute(sql`select id from forum_complaints where case_id=${c.id} and reporter_user_id=${actorId} limit 1`);
-        if (!own.rows.length) throw new ComplaintForbiddenError("not a participant in this direction");
-        side = "reporter";
-      } else throw new ComplaintForbiddenError("not a participant in this direction");
-      const existing = await tx.execute<{ ordinal: number; status: string }>(sql`select ordinal,status from forum_complaint_appeals
+        join forum_complaint_targets t on t.id=c.target_id
+        where d.id=${input.decisionId} and c.id=${c.id}`);
+      const initial=result.rows[0];
+      if(!initial)throw new ComplaintConflictError("initial decision unavailable");
+      const rows=await tx.execute<AppealState & Record<string,unknown>>(sql`
+        select ordinal,status,outcome from forum_complaint_appeals
         where decision_id=${input.decisionId} order by ordinal`);
-      if (existing.rows.length >= 3) throw new ComplaintConflictError("appeal limit reached");
-      // Only the first appeal is product-unambiguous. Storage supports 1..3; no pending uniqueness policy.
-      if (existing.rows.length) throw new ComplaintPolicyRequiredError("subsequent appeal transitions require product policy");
-      const id = randomUUID();
-      await tx.execute(sql`insert into forum_complaint_appeals(id,case_id,decision_id,appellant_user_id,side,argument,ordinal,created_at)
-        values (${id},${c.id},${input.decisionId},${actorId},${side},${input.argument},1,statement_timestamp())`);
-      await this.event(tx, actorId, input, fingerprint, "appealed", id);
+      const policy=deriveAppealPolicy(initial.outcome,rows.rows);
+      if(policy.pending||policy.remaining===0)throw new ComplaintConflictError("appeal not eligible");
+      if(policy.eligibleSide==="author"){
+        if(initial.author!==actorId)throw new ComplaintForbiddenError("not a participant in this direction");
+      }else{
+        const own=await tx.execute(sql`select id from forum_complaints
+          where case_id=${c.id} and reporter_user_id=${actorId} limit 1`);
+        if(!own.rows.length)throw new ComplaintForbiddenError("not a participant in this direction");
+      }
+      const id=randomUUID();
+      await tx.execute(sql`insert into forum_complaint_appeals
+        (id,case_id,decision_id,appellant_user_id,side,argument,ordinal,created_at)
+        values (${id},${c.id},${input.decisionId},${actorId},${policy.eligibleSide},
+          ${input.argument},${policy.used+1},statement_timestamp())`);
+      await this.event(tx,actorId,input,fingerprint,"appealed",id);
       return id;
     });
   }
 
-  async resolveAppeal(actorId: string, input: ResolveComplaintAppeal) {
-    const fingerprint = digest("resolve-appeal", input);
-    return this.database.transaction(async tx => {
-      await this.actorMutex(tx, actorId);
-      await this.lockCase(tx, input.caseId);
-      const replay = await this.replay(tx, actorId, input.operationId, fingerprint);
-      if (replay) return replay.entityId;
-      const r = await tx.execute(sql`update forum_complaint_appeals set status='resolved',outcome=${input.outcome},
+  async resolveAppeal(actorId:string,input:ResolveComplaintAppeal){
+    const fingerprint=digest("resolve-appeal",input);
+    return this.database.transaction(async tx=>{
+      await this.actorMutex(tx,actorId);
+      const c=await this.lockCase(tx,input.caseId);
+      const replay=await this.replay(tx,actorId,input.operationId,fingerprint);
+      if(replay)return replay.entityId;
+      if(c.state!=="resolved"||!c.initialDecisionId)throw new ComplaintConflictError("case not resolved");
+      const updated=await tx.execute(sql`
+        update forum_complaint_appeals set status='resolved',outcome=${input.outcome},
         reasoning=${input.reasoning},reviewer_user_id=${actorId},resolved_at=statement_timestamp()
-        where id=${input.appealId} and case_id=${input.caseId} and status='pending' returning id`);
-      if (!r.rows.length) throw new ComplaintConflictError("appeal is not the expected pending appeal");
-      await this.event(tx, actorId, input, fingerprint, "appeal-resolved", input.appealId);
-      // Original Decision remains immutable; no sanctions or speculative re-appeal/effective-outcome policy.
+        where id=${input.appealId} and case_id=${c.id} and decision_id=${c.initialDecisionId}
+        and status='pending' returning id`);
+      if(!updated.rows.length)throw new ComplaintConflictError("appeal is not the expected pending appeal");
+      await this.event(tx,actorId,input,fingerprint,"appeal-resolved",input.appealId);
+      await insertComplaintAppealResultNotifications(tx,c.id,input.appealId);
       return input.appealId;
     });
   }
@@ -359,18 +369,33 @@ export class DrizzleComplaintsRepository {
   async readReviewContext(caseId:string,postId:string){return readComplaintContextPost(this.database,caseId,postId);}
   async readReviewEvidence(caseId:string,attachmentId:string){return readComplaintEvidenceObject(this.database,caseId,attachmentId);}
 
-  async readOwnResult(actorId: string, caseId: string) {
-    const r = await this.database.execute<{ caseId: string; decisionId: string; outcome: ComplaintOutcome; reasoning: string;
-      decidedAt: Date; affectedAuthor: boolean; reporter: boolean }>(sql`
-      select c.id as "caseId",d.id as "decisionId",d.outcome,d.reasoning,d.created_at as "decidedAt",
-        (t.affected_author_id=${actorId}) as "affectedAuthor",
-        exists(select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${actorId}) as reporter
-      from forum_complaint_cases c join forum_complaint_targets t on t.id=c.target_id
-      join forum_complaint_decisions d on d.id=c.initial_decision_id and d.case_id=c.id
-      where c.id=${caseId} and (t.affected_author_id=${actorId} or exists
-        (select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${actorId}))`);
-    if (!r.rows[0]) throw new ComplaintNotFoundError("result not found");
-    return r.rows[0];
+  async readOwnResult(actorId:string,caseId:string){
+    return this.database.transaction(async tx=>{
+      const member=await tx.execute<{caseId:string;decisionId:string;outcome:ComplaintOutcome;
+        reasoning:string;decidedAt:Date;affectedAuthor:boolean;reporter:boolean}>(sql`
+        select c.id as "caseId",d.id as "decisionId",d.outcome,d.reasoning,d.created_at as "decidedAt",
+          t.affected_author_id=${actorId} as "affectedAuthor",
+          exists(select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${actorId}) as reporter
+        from forum_complaint_cases c join forum_complaint_targets t on t.id=c.target_id
+        join forum_complaint_decisions d on d.id=c.initial_decision_id and d.case_id=c.id
+        where c.id=${caseId} and (t.affected_author_id=${actorId} or exists(
+          select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${actorId}))`);
+      const own=member.rows[0];
+      if(!own)throw new ComplaintNotFoundError("result not found");
+      const appeals=await tx.execute<AppealState & Record<string,unknown> & {
+        id:string;side:"author"|"reporter";resolvedAt:Date|null;reasoning:string|null;
+        ownArgument:string|null
+      }>(sql`select id,ordinal,side,status,outcome,reasoning,resolved_at as "resolvedAt",
+        case when appellant_user_id=${actorId} then argument else null end as "ownArgument"
+        from forum_complaint_appeals where case_id=${caseId} and decision_id=${own.decisionId}
+        order by ordinal`);
+      const policy=deriveAppealPolicy(own.outcome,appeals.rows);
+      return {...own,...policy,appeals:appeals.rows.map(row=>({
+        id:row.id,ordinal:row.ordinal,side:row.side,status:row.status,outcome:row.outcome,
+        reasoning:row.reasoning,resolvedAt:row.resolvedAt,ownArgument:row.ownArgument
+      })),canAppeal:!policy.pending&&policy.remaining>0&&
+        (policy.eligibleSide==="author"?own.affectedAuthor:own.reporter)};
+    },{isolationLevel:"repeatable read",accessMode:"read only"});
   }
 }
 
