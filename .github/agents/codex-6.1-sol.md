@@ -15,7 +15,7 @@
 
 ## Текущий этап
 
-Package 4 merged через #276 в main `1ad8a6402111928c0f08e6f15aba624ba18a4426`. Технический план Package 5 — History + notifications подготовлен и приведён в конце файла. Следующий шаг — согласование Мирой и затем назначение Лире. Код/migration/implementation PR Package 5 не создавались. Ранее завершённые P4 checkpoints ниже сохранены как контекст.
+Independent technical whole-PR review Package 5 / PR #277 завершён на exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f`: **CHANGES REQUIRED — 2 P2 и 2 P3**. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672). Implementation не менял. Следующий шаг — координация bounded correction Мирой; технический план ниже остаётся основанием Package 5.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -355,3 +355,15 @@ Migration **реально необходима** из-за notification shape �
 
 До согласования плана Лёва реализацию не начинает; Package 6+ и Stage 6 не выполняются.
 
+
+
+## Package 5 technical whole-PR review — 2026-11-02
+
+- Exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f`, main `1ad8a6402111928c0f08e6f15aba624ba18a4426`: CHANGES REQUIRED.
+- P2: positive timeline pages отвергаются regexp в complaint-history route; actual Next page=1 даёт 400 при 58 events, native page1 содержит 8 records.
+- P2: avatar-less Decision card на desktop оставляет copy в 52px avatar column; видимый label «C…». Browser-only explicit-column control восстанавливает ширину >1032px.
+- P3: persisted Appeal outcome выводится raw upheld/overturned вместо localized labels.
+- P3: согласованная P5 strict POST boundary не выполнена: duplicates/unknown fields и >65KiB body принимаются. Ownership сохраняется, auth bypass не заявляется; tolerant parser существовал раньше, scope — согласованное требование P5.
+- Native upgrade/backfill/dual-role dedup/idempotence, concurrent activity и fanout failure rollback PASS; actual participant/identity grant/revoke boundaries PASS.
+- Full local suites: 1735+1 timeout / 454+1 timeout, соответствующие isolated files 14/14 и 12/12 PASS; причины initial timing failures окончательно не установлены. Build/diff PASS, exact-head CI/jobs/tree parity независимо проверены. Implementation чист; свои временные ресурсы остановлены/удалены.
+- Полный опубликованный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672 ; evidence `/workspace/work/review277-evidence/`.
