@@ -93,6 +93,32 @@ describe("notifications route", () => {
     });
   });
 
+  it("rejects duplicate, unknown, oversized and invalid notification POST before mutation",async()=>{
+    const contextValue=context();
+    const markNotificationRead=vi.fn();
+    contextValue.set(forumWriterContext,{markNotificationRead} as never);
+    const request=(body:BodyInit,contentType="application/x-www-form-urlencoded")=>new Request(
+      "https://forum.example/en/notifications",{method:"POST",
+      headers:{Origin:"https://forum.example","Content-Type":contentType},body});
+    const invalid=[
+      request("intent=open&notificationId=notification-1&notificationId=other"),
+      request("intent=open&intent=open&notificationId=notification-1"),
+      request("intent=open&notificationId=notification-1&extra=value"),
+      request("intent=open&notificationId=notification-1&padding="+"x".repeat(65536)),
+      request("intent=open&notificationId="+"x".repeat(129)),
+      request("intent=open&notificationId=%20%20"),
+      request("intent=edit&notificationId=notification-1"),
+      request("intent=open"),
+      request("intent=open&notificationId=notification-1","text/plain"),
+      request(new Uint8Array([255])),
+    ];
+    for(const item of invalid){
+      const result=await action({request:item,params:{locale:"en"},context:contextValue});
+      expect(responseStatus(result)).toBe(400);
+    }
+    expect(markNotificationRead).not.toHaveBeenCalled();
+  });
+
   it("rejects a guest action before reading notification storage", async () => {
     const value = context(false);
     const markNotificationRead = vi.fn();
