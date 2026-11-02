@@ -47,7 +47,7 @@ export function ComplaintTimelineEventItem({event}:{event:ComplaintTimelineEvent
   {(event.kind==="appealed"||event.kind==="appeal-resolved")&&
     (event.appealSide==="author"||event.appealSide==="reporter")&&event.appealOrdinal!==null?
     <p>{t(event.appealSide==="author"?"complaintHistoryAppealSideAuthor":"complaintHistoryAppealSideReporter")}
-      {" · "}{t("complaintHistoryAppealOrdinal",{ordinal:event.appealOrdinal})}</p>:null}
+      {" · "}{t("complaintHistoryAppealOrdinal",{number:event.appealOrdinal})}</p>:null}
   {event.appealArgument?<p dir="auto">{event.appealArgument}</p>:null}
   {event.appellantName?<p>{event.appellantName} ({event.appellantId})</p>:null}
   {event.kind==="appeal-resolved"&&event.appealOutcome?<p>{event.appealOutcome}</p>:null}
