@@ -86,7 +86,7 @@ export class ComplaintsService {
       duplicate:has("forum.helpDuplicate.manage"),sourceLocale:has("forum.sourceLocale.correctAny"),
       solutionModeration:has("forum.solution.manageAny"),
     };
-    return this.repository.readReview(complaintId(caseId),pages,permissions,has("forum.helpDuplicate.manage"));
+    return this.repository.readReview(actor,complaintId(caseId),pages,permissions,has("forum.helpDuplicate.manage"));
   }
   async readReviewContext(actor:string,caseId:string,postId:string){
     await this.require(actor,"forum.complaint.review");
