@@ -96,7 +96,7 @@ Simple paste проверяет disabled до передачи plain/HTML/spread
 
 ## AP-01 — постоянный контракт обычной админ-панели (2026-10-29)
 
-Добавлен [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — постоянный контракт утверждённой
+Добавлен [`docs/ADMIN_PANEL.md`](../ADMIN_PANEL.md) — постоянный контракт утверждённой
 структуры, admission/section/action matrix, общего Quick actions, significant-action/reason
 matrix и отдельных границ «Требуют внимания» и будущей super-admin UI. Согласованы необходимые
 ссылки и scope формулировки в product, authorization, UI/UX и roadmap документах.
