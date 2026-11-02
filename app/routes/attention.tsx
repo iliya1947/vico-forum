@@ -1,3 +1,5 @@
+import {complaintAppealContext} from "../complaints/appeal-context";
+import type {PendingAppealsPage} from "../../db/complaint-appeal-read";
 import {strictPageQuery} from "../complaints/page-query";
 import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-read";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
@@ -47,7 +49,7 @@ export async function loader({ request, params, context, url }: {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
-  let permissions: [boolean, boolean, boolean, boolean, boolean, boolean];
+  let permissions: [boolean, boolean, boolean, boolean, boolean, boolean, boolean];
   try {
     const authorization = authorizationForRequest(context).forUser(session.user.id);
     permissions = await Promise.all([
@@ -57,6 +59,7 @@ export async function loader({ request, params, context, url }: {
       authorization.has("forum.attachmentSecurity.read"),
       authorization.has("forum.complaint.review"),
       authorization.has("forum.complaint.priority.manage"),
+      authorization.has("forum.complaint.appeal.review"),
     ]);
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
@@ -64,27 +67,27 @@ export async function loader({ request, params, context, url }: {
     }
     throw error;
   }
-  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities] = permissions;
+  const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities,canReviewAppeals] = permissions;
   const canViewHelpAttention = canViewSolutionModeration || canViewDuplicateDispute || canManageNeedsDetails;
 
   const query = (url??new URL(request.url)).searchParams;
   const requestedMode = query.get("mode");
   const mode: AttentionMode = requestedMode === "signals" || requestedMode === "complaints" || requestedMode === "security"
-    ? requestedMode : canViewHelpAttention ? "signals" : canReviewComplaints || canManageComplaintPriorities ? "complaints" : "security";
+    ? requestedMode : canViewHelpAttention ? "signals" : canReviewComplaints || canReviewAppeals || canManageComplaintPriorities ? "complaints" : "security";
   const requestedGroup = query.get("group") as AttentionGroup | null;
   const allowedGroups = mode === "signals" ? SIGNAL_GROUPS : mode === "security" ? SECURITY_GROUPS : COMPLAINT_GROUPS;
   const group: AttentionGroup = requestedGroup && allowedGroups.has(requestedGroup)
     ? requestedGroup
-    : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : "group1";
-  if(mode === "complaints" && !canReviewComplaints && canManageComplaintPriorities)
+    : mode === "signals" ? "needs-details" : mode === "security" ? "attachments" : canReviewComplaints ? "group1" : canReviewAppeals ? "group2" : "group1";
+  if(mode === "complaints" && !canReviewComplaints && !canReviewAppeals && canManageComplaintPriorities)
     throw redirect(`/${encodeURIComponent(params.locale??"en")}/attention/complaints/settings`);
   // Each mode checks its own capability before reading a protected queue.
-  if (mode === "security" ? !canReadSecurityAttachments : mode === "complaints" ? !canReviewComplaints : !canViewHelpAttention) {
+  if (mode === "security" ? !canReadSecurityAttachments : mode === "complaints" ? (group==="group2"?!canReviewAppeals:!canReviewComplaints) : !canViewHelpAttention) {
     throw new Response("Forbidden", { status: 403 });
   }
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
-  const pageIndex = mode==="complaints"&&(group==="group3"||query.getAll("group").includes("group3"))
+  const pageIndex = mode==="complaints"&&(group==="group2"||group==="group3"||query.getAll("group").includes("group3")||query.getAll("group").includes("group2"))
     ? strictPageQuery(query,["mode","group","page"])
     : Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000
       ? pageNumber : 0;
@@ -110,12 +113,22 @@ export async function loader({ request, params, context, url }: {
   let counts: ForumAttentionQueueCounts | null = null;
   let complaintQueue: ComplaintQueuePage | null = null;
   let complaintHistory: ComplaintResolvedHistoryPage | null = null;
+  let complaintAppeals:PendingAppealsPage|null=null;
   if(mode==="complaints"&&group==="group1"){
     try{complaintQueue=await context.get(complaintQueueContext).readQueue(session.user.id,pageIndex);
       complaintQueue={...complaintQueue,cases:await presentComplaintCases(context,complaintQueue.cases)};}
     catch(error){
       if(error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError)throw new Response("Unavailable",{status:503});
       if(error instanceof ComplaintForbiddenError)throw new Response("Forbidden",{status:403});
+      throw error;
+    }
+  }
+  if(mode==="complaints"&&group==="group2"){
+    try{complaintAppeals=await context.get(complaintAppealContext).pendingQueue(session.user.id,pageIndex);}
+    catch(error){
+      if(error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError)
+        throw new Response("Unavailable",{status:503,headers:{"Cache-Control":"private, no-store"}});
+      if(error instanceof ComplaintForbiddenError)throw new Response("Forbidden",{status:403,headers:{"Cache-Control":"private, no-store"}});
       throw error;
     }
   }
@@ -171,8 +184,8 @@ export async function loader({ request, params, context, url }: {
     }
   }
 
-  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue, complaintHistory,
-    canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities, referenceTime: new Date().toISOString() };
+  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue, complaintHistory,complaintAppeals,
+    canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, canReviewAppeals,canManageComplaintPriorities, referenceTime: new Date().toISOString() };
 }
 
 export async function action({ request, context }: {

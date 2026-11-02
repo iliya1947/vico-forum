@@ -159,8 +159,8 @@ function publicDiscoveryLocation(row: {
 }
 
 export interface ForumNotificationSummary {
-  id:string;kind:"reply"|"mention"|"complaint-decision";actorName:string|null;
-  topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;
+  id:string;kind:"reply"|"mention"|"complaint-decision"|"complaint-appeal-result";actorName:string|null;
+  topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;appealId?:string|null;
   createdAt:Date;readAt:Date|null;
 }
 export interface ForumNotificationPage {
@@ -168,6 +168,7 @@ export interface ForumNotificationPage {
 }
 export type ForumNotificationTarget =
   | {kind:"complaint-decision";caseId:string}
+  | {kind:"complaint-appeal-result";caseId:string;appealId:string}
   | {kind:"reply"|"mention";topicId:string;postId:string};
 
 export interface ForumReplyNotificationSummary {
@@ -1401,12 +1402,13 @@ export class DrizzleForumRepository {
       const rows=await tx.execute<ForumNotificationSummary & Record<string,unknown>>(sql`
         select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
           actor.name as "actorName",n.topic_id as "topicId",title.original_content as "topicTitle",
-          n.post_id as "postId",d.case_id as "caseId"
+          n.post_id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
         from forum_reply_notifications n
         left join "user" actor on actor.id=n.actor_user_id and n.kind in ('reply','mention')
         left join forum_topics topic on topic.id=n.topic_id
         left join forum_topic_title_revisions title on title.topic_id=topic.id and title.id=topic.current_title_revision_id
         left join forum_complaint_decisions d on d.id=n.complaint_decision_id and n.kind='complaint-decision'
+        left join forum_complaint_appeals a on a.id=n.complaint_appeal_id and n.kind='complaint-appeal-result'
         where n.recipient_user_id=${userId}
         order by case when n.read_at is null then 0 else 1 end,n.created_at desc,n.id desc
         limit 51 offset ${page*50}`);
@@ -1423,15 +1425,16 @@ export class DrizzleForumRepository {
 
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
     return this.database.transaction(async tx=>{
-      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;topicId:string|null;postId:string|null}>(sql`
-        select n.kind,d.case_id as "caseId",n.topic_id as "topicId",n.post_id as "postId"
+      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null}>(sql`
+        select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",n.topic_id as "topicId",n.post_id as "postId"
         from forum_reply_notifications n
         left join forum_complaint_decisions d on d.id=n.complaint_decision_id
+        left join forum_complaint_appeals a on a.id=n.complaint_appeal_id
         where n.id=${notificationId} and n.recipient_user_id=${userId}
         for update of n`);
       const n=row.rows[0];
       if(!n)throw new ForumEntityNotFoundError("notification not found");
-      if(n.kind==="complaint-decision"){
+      if(n.kind==="complaint-decision"||n.kind==="complaint-appeal-result"){
         if(!n.caseId)throw new ForumEntityNotFoundError("notification target missing");
         const member=await tx.execute(sql`select 1 from forum_complaint_cases c
           join forum_complaint_targets t on t.id=c.target_id
@@ -1439,7 +1442,7 @@ export class DrizzleForumRepository {
             select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${userId}))`);
         if(!member.rows.length)throw new ForumEntityNotFoundError("notification not found");
         await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
-        return {kind:"complaint-decision" as const,caseId:n.caseId};
+        return n.kind==="complaint-appeal-result"&&n.appealId?{kind:n.kind,caseId:n.caseId,appealId:n.appealId}:{kind:"complaint-decision" as const,caseId:n.caseId};
       }
       if(!n.topicId||!n.postId)throw new ForumEntityNotFoundError("notification target missing");
       await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
