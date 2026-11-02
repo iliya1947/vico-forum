@@ -160,7 +160,7 @@ function publicDiscoveryLocation(row: {
 
 export interface ForumNotificationSummary {
   id:string;kind:"reply"|"mention"|"complaint-decision";actorName:string|null;
-  topicId:string|null;topicTitle:string|null;postId:string|null;caseId:string|null;
+  topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;
   createdAt:Date;readAt:Date|null;
 }
 export interface ForumNotificationPage {
@@ -1398,7 +1398,7 @@ export class DrizzleForumRepository {
     if(!Number.isSafeInteger(page)||page<0||page>10000)throw new RangeError("invalid page");
     return this.database.transaction(async tx=>{
       const total=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_reply_notifications where recipient_user_id=${userId}`);
-      const rows=await tx.execute<ForumNotificationSummary>(sql`
+      const rows=await tx.execute<ForumNotificationSummary & Record<string,unknown>>(sql`
         select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
           actor.name as "actorName",n.topic_id as "topicId",title.original_content as "topicTitle",
           n.post_id as "postId",d.case_id as "caseId"

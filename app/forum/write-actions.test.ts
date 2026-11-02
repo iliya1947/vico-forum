@@ -186,6 +186,7 @@ function writer() {
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
     markReplyNotificationRead: vi.fn(async () => ({ topicId: "topic-1", postId: "post-1" })),
+    markNotificationRead: vi.fn(async () => ({ kind:"reply" as const,topicId:"topic-1",postId:"post-1" })),
     pinTopic: vi.fn(async () => undefined),
     unpinTopic: vi.fn(async () => undefined),
   } satisfies ForumWriter;
