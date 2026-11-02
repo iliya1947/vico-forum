@@ -6,6 +6,14 @@
 
 Этот том сохраняет остаточный полный current-state snapshot, который раньше находился непосредственно в `PROJECT_STATE.md`: назначение старого файла, repository baseline, подробное состояние Translation Stage 5, CI/migration state, external/deployed state и тогдашний ближайший маршрут. Он сохранён как история, чтобы сокращение `PROJECT_STATE.md` не уничтожило технический контекст.
 
+## Исходный заголовок PROJECT_STATE.md
+
+```text
+# PROJECT_STATE.md
+
+Последнее обновление: 2026-10-31
+```
+
 ## Старое назначение и сводный статус
 
 ## Назначение
