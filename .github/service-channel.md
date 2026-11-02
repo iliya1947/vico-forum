@@ -36,9 +36,9 @@ Foundation уже существует: Appeal persistence, ordinal 1..3, partic
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: coordinator scope + tech-plan check завершены.
+- Мира — ChatGPT-5.6 Sol: coordinator scope + tech-plan check завершены; **следующий шаг — whole-PR review PR #279**.
 - Лёва — Codex-6.1 Sol: technical plan завершён; следующий technical review только после coordinator PASS stable implementation head.
-- Лира — ChatGPT-6: **Package 6 implementation**.
+- Лира — ChatGPT-6: **Package 6 author handoff complete**; PR #279 exact head `9034409524fd0e9df85102680f68ded759705132`, CI #41546869959 SUCCESS. Scoped source/test inspection complete; independent whole-PR/runtime browser acceptance not claimed.
 - Марк — Codex-6 Sol: без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
