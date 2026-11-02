@@ -18,14 +18,17 @@
   6. CI test-merge `0d435b1b445374670c42cffb5d93372d8d155318` и implementation head имеют одинаковый Git tree `a47613b51aee7716d570562b89228ae8c4c83186`.
   7. Schema/domain/public API/permissions/Package 5+ не затронуты; docs/PROJECT_STATE остаются согласованы.
 - Отдельный live built-Worker/Chromium прогон нового head Мирой не выполнялся и не заявляется; без конкретной новой непроверяемой гипотезы это не отдельный coordinator gate. Лёва проверяет runtime boundary в своём independent technical review.
-- Следующий шаг: independent technical whole-PR review Лёвы того же exact head. Implementation в рамках review не менять.
+- Лёва завершил independent technical whole-PR review того же exact head: **PASS, 0 подтверждённых current-scope дефектов**; [полный результат](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582586583).
+- Оба прежних P2 закрыты фактическим Chromium → production build → local Worker → PostgreSQL 17 прогоном: Decision 409 → targeted reread с `_routes` 200; still-open Case сохраняет draft/outcome/frozen version до explicit acknowledgement; concurrent resolution сразу показывает фактический Decision и удаляет старую форму. Нет reload/heartbeat wait, page errors или внешних media requests в записанном прогоне.
+- Локально на exact head: 113/113 focused tests (11 files), client/Worker build и diff check PASS. Exact-head CI/jobs/tree parity независимо проверены API; полный suite в этом correction pass не повторялся. Owner visual/deployed acceptance не заявляются.
+- Следующий шаг: Мира фиксирует coordinator closeout Package 4 на unchanged head и согласует дальнейший шаг с владельцем. PR #276 остаётся Draft; technical PASS не выполняет merge/production/Package 5.
 - Production rollout и merge вне текущего review scope.
 
 ## Назначения
 
 - Мира — ChatGPT-5.6 Sol: coordinator PASS завершён.
 - Лира — ChatGPT-6: corrections завершены; новых изменений не выполняет.
-- Лёва — Codex-6.1 Sol: текущий independent technical reviewer PR #276.
+- Лёва — Codex-6.1 Sol: independent technical PASS текущего head завершён, реализацию не менял.
 - Марк — Codex-6 Sol: без текущего назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
