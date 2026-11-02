@@ -11,7 +11,7 @@ import { readComplaintQueue } from "./complaint-queue-read";
 import { COMPLAINT_ACTIVITY_SECONDS, type ComplaintPrioritySettings, type ComplaintPrioritySettingsCommand, type ComplaintPriorityCommand } from "../app/complaints/queue-contract";
 import {
   ComplaintConflictError, ComplaintForbiddenError, ComplaintNotFoundError,
-  ComplaintPolicyRequiredError, ComplaintRateLimitError, COMPLAINT_SUBMISSION_LIMITS,
+  ComplaintRateLimitError, COMPLAINT_SUBMISSION_LIMITS,
   type ComplaintOutcome, type ComplaintReason, type ComplaintTarget,
 } from "./complaints-domain";
 

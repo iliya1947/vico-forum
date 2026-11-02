@@ -5,7 +5,7 @@ import { Client, Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
-import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError, ComplaintPolicyRequiredError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
+import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
@@ -324,14 +324,14 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     await expectCode(client.query("update forum_complaint_cases set initial_decision_id=$1 where id=$2",[randomUUID(),c.caseId]),"23503");
     expect((await service().readCase("reviewer",c.caseId)).events.items.map(e=>e.kind)).toEqual(["submitted","decided"]);
   });
-  it("persists first appeals in both directions and preserves unspecified later transition policy", async () => {
+  it("persists first Appeals in both directions with pending lock and exact replay", async () => {
     for (const outcome of ["confirmed","not-confirmed"] as const) {
       const c = await decision(outcome), actor = outcome === "confirmed" ? "content-author" : "reporter-one";
       const input = {caseId:c.caseId,decisionId:c.decisionId,argument:"Please reconsider",operationId:randomUUID()};
       await expect(service().appeal("outsider",input)).rejects.toBeInstanceOf(ComplaintForbiddenError);
       const appealId = await service().appeal(actor,input);
       expect(await service().appeal(actor,input)).toBe(appealId);
-      await expect(service().appeal(actor,{...input,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintPolicyRequiredError);
+      await expect(service().appeal(actor,{...input,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
       const resolution = {caseId:c.caseId,appealId,outcome:"overturned" as const,reasoning:"Appeal result",operationId:randomUUID()};
       expect(await service().resolveAppeal("appeal-reviewer",resolution)).toBe(appealId);
       expect(await service().resolveAppeal("appeal-reviewer",resolution)).toBe(appealId);
@@ -341,14 +341,49 @@ describe("complaints domain foundation / real PostgreSQL", () => {
       await expectCode(client.query("update forum_complaint_appeals set argument='changed' where id=$1",[appealId]),"55000");
     }
   });
-  it("has a database-enforced three-appeal total and same-case ownership without imposing one-pending uniqueness", async () => {
+  it("enforces one pending Appeal and three-slot ordinal bounds", async () => {
     const c = await decision(), other = await decision();
     const insert = (ordinal: number, caseId = c.caseId, decisionId = c.decisionId) => client.query(`insert into forum_complaint_appeals
       (id,case_id,decision_id,appellant_user_id,side,argument,ordinal) values ($1,$2,$3,'reporter-one','reporter','Argument',$4)`,[randomUUID(),caseId,decisionId,ordinal]);
-    await insert(1); await insert(2); await insert(3);
+    await insert(1);
+    await expectCode(insert(2),"23505");
     await expectCode(insert(4),"23514");
-    await expectCode(insert(3),"23505");
+    await expectCode(insert(1),"23505");
     await expectCode(insert(1,c.caseId,other.decisionId),"23503");
+  });
+  it("Package 6 flips effective outcomes through 3 slots, blocks pending and notifies every participant",async()=>{
+    const c=await decision("confirmed");
+    const one={caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"First Appeal"};
+    const id1=await service().appeal("content-author",one);
+    expect(await service().appeal("content-author",one)).toBe(id1);
+    await expect(service().appeal("content-author",{...one,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
+    const afterOne=await service().readOwnResult("content-author",c.caseId);
+    expect(afterOne).toMatchObject({outcome:"confirmed",effectiveOutcome:"confirmed",pending:true,remaining:2,canAppeal:false});
+    const res=(id:string,outcome:"upheld"|"overturned")=>service().resolveAppeal("appeal-reviewer",{
+      caseId:c.caseId,appealId:id,operationId:randomUUID(),reasoning:"Public Appeal result",outcome});
+    await res(id1,"overturned");
+    expect(await service().readOwnResult("reporter-one",c.caseId)).toMatchObject({
+      outcome:"confirmed",effectiveOutcome:"not-confirmed",canAppeal:true,remaining:2});
+    const id2=await service().appeal("reporter-one",{caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"Second Appeal"});
+    await res(id2,"overturned");
+    expect(await service().readOwnResult("content-author",c.caseId)).toMatchObject({effectiveOutcome:"confirmed",canAppeal:true,remaining:1});
+    const id3=await service().appeal("content-author",{caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"Third Appeal"});
+    await res(id3,"upheld");
+    const end=await service().readOwnResult("content-author",c.caseId);
+    expect(end).toMatchObject({outcome:"confirmed",effectiveOutcome:"confirmed",remaining:0,used:3,canAppeal:false});
+    expect(end.appeals.map(a=>a.ordinal)).toEqual([1,2,3]);
+    expect(end.appeals.every(a=>a.status==="resolved")).toBe(true);
+    await expect(service().appeal("content-author",{...one,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
+    const rows=await client.query<{recipient_user_id:string;complaint_appeal_id:string}>(`
+      select recipient_user_id,complaint_appeal_id from forum_reply_notifications
+      where complaint_appeal_id=any($1::text[]) order by complaint_appeal_id,recipient_user_id`,[[id1,id2,id3]]);
+    expect(rows.rows).toHaveLength(6);
+    expect([...new Set(rows.rows.map(x=>x.recipient_user_id))].sort()).toEqual(["content-author","reporter-one"]);
+    const own=rows.rows.find(x=>x.recipient_user_id==="reporter-one")!;
+    const open=await forum.markNotificationRead("reporter-one",(await client.query<{id:string}>(`
+      select id from forum_reply_notifications where complaint_appeal_id=$1 and recipient_user_id='reporter-one'`,[own.complaint_appeal_id])).rows[0]!.id);
+    expect(open).toMatchObject({kind:"complaint-appeal-result",caseId:c.caseId,appealId:own.complaint_appeal_id});
+    await expect(service().readOwnResult("outsider",c.caseId)).rejects.toBeInstanceOf(ComplaintNotFoundError);
   });
   it("permits a later revision after resolution", async () => {
     const c = await decision();
