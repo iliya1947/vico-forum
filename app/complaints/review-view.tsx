@@ -3,7 +3,7 @@ import {Link,useFetcher} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ForumShell} from "../forum/ui";
 import {TopicQuickActions} from "../admin/quick-actions";
-import {ComplaintActivity,complaintQueuePath,complaintReviewPath} from "./queue-view";
+import {ComplaintActivity,complaintQueuePath,complaintReviewPath,complaintTriagePath} from "./queue-view";
 import type {ReviewCase,ReviewPages,ReviewPage,ReviewContextPost,ReviewSource,ReviewFullPost} from "./review-contract";
 
 const reviewUrl=(locale:string,id:string)=>complaintReviewPath(locale,id);
@@ -80,7 +80,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
   <h1>{t("complaintReviewHeading")}</h1>
   {item.previousCaseId?<Link to={reviewUrl(locale,item.previousCaseId)}>{t("complaintReviewPrevious")}</Link>:null}
   <p>{item.state==="resolved"?t("complaintReviewResolved"):t("complaintCaseOpen")} · {t(("complaintPriority"+item.priority) as "complaintPriority1")} · {t("complaintReportCount")}: {item.independentReporterCount}</p>
-  {item.state==="open"?<><ComplaintActivity locale={locale} caseId={item.id}/>
+  {item.state==="open"?<><Link to={complaintTriagePath(locale,item.id)}>{t("complaintPriorityLabel")}</Link><ComplaintActivity locale={locale} caseId={item.id}/>
     <p className="complaint-activity" role="status">{t(item.activeElsewhere?"complaintActivityOther":"complaintActivityNone")}</p></>:null}
   <section>
    <h2>{t("complaintReviewEvidence")}</h2>
