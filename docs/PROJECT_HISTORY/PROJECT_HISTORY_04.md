@@ -1,6 +1,6 @@
 # PROJECT_HISTORY_04.md
 
-> [Индекс истории](./PROJECT_HISTORY.md)> · [Предыдущий том](./PROJECT_HISTORY_03.md)> · [Следующий том](./PROJECT_HISTORY_05.md)
+> [Индекс истории](./PROJECT_HISTORY.md) · [Предыдущий том](./PROJECT_HISTORY_03.md) · [Следующий том](./PROJECT_HISTORY_05.md)
 
 Период: **2026-10-20 — 2026-10-26**.
 
