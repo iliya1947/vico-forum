@@ -30,6 +30,7 @@ export interface ReviewCapability {
 export interface ReviewCase {
   id: string; previousCaseId: string | null; state: "open" | "resolved"; version: number;
   kind: "post" | "topic-title"; targetId: string; topicId: string; postId: string | null;
+  activeElsewhere: boolean;
   reported: ReviewSource; current: ReviewSource;
   currentTopicTitle: ReviewSource; targetPresent: boolean;
   automaticPriority: ComplaintPriority; priorityOverride: ComplaintPriority | null; priority: ComplaintPriority;
