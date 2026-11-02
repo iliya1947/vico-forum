@@ -1,0 +1,53 @@
+import {data,useLoaderData,type RouterContextProvider} from "react-router";
+import {complaintReviewContext} from "../complaints/review-context";
+import {reviewPages,reviewHeaders} from "../complaints/review.server";
+import {complaintReviewer,complaintHttpError,complaintCommandFailure} from "../complaints/queue.server";
+import {complaintId,ComplaintInputError} from "../../db/complaints-domain";
+import {requireSameOrigin} from "../forum/mutations.server";
+import {ComplaintReviewView} from "../complaints/review-view";
+import {ForumRouteError} from "../forum/ui";
+
+export function headers(){return reviewHeaders;}
+export async function loader({request,params,context}:{request:Request;params:{locale?:string;caseId?:string};context:RouterContextProvider}){
+ try{
+  const actor=await complaintReviewer(context);
+  const id=complaintId(params.caseId);
+  const page=await context.get(complaintReviewContext).read(actor,id,reviewPages(request.url));
+  return data({locale:params.locale??"en",item:page},{headers:reviewHeaders});
+ }catch(e){return complaintHttpError(e);}
+}
+export async function action({request,params,context}:{request:Request;params:{caseId?:string};context:RouterContextProvider}){
+ try{
+  if(request.method!=="POST")throw new Response("Method Not Allowed",{status:405,headers:reviewHeaders});
+  const actor=await complaintReviewer(context);
+  if(!requireSameOrigin(request))throw new Response("Forbidden",{status:403,headers:reviewHeaders});
+  if(!request.headers.get("content-type")?.toLowerCase().startsWith("application/x-www-form-urlencoded"))throw new ComplaintInputError();
+  if(!request.body)throw new ComplaintInputError();
+  const reader=request.body.getReader();const chunks:Uint8Array[]=[];let size=0;
+  try{
+    while(true){const p=await reader.read();if(p.done)break;size+=p.value.byteLength;
+      if(size>262144){await reader.cancel();throw new ComplaintInputError();}chunks.push(p.value);}
+  }finally{reader.releaseLock();}
+  const bytes=new Uint8Array(size);let pos=0;for(const part of chunks){bytes.set(part,pos);pos+=part.length;}
+  let form:URLSearchParams;
+  try{form=new URLSearchParams(new TextDecoder("utf-8",{fatal:true}).decode(bytes));}catch{throw new ComplaintInputError();}
+  const intent=form.get("intent");
+  const allowed=intent==="note"?["intent","operationId","body"]:intent==="decision"?
+    ["intent","operationId","expectedVersion","outcome","reasoning"]:[];
+  if(!allowed.length||[...form.keys()].some(k=>!allowed.includes(k)||form.getAll(k).length!==1)||allowed.some(k=>!form.has(k)))throw new ComplaintInputError();
+  const caseId=complaintId(params.caseId),operationId=complaintId(form.get("operationId"));
+  const review=context.get(complaintReviewContext);
+  if(intent==="note"){
+    await review.addNote(actor,{caseId,operationId,body:form.get("body")!});
+  }else{
+    const expected=form.get("expectedVersion")!;
+    if(!/^[1-9]\d{0,9}$/.test(expected)||Number(expected)>2147483647)throw new ComplaintInputError();
+    const outcome=form.get("outcome");
+    if(outcome!=="confirmed"&&outcome!=="not-confirmed")throw new ComplaintInputError();
+    await review.decide(actor,{caseId,operationId,expectedVersion:Number(expected),outcome,reasoning:form.get("reasoning")!});
+  }
+  return data({ok:true as const,intent,operationId},{headers:reviewHeaders});
+ }catch(error){return complaintCommandFailure(error);}
+}
+export default function ComplaintReviewRoute(){return <ComplaintReviewView {...useLoaderData<typeof loader>()}/>;}
+export const ErrorBoundary=ForumRouteError;
