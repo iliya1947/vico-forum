@@ -79,7 +79,8 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
   <h1>{t("complaintReviewHeading")}</h1>
   {item.previousCaseId?<Link to={reviewUrl(locale,item.previousCaseId)}>{t("complaintReviewPrevious")}</Link>:null}
   <p>{item.state==="resolved"?t("complaintReviewResolved"):t("complaintCaseOpen")} · {t(("complaintPriority"+item.priority) as "complaintPriority1")} · {t("complaintReportCount")}: {item.independentReporterCount}</p>
-  {item.state==="open"?<ComplaintActivity locale={locale} caseId={item.id}/>:null}
+  {item.state==="open"?<><ComplaintActivity locale={locale} caseId={item.id}/>
+    <p className="complaint-activity" role="status">{t(item.activeElsewhere?"complaintActivityOther":"complaintActivityNone")}</p></>:null}
   <section>
    <h2>{t("complaintReviewEvidence")}</h2>
    <p>{t(item.kind==="post"?"complaintTargetPost":"complaintTargetTitle")}</p>
