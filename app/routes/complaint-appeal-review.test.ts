@@ -58,7 +58,7 @@ describe("Package 6 independent Appeal reviewer",()=>{
   await expect(action({params,context:f.ctx,request:request(body,{Origin:"https://evil.example","Content-Type":"application/x-www-form-urlencoded"})}))
     .rejects.toMatchObject({status:403});
   const missing=fixture([]);
-  await expect(action({params,context:missing.ctx,request:request(body)})).rejects.toMatchObject({status:403});
+  expect(await action({params,context:missing.ctx,request:request(body)})).toMatchObject({init:{status:403}});
   expect(f.resolve).not.toHaveBeenCalled();
  });
  it("refreshes 409 without changing Appeal target or draft",()=>{

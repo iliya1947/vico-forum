@@ -48,8 +48,7 @@ describe("Package 6 participant Appeal HTTP",()=>{
    const r=await action({request:request(body),params:{caseId:"case-one"},context:f.ctx});
    expect(r).toMatchObject({init:{status:400}});
   }
-  const foreign=await action({request:request(input,{Origin:"https://evil.example","Content-Type":"application/x-www-form-urlencoded"}),params:{caseId:"case-one"},context:f.ctx});
-  expect(foreign).toMatchObject({init:{status:403}});
+  await expect(action({request:request(input,{Origin:"https://evil.example","Content-Type":"application/x-www-form-urlencoded"}),params:{caseId:"case-one"},context:f.ctx})).rejects.toMatchObject({status:403});
   const wrong=await action({request:request("argument=a",{Origin:"https://forum.example","Content-Type":"text/plain"}),params:{caseId:"case-one"},context:f.ctx});
   expect(wrong).toMatchObject({init:{status:400}});
   expect(f.submit).not.toHaveBeenCalled();
