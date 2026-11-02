@@ -130,7 +130,7 @@ describe("Decision conflict revalidation with the real Router",()=>{
    const {router,i18n,loader,submissions}=await mountConflict(initial,updated);
    try{
     await screen.findByRole("button",{name:i18n.t("complaintReviewResolve")});
-    beginDecision(i18n.t.bind(i18n));
+    beginDecision(key=>i18n.t(key));
     await waitFor(()=>expect(submissions).toHaveLength(1));
     expect(submissions[0]).toMatchObject({expectedVersion:"3",operationId:"decision-1",
      outcome:"not-confirmed",reasoning:"Keep this draft after conflict"});
@@ -138,11 +138,11 @@ describe("Decision conflict revalidation with the real Router",()=>{
     expect(loader).toHaveBeenCalledTimes(2);
     const form=screen.getByRole("button",{name:i18n.t("complaintReviewResolve")}).closest("form");
     expect(form?.querySelector<HTMLInputElement>('input[name="expectedVersion"]')?.value).toBe("3");
-    expect(screen.getByRole<HTMLTextAreaElement>("textbox",{name:i18n.t("complaintReviewReasoning")}).value)
+    expect((screen.getByRole("textbox",{name:i18n.t("complaintReviewReasoning")}) as HTMLTextAreaElement).value)
      .toBe("Keep this draft after conflict");
-    expect(screen.getByRole<HTMLSelectElement>("combobox",{name:i18n.t("complaintReviewOutcome")}).value)
+    expect((screen.getByRole("combobox",{name:i18n.t("complaintReviewOutcome")}) as HTMLSelectElement).value)
      .toBe("not-confirmed");
-    expect(screen.getByRole<HTMLButtonElement>("button",{name:i18n.t("complaintReviewResolve")}).disabled).toBe(true);
+    expect((screen.getByRole("button",{name:i18n.t("complaintReviewResolve")}) as HTMLButtonElement).disabled).toBe(true);
     if(change==="report")expect(screen.getByText("New report")).toBeTruthy();
     if(change==="note")expect(screen.getByText("New moderator note")).toBeTruthy();
     fireEvent.click(accept);
@@ -163,7 +163,7 @@ describe("Decision conflict revalidation with the real Router",()=>{
   const {router,i18n,loader,submissions}=await mountConflict(initial,resolved);
   try{
    await screen.findByRole("button",{name:i18n.t("complaintReviewResolve")});
-   beginDecision(i18n.t.bind(i18n));
+   beginDecision(key=>i18n.t(key));
    await waitFor(()=>expect(submissions).toHaveLength(1));
    expect(await screen.findByText("Another reviewer decided")).toBeTruthy();
    expect(loader).toHaveBeenCalledTimes(2);
