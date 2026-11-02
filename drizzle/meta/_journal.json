@@ -379,6 +379,13 @@
       "when": 1793405615325,
       "tag": "0053_complaint_priority_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793650200000,
+      "tag": "0054_complaint_history_notifications",
+      "breakpoints": true
     }
   ]
 }

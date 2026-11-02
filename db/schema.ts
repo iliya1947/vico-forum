@@ -1253,18 +1253,18 @@ export const forumReplyNotifications = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     actorUserId: text("actor_user_id")
-      .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
     topicId: text("topic_id")
-      .notNull()
       .references(() => forumTopics.id, { onDelete: "cascade" }),
-    postId: text("post_id").notNull(),
-    kind: text("kind").$type<"reply" | "mention">().notNull().default("reply"),
+    postId: text("post_id"),
+    complaintDecisionId: text("complaint_decision_id").references(() => forumComplaintDecisions.id, { onDelete: "restrict" }),
+    kind: text("kind").$type<"reply" | "mention" | "complaint-decision">().notNull().default("reply"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     readAt: timestamp("read_at", { withTimezone: true }),
   },
   (table) => [
-    check("forum_reply_notifications_kind_check", sql`${table.kind} in (\'reply\', \'mention\')`),
+    check("forum_reply_notifications_kind_check", sql`(${table.kind} in ('reply','mention') and ${table.actorUserId} is not null and ${table.topicId} is not null and ${table.postId} is not null and ${table.complaintDecisionId} is null) or (${table.kind} = 'complaint-decision' and ${table.complaintDecisionId} is not null and ${table.actorUserId} is null and ${table.topicId} is null and ${table.postId} is null)`),
+    unique("forum_reply_notifications_recipient_decision_unique").on(table.recipientUserId, table.complaintDecisionId),
     unique("forum_reply_notifications_recipient_post_unique").on(table.recipientUserId, table.postId),
     index("forum_reply_notifications_recipient_created_idx").on(
       table.recipientUserId,
@@ -1643,6 +1643,7 @@ export const forumComplaintCases = pgTable("forum_complaint_cases", {
   uniqueIndex("complaint_case_open_target_unique").on(t.targetId).where(sql`${t.state} = 'open'`),
   index("complaint_case_target_resolved_idx").on(t.targetId, t.resolvedAt.desc(), t.createdAt.desc(), t.id.desc()).where(sql`${t.state} = 'resolved'`),
   index("complaint_case_state_created_idx").on(t.state, t.createdAt, t.id),
+  index("complaint_case_history_idx").on(t.resolvedAt.desc(), t.id.desc()).where(sql`${t.state} = 'resolved'`),
   check("complaint_case_lifecycle", sql`${t.version} > 0 and ((${t.state} = 'open' and ${t.initialDecisionId} is null and ${t.resolvedAt} is null) or (${t.state} = 'resolved' and ${t.initialDecisionId} is not null and ${t.resolvedAt} is not null and ${t.resolvedAt} >= ${t.createdAt}))`),
 ]);
 
@@ -1737,7 +1738,7 @@ export const forumComplaintEvents = pgTable("forum_complaint_events", {
   foreignKey({ name: "complaint_event_appeal_fk", columns: [t.caseId,t.appealId], foreignColumns: [forumComplaintAppeals.caseId,forumComplaintAppeals.id] }).onDelete("restrict"),
   check("complaint_event_fingerprint_check", sql`${t.fingerprint} ~ '^[0-9a-f]{64}$' and btrim(${t.operationId}) <> '' and char_length(${t.operationId}) <= 200`),
   check("complaint_event_priority_check", sql`(${t.priorityOverride} is null or ${t.priorityOverride} between 1 and 3) and (${t.kind} = 'priority-changed' or ${t.priorityOverride} is null)`),
-  check("complaint_event_shape_check", sql`(${t.kind} = 'submitted' and ${t.complaintId} is not null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'decided' and ${t.decisionId} is not null and ${t.complaintId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'noted' and ${t.noteId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.appealId} is null) or (${t.kind} in ('appealed','appeal-resolved') and ${t.appealId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null) or (${t.kind} = 'priority-changed' and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null)`),
+  check("complaint_event_shape_check", sql`(${t.kind} = 'submitted' and ${t.complaintId} is not null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'decided' and ${t.decisionId} is not null and ${t.complaintId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'noted' and ${t.noteId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.appealId} is null) or (${t.kind} in ('appealed','appeal-resolved') and ${t.appealId} is not null and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null) or (${t.kind} = 'priority-changed' and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null) or (${t.kind} = 'review-started' and ${t.complaintId} is null and ${t.decisionId} is null and ${t.noteId} is null and ${t.appealId} is null)`),
 ]);
 
 export const forumComplaintEvidenceAttachments = pgTable("forum_complaint_evidence_attachments", {
