@@ -9,13 +9,15 @@
 - Лёва реализовал Packages 1–3 и интеграцию Package 3 с AP-05.
 - Принятая migration chain после интеграции: AP-05 `0051_forum_admin_history`, Complaints `0052_complaints_queue` и `0053_complaint_priority_settings`.
 - Package 3 сохраняет Queue/triage, configurable reason priorities, manual override и non-exclusive expiring reviewer activity.
-- Package 4 должен строиться поверх shared Admin Quick actions; complaint decision `confirmed | not-confirmed` остаётся отдельным от административных действий.
+- Packages 4–5 merged; shared Admin Quick actions и complaint Decisions остаются отдельными доменами.
 - Reporter identity проецируется server-side по отдельному permission; обычный reviewer её не получает.
-- Package 5+ — History UI, result notifications и appeals — вне текущего scope.
+- Packages 1–5 merged; текущий bounded scope — технический план Package 6 (Appeals), без реализации.
 
 ## Текущий этап
 
-Independent technical whole-PR review corrected Package 5 / PR #277 завершён на exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`: **PASS, 0 подтверждённых current-scope дефектов**. Все 4 previous findings закрыты actual Chromium/Worker/PG verification. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6587539354). Implementation не менял. Следующий шаг — coordinator closeout Миры; merge/production/Package 6 не выполнялись.
+Технический план Package 6 подготовлен против main `284bee3f5f0899cce1dc751cf4e9ef169739a120` по назначению Миры #6589373781. Полный план ниже в разделе «Технический план Package 6 — Appeals». Следующий шаг — Мира проверяет соответствие scope и назначает Лире отдельную реализацию. Implementation PR отсутствует; application/schema/production не менялись.
+
+Package 5 завершён: PR #277 merged в указанный main после coordinator и independent technical PASS. Результаты предыдущих этапов ниже сохраняются как история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -376,3 +378,187 @@ Migration **реально необходима** из-за notification shape �
 - Локальные tests 124/124 (15 files), build/diff PASS; exact-head CI/jobs независимо проверены API. DB/migration/fanout/activity код идентичен прежнему fully-reviewed head; native/full suites в этом correction pass повторно не запускались и не заявляются.
 - Полный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6587539354 ; evidence `/workspace/work/review277-corrected-evidence/`.
 - Implementation чист; свои temporary preview/PG/symlink остановлены/удалены. Следующий шаг — Мира фиксирует coordinator closeout того же unchanged head и дальнейший маршрут владельцу.
+
+## Технический план Package 6 — Appeals
+
+Основание: [назначение Миры #6589373781](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6589373781) и утверждённый Appeals scope служебного плана. Проверенный main: 284bee3f5f0899cce1dc751cf4e9ef169739a120, Packages 1–5 merged, migrations 0000–0054. Автор: Лёва.
+
+Это план для отдельного implementation assignment Лире после проверки Мирой. Application/schema не изменены, implementation PR не создан; execution/CI нового поведения не заявляются. Проверены текущие repository/service/schema, P4 read model, Attention/header, P5 notification/result surfaces и профильные контракты.
+
+### 1. Scope и foundation
+
+Package 6 завершает participant submission/result, pending Appeals queue (Complaints group2), reviewer workflow, текущий effective outcome и уведомления о результате каждой Appeal. Initial Decision остаётся immutable, resolved Case не переоткрывается.
+
+Уже существуют Appeal persistence, argument/side/ordinal1..3, pending→resolved с upheld/overturned и reasoning, composite Case/Decision FK, UNIQUE Decision+ordinal, events/fingerprint replay, actor→Case locks, participant-direction check первой Appeal, отдельное forum.complaint.appeal.review, conditional identity и readonly Appeal History. Новые таблицы или permissions не нужны.
+
+Конкретные пробелы main:
+- repository.appeal после первой записи выбрасывает ComplaintPolicyRequiredError и смотрит только initial outcome;
+- нет unique-pending ограничения, effective-outcome projection и Appeal-result fanout;
+- resolveAppeal уже имеет pending-status CAS, но не уведомляет участников;
+- group2 placeholder; Attention/header не допускают appeal-only reviewer;
+- P4 context/evidence routes требуют complaint.review, participant result показывает только initial Decision;
+- общий inbox знает reply/mention/complaint-decision; recipient+Decision unique не годится для каждого отдельного Appeal result.
+
+Не входят Package7 closeout, новая anti-abuse/quota policy, withdrawal/edit Appeal, автоматические санкции/их отмена, новый assignment/presence, Admin/Signals/Security features и production actions. Shared Quick actions остаются самостоятельными каноническими операциями.
+
+### 2. Единая policy и текущий итог
+
+Добавить небольшой domain reducer, например db/complaint-appeal-policy.ts. Вход — initial binary outcome и максимум три Appeal по ordinal. Не хранить вторую mutable effective_outcome колонку.
+
+| Текущий итог | Appeal result | Новый итог | Следующая eligible side при свободном слоте |
+| --- | --- | --- | --- |
+| confirmed | upheld | confirmed | author |
+| confirmed | overturned | not-confirmed | reporter |
+| not-confirmed | upheld | not-confirmed | reporter |
+| not-confirmed | overturned | confirmed | author |
+
+Начать с initial outcome, последовательно применить только resolved результаты; pending итог не меняет. Вторая/третья overturned переворачивает предшествующий текущий итог, а не всегда original Decision. UI однозначно называет upheld «сохранить текущий итог», overturned «изменить текущий итог».
+
+Used = все принятые Appeal этого initial Decision, включая pending; remaining=3−used. Новая подача разрешена только при resolved Case, отсутствии pending, used<3 и actual membership проигравшей стороны: confirmed→affected author, not-confirmed→любой реальный reporter именно этого Case. Повтор того же reporter разрешён. Для dual-role actor side выводится из текущего итога. Browser не определяет side, ordinal, outcome или identity.
+
+Существующий readOwnResult.outcome сохраняет значение initial outcome. Добавить явно effectiveOutcome, used/remaining, pending summary и собственную eligibility/reason. Если History/review показывают текущий итог, подписывать его отдельно от initial outcome; initial labels не менять молча. Общий bounded reducer использовать в read/command paths; эквивалентную SQL queue projection проверить против него на всех цепочках ≤3.
+
+### 3. Транзакции, replay и concurrency
+
+Сохранить payload и канонический порядок нормализованных fingerprint fields существующих команд:
+- appeal: caseId, decisionId, operationId, argument;
+- resolveAppeal: caseId, appealId, operationId, outcome, reasoning.
+
+Не добавлять side/ordinal/permissions из браузера. Existing successful replay должен оставаться валидным после upgrade.
+
+Submission:
+1. actor FOR NO KEY UPDATE → Case FOR UPDATE, как foundation.
+2. Exact replay до quota/state/eligibility проверок: прежний ID даже после изменения eligible side; тот же nonce с другим payload — conflict.
+3. Проверить resolved Case и его initialDecisionId=input.decisionId; прочитать initial Decision, affected author и ≤3 Appeal этого Decision в той же transaction. Все mutations сериализуются тем же Case lock.
+4. Server membership/policy из п.2. Pending/quota/stale Decision→409, неверное участие/направление→403, без disclosure чужой истории в ошибках.
+5. Ordinal=max+1, insert с DB time + appealed event атомарно. Replay/rejected command не тратят слот и не создают event.
+
+Resolution:
+1. Fresh appeal.review, actor→Case lock, exact replay до state check.
+2. Проверить Appeal↔Case↔immutable initial Decision ownership. Только конкретная pending запись может стать resolved.
+3. Pending-status CAS сохраняет result/reasoning/reviewer/DB resolved_at.
+4. Append appeal-resolved event + все result notifications в той же transaction. Любой сбой откатывает result/event/fanout целиком.
+
+Новый expectedVersion или изменение Case.version для Appeal-команд не нужны: argument, initial Decision и предыдущие results immutable; единственная pending запись + explicit Appeal ID/status под Case lock дают необходимый CAS. Notes не меняют eligibility. Existing P4 Decision expectedVersion остаётся прежним. Старая форма не может resolve следующую Appeal: другой ID. После409 сохранить draft, перечитать состояние, не переносить решение автоматически на новую pending запись.
+
+Один Case lock сериализует submissions разных reporters, submit/resolve race и concurrent resolves; partial unique/ordinal — последняя DB-защита. Сохранить lock order actor→Case, не добавлять обратный порядок. Unknown commit failure повторяется с тем же nonce/payload, новый nonce только для подтверждённо нового действия.
+
+### 4. Forward migration и upgrade
+
+Новая migration после0054 (0055, если main не изменился), синхронно schema/journal/snapshot/manifest:
+- partial UNIQUE на forum_complaint_appeals(decision_id) WHERE status='pending';
+- nullable complaint_appeal_id в существующей forum_reply_notifications, RESTRICT FK к Appeal;
+- kind complaint-appeal-result;
+- UNIQUE(recipient_user_id,complaint_appeal_id);
+- строгий shape CHECK: reply/mention имеют actor/topic/post и оба complaint FK NULL; complaint-decision — только Decision FK; complaint-appeal-result — только Appeal FK. Без фиктивных actor/topic/post и заполнения обоих complaint FK;
+- idempotent backfill уже resolved foundation Appeals всем фактическим участникам, created_at=original resolved_at; ON CONFLICT DO NOTHING сохраняет read_at.
+
+Сохранить ordinal CHECK1..3, UNIQUE Decision+ordinal и ownership FK. Existing pending(status,created_at,id) index пригоден для queue; дополнительные индексы только под подтверждённую потребность запроса. Accepted migrations не переписывать. Обновить runtime privilege/manifest contracts по фактическому SQL, без DDL для web role и external GRANTs.
+
+Upgrade fixtures: no Appeal, first pending, first resolved upheld/overturned. До unique index проверить отсутствие двух pending; policy-read не принимает повреждённую последовательность (ordinal gap, pending не последний, result после pending). Main application последующие Appeal запрещал. Нельзя миграцией удалять/перенумеровывать/автоматически resolve записи. Если действительно найдена несовместимость данных — конкретный blocker передать Лёве; гипотетическая legacy-аномалия не требует prod действий.
+
+### 5. Permissions и privacy
+
+- Participant result/submission: session + actual Case membership/direction; complaint.create/review/appeal.review не требуются, как в foundation.
+- appeal.review независимо открывает group2, Appeal view/context/evidence и resolve.
+- complaint.review открывает group1/group3, P4 review/notes/initial Decision; само не разрешает resolve Appeal.
+- reporterIdentity.read только добавляет structured identity к уже разрешённому review.
+- priority.manage-only открывает settings, без Cases/Appeals.
+- Shared Admin/Help actions и private pending Help fields сохраняют собственные permissions; admin admission не расширяется.
+
+Каждый endpoint самостоятельно проверяет session/current authority. Review key, identity и shared presentation flags выводятся из одного consistent effective-permission snapshot; новый request видит overrides/revocation. Loader flags не authority для POST.
+
+Обычная reviewer SQL не выбирает reporter/appellant account fields; elevated branch добавляет только id/name, без email. Participant DTO не содержит других reporters/их количества, private notes, evidence keys, event actor/operation/fingerprint, reviewer identity или admin history. Он содержит initial public reasoning, current outcome и максимум три public result summary: Appeal id/ordinal/side/status, result/reasoning/resolvedAt. Чужие Appeal arguments участникам не отдавать; собственный аргумент допустим только own-only projection. Reviewer видит аргументы по protected authority с прежней identity границей.
+
+Все document/data/action/resource success/error responses private,no-store. Membership-only result постороннему404; protected errors различают401/403/404/409/503. Только известная typed dependency unavailability→503; unexpected schema/programming failures идут в обычный error path.
+
+### 6. Read models, routes и reuse P4
+
+Предлагаемые routes, имена файлов по conventions:
+- existing /:locale/complaints/:caseId/result: participant GET + Appeal POST;
+- /:locale/attention?mode=complaints&group=group2;
+- /:locale/attention/complaints/:caseId/appeals/:appealId: protected GET + resolve POST;
+- его appeal-scoped context/:postId и evidence/:attachmentId.
+
+Добавить узкие appeal contract/context/server presentation capability, local/Hyperdrive wiring по existing lifecycle: fresh operation client, finally discard, typed availability. Foundation readCase целиком браузеру не отдавать; submission capability не расширять до arbitrary private reads.
+
+Appeal view показывает original Decision/reasoning, current effective outcome, текущую Appeal/argument/ordinal, всю bounded историю предыдущих Appeals/results. Для reported immutable revision/current source/reports/readonly notes/retained evidence/context минимально выделить общие read/render helpers P4. Required capability выбирается server method (Case или Appeal review), а не browser flag. Appeal↔Case↔Decision проверить до выдачи/resources и внутри согласованного read snapshot.
+
+Сохранить P4 bounds: reports/notes/evidence50+lookahead+independent totals, context25, SQL-bounded excerpts, protected full expansion, реальные permanent numbers/source locale. Read-only repeatable-read projection объединяет Appeal state и content, не смешивает независимые противоречивые reads. Context post должен принадлежать теме Case; asset — retained target Case до bucket fetch. Object keys server-only; attachment/octet-stream/nosniff/sandbox прежние.
+
+Appeal-only reviewer не отправляется на P4 resource, требующий complaint.review; старый Case route не ослаблять. Previous-Case/History links показывать при отдельной authority. Notes в Appeal view readonly: appeal.review не даёт addNote. Shared Quick actions при reuse идут в canonical topic handler со своими fresh checks.
+
+CaseActivity рассчитан на open Case и complaint.review. Не монтировать его на resolved Appeal Case; новая Appeal-presence/claim инфраструктура для этого scope не нужна.
+
+### 7. Attention, queue и reviewer preference
+
+Добавить appeal.review в header Attention admission и default mode/group. Проверять выбранную группу до DB read: group1/group3→review, group2→appeal.review. Appeal-only default group2; review-only group1; только priority.manage→settings. Review+appeal.review сохраняет default group1. Явно запрошенная недоступная группа не отдаёт данные другой группы. Недоступные tabs/links и protected counts не запрашиваются/не отображаются.
+
+Group2: одна строка на pending Appeal, bounded25+lookahead, независимый total всех pending, корректный на empty/out-of-range pages. Поля: ordinal/3, pending time, target kind, bounded immutable excerpt/source locale, effective outcome. Никаких reporter identities в queue даже elevated actor. Resolved Appeal исчезает из queue, остаётся доступной по protected URL и History.
+
+Soft preference: server boolean «это ваше исходное Decision»; чужие initial Decisions сортируются раньше собственных, внутри created_at,id. На собственной записи рекомендация другого reviewer, но resolve разрешён при appeal.review. Не требовать доказать отсутствие иных moderators, не искать/назначать «свободного» reviewer, не вводить hard self-review ban, availability lock или зависимость от presence.
+
+Новые paged loaders используют strictPageQuery: page0..10000, unknown/duplicate application keys400. React Router8 передаёт нормализованный loader url: raw request.url сохраняет .data/_routes и уже приводил к runtime400 в P4. Проверить actual single-fetch navigation/resources. Signals/Security paths не рефакторить.
+
+### 8. Формы и participant result
+
+Result показывает immutable initial result/reasoning/time отдельно от current effective outcome, used/remaining, pending/results и причину отсутствия формы (pending, лимит, другая сторона). Убрать «Appeals unavailable» вместе с работающим workflow. Не раскрывать число/идентичности reporters и не утверждать наличие/отсутствие санкций без Case→action fact.
+
+Participant POST: session+same-origin, URLencoded stream32768 bytes, whitelist intent/decisionId/operationId/argument; caseId из path, actor из session. Repository проверяет Decision ownership. Required argument trim/NUL/2000 Unicode code points; UTF-16 maxLength не должен запрещать допустимый supplementary Unicode.
+
+Reviewer POST: session+same-origin+fresh appeal.review, URLencoded stream256KiB, whitelist intent/operationId/outcome/reasoning; path caseId+appealId; reasoning required trim/NUL/10000 Unicode code points. Duplicate/unknown fields, неверные encoding/intent/outcome/ID отвергаются до mutation. No GET writes.
+
+Nonce, target Appeal ID и draft устойчивы через rerender/revalidation/ambiguous failures; draft очищается лишь по matching successful acknowledgement. При409 refresh + сохранение текста, без автоматической замены target или нового nonce. EN canonical + RU/HE, generic LocaleRegistry/lang/dir, mobile/RTL/accessibility. Evidence/arguments/reasoning отображаются инертно.
+
+### 9. Appeal-result notifications
+
+Добавить insertComplaintAppealResultNotifications(tx,caseId,appealId), по P5 pattern. Recipients=affected author UNION все actual Case reporters, dedup account, включая author=reporter. Не ограничивать appellant и не применять reply self-suppression. Pending submission отдельное уведомление не создаёт — такого требования нет.
+
+Kind complaint-appeal-result, отдельный Appeal FK и original resolved_at; fanout атомарен result/event. Recipient+Appeal unique даёт replay/backfill dedup без reset read_at. Case/Decision выводятся из authoritative Appeal ownership.
+
+Расширить mixed DTO/query, generic unread count, exhaustive mark/open target, action redirect, system rendering. Destination: /:locale/complaints/:caseId/result#appeal-<appealId>, устойчивый id на public result summary. Старое уведомление ведёт к своему immutable result после следующих Appeals. Mark/open rechecks recipient+participant membership и idempotent read_at; destination проверяет membership повторно. Никаких client-controlled redirects.
+
+Единственный inbox /notifications и P5 strict open POST4096 bytes сохраняются. Reply/mention producers/targets/constraints прежние. Legacy read/count/mark исключают оба complaint kinds в SQL до limit/update; общий header count включает все kinds. Appeal rows используют is-system layout без fake avatar/actor и узкой reply-grid колонки. Notification text без identities/private arguments/admin measures.
+
+### 10. Реализация и документация
+
+Порядок одного bounded implementation PR:
+1. Reducer/policy, repository/service, forward schema/migration/metadata/manifest, atomic notification helper.
+2. Participant/queue/reviewer projections и узкие Worker/local/Hyperdrive contracts, минимальный P4 reuse.
+3. Participant result/form, group2/header, reviewer/resources, EN/RU/HE.
+4. Mixed inbox read/open/render и History compatibility; native/route/browser evidence.
+5. docs/moderation/COMPLAINTS.md и применимые auth/database contracts отражают реальный P6; PROJECT_STATE только фактическое состояние. Заменить superseded deferred statements, не объявлять Package7/project complete.
+
+Лира начинает из актуального main; если baseline изменился, сначала проверяет delta и адаптирует затронутые boundaries. Старые локальные dirty changes Лёвы не входят в пакет.
+
+### 11. Acceptance и доказательства
+
+Native PostgreSQL17:
+- оба initial outcomes, все result chains≤3, pending не меняет итог, shared third slot/fourth rejected;
+- one pending блокирует все стороны, разные/повторные reporters, dual-role, foreign Case/reporter/Decision;
+- concurrent submits разных actors→один slot/event; concurrent resolves→один result/fanout; submit/resolve race; replay после eligibility flip; changed replay conflicts; rejected/rollback не тратят слот;
+- initial Decision/arguments/old results immutable; result/event/fanout rollback; actor→Case lock order;
+- каждый participant получает один notification на каждый result, outsider ноль, author=reporter dedup; retries/backfill сохраняют read_at;
+- clean migration + upgrade0054 с first pending/resolved fixtures, backfill timestamps/dedup, реальные unique/check/FK enforcement, manifest/runtime ACL parity.
+
+Permission/privacy/routes:
+- appeal-only header/group2/review/resolve/context/evidence без complaint.review; review-only не resolve; identity/priority-only и outsider не читают Appeal;
+- allow/deny/revocation next request, consistent snapshot; ordinary SQL/HTML/data/resources без structured reporter/appellant identity; participant DTO без чужих private arguments/notes/reporters;
+- Case↔Appeal↔Decision, Case↔context post и retained asset ownership; foreign substitution404 до bucket;
+- private/no-store на errors; malformed/duplicate/oversize/cross-origin requests без mutation;
+- queue25 и mixed inbox50+ independent totals/out-of-range, unread/order, legacy read/count/mark исключают system kinds;
+- nonce/draft/target сохраняются при409/revalidation/ambiguous failure, Unicode supplementary limits.
+
+Actual local Worker + PostgreSQL + Chromium:
+- participant→Appeal→group2→appeal-only reviewer→result→notification open/read→следующая eligible сторона→third result/лимит;
+- self-initial-reviewer preference без deadlock, old notification anchor после нескольких results;
+- real React Router single-fetch navigation/pagination/resources, не только memory-router mocks;
+- retained evidence permitted/forbidden substitutions, EN/RU/HE/mobile/RTL, mixed inbox system layout без P5 regression; relevant P1–5 regressions.
+
+Выполнить repository-required lint/typecheck/application/database/migrations/schema/runtime privilege/build/Worker/Hyperdrive smoke. Evidence с exact head и фактическими командами/результатами; green CI не заменяет runtime verification. Preview/owner visual acceptance по текущему repository cycle, без production bindings/rollout.
+
+Готовность к review: весь текущий scope завершён на stable exact head, applicable checks/visual acceptance зафиксированы, docs соответствуют реализации. Мира первой проводит coordinator whole-PR review; после PASS Лёва независимо проверяет тот же head. Implementation change требует нового цикла.
+
+### 12. Handoff
+
+Product policy уже принята, новых owner questions для старта нет. Техплан подготовлен; следующий шаг Миры — проверить bounded scope и дать Лире отдельное implementation assignment с этим планом. Лира пока не назначена, implementation PR отсутствует. Лёва не реализует пакет без технической эскалации.
