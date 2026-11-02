@@ -11,7 +11,7 @@ type Base = Record<string,unknown> & {
  titleId:string;titleText:string;titleLocale:string;titleAt:Date;
  sectionId:string;topicAuthorId:string;isPinned:boolean;isSolved:boolean;bestAnswerPostId:string|null;
  duplicateRelationshipId:string|null;duplicateOriginalId:string|null;bestStatus:"needs-review"|"outdated"|null;bestReason:string|null;
- pendingHelpAppealId:string|null;priorityOverride:number|null;automaticPriority:number;
+ pendingHelpAppealId:string|null;priorityOverride:number|null;automaticPriority:number;activeElsewhere:boolean;
 };
 const iso=(v:Date|string)=>new Date(v).toISOString();
 const source=(id:string,content:string,locale:string,at:Date)=>({
@@ -20,7 +20,7 @@ const source=(id:string,content:string,locale:string,at:Date)=>({
 const page=<T,>(rows:T[],total:number,index:number,size:number)=>({
  items:rows.slice(0,size),total,page:index,hasMore:rows.length>size,
 });
-async function base(tx:Tx,id:string,help:boolean):Promise<Base>{
+async function base(tx:Tx,id:string,actor:string,help:boolean):Promise<Base>{
  const query=await tx.execute<Base>(sql`select c.id,c.target_id as "targetId",c.previous_case_id as "previousCaseId",c.state,c.version,
   t.kind,t.topic_id as "topicId",t.post_id as "postId",
   coalesce(pr.id,tr.id) as "reportedId",coalesce(pr.original_content,tr.original_content) as "reportedText",
@@ -36,6 +36,9 @@ async function base(tx:Tx,id:string,help:boolean):Promise<Base>{
   ${help?sql`(select appeal.id from forum_help_duplicate_appeals appeal
    where appeal.relationship_id=rel.id and appeal.status='pending' limit 1)`:sql`null::text`} as "pendingHelpAppealId",
   c.priority_override as "priorityOverride",
+  exists(select 1 from forum_complaint_activity activity
+    where activity.case_id=c.id and activity.reviewer_user_id<>${actor}
+    and activity.expires_at>statement_timestamp()) as "activeElsewhere",
   (select max((settings.weights->>r.reason)::int)::int from forum_complaints r
    cross join forum_complaint_priority_settings settings
    where r.case_id=c.id and settings.id=1) as "automaticPriority"
@@ -53,10 +56,10 @@ async function base(tx:Tx,id:string,help:boolean):Promise<Base>{
  return query.rows[0];
 }
 /** Read-only consistent projection. No event/appeal/operation-key serialization. */
-export async function readComplaintReview(db:NodePgDatabase,id:string,pages:ReviewPages,identity:boolean,help:boolean,
+export async function readComplaintReview(db:NodePgDatabase,id:string,actor:string,pages:ReviewPages,identity:boolean,help:boolean,
  permissions:ReviewCase["permissions"]):Promise<ReviewCase>{
  return db.transaction(async tx=>{
- const b=await base(tx,id,help);
+ const b=await base(tx,id,actor,help);
  const counts=await tx.execute<{reports:number;independent:number;notes:number;evidence:number;context:number}>(sql`
   select (select count(*)::int from forum_complaints where case_id=${id}) as reports,
   (select count(distinct reporter_user_id)::int from forum_complaints where case_id=${id}) as independent,
@@ -98,7 +101,7 @@ export async function readComplaintReview(db:NodePgDatabase,id:string,pages:Revi
  const decision=decisions.rows[0];
  return {
   id:b.id,previousCaseId:b.previousCaseId,state:b.state,version:b.version,kind:b.kind,
-  targetId:b.targetId,topicId:b.topicId,postId:b.postId,
+  targetId:b.targetId,topicId:b.topicId,postId:b.postId,activeElsewhere:b.activeElsewhere,
   reported:source(b.reportedId,b.reportedText,b.reportedLocale,b.reportedAt),
   current:source(b.currentId,b.currentText,b.currentLocale,b.currentAt),
   currentTopicTitle:source(b.titleId,b.titleText,b.titleLocale,b.titleAt),
