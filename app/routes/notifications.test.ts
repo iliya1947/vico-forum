@@ -218,4 +218,13 @@ describe("notifications route", () => {
     expect((response as Response).headers.get("Location")).toBe("/en/complaints/case-7/result");
     expect(markNotificationRead).toHaveBeenCalledWith({userId:"user-1",notificationId:"notification-1"});
   });
+  it("opens own Appeal result at its immutable anchor",async()=>{
+    const value=context();
+    const markNotificationRead=vi.fn(async()=>({kind:"complaint-appeal-result" as const,caseId:"case-7",appealId:"appeal-2"}));
+    value.set(forumWriterContext,{markNotificationRead} as never);
+    const response=await action({request:openRequest(),params:{locale:"he"},context:value});
+    expect((response as Response).headers.get("Location")).toBe("/he/complaints/case-7/result#appeal-appeal-2");
+    expect((response as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    expect(markNotificationRead).toHaveBeenCalledExactlyOnceWith({userId:"user-1",notificationId:"notification-1"});
+  });
 });
