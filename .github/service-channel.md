@@ -5,31 +5,23 @@
 ## Актуальное состояние
 
 - Packages 1–4 завершены и merged в `main`.
-- Текущий этап: **Package 5 — реализация/документация завершена на stable head; следующий назначенный этап — coordinator whole-PR review Миры**.
-- Лёва подготовил технический план Package 5 от main `1ad8a6402111928c0f08e6f15aba624ba18a4426`; Мира независимо проверила ключевые предпосылки и **утвердила план**.
-- Подтверждено по текущему main:
-  1. Existing `forum_reply_notifications` допускает только reply/mention и требует actor/topic/post; для complaint Decision без dummy references нужна forward schema extension.
-  2. Existing review activity — только TTL lease `forum_complaint_activity`; историческую review activity из него восстановить нельзя. Минимальный `review-started` event в существующем complaint event stream относится к текущему Package 5 scope.
-  3. Atomic Decision + notification fanout в одной transaction совместим с текущим replay/CAS: failure откатывает весь набор, committed retry не должен дублировать rows/read state.
-  4. Readonly уже persisted Appeals в History допустимы; submit/resolve workflow, queue, eligibility/effective-outcome policy и appeal notifications остаются Package 6.
-  5. До Package 6 participant result не показывает фальшивую рабочую Appeal форму/URL; честно сообщает, что подача ещё недоступна.
-  6. Текст «административные меры приняты» не выводится без authoritative Case→sanction факта; current main такой связи не хранит.
-- Утверждённый implementation scope:
-  - real resolved Cases History + bounded lifecycle;
-  - privacy-scoped reviewer/identity projections;
-  - unified notifications surface с typed `complaint-decision`;
-  - deduplicated result notifications фактическим reporters Case и affected content author;
-  - participant result route/DTO;
-  - сохранить admin History отдельно и не копировать Quick actions/sanctions в Complaints.
-- Package 6+, Signals/Security, unrelated admin work и Stage 6/production rollout вне scope.
-- Draft implementation PR #277: exact head `5ad59262ea6ef1c2cc5b917f4d03c94564112460`. [CI #41495180494](https://github.com/iliya1947/vico-forum/actions/runs/41495180494) SUCCESS: checks/database, 1728 application и 454 PostgreSQL tests; миграции/manifest/Worker smoke PASS. Обновлены профильная документация и PROJECT_STATE.
-- Авторская реализация закончена. Independent coordinator/technical review, targeted browser scenario, owner visual acceptance, merge и production не выполнялись и не заявляются. Разработчику не поручается проведение browser/runtime проверки. Лира соблюдает запрет использовать браузер; owner visual acceptance только по отдельному запросу. Недостающие verification результаты должны быть явно отмечены в review, а не объявлены прошедшими.
+- Package 5 реализован в Draft PR #277, но coordinator review stable head `5ad59262ea6ef1c2cc5b917f4d03c94564112460` завершён **CHANGES REQUIRED**.
+- Exact-head CI #41495180494 зелёный: 1728 application / 454 PostgreSQL tests и остальные обязательные repository checks PASS. Green CI не закрыл найденные semantic gaps.
+- Мира проверила весь Package 5 scope. Подтверждённых проблем в schema/migration, atomic Decision→notifications fanout, replay/dedup/read_at, participant result membership/privacy, reporter/appellant identity filtering, review-started persistence и Package 6 boundary не найдено.
+- Подтверждены 5 current-scope issues:
+  1. **History excerpt bound:** `readComplaintResolvedHistory` выбирает полный immutable `original_content` до 25 Cases, а 500-char truncation выполняется только в React. Post body storage не имеет content-length bound, поэтому private loader/data payload не bounded. Excerpt должен ограничиваться на server/read boundary.
+  2. **Package 5 query boundary:** unified notifications принимает duplicate `page` и игнорирует unknown query; History group3 в existing Attention route также silently принимает duplicate/invalid pagination (или fallback 0). Approved plan требует unknown/duplicate pagination → 400 для новых P5 surfaces и normalized React Router URL там, где Framework добавляет internal metadata. Existing unrelated Attention surfaces не переписывать.
+  3. **Legacy notification count semantics:** `readReplyNotifications` и `markReplyNotificationRead` уже фильтруют reply/mention, но `countUnreadReplyNotifications` считает все kinds. Header при этом всё ещё вызывает legacy count, а новый `countUnreadNotifications` лишь alias. Нужно сохранить legacy reply/mention-only SQL count и перевести generic/header path на all-kind generic count.
+  4. **Resolved History label:** History list использует `complaintQueueTotal` = “Open cases: {{total}}”, поэтому resolved History сообщает пользователю неверный статус. Нужен отдельный localized resolved-History total label.
+  5. **Readonly Appeal presentation:** timeline DTO получает persisted `appealSide` и `appealOrdinal`, но UI их не отображает. Package 5 требует readonly lifecycle existing Appeal records с argument/ordinal/side/time; это не реализация Package 6 workflow.
+- Correction должна быть локальной. Не менять schema/domain сверх необходимости, не вводить Appeal submit/policy/notifications, sanctions, Signals/Security или unrelated UI rewrite.
+- После нового implementation head Мира начинает новый whole-PR cycle. Лёва не расходуется до coordinator PASS.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: technical plan согласован.
-- Лёва — Codex-6.1 Sol: technical plan завершён; следующий technical reviewer после coordinator PASS.
-- Лира — ChatGPT-6: текущий исполнитель Package 5.
+- Мира — ChatGPT-5.6 Sol: coordinator review завершён CHANGES REQUIRED.
+- Лира — ChatGPT-6: текущий исполнитель bounded correction PR #277.
+- Лёва — Codex-6.1 Sol: ждёт нового coordinator PASS.
 - Марк — Codex-6 Sol: без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
