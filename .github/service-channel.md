@@ -6,9 +6,9 @@
 
 - Packages 1–3 завершены и merged в `main`.
 - Package 4 находится в Draft [PR #276](https://github.com/iliya1947/vico-forum/pull/276), stable exact head `12d94f308e25f579310b1cf18663697230c10354`, current main/base `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`.
-- Предыдущий technical review выявил один current-scope P2 в Decision 409 recovery. Лира исправила его локально; относительно прежнего review head изменены только route revalidation и Router/UI regression tests.
+- Предыдущий technical review выявил один current-scope P2 в Decision 409 recovery. Лира внесла локальную correction; относительно прежнего review head изменены только route revalidation и Router/UI regression tests. Technical review выявил оставшийся runtime recovery defect, описанный ниже.
 - Мира провела новый coordinator whole-PR review нового head: **PASS, подтверждённых current-scope дефектов — 0**.
-- Проверено:
+- Coordinator snapshot Миры до independent technical review (не заменяет runtime verdict ниже):
   1. P2 correction: Decision 409 принудительно revalidate Case; component не remount, поэтому reasoning/outcome/nonce/frozen reviewedVersion сохраняются.
   2. Still-open conflict требует явного acknowledgement новой version; автоматического retry нет.
   3. Concurrent resolution после reread показывает фактический Decision и убирает Resolve form.
