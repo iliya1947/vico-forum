@@ -14,4 +14,5 @@
 - Coordinator whole-PR review Миры: PASS, 0 подтверждённых current-scope дефектов
 - Отдельный browser-прогон не является blocker текущего review-cycle; назначение на него отменено. Если independent review выявит конкретную непроверяемую без браузера границу, проверка назначается точечно. Owner visual acceptance — только по отдельному запросу владельца.
 - Technical reviewer: Лёва — Codex-6.1 Sol
-- Следующий шаг: Лёва проводит независимый technical whole-PR review PR #276 на том же exact head; implementation не меняет. Package 5+ вне scope.
+- Technical whole-PR review: CHANGES REQUIRED, один подтверждённый P2; [результат](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6580997474)
+- Следующий шаг: Мира координирует bounded correction Decision conflict recovery Лирой. После нового stable implementation head и применимых checks — новый coordinator whole-PR cycle, затем technical review после coordinator PASS. Package 5+ вне scope.
