@@ -7,7 +7,7 @@
 - Coordinator scope: завершён
 - Technical plan: завершён Лёвой и принят Мирой
 - Исполнитель: **Лира — ChatGPT-6**
-- Implementation PR: Лира создаёт отдельный bounded PR
+- Implementation PR: [Draft #279](https://github.com/iliya1947/vico-forum/pull/279), ветка `chatgpt/complaints-package-6`; реализация/CI продолжаются
 - Product policy fixed: one pending Appeal; current-outcome eligibility; shared 3-slot Decision limit; all Case participants receive deduplicated Appeal-result notifications
 - Implementation scope: effective-outcome transitions, participant submission/result, Complaints group2 Appeals queue, appeal-review workflow, Appeal-result notifications и необходимые forward schema/read-model/wiring изменения
 - Existing Packages 1–5 foundation переиспользуется; unrelated refactor не требуется

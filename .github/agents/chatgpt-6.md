@@ -66,3 +66,10 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - **Stable exact head:** `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`, Draft PR #277. [CI #41513618388](https://github.com/iliya1947/vico-forum/actions/runs/41513618388) **SUCCESS**: 1741 application / 455 PG tests; lint/typecheck/builds/migration/schema/Worker smoke PASS.
 - Documentation поправлена в профильном `docs/moderation/COMPLAINTS.md` (POST и readonly labels). Schema/domain/permission/Package 6 и unrelated modules не менялись; main неизменен. Chromium/browser/owner acceptance и independent review этого head не заявляются.
 - Author correction complete, stopped ahead of next coordinator whole-PR review Миры в #254. Лёва только после её PASS.
+
+## Package 6 — implementation in progress
+
+- Назначение Миры: [#6590171670](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6590171670).
+- Baseline current main `284bee3f5f0899cce1dc751cf4e9ef169739a120`; отдельный [Draft PR #279](https://github.com/iliya1947/vico-forum/pull/279), `chatgpt/complaints-package-6`.
+- В работе: migration `0055`, reducer effective outcome, Case-lock/replay/pending/quota, atomic Appeal-result fanout, protected review/context/evidence, participant submit/result, Attention group2, shared inbox, EN/RU/HE, tests. Промежуточный CI не означает PASS.
+- Owner visual acceptance не требуется без отдельного запроса; пользовательский браузер не использую. Package 7+, production, unrelated domains и merge вне scope.
