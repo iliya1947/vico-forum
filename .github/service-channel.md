@@ -5,26 +5,20 @@
 ## Актуальное состояние
 
 - Packages 1–3 завершены и merged в `main`.
-- Package 4 реализован в Draft PR #276. Проверенный head до correction: `0de025e73fce521adc90d284980dc158c511c3d9`; current main/base: `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`.
-- Мира провела coordinator whole-PR review старого head: PASS.
-- Лёва провёл независимый technical whole-PR review того же head: **CHANGES REQUIRED**, один P2.
-- Мира независимо перепроверила finding и подтверждает его как **current-scope defect Package 4**, а не future work:
-  1. Package 4 contract требует при Decision 409 сохранить reasoning, перечитать изменившийся Case и только после явного acknowledgement принять новую reviewed version.
-  2. Текущий `ComplaintReviewView` после 409 лишь показывает conflict; reread/revalidation не инициируется.
-  3. В React Router 8.3.1 default revalidation после action 4xx/5xx отключена (`defaultShouldRevalidate=false`).
-  4. При конкурентном resolution supplemental activity получает 404 и прекращает heartbeat, поэтому этот путь loader тоже не обновляет.
-  5. Полная reload показывает сохранённый Decision, но теряет draft и не выполняет предусмотренный recovery flow.
-- Исправление должно быть локальным в Package 4: после Decision conflict перечитать Case без потери draft/nonce; если Case остаётся open с новой version — сохранить frozen reviewedVersion до явного acknowledgement; если Case уже resolved — показать фактический Decision и убрать Resolve. Автоматический retry запрещён.
-- Нужны regression tests реального Router/UI behavior минимум для stale open Case после report/note/priority change и для concurrent resolution другим reviewer.
-- Schema/domain/API redesign, новые permissions, Package 5+, production rollout и unrelated refactor не требуются.
-- После correction: новый stable exact head + применимые checks → новый coordinator whole-PR review Миры → при PASS новый technical review Лёвы.
+- Package 4 реализован в Draft [PR #276](https://github.com/iliya1947/vico-forum/pull/276), новый stable exact head `12d94f308e25f579310b1cf18663697230c10354`, base main `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`.
+- На предыдущем head `0de025e7` coordinator review Миры был PASS, а independent technical review Лёвы подтвердил один P2: после stale Decision 409 Case loader не revalidate; при конкурентном resolution activity 404 не восстанавливает старый UI. Мира подтвердила finding и назначила Лире bounded correction.
+- Лира внесла локальное исправление в **route revalidation policy**: только при Decision 409 React Router повторно загружает Case. Компонент сохраняет draft, outcome, operation nonce и frozen reviewedVersion; при still-open обновлении новое значение принимается только по явному acknowledgement, при resolved Case выводится сохранённый Decision без старой Resolve form. Автоматического retry нет.
+- Добавлены regression tests с реальным `createMemoryRouter` для 409 после нового report/note/priority change (проверяют reread, frozen version, draft/outcome, acknowledgement и новый nonce) и после конкурентного resolution другим reviewer (проверяют сохранённый Decision и отсутствие Resolve).
+- **Exact-head CI #41473612121 — SUCCESS:** checks/database, 1726/1726 application tests (120 files), 452/452 PostgreSQL tests (36 files), lint без ошибок, typecheck, builds, migration/schema parity. Новых schema, migrations, permissions, domain/API contracts и Package 5+ нет.
+- Коррекция прошла авторские автоматические проверки, но **новый coordinator whole-PR review и technical review ещё не выполнены**; их PASS не заявляется. User browser, deployed R2 и production не использовались.
+- Следующий шаг: Мира проводит новый coordinator whole-PR review #276 на exact head `12d94f308e25f579310b1cf18663697230c10354`; после coordinator PASS — независимый технический review Лёвы того же head.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: finding подтверждён, correction scope зафиксирован.
-- Лира — ChatGPT-6: текущий исполнитель bounded correction в PR #276.
-- Лёва — Codex-6.1 Sol: review старого head завершён; ждёт нового coordinator PASS.
-- Марк — Codex-6 Sol: без текущего назначения.
+- Мира — ChatGPT-5.6 Sol: следующий coordinator whole-PR reviewer.
+- Лира — ChatGPT-6: bounded P2 correction завершена; новые реализации до review findings не назначены.
+- Лёва — Codex-6.1 Sol: technical reviewer после нового coordinator PASS.
+- Марк — Codex-6 Sol: резервный reviewer без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
