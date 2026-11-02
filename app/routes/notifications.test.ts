@@ -46,6 +46,22 @@ describe("notifications route", () => {
       .rejects.toMatchObject({ status: 401 });
   });
 
+  it("rejects duplicate, unknown and invalid inbox pages but accepts a normalized Framework URL",async()=>{
+    const value=context();
+    const readNotifications=vi.fn(async(_userId:string,page:number)=>({page,total:0,hasMore:false,items:[]}));
+    value.set(forumReaderContext,{readNotifications} as never);
+    for(const search of ["?page=1&page=2","?unused=1","?page=-1","?page=10001","?page=01","?page=abc"]){
+      await expect(loader({params:{locale:"en"},context:value,url:new URL("https://forum.example/en/notifications"+search)}))
+        .rejects.toMatchObject({status:400});
+    }
+    expect(readNotifications).not.toHaveBeenCalled();
+    // Raw Framework data URL may contain _routes; the passed url is normalized application URL.
+    const result=await loader({params:{locale:"en"},context:value,
+      url:new URL("https://forum.example/en/notifications?page=12")});
+    expect(result.page).toBe(12);
+    expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1",12);
+  });
+
   it("loads the current user's unified notifications with serialized timestamps", async () => {
     const value = context();
     const readNotifications = vi.fn(async () => ({page:0,total:1,hasMore:false,items:[{

@@ -33,12 +33,12 @@ const service = (connection = client) => new ComplaintsService(new DrizzleCompla
 const limitedService = (connection = client) => new ComplaintsService(new DrizzleComplaintsRepository(drizzle(connection)), authorization);
 const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
 const report = (target: ComplaintTarget, explanation: string | null = null) => ({ target, explanation, reason: "spam" as const, operationId: randomUUID() });
-async function content() {
+async function content(originalBody="Reported body") {
   const id = randomUUID();
   const postId = randomUUID(), revisionId = randomUUID(), titleId = randomUUID();
   await forum.createTopicWithInitialPost({ id, sectionId: "complaints-section", authorId: "content-author",
     titleRevision: { id: titleId, originalContent: "Reported title", sourceLocale: "en" },
-    initialPost: { id: postId, topicId: id, authorId: "content-author", bodyRevision: { id: revisionId, originalContent: "Reported body", sourceLocale: "en" } } });
+    initialPost: { id: postId, topicId: id, authorId: "content-author", bodyRevision: { id: revisionId, originalContent: originalBody, sourceLocale: "en" } } });
   return { post: { kind: "post", topicId: id, postId, revisionId } as const,
     title: { kind: "topic-title", topicId: id, revisionId: titleId } as const };
 }
@@ -82,6 +82,23 @@ afterAll(async () => {
 });
 
 describe("complaints domain foundation / real PostgreSQL", () => {
+
+  it("bounds resolved History snippets before returning rows and separates legacy/generic unread counts",async()=>{
+    const originalBody="Long complaint evidence ".repeat(1000);
+    const target=await content(originalBody);
+    const legacyBefore=await forum.countUnreadReplyNotifications("reporter-two");
+    const genericBefore=await forum.countUnreadNotifications("reporter-two");
+    const saved=await service().submit("reporter-two",report(target.post));
+    await service().decide("reviewer",{caseId:saved.caseId,operationId:randomUUID(),
+      expectedVersion:1,outcome:"confirmed",reasoning:"Decision with a long reported body"});
+    const history=await service().readResolvedHistory("reviewer",0);
+    const item=history.cases.find(x=>x.id===saved.caseId);
+    expect(item).toBeDefined();
+    expect(item?.text).toBe(originalBody.slice(0,500));
+    expect(item?.text.length).toBe(500);
+    expect(await forum.countUnreadReplyNotifications("reporter-two")).toBe(legacyBefore);
+    expect(await forum.countUnreadNotifications("reporter-two")).toBe(genericBefore+1);
+  });
 
   it("Package 5 unified result notifications fan out only to Case participants and survive exact replay",async()=>{
     const target=await content();

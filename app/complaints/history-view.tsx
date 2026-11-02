@@ -25,7 +25,7 @@ export function ComplaintResolvedHistoryList({locale,history}:{locale:string;his
   </nav>}
  </div>;
 }
-function EventDetails({event}:{event:ComplaintTimelineEvent}){
+export function ComplaintTimelineEventItem({event}:{event:ComplaintTimelineEvent}){
  const {t}=useTranslation("common");
  const label=event.kind==="submitted"?t("complaintReviewReports"):
  event.kind==="noted"?t("complaintReviewNotes"):
@@ -62,7 +62,7 @@ export function ComplaintTimelineView({locale,timeline}:{locale:string;timeline:
   <p>{timeline.outcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
   <p>{t("complaintHistoryCoverageNotice")}</p>
   <Link to={complaintReviewPath(locale,timeline.caseId)}>{t("complaintOpenCase")}</Link>
-  <ul>{timeline.events.map(event=><EventDetails key={event.id} event={event}/>)}</ul>
+  <ul>{timeline.events.map(event=><ComplaintTimelineEventItem key={event.id} event={event}/>)}</ul>
   <nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>
    {timeline.page>0?<Link to={`?page=${timeline.page-1}`}>{t("attentionCasePrevious")}</Link>:null}
    <span>{timeline.total}</span>
