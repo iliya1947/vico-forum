@@ -5,7 +5,7 @@ export const COMPLAINT_REVIEW_PAGE_SIZE = 50;
 export const COMPLAINT_CONTEXT_PAGE_SIZE = 25;
 export interface ReviewPages { reports: number; notes: number; evidence: number; context: number }
 export interface ReviewPage<T> { items: T[]; total: number; page: number; hasMore: boolean }
-export interface ReviewSource { revisionId: string; originalContent: string; sourceLocale: string; createdAt: string }
+export interface ReviewSource { revisionId: string; originalContent: string; sourceLocale: string; createdAt: string; direction?: "ltr" | "rtl" | "auto" }
 export interface ReviewReport {
   id: string; reason: ComplaintReason; explanation: string | null; createdAt: string;
   reporter?: { id: string; name: string };
@@ -14,7 +14,7 @@ export interface ReviewNote { id: string; body: string; author: { id: string; na
 export interface ReviewEvidence { id: string; fileName: string; byteSize: number; detectedType: string }
 export interface ReviewContextPost {
   id: string; number: number; author: { id: string; name: string };
-  createdAt: string; excerpt: string; truncated: boolean; sourceLocale: string;
+  createdAt: string; excerpt: string; truncated: boolean; sourceLocale: string; direction?: "ltr" | "rtl" | "auto";
 }
 export interface ReviewTopic {
   id: string; title: ReviewSource; authorId: string; sectionId: string;
