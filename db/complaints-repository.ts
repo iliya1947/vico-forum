@@ -1,3 +1,4 @@
+import { insertComplaintDecisionNotifications } from "./forum-notifications";
 import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject} from "./complaint-review-read";
 import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
 import { createHash, randomUUID } from "node:crypto";
@@ -78,7 +79,7 @@ export class DrizzleComplaintsRepository {
   }
 
   private async event(tx: Tx, actorId: string, input: ComplaintCaseCommand, fingerprint: string,
-    kind: "submitted" | "decided" | "noted" | "appealed" | "appeal-resolved" | "priority-changed", entityId: string, priority: number | null = null) {
+    kind: "submitted" | "decided" | "noted" | "appealed" | "appeal-resolved" | "priority-changed" | "review-started", entityId: string, priority: number | null = null) {
     await tx.execute(sql`insert into forum_complaint_events
       (id,case_id,kind,actor_user_id,operation_id,fingerprint,complaint_id,decision_id,note_id,appeal_id,priority_override,created_at)
       values (${randomUUID()},${input.caseId},${kind},${actorId},${input.operationId},${fingerprint},
@@ -130,11 +131,20 @@ export class DrizzleComplaintsRepository {
 
   async activity(actorId: string, caseId: string, active: boolean) {
     await this.database.transaction(async tx=>{
+      // Actor mutex before Case: concurrent tabs cannot double-record a lease start.
+      await this.actorMutex(tx,actorId);
       const c=await tx.execute(sql`select id from forum_complaint_cases where id=${caseId} and state='open' for share`);
       if(!c.rows.length)throw new ComplaintNotFoundError("open case not found");
+      const previous=await tx.execute<{wasActive:boolean}>(sql`select expires_at>statement_timestamp() as "wasActive"
+        from forum_complaint_activity where case_id=${caseId} and reviewer_user_id=${actorId} for update`);
       await tx.execute(sql`insert into forum_complaint_activity(case_id,reviewer_user_id,expires_at)
         values(${caseId},${actorId},statement_timestamp()+${active?COMPLAINT_ACTIVITY_SECONDS:0}*interval '1 second')
         on conflict(case_id,reviewer_user_id) do update set expires_at=excluded.expires_at`);
+      if(active&&!previous.rows[0]?.wasActive){
+        const operationId=randomUUID();
+        await this.event(tx,actorId,{caseId,operationId},digest("review-started",{caseId,operationId}),
+          "review-started",caseId);
+      }
     });
   }
 
@@ -236,6 +246,7 @@ export class DrizzleComplaintsRepository {
       await tx.execute(sql`update forum_complaint_cases set state='resolved',initial_decision_id=${id},
         version=version+1,resolved_at=statement_timestamp() where id=${c.id}`);
       await this.event(tx, actorId, input, fingerprint, "decided", id);
+      await insertComplaintDecisionNotifications(tx,c.id,id);
       return id;
     });
   }
@@ -343,8 +354,11 @@ export class DrizzleComplaintsRepository {
   async readReviewEvidence(caseId:string,attachmentId:string){return readComplaintEvidenceObject(this.database,caseId,attachmentId);}
 
   async readOwnResult(actorId: string, caseId: string) {
-    const r = await this.database.execute<{ caseId: string; decisionId: string; outcome: ComplaintOutcome; reasoning: string }>(sql`
-      select c.id as "caseId",d.id as "decisionId",d.outcome,d.reasoning
+    const r = await this.database.execute<{ caseId: string; decisionId: string; outcome: ComplaintOutcome; reasoning: string;
+      decidedAt: Date; affectedAuthor: boolean; reporter: boolean }>(sql`
+      select c.id as "caseId",d.id as "decisionId",d.outcome,d.reasoning,d.created_at as "decidedAt",
+        (t.affected_author_id=${actorId}) as "affectedAuthor",
+        exists(select 1 from forum_complaints r where r.case_id=c.id and r.reporter_user_id=${actorId}) as reporter
       from forum_complaint_cases c join forum_complaint_targets t on t.id=c.target_id
       join forum_complaint_decisions d on d.id=c.initial_decision_id and d.case_id=c.id
       where c.id=${caseId} and (t.affected_author_id=${actorId} or exists

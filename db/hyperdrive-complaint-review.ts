@@ -23,6 +23,7 @@ export function createHyperdriveComplaintReview(connectionString:string, authori
    read:(actor,id,pages)=>run(s=>s.readReview(actor,id,pages)),
    context:(actor,id,postId)=>run(s=>s.readReviewContext(actor,id,postId)),
    evidence:(actor,id,attachmentId)=>run(s=>s.readReviewEvidence(actor,id,attachmentId)),
+   ownResult:(actor,caseId)=>run(s=>s.readOwnResult(actor,caseId)),
    addNote:(actor,input)=>run(s=>s.addNote(actor,input)),
    decide:(actor,input)=>run(s=>s.decide(actor,input)),
  };
