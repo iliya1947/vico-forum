@@ -8,6 +8,8 @@ import { ForumRouteError } from "../forum/ui";
 import { NotificationsView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 
+export function headers(){return {"Cache-Control":"private, no-store"};}
+
 export function meta() {
   return [{ title: "Notifications · Vico Forum" }];
 }
@@ -61,8 +63,9 @@ export async function action({ request, params, context }: {
 
   return runForumMutation(request, context, async (writer, userId) => {
     const target = await writer.markNotificationRead({ userId, notificationId });
-    return target.kind==="complaint-decision" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result`) : redirect(
+    return target.kind==="complaint-decision" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result`,{headers:headers()}) : redirect(
       `${forumTopicPath(locale, target.topicId)}#post-${encodeURIComponent(target.postId)}`,
+      {headers:headers()},
     );
   });
 }
