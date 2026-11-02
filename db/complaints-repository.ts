@@ -336,8 +336,8 @@ export class DrizzleComplaintsRepository {
   }
 
 
-  async readReview(caseId:string,pages:ReviewPages,permissions:ReviewCase["permissions"],help:boolean){
-    return readComplaintReview(this.database,caseId,pages,permissions.identity,help,permissions);
+  async readReview(actorId:string,caseId:string,pages:ReviewPages,permissions:ReviewCase["permissions"],help:boolean){
+    return readComplaintReview(this.database,caseId,actorId,pages,permissions.identity,help,permissions);
   }
   async readReviewContext(caseId:string,postId:string){return readComplaintContextPost(this.database,caseId,postId);}
   async readReviewEvidence(caseId:string,attachmentId:string){return readComplaintEvidenceObject(this.database,caseId,attachmentId);}
