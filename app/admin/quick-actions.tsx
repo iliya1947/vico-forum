@@ -72,7 +72,8 @@ function TopicQuickActionForm({locale,topic,action,best,inline}:{locale:string;t
  const fetcher=useFetcher<{ok?:boolean;error?:string}>();
  const FormComponent=inline?fetcher.Form:Form;
  return <div>
-  <FormComponent method="post" action={forumTopicPath(locale,topic.id)} className="topic-admin-form">
+  <FormComponent method="post" action={forumTopicPath(locale,topic.id)}
+    className={`topic-admin-form ${action.intent==="pinTopic"||action.intent==="unpinTopic"?"pin-topic-form":""} ${action.intent==="correctTitleSourceLocale"?"source-locale-form":""}`}>
    <input type="hidden" name="intent" value={action.intent}/>
    {inline?<input type="hidden" name="inlineQuickAction" value="1"/>:null}
    {Object.entries(action.fields).map(([name,value])=><input key={name} type="hidden" name={name} value={value}/>)}
