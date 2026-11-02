@@ -47,3 +47,13 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Утверждённый P5 реализован в bounded PR: resolved History/timeline и persisted Appeals readonly; без новых workflow/permissions; notifications через общий inbox и atomic Decision fanout; member-only result; review-started coverage с явным ограничением истории.
 - Авторская проверка и CI **не** равны независимому whole-PR review. Chromium→built Worker→PostgreSQL interactive acceptance и owner visual acceptance отсутствуют; не заявлять их пройденными. Разработчик запретил Лире использовать браузер; техническую проверку нельзя перекладывать на владельца. Owner visual acceptance — только по отдельному запросу. Следующий этап — coordinator whole-PR review Миры с фиксацией остаточных verification gaps, затем technical review Лёвы после coordinator PASS.
 - Package 6+, unrelated domains и production не затрагиваются. Новых implementation commits не делать без новой подтверждённой current-scope задачи.
+
+## Package 5 — bounded coordinator correction complete
+
+- Мира назначила [пять подтверждённых текущих дефектов](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6584762142) после whole-PR review прежнего `5ad59262ea6ef1c2cc5b917f4d03c94564112460`.
+- Исправлено: SQL-bound History excerpt (500 characters); strict normalized URL pagination в Notifications и Attention History; legacy-only и generic all-kind notification counts с header routing; resolved History total EN/RU/HE/fingerprints; persisted readonly Appeal side/ordinal.
+- Добавлены регрессии: native PG длинного immutable content/read counts; Notifications route unknown/duplicate/invalid pages; strict query unit и Attention History route с Framework-normalized URL и проверкой сохранения unrelated group behavior; SSR UI total/Appeal side/ordinal.
+- Новый **stable exact head:** `1af1c6272bf7b46009145488b52a42f89bfd0b2f`, Draft PR #277. [CI #41501045924](https://github.com/iliya1947/vico-forum/actions/runs/41501045924): **SUCCESS**, 1736 application / 455 PostgreSQL tests, lint/typecheck/builds/migrations/schema/Worker smoke PASS.
+- Первые correction CI показали типовую ошибку i18next из-за зарезервированного `ordinal`; заменено на `number` в сообщениях и fingerprints. Финальный CI пройден.
+- Проверки Chromium→built Worker→PG, owner visual acceptance и независимый review этого head не заявляются. Браузер пользователя не использован; production/deploy/merge и Package 6+ не затронуты.
+- Author correction завершена, implementation до нового coordinator cycle не менять. Следующая задача — Мире провести whole-PR review указанного exact head; Лёва только после coordinator PASS.
