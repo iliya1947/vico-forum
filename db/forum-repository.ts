@@ -763,18 +763,10 @@ export class DrizzleForumRepository {
       if (topic.authorId !== input.authorId) recipients.add(topic.authorId);
       if (parentAuthorId && parentAuthorId !== input.authorId) recipients.add(parentAuthorId);
       if (recipients.size > 0) {
-        await tx.insert(forumReplyNotifications).values(
-          [...recipients].map((recipientUserId) => ({
-            id: crypto.randomUUID(),
-            recipientUserId,
-            actorUserId: input.authorId,
-            topicId: input.topicId,
-            postId: input.id,
-            createdAt,
-          })),
-        ).onConflictDoNothing({
-          target: [forumReplyNotifications.recipientUserId, forumReplyNotifications.postId],
-        });
+        await tx.execute(sql`insert into forum_reply_notifications
+          (id,recipient_user_id,actor_user_id,topic_id,post_id,created_at)
+          values ${sql.join([...recipients].map(recipient=>sql`(${crypto.randomUUID()},${recipient},${input.authorId},${input.topicId},${input.id},${createdAt})`),sql`,`)}
+          on conflict(recipient_user_id,post_id) do nothing`);
       }
 
       await this.recordPublishedMentions(tx, {
@@ -807,17 +799,10 @@ export class DrizzleForumRepository {
     if (!identifiers.length) return;
     const existing = await tx.select({ id: user.id }).from(user).where(inArray(user.id, identifiers));
     if (!existing.length) return;
-    await tx.insert(forumReplyNotifications).values(existing.map(({ id }) => ({
-      id: crypto.randomUUID(),
-      recipientUserId: id,
-      actorUserId: input.actorId,
-      topicId: input.topicId,
-      postId: input.postId,
-      kind: "mention" as const,
-      createdAt: input.createdAt,
-    }))).onConflictDoNothing({
-      target: [forumReplyNotifications.recipientUserId, forumReplyNotifications.postId],
-    });
+    await tx.execute(sql`insert into forum_reply_notifications
+      (id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at)
+      values ${sql.join(existing.map(({id})=>sql`(${crypto.randomUUID()},${id},${input.actorId},${input.topicId},${input.postId},'mention',${input.createdAt})`),sql`,`)}
+      on conflict(recipient_user_id,post_id) do nothing`);
   }
 
   private async publicationReceipt(

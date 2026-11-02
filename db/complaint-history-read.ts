@@ -24,7 +24,7 @@ export interface ComplaintTimelinePage {
 export async function readComplaintResolvedHistory(db:NodePgDatabase,page:number):Promise<ComplaintResolvedHistoryPage>{
   return db.transaction(async tx=>{
     const counts=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_complaint_cases where state='resolved'`);
-    const list=await tx.execute<ComplaintResolvedHistoryItem>(sql`
+    const list=await tx.execute<ComplaintResolvedHistoryItem & Record<string,unknown>>(sql`
       select c.id,t.kind,coalesce(pr.original_content,tr.original_content,'') as text,
         coalesce(pr.source_locale,tr.source_locale,'und') as "sourceLocale",
         c.resolved_at as "resolvedAt",d.outcome,
@@ -46,7 +46,7 @@ export async function readComplaintTimeline(db:NodePgDatabase,caseId:string,page
       where c.id=${caseId} and c.state='resolved'`);
     if(!header.rows[0])throw new ComplaintNotFoundError("resolved case not found");
     const counts=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_complaint_events where case_id=${caseId}`);
-    const events=await tx.execute<ComplaintTimelineEvent>(sql`
+    const events=await tx.execute<ComplaintTimelineEvent & Record<string,unknown>>(sql`
       select e.id,e.kind,e.created_at as "createdAt",
         case when e.kind in ('submitted','appealed') then null else moderator.name end as "moderatorName",
         report.reason,report.explanation,note.body as "noteBody",
