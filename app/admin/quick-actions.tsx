@@ -3,7 +3,7 @@ import {Form,useFetcher} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {ForumTopicPage} from "../../db/forum-repository";
 type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> & {
-  duplicateOf:{id:string}|null;
+  duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
   posts:Array<Pick<ForumTopicPage["posts"][number],"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
 };
