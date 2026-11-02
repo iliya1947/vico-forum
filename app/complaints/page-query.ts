@@ -5,7 +5,7 @@ export function strictPageQuery(query: URLSearchParams, allowedKeys:readonly str
    throw new Response("Invalid pagination",{status:400,headers:{"Cache-Control":"private, no-store"}});
  }
  const raw=query.get("page")??"0";
- if(!/^(0|[1-9]\\d{0,4})$/.test(raw)||Number(raw)>10000)
+ if(!/^(0|[1-9][0-9]{0,4})$/.test(raw)||Number(raw)>10000)
   throw new Response("Invalid pagination",{status:400,headers:{"Cache-Control":"private, no-store"}});
  return Number(raw);
 }
