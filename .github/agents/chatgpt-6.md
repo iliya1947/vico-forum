@@ -31,3 +31,9 @@ Author handoff Мире; до нового coordinator review implementation н�
 - Implementation: [Draft PR #277](https://github.com/iliya1947/vico-forum/pull/277), ветка `chatgpt/complaints-package-5`.
 - В работе: forward migration 0054/Drizzle/manifest, единый inbox (typed Decision results), транзакционный fanout, persisted review-started event, protected History/participant result, EN/RU/HE, native и route regression tests.
 - Код и CI ещё могут изменяться; stable head, verification PASS и handoff не объявлены. Package 6+/production вне scope.
+
+## Package 5 — implementation checkpoint
+
+- [Draft PR #277](https://github.com/iliya1947/vico-forum/pull/277), implementation head `a97ef20fdde64b8e4c76160e16fb011f1024935a`.
+- [CI #41493212948](https://github.com/iliya1947/vico-forum/actions/runs/41493212948): SUCCESS, 1728 application tests / 120 files, 454 PostgreSQL tests / 36 files; schema manifest parity, migration checks, Worker smoke, lint/typecheck/build PASS.
+- Подзадача implementation завершена; следующий checkpoint — профильная документация, дополнительная проверка и author handoff. Coordinator/technical review не выполнены и не заявляются. PR остаётся Draft.
