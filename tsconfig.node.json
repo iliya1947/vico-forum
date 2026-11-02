@@ -90,6 +90,8 @@
     "app/complaints/request-context.ts",
     "app/complaints/queue-contract.ts",
     "app/complaints/queue-context.ts",
+    "app/complaints/review-contract.ts",
+    "app/complaints/review-context.ts",
     "app/complaints/response.ts",
     "app/routes/complaint-submit.ts"
   ],
