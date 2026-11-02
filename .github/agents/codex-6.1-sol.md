@@ -15,7 +15,7 @@
 
 ## Текущий этап
 
-Технический план Package 4 подготовлен от main `ddffcb97b3864aea3e70f327627441682efd4f1d` и приведён ниже. Implementation PR ещё не создан; следующий исполнитель — Лира. Реализацию Лёва не начинает без технической эскалации.
+Технический whole-PR review PR #276 завершён на head `0de025e73fce521adc90d284980dc158c511c3d9`: CHANGES REQUIRED, один подтверждённый P2. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6580997474). Implementation не изменялся; следующий шаг — координация исправления Мирой. Технический план ниже сохранён как основание реализации.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -136,3 +136,13 @@ Signals/Security, обычная admin navigation и History producers не по
 
 **Следующий шаг: Лира реализует Package 4 по этому техническому плану; координация и eventual review — через #254.**
 
+
+
+## Technical review PR #276 — 2026-11-02
+
+- Exact head: `0de025e73fce521adc90d284980dc158c511c3d9`; main/base: `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`.
+- Вердикт: CHANGES REQUIRED. Один P2: после конкурентного resolution Decision POST получает 409, Router не перечитывает loader, кнопка acknowledge зависит от новой loader version, а activity получает 404 и прекращает обновления. UI остаётся открытым до полной перезагрузки, теряющей draft.
+- Причинная цепочка, ограниченное исправление и regression criteria: [полный опубликованный результат](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6580997474).
+- Самостоятельно повторены: 1722 application / 120 files, 452 PostgreSQL / 36 files, production Worker/client build — PASS. Дополнительный Router diagnostic и точечный actual Chromium/Worker/PG прогон подтверждают finding; owner visual acceptance/deployed R2 не заявляются.
+- Implementation не менял; свои временные preview/DB/config остановлены/удалены. Локальные evidence сохранены в `/workspace/work/review276-evidence/`.
+- Следующий шаг — Мира координирует bounded correction Лиры и новый coordinator review на новом stable head; затем technical review по workflow.
