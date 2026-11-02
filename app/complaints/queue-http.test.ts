@@ -37,9 +37,9 @@ describe("complaints queue HTTP capabilities",()=>{
     await expect(triageLoader({params:{caseId:"case"},context:s.context})).rejects.toMatchObject({status});
     expect(s.queue.readQueue).not.toHaveBeenCalled();expect(s.queue.readTriage).not.toHaveBeenCalled();
   });
-  it("keeps deferred groups inert and bounds queue page input",async()=>{
+  it("requires independent Appeal permission for group2 and bounds queue page input",async()=>{
     const s=context();
-    await attentionLoader({request:new Request("https://forum.test/en/attention?mode=complaints&group=group2"),params:{},context:s.context});
+    await expect(attentionLoader({request:new Request("https://forum.test/en/attention?mode=complaints&group=group2"),params:{},context:s.context})).rejects.toMatchObject({status:403});
     expect(s.queue.readQueue).not.toHaveBeenCalled();
     await attentionLoader({request:new Request("https://forum.test/en/attention?mode=complaints&page=10001"),params:{},context:s.context});
     expect(s.queue.readQueue).toHaveBeenCalledWith("trusted-reviewer",0);
