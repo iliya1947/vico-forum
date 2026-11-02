@@ -39,21 +39,37 @@ describe("Package 4 full Case HTTP boundary",()=>{
    [[],false,401],[["forum.complaint.reporterIdentity.read"],true,403],[["forum.complaint.priority.manage"],true,403]
   ] as [string[],boolean,number][]) {
    const f=fixture(keys,actor);
-   await expect(caseLoader({request:new Request(url),params:{caseId:"case-1"},context:f.context})).rejects.toMatchObject({status});
+   await expect(caseLoader({request:new Request(url),url:new URL(url),params:{caseId:"case-1"},context:f.context})).rejects.toMatchObject({status});
    expect(f.cap.read).not.toHaveBeenCalled();
   }
  });
  it("reads bounded independent query pages and trusted actor",async()=>{
   const f=fixture();
   const result=await caseLoader({request:new Request(url+"?reports=1&notes=2&evidence=3&context=4"),
-   params:{caseId:"case-1",locale:"en"},context:f.context});
+   url:new URL(url+"?reports=1&notes=2&evidence=3&context=4"),params:{caseId:"case-1",locale:"en"},context:f.context});
   expect(result).toMatchObject({data:{locale:"en"}});
   expect(f.cap.read).toHaveBeenCalledWith("trusted-reviewer","case-1",{reports:1,notes:2,evidence:3,context:4});
   expect(reviewPages(url+"?notes=100")).toEqual({reports:0,notes:100,evidence:0,context:0});
  });
  it.each(["reports=10001","reports=-1","notes=1&notes=2","unused=1"])("rejects invalid page %s",async query=>{
   const f=fixture();
-  await expect(caseLoader({request:new Request(url+"?"+query),params:{caseId:"case-1"},context:f.context})).rejects.toMatchObject({status:400});
+  await expect(caseLoader({request:new Request(url+"?"+query),url:new URL(url+"?"+query),params:{caseId:"case-1"},context:f.context})).rejects.toMatchObject({status:400});
+ });
+ it("reads targeted Framework data rereads without treating _routes as an application page key",async()=>{
+  const f=fixture();
+  const raw=url+".data?_routes=routes%2Fcomplaint-review&reports=2&notes=3";
+  const normalized=new URL(url+"?reports=2&notes=3");
+  const result=await caseLoader({request:new Request(raw),url:normalized,
+   params:{caseId:"case-1",locale:"en"},context:f.context});
+  expect(result).toMatchObject({data:{locale:"en"}});
+  expect(f.cap.read).toHaveBeenCalledWith("trusted-reviewer","case-1",
+   {reports:2,notes:3,evidence:0,context:0});
+  expect(result.init?.headers).toEqual(expect.objectContaining({"Cache-Control":"private, no-store"}));
+  for(const query of ["notes=1&notes=2","unused=1","reports=10001"]){
+   const rawRequest=new Request(url+".data?_routes=routes%2Fcomplaint-review&"+query);
+   await expect(caseLoader({request:rawRequest,url:new URL(url+"?"+query),
+    params:{caseId:"case-1",locale:"en"},context:f.context})).rejects.toMatchObject({status:400});
+  }
  });
  it("rejects cross origin, unrecognized intents, field pollution and oversized body",async()=>{
   const f=fixture();
