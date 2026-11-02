@@ -81,3 +81,10 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Documentation-only commits in PR #279: `8a9ea4f866a113d22bdc3cb0f1f03f51e068a29c` (permanent Complaints contract), `9034409524fd0e9df85102680f68ded759705132` (state distinguishes draft implementation from merged main).
 - Current head after docs: `9034409524fd0e9df85102680f68ded759705132`. Exact-head CI/review not yet verified; no stable-head handoff. Code/runtime/production/merge untouched in this checkpoint.
 - Next: check latest exact-head CI, finish author verification for full Package 6 scope and record handoff only if verified.
+
+## Package 6 — author source/CI checkpoint (current)
+
+- PR #279 exact head `9034409524fd0e9df85102680f68ded759705132`; [CI #41546869959](https://github.com/iliya1947/vico-forum/actions/runs/41546869959) SUCCESS on exact head: checks/database, migration schema parity, PostgreSQL17 tests, app tests, builds, Worker/Hyperdrive smoke.
+- Compared approved technical plan with repository code for effective-outcome reducer, protected participant/result and Appeal-review endpoints, independent Appeals read model, notification fanout and forward migration 0055. Their core contracts are represented in current source; this is a scoped author inspection, **not** a complete whole-PR review or real-browser acceptance.
+- Browser/Chromium→built Worker→PG interactive acceptance was **not run**, in compliance with user's prohibition on my browser use. No owner visual acceptance was requested. Exact runtime behavior beyond automated checks is not verified.
+- No new code changes, no coordinator handoff/PASS claimed. Remaining before handoff: finish applicable author verification and record the actual verification gap for coordinator. No production/deployment/merge.
