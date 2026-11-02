@@ -9804,3 +9804,20 @@ a.topic-tag:focus-visible {
 .complaint-priority-form :is(button,select),.complaint-open-case { min-block-size: 44px; padding: .6rem; border: 1px solid var(--color-border); border-radius: .4rem; font: inherit; }
 .complaint-open-case { display: inline-flex; align-items: center; }
 .complaint-reason-summary { padding-inline-start: 1.3rem; }
+
+/* Read-only administrative category/section browsing. */
+.admin-forum { min-inline-size: 0; }
+.admin-forum-search { display: grid; gap: .5rem; margin-block: 1rem; }
+.admin-forum-search > div { display: flex; flex-wrap: wrap; gap: .5rem; }
+.admin-forum-search input { flex: 1 1 12rem; min-inline-size: 0; max-inline-size: 100%; }
+.admin-forum-objects { list-style: none; padding: 0; display: grid; gap: .75rem; }
+.admin-forum-objects > li { min-inline-size: 0; padding: 1rem; border: 1px solid var(--color-border); border-radius: .5rem; background: var(--color-surface); }
+.admin-forum h2, .admin-forum h4, .admin-forum-trail { overflow-wrap: anywhere; }
+.admin-forum h4 { margin-block: 0 .5rem; font-size: 1.1rem; }
+.admin-forum-counts { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-block: .75rem; }
+.admin-forum-counts > div { display: flex; flex-wrap: wrap; gap: .4rem; }
+.admin-forum-counts dt { color: var(--color-text-muted); }
+.admin-forum-counts dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.admin-forum-reserved { color: var(--color-text-muted); }
+.admin-forum-paging, .admin-forum-trail { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1rem; }
+.admin-forum-paging a { min-block-size: 2.75rem; display: inline-flex; align-items: center; }

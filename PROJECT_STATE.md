@@ -95,8 +95,9 @@ Stage 5 завершён в repository/local-CI path.
 - AP-03 — authorization-change History и Overview recent actions;
 - AP-04 — существующий Roles & permissions UI внутри общего admin shell;
 - AP-05 — shared topic Quick actions и forum/Help History producers.
+- AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой.
 
-Ещё не реализованы полноценные Forum/User object pages, topic closure, user blocking и реальные Settings operations.
+Ещё не реализованы административные страницы тем и действия с сообщениями внутри них, страницы пользователей, topic closure, user blocking и реальные Settings operations.
 
 ### Complaints
 
@@ -156,7 +157,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- Admin Panel имеет реализованные AP-01–05, но последующие object/action packages ещё не завершены.
+- Admin Panel имеет реализованные AP-01–06, но последующие object/action packages ещё не завершены.
 - Complaints имеет реализованные Packages 1–3, Packages 4+ ещё не завершены.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.

@@ -8,12 +8,13 @@ admin panel. AP-01 established the documentation contract. AP-02 implements
 aggregate counts. The existing `/:locale/admin/authorization` UI remains independently
 protected at its original URL and, in AP-04, reuses the common shell/navigation.
 AP-03 adds authorization-change History and protected Overview recent actions. AP-05 reuses
-existing topic operations in shared Quick actions and connects their forum/Help History producers. New object
-pages, topic closure and user blocking remain unimplemented. AP-02 itself added no schema
+existing topic operations in shared Quick actions and connects their forum/Help History producers. AP-06 adds
+protected category/section browsing and dedicated object pages. Topic admin pages, topic closure
+and user blocking remain unimplemented. AP-02 itself added no schema
 or permission keys; AP-03 adds the independent `admin.history.read` capability.
 
 Other routes and capabilities described below as delivery targets become available only
-through their respective bounded implementation PRs. Unfinished Forum/Users/Settings
+through their respective bounded implementation PRs. Unfinished Users/Settings
 links explicitly use the shared Under development surface and grant no future read/action
 permission. Forum navigation is shown for Forum capabilities; the Users placeholder is
 shown with the existing authorization-user-management subset, not a new general user read.
@@ -82,6 +83,43 @@ During owner-only pre-release, approved unfinished destinations may use the shar
 Under development mechanism. This does not grant a private read or mutation. Settings has no
 approved concrete operations yet; its placeholder does not authorize a settings store or API.
 An unfinished section is not reported as implemented or accepted at closeout.
+
+## Implemented category/section browsing (AP-06)
+
+`/:locale/admin/forum` lists categories; `/:locale/admin/forum/categories/:categoryId`
+shows category metadata and its sections; `/:locale/admin/forum/sections/:sectionId`
+shows section metadata and its parent category. Forum navigation is current on all three
+pages. The old `under-development?feature=admin-forum` link redirects to the protected index.
+
+Each flat route independently checks the existing Forum admission/read boundary before
+parsing object/query input or reading private data. This adds no permission, role, schema,
+migration or runtime privilege. Request-scoped resolver snapshots and next-request revocation
+are inherited from the existing authorization capability. Success and controlled
+401/403/400/404/503 responses use `private, no-store`; typed authorization/database outages
+fail closed while unexpected failures propagate to the existing error boundary.
+
+A separate protected admin reader returns only category/section identifiers, names,
+relationships, reserved/service flags and aggregate counts. It uses existing SELECT access
+to categories, sections, topics and posts. Category lists and category child-section lists
+support literal case-insensitive name/ID search (`q`, trimmed, at most 200 Unicode code points)
+and stable ID keyset paging (`after`, at most 2048 UTF-8 bytes), 25 items per page.
+Search filters run in PostgreSQL before LIMIT; exact matching totals do not shrink with
+the cursor. Object IDs have the same 2048-byte bound. Duplicate query/cursor values,
+empty cursors and NUL are rejected. Counts are independent aggregates; empty results,
+zero counts and missing objects are presented truthfully. Search starts a fresh page;
+next/first links preserve the filter. These are live lists, not a multi-request snapshot.
+
+The reserved Help category and internal service section have explicit localized labels.
+Admin category counts include that internal section. The service-section public-view link
+opens the public Help category; no public service-section URL is introduced. Public readers,
+Overview public aggregates and Help discovery `section: null` remain unchanged. No topic or
+message body, revision, user email, Cases or History payload is included in the admin DTO.
+
+This slice is read-only. Section detail provides counts and a public-view link; administrative
+topic navigation/message actions belong to AP-07. Structural create/rename/move/delete,
+closure, Users and blocking are outside AP-06. There is no speculative Quick actions menu
+without an approved category/section operation. EN/RU/HE, shared AdminShell, logical CSS,
+keyboard search/navigation and responsive/RTL behavior apply to these pages.
 
 ## Authorization and admission matrix
 

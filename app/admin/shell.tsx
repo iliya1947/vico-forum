@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell, Breadcrumbs } from "../forum/ui";
+import {adminForumPath} from "./forum-paths";
 import { underDevelopmentPath } from "../forum/paths";
 import type { AdminAccess } from "./access";
 
@@ -10,7 +11,7 @@ export function adminDestinations(locale: string, access: AdminAccess) {
   const base = `/${encodeURIComponent(locale)}/admin`;
   return [
     { id: "overview", label: "adminOverview" as const, href: base, pending: false },
-    ...(access.canReadForum ? [{ id: "forum", label: "adminForum" as const, href: underDevelopmentPath(locale,"admin-forum"), pending: true }] : []),
+    ...(access.canReadForum ? [{ id: "forum", label: "adminForum" as const, href: adminForumPath(locale), pending: false }] : []),
     ...(access.canManageAuthorization ? [
       { id: "users", label: "adminUsers" as const, href: underDevelopmentPath(locale,"admin-users"), pending: true },
       { id: "roles", label: "adminRoles" as const, href: `${base}/authorization`, pending: false },
@@ -20,7 +21,7 @@ export function adminDestinations(locale: string, access: AdminAccess) {
   ];
 }
 
-export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles"}) {
+export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles" | "forum"}) {
   const {t} = useTranslation("common");
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel">

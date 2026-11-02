@@ -1,4 +1,3 @@
-import {act} from "react";
 import {render,cleanup as cleanupViews} from "@testing-library/react";
 import {I18nextProvider} from "react-i18next";
 import {createMemoryRouter,RouterProvider} from "react-router";
@@ -8,7 +7,6 @@ import {canonicalEnglishCatalog} from "../localization/catalog";
 import {russianCommonValues,hebrewCommonValues} from "../localization/manual-values";
 import {AdminOverview} from "./overview";
 import {adminAccess} from "./access";
-import {UnderDevelopmentView} from "../forum/under-development-view";
 
 const counts={categories:0,sections:0,topics:101,posts:1200};
 let cleanup=()=>{};
@@ -23,7 +21,6 @@ async function mount(locale="en",permissions:readonly ("forum.topic.pin"|"access
   const access=adminAccess(new Set(permissions));
   const router=createMemoryRouter([
     {path:"/:locale/admin",element:<AdminOverview locale={locale} access={access} counts={stats}/>},
-    {path:"/:locale/under-development",element:<UnderDevelopmentView locale={locale} requestedFeature="admin-forum"/>},
   ],{initialEntries:[`/${locale}/admin`]});
   const {container:node}=render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>);
   cleanup=()=>{cleanupViews();router.dispose();};
@@ -40,14 +37,11 @@ describe("admin shell and truthful Overview",()=>{
     expect(node.querySelector('a[href*="/attention"]')).toBeNull();
   });
   it("filters actual authorization destination independently and keeps unfinished sections honest",async()=>{
-    const {node,router}=await mount();
+    const {node}=await mount();
     expect(node.querySelector('a[href$="/admin/authorization"]')).toBeNull();
-    expect(node.querySelector(".admin-destination")?.textContent).toContain("Under development");
-    const link=node.querySelector<HTMLAnchorElement>('.admin-destination[href*="admin-forum"]')!;
-    await act(async()=>link.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,button:0})));
-    expect(router.state.location.pathname).toBe("/en/under-development");
-    expect(router.state.location.search).toBe("?feature=admin-forum");
-    expect(node.querySelector(".under-development-requested")?.textContent).toContain("Forum");
+    const forum=node.querySelector<HTMLAnchorElement>('.admin-destination[href="/en/admin/forum"]')!;
+    expect(forum).toBeTruthy();expect(forum.textContent).toBe("Forum");
+    expect(node.querySelector('.admin-destination[href*="admin-settings"]')?.textContent).toContain("Under development");
   });
   it("shows unavailable rather than fabricated zero statistics with a locale-safe retry",async()=>{
     const {node}=await mount("he",["forum.topic.pin"],null);
