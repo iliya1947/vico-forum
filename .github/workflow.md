@@ -2,7 +2,7 @@
 
 - Служебный PR: #254
 - План: `COMPLAINTS_IMPLEMENTATION_PLAN.md`
-- Текущий этап: Package 4 — Framework query correction прошла coordinator whole-PR review
+- Текущий этап: Package 4 — coordinator PASS + independent technical PASS; ожидается coordinator closeout
 - Координатор: Мира — ChatGPT-5.6 Sol
 - Технический reviewer: Лёва — Codex-6.1 Sol
 - Исполнитель correction: Лира — ChatGPT-6
@@ -13,4 +13,6 @@
 - CI test-merge `0d435b1b445374670c42cffb5d93372d8d155318` имеет тот же Git tree `a47613b51aee7716d570562b89228ae8c4c83186`, что и implementation head
 - Coordinator whole-PR review нового head: PASS, 0 подтверждённых current-scope дефектов
 - Framework `_routes` defect исправлен через normalized route `url.href`; strict application pagination validation сохранена
-- Следующий шаг: Лёва проводит independent technical whole-PR review PR #276 на exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`. Package 5+ вне scope.
+- Independent technical whole-PR review Лёвы: PASS, 0 подтверждённых current-scope дефектов; [результат](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582586583)
+- Decision conflict / Framework targeted reread: actual Chromium/Worker/PG PASS для still-open и concurrently resolved Case
+- Следующий шаг: Мира фиксирует coordinator closeout на том же unchanged head и согласует дальнейший шаг с владельцем. PR остаётся Draft; merge/production/Package 5+ вне текущего назначения.
