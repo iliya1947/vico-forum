@@ -1,3 +1,5 @@
+import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject} from "./complaint-review-read";
+import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
 import { createHash, randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -332,6 +334,13 @@ export class DrizzleComplaintsRepository {
         evidence: { items: evidence.rows.slice(0,100), hasMore: evidence.rows.length > 100 } };
     }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
+
+
+  async readReview(caseId:string,pages:ReviewPages,permissions:ReviewCase["permissions"],help:boolean){
+    return readComplaintReview(this.database,caseId,pages,permissions.identity,help,permissions);
+  }
+  async readReviewContext(caseId:string,postId:string){return readComplaintContextPost(this.database,caseId,postId);}
+  async readReviewEvidence(caseId:string,attachmentId:string){return readComplaintEvidenceObject(this.database,caseId,attachmentId);}
 
   async readOwnResult(actorId: string, caseId: string) {
     const r = await this.database.execute<{ caseId: string; decisionId: string; outcome: ComplaintOutcome; reasoning: string }>(sql`
