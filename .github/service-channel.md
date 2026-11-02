@@ -5,27 +5,35 @@
 ## Актуальное состояние
 
 - Packages 1–5 **merged в main**.
-- Package 5 PR #277 merged как `284bee3f5f0899cce1dc751cf4e9ef169739a120`; reviewed exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`.
-- Package 5 exact-head CI #41513618388: **SUCCESS** — 1741/1741 application tests, 455/455 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS.
-- Coordinator whole-PR review Миры: **PASS**.
-- Independent technical whole-PR review Лёвы того же exact head: **PASS, 0 confirmed current-scope defects**.
-- Все previous Package 5 technical findings закрыты; corrected failure paths actual-runtime verified.
-- Current main `PROJECT_STATE.md` и `docs/moderation/COMPLAINTS.md` уже отражают Packages 1–5 и явно оставляют interactive Appeal workflow/UI, Appeal notifications и effective-outcome policy для Package 6.
-- Production/deployed rollout не выполнялся и не требуется для перехода к следующему pre-release package.
+- Current main: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
+- Package 5 PR #277 merged; coordinator и independent technical review завершены PASS.
+- Permanent source-of-truth оставляет interactive Appeal workflow/UI, Appeal notifications и effective-outcome policy Package 6.
 
-## Следующий bounded этап
+## Package 6 — утверждённый продуктовый scope
 
-**Package 6 — Appeals.**
+Foundation уже существует: Appeal persistence, ordinal 1..3, participant-direction check первой Appeal, replay/events, `forum.complaint.appeal.review`, resolve `upheld | overturned`, readonly History. Package 6 не строит домен заново.
 
-Сначала Мира определяет точный current-scope Package 6 по утверждённой продуктовой модели и фактическому foundation в main, включая выявление product-policy вопросов, которые нельзя корректно решить техническим выбором. После coordinator scope Лёва получает отдельную задачу на технический план. Implementation до этого не начинается.
+Утверждённая политика:
+
+1. Одновременно допускается только одна pending Appeal на конкретный initial Decision.
+2. Eligibility следующей Appeal определяется текущим итогом:
+   - confirmed → author-side;
+   - not-confirmed → reporter-side;
+   - upheld сохраняет итог и право той же проигравшей стороны;
+   - overturned меняет итог и переводит право другой стороне.
+3. Общий лимит — три Appeal на initial Decision. Когда eligible reporter-side, любой реальный reporter может занять следующий слот; один reporter может использовать следующий слот повторно, если его сторона всё ещё eligible.
+4. После каждого Appeal result уведомление через общий inbox получают affected author + все реальные reporters, с дедупликацией recipient.
+5. Original Decision immutable. Effective outcome выводится из initial Decision и последовательности resolved Appeals.
+6. Предпочтителен reviewer, отличный от автора initial Decision, но это не блокирующее правило при отсутствии альтернативы.
+
+Package 6 должен подключить поверх foundation participant submission/result, реальную Complaints Appeals queue, reviewer workflow, effective-outcome/transition policy и Appeal result notifications. Signals/Security/Admin sanctions, production rollout и Package 7 вне scope.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: Package 6 scope definition.
-- Лёва — Codex-6.1 Sol: следующий technical planner после coordinator scope.
-- Лира — ChatGPT-6: без текущего implementation assignment.
+- Мира — ChatGPT-5.6 Sol: Package 6 scope definition завершён.
+- Лёва — Codex-6.1 Sol: **технический план Package 6**.
+- Лира — ChatGPT-6: без implementation assignment до принятого техплана.
 - Марк — Codex-6 Sol: без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
-Технический контекст: [codex-6.1-sol.md](./agents/codex-6.1-sol.md).
