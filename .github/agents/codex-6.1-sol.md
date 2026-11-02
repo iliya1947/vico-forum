@@ -2,18 +2,25 @@
 
 ## Следующая активная задача
 
-Independent whole-PR review AP-06 PR #270 после восстановления доступности Codex.
+Independent whole-PR technical review AP-06 PR #270.
 
 Exact head:
 
-`e019a8a11ef52a2b7f55adfc8fd66b0bc6c600d5`
+`71548fe5456c37d0965415d95967c6ff60c7233a`
+
+Base:
+
+`ddffcb97b3864aea3e70f327627441682efd4f1d`
 
 Scope проверки:
 
 1. Полный AP-06 против актуальных permanent contracts и текущего `main`.
-2. Integration result с Complaints Package 3, включая ранее пересекавшиеся файлы и сохранность обоих принятых наборов изменений.
+2. Повторный integration result после sync с новым `main`, включая сохранность AP-06 и нового контракта `PROJECT_STATE.md`.
 3. Admission/private-read boundary, protected category/section projection, Help semantics, literal search/paging, Worker/runtime binding, routes, localization и read-only boundary AP-06.
-4. Actionable только подтверждённые current-scope дефекты; AP-07+ не является дефектом AP-06.
-5. Во время review implementation не изменять.
+4. Проверить, что test-merge не теряет изменения AP-06 или актуального `main`.
+5. Actionable только подтверждённые current-scope дефекты; AP-07+ не является дефектом AP-06.
+6. Во время review implementation не изменять.
 
-Review ещё не начат.
+Coordinator review Миры на этом exact head: PASS, 0 подтверждённых current-scope дефектов.
+Exact-head CI #41433266864: SUCCESS.
+Review Лёвы ещё не начат.
