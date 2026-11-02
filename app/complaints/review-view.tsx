@@ -39,7 +39,8 @@ function ExpandPost({locale,id,post}:{locale:string;id:string;post:ReviewContext
 }
 function CaseQuickActions({item,locale}:{item:ReviewCase;locale:string}){
  const p=item.permissions,q=item.topic;
- const posts=item.context.items.map(x=>({id:x.id,solutionModerationStatus:null,solutionOutdatedReason:null}));
+ const posts:Array<{id:string;solutionModerationStatus:"needs-review"|"outdated"|null;solutionOutdatedReason:string|null}>=
+  item.context.items.map(x=>({id:x.id,solutionModerationStatus:null,solutionOutdatedReason:null}));
  if(q.bestAnswer&&!posts.some(x=>x.id===q.bestAnswer!.id))posts.push(q.bestAnswer);
  return <TopicQuickActions locale={locale} inline
   topic={{id:q.id,isPinned:q.isPinned,isSolved:q.isSolved,bestAnswerPostId:q.bestAnswerPostId,
