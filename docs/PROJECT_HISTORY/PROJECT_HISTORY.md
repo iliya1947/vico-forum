@@ -18,6 +18,7 @@ Git history и PR остаются первичными историческим
 4. [`PROJECT_HISTORY_04.md`](./PROJECT_HISTORY_04.md) — 2026-10-20 — 2026-10-26: post-Editor решения и correction packages по auth, recovery, database, notifications, Help lifecycle и audit fixes.
 5. [`PROJECT_HISTORY_05.md`](./PROJECT_HISTORY_05.md) — 2026-10-27 — 2026-10-28: attachment journal, Markdown/literal-text, Editor и localization corrections.
 6. [`PROJECT_HISTORY_06.md`](./PROJECT_HISTORY_06.md) — 2026-10-29 — 2026-10-31: Admin Panel AP-01–05, Complaints Packages 1–3 и поздние Editor/discovery/i18n/a11y corrections.
+7. [`PROJECT_HISTORY_07.md`](./PROJECT_HISTORY_07.md) — snapshot 2026-10-31: полный остаточный `PROJECT_STATE.md` перед его нормализацией 2026-11-02.
 
 ## Архивные снимки
 
