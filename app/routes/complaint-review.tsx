@@ -63,5 +63,5 @@ export async function action({request,params,context}:{request:Request;params:{c
   return data({ok:true as const,intent,operationId},{headers:reviewHeaders});
  }catch(error){return complaintCommandFailure(error);}
 }
-export default function ComplaintReviewRoute(){return <ComplaintReviewView {...useLoaderData<typeof loader>()}/>;}
+export default function ComplaintReviewRoute(){const data=useLoaderData<typeof loader>();return <ComplaintReviewView key={data.item.id} {...data}/>;}
 export const ErrorBoundary=ForumRouteError;
