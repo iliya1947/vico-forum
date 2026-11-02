@@ -20,7 +20,7 @@ function context(){
  ctx.set(authorizationContext,{forUser:()=>({
   has:async(key:string)=>key==="forum.complaint.review",
  })} as never);
- ctx.set(complaintQueueContext,{readResolvedHistory} as never);
+ ctx.set(complaintQueueContext,{readResolvedHistory,readQueue:vi.fn(async(_actor:string,page:number)=>({cases:[],total:0,page,hasMore:false}))} as never);
  return {ctx,readResolvedHistory};
 }
 function request(search:string){
