@@ -23,3 +23,11 @@
 ## Текущий этап
 
 Author handoff Мире; до нового coordinator review implementation не меняю. После coordinator PASS — independent technical review Лёвы того же head.
+
+## Package 5 — implementation in progress (PR #277)
+
+- Назначение Миры: [#6583342749](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6583342749).
+- Базовый main: `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
+- Implementation: [Draft PR #277](https://github.com/iliya1947/vico-forum/pull/277), ветка `chatgpt/complaints-package-5`.
+- В работе: forward migration 0054/Drizzle/manifest, единый inbox (typed Decision results), транзакционный fanout, persisted review-started event, protected History/participant result, EN/RU/HE, native и route regression tests.
+- Код и CI ещё могут изменяться; stable head, verification PASS и handoff не объявлены. Package 6+/production вне scope.
