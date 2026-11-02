@@ -4,14 +4,18 @@
 
 Координатор Complaints и ответственный за соответствие #254 текущему `AGENTS.md`.
 
-## Package 4 closeout
+## Текущий этап
 
-Implementation PR #276, exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`.
+Package 4 merged в `main` через PR #276, merge commit `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
 
-- Coordinator whole-PR review: **PASS, 0 current-scope defects**.
-- Independent technical whole-PR review Лёвы того же unchanged head: **PASS, 0 current-scope defects**.
-- Оба исправления Decision conflict recovery закрыты и подтверждены targeted actual Chromium/Worker/PostgreSQL runtime check.
-- Exact-head CI #41478096937: SUCCESS, 1727 application / 452 PostgreSQL tests; build/schema/runtime checks PASS.
-- Package 5+, production rollout и merge не выполнялись агентами.
+Начат bounded planning **Package 5 — History + notifications**.
 
-Package 4 review-cycle завершён. Следующий шаг принадлежит владельцу: merge PR #276. После merge можно начинать bounded planning Package 5 — History + notifications.
+Scope Миры:
+- реальный Complaints History для resolved Cases;
+- complaint-specific lifecycle;
+- result notifications через существующую общую notifications surface;
+- reporter/content-author projections без раскрытия запрещённых санкций или reporter identity;
+- admin Quick actions/history остаются отдельным admin-domain;
+- Package 6 appeal workflow не реализуется преждевременно.
+
+Следующий шаг: Лёва готовит технический план Package 5 по актуальному main и source-of-truth, отдельно проверяя границу между уже persisted appeal foundation и будущим Package 6.
