@@ -4,22 +4,26 @@
 
 ## Актуальное состояние
 
-- Packages 1–4 merged в `main`; Package 5 реализован в Draft PR #277, новый stable exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe` от main `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
-- Предыдущий coordinator whole-PR PASS и independent technical CHANGES REQUIRED относились к `1af1c6272bf7b46009145488b52a42f89bfd0b2f`. [Технические findings Лёвы](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672) перепроверены Мирой: 4/4 current-scope.
-- Четыре подтверждённых findings исправлены в ограниченном пакете:
-  1. History timeline использует canonical strict `page` parser, включая page=1/10000, и проверенный memory-router Next переход после 50 событий.
-  2. Системная Decision карточка получает три реальные CSS grid tracks на desktop вместо пустой avatar-колонки; мобильный и RTL layout, legacy reply/mention cards сохранены.
-  3. Persisted Appeal result `upheld | overturned` локализован в readonly History EN/RU/HE; source fingerprints добавлены, DB values/effective outcome не менялись.
-  4. Shared notifications POST читает максимум 4096 bytes URL-encoded body, проверяет ровно intent/open + bounded notification ID, запрещает duplicate/unknown/invalid fields/encoding до storage mutation; session/origin/recipient ownership/result membership сохранены.
-- Новые targeted tests для loader >50 events, UI Next route transition, HTML/CSS system-vs-legacy presentation, readonly labels и malformed/oversized POST. [CI #41513618388](https://github.com/iliya1947/vico-forum/actions/runs/41513618388): **SUCCESS**, 1741 application / 455 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS.
-- Schema/migration, atomic Decision fanout, activity, participant privacy, permissions, admin и Package 6 не расширялись и не переделывались.
-- Targeted Chromium → Worker → PostgreSQL и owner visual acceptance на новом head Лирой не проводились и не заявляются; браузер пользователя не использовался. Реализация завершена; ожидается новый independent coordinator cycle, затем technical review при PASS.
+- Packages 1–4 merged в `main`; Package 5 реализован в Draft PR #277, stable exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`.
+- Current main: `fb35519fec2520617e0db5c81837782a740e7613`. После исходного base #277 main продвинулся только изменением `AGENTS.md`; Package 5 implementation не пересекается, sync ради этого не требуется.
+- Предыдущий exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f`: coordinator PASS → independent technical review Лёвы CHANGES REQUIRED (2 P2 + 2 P3); Мира подтвердила 4/4 как current-scope.
+- Лира исправила все четыре findings одним bounded correction package:
+  1. History timeline positive pages/Next after 50 events;
+  2. desktop system Decision notification grid без пустой avatar-column;
+  3. EN/RU/HE readonly Appeal outcome labels;
+  4. bounded 4096-byte strict URL-encoded notifications POST с duplicate/unknown/id validation.
+- [CI #41513618388](https://github.com/iliya1947/vico-forum/actions/runs/41513618388): **SUCCESS**, exact head совпадает; 1741/1741 application tests, 455/455 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS.
+- Новый coordinator whole-PR review Миры exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`: **PASS**.
+- В correction перепроверены 4/4 исходных failure paths; whole-PR sweep также повторно проверил History/identity, review-started, migration/backfill, atomic Decision notification fanout/replay/dedup, unified и legacy notification read/unread/open paths, participant result membership/privacy и отсутствие Package 6 workflow.
+- Новых confirmed current-scope defects не найдено.
+- Targeted interactive browser/owner visual acceptance на corrected head не заявляются; отдельного owner visual request нет.
+- Следующий шаг: independent technical whole-PR review Лёвы того же exact head. Implementation до результата review не менять.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: следующий coordinator whole-PR reviewer нового stable head.
-- Лира — ChatGPT-6: bounded correction + author handoff завершены.
-- Лёва — Codex-6.1 Sol: ждёт нового coordinator PASS для independent technical review того же head.
+- Мира — ChatGPT-5.6 Sol: coordinator whole-PR review corrected head завершён **PASS**.
+- Лира — ChatGPT-6: correction/handoff завершены, без текущего implementation assignment.
+- Лёва — Codex-6.1 Sol: следующий independent technical reviewer exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`.
 - Марк — Codex-6 Sol: без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
