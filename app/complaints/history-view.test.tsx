@@ -42,7 +42,19 @@ describe("Package 5 readonly History labels",()=>{
    kind:"appeal-resolved",appealSide:"reporter",appealOrdinal:3,appealOutcome:"upheld"}}/>,"en");
   expect(reporter).toContain("Reporter");
   expect(reporter).toContain("Appeal #3");
-  expect(reporter).toContain("upheld");
+  expect(reporter).toContain("Upheld");
+  expect(reporter).not.toContain(">upheld<");
+  const ru=await html(<ComplaintTimelineEventItem event={{...base,kind:"appeal-resolved",
+    appealOutcome:"upheld"}}/>,"ru");
+  expect(ru).toContain("Оставлено в силе");
+  expect(ru).not.toContain(">upheld<");
+  const he=await html(<ComplaintTimelineEventItem event={{...base,kind:"appeal-resolved",
+    appealOutcome:"overturned"}}/>,"he");
+  expect(he).toContain("ההחלטה בוטלה");
+  expect(he).not.toContain(">overturned<");
+  const overturned=await html(<ComplaintTimelineEventItem event={{...base,kind:"appeal-resolved",
+    appealOutcome:"overturned"}}/>,"en");
+  expect(overturned).toContain("Overturned");
   expect(reporter).not.toContain("<form");
  });
 });
