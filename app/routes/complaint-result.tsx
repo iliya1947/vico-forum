@@ -69,7 +69,7 @@ export default function ComplaintResultRoute(){
     <button type="submit" disabled={appeal.state!=="idle"}>{t("complaintAppealSubmit")}</button>
   </appeal.Form>:<p role="status">{result.pending?t("complaintAppealPending"):
     result.remaining===0?t("complaintAppealLimit"):t("complaintAppealOtherSide")}</p>}
-  {appeal.data?.error?<p role="alert">{t(appeal.data.error==="conflict"?"complaintReviewConflict":"complaintReviewInvalid")}</p>:null}
+  {appeal.data?.error?<p role="alert">{t(appeal.data.error==="conflict"?"complaintError_conflict":"complaintError_invalid")}</p>:null}
   {appeal.data?.ok?<p role="status">{t("complaintAppealSubmitted")}</p>:null}
  </section></ForumShell>;
 }

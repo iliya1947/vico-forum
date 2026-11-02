@@ -101,7 +101,7 @@ export function ComplaintAppealReviewView({locale,result}:{locale:string;result:
       value={reasoning} onChange={e=>setReasoning(e.target.value)}/></label>
     <button type="submit" disabled={resolve.state!=="idle"}>{t("complaintAppealResolve")}</button>
    </resolve.Form>:<p>{t("complaintHistoryAppealResolved")}</p>}
-   {resolve.data?.error?<p role="alert">{t(resolve.data.error==="conflict"?"complaintReviewConflict":"complaintReviewInvalid")}</p>:null}
+   {resolve.data?.error?<p role="alert">{t(resolve.data.error==="conflict"?"complaintError_conflict":"complaintError_invalid")}</p>:null}
    {resolve.data?.ok?<p role="status">{t("complaintAppealResolved")}</p>:null}
   </section>
  </ForumShell>;
