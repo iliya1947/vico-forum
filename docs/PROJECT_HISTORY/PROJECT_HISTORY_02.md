@@ -8,6 +8,11 @@
 
 ## Исторические срезы
 
+## Текущая фаза и датированные срезы реализации
+
+Vico Forum находится в ранней pre-release разработке. Промежуточные PR/CI
+checkpoints ниже сохраняются как датированная история, не как очередь действий.
+
 - Registration/email login merged by owner in PR #214 (2026-10-10): existing Better Auth 1.7.4
   enables sign-up and sign-in with email/password, default auto-session and 8–128 character
   password validation without mandatory email verification. Locale-prefixed guest routes
