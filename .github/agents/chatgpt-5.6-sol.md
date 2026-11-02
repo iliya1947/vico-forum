@@ -7,21 +7,20 @@
 ## Важный подтверждённый контекст
 
 - Packages 1–3 завершены и merged.
-- Package 4 ограничен protected full Case review, reports/evidence/context, private moderator notes, reporter projection, initial Decision и reuse shared Admin Quick actions.
-- Package 5+ (History/results notifications/appeals UI) не входит в текущий scope.
-- Reporter identity требует отдельного permission поверх Case review; complaint Decision и административные действия остаются независимыми.
+- Package 4 ограничен protected Case review, notes, initial Decision и reuse shared Admin Quick actions; Package 5+ вне scope.
+- Reporter privacy, replay/CAS и разделение complaint Decision/admin actions сохраняются обязательными.
 
 ## Текущий этап
 
-Package 4 реализован в PR #276 на exact head `0de025e73fce521adc90d284980dc158c511c3d9`.
+Technical review PR #276 старого exact head `0de025e73fce521adc90d284980dc158c511c3d9` выявил один P2.
 
-Coordinator whole-PR review Миры завершён: **PASS, 0 подтверждённых current-scope дефектов**.
+Мира independently подтвердила finding как current-scope defect:
+- Decision action возвращает 409 при stale expectedVersion;
+- `ComplaintReviewView` после 409 не инициирует reread/revalidation;
+- React Router 8.3.1 по умолчанию не revalidate loaders после action 4xx/5xx;
+- при concurrent resolution activity получает 404 и прекращает heartbeat;
+- поэтому UI остаётся на stale open Case вместо показа фактического resolved Decision или explicit acknowledgement новой open version.
 
-Проверены:
-1. bounded scope и отсутствие Package 5+;
-2. authorization/privacy/protected evidence;
-3. notes/Decision replay, CAS и concurrency;
-4. shared canonical Quick actions;
-5. exact-head CI/regressions и docs/PROJECT_STATE.
+Это прямо нарушает уже утверждённый Package 4 recovery contract, поэтому исправление требуется сейчас.
 
-Следующий шаг — независимый technical whole-PR review Лёвы того же exact head. Отдельный общий browser-прогон не блокирует review без конкретной границы, которую невозможно проверить иначе; owner visual acceptance — только по отдельному запросу владельца.
+Следующий шаг: Лира выполняет один bounded correction в PR #276 с regression coverage; затем новый coordinator whole-PR cycle на новом stable exact head.
