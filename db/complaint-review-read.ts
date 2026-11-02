@@ -10,7 +10,7 @@ type Base = Record<string,unknown> & {
  currentId:string;currentText:string;currentLocale:string;currentAt:Date;
  titleId:string;titleText:string;titleLocale:string;titleAt:Date;
  sectionId:string;topicAuthorId:string;isPinned:boolean;isSolved:boolean;bestAnswerPostId:string|null;
- duplicateRelationshipId:string|null;duplicateOriginalId:string|null;bestStatus:string|null;bestReason:string|null;
+ duplicateRelationshipId:string|null;duplicateOriginalId:string|null;bestStatus:"needs-review"|"outdated"|null;bestReason:string|null;
  pendingHelpAppealId:string|null;priorityOverride:number|null;automaticPriority:number;
 };
 const iso=(v:Date|string)=>new Date(v).toISOString();
