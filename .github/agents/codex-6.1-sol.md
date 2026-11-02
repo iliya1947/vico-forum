@@ -15,7 +15,7 @@
 
 ## Текущий этап
 
-Independent technical whole-PR review PR #276 завершён на exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`: **PASS, 0 подтверждённых current-scope дефектов**. Оба предыдущих P2 Decision recovery закрыты фактическим Chromium/Worker/PG прогоном. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582586583). Implementation не менялся. Следующий шаг — coordinator closeout Миры; merge/production не выполнялись.
+Package 4 merged через #276 в main `1ad8a6402111928c0f08e6f15aba624ba18a4426`. Технический план Package 5 — History + notifications подготовлен и приведён в конце файла. Следующий шаг — согласование Мирой и затем назначение Лире. Код/migration/implementation PR Package 5 не создавались. Ранее завершённые P4 checkpoints ниже сохранены как контекст.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -165,3 +165,193 @@ Signals/Security, обычная admin navigation и History producers не по
 - 27 других файлов идентичны fully-reviewed initial head; authorization/domain/SQL/shared action/schema/package boundaries не расширены. Implementation не менял, свои временные ресурсы остановил/удалил.
 - Полный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582586583 ; evidence `/workspace/work/review276-final-evidence/`.
 - Следующий шаг — Мира фиксирует coordinator closeout того же unchanged head; PR остаётся Draft, merge/production/Package 5 не выполняются этим verdict.
+
+
+## Технический план Package 5 — History + notifications
+
+Дата: 2026-11-02. Планировщик: Лёва. Основание: [назначение #6582883012](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582883012), COMPLAINTS_IMPLEMENTATION_PLAN.md (§13 Package 5), AGENTS.md и актуальные профильные контракты. Проверенный main: **`1ad8a6402111928c0f08e6f15aba624ba18a4426`**, Package 4 merged через #276.
+
+**Результат этапа — технический план для согласования Мирой и последующей реализации Лирой. Код, migration и implementation PR здесь не создаются.**
+
+### 1. Установленный baseline
+
+- Complaints P1–4 работают через ComplaintsService/DrizzleComplaintsRepository, private read DTO и request-scoped Hyperdrive capability. Initial Decision immutable, Case resolved, exact replay/CAS и событие сохраняются одной transaction.
+- `forum_complaint_events` уже содержит submitted/noted/decided/appealed/appeal-resolved/priority-changed, typed entity FKs, private actor/operation/fingerprint, DB timestamps и index (case_id,created_at,id). Notes/reports/initial Decision immutable; Appeal argument immutable, один resolved result immutable. Это штатный источник complaint lifecycle, новая параллельная audit table не нужна.
+- Priority event хранит выбранный override, включая null=Automatic. Исторические automatic weights/priority не сохраняются; текущий settings singleton не является историей.
+- Review activity сейчас — только mutable lease (case,reviewer,expires_at), heartbeat 30s/TTL 90s. Исторические посещения и точные длительности не сохранены.
+- Общая notifications surface — `/:locale/notifications`, NotificationsView, header unread badge. Штатная таблица `forum_reply_notifications` уже хранит reply/mention, recipient/read_at; producers находятся в forum transaction. Читать/открыть можно только свою строку. List ограничен 50, unread-first, count отдельный.
+- Таблица сейчас требует actor/topic/post NOT NULL и unique(recipient,post), а kind CHECK разрешает только reply/mention. Complaint title result нельзя корректно записать туда без расширения schema; dummy post/actor недопустимы.
+- `readOwnResult` уже проверяет affected_author или реального reporter по конкретному Case и возвращает только Case/Decision/outcome/public reasoning. User-facing result route ещё отсутствует.
+- Admin History — отдельные admin_history/appendForumHistory, собственные permissions/transactions/order. Pin/Help/source-locale actions не являются complaint Decision или доказательством применённой санкции.
+- Repository migrations 0000–0053; Stage 6 paused. Наличие local/CI возможностей не разрешает production rollout.
+
+Основные источники кода: db/complaints-{service,repository}.ts, db/complaint-review-read.ts, db/schema.ts, db/forum-repository.ts (notification producers/read/count/mark), db/forum-history.ts, app/routes/{attention,notifications,locale-boundary}.tsx, app/forum/views.tsx, drizzle/{0047,0052} и .github/scripts/runtime-privileges.mjs.
+
+### 2. Минимальный текущий scope
+
+1. Complaints History group3 в Attention показывает resolved Cases и ссылки на их protected full Case/history.
+2. Bounded readonly timeline показывает фактически сохранённый complaint lifecycle, включая уже persisted Appeal records, без нового appeal workflow.
+3. Initial Decision создаёт уведомление всем своим реальным reporters и affected content author через существующий общий inbox, badge и read/open mechanism.
+4. Participant открывает свой минимальный private result, не reviewer Case. История и participant result — разные server projections.
+5. Shared administrative operations продолжают писать только существующий admin History; никакого копирования sanctions/actions в complaint timeline.
+
+Исключены: Package 6 transitions/forms/appeal queue/appeal notifications, effective-outcome policy, external email/push, новый complaint inbox, общая event bus/outbox/Queue, Signals/Security changes, новые admin actions, production/Stage 6.
+
+### 3. Матрица authority и DTO
+
+| Surface | Authority | Разрешённая projection |
+| --- | --- | --- |
+| Resolved History list / Case timeline | Session + fresh forum.complaint.review | Case summary, complaint-domain lifecycle; только moderation data |
+| Reporter/appellant identity в History | Review + отдельный forum.complaint.reporterIdentity.read из одного effective-permission snapshot | Дополнительные id/name; без email, session/account fields |
+| Own notification list/count/open | Session recipient_user_id | Только уведомления этого recipient; browser userId/kind/redirect не authority |
+| Participant result | Session + реальное affected_author/reporter membership конкретного Case | Initial outcome, public reasoning, decision time, только свои audience flags |
+| Shared admin History/actions | Собственные существующие permissions и resource/state checks | Прежняя admin projection; complaint review её не открывает |
+
+History SQL для обычного reviewer не JOIN reporter/appellant accounts и не выбирает скрытый actor submitted/appealed event как «автора события». Для noted/decided/priority-changed/review-started автор является moderator, и author/time можно показывать. Не раскрывать reporter через generic event.actor, data attributes, cursor, debug JSON или avatar.
+
+Identity-only, priority-manager-only, appeal-review-only, Signals/Security/admin permissions не открывают reviewer History. Participant membership не требует сохранения complaint.create/review permission: пользователь должен иметь возможность прочитать уже относящийся к нему результат. Reviewer, не являющийся участником, использует protected Case, а не обход participant membership.
+
+Participant DTO: caseId, decisionId, initial outcome, public reasoning, decidedAt; own reporter/affectedAuthor flags и честная availability апелляции. Не возвращать чужие reports/reasons/explanations, reporter list/count, notes, reviewer identity, event actor/operation/fingerprint, sanctions/admin events или evidence keys. При одновременном авторстве контента и собственной жалобе показываются только собственные роли; это не раскрывает других участников.
+
+Все личные document/data/resource/action ответы и контролируемые ошибки — private, no-store. Session/permission/membership проверяются на каждом новом request, не по role-name или UI flag. Known availability errors → 503, не пустой inbox/History и не ложный 403; unexpected errors не маскировать.
+
+### 4. History read model и UI
+
+- `/:locale/attention?mode=complaints&group=group3`: только c.state=resolved, sort resolved_at DESC,id DESC; page 25 + lookahead, independent total по всем eligible resolved Cases. Reuse P3 pagination bounds/presentation patterns; Queue group1 не переписывать.
+- Строка: Case id/kind, bounded immutable target/context excerpt с source locale, resolution time, initial outcome, independent reporter count и ссылка на existing full review. Не выдавать current reason weights за приоритет в прошлом.
+- Отдельный protected `/:locale/attention/complaints/:caseId/history` либо эквивалентная bounded секция существующего Case view: timeline 50 + lookahead, own total и стабильный created_at,id. Membership событий — по Case; route требует resolved Case для данного History surface. Existing full review остаётся доступен open/resolved.
+- Один read-only repeatable-read snapshot для Case header/count/page и условных identity joins. Все страницы достижимы; total на empty/out-of-range page не становится длиной страницы. Между requests snapshot не обещать.
+- Timeline projection задаётся discriminated union, а не сериализацией raw event row:
+  - submitted → report reason/explanation/time, reporter только при elevated projection;
+  - priority-changed → сохранённый manual override или «Automatic restored», moderator/time;
+  - noted → note body/author/time;
+  - decided → immutable initial Decision/outcome/public reasoning/moderator/time;
+  - review-started → зафиксированное начало activity lease, moderator/time;
+  - appealed → сохранённые argument/ordinal/side/time, appellant только при elevated projection;
+  - appeal-resolved → только фактически сохранённые result/reasoning/review time; не effective outcome.
+- Submitted/appealed event не должен раскрывать private actor через общий author field. При join текущего Appeal не приписывать поздний result моменту appeal submission; это отдельный тип события.
+- Reuse P4 text-only source rendering/registry direction/notes/details, full Case/evidence authorization. Не создавать второй mutation backend заметок или решений. Resolved notes по-прежнему разрешены и появляются в timeline; resolution time/index ordering от новых notes не меняются.
+- Честно обозначить, что прежние automatic-priority values и activity до начала recording неизвестны. Никаких fabricated audit rows или «reviewed» по факту GET.
+- Новые loader/query boundaries используют normalized React Router 8.3.1 `url.href`, а не raw Request.url с `_routes`/.data. Сохранить обе P4 conflict corrections и actual Framework regression coverage.
+
+### 5. Минимальное сохранение review activity
+
+Для requirement «сохранять/показывать review activity» одной текущей lease-строки недостаточно.
+
+Предлагается **один новый kind review-started в существующем forum_complaint_events**:
+- producer — только существующий authorized same-origin activity POST;
+- append только при переходе inactive/expired → active; повторные heartbeat внутри действующего lease не создают событий;
+- existing TTL renewal и append первого события выполняются одной DB transaction с атомарной сериализацией (case,reviewer) lease row/upsert; конкурирующие вкладки не создают два start event одного перехода;
+- server-generated UUID operation key и fingerprint, не browser-selected event actor/kind; event сохраняет только Case/reviewer/start DB time, все entity FK/priority поля для этого kind null;
+- это не assignment/lock, не «закончил проверку», не доказательство активной работы каждую секунду. Не выводить точную duration или end time по TTL; GET ничего не пишет;
+- activity не увеличивает Case version; не нарушить actor→Case lock order остальных команд. Если добавляется actor mutex, он берётся до Case; никаких новых mutex после Case. Исторический event insert не должен вводить global admin-history lock;
+- resolved Case отвергает renewal как прежде. Supplemental activity failure не блокирует разрешённый Case read/note/Decision.
+- Старые lease rows **не backfill** в исторические события. UI сообщает начало coverage, а не реконструирует прошлое. Старые persisted notes/Decisions сами являются достоверными действиями.
+
+Изменить event shape CHECK, typed kind/helper и tests только для нового kind, сохранив все прежние варианты/replay/immutability constraints.
+
+### 6. Один общий inbox: persistence и штатные механизмы
+
+Расширить существующую таблицу `forum_reply_notifications` новым typed kind `complaint-decision`, без второй notification table/inbox. Существующее имя таблицы можно оставить как legacy technical name; её переименование не требуется.
+
+Минимальная forward schema:
+- новый nullable complaint_decision_id FK → immutable forum_complaint_decisions.id (Case выводится по Decision, не дублируется неподтверждённым browser caseId);
+- actor_user_id/topic_id/post_id допускают null для complaint-decision;
+- строгий kind-specific CHECK:
+  - reply/mention: actor/topic/post NOT NULL, complaint_decision_id NULL;
+  - complaint-decision: complaint_decision_id NOT NULL, actor/topic/post NULL;
+- существующие recipient FK, reply post/topic FK, unique(recipient,post), created/read indexes сохраняются;
+- unique(recipient_user_id,complaint_decision_id) гарантирует одну result notification на initial Decision и recipient, включая dual-role recipient.
+- Никаких dummy actor/post для title, serialized notes/reporters/sanctions в payload или null-unsafe actorName.trim() в общей presentation.
+
+Выделить минимальный общий db/forum-notifications.ts helper/read contract, работающий с переданным tx; ForumRepository и ComplaintsRepository используют его без отдельной connection/COMMIT. Общая typed projection — reply | mention | complaint-decision. Existing reply/mention producers, arbitration/dedup/self-notification policy и read_at semantics сохраняются.
+
+В existing Forum reader/writer + Hyperdrive adapter добавить generic readNotifications/countUnreadNotifications/openNotification; общий notifications route, view и header переходят на них. Legacy reply-named methods при сохранении должны фильтровать reply/mention **в SQL до LIMIT/count/update**, а не случайно возвращать complaint null-target rows или фильтровать уже обрезанную смешанную страницу.
+
+Shared NotificationsView отображает complaint result системной карточкой без обязательного actor avatar/name. Общие list/header/open/read-state принадлежат одной поверхности. Допускается небольшое выделение union renderer из большого views.tsx, без общего UI rewrite.
+
+Pagination общей ленты: сохранить unread-first, затем created_at DESC,id DESC; bounded page 50 + lookahead с independent matching total/unread count, page bounds как в P3. Обеспечить достижимость страниц read history и всех >50 unread, а не вырезать по 50 каждого kind и склеивать. После open/read строки могут менять позиции; cross-request стабильность не обещать.
+
+### 7. Producer, recipients и transactional delivery
+
+В existing decide transaction после проверки replay/open expectedVersion:
+1. insert immutable Decision;
+2. close Case + existing decided event;
+3. insert result notification rows через тот же tx;
+4. commit всего набора.
+
+Recipients = UNION DISTINCT всех реальных reporters конкретного Case и target.affected_author_id. Не followers/все reviewers, не автор текущей revision вместо affected author. Пользователь одновременно author/reporter получает одну строку. Не применять reply-self suppression: даже reviewer, являющийся участником, сохраняет право на свой результат.
+
+Fanout выполняется set-based INSERT SELECT с DB unique key, не отдельной connection/сетевым вызовом на каждого recipient. Не брать recipient actor mutex после Case lock. Ошибка event/notification persistence откатывает Decision/Case; exact retry возвращает записанный результат и не создаёт дублей/не сбрасывает read_at. Ambiguous commit retry использует тот же command nonce.
+
+Никаких after-commit promises, фонового provider/Queue/outbox только ради in-app delivery: persisted строка в общем inbox уже является durable delivery для этого пакета.
+
+Forward migration выполняет идемпотентный backfill notification rows для уже persisted initial Decisions P1–4, тем же правилом recipients/dedup. created_at соответствует реальному decision time; existing rows/read state не перезаписывать. Это не создание новых Decisions или повторная санкция. GET не делает backfill. При будущей реальной deployment/migration integration учесть старые producers в rollout window; external acceptance остаётся отдельным Stage 6, не выполняется этим PR.
+
+### 8. Open/read-state и participant result
+
+- Existing `POST /:locale/notifications`, intent=open, notificationId: session + same-origin, bounded URL-encoded input и duplicate/id validation. Kind, recipient и redirect target определяются по принадлежащей actor DB row; не принимать browser targetURL/kind/userId как authority.
+- read_at устанавливается idempotently coalesce(read_at,DB time), только для своей строки. Чужая/несуществующая строка → 404, без раскрытия чужого kind/Case.
+- reply/mention возвращают прежний topic#post redirect.
+- complaint-decision открывает `/:locale/complaints/:caseId/result` (session-only membership route, не attention/reviewer shell). Membership результата recheck при open и при самом GET.
+- Новый route переиспользует/узко расширяет readOwnResult: persisted initial Decision + own reporter/affected-author membership в одном consistent read, safe minimal DTO из §3. Ни presence в inbox, ни угадываемый caseId сами по себе не дают доступ.
+- Participant result показывает initial confirmed/not-confirmed, public reasoning и время; безопасный plain text без remote media. Самим форме Decision в P4 добавить ясную подсказку, что reasoning виден обеим относящимся к делу сторонам, private note остаётся отдельно.
+- Header unread count охватывает все видимые своему recipient kinds и не зависит от LIMIT текущей страницы. Известный outage на странице → 503; optional header сохраняет штатное unavailable/undefined поведение, не выдумывает 0.
+
+### 9. Appeals и административные меры: граница текущего пакета
+
+**Readonly Appeal history сейчас:** уже persisted foundation records/events отображаются в reviewer timeline с прежней identity projection. Initial Decision не изменяется; stored upheld/overturned показывается как отдельный результат конкретного Appeal, не как рассчитанное effective outcome. Для чтения reviewer Case history используется forum.complaint.review; это не право разрешать Appeal. Никаких новых appeal submit/resolve POST routes, queue/group2, ordinal transition rules, reviewer reassignment или quota-reset policy.
+
+**Participant appeal entry сейчас:** result DTO/страница явно сообщает, что подача апелляций пока недоступна до Package 6. Можно показать направление, предусмотренное initial Decision (affected author для confirmed; own reporter для not-confirmed), но это не promise реальной eligibility после уже существующих appeals и не active submit control. Не вычислять remaining attempts/effective outcome и не давать фальшивый рабочий URL. Общую доступную поверхность submit/appeal notifications подключает Package 6. Это scoped трактовка «доступного пути апелляции» для согласования Мирой: пока working path отсутствует, UI честно отражает отсутствие доступности.
+
+**Notifications сейчас:** только initial Decision result. Existing appeal storage остаётся пригодным для readonly History; notification producers для последующих Appeal transitions/их policy принадлежат Package 6. Сохранённые appeal records не удаляются и не переинтерпретируются.
+
+**Общее сообщение о мерах:** не выводить «меры приняты» из confirmed, количества жалоб, pin/Help action или похожего admin_history по времени/topic. В main нет authoritative Case→санкция relationship и самих hide/block операций. В минимальном Package 5 такое необоснованное сообщение отсутствует; также не утверждать «мер не было». Administrative detail/History не проецируются participant. Когда появится реально применимая утверждённая операция и достоверный факт связи, общий текст должен исходить из её домена; создавать boolean/manual sanction backend здесь не нужно.
+
+Таким образом future-only appeal policy/новые санкции не становятся blocker P5. Эти две staged presentation границы должны быть явно приняты координатором перед назначением реализации; если требуется уже сейчас рабочая подача Appeal или утверждение о конкретной мере, это явное изменение Package 5 scope, а не скрытая реализация.
+
+### 10. Модули и migration
+
+| Модуль | Работа |
+| --- | --- |
+| app/complaints/history-contract/context + db/complaint-history-read.ts | Resolved list/timeline DTO, bounded read snapshot, identity-scoped joins |
+| db/complaints-service/repository.ts | Fresh History authority, participant result, atomic result producer, review-start event producer |
+| db/forum-notifications.ts, db/forum-repository.ts | Минимальная shared notification projection/producer/open/count, прежние reply/mention contracts |
+| db/hyperdrive-complaint-history/result + hyperdrive-forum.ts | Existing fresh-client/deadline/classified-error/discard lifecycle, request-scoped wiring |
+| app/routes/attention.tsx + AttentionCenterView | Реальный Complaints group3, independent page totals; group1/Signals/Security без rewrite |
+| protected Case History route/view; participant result route | Разные read authority/DTO; P4 components reuse, normalized URL handling |
+| app/routes/notifications.tsx, NotificationsView, locale-boundary/header | Одна typed общая лента, общий open/read/unread, безопасные system cards |
+| workers/app.ts, app/routes.ts, tsconfig.node.json | Capability/routes/typecheck admission, без новых permissions |
+| db/schema.ts, forward drizzle migration, metadata/snapshot/manifest/probes | Extension notification kinds/FK/checks, event review-started, resolved history index/backfill |
+| localization + профильные docs/PROJECT_STATE | EN/RU/HE/RTL, фактический P5 после реализации |
+
+Migration **реально необходима** из-за notification shape и отсутствующего durable review activity event kind. Ожидается одна forward migration после 0053 (номер проверить от actual main при старте реализации): новые columns/checks/indexes, notification backfill. Для resolved list добавить индекс по resolved_at/id с resolved predicate, если существующий state/created index не покрывает выбранный access path. Event case/time index уже есть.
+
+Новые таблицы и permission keys не нужны. Runtime SELECT/INSERT/UPDATE для notifications и INSERT/SELECT для complaint events уже есть; не расширять web role до owner/DELETE/DDL. Обновить структурный manifest/Drizzle journal+snapshot и regression/provisioning probes для новой формы; accepted 0000–0053 не менять. Внешние migrations/GRANT не выполнять.
+
+### 11. Проверки и критерии готовности
+
+Это требования будущей реализации, а не утверждение о запущенных tests.
+
+- PG17 migration: clean 0000→new и upgrade с заполненным P1–4 state; старые reply/mention данные/read_at/FKs/uniques сохранены; новые shape CHECK/FK/dedup, идемпотентный backfill и dual-role recipient.
+- Decision concurrency/replay/rollback: одновременно два resolutions, same/changed nonce, ambiguous success retry, fanout failure rollback, сохранённый read_at после retry; все recipients конкретного Case и только они, title/первый post/affected author vs revision editor.
+- Notification regressions: reply/mention generation и arbitration без изменений, >50 mixed unread/read, total/badge не усечён, все pages достижимы, чужой notification ID 404, idempotent own-open и корректный kind redirect.
+- Result privacy: guest/outsider/identity-only/reviewer nonparticipant не обходят membership; участник после отзыва create/review всё ещё читает свой initial result; никакой reporter list/count/notes/admin details в HTML, loader/data, badge или redirect.
+- History privacy: review revoke/custom role/allow-deny-inherit; ordinary vs elevated identity SQL и payload, submitted/appealed actor leak отрицательные проверки; forged event/Case/Appeal membership; appeals readonly, initial outcome не переписан.
+- History bounds: >25 resolved Cases, >50 events каждого применимого рода, empty/out-of-range totals, deterministic order, notes после resolution, previousCase links; current settings не выдаются за историческую automatic priority.
+- Activity: первый active lease → один event, concurrent duplicate heartbeat → не два, renew → без event, expire/release → следующий start, no Case version bump, DB time/TTL и non-exclusive behavior сохранены, event failure rollback; прошлые leases не превращены в fabricated history.
+- Web/Framework: actual normalized URL (включая .data?_routes=...), unknown/duplicate pagination 400, private/no-store на success/errors, same-origin/form limits, 401/403/404/409/503/transport deadline recovery, освобождение client.
+- Targeted built Worker + Chromium/PG verification конкретно новой цепочки: report → Decision → mixed notifications/badge → open/read → own result; unrelated denied; History timeline; обе P4 Decision 409 branches продолжают работать. Не ограничиваться memory-router mock loader. Owner visual acceptance — только по отдельному запросу.
+- EN/RU/HE/LTR/RTL, 320px/desktop, keyboard/focus/labels/unread status, inert free text/no unsolicited external media; не заявлять real email/provider/production/R2 acceptance.
+- Обычный repository CI: lint/typecheck/unit/route/native DB/build/UI preview/Worker smoke; migration history/metadata/schema parity/full manifest/runtime privilege/provisioning checks. Профильные contracts обновляются с реализацией; PROJECT_STATE — только фактически завершённое состояние, история checkpoints — в docs/PROJECT_HISTORY.
+
+Готово, когда reviewer достигает всех resolved Cases и их фактического lifecycle, reporters/affected author получают deduplicated private initial results в единой общей ленте, own-open/read/count и privacy работают, P1–4 и reply/mention не регрессировали, appeals не превратились в Package 6, applicable exact-head checks и coordinator/independent review завершены.
+
+### 12. Handoff и вопросы
+
+Подтверждённых технических/product blockers для bounded Package 5 не обнаружено. Реальные отсутствующие элементы main (shared notification shape для Decision и durable review-start event) закрываются описанной forward schema extension, а не отдельным inbox/audit subsystem. Нет зависимости от production/provider provisioning.
+
+**Мире:** согласовать план, включая staged отсутствие active Appeal entry и неподтверждённого сообщения о мерах (§9), затем назначить Лире реализацию одним bounded implementation PR от актуального main. Лире перед стартом проверить delta/номер migration; выполнение: schema/shared notifications + atomic producer → History/result projections → shared UI/routes → native/HTTP/browser regressions/docs/checks → stable head handoff Мире. После coordinator PASS — независимый technical review того же exact head.
+
+До согласования плана Лёва реализацию не начинает; Package 6+ и Stage 6 не выполняются.
+
