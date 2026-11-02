@@ -2,17 +2,20 @@
 
 - Служебный PR: #254
 - План: `COMPLAINTS_IMPLEMENTATION_PLAN.md`
-- Текущий этап: Package 5 — авторская реализация и документация завершены на stable exact head; независимый review ещё не начат
+- Текущий этап: Package 5 — coordinator whole-PR review завершён, CHANGES REQUIRED
 - Координатор: Мира — ChatGPT-5.6 Sol
 - Технический планировщик/reviewer: Лёва — Codex-6.1 Sol
-- Исполнитель: Лира — ChatGPT-6
+- Исполнитель correction: Лира — ChatGPT-6
 - Current main: `1ad8a6402111928c0f08e6f15aba624ba18a4426`
-- Technical plan Package 5: утверждён Мирой; хранится в `.github/agents/codex-6.1-sol.md`
-- Implementation PR: #277 (`chatgpt/complaints-package-5`), Draft; stable head `5ad59262ea6ef1c2cc5b917f4d03c94564112460`
-- Scope: resolved Complaints History + complaint lifecycle + initial Decision result notifications через общую notifications surface + participant result
-- Forward migration и минимальный `review-started` event подтверждены как current-scope необходимость
-- Package 6 appeal workflow, новые sanctions/admin actions, Signals/Security и Stage 6 вне scope
-- Exact-head CI: #41495180494 SUCCESS (checks/database) — 1728 application tests, 454 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS.
-- Документация `docs/moderation/COMPLAINTS.md`, `PROJECT_STATE.md`, `docs/PROJECT_HISTORY/` обновлена в #277.
-- Targeted interactive Chromium→Worker→PG и owner visual acceptance не проводились; эти результаты не заявлены. Запрет разработчика на использование браузера Лирой сохраняется; owner visual acceptance — только по отдельному запросу, не поручается владельцу автоматически.
-- Следующий шаг: Мира проводит coordinator whole-PR review PR #277 на stable exact head и определяет применимые недостающие verification gates. После coordinator PASS — независимый technical review Лёвы того же head.
+- Implementation PR: #277 (`chatgpt/complaints-package-5`), Draft
+- Reviewed stable head: `5ad59262ea6ef1c2cc5b917f4d03c94564112460`
+- Exact-head CI #41495180494: SUCCESS — 1728/1728 application tests, 454/454 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS
+- Coordinator verdict: **CHANGES REQUIRED**, 5 confirmed current-scope issues
+- Confirmed correction scope:
+  1. bound History target excerpts server-side, not only in React;
+  2. enforce approved strict Package 5 pagination/query boundary for unified notifications and History group3 using normalized Framework URL where required;
+  3. restore legacy reply/mention-only count semantics and move header/generic badge path to countUnreadNotifications;
+  4. use resolved-History wording instead of existing “Open cases” label;
+  5. render persisted Appeal side + ordinal in readonly History.
+- No confirmed defects in migration shape, Decision fanout transaction/replay/dedup, participant membership/privacy, identity filtering, review-started persistence or Package 6 boundary.
+- Следующий шаг: Лира исправляет только эти confirmed findings, добавляет targeted regressions, получает новый stable exact head + applicable CI и передаёт Мире. Затем coordinator cycle начинается заново.
