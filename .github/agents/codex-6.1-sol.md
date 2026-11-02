@@ -24,3 +24,19 @@ Scope проверки:
 Coordinator review Миры на этом exact head: PASS, 0 подтверждённых current-scope дефектов.
 Exact-head CI #41433266864: SUCCESS.
 Review Лёвы ещё не начат.
+
+
+## Восстановление контекста — 2026-11-02
+
+Назначение выше проверено до начала review. Лёва — автор исходного AP-06 implementation
+head `b9f2539287ef3415c17cf3c73ea1822321e02e54` и author handoff
+[#6536528485](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6536528485).
+В новом head `71548fe` файлы `db/admin-forum.ts`, `app/admin/forum.tsx` и
+`app/admin/forum.server.ts` имеют те же blob SHA, что исходная реализация.
+Последующий sync Лирой не делает whole-PR review Лёвы независимым.
+
+Актуальный main AGENTS.md, «Проверка PR» п.1: «Реализатор whole-PR проверку собственной
+работы не проводит». «Рабочий процесс» п.6 предусматривает Марка вместо Лёвы, если
+Лёва участвовал в реализации. Независимый review не начат, verdict не выдан;
+implementation #270 не менялась. Это конфликт назначения, не functional finding.
+Мире передаётся уточнение назначения; Марк самостоятельно не назначался и не запускался.
