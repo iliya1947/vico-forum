@@ -8,8 +8,8 @@
 - Исполнитель: Лира — ChatGPT-6
 - Current main: `1ad8a6402111928c0f08e6f15aba624ba18a4426`
 - Technical plan Package 5: утверждён Мирой; хранится в `.github/agents/codex-6.1-sol.md`
-- Implementation PR: ещё не создан
+- Implementation PR: #277 (`chatgpt/complaints-package-5`), Draft — реализация продолжается
 - Scope: resolved Complaints History + complaint lifecycle + initial Decision result notifications через общую notifications surface + participant result
 - Forward migration и минимальный `review-started` event подтверждены как current-scope необходимость
 - Package 6 appeal workflow, новые sanctions/admin actions, Signals/Security и Stage 6 вне scope
-- Следующий шаг: Лира реализует Package 5 одним bounded implementation PR от актуального main и после stable head + применимых checks передаёт Мире на coordinator whole-PR review.
+- Следующий шаг: Лира завершает bounded implementation Package 5 в Draft PR #277, затем выполняет проверки/документацию и передаёт Мире stable exact head на coordinator whole-PR review.
