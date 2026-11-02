@@ -83,6 +83,65 @@ afterAll(async () => {
 
 describe("complaints domain foundation / real PostgreSQL", () => {
 
+  it("Package 5 unified result notifications fan out only to Case participants and survive exact replay",async()=>{
+    const target=await content();
+    const first=await service().submit("reporter-one",report(target.title));
+    await service().submit("reporter-two",report(target.title));
+    const input={caseId:first.caseId,operationId:randomUUID(),expectedVersion:2,
+      outcome:"confirmed" as const,reasoning:"A public Decision"};
+    const decisionId=await service().decide("reviewer",input);
+    const original=await client.query<{id:string;recipient_user_id:string;actor_user_id:string|null;
+      topic_id:string|null;post_id:string|null;kind:string;read_at:Date|null}>(`
+      select id,recipient_user_id,actor_user_id,topic_id,post_id,kind,read_at
+      from forum_reply_notifications where complaint_decision_id=$1 order by recipient_user_id`,[decisionId]);
+    expect(original.rows.map(row=>row.recipient_user_id)).toEqual(["content-author","reporter-one","reporter-two"]);
+    expect(original.rows.every(row=>row.kind==="complaint-decision"&&row.actor_user_id===null&&
+      row.topic_id===null&&row.post_id===null)).toBe(true);
+    const own=original.rows.find(row=>row.recipient_user_id==="reporter-one")!;
+    await expect(forum.markNotificationRead("outsider",own.id)).rejects.toThrow("notification");
+    expect(await forum.markNotificationRead("reporter-one",own.id)).toEqual({kind:"complaint-decision",caseId:first.caseId});
+    const readAt=(await client.query<{read_at:Date}>(`
+      select read_at from forum_reply_notifications where id=$1`,[own.id])).rows[0]!.read_at;
+    expect(readAt).not.toBeNull();
+    expect(await forum.markNotificationRead("reporter-one",own.id)).toEqual({kind:"complaint-decision",caseId:first.caseId});
+    expect(await service().decide("reviewer",input)).toBe(decisionId);
+    const again=await client.query<{recipient_user_id:string;read_at:Date|null}>(`
+      select recipient_user_id,read_at from forum_reply_notifications where complaint_decision_id=$1 order by recipient_user_id`,[decisionId]);
+    expect(again.rows).toHaveLength(3);
+    expect(again.rows.find(row=>row.recipient_user_id==="reporter-one")!.read_at).toEqual(readAt);
+    expect((await service().readOwnResult("content-author",first.caseId))).toMatchObject({
+      decisionId,affectedAuthor:true,reporter:false,outcome:"confirmed",reasoning:"A public Decision"
+    });
+    await expect(service().readOwnResult("outsider",first.caseId)).rejects.toThrow("result not found");
+  });
+
+  it("Package 5 records fresh review-started activity once per active lease without changing Case version",async()=>{
+    const target=await content();
+    const saved=await service().submit("reporter-one",report(target.post));
+    const before=(await client.query<{version:number}>(`select version from forum_complaint_cases where id=$1`,[saved.caseId])).rows[0]!.version;
+    await service().activity("reviewer",saved.caseId,true);
+    await service().activity("reviewer",saved.caseId,true);
+    const count=async()=>(await client.query<{total:number}>(`
+      select count(*)::int as total from forum_complaint_events where case_id=$1 and kind='review-started'`,[saved.caseId])).rows[0]!.total;
+    expect(await count()).toBe(1);
+    await service().activity("reviewer",saved.caseId,false);
+    await service().activity("reviewer",saved.caseId,true);
+    expect(await count()).toBe(2);
+    expect((await client.query<{version:number}>(`select version from forum_complaint_cases where id=$1`,[saved.caseId])).rows[0]!.version).toBe(before);
+    await service().decide("reviewer",{caseId:saved.caseId,operationId:randomUUID(),
+      expectedVersion:before,outcome:"not-confirmed",reasoning:"Public"});
+    await expect(service().activity("reviewer",saved.caseId,true)).rejects.toThrow("open case not found");
+    const timeline=await service().readHistoryTimeline("reviewer",saved.caseId,0);
+    expect(timeline.events.filter(event=>event.kind==="review-started")).toHaveLength(2);
+    expect(timeline.events.filter(event=>event.kind==="submitted")[0]).toMatchObject({
+      reporterName:null,reporterId:null,moderatorName:null
+    });
+    expect(timeline.events.some(event=>event.kind==="decided")).toBe(true);
+    expect((await service().readResolvedHistory("reviewer",0)).cases.some(item=>item.id===saved.caseId)).toBe(true);
+    await expect(service().readHistoryTimeline("outsider",saved.caseId,0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+  });
+
+
   it("reads protected full Case evidence and topic context through a bounded private projection", async () => {
     const c = await content();
     const attachmentId = await asset(c.post.postId);
