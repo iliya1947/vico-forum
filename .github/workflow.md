@@ -14,5 +14,5 @@
 - Package 6 appeal workflow, новые sanctions/admin actions, Signals/Security и Stage 6 вне scope
 - Exact-head CI: #41495180494 SUCCESS (checks/database) — 1728 application tests, 454 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS.
 - Документация `docs/moderation/COMPLAINTS.md`, `PROJECT_STATE.md`, `docs/PROJECT_HISTORY/` обновлена в #277.
-- Browser/visual acceptance: targeted interactive Chromium→built Worker→PG и owner visual acceptance не проведены; это остаётся gate до coordinator review.
-- Следующий шаг: обеспечить указанные применимые acceptance gates; затем Мира проводит coordinator whole-PR review #277 на том же stable exact head. После coordinator PASS — техническая проверка Лёвы.
+- Targeted interactive Chromium→Worker→PG и owner visual acceptance не проводились; эти результаты не заявлены. Запрет разработчика на использование браузера Лирой сохраняется; owner visual acceptance — только по отдельному запросу, не поручается владельцу автоматически.
+- Следующий шаг: Мира проводит coordinator whole-PR review PR #277 на stable exact head и определяет применимые недостающие verification gates. После coordinator PASS — независимый technical review Лёвы того же head.
