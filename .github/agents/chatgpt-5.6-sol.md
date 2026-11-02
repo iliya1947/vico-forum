@@ -30,3 +30,10 @@ Current main на closeout: `fb35519fec2520617e0db5c81837782a740e7613`; посл
 Implementation не менялся после reviewed exact head. Package 6+, production/deployed rollout и owner-only merge не выполнялись.
 
 Следующий маршрут: owner merge PR #277; после merge обновить progress/status служебного плана и перейти к Package 6 bounded cycle.
+
+
+## Package 5 — post-merge confirmation
+
+PR #277 merged into `main` as `284bee3f5f0899cce1dc751cf4e9ef169739a120`. Current main source-of-truth confirms Packages 1–5 implemented in repository/local-CI path; Package 6 remains deferred.
+
+Следующая coordinator-задача: определить bounded scope Package 6 Appeals на текущем main до передачи технического планирования Лёве.
