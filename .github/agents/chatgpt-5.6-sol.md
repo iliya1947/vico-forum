@@ -6,17 +6,16 @@
 
 ## Текущий этап
 
-Новый coordinator whole-PR review PR #276 завершён на exact head `12d94f308e25f579310b1cf18663697230c10354`.
+Technical review corrected head `12d94f308e25f579310b1cf18663697230c10354` выявил один P2, который Мира независимо подтвердила.
 
-**Вердикт: PASS, 0 подтверждённых current-scope дефектов.**
+Подтверждённая цепочка:
+1. Decision 409 вызывает новый `shouldRevalidate=true`.
+2. React Router 8.3.1 Framework single-fetch делает targeted data request с internal `_routes`.
+3. В v8.3.1 `request.url` является raw URL и сохраняет framework implementation details; нормализованный application URL передаётся отдельным `url` argument.
+4. Case loader вызывает `reviewPages(request.url)`.
+5. `reviewPages` отвергает любой query кроме `reports/notes/evidence/context`, поэтому `_routes` приводит к 400.
+6. В результате conflict recovery не достигает актуального Case и ломает уже утверждённый Package 4 recovery contract.
 
-Проверено:
-1. P2 Decision 409 recovery исправлен через узкий route `shouldRevalidate`.
-2. Draft/outcome/nonce и frozen reviewedVersion сохраняются; still-open Case требует явного acknowledgement.
-3. Concurrently resolved Case после reread показывает фактический Decision без устаревшей Resolve form.
-4. Regression coverage использует реальный `createMemoryRouter` для report/note/priority change и concurrent resolution.
-5. Относительно старого review head изменены только два файла; остальные 28 файлов Package 4 не менялись.
-6. Exact-head CI #41473612121 — SUCCESS: 1726 application и 452 PostgreSQL tests, плюс lint/typecheck/build/schema/Worker checks.
-7. Test-merge и implementation head имеют одинаковый Git tree `4b7ef746171e5d80fce495be188023ba42898990`.
+Это current-scope defect, не future work.
 
-Следующий шаг — independent technical whole-PR review Лёвы того же exact head.
+Следующий шаг: Лира выполняет локальный correction query boundary + regression для Framework-style `_routes` request. После нового stable head начинается новый coordinator whole-PR cycle.
