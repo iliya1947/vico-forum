@@ -118,9 +118,29 @@ export class ComplaintsService {
     if(!Number.isSafeInteger(page)||page<0||page>10000)throw new ComplaintInputError("invalid page");
     return this.repository.readAppealQueue(actor,page);
   }
-  async readAppealCaseForReviewer(actor:string,caseId:string,appealId:string){
-    const identities=await this.reviewIdentity(actor,"forum.complaint.appeal.review");
-    return this.repository.readAppealCaseForReviewer(complaintId(caseId),complaintId(appealId),identities);
+  async readAppealCaseForReviewer(actor:string,caseId:string,appealId:string,pages:ReviewPages){
+    complaintId(actor);
+    for(const n of Object.values(pages))if(!Number.isSafeInteger(n)||n<0||n>10000)
+      throw new ComplaintInputError("invalid page");
+    const resolved=await this.authorization.forUser(actor).resolve();
+    const has=(key:PermissionKey)=>resolved.effectivePermissions.includes(key);
+    if(!has("forum.complaint.appeal.review"))throw new ComplaintForbiddenError("appeal review denied");
+    const permissions:ReviewCase["permissions"]={
+      identity:has("forum.complaint.reporterIdentity.read"),
+      pin:has("forum.topic.pin"),solution:has("forum.solution.manageAny"),
+      duplicate:has("forum.helpDuplicate.manage"),sourceLocale:has("forum.sourceLocale.correctAny"),
+      solutionModeration:has("forum.solution.manageAny"),
+    };
+    return this.repository.readAppealCaseForReviewer(actor,complaintId(caseId),complaintId(appealId),
+      permissions.identity,pages,permissions);
+  }
+  async readAppealContext(actor:string,caseId:string,appealId:string,postId:string){
+    await this.readAppealCaseForReviewer(actor,caseId,appealId,{reports:0,notes:0,evidence:0,context:0});
+    return this.repository.readReviewContext(complaintId(caseId),complaintId(postId));
+  }
+  async readAppealEvidence(actor:string,caseId:string,appealId:string,attachmentId:string){
+    await this.readAppealCaseForReviewer(actor,caseId,appealId,{reports:0,notes:0,evidence:0,context:0});
+    return this.repository.readReviewEvidence(complaintId(caseId),complaintId(attachmentId));
   }
   async readOwnResult(actor: string, caseId: string) {
     return this.repository.readOwnResult(complaintId(actor), complaintId(caseId));

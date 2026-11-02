@@ -1,3 +1,4 @@
+import {readPendingAppeals,readAppealReviewerCase} from "./complaint-appeal-read";
 import {deriveAppealPolicy,type AppealState} from "./complaint-appeal-policy";
 import { readComplaintResolvedHistory, readComplaintTimeline } from "./complaint-history-read";
 import { insertComplaintDecisionNotifications,insertComplaintAppealResultNotifications } from "./forum-notifications";
@@ -113,6 +114,11 @@ export class DrizzleComplaintsRepository {
 
   async readQueue(actorId: string, page: number) { return readComplaintQueue(this.database,actorId,page); }
 
+  async readAppealQueue(actor:string,page:number){return readPendingAppeals(this.database,actor,page);}
+  async readAppealCaseForReviewer(actor:string,caseId:string,appealId:string,
+    identity:boolean,pages:ReviewPages,permissions:ReviewCase["permissions"]){
+    return readAppealReviewerCase(this.database,actor,caseId,appealId,identity,pages,permissions);
+  }
   async readResolvedHistory(page:number){return readComplaintResolvedHistory(this.database,page);}
   async readHistoryTimeline(caseId:string,page:number,identity:boolean){
     return readComplaintTimeline(this.database,caseId,page,identity);
