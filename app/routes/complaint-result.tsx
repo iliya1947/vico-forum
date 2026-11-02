@@ -11,7 +11,7 @@ export async function loader({params,context}:{params:{caseId?:string;locale?:st
   const session=authSessionForRequest(context);
   if(!session)throw new Response("Unauthorized",{status:401,headers:complaintPrivateHeaders});
   const result=await context.get(complaintReviewContext).ownResult(session.user.id,complaintId(params.caseId));
-  return {locale:params.locale??"en",result:{...result,decidedAt:result.decidedAt.toISOString()}};
+  return {locale:params.locale??"en",result:{...result,decidedAt:new Date(result.decidedAt).toISOString()}};
  }catch(error){return complaintHttpError(error);}
 }
 export default function ComplaintResultRoute(){

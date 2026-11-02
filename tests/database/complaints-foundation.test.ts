@@ -207,7 +207,7 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     await expect(service().readCase("outsider",c.caseId)).rejects.toBeInstanceOf(ComplaintForbiddenError);
     const own = await service().readOwnResult("reporter-one",c.caseId);
     expect(own).toMatchObject({caseId:c.caseId,decisionId:c.decisionId,outcome:"not-confirmed",reasoning:"Public result",reporter:true,affectedAuthor:false});
-    expect(own.decidedAt).toBeInstanceOf(Date);
+    expect(Number.isNaN(Date.parse(String(own.decidedAt)))).toBe(false);
     expect(JSON.stringify(own)).not.toContain("Internal note");
     await expect(service().readOwnResult("outsider",c.caseId)).rejects.toThrow("result not found");
   });

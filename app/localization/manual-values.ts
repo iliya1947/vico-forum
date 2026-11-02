@@ -962,7 +962,7 @@ export const hebrewCommonValues = {
   },
   notifications: "התראות",
   notificationsUnreadLabel: "התראות, {{count}} לא נקראו",
-  notificationIntro: "תגובות לנושאים ולהודעות שלך, ואזכורים של החשבון שלך.",
+  notificationIntro: "תגובות, אזכורים והחלטות לגבי התלונות שלך.",
   notificationEmpty: "אין לך התראות.",
   notificationReplyBy: "תגובה מאת {{actor}}",
   notificationMentionBy: "אזכור מאת {{actor}}",

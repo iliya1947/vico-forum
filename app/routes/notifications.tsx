@@ -28,8 +28,8 @@ export async function loader({ params, context, url }: {
     return {
       locale:params.locale??"en",page:result.page,total:result.total,hasMore:result.hasMore,
       notifications:result.items.map(notification=>({
-        ...notification,createdAt:notification.createdAt.toISOString(),
-        readAt:notification.readAt?.toISOString()??null,
+        ...notification,createdAt:new Date(notification.createdAt).toISOString(),
+        readAt:notification.readAt===null?null:new Date(notification.readAt).toISOString(),
       })),
     };
   } catch (error) {

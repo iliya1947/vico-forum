@@ -249,6 +249,8 @@ const reader: ForumReader = {
     latestPostId: topic.posts.at(-1)!.id,
   } : undefined,
   readOnlinePresence: async () => ({ count: 1, members: [{ id: "lin", name: "Lin", image: null }] }),
+  readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
+  countUnreadNotifications: async () => 0,
   readReplyNotifications: async () => [],
   countUnreadReplyNotifications: async () => 0,
   readTopicPinState: async (id) => id === topic.id,

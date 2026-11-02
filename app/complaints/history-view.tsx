@@ -31,7 +31,9 @@ function EventDetails({event}:{event:ComplaintTimelineEvent}){
  event.kind==="noted"?t("complaintReviewNotes"):
  event.kind==="decided"?t("complaintReviewDecision"):
  event.kind==="priority-changed"?t("complaintPriorityLabel"):
- event.kind==="appealed"||event.kind==="appeal-resolved"?t("complaintHistoryReviewStarted");
+ event.kind==="appealed"?t("complaintHistoryAppealSubmitted"):
+ event.kind==="appeal-resolved"?t("complaintHistoryAppealResolved"):
+ t("complaintHistoryReviewStarted");
  return <li><article className="attention-case">
   <strong>{label}</strong>{" · "}<time dateTime={new Date(event.createdAt).toISOString()}>{new Date(event.createdAt).toISOString()}</time>
   {event.moderatorName?<p>{event.moderatorName}</p>:null}
