@@ -74,6 +74,7 @@ export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQ
   return <ForumShell locale={locale} variant="attention"><section className="complaint-triage">
     <Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link>
     <h1>{t("complaintTriageHeading")}</h1>
+    <Link to={complaintReviewPath(locale,item.id)}>{t("complaintOpenCase")}</Link>
     <ComplaintActivity locale={locale} caseId={item.id}/>
     <ComplaintCaseSummary locale={locale} item={item} openLink={false}/>
     <fetcher.Form key={item.version} method="post" className="complaint-priority-form" onSubmit={event=>{
