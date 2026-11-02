@@ -4,18 +4,19 @@
 
 Координатор Complaints и ответственный за соответствие #254 текущему `AGENTS.md`.
 
-## Текущий этап
+## Package 5 — согласование technical plan
 
-Package 4 merged в `main` через PR #276, merge commit `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
+План Лёвы для **History + notifications** проверен против актуального main `1ad8a6402111928c0f08e6f15aba624ba18a4426` и утверждён.
 
-Начат bounded planning **Package 5 — History + notifications**.
+Ключевые independently verified основания:
+- notification table сейчас reply/mention-only и требует actor/topic/post, поэтому complaint Decision требует forward schema extension;
+- reviewer activity сейчас ephemeral TTL lease без исторической записи, поэтому минимальный persisted `review-started` event нужен для заявленного History scope;
+- current `decide` уже transaction + actor mutex + Case lock + replay/CAS/event, поэтому notification fanout должен добавляться в ту же transaction;
+- participant result уже имеет server-side membership foundation через `readOwnResult`;
+- Package 6 appeal workflow не должен реализовываться в Package 5.
 
-Scope Миры:
-- реальный Complaints History для resolved Cases;
-- complaint-specific lifecycle;
-- result notifications через существующую общую notifications surface;
-- reporter/content-author projections без раскрытия запрещённых санкций или reporter identity;
-- admin Quick actions/history остаются отдельным admin-domain;
-- Package 6 appeal workflow не реализуется преждевременно.
+Staged boundaries также приняты:
+- до Package 6 не создавать фиктивный active Appeal path;
+- не утверждать наличие/отсутствие административных мер без authoritative связи.
 
-Следующий шаг: Лёва готовит технический план Package 5 по актуальному main и source-of-truth, отдельно проверяя границу между уже persisted appeal foundation и будущим Package 6.
+Следующий шаг: Лира реализует approved Package 5 одним bounded implementation PR; после stable head и checks Мира первой проводит coordinator whole-PR review.
