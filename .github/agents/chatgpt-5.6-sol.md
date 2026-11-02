@@ -37,3 +37,21 @@ Implementation не менялся после reviewed exact head. Package 6+, p
 PR #277 merged into `main` as `284bee3f5f0899cce1dc751cf4e9ef169739a120`. Current main source-of-truth confirms Packages 1–5 implemented in repository/local-CI path; Package 6 remains deferred.
 
 Следующая coordinator-задача: определить bounded scope Package 6 Appeals на текущем main до передачи технического планирования Лёве.
+
+
+## Package 6 — coordinator whole-PR review #279
+
+Reviewed stable exact head: `9034409524fd0e9df85102680f68ded759705132`; base/current main `284bee3f5f0899cce1dc751cf4e9ef169739a120`; CI #41546869959 SUCCESS.
+
+Verdict: **FAIL**.
+
+Confirmed current-scope blockers:
+1. `P6-RTL-01`: Appeals group2/review/context omit the locale-registry source-direction enrichment used by ordinary Case review, leaving persisted `sourceLocale` unused for RTL presentation.
+2. `P6-VERIFY-01`: no P6 native PostgreSQL concurrency/rollback acceptance for concurrent submit/resolve and atomic result+event+notification rollback.
+3. `P6-VERIFY-02`: no populated 0054→0055 upgrade/backfill acceptance.
+
+Static review otherwise confirmed effective-outcome policy, one-pending/shared-three-slot rules, participant membership/privacy, independent appeal.review authority, transaction/replay structure, notification fanout/dedup and inbox boundaries.
+
+Full Chromium acceptance is not treated as a separate blocker under the developer's current browser restriction; no browser-only defect was established.
+
+Independent Codex review must not start until a correction head passes a fresh coordinator whole-PR cycle.
