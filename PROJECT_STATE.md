@@ -101,14 +101,14 @@ Stage 5 завершён в repository/local-CI path.
 
 ### Complaints
 
-По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–3; в текущей implementation-ветке разрабатывается Package 4:
+По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–4:
 
 - domain/evidence foundation;
 - пользовательская submission с immutable revision evidence, grouping и rate limits;
-- open Queue/triage, configurable automatic priority, manual override и non-exclusive reviewer activity.
-- Package 4 в текущей implementation-ветке: protected full Case view, bounded reports/notes/evidence/context, initial Decision и shared Quick actions. CI, runtime/browser и coordinator acceptance ещё не утверждались.
+- open Queue/triage, configurable automatic priority, manual override и non-exclusive reviewer activity;
+- protected full Case review с постраничными reports, notes, retained evidence и context; initial Decision и shared Admin Quick actions.
 
-В принятом `main` Package 4 ещё не завершён. Result notifications/History и appeals workflow/UI — отдельные последующие пакеты.
+Result notifications/History и appeals workflow/UI остаются следующими пакетами.
 
 ## CI и migration state
 
@@ -159,7 +159,7 @@ External topology является mutable state и должна перепро�
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
 - Admin Panel имеет реализованные AP-01–06, но последующие object/action packages ещё не завершены.
-- Complaints имеет реализованные Packages 1–3, Packages 4+ ещё не завершены.
+- Complaints имеет реализованные Packages 1–4, Packages 5+ ещё не завершены.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
 - Stage 6 external integration остаётся paused.
