@@ -53,6 +53,7 @@ export function ComplaintAppealReviewView({locale,result}:{locale:string;result:
    <p>{appeal.ownInitialDecision?t("complaintAppealPreferOther"):null}</p>
    <h2>{t("complaintAppealInitialResult")}</h2>
    <p>{appeal.initialOutcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
+   {item.decision?.reasoning?<p dir="auto">{item.decision.reasoning}</p>:null}
    <h2>{t("complaintAppealEffectiveResult")}</h2>
    <p>{appeal.effectiveOutcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
    <h2>{t("complaintAppealArgument")}</h2>
