@@ -107,13 +107,13 @@ review, owner visual acceptance и merge этой записью не объяв
 документах:
 
 - `PROJECT.md` — продуктовый и технический baseline;
-- `PROJECT_HISTORY.md` — значимая история решений, регрессий и последующих corrections;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md` — значимая история решений, регрессий и последующих corrections;
 - `ROADMAP.md` — последовательность этапов;
 - `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*` — мультиязычность и переводы;
 - `docs/auth/AUTHORIZATION.md` — application authorization;
 - `docs/database/*` — migrations, Hyperdrive и external rollout.
 
-Значимые исторические/corrective цепочки подробно фиксируются в `PROJECT_HISTORY.md`.
+Значимые исторические/corrective цепочки подробно фиксируются в `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`.
 Датированные implementation/CI/review-срезы ниже сохраняют **состояние на дату записи**.
 Их тогдашние «in progress», «следующая задача», «проверка/merge ожидаются» не
 являются текущими gates. Актуальные контракты определяются профильными
