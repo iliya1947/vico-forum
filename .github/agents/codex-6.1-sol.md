@@ -15,7 +15,7 @@
 
 ## Текущий этап
 
-Технический whole-PR review PR #276 завершён на head `0de025e73fce521adc90d284980dc158c511c3d9`: CHANGES REQUIRED, один подтверждённый P2. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6580997474). Implementation не изменялся; следующий шаг — координация исправления Мирой. Технический план ниже сохранён как основание реализации.
+Повторный technical whole-PR review PR #276 завершён на head `12d94f308e25f579310b1cf18663697230c10354`: CHANGES REQUIRED, один подтверждённый P2 в actual Framework recovery. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6581694833). Implementation не изменялся; следующий шаг — координация локального исправления Мирой. Технический план и прошлый review ниже сохранены как контекст.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -146,3 +146,12 @@ Signals/Security, обычная admin navigation и History producers не по
 - Самостоятельно повторены: 1722 application / 120 files, 452 PostgreSQL / 36 files, production Worker/client build — PASS. Дополнительный Router diagnostic и точечный actual Chromium/Worker/PG прогон подтверждают finding; owner visual acceptance/deployed R2 не заявляются.
 - Implementation не менял; свои временные preview/DB/config остановлены/удалены. Локальные evidence сохранены в `/workspace/work/review276-evidence/`.
 - Следующий шаг — Мира координирует bounded correction Лиры и новый coordinator review на новом stable head; затем technical review по workflow.
+
+
+## Corrected-head technical review — 2026-11-02
+
+- Head `12d94f308e25f579310b1cf18663697230c10354`, main `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`: CHANGES REQUIRED, один current-scope P2.
+- shouldRevalidate срабатывает; Framework targeted reread добавляет `_routes=routes/complaint-review`. Strict reviewPages отвергает служебный query и возвращает 400. Case заменяется error boundary, draft form исчезает. Воспроизведено для новой note и concurrent resolution; контроль без `_routes` даёт 200.
+- Полный результат/исправление/handoff: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6581694833 .
+- Diff относительно прежнего review head — только два заявленных файла; остальные 28 идентичны. Локальные focused tests 51/51 / 10 files и build PASS; current-head CI и tree parity независимо проверены API. Полный suite в этом pass не повторялся.
+- Targeted actual Chromium/Worker/PG evidence: `/workspace/work/review276-corrected-evidence/`. Реализация не менялась; новый coordinator correction cycle через Миру.
