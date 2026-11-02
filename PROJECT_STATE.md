@@ -169,9 +169,3 @@ External topology является mutable state и должна перепро�
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
-
-## Правило ведения state
-
-В этот файл добавляется только информация, необходимая для понимания **текущего** состояния проекта и ближайшего общего маршрута.
-
-Завершённые implementation/CI/review snapshots, superseded состояния и подробные corrective цепочки переносятся в `docs/PROJECT_HISTORY/`. Постоянные domain/architecture/operations contracts фиксируются в соответствующих профильных source-of-truth, а здесь отражается только их актуальный статус.
