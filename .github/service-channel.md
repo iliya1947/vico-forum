@@ -5,23 +5,24 @@
 ## Актуальное состояние
 
 - Packages 1–4 завершены и merged в `main`.
-- Package 5 реализован в Draft PR #277, stable exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f` от текущего main `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
-- Повторный coordinator whole-PR review Миры нового exact head завершён **PASS**.
-- Exact-head CI #41501045924 независимо сверён: head совпадает; SUCCESS, 1736/1736 application tests (123 files), 455/455 PostgreSQL tests (36 files), lint/typecheck/builds/migration/schema/Worker smoke PASS.
-- Пять ранее подтверждённых current-scope findings проверены на новом head и закрыты: server-side History excerpt bound; strict normalized P5 query/pagination; legacy/generic unread count split + generic header; resolved History total label; readonly Appeal side/ordinal.
-- В coordinator snapshot Whole-PR повторно проверен по Package 5 scope: History/timeline permissions и identity projection, Decision→notification atomic fanout/replay/dedup, participant-only result, review-started lease/event semantics, migration/backfill и Package 6 boundary. Новых подтверждённых current-scope дефектов не найдено.
-- React Router 8.3.1 normalized loader `url` для Framework Mode подтверждён по актуальной официальной API/changelog документации.
-- Targeted interactive Chromium→Worker→PG и owner visual acceptance не заявляются; отдельного owner visual request не было.
-- Лёва завершил independent technical whole-PR review того же head: **CHANGES REQUIRED — 2 P2 и 2 P3**; [полный результат и handoff](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672).
-- Подтверждено в actual Chromium/Worker/PG: timeline page=1 возвращает 400 из-за regexp; desktop Decision card занимает avatar column и показывает «C…»; readonly Appeal outcome не локализован; согласованная strict notification POST boundary не выполнена. Auth bypass не заявляется.
-- Дополнительные native probes upgrade/backfill/dual-role dedup/idempotence, concurrent activity и fanout failure rollback PASS; participant/identity grant/revoke проверки PASS. Build/diff PASS. В полных local suites было по одному timeout, isolated повторы соответствующих файлов прошли 14/14 и 12/12; exact-head GitHub CI independently SUCCESS.
-- Следующий шаг: Мира координирует bounded correction текущих findings, затем новый stable head/checks и coordinator cycle. Implementation в рамках review не изменялся; текущий head technical PASS не получил.
+- Package 5 реализован в Draft PR #277; reviewed exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f` от main `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
+- Exact-head CI #41501045924: SUCCESS — 1736/1736 application tests, 455/455 PostgreSQL tests, lint/typecheck/builds/migration/schema/Worker smoke PASS.
+- Coordinator whole-PR review Миры этого head ранее завершён PASS после закрытия пяти предыдущих findings.
+- Лёва завершил independent technical whole-PR review: **CHANGES REQUIRED — 2 P2 и 2 P3**; полный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586050672.
+- Мира независимо перепроверила каждый finding против exact head, current main и действующего Package 5 contract. **Все 4 подтверждены как current-scope defects**:
+  1. **P2 — History timeline pagination:** route regexp отвергает корректные положительные `page`; после первых 50 событий следующая страница недоступна.
+  2. **P2 — desktop Decision notification:** удалён avatar, но desktop four-column grid сохранён; copy попадает в 3.25rem avatar column, карточка визуально ломается.
+  3. **P3 — readonly Appeal result localization:** persisted `upheld | overturned` выводится raw enum в EN/RU/HE History; Package 5 обязан локализовать текущую readonly presentation.
+  4. **P3 — notifications POST boundary:** общий inbox action использует unbounded `request.formData()`, принимает duplicate/unknown fields и не требует URL-encoded body, хотя утверждённый P5 technical contract требует bounded URL-encoded input + duplicate/id validation.
+- Findings #1–4 не являются Package 6/future groundwork. Auth bypass по finding #4 не заявляется; ownership/result membership остаются отдельными прошедшими boundaries.
+- Correction должен быть локальным и bounded; уже прошедшие migration/fanout/activity/privacy boundaries без отдельного подтверждённого дефекта не переделывать.
+- Следующий шаг: Лира выполняет один correction package по этим четырём findings в PR #277. После нового stable head + применимых checks — новый coordinator whole-PR review Миры; после PASS — independent technical review Лёвы того же head.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: coordinator PASS завершён.
-- Лира — ChatGPT-6: implementation/correction завершены, без текущего назначения.
-- Лёва — Codex-6.1 Sol: independent review текущего head завершён, CHANGES REQUIRED; реализацию не менял.
+- Мира — ChatGPT-5.6 Sol: перепроверка technical findings завершена, 4/4 confirmed current-scope.
+- Лира — ChatGPT-6: назначен bounded correction Package 5 / PR #277 по четырём подтверждённым findings.
+- Лёва — Codex-6.1 Sol: independent review завершён, CHANGES REQUIRED; implementation не менял.
 - Марк — Codex-6 Sol: без назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
