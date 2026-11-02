@@ -57,3 +57,12 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Первые correction CI показали типовую ошибку i18next из-за зарезервированного `ordinal`; заменено на `number` в сообщениях и fingerprints. Финальный CI пройден.
 - Проверки Chromium→built Worker→PG, owner visual acceptance и независимый review этого head не заявляются. Браузер пользователя не использован; production/deploy/merge и Package 6+ не затронуты.
 - Author correction завершена, implementation до нового coordinator cycle не менять. Следующая задача — Мире провести whole-PR review указанного exact head; Лёва только после coordinator PASS.
+
+## Package 5 — 4 technical findings correction complete
+
+- Мира [подтвердила 4 findings](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6586563827) Лёвы (2 P2/2 P3) на прежнем `1af1c6272bf7b46009145488b52a42f89bfd0b2f`.
+- Исправлено локально: `app/routes/complaint-history.tsx` использует проверенный strict page parser; system class и CSS grids в shared notifications desktop/mobile; RU/HE/EN `upheld|overturned` readonly labels/fingerprints; bounded 4096-byte URL-encoded notifications POST с allowlisted single fields и bounded ID.
+- Добавлены тесты: timeline page=1/10000 и error inputs, MemoryRouter переход Next с 50+8 событиями, CSS/SSR card contract для system/legacy, RU/HE/EN Appeal outcomes, URL-encoded invalid/duplicate/unknown/oversized POST, запрет mutation по ошибочным запросам.
+- **Stable exact head:** `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`, Draft PR #277. [CI #41513618388](https://github.com/iliya1947/vico-forum/actions/runs/41513618388) **SUCCESS**: 1741 application / 455 PG tests; lint/typecheck/builds/migration/schema/Worker smoke PASS.
+- Documentation поправлена в профильном `docs/moderation/COMPLAINTS.md` (POST и readonly labels). Schema/domain/permission/Package 6 и unrelated modules не менялись; main неизменен. Chromium/browser/owner acceptance и independent review этого head не заявляются.
+- Author correction complete, stopped ahead of next coordinator whole-PR review Миры в #254. Лёва только после её PASS.
