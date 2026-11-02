@@ -73,3 +73,11 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Baseline current main `284bee3f5f0899cce1dc751cf4e9ef169739a120`; отдельный [Draft PR #279](https://github.com/iliya1947/vico-forum/pull/279), `chatgpt/complaints-package-6`.
 - В работе: migration `0055`, reducer effective outcome, Case-lock/replay/pending/quota, atomic Appeal-result fanout, protected review/context/evidence, participant submit/result, Attention group2, shared inbox, EN/RU/HE, tests. Промежуточный CI не означает PASS.
 - Owner visual acceptance не требуется без отдельного запроса; пользовательский браузер не использую. Package 7+, production, unrelated domains и merge вне scope.
+
+## Package 6 — documentation checkpoint
+
+- Implementation PR #279: source implementation head `37e6ef9d3f2f126ae635217e8f44586de3854efe` passed CI #41543820653.
+- Found stale Package 5-only/deferred-Appeals wording in `docs/moderation/COMPLAINTS.md` and `PROJECT_STATE.md` on the implementation branch.
+- Documentation-only commits in PR #279: `8a9ea4f866a113d22bdc3cb0f1f03f51e068a29c` (permanent Complaints contract), `9034409524fd0e9df85102680f68ded759705132` (state distinguishes draft implementation from merged main).
+- Current head after docs: `9034409524fd0e9df85102680f68ded759705132`. Exact-head CI/review not yet verified; no stable-head handoff. Code/runtime/production/merge untouched in this checkpoint.
+- Next: check latest exact-head CI, finish author verification for full Package 6 scope and record handoff only if verified.
