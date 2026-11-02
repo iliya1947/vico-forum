@@ -1,8 +1,9 @@
 # Complaints
 
 This is the permanent complaints-domain contract. Product decisions and staged
-delivery are recorded in service PR #254; this document records implemented
-Packages 1–4 behavior. Notifications, History list and appeal UI remain deferred.
+delivery are recorded in service PR #254. Packages 1–4 are merged; Package 5
+is implemented in the current working PR, pending independent review and merge.
+The interactive appeal workflow/UI remains deferred.
 
 ## Domain and boundaries
 
@@ -106,8 +107,8 @@ Queue priority, manual override and expiring reviewer presence are implemented b
 The first Complaints group at `/:locale/attention?mode=complaints&group=group1`
 is the open-Case Queue. `forum.complaint.review` independently admits it and the
 header Attention link; Signals or Security permissions do not imply this capability,
-and complaint review does not grant their queues. Appeals/History groups remain
-explicit placeholders. Every private loader/action independently checks the current
+and complaint review does not grant their queues. Appeals remains a placeholder;
+Package 5 implements the resolved History group. Every private loader/action independently checks the current
 session and effective permission; presentation flags are not authority.
 
 One SQL statement aggregates all eligible open Cases, counts independent reports,
@@ -220,7 +221,7 @@ trimmed text, NUL rejection and up to 10000 Unicode code points; operation-key
 replay, actor/Case locks, expected-version Decision CAS and atomic event/Case updates.
 Notes are append-only and permitted after resolution. Decisions store a single
 `confirmed | not-confirmed` result separately from administrative measures;
-no notifications or sanctions are triggered. Decision drafts keep the reviewed
+Package 5 adds transactional initial Decision result notifications; sanctions are never triggered. Decision drafts keep the reviewed
 version until a deliberate acknowledgement of a changed Case, and form retries
 retain their operation nonce.
 
@@ -231,6 +232,61 @@ behavior; all actions independently recheck their native permission, ownership,
 state and CAS boundary. These actions are not Complaints Decisions and do not
 write Complaints notes, reports or outcomes. Only already implemented AP-05 actions
 are displayed. Resolved Case links are not a History UI.
+
+## Resolved History and notifications (Package 5)
+
+Only resolved Cases appear at `/:locale/attention?mode=complaints&group=group3`.
+Reviewer History requires fresh `forum.complaint.review` and returns a bounded
+25-Case page, independent total and lookahead, newest resolution first. Rows
+contain immutable reported-revision excerpts, source locale, initial outcome,
+resolution time and independent reporter count. Protected full review remains
+separate and works for both open and resolved Cases.
+
+`/:locale/attention/complaints/:caseId/history` presents the immutable complaint
+event stream for one resolved Case, 50 events per page with separate total.
+Events cover report submission, priority overrides, notes, initial Decision,
+recorded review starts, and already-persisted Appeal submission/resolution.
+Appeal events show only their recorded argument and review outcome, not a
+recomputed effective Decision. Later notes do not change Case resolution.
+The event projection does not expose operation keys/fingerprints. Submitted
+and appealed actors are not presented as generic moderators; reporter/appellant
+identity is selected only with both reviewer authority and the separate
+`forum.complaint.reporterIdentity.read` permission.
+
+An authorized activity POST appends one immutable `review-started` event when
+a reviewer goes from inactive/expired to active. Normal 30-second heartbeats
+within an active 90-second lease add no events. The lease and event are written
+transactionally, do not increment Case version, and do not assign/lock a Case.
+Old visits cannot be reconstructed. No end timestamp, duration or historical
+automatic-priority value is inferred from current mutable state.
+
+The existing unified `forum_reply_notifications` persistence and forum inbox
+now support typed `complaint-decision` rows without fictional post/actor fields.
+A forward migration `0054` adds the Decision FK, strict per-kind shape CHECK,
+recipient+Decision deduplication and idempotent backfill for already-persisted
+initial Decisions using original Decision timestamps. Every initial Decision
+transaction creates one notification per distinct actual Case reporter and
+the affected content author; the same person in both roles receives one row.
+Fanout shares the Decision/Case/event transaction, so failures roll back the
+whole command and exact successful replays do not create duplicates or reset
+`read_at`. Existing reply/mention producers and their data constraints remain.
+
+`/:locale/notifications` remains the only inbox. It includes a mixed-kind
+unread-first 50-item page with independent total/unread count, idempotent
+recipient-owned mark-read and old topic/post links for reply/mention. A Decision
+notification opens `/:locale/complaints/:caseId/result`, which independently
+checks the authenticated viewer's affected-author or reporter membership.
+Only initial outcome, public reasoning, timestamp, Decision/Case IDs and
+own role flags are returned. Other reporters, notes, complaint details, event
+actors and administrative history/sanctions stay private. All these routes
+and response/error boundaries use `private, no-store`.
+
+Appeal submission/UI, queue, effective-outcome rules and Appeal notifications
+are deferred to Package 6. The participant page states that Appeals cannot
+yet be submitted instead of offering a nonfunctional link. Without a real
+Case-to-administrative-action fact, neither the notification nor the result
+claims that measures were taken or that no measures occurred. Shared Admin
+Quick actions and their Admin History stay in their own authorized domain.
 
 ## Transactions and replay
 
@@ -291,7 +347,8 @@ Aggregate independent-reporter count is moderation-only. Free-text explanations
 can contain voluntarily disclosed names; structured identity is still withheld.
 
 Participant result reads recheck content-author or actual reporter membership and
-return only Case/Decision identity, binary outcome and public reasoning. They never
+return only Case/Decision identity, binary outcome, public reasoning,
+Decision timestamp and the participant's own author/reporter role flags. They never
 return other complaints, moderator notes, reporter list, private history or sanctions.
 Future response serialization/cache handling must preserve `private, no-store`.
 Case reports/notes/events are independently paginated in bounded pages of 50; evidence
