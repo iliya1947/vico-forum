@@ -1,53 +1,36 @@
 # Лёва — Codex-6.1 Sol
 
-## Следующая активная задача
+## Текущий результат AP-06 — 2026-11-02
 
-Independent whole-PR technical review AP-06 PR #270.
+Техническая проверка integration sync Лиры в PR #270 завершена.
 
-Exact head:
+- Exact head: `71548fe5456c37d0965415d95967c6ff60c7233a`.
+- Base/main: `ddffcb97b3864aea3e70f327627441682efd4f1d`.
+- Итог в проверенном integration scope: PASS, подтверждённых дефектов не найдено.
+- Результат опубликован по разрешению владельца:
+  [#6577016139](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6577016139).
 
-`71548fe5456c37d0965415d95967c6ff60c7233a`
+## Доказательства и границы
 
-Base:
+Те же 30 AP-06 файлов; 21 совпадает побайтно с исходным implementation head
+`b9f2539287ef3415c17cf3c73ea1822321e02e54`. Остальные 9 — реальные пересечения
+с main. У восьми, кроме PROJECT_STATE.md, исходный и текущий AP-06 line delta
+полностью совпадают. PROJECT_STATE.md сохраняет нормализованный main и только
+актуальное AP-06 дополнение. Complaints routes/Worker capabilities/localization
+сохранены. Main schema/migrations 0000–0053/catalog/privileges/dependencies не менялись.
 
-`ddffcb97b3864aea3e70f327627441682efd4f1d`
+Свежий test-merge `87f5adda4b8359fc034db7c3dd6523cedb64e173` имеет tree
+`c64ae36ea4e10abd262c20608f635357ce47c365`, совпадающий с implementation head.
+CI #41433266864 проверен через GitHub: current head, SUCCESS обеих jobs.
 
-Scope проверки:
+Проверял результат интеграции Лиры по подтверждённому владельцем назначению.
+Исходный AP-06 реализовал сам; полностью независимый whole-PR verdict собственной
+реализации не заявляю. Новый actual browser прогон на текущем head не выполнял;
+прежние 81 browser case не выдаю за новый exact-head browser acceptance.
+Implementation не изменял, merge/owner acceptance/production rollout не выполнял.
 
-1. Полный AP-06 против актуальных permanent contracts и текущего `main`.
-2. Повторный integration result после sync с новым `main`, включая сохранность AP-06 и нового контракта `PROJECT_STATE.md`.
-3. Admission/private-read boundary, protected category/section projection, Help semantics, literal search/paging, Worker/runtime binding, routes, localization и read-only boundary AP-06.
-4. Проверить, что test-merge не теряет изменения AP-06 или актуального `main`.
-5. Actionable только подтверждённые current-scope дефекты; AP-07+ не является дефектом AP-06.
-6. Во время review implementation не изменять.
+## Следующий шаг
 
-Coordinator review Миры на этом exact head: PASS, 0 подтверждённых current-scope дефектов.
-Exact-head CI #41433266864: SUCCESS.
-Review Лёвы ещё не начат.
-
-
-## Восстановление контекста — 2026-11-02
-
-Назначение выше проверено до начала review. Лёва — автор исходного AP-06 implementation
-head `b9f2539287ef3415c17cf3c73ea1822321e02e54` и author handoff
-[#6536528485](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6536528485).
-В новом head `71548fe` файлы `db/admin-forum.ts`, `app/admin/forum.tsx` и
-`app/admin/forum.server.ts` имеют те же blob SHA, что исходная реализация.
-Последующий sync Лирой не делает whole-PR review Лёвы независимым.
-
-Актуальный main AGENTS.md, «Проверка PR» п.1: «Реализатор whole-PR проверку собственной
-работы не проводит». «Рабочий процесс» п.6 предусматривает Марка вместо Лёвы, если
-Лёва участвовал в реализации. Независимый review не начат, verdict не выдан;
-implementation #270 не менялась. Это конфликт назначения, не functional finding.
-Мире передаётся уточнение назначения; Марк самостоятельно не назначался и не запускался.
-
-
-### Уточнение владельца — 2026-11-02
-
-Владелец подтвердил назначение: последней с #270 работала Лира. Предыдущее
-предложение вернуть назначение координатору не является текущим следующим шагом.
-Лёва продолжает техническую проверку текущего head и integration sync Лиры;
-участие Лёвы в исходной AP-06 реализации сохраняется как граница независимости.
-Полностью независимый whole-PR verdict своей реализации не заявляется.
-Результаты проверки сначала сообщаются владельцу в чате; до его команды
-review-результаты в служебный PR не публикуются. Implementation не меняется.
+Мира фиксирует итог текущего AP-06 цикла с опубликованными границами проверки.
+Контекст уже в #251. AP-07 не начинать; после review/merge AP-06 админ-панель
+остаётся на согласованной паузе до завершения текущего цикла Complaints.
