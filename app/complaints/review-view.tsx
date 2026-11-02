@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useRef,useState,type FormEvent} from "react";
 import {Link,useFetcher} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ForumShell} from "../forum/ui";
@@ -30,7 +30,7 @@ function PageLinks<T>({locale,id,kind,value,pages}:{locale:string;id:string;kind
 function ExpandPost({locale,id,post}:{locale:string;id:string;post:ReviewContextPost}){
  const {t}=useTranslation("common");
  const fetcher=useFetcher<ReviewFullPost>();
- const path=`/`{encodeURIComponent(locale)}/attention/complaints/`{encodeURIComponent(id)}/context/`{encodeURIComponent(post.id)}`;
+ const path="/"+encodeURIComponent(locale)+"/attention/complaints/"+encodeURIComponent(id)+"/context/"+encodeURIComponent(post.id);
  return <li className="complaint-context-post">
   <strong>#{post.number} · {post.author.name}</strong> <time dateTime={post.createdAt}>{moment(post.createdAt)}</time>
   <p dir="auto" lang={post.sourceLocale==="und"?undefined:post.sourceLocale}>{post.excerpt}{post.truncated?"…":""}</p>
@@ -68,17 +68,17 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
  },[note.data]);
  const pages:ReviewPages={reports:item.reports.page,notes:item.notes.page,evidence:item.evidence.page,context:item.context.page};
  const stale=item.version!==reviewedVersion;
- const onSubmitNonce=(ref:{current:string})=>(event:React.FormEvent<HTMLFormElement>)=>{
+ const onSubmitNonce=(ref:{current:string})=>(event:FormEvent<HTMLFormElement>)=>{
   const input=event.currentTarget.elements.namedItem("operationId") as HTMLInputElement;
   if(!ref.current)ref.current=crypto.randomUUID();
   input.value=ref.current;
  };
  return <ForumShell locale={locale} variant="attention">
- <main className="complaint-review">
+ <section className="complaint-review">
   <nav><Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link></nav>
   <h1>{t("complaintReviewHeading")}</h1>
   {item.previousCaseId?<Link to={reviewUrl(locale,item.previousCaseId)}>{t("complaintReviewPrevious")}</Link>:null}
-  <p>{item.state==="resolved"?t("complaintReviewResolved"):t("complaintCaseOpen")} · {t(`complaintPriority`{item.priority}`)} · {t("complaintReportCount")}: {item.independentReporterCount}</p>
+  <p>{item.state==="resolved"?t("complaintReviewResolved"):t("complaintCaseOpen")} · {t(("complaintPriority"+item.priority) as "complaintPriority1")} · {t("complaintReportCount")}: {item.independentReporterCount}</p>
   {item.state==="open"?<ComplaintActivity locale={locale} caseId={item.id}/>:null}
   <section>
    <h2>{t("complaintReviewEvidence")}</h2>
@@ -90,7 +90,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
   <section>
    <h2>{t("complaintReviewReports")}</h2>
    <ul>{item.reports.items.map(r=><li key={r.id}>
-    <strong>{t(`complaintReason_`{r.reason}`)}</strong> · <time dateTime={r.createdAt}>{moment(r.createdAt)}</time>
+    <strong>{t(("complaintReason_"+r.reason) as "complaintReason_spam")}</strong> · <time dateTime={r.createdAt}>{moment(r.createdAt)}</time>
     {r.reporter?<span> · {r.reporter.name} ({r.reporter.id})</span>:null}
     {r.explanation?<p dir="auto">{r.explanation}</p>:null}
    </li>)}</ul>
@@ -99,7 +99,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
   <section>
    <h2>{t("complaintReviewAttachments")}</h2>
    <ul>{item.evidence.items.map(a=><li key={a.id}>
-    <a href={`/`{encodeURIComponent(locale)}/attention/complaints/`{encodeURIComponent(item.id)}/evidence/`{encodeURIComponent(a.id)}`}>
+    <a href={"/"+encodeURIComponent(locale)+"/attention/complaints/"+encodeURIComponent(item.id)+"/evidence/"+encodeURIComponent(a.id)}>
      {a.fileName}</a> · {a.byteSize}
    </li>)}</ul>
    <PageLinks locale={locale} id={item.id} kind="evidence" pages={pages} value={item.evidence}/>
@@ -120,7 +120,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
     <button type="submit" disabled={note.state!=="idle"}>{t("complaintReviewNoteSave")}</button>
    </note.Form>
    {note.data?.ok?<p role="status">{t("complaintReviewNoteSaved")}</p>:null}
-   {note.data?.error?<p role="alert">{t(note.data.error==="conflict"?"complaintTriageConflict":`complaintError_`{note.data.error}`)}</p>:null}
+   {note.data?.error?<p role="alert">{t(note.data.error==="conflict"?"complaintTriageConflict":("complaintError_"+note.data.error) as "complaintError_invalid")}</p>:null}
   </section>
   <section>
    <h2>{t("complaintReviewDecision")}</h2>
@@ -137,7 +137,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
       {stale?<p role="alert">{t("complaintReviewChanged")} <button type="button" onClick={()=>{setReviewedVersion(item.version);decisionNonce.current="";}}>{t("complaintReviewAcceptChanges")}</button></p>:null}
       <button type="submit" disabled={stale||decision.state!=="idle"}>{t("complaintReviewResolve")}</button>
      </decision.Form>}
-   {decision.data?.error?<p role="alert">{t(decision.data.error==="conflict"?"complaintReviewChanged":`complaintError_`{decision.data.error}`)}</p>:null}
+   {decision.data?.error?<p role="alert">{t(decision.data.error==="conflict"?"complaintReviewChanged":("complaintError_"+decision.data.error) as "complaintError_invalid")}</p>:null}
   </section>
- </main></ForumShell>;
+ </section></ForumShell>;
 }
