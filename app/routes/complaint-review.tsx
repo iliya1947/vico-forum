@@ -1,4 +1,4 @@
-import {data,useLoaderData,type RouterContextProvider} from "react-router";
+import {data,useLoaderData,type RouterContextProvider,type ShouldRevalidateFunctionArgs} from "react-router";
 import {registryForRequest} from "../localization/request-context";
 import {RegistryConnectionUnavailableError} from "../localization/persistent-registry";
 import {ComplaintStorageUnavailableError} from "../../db/hyperdrive-complaints";
@@ -11,6 +11,11 @@ import {ComplaintReviewView} from "../complaints/review-view";
 import {ForumRouteError} from "../forum/ui";
 
 export function headers(){return reviewHeaders;}
+export function shouldRevalidate({actionStatus,formData,defaultShouldRevalidate}:ShouldRevalidateFunctionArgs){
+ // A failed Decision leaves the reviewed version frozen, but must refresh the Case.
+ if(actionStatus===409&&formData?.get("intent")==="decision")return true;
+ return defaultShouldRevalidate;
+}
 export async function loader({request,params,context}:{request:Request;params:{locale?:string;caseId?:string};context:RouterContextProvider}){
  try{
   const actor=await complaintReviewer(context);
