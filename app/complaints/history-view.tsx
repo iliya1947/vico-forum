@@ -7,7 +7,7 @@ const historyPath=(locale:string,id:string)=>`/${encodeURIComponent(locale)}/att
 export function ComplaintResolvedHistoryList({locale,history}:{locale:string;history:ComplaintResolvedHistoryPage}){
  const {t}=useTranslation("common");
  return <div className="complaint-history">
-  <p>{t("complaintQueueTotal",{total:history.total})}</p>
+  <p>{t("complaintHistoryTotal",{total:history.total})}</p>
   <ul className="attention-case-list">{history.cases.map(item=><li key={item.id}>
    <article className="attention-case complaint-case">
     <p>{t(item.kind==="post"?"complaintTargetPost":"complaintTargetTitle")}</p>
@@ -44,6 +44,10 @@ function EventDetails({event}:{event:ComplaintTimelineEvent}){
   {event.decisionOutcome?<p>{event.decisionOutcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>:null}
   {event.reasoning?<p dir="auto">{event.reasoning}</p>:null}
   {event.kind==="priority-changed"?<p>{event.priorityOverride??t("complaintPriorityAutomatic")}</p>:null}
+  {(event.kind==="appealed"||event.kind==="appeal-resolved")&&
+    (event.appealSide==="author"||event.appealSide==="reporter")&&event.appealOrdinal!==null?
+    <p>{t(event.appealSide==="author"?"complaintHistoryAppealSideAuthor":"complaintHistoryAppealSideReporter")}
+      {" · "}{t("complaintHistoryAppealOrdinal",{ordinal:event.appealOrdinal})}</p>:null}
   {event.appealArgument?<p dir="auto">{event.appealArgument}</p>:null}
   {event.appellantName?<p>{event.appellantName} ({event.appellantId})</p>:null}
   {event.kind==="appeal-resolved"&&event.appealOutcome?<p>{event.appealOutcome}</p>:null}

@@ -1,3 +1,4 @@
+import {strictPageQuery} from "../complaints/page-query";
 import { redirect, useLoaderData, type RouterContextProvider } from "react-router";
 
 import { authSessionForRequest } from "../auth/request-context";
@@ -23,10 +24,9 @@ export async function loader({ params, context, url }: {
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
   try {
-    const value=url?.searchParams.get("page")??"0";
-    if(!/^(0|[1-9]\\d{0,4})$/.test(value)||Number(value)>10000)
-      throw new Response("Invalid page",{status:400,headers:{"Cache-Control":"private, no-store"}});
-    const result=await forumReaderForRequest(context).readNotifications(session.user.id,Number(value));
+    // React Router's normalized URL excludes .data/_routes transport metadata.
+    const page=strictPageQuery(url?.searchParams??new URL("https://localhost/notifications").searchParams,["page"]);
+    const result=await forumReaderForRequest(context).readNotifications(session.user.id,page);
     return {
       locale:params.locale??"en",page:result.page,total:result.total,hasMore:result.hasMore,
       notifications:result.items.map(notification=>({

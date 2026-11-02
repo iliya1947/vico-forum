@@ -25,7 +25,7 @@ export async function readComplaintResolvedHistory(db:NodePgDatabase,page:number
   return db.transaction(async tx=>{
     const counts=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_complaint_cases where state='resolved'`);
     const list=await tx.execute<ComplaintResolvedHistoryItem & Record<string,unknown>>(sql`
-      select c.id,t.kind,coalesce(pr.original_content,tr.original_content,'') as text,
+      select c.id,t.kind,left(coalesce(pr.original_content,tr.original_content,''),500) as text,
         coalesce(pr.source_locale,tr.source_locale,'und') as "sourceLocale",
         c.resolved_at as "resolvedAt",d.outcome,
         (select count(distinct reporter_user_id)::int from forum_complaints r where r.case_id=c.id) as "independentReporterCount"

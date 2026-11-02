@@ -1,3 +1,4 @@
+import {strictPageQuery} from "../complaints/page-query";
 import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-read";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
@@ -37,10 +38,11 @@ function signalPermission(kind: HelpSignalKind) {
       : "forum.solution.manageAny" as const;
 }
 
-export async function loader({ request, params, context }: {
+export async function loader({ request, params, context, url }: {
   request: Request;
   params: { locale?: string };
   context: RouterContextProvider;
+  url?: URL;
 }) {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthorized", { status: 401 });
@@ -65,7 +67,7 @@ export async function loader({ request, params, context }: {
   const [canViewSolutionModeration, canViewDuplicateDispute, canManageNeedsDetails, canReadSecurityAttachments, canReviewComplaints, canManageComplaintPriorities] = permissions;
   const canViewHelpAttention = canViewSolutionModeration || canViewDuplicateDispute || canManageNeedsDetails;
 
-  const query = new URL(request.url).searchParams;
+  const query = (url??new URL(request.url)).searchParams;
   const requestedMode = query.get("mode");
   const mode: AttentionMode = requestedMode === "signals" || requestedMode === "complaints" || requestedMode === "security"
     ? requestedMode : canViewHelpAttention ? "signals" : canReviewComplaints || canManageComplaintPriorities ? "complaints" : "security";
@@ -82,8 +84,10 @@ export async function loader({ request, params, context }: {
   }
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
-  const pageIndex = Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000
-    ? pageNumber : 0;
+  const pageIndex = mode==="complaints"&&(group==="group3"||query.getAll("group").includes("group3"))
+    ? strictPageQuery(query,["mode","group","page"])
+    : Number.isSafeInteger(pageNumber) && pageNumber >= 0 && pageNumber <= 10000
+      ? pageNumber : 0;
 
   let queue: { cases: (Omit<ForumAttentionQueueCase, "createdAt"> & { createdAt: string })[]; hasMore: boolean; page: number } | null = null;
   let securityQueue: {

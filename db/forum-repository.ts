@@ -1415,7 +1415,10 @@ export class DrizzleForumRepository {
   }
 
   async countUnreadNotifications(userId:string):Promise<number>{
-    return this.countUnreadReplyNotifications(userId);
+    const [row]=await this.database.select({count:sql<number>`count(*)::int`})
+      .from(forumReplyNotifications)
+      .where(and(eq(forumReplyNotifications.recipientUserId,userId),isNull(forumReplyNotifications.readAt)));
+    return row?.count??0;
   }
 
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
@@ -1486,6 +1489,7 @@ export class DrizzleForumRepository {
       .where(and(
         eq(forumReplyNotifications.recipientUserId, userId),
         isNull(forumReplyNotifications.readAt),
+        inArray(forumReplyNotifications.kind,["reply","mention"]),
       ));
     return row?.count ?? 0;
   }

@@ -237,14 +237,16 @@ are displayed. Resolved Case links are not a History UI.
 Only resolved Cases appear at `/:locale/attention?mode=complaints&group=group3`.
 Reviewer History requires fresh `forum.complaint.review` and returns a bounded
 25-Case page, independent total and lookahead, newest resolution first. Rows
-contain immutable reported-revision excerpts, source locale, initial outcome,
+contain SQL-bounded immutable reported-revision excerpts (500 characters before
+loader serialization), source locale, initial outcome,
 resolution time and independent reporter count. Protected full review remains
 separate and works for both open and resolved Cases.
 
 `/:locale/attention/complaints/:caseId/history` presents the immutable complaint
 event stream for one resolved Case, 50 events per page with separate total.
 Events cover report submission, priority overrides, notes, initial Decision,
-recorded review starts, and already-persisted Appeal submission/resolution.
+recorded review starts, and already-persisted Appeal submission/resolution
+(including explicit stored side and ordinal).
 Appeal events show only their recorded argument and review outcome, not a
 recomputed effective Decision. Later notes do not change Case resolution.
 The event projection does not expose operation keys/fingerprints. Submitted
@@ -259,6 +261,9 @@ transactionally, do not increment Case version, and do not assign/lock a Case.
 Old visits cannot be reconstructed. No end timestamp, duration or historical
 automatic-priority value is inferred from current mutable state.
 
+The protected History group and unified inbox reject unknown or duplicate
+application query keys and invalid pagination with 400; Framework-owned
+single-fetch query metadata is excluded using the normalized loader URL.
 The existing unified `forum_reply_notifications` persistence and forum inbox
 now support typed `complaint-decision` rows without fictional post/actor fields.
 A forward migration `0054` adds the Decision FK, strict per-kind shape CHECK,
@@ -271,7 +276,7 @@ whole command and exact successful replays do not create duplicates or reset
 `read_at`. Existing reply/mention producers and their data constraints remain.
 
 `/:locale/notifications` remains the only inbox. It includes a mixed-kind
-unread-first 50-item page with independent total/unread count, idempotent
+unread-first 50-item page with independent total/unread count (all kinds), idempotent
 recipient-owned mark-read and old topic/post links for reply/mention. A Decision
 notification opens `/:locale/complaints/:caseId/result`, which independently
 checks the authenticated viewer's affected-author or reporter membership.
