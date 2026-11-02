@@ -1,8 +1,8 @@
 # Complaints
 
 This is the permanent complaints-domain contract. Product decisions and staged
-delivery are recorded in service PR #254. It describes Packages 1–5 in the
-repository/local-CI implementation; the interactive appeal workflow/UI remains deferred.
+delivery are recorded in service PR #254. It describes the Complaints implementation through Package 6 in the
+repository/local-CI path. External production rollout remains separate.
 
 ## Domain and boundaries
 
@@ -106,7 +106,7 @@ Queue priority, manual override and expiring reviewer presence are implemented b
 The first Complaints group at `/:locale/attention?mode=complaints&group=group1`
 is the open-Case Queue. `forum.complaint.review` independently admits it and the
 header Attention link; Signals or Security permissions do not imply this capability,
-and complaint review does not grant their queues. Appeals remains a placeholder;
+and complaint review does not grant their queues. Package 6 implements the independent protected Appeals queue;
 Package 5 implements the resolved History group. Every private loader/action independently checks the current
 session and effective permission; presentation flags are not authority.
 
@@ -288,9 +288,10 @@ own role flags are returned. Other reporters, notes, complaint details, event
 actors and administrative history/sanctions stay private. All these routes
 and response/error boundaries use `private, no-store`.
 
-Appeal submission/UI, queue, effective-outcome rules and Appeal notifications
-are deferred to Package 6. The participant page states that Appeals cannot
-yet be submitted instead of offering a nonfunctional link. Without a real
+Package 6 adds participant Appeal submission and result display, an independent
+Appeals review queue, effective-outcome policy and Appeal-result notifications.
+The initial Decision and its notification remain immutable and distinct from the
+effective outcome after resolved Appeals. Without a real
 Case-to-administrative-action fact, neither the notification nor the result
 claims that measures were taken or that no measures occurred. Shared Admin
 Quick actions and their Admin History stay in their own authorized domain.
@@ -361,22 +362,41 @@ Future response serialization/cache handling must preserve `private, no-store`.
 Case reports/notes/events are independently paginated in bounded pages of 50; evidence
 metadata is bounded with an explicit has-more indicator. There is no unbounded queue.
 
-## Appeals: implemented foundation and deferred policy
+## Appeals: Package 6 workflow and policy
 
-The content author can persist a first Appeal of a confirmed Decision; an actual
-reporter can persist a first Appeal of a rejected Decision. Decision/Case ownership,
-participation and direction are checked server-side. Actor/operation replay does
-not consume another slot. Review preserves argument, original Decision and result;
-the original reviewer is not absolutely forbidden from resolving an Appeal.
+The initial Decision remains immutable. The effective outcome is derived in ordinal
+order from the initial outcome and resolved Appeals: `upheld` retains the current
+outcome and `overturned` reverses it. When effective outcome is `confirmed`,
+the affected author is eligible to appeal; when `not-confirmed`, any actual
+reporter in the Case is eligible. A reporter may submit again if reporter-side
+eligibility persists. The three ordinal slots belong to the initial Decision,
+not to any individual participant; only one pending Appeal is allowed at a time.
 
-Storage permits up to three ordinal records per concrete initial Decision:
-CHECK `1..3`, UNIQUE Decision+ordinal, composite Case+Decision FK. It intentionally
-has no unique-pending index. The service guards subsequent appeals with
-`ComplaintPolicyRequiredError` pending Package 6's transition table. Thus no choice
-about concurrent pending appeals, reversal/re-appeal eligibility or effective-outcome
-precedence is silently installed. First results are persisted as `upheld | overturned`;
-Package 1 does not derive a new effective Decision or reset quotas from those results.
-The eventual public appeal workflow must resolve this policy and notifications first.
+Each Appeal submission checks authenticated Case participation, current eligibility,
+pending status and quota under the existing transaction/Case-lock and command replay
+boundary. Matching exact-operation retries return the prior result without consuming
+a slot; changed replays conflict. The forward migration `0055` enforces unique
+pending Appeals per Decision and extends the common inbox with an Appeal-result kind,
+FK/recipient dedup and historical backfill. Appeal resolution persists
+`upheld | overturned` and creates one notification for each distinct affected
+author/actual reporter in the same transaction. Existing read state is not reset
+by replay or backfill.
+
+Participants use their protected `/:locale/complaints/:caseId/result` page to
+inspect initial and effective outcomes and submit a currently eligible Appeal.
+The page must not disclose identities of other reporters, internal notes or
+administrative sanctions. The unified notifications inbox links Appeal results
+to that same participant-authorized Case result surface.
+
+The Complaints Appeals group at `/:locale/attention?mode=complaints&group=group2`
+is an actual pending-Appeal queue, separate from open Case Queue and resolved
+History. Its admission, header route and protected Appeal review/context/evidence
+resources independently accept `forum.complaint.appeal.review` without requiring
+`forum.complaint.review`. Reporter identity is additionally projected only with
+`forum.complaint.reporterIdentity.read`. Resolution uses the existing authoritative
+Appeal command and CAS/replay boundary. A reviewer other than the initial
+Decision reviewer is preferred, not mandatory; review never deadlocks merely
+because the same moderator is the only eligible reviewer.
 
 ## Verification and external boundary
 
