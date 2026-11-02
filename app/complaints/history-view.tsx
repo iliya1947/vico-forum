@@ -31,8 +31,7 @@ function EventDetails({event}:{event:ComplaintTimelineEvent}){
  event.kind==="noted"?t("complaintReviewNotes"):
  event.kind==="decided"?t("complaintReviewDecision"):
  event.kind==="priority-changed"?t("complaintPriorityLabel"):
- event.kind==="appealed"||event.kind==="appeal-resolved"?t("complaintAppealsHeading"):
- t("complaintReviewActivity");
+ event.kind==="appealed"||event.kind==="appeal-resolved"?t("complaintHistoryReviewStarted");
  return <li><article className="attention-case">
   <strong>{label}</strong>{" · "}<time dateTime={new Date(event.createdAt).toISOString()}>{new Date(event.createdAt).toISOString()}</time>
   {event.moderatorName?<p>{event.moderatorName}</p>:null}
@@ -55,6 +54,7 @@ export function ComplaintTimelineView({locale,timeline}:{locale:string;timeline:
   <Link to={`/${encodeURIComponent(locale)}/attention?mode=complaints&group=group3`}>{t("complaintHistoryHeading")}</Link>
   <h1>{t("complaintHistoryHeading")}</h1>
   <p>{timeline.outcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
+  <p>{t("complaintHistoryCoverageNotice")}</p>
   <Link to={complaintReviewPath(locale,timeline.caseId)}>{t("complaintOpenCase")}</Link>
   <ul>{timeline.events.map(event=><EventDetails key={event.id} event={event}/>)}</ul>
   <nav className="attention-case-pagination" aria-label={t("attentionCasePagination")}>

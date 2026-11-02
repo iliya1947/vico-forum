@@ -408,7 +408,7 @@ export function NotificationsView({
                     <button
                       className={unread ? "notification-card is-unread" : "notification-card"}
                       type="submit"
-                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("complaintReviewDecision"):notification.topicTitle??""}`}
+                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.topicTitle??""}`}
                     >
                       {notification.kind!=="complaint-decision"?<span className="notification-avatar" aria-hidden="true">
                         {(notification.actorName??"").trim().slice(0, 1).toUpperCase()}
@@ -416,7 +416,7 @@ export function NotificationsView({
                       <span className="notification-copy">
                         <span className="notification-summary">
                           {notification.kind==="complaint-decision"?
-                            <strong>{t("complaintReviewDecision")}</strong>:
+                            <strong>{t("notificationDecisionResult")}</strong>:
                             <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:notification.actorName??""})}</span>
                             <strong dir="auto">{notification.topicTitle}</strong></>}
                         </span>

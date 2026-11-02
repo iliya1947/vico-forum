@@ -21,7 +21,7 @@ export default function ComplaintResultRoute(){
   <p>{result.outcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
   <p dir="auto">{result.reasoning}</p>
   <time dateTime={result.decidedAt}>{new Date(result.decidedAt).toLocaleString(locale)}</time>
-  <p>{t("complaintAppealsHeading")}: {t("attentionPlaceholderEmpty")}</p>
+  <p>{t("complaintAppealsHeading")}: {t("complaintResultAppealUnavailable")}</p>
  </section></ForumShell>;
 }
 export const ErrorBoundary=ForumRouteError;

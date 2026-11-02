@@ -4,6 +4,13 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  "complaintHistoryReviewStarted": "Модератор начал проверку дела",
+  "complaintHistoryAppealSubmitted": "Апелляция подана",
+  "complaintHistoryAppealResolved": "Апелляция рассмотрена",
+  "complaintResultAppealUnavailable": "Подача апелляций пока недоступна.",
+  "notificationDecisionResult": "Решение по жалобе",
+  "complaintResultPublicReasoningNotice": "Это обоснование доступно автору затронутого контента и авторам жалоб.",
+  "complaintHistoryCoverageNotice": "История предыдущих посещений модераторов не сохранялась.",
   "complaintReviewHeading": "Проверка жалобы",
   "complaintReviewPrevious": "Предыдущее связанное дело",
   "complaintReviewResolved": "Решено",
@@ -217,7 +224,7 @@ export const russianCommonValues = {
   },
   notifications: "Уведомления",
   notificationsUnreadLabel: "Уведомления, непрочитанных: {{count}}",
-  notificationIntro: "Ответы на ваши темы и сообщения, а также упоминания вашего аккаунта.",
+  notificationIntro: "Ответы, упоминания и решения по вашим жалобам.",
   notificationEmpty: "Уведомлений нет.",
   notificationReplyBy: "Ответ от {{actor}}",
   notificationMentionBy: "Упоминание от {{actor}}",
@@ -736,6 +743,13 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  "complaintHistoryReviewStarted": "בודק התחיל לעיין במקרה",
+  "complaintHistoryAppealSubmitted": "הוגש ערעור",
+  "complaintHistoryAppealResolved": "הערעור נבדק",
+  "complaintResultAppealUnavailable": "הגשת ערעורים עדיין אינה זמינה.",
+  "notificationDecisionResult": "החלטה לגבי תלונה",
+  "complaintResultPublicReasoningNotice": "הנימוק זמין למחבר התוכן שנפגע ולמגישי התלונות.",
+  "complaintHistoryCoverageNotice": "ביקורי בודקים קודמים לא נשמרו בהיסטוריה.",
   "complaintReviewHeading": "בדיקת תלונה",
   "complaintReviewPrevious": "מקרה קשור קודם",
   "complaintReviewResolved": "טופל",
