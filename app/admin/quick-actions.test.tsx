@@ -39,6 +39,24 @@ describe("shared topic Quick actions presentation",()=>{
   expect(actions.filter(a=>a.intent.endsWith("HelpDuplicateAppeal")).map(a=>a.fields)).toEqual([{expectedAppealId:"appeal"},{expectedAppealId:"appeal"}]);
   expect(actions.some(a=>a.intent==="markSolved"||a.intent==="selectBestAnswer")).toBe(false);
  });
+ it("keeps inline review transport on canonical topic actions without changing their intents",()=>{
+  const common:Record<string,string>={};
+  for(const [key,value] of Object.entries(canonicalEnglishCatalog.common)){
+    if(typeof value.source==="string")common[key]=value.source;
+    else for(const [branch,text] of Object.entries(value.source))common[`${key}_${branch}`]=text;
+  }
+  const i18n=createTranslationRuntime({locale:{translationLocale:"en",direction:"ltr",formatting:{locale:"en",timeZone:"UTC"},fallbackLocales:[],nativeName:"English",presentationMetadata:{}},
+    fallbackLocales:[],resourcesByLocale:{en:{common}},bundleVersions:{en:{common:"test"}},staleKeys:{}});
+  const router=createMemoryRouter([{path:"/en/review",element:<TopicQuickActions locale="en" {...input} inline/>}],{initialEntries:["/en/review"]});
+  try{
+   const {container}=render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>);
+   const forms=[...container.querySelectorAll("form")];expect(forms.length).toBeGreaterThan(3);
+   expect(forms.every(form=>form.getAttribute("action")==="/en/topics/topic%2F1"&&form.method==="post")).toBe(true);
+   expect(forms.every(form=>form.querySelector<HTMLInputElement>('input[name="inlineQuickAction"]')?.value==="1")).toBe(true);
+   expect(forms.find(form=>form.querySelector<HTMLInputElement>('input[name="intent"][value="correctTitleSourceLocale"]'))
+     ?.querySelector<HTMLInputElement>('input[name="expectedRevisionId"]')?.value).toBe("title-r1");
+  }finally{router.dispose();}
+ });
  it("submits all reused forms to the canonical topic endpoint, including from another page",()=>{
   const common:Record<string,string>={};
   for(const [key,value] of Object.entries(canonicalEnglishCatalog.common)){
