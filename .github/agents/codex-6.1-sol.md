@@ -15,7 +15,7 @@
 
 ## Текущий этап
 
-Повторный technical whole-PR review PR #276 завершён на head `12d94f308e25f579310b1cf18663697230c10354`: CHANGES REQUIRED, один подтверждённый P2 в actual Framework recovery. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6581694833). Implementation не изменялся; следующий шаг — координация локального исправления Мирой. Технический план и прошлый review ниже сохранены как контекст.
+Independent technical whole-PR review PR #276 завершён на exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`: **PASS, 0 подтверждённых current-scope дефектов**. Оба предыдущих P2 Decision recovery закрыты фактическим Chromium/Worker/PG прогоном. [Результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582586583). Implementation не менялся. Следующий шаг — coordinator closeout Миры; merge/production не выполнялись.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -155,3 +155,13 @@ Signals/Security, обычная admin navigation и History producers не по
 - Полный результат/исправление/handoff: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6581694833 .
 - Diff относительно прежнего review head — только два заявленных файла; остальные 28 идентичны. Локальные focused tests 51/51 / 10 files и build PASS; current-head CI и tree parity независимо проверены API. Полный suite в этом pass не повторялся.
 - Targeted actual Chromium/Worker/PG evidence: `/workspace/work/review276-corrected-evidence/`. Реализация не менялась; новый coordinator correction cycle через Миру.
+
+
+## Final corrected-head technical review — 2026-11-02
+
+- Head `7d64933d47c257267d1fa4c6aec63685e9d27344`, main `6b653e3ec202e649c3ed48ba442d9a5bf5c64d1f`: PASS, findings 0.
+- Подтверждены actual targeted GET с `_routes` → 200 после Decision 409, draft/outcome/frozen version до explicit acknowledgement, новый nonce и успешный Decision; concurrent resolution сразу показывает сохранённый Decision без старой формы, reload и heartbeat wait.
+- Локальные focused tests 113/113 (11 files), client/Worker build и diff check PASS; GitHub API подтверждает exact-head CI/jobs SUCCESS и tree parity. Полные suites в этом pass не повторялись; прошлые результаты не приписаны новому head.
+- 27 других файлов идентичны fully-reviewed initial head; authorization/domain/SQL/shared action/schema/package boundaries не расширены. Implementation не менял, свои временные ресурсы остановил/удалил.
+- Полный результат: https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6582586583 ; evidence `/workspace/work/review276-final-evidence/`.
+- Следующий шаг — Мира фиксирует coordinator closeout того же unchanged head; PR остаётся Draft, merge/production/Package 5 не выполняются этим verdict.
