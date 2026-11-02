@@ -1,3 +1,4 @@
+import type { ComplaintResolvedHistoryPage, ComplaintTimelinePage } from "../../db/complaint-history-read";
 import { createContext } from "react-router";
 import type { ComplaintPrioritySettings, ComplaintPrioritySettingsCommand, ComplaintPriorityCommand, ComplaintQueueCase, ComplaintQueuePage } from "./queue-contract";
 /** Triage only: no notes, decisions, identity projection or administrative actions. */
@@ -6,6 +7,8 @@ export interface ComplaintQueue {
   savePrioritySettings(actor: string, input: ComplaintPrioritySettingsCommand): Promise<void>;
   readQueue(actor: string, page: number): Promise<ComplaintQueuePage>;
   readTriage(actor: string, caseId: string): Promise<ComplaintQueueCase>;
+  readResolvedHistory(actor:string,page:number):Promise<ComplaintResolvedHistoryPage>;
+  readHistoryTimeline(actor:string,caseId:string,page:number):Promise<ComplaintTimelinePage>;
   changePriority(actor: string, input: ComplaintPriorityCommand): Promise<void>;
   activity(actor: string, caseId: string, active: boolean): Promise<void>;
 }

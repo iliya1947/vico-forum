@@ -1,3 +1,4 @@
+import { readComplaintResolvedHistory, readComplaintTimeline } from "./complaint-history-read";
 import { insertComplaintDecisionNotifications } from "./forum-notifications";
 import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject} from "./complaint-review-read";
 import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
@@ -110,6 +111,11 @@ export class DrizzleComplaintsRepository {
   }
 
   async readQueue(actorId: string, page: number) { return readComplaintQueue(this.database,actorId,page); }
+
+  async readResolvedHistory(page:number){return readComplaintResolvedHistory(this.database,page);}
+  async readHistoryTimeline(caseId:string,page:number,identity:boolean){
+    return readComplaintTimeline(this.database,caseId,page,identity);
+  }
 
   async readTriage(actorId: string, caseId: string) {
     const result=await readComplaintQueue(this.database,actorId,0,caseId);

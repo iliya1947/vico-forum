@@ -40,6 +40,17 @@ export class ComplaintsService {
     if(!Number.isSafeInteger(page)||page<0||page>10000)throw new ComplaintInputError("invalid page");
     return this.repository.readQueue(actor,page);
   }
+  async readResolvedHistory(actor:string,page:number){
+    await this.require(actor,"forum.complaint.review");
+    if(!Number.isSafeInteger(page)||page<0||page>10000)throw new ComplaintInputError("invalid page");
+    return this.repository.readResolvedHistory(page);
+  }
+  async readHistoryTimeline(actor:string,caseId:string,page:number){
+    const identity=await this.reviewIdentity(actor,"forum.complaint.review");
+    if(!Number.isSafeInteger(page)||page<0||page>10000)throw new ComplaintInputError("invalid page");
+    return this.repository.readHistoryTimeline(complaintId(caseId),page,identity);
+  }
+
   async readTriage(actor: string, caseId: string) {
     await this.require(actor,"forum.complaint.review");
     return this.repository.readTriage(actor,complaintId(caseId));

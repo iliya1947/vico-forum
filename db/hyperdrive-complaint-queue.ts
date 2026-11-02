@@ -24,6 +24,8 @@ export function createHyperdriveComplaintQueue(connectionString: string, authori
     savePrioritySettings:(actor,input)=>run(s=>s.savePrioritySettings(actor,input)),
     readQueue:(actor,page)=>run(s=>s.readQueue(actor,page)),
     readTriage:(actor,id)=>run(s=>s.readTriage(actor,id)),
+    readResolvedHistory:(actor,page)=>run(s=>s.readResolvedHistory(actor,page)),
+    readHistoryTimeline:(actor,id,page)=>run(s=>s.readHistoryTimeline(actor,id,page)),
     changePriority:(actor,input)=>run(s=>s.changePriority(actor,input)),
     activity:(actor,id,active)=>run(s=>s.activity(actor,id,active)),
   };
