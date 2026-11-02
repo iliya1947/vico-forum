@@ -1,9 +1,8 @@
 # Complaints
 
 This is the permanent complaints-domain contract. Product decisions and staged
-delivery are recorded in service PR #254. Packages 1–4 are merged; Package 5
-is implemented in the current working PR, pending independent review and merge.
-The interactive appeal workflow/UI remains deferred.
+delivery are recorded in service PR #254. It describes Packages 1–5 in the
+repository/local-CI implementation; the interactive appeal workflow/UI remains deferred.
 
 ## Domain and boundaries
 

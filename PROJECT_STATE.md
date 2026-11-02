@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0053` in main; Package 5 implementation branch adds forward `0054` (not merged);
+- repository migration history: `0000`–`0054`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -101,7 +101,7 @@ Stage 5 завершён в repository/local-CI path.
 
 ### Complaints
 
-По `docs/moderation/COMPLAINTS.md` Packages 1–4 реализованы в `main`; Package 5 реализован в отдельном implementation tree, но пока не принят в `main`:
+По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–5 в repository/local-CI path:
 
 - domain/evidence foundation;
 - пользовательская submission с immutable revision evidence, grouping и rate limits;
@@ -159,7 +159,7 @@ External topology является mutable state и должна перепро�
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
 - Admin Panel имеет реализованные AP-01–06, но последующие object/action packages ещё не завершены.
-- Complaints Packages 1–4 реализованы в `main`, Package 5 — в отдельном implementation tree (review/merge не завершены); Package 6+ остаётся будущей работой.
+- Complaints реализованы через Package 5 в repository/local-CI path; Package 6+ остаётся будущей работой.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
 - Stage 6 external integration остаётся paused.
