@@ -58,7 +58,13 @@ async function base(tx:Tx,id:string,actor:string,help:boolean):Promise<Base>{
 /** Read-only consistent projection. No event/appeal/operation-key serialization. */
 export async function readComplaintReview(db:NodePgDatabase,id:string,actor:string,pages:ReviewPages,identity:boolean,help:boolean,
  permissions:ReviewCase["permissions"]):Promise<ReviewCase>{
- return db.transaction(async tx=>{
+ return db.transaction(tx=>readComplaintReviewInTx(tx,id,actor,pages,identity,help,permissions),
+  {isolationLevel:"repeatable read",accessMode:"read only"});
+}
+/** Internal reuse for Appeal review: one repeatable-read snapshot for Appeal+Case. */
+export async function readComplaintReviewInTx(tx:Tx,id:string,actor:string,pages:ReviewPages,identity:boolean,help:boolean,
+ permissions:ReviewCase["permissions"]):Promise<ReviewCase>{
+
  const b=await base(tx,id,actor,help);
  const counts=await tx.execute<{reports:number;independent:number;notes:number;evidence:number;context:number}>(sql`
   select (select count(*)::int from forum_complaints where case_id=${id}) as reports,
@@ -120,7 +126,6 @@ export async function readComplaintReview(db:NodePgDatabase,id:string,actor:stri
    pendingHelpDuplicateAppeal:b.pendingHelpAppealId?{id:b.pendingHelpAppealId}:null},
   decision:decision?{...decision,createdAt:iso(decision.createdAt)}:null,permissions,
  };
- },{isolationLevel:"repeatable read",accessMode:"read only"});
 }
 export async function readComplaintContextPost(db:NodePgDatabase,caseId:string,postId:string):Promise<ReviewFullPost>{
  return db.transaction(async tx=>{

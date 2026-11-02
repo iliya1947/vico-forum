@@ -2,7 +2,7 @@ import {sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {ComplaintNotFoundError,type ComplaintOutcome} from "./complaints-domain";
 import {deriveAppealPolicy,type AppealState} from "./complaint-appeal-policy";
-import {readComplaintReview} from "./complaint-review-read";
+import {readComplaintReviewInTx} from "./complaint-review-read";
 import type {ReviewCase,ReviewPages} from "../app/complaints/review-contract";
 
 export interface PendingAppealSummary {
@@ -51,7 +51,7 @@ export async function readPendingAppeals(db:NodePgDatabase,actor:string,page:num
 /** Reviewer authority is passed only by the server service after a fresh permission snapshot. */
 export async function readAppealReviewerCase(db:NodePgDatabase,actor:string,caseId:string,appealId:string,
  identity:boolean,pages:ReviewPages,permissions:ReviewCase["permissions"]):Promise<AppealReviewPage>{
- const appeals=await db.transaction(async tx=>{
+ return db.transaction(async tx=>{
    const initial=await tx.execute<{outcome:ComplaintOutcome;reviewerId:string;decisionId:string}>(sql`
      select d.outcome,d.reviewer_user_id as "reviewerId",d.id as "decisionId"
      from forum_complaint_cases c join forum_complaint_decisions d on d.id=c.initial_decision_id
@@ -68,9 +68,9 @@ export async function readAppealReviewerCase(db:NodePgDatabase,actor:string,case
      order by a.ordinal`);
    if(!rows.rows.some(x=>x.id===appealId))throw new ComplaintNotFoundError("appeal not found in Case");
    const p=deriveAppealPolicy(initial.rows[0].outcome,rows.rows as AppealState[]);
-   return rows.rows.map(row=>({...row,initialOutcome:p.initialOutcome,
+   const appeals=rows.rows.map(row=>({...row,initialOutcome:p.initialOutcome,
      effectiveOutcome:p.effectiveOutcome,ownInitialDecision:initial.rows[0].reviewerId===actor}));
+   const caseReview=await readComplaintReviewInTx(tx,caseId,actor,pages,identity,false,permissions);
+   return {appeal:appeals.find(a=>a.id===appealId)!,appeals,caseReview};
  },{isolationLevel:"repeatable read",accessMode:"read only"});
- const caseReview=await readComplaintReview(db,caseId,actor,pages,identity,false,permissions);
- return {appeal:appeals.find(a=>a.id===appealId)!,appeals,caseReview};
 }
