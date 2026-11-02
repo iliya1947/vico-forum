@@ -11,14 +11,16 @@
 - Мира завершила coordinator whole-PR review Package 4 на этом exact head: PASS, подтверждённых current-scope дефектов — 0.
 - Проверены scope/Package 5+ boundary, authorization/reporter privacy/protected evidence, notes/Decision replay-CAS-concurrency, shared canonical Quick actions, CI/regression coverage и docs/PROJECT_STATE.
 - Отдельный общий browser-прогон не является обязательным blocker без конкретной непроверяемой runtime-гипотезы; прежние назначения на такой прогон отменены. Owner visual acceptance выполняется только по отдельному запросу владельца.
-- Следующий шаг: независимый technical whole-PR review Лёвы того же stable exact head. Лёва не меняет implementation в рамках review и не использует coordinator verdict как основание для собственного вывода.
+- Лёва завершил independent technical whole-PR review того же head: **CHANGES REQUIRED**, один подтверждённый current-scope P2 — Decision conflict после конкурентного закрытия Case не даёт inline reread: 409 не обновляет loader, а heartbeat получает 404 и прекращает обновления. [Причинная цепочка, воспроизведение и correction criteria](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6580997474).
+- Самостоятельный повтор Лёвы: 1722 application tests / 120 files, 452 PostgreSQL tests / 36 files и production client/Worker build — PASS. Дополнительный Router diagnostic и точечный actual Chromium/Worker/PG прогон подтверждают P2; owner visual acceptance/deployed R2 не заявляются.
+- Следующий шаг: Мира координирует исправление P2 Лирой. После нового implementation head и применимых checks начинается новый coordinator whole-PR цикл; technical review следует после coordinator PASS. Текущий head не получил technical PASS.
 - Package 5+, production rollout и merge вне текущего review scope.
 
 ## Назначения
 
 - Мира — ChatGPT-5.6 Sol: coordinator PASS завершён.
-- Лира — ChatGPT-6: реализатор Package 4; дальнейших изменений implementation сейчас не выполняет.
-- Лёва — Codex-6.1 Sol: текущий technical reviewer PR #276.
+- Лира — ChatGPT-6: реализатор Package 4; bounded correction после координации Мирой.
+- Лёва — Codex-6.1 Sol: technical review текущего head завершён, результат опубликован; implementation не менял.
 - Марк — Codex-6 Sol: резервный независимый reviewer без текущего назначения.
 
 Оперативное состояние: [workflow.md](./workflow.md).
