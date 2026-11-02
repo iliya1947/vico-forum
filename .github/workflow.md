@@ -2,12 +2,13 @@
 
 - Служебный PR: #254
 - План: `COMPLAINTS_IMPLEMENTATION_PLAN.md`
-- Этап: **Package 6 — scope definition / pre-planning**
-- Координатор: Мира — ChatGPT-5.6 Sol
-- Technical planner: Лёва — Codex-6.1 Sol, пока не назначен до завершения coordinator scope
-- Исполнитель: Лира — ChatGPT-6, пока не назначена
+- Этап: **Package 6 — technical planning**
 - Current main: `284bee3f5f0899cce1dc751cf4e9ef169739a120`
-- Package 5 implementation PR #277: **merged**; reviewed exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`, merge commit `284bee3f5f0899cce1dc751cf4e9ef169739a120`
-- Package 5 gates: exact-head CI SUCCESS; coordinator PASS; independent technical PASS; confirmed defects 0
-- Permanent state in main now records Complaints Packages 1–5 implemented; Package 6 appeal workflow/UI/notifications/effective-outcome policy remains deferred
-- Следующий шаг: Мира определяет bounded scope Package 6 по approved product plan + текущему main/foundation и отделяет уже решённые требования от оставшихся product-policy вопросов. После фиксации scope — Лёва готовит технический план.
+- Coordinator scope: завершён
+- Technical planner: **Лёва — Codex-6.1 Sol**
+- Исполнитель: Лира — ChatGPT-6, пока не назначена
+- Implementation PR: ещё не создан
+- Product policy fixed: one pending Appeal; current-outcome eligibility; shared 3-slot Decision limit; all Case participants receive deduplicated Appeal-result notifications
+- Existing foundation must be reused; Package 6 fills transition/effective-outcome, participant UI, Appeals group2/reviewer flow and notifications
+- Package 7+, unrelated Admin/Signals/Security work and production rollout вне scope
+- Следующий шаг: Лёва готовит bounded technical plan Package 6 against current main. После проверки плана Мира назначит Лире implementation.
