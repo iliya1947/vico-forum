@@ -3181,7 +3181,7 @@
             "post_id",
             "topic_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "bf57fde6bd364c2319871be19d986fed6ebf0ab0269d24427975ae50c296df89"
         }
       ],
       "indexes": [
@@ -5949,7 +5949,7 @@
               "nulls": "last"
             }
           ],
-          "predicateSha256": "PENDING"
+          "predicateSha256": "e3d203fa955b9b9a7b4e08203d6b02a137caca414badad096e5468f8e8cee9cc"
         },
         {
           "name": "complaint_case_open_target_unique",
@@ -6342,7 +6342,7 @@
             "kind",
             "note_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "cbf0cc89f5e6ee0c83fbd819d693c21543e5f82669bd10ac8255899091d313dd"
         }
       ],
       "indexes": [
