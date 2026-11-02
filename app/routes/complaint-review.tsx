@@ -16,11 +16,11 @@ export function shouldRevalidate({actionStatus,formData,defaultShouldRevalidate}
  if(actionStatus===409&&formData?.get("intent")==="decision")return true;
  return defaultShouldRevalidate;
 }
-export async function loader({request,params,context}:{request:Request;params:{locale?:string;caseId?:string};context:RouterContextProvider}){
+export async function loader({url,params,context}:{url:URL;params:{locale?:string;caseId?:string};context:RouterContextProvider}){
  try{
   const actor=await complaintReviewer(context);
   const id=complaintId(params.caseId);
-  const page=await context.get(complaintReviewContext).read(actor,id,reviewPages(request.url));
+  const page=await context.get(complaintReviewContext).read(actor,id,reviewPages(url.href));
   let registry;
   try{({registry}=await registryForRequest(context));}
   catch(error){
