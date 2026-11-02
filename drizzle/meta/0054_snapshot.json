@@ -4851,8 +4851,8 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "forum_reply_notifications_complaint_decision_id_forum_complaint_decisions_id_fk": {
-          "name": "forum_reply_notifications_complaint_decision_id_forum_complaint_decisions_id_fk",
+        "forum_reply_notifications_decision_fk": {
+          "name": "forum_reply_notifications_decision_fk",
           "tableFrom": "forum_reply_notifications",
           "tableTo": "forum_complaint_decisions",
           "columnsFrom": [

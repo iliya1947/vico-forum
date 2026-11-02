@@ -1257,7 +1257,7 @@ export const forumReplyNotifications = pgTable(
     topicId: text("topic_id")
       .references(() => forumTopics.id, { onDelete: "cascade" }),
     postId: text("post_id"),
-    complaintDecisionId: text("complaint_decision_id").references(() => forumComplaintDecisions.id, { onDelete: "restrict" }),
+    complaintDecisionId: text("complaint_decision_id"),
     kind: text("kind").$type<"reply" | "mention" | "complaint-decision">().notNull().default("reply"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     readAt: timestamp("read_at", { withTimezone: true }),
@@ -1265,6 +1265,7 @@ export const forumReplyNotifications = pgTable(
   (table) => [
     check("forum_reply_notifications_kind_check", sql`(${table.kind} in ('reply','mention') and ${table.actorUserId} is not null and ${table.topicId} is not null and ${table.postId} is not null and ${table.complaintDecisionId} is null) or (${table.kind} = 'complaint-decision' and ${table.complaintDecisionId} is not null and ${table.actorUserId} is null and ${table.topicId} is null and ${table.postId} is null)`),
     unique("forum_reply_notifications_recipient_decision_unique").on(table.recipientUserId, table.complaintDecisionId),
+    foreignKey({name:"forum_reply_notifications_decision_fk",columns:[table.complaintDecisionId],foreignColumns:[forumComplaintDecisions.id]}).onDelete("restrict"),
     unique("forum_reply_notifications_recipient_post_unique").on(table.recipientUserId, table.postId),
     index("forum_reply_notifications_recipient_created_idx").on(
       table.recipientUserId,

@@ -3113,7 +3113,7 @@
           "initiallyDeferred": false
         },
         {
-          "name": "forum_reply_notifications_complaint_decision_id_forum_complaint_decisions_id_fk",
+          "name": "forum_reply_notifications_decision_fk",
           "columns": [
             "complaint_decision_id"
           ],

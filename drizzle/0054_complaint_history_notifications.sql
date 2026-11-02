@@ -7,7 +7,7 @@ ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notification
   (kind in ('reply','mention') and actor_user_id is not null and topic_id is not null and post_id is not null and complaint_decision_id is null)
   or (kind='complaint-decision' and complaint_decision_id is not null and actor_user_id is null and topic_id is null and post_id is null)
 );--> statement-breakpoint
-ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notifications_complaint_decision_id_forum_complaint_decisions_id_fk"
+ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notifications_decision_fk"
   FOREIGN KEY ("complaint_decision_id") REFERENCES "public"."forum_complaint_decisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "forum_reply_notifications" ADD CONSTRAINT "forum_reply_notifications_recipient_decision_unique" UNIQUE("recipient_user_id","complaint_decision_id");--> statement-breakpoint
 CREATE INDEX "complaint_case_history_idx" ON "forum_complaint_cases" USING btree ("resolved_at" DESC NULLS LAST,"id" DESC NULLS LAST) WHERE "forum_complaint_cases"."state" = 'resolved';--> statement-breakpoint
