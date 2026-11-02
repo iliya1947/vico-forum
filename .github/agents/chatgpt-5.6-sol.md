@@ -4,19 +4,14 @@
 
 Координатор Complaints и ответственный за соответствие #254 текущему `AGENTS.md`.
 
-## Текущий этап
+## Package 4 closeout
 
-Новый coordinator whole-PR review PR #276 завершён на exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`.
+Implementation PR #276, exact head `7d64933d47c257267d1fa4c6aec63685e9d27344`.
 
-**Вердикт: PASS, 0 подтверждённых current-scope дефектов.**
+- Coordinator whole-PR review: **PASS, 0 current-scope defects**.
+- Independent technical whole-PR review Лёвы того же unchanged head: **PASS, 0 current-scope defects**.
+- Оба исправления Decision conflict recovery закрыты и подтверждены targeted actual Chromium/Worker/PostgreSQL runtime check.
+- Exact-head CI #41478096937: SUCCESS, 1727 application / 452 PostgreSQL tests; build/schema/runtime checks PASS.
+- Package 5+, production rollout и merge не выполнялись агентами.
 
-Проверено:
-1. Framework query correction использует React Router 8.3.1 normalized `url.href`; internal `_routes` больше не конфликтует со strict application pagination validation.
-2. Unknown/duplicate/out-of-range application query всё ещё даёт 400; auth/private-no-store не ослаблены.
-3. Предыдущий Decision 409 recovery остаётся неизменным: reread + frozen reviewedVersion + сохранённые draft/outcome/nonce + explicit acknowledgement, без auto-retry.
-4. Concurrently resolved Case после reread показывает фактический Decision и убирает obsolete Resolve form.
-5. После обеих corrections относительно первоначального проверенного head изменены только route и два regression-test файла; остальные 27 файлов Package 4 не менялись.
-6. Exact-head CI #41478096937 — SUCCESS: 1727 application и 452 PostgreSQL tests, плюс lint/typecheck/build/schema/Worker checks.
-7. Test-merge и implementation head имеют одинаковый Git tree `a47613b51aee7716d570562b89228ae8c4c83186`.
-
-Следующий шаг — independent technical whole-PR review Лёвы того же exact head.
+Package 4 review-cycle завершён. Следующий шаг принадлежит владельцу: merge PR #276. После merge можно начинать bounded planning Package 5 — History + notifications.
