@@ -48,7 +48,7 @@ export function ComplaintQueueList({locale,queue}:{locale:string;queue:Complaint
   </div>;
 }
 
-function ComplaintActivity({locale,caseId}:{locale:string;caseId:string}) {
+export function ComplaintActivity({locale,caseId}:{locale:string;caseId:string}) {
   const {revalidate}=useRevalidator();
   useEffect(()=>{
     const url=complaintTriagePath(locale,caseId)+"/activity";
