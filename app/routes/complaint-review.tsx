@@ -1,4 +1,7 @@
 import {data,useLoaderData,type RouterContextProvider} from "react-router";
+import {registryForRequest} from "../localization/request-context";
+import {RegistryConnectionUnavailableError} from "../localization/persistent-registry";
+import {ComplaintStorageUnavailableError} from "../../db/hyperdrive-complaints";
 import {complaintReviewContext} from "../complaints/review-context";
 import {reviewPages,reviewHeaders} from "../complaints/review.server";
 import {complaintReviewer,complaintHttpError,complaintCommandFailure} from "../complaints/queue.server";
@@ -13,7 +16,18 @@ export async function loader({request,params,context}:{request:Request;params:{l
   const actor=await complaintReviewer(context);
   const id=complaintId(params.caseId);
   const page=await context.get(complaintReviewContext).read(actor,id,reviewPages(request.url));
-  return data({locale:params.locale??"en",item:page},{headers:reviewHeaders});
+  let registry;
+  try{({registry}=await registryForRequest(context));}
+  catch(error){
+   if(error instanceof RegistryConnectionUnavailableError)throw new ComplaintStorageUnavailableError("source registry unavailable",{cause:error});
+   throw error;
+  }
+  const direction=(locale:string)=>locale==="und"?"auto" as const:registry.find(locale)?.locale.direction??"auto" as const;
+  const present=(source:typeof page.reported)=>({...source,direction:direction(source.sourceLocale)});
+  const item={...page,reported:present(page.reported),current:present(page.current),
+    currentTopicTitle:present(page.currentTopicTitle),
+    context:{...page.context,items:page.context.items.map(post=>({...post,direction:direction(post.sourceLocale)}))}};
+  return data({locale:params.locale??"en",item},{headers:reviewHeaders});
  }catch(e){return complaintHttpError(e);}
 }
 export async function action({request,params,context}:{request:Request;params:{caseId?:string};context:RouterContextProvider}){
