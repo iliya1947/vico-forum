@@ -4,32 +4,36 @@
 
 Координатор Complaints и ответственный за соответствие #254 текущему `AGENTS.md`.
 
-## Package 5 coordinator whole-PR review — PASS
+## Package 5 — corrected-head coordinator whole-PR review
 
-Повторно проверен PR #277 exact head `1af1c6272bf7b46009145488b52a42f89bfd0b2f` против current main `1ad8a6402111928c0f08e6f15aba624ba18a4426`.
+Implementation PR #277 проверен на stable exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`.
 
-Exact-head CI #41501045924 сверён: SUCCESS; 1736/1736 application tests (123 files), 455/455 PostgreSQL tests (36 files), lint/typecheck/builds/migration/schema/Worker smoke PASS.
+Current main на момент финального sweep: `fb35519fec2520617e0db5c81837782a740e7613`. Он отличается от исходного base #277 только обновлением `AGENTS.md`; implementation Package 5 не пересекается.
 
-Пять findings предыдущего coordinator review были закрыты. Повторно проверены основные Package 5 цепочки: migration/backfill shape; atomic Decision notification fanout, replay/dedup/read state; participant membership/result privacy; History reviewer/identity boundaries; persisted review-started lease semantics; readonly Appeal boundary без Package 6 workflow.
+Exact-head CI #41513618388 независимо сверён: SUCCESS; 1741/1741 application tests (126 files), 455/455 PostgreSQL tests (36 files), lint/typecheck/builds/migration/schema/Worker smoke PASS.
 
-Coordinator verdict этого exact head был **PASS**.
+### Recheck четырёх technical findings
 
-## Independent technical review — validation of findings
+1. **Timeline pagination — PASS.** Timeline route использует canonical `strictPageQuery`; positive pages и actual Next transition после 50 событий покрыты regressions.
+2. **Desktop Decision notification layout — PASS.** `is-system` использует три реальные desktop tracks; legacy reply/mention и responsive layout сохранены.
+3. **Readonly Appeal outcome localization — PASS.** `upheld | overturned` отображаются через canonical EN + reviewed RU/HE labels; fingerprints сверены с фактическим `sourceFingerprint` contract.
+4. **Unified notifications POST boundary — PASS.** Session/same-origin сохраняются; request читается bounded до 4096 bytes, требует URL-encoded POST, отвергает duplicate/unknown/missing/invalid fields и invalid UTF-8 до storage mutation; существующие UUID notification IDs совместимы.
 
-Лёва провёл independent technical whole-PR review того же exact head и зафиксировал 4 findings. Каждый перепроверен Мирой отдельно против current main, Package 5 technical plan и actual implementation.
+### Whole-PR regression sweep
 
-1. **Timeline pagination — CONFIRMED current-scope P2.**
-   `app/routes/complaint-history.tsx` использует regexp `/^(0|[1-9]\\d{0,4})$/`; в regex literal `\\d` означает literal backslash + d. Корректные положительные `page` отвергаются, поэтому UI Next после первых 50 events ведёт в 400.
+Повторно проверены:
+- resolved History/timeline bounds, permissions и optional identity projection;
+- `review-started` только при inactive→active lease transition, без Case ownership/version mutation;
+- migration `0054`, per-kind notification shape, recipient+Decision dedup и historical backfill;
+- atomic initial Decision → event → notification fanout внутри одной transaction и replay semantics;
+- unified inbox + legacy reply/mention count/read paths;
+- notification mark-read recipient ownership + complaint participant membership;
+- participant result membership/privacy и отсутствие notes/reporters/sanctions;
+- Package 6 boundary: readonly persisted Appeals показаны, но submission/resolution UI/policy/notifications не добавлены;
+- `PROJECT_STATE.md` и `docs/moderation/COMPLAINTS.md` соответствуют Package 5 implementation.
 
-2. **Desktop complaint-decision notification layout — CONFIRMED current-scope P2.**
-   Desktop `.notification-card` сохраняет four-column grid `3.25rem | 1fr | auto | 2.9rem`, но complaint-decision не рендерит avatar. Без explicit placement `.notification-copy` занимает первую 3.25rem колонку; mobile media rules проблему отдельно исправляют, desktop — нет.
+Новых confirmed current-scope defects не найдено.
 
-3. **Readonly Appeal outcome localization — CONFIRMED current-scope P3.**
-   `history-view.tsx` выводит `event.appealOutcome` напрямую как `upheld | overturned`. Package 5 уже отображает persisted readonly Appeal lifecycle в EN/RU/HE; это presentation текущего scope, а не Package 6 workflow. Existing SSR test закрепляет raw `upheld`.
+**Coordinator verdict: PASS.**
 
-4. **Unified notifications POST boundary — CONFIRMED current-scope P3.**
-   Package 5 technical plan §8 явно требует existing `POST /:locale/notifications`: session + same-origin + bounded URL-encoded input + duplicate/id validation. Текущий action читает unbounded `request.formData()`, не требует URL-encoded content type и использует first-value semantics через `FormData.get()`; duplicate/unknown fields не отвергаются. `runForumMutation` проверяет session/same-origin, но не компенсирует эти missing boundaries. В Complaints уже есть сопоставимый bounded URL-encoded parser, поэтому локальная correction возможна без архитектурного расширения.
-
-Итог: **4/4 findings подтверждены как реальные current-scope defects Package 5 — 2 P2 + 2 P3.**
-
-Следующий этап: один bounded correction package Лиры в PR #277; Package 6+, schema/domain/API/permissions и несвязанный refactor не включать без нового подтверждённого дефекта. После нового stable head и применимых checks начинается новый coordinator whole-PR cycle Миры.
+Следующий этап: independent technical whole-PR review Лёвы того же exact head `96bb5e82dc7ff7df9e57ce08c182f5c8c49d38fe`. Implementation до результата review не менять.
