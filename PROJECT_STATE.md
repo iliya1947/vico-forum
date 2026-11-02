@@ -101,13 +101,14 @@ Stage 5 завершён в repository/local-CI path.
 
 ### Complaints
 
-По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–3:
+По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–3; в текущей implementation-ветке разрабатывается Package 4:
 
 - domain/evidence foundation;
 - пользовательская submission с immutable revision evidence, grouping и rate limits;
 - open Queue/triage, configurable automatic priority, manual override и non-exclusive reviewer activity.
+- Package 4 в текущей implementation-ветке: protected full Case view, bounded reports/notes/evidence/context, initial Decision и shared Quick actions. CI, runtime/browser и coordinator acceptance ещё не утверждались.
 
-Full Case review, moderator notes/initial Decision UI, result notifications/history и appeals workflow/UI относятся к следующим пакетам и в текущем `main` не завершены.
+В принятом `main` Package 4 ещё не завершён. Result notifications/History и appeals workflow/UI — отдельные последующие пакеты.
 
 ## CI и migration state
 
