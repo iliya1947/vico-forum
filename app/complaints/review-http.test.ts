@@ -4,6 +4,7 @@ import {authSessionContext} from "../auth/request-context";
 import {authorizationContext} from "../authorization/request-context";
 import {privateAttachmentBucketContext} from "../forum/attachment-request-context";
 import {complaintReviewContext} from "./review-context";
+import {registryLoaderContext} from "../localization/request-context";
 import {loader as caseLoader,action as caseAction} from "../routes/complaint-review";
 import {loader as postLoader} from "../routes/complaint-review-context";
 import {loader as evidenceLoader} from "../routes/complaint-review-evidence";
@@ -15,6 +16,7 @@ function fixture(permissions=["forum.complaint.review"],actor=true) {
  context.set(authSessionContext,actor?{user:{id:"trusted-reviewer"}} as never:null);
  const has=vi.fn(async(key:string)=>permissions.includes(key));
  context.set(authorizationContext,{forUser:()=>({has})} as never);
+ context.set(registryLoaderContext,(async()=>({registry:{find:()=>({locale:{direction:"ltr"}})}})) as never);
  const cap={
   read:vi.fn(async()=>({id:"case-1",reports:{items:[],total:0,page:0,hasMore:false}})),
   context:vi.fn(async()=>({id:"post-1",source:{originalContent:"text"}})),
