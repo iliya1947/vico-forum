@@ -55,9 +55,9 @@ describe("Package 6 participant Appeal HTTP",()=>{
   expect(f.submit).not.toHaveBeenCalled();
  });
  it("refreshes a conflicted result to show changed pending/eligibility without overwriting draft",()=>{
-  const args={actionStatus:409,formData:new FormData(),defaultShouldRevalidate:false} as never;
+  const args={actionStatus:409,formData:new FormData(),defaultShouldRevalidate:false};
   (args as {formData:FormData}).formData.set("intent","appeal");
-  expect(shouldRevalidate(args)).toBe(true);
-  expect(shouldRevalidate({...args,actionStatus:200})).toBe(false);
+  expect(shouldRevalidate(args as never)).toBe(true);
+  expect(shouldRevalidate({...args,actionStatus:200} as never)).toBe(false);
  });
 });
