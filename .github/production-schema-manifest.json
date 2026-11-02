@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0054_complaint_history_notifications",
+  "targetMigration": "0055_complaint_appeal_notifications",
   "tables": {
     "account": {
       "columns": [
@@ -3069,6 +3069,12 @@
           "type": "text",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "complaint_appeal_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -3080,6 +3086,14 @@
         }
       ],
       "uniqueConstraints": [
+        {
+          "name": "forum_reply_notifications_recipient_appeal_unique",
+          "columns": [
+            "recipient_user_id",
+            "complaint_appeal_id"
+          ],
+          "nullsNotDistinct": false
+        },
         {
           "name": "forum_reply_notifications_recipient_decision_unique",
           "columns": [
@@ -3104,6 +3118,20 @@
             "actor_user_id"
           ],
           "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_appeal_fk",
+          "columns": [
+            "complaint_appeal_id"
+          ],
+          "referencedTable": "forum_complaint_appeals",
           "referencedColumns": [
             "id"
           ],
@@ -3176,12 +3204,13 @@
           "name": "forum_reply_notifications_kind_check",
           "columns": [
             "actor_user_id",
+            "complaint_appeal_id",
             "complaint_decision_id",
             "kind",
             "post_id",
             "topic_id"
           ],
-          "definitionSha256": "bf57fde6bd364c2319871be19d986fed6ebf0ab0269d24427975ae50c296df89"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": [
@@ -5780,6 +5809,19 @@
             }
           ],
           "predicateSha256": null
+        },
+        {
+          "name": "complaint_appeal_single_pending_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "decision_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": "PENDING"
         }
       ]
     },
