@@ -7,6 +7,7 @@ import { COMPLAINT_REASONS } from "../../db/complaints-domain";
 import type { ComplaintQueueCase, ComplaintQueuePage } from "./queue-contract";
 
 export const complaintQueuePath=(locale:string)=>`/${encodeURIComponent(locale)}/attention?mode=complaints&group=group1`;
+export const complaintReviewPath=(locale:string,id:string)=>`/${encodeURIComponent(locale)}/attention/complaints/${encodeURIComponent(id)}/review`;
 export const complaintTriagePath=(locale:string,id:string)=>`/${encodeURIComponent(locale)}/attention/complaints/${encodeURIComponent(id)}`;
 
 export function ComplaintCaseSummary({locale,item,openLink=true}:{locale:string;item:ComplaintQueueCase;openLink?:boolean}) {
@@ -29,7 +30,7 @@ export function ComplaintCaseSummary({locale,item,openLink=true}:{locale:string;
     <ul className="complaint-reason-summary">{COMPLAINT_REASONS.filter(reason=>item.reasons[reason]).map(reason=>
       <li key={reason}>{t(`complaintReason_${reason}`)}: {number.format(item.reasons[reason]!)}</li>)}</ul>
     <p className="complaint-activity" role="status">{t(item.activeElsewhere?"complaintActivityOther":"complaintActivityNone")}</p>
-    {openLink&&<Link className="complaint-open-case" to={complaintTriagePath(locale,item.id)}>{t("complaintOpenCase")}</Link>}
+    {openLink&&<Link className="complaint-open-case" to={complaintReviewPath(locale,item.id)}>{t("complaintOpenCase")}</Link>}
   </article>;
 }
 
