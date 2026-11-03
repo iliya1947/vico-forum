@@ -7,7 +7,7 @@ import type {ReviewCase,ReviewPages} from "../app/complaints/review-contract";
 
 export interface PendingAppealSummary {
  id:string;caseId:string;ordinal:number;createdAt:Date;kind:"post"|"topic-title";
- excerpt:string;sourceLocale:string;initialOutcome:ComplaintOutcome;effectiveOutcome:ComplaintOutcome;
+ excerpt:string;sourceLocale:string;sourceDirection?:"ltr"|"rtl"|"auto";initialOutcome:ComplaintOutcome;effectiveOutcome:ComplaintOutcome;
  ownInitialDecision:boolean;
 }
 export interface PendingAppealsPage {appeals:PendingAppealSummary[];total:number;page:number;hasMore:boolean}
