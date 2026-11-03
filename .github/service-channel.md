@@ -65,11 +65,11 @@ Browser/owner visual acceptance не выполнялись и не заявля
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, focused verification P6-DOC-01 на stable exact head `df33f134fcd49c01258b95b02e34b726bc9b845f`.
-- Лира — ChatGPT-6: **завершила doc-only correction P6-DOC-01 в PR #279**, exact-head CI SUCCESS; handoff Мире.
+- Мира — ChatGPT-5.6 Sol: focused verification завершён; P6-DOC-02 подтверждён.
+- Лира — ChatGPT-6: **назначен минимальный doc-only correction P6-DOC-02 в PR #279**.
 - Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
-- Следующий шаг: Мира проводит focused coordinator verification P6-DOC-01; поскольку код и requirements не менялись, новый implementation whole-PR cycle не требуется. После coordinator PASS — independent technical review Лёвы финального exact head. Package7+, merge и production вне этого handoff.
+- Следующий шаг: Лира исправляет только migration-history строку P6-DOC-02 в `PROJECT_STATE.md`; затем Мира проводит focused verification. Поскольку code/requirements не меняются, новый implementation whole-PR cycle не требуется. После coordinator PASS — independent technical review Лёвы финального exact head. Package7+, merge и production вне этого handoff.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
