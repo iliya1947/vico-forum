@@ -5,10 +5,10 @@
 ## Актуальное состояние
 
 - Packages 1–5 merged в main; current main/base: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
-- Package 6 implementation: Draft PR #279, stable exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`.
-- Exact-head CI #41559889094 attempt1 SUCCESS (checks/database), независимо проверен Лёвой.
-- Coordinator whole-PR review Миры этого head завершён PASS.
-- Independent technical whole-PR review Лёвы этого же head завершён **CHANGES REQUIRED: 2 подтверждённых P3 findings**.
+- Package 6 implementation: Draft PR #279, **current stable exact head `e2e43316165b49d2b9fbf724138c9c7d07f71a60`** (previous reviewed head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`).
+- Current exact-head **CI #41567459036 attempt 1 SUCCESS**, both `checks` and `database`. Previous reviewed head CI #41559889094 also passed.
+- Coordinator PASS Миры получен **только на предыдущем head**. **Current head awaits fresh coordinator whole-PR review.**
+- Independent technical review Лёвы предыдущего head выявил два P3 finding; обе авторские correction внесены на новом head и ожидают повторной coordinator/independent приёмки.
 - [Полный результат и handoff Мире #6593499774](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774).
 
 ## Package 6 — утверждённый product scope
@@ -29,6 +29,12 @@
 - Previous coordinator findings P6-RTL-01 / P6-VERIFY-01 / P6-VERIFY-02 закрыты; повторно открытыми не считаются.
 - Иных подтверждённых current-scope дефектов на проверенном head не найдено.
 
+## Author correction result — current head
+
+- **P6-UI-01 implemented, pending coordinator acceptance:** Appeals group2 показывает ранее доступный localized target kind; Appeal reviewer показывает target kind и current topic title с existing registry-based source direction. Render regressions различают post и topic-title, проверяют EN/RU/HE и RTL.
+- **P6-UI-02 implemented, pending coordinator acceptance:** обе Appeal forms сохраняют классификацию `invalid/conflict/forbidden/notFound/unavailable` с локализованными отдельными текстами; HTTP status/service classification не изменены. Rendered React Router/action regressions проверяют видимый feedback, status, draft, nonce и retry. Семь новых RU/HE manual translation fingerprints проверены против canonical descriptor SHA-256.
+- **Exact head `e2e43316165b49d2b9fbf724138c9c7d07f71a60`, CI #41567459036 — SUCCESS** (attempt 1; `checks` и `database`). Нового coordinator PASS / independent verdict на этом head ещё нет.
+
 ## Проверенная evidence и ограничения
 
 Лёва локально выполнил115 application/route tests,73 native PostgreSQL17 tests, production build; дополнительные independent probes проверили28-row queue,60-row mixed inbox и concurrent resolution двумя разными reviewers. Actual Worker+session+PermissionResolver+PostgreSQL HTTP проверил three-slot flow, repeated reporter, outcome flips, replay, participant/appeal-only/privacy/resource boundaries и notification targets/dedup. Implementation не менялся.
@@ -37,11 +43,11 @@ Browser/owner visual acceptance не выполнялись и не заявля
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: независимая проверка P6-UI-01 / P6-UI-02 завершена; оба подтверждены current-scope.
-- Лира — ChatGPT-6: **назначен один bounded correction package по P6-UI-01 / P6-UI-02 в существующем PR #279**.
+- Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, repeat coordinator whole-PR review new stable exact head #279.
+- Лира — ChatGPT-6: **завершила bounded correction package P6-UI-01/02** в #279; exact-head CI SUCCESS; handoff Мире.
 - Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
-- После corrections — новый coordinator whole-PR review stable exact head; после PASS — independent technical review того же head. Package7+, merge и production вне этого handoff.
+- Следующий шаг: coordinator whole-PR review нового stable exact head, затем (при PASS) independent technical review Лёвы того же head. Package7+, merge и production вне этого handoff.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
