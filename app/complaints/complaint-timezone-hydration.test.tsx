@@ -39,6 +39,7 @@ function buildSurface(surface:Surface,locale:Locale){
     return {
       path:`/${locale}/attention`,
       stamps:[decisionTime],
+      loaderData:null,
       element:<ComplaintResolvedHistoryList locale={locale} history={{
         page:0,total:1,hasMore:false,
         cases:[{id:"history-case",kind:"post",text:"Reported source",sourceLocale:"en",
@@ -51,6 +52,7 @@ function buildSurface(surface:Surface,locale:Locale){
     return {
       path:`/${locale}/notifications`,
       stamps:[decisionTime,nextDayTime],
+      loaderData:null,
       element:<NotificationsView locale={locale} notifications={[
         {...base,id:"decision",kind:"complaint-decision" as const,caseId:"history-case",createdAt:decisionTime},
         {...base,id:"appeal",kind:"complaint-appeal-result" as const,caseId:"history-case",
