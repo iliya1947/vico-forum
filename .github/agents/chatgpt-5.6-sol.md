@@ -172,3 +172,16 @@ Lyova reported one P3 on reviewed head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492
 `scripts/smoke-complaints-local.ts` protects `.dev.vars` creation with exclusive `wx`, but its shared `finally` unconditionally removes the path. Therefore an existing `.dev.vars` causes exclusive creation to fail and is nevertheless deleted by teardown. Current clean GitHub-hosted CI does not normally contain this ignored file, but the destructive failure path is present in newly introduced Package 7 tooling now and contradicts the ownership semantics implied by `wx`.
 
 Classification: **P7-SMOKE-01 CONFIRMED current-scope P3**. Correction is bounded to smoke ownership cleanup/regression; no Complaints application/schema/permission change and no rework of accepted B1/B2/B3/P7-DOC-01.
+
+
+## Package 7 — fresh coordinator PASS after P7-SMOKE-01
+
+Reviewed exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959` after bounded smoke ownership correction.
+
+- Correction delta vs prior fully reviewed head: exactly three files, limited to smoke/ownership probe/CI.
+- `P7-SMOKE-01` independently verified CLOSED.
+- Exact-head CI #41667933728 SUCCESS; DB 464/464, connected P7 4/4, ownership probe 1/1, authenticated Worker HTTP smoke PASS.
+- Previously accepted Package 7 integration tests/docs/state have identical blob SHA to prior reviewed head; production application/schema/permissions unchanged.
+- Whole bounded Package 7 scope remains satisfied; no browser/R2/production claims added.
+
+**Verdict: PASS — 0 confirmed current-scope defects.** Next separate stage: independent technical whole-PR review by Лёва on the same exact head.
