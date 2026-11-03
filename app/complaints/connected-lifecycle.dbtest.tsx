@@ -38,6 +38,8 @@ import {loader as participantLoader,action as appealAction} from "../routes/comp
 import {action as appealReviewAction} from "../routes/complaint-appeal-review";
 import {loader as historyLoader} from "../routes/complaint-history";
 import {loader as inboxLoader,action as inboxAction} from "../routes/notifications";
+import {topicAction} from "../forum/actions.server";
+import {createHyperdriveForumWriter} from "../../db/hyperdrive-forum";
 
 // This TSX fixture belongs to the UI TS project, but only the native database
 // Vitest configuration runs it. No browser or production dependencies.
@@ -461,5 +463,153 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
     expect(await appealAction({params:{caseId:eligible.caseId},
       context:context(reporter),request:appealRequest})).toMatchObject({ok:true});
   },30000);
+
+  it("keeps native Appeals, History, timeline and mixed inbox totals independent of page limits",async()=>{
+    const domain=service(),baselinePending=(await domain.readAppealQueue("reviewer",0)).total;
+    const baselineHistory=(await domain.readResolvedHistory("reviewer",0)).total;
+    const beforeInbox=(await forum.readNotifications("content-author",0)).total;
+    const secondReviewer=await quotaActor();
+    await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-moderator')",
+      [secondReviewer]);
+    const cases:Array<{caseId:string;decisionId:string;appealId:string;reporter:string;
+      topicId:string;postId:string}>=[];
+    // Different reporters and content targets: the anti-abuse budget is not raised or bypassed.
+    for(let i=0;i<28;i++){
+      const target=await content("P7 pagination Case "+i),reporter=await quotaActor();
+      const submitted=await domain.submit(reporter,{target:target.post,reason:"spam",
+        explanation:null,operationId:randomUUID()});
+      const reviewer=i<2?secondReviewer:"reviewer";
+      const decisionId=await domain.decide(reviewer,{caseId:submitted.caseId,expectedVersion:1,
+        outcome:"not-confirmed",reasoning:"Pagination Decision",operationId:randomUUID()});
+      const appealId=await domain.appeal(reporter,{caseId:submitted.caseId,decisionId,
+        argument:"Pagination Appeal",operationId:randomUUID()});
+      cases.push({caseId:submitted.caseId,decisionId,appealId,reporter,
+        topicId:target.post.topicId,postId:target.post.postId});
+    }
+    const pending0=await domain.readAppealQueue("reviewer",0);
+    const pending1=await domain.readAppealQueue("reviewer",1);
+    const pendingAll=[...pending0.appeals,...pending1.appeals];
+    expect(pending0).toMatchObject({page:0,total:baselinePending+28,hasMore:true});
+    expect(pending0.appeals).toHaveLength(25);
+    expect(pending1).toMatchObject({page:1,total:baselinePending+28,hasMore:false});
+    expect(pending1.appeals).toHaveLength(baselinePending+3);
+    expect(new Set(pendingAll.map(x=>x.id)).size).toBe(baselinePending+28);
+    expect(pendingAll.slice(0,2).map(x=>x.caseId)).toEqual(cases.slice(0,2).map(x=>x.caseId));
+    expect(pendingAll.slice(0,2).every(x=>!x.ownInitialDecision)).toBe(true);
+    expect(pendingAll.slice(2).every(x=>x.ownInitialDecision)).toBe(true);
+    for(let i=1;i<pendingAll.length;i++){
+      const a=pendingAll[i-1]!,b=pendingAll[i]!;
+      if(a.ownInitialDecision===b.ownInitialDecision)
+        expect(new Date(a.createdAt).getTime()<=new Date(b.createdAt).getTime() ||
+          (new Date(a.createdAt).getTime()===new Date(b.createdAt).getTime()&&a.id<b.id)).toBe(true);
+    }
+    const resolvedFirst=cases[0]!;
+    await domain.resolveAppeal("appeal-reviewer",{caseId:resolvedFirst.caseId,
+      appealId:resolvedFirst.appealId,operationId:randomUUID(),
+      outcome:"upheld",reasoning:"Pagination review"});
+    const afterOne=await domain.readAppealQueue("reviewer",0);
+    expect(afterOne.total).toBe(baselinePending+27);
+    expect(afterOne.appeals.some(x=>x.id===resolvedFirst.appealId)).toBe(false);
+    const history0=await domain.readResolvedHistory("reviewer",0);
+    const history1=await domain.readResolvedHistory("reviewer",1);
+    const historyBeyond=await domain.readResolvedHistory("reviewer",100);
+    expect(history0).toMatchObject({total:baselineHistory+28,hasMore:true,page:0});
+    expect(history0.cases).toHaveLength(25);
+    expect(history1).toMatchObject({total:baselineHistory+28,hasMore:false,page:1});
+    expect(history1.cases).toHaveLength(baselineHistory+3);
+    expect(historyBeyond).toMatchObject({total:baselineHistory+28,hasMore:false,cases:[]});
+    expect(new Set([...history0.cases,...history1.cases].map(x=>x.id)).size)
+      .toBe(baselineHistory+28);
+    const pendingOnly=await content("P7 intentionally open Case");
+    const openReporter=await quotaActor();
+    const open=await domain.submit(openReporter,{target:pendingOnly.post,reason:"spam",
+      explanation:null,operationId:randomUUID()});
+    expect((await domain.readResolvedHistory("reviewer",0)).cases.some(x=>x.id===open.caseId))
+      .toBe(false);
+    const beforeTimeline=await domain.readHistoryTimeline("reviewer",resolvedFirst.caseId,0);
+    for(let i=0;i<53;i++)
+      await domain.addNote("reviewer",{caseId:resolvedFirst.caseId,
+        operationId:randomUUID(),body:"Private timeline note "+i});
+    const timeline0=await domain.readHistoryTimeline("reviewer",resolvedFirst.caseId,0);
+    const timeline1=await domain.readHistoryTimeline("reviewer",resolvedFirst.caseId,1);
+    const timelineBeyond=await domain.readHistoryTimeline("reviewer",resolvedFirst.caseId,100);
+    const expectedEvents=beforeTimeline.total+53;
+    expect(expectedEvents).toBeGreaterThan(50);
+    expect(timeline0).toMatchObject({total:expectedEvents,page:0,hasMore:true});
+    expect(timeline0.events).toHaveLength(50);
+    expect(timeline1).toMatchObject({total:expectedEvents,page:1,hasMore:false});
+    expect(timeline1.events).toHaveLength(expectedEvents-50);
+    expect(timelineBeyond).toMatchObject({total:expectedEvents,events:[],hasMore:false});
+    expect(new Set([...timeline0.events,...timeline1.events].map(x=>x.id)).size)
+      .toBe(expectedEvents);
+    const review0=await domain.readReview("reviewer",resolvedFirst.caseId,
+      {reports:0,notes:0,evidence:0,context:0});
+    const review1=await domain.readReview("reviewer",resolvedFirst.caseId,
+      {reports:0,notes:1,evidence:0,context:0});
+    expect(review0.notes).toMatchObject({total:53,hasMore:true});
+    expect(review0.notes.items).toHaveLength(50);
+    expect(review1.notes).toMatchObject({total:53,hasMore:false});
+    expect(review1.notes.items).toHaveLength(3);
+    expect(review0.reports.total).toBe(review1.reports.total);
+    expect(review0.evidence.total).toBe(review1.evidence.total);
+
+    // Route loader receives a Framework-normalized page URL, but uses native SQL counts.
+    const routeContext=new RouterContextProvider();
+    routeContext.set(authSessionContext,{user:{id:"reviewer"}} as never);
+    routeContext.set(authorizationContext,authorization as never);
+    routeContext.set(complaintQueueContext,domain as never);
+    const fromRoute=await historyLoader({params:{caseId:resolvedFirst.caseId,locale:"en"},
+      context:routeContext,url:new URL("https://forum.test/en/attention/complaints/"+
+        resolvedFirst.caseId+"/history?page=1")});
+    expect(fromRoute.timeline).toMatchObject({page:1,total:expectedEvents,hasMore:false});
+    expect(fromRoute.timeline.events).toHaveLength(expectedEvents-50);
+
+    for(const item of cases.slice(1))
+      await domain.resolveAppeal("appeal-reviewer",{caseId:item.caseId,appealId:item.appealId,
+        operationId:randomUUID(),outcome:"upheld",reasoning:"Inbox fanout"});
+    expect((await domain.readAppealQueue("reviewer",0)).total).toBe(baselinePending);
+    // A single legacy reply row is a controlled fixture, not a replacement producer.
+    const legacyId=randomUUID();
+    await client.query("insert into forum_reply_notifications "+
+      "(id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at) "+
+      "values ($1,'content-author','reviewer',$2,$3,'reply',now())",
+      [legacyId,cases[0]!.topicId,cases[0]!.postId]);
+    const inbox0=await forum.readNotifications("content-author",0);
+    const inbox1=await forum.readNotifications("content-author",1);
+    const all=[...inbox0.items,...inbox1.items];
+    const expectedTotal=beforeInbox+56+1;
+    expect(inbox0).toMatchObject({total:expectedTotal,page:0,hasMore:true});
+    expect(inbox0.items).toHaveLength(50);
+    expect(inbox1).toMatchObject({total:expectedTotal,page:1,hasMore:false});
+    expect(inbox1.items).toHaveLength(expectedTotal-50);
+    expect(new Set(all.map(x=>x.id)).size).toBe(expectedTotal);
+    expect(all.filter(x=>x.kind==="complaint-decision")).toHaveLength(
+      beforeInbox?all.filter(x=>x.kind==="complaint-decision").length:28);
+    expect(all.filter(x=>x.kind==="complaint-appeal-result").length).toBeGreaterThanOrEqual(28);
+    expect(all.some(x=>x.id===legacyId&&x.kind==="reply")).toBe(true);
+    expect(await forum.countUnreadNotifications("content-author")).toBe(expectedTotal);
+    expect(await forum.countUnreadReplyNotifications("content-author")).toBe(1);
+    expect((await forum.readReplyNotifications("content-author")).map(x=>x.id)).toEqual([legacyId]);
+    const decisionNotice=all.find(x=>x.kind==="complaint-decision"&&
+      x.caseId===cases[0]!.caseId)!;
+    const readFirst=await forum.markNotificationRead("content-author",decisionNotice.id);
+    expect(readFirst).toEqual({kind:"complaint-decision",caseId:cases[0]!.caseId});
+    const markedAt=(await client.query<{read_at:Date}>(
+      "select read_at from forum_reply_notifications where id=$1",[decisionNotice.id]))
+      .rows[0]!.read_at;
+    await forum.markNotificationRead("content-author",decisionNotice.id);
+    expect((await client.query<{read_at:Date}>(
+      "select read_at from forum_reply_notifications where id=$1",[decisionNotice.id]))
+      .rows[0]!.read_at).toEqual(markedAt);
+    expect(await forum.countUnreadNotifications("content-author")).toBe(expectedTotal-1);
+    expect(await forum.countUnreadReplyNotifications("content-author")).toBe(1);
+    await expect(forum.markNotificationRead("reviewer",legacyId)).rejects.toThrow();
+    expect(await forum.markReplyNotificationRead("content-author",legacyId))
+      .toEqual({topicId:cases[0]!.topicId,postId:cases[0]!.postId});
+    expect(await forum.markReplyNotificationRead("content-author",legacyId))
+      .toEqual({topicId:cases[0]!.topicId,postId:cases[0]!.postId});
+    expect(await forum.countUnreadReplyNotifications("content-author")).toBe(0);
+    expect(await forum.countUnreadNotifications("content-author")).toBe(expectedTotal-2);
+  },60000);
 });
 
