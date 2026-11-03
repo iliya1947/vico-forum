@@ -461,10 +461,7 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     });
     const operationId=randomUUID();
     await client.query(`create function complaint_test_reject_appeal_notification() returns trigger
-      language plpgsql as $ begin
-        if new.kind='complaint-appeal-result' then raise exception 'intentional notification failure'; end if;
-        return new;
-      end $`);
+      language plpgsql as 'begin\n        if new.kind=''complaint-appeal-result'' then raise exception ''intentional notification failure''; end if;\n        return new;\n      end'`);
     await client.query(`create trigger complaint_test_reject_appeal_notification
       before insert on forum_reply_notifications for each row
       execute function complaint_test_reject_appeal_notification()`);
