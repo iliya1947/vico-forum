@@ -4,11 +4,12 @@
 
 ## Актуальное состояние
 
-- Packages 1–5 **merged в main**.
-- Current main: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
-- Package 6 implementation: Draft PR #279, current stable exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62` (last reviewed head `0d6bdbb465148875e02663c4c27c56e099a415e4`).
-- Exact-head CI #41559889094, attempt 1: **SUCCESS** (`checks` and `database`).
-- Final repeat coordinator whole-PR review Миры на current stable exact head завершён: **PASS, 0 confirmed current-scope defects**.
+- Packages 1–5 merged в main; current main/base: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
+- Package 6 implementation: Draft PR #279, stable exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`.
+- Exact-head CI #41559889094 attempt1 SUCCESS (checks/database), независимо проверен Лёвой.
+- Coordinator whole-PR review Миры этого head завершён PASS.
+- Independent technical whole-PR review Лёвы этого же head завершён **CHANGES REQUIRED: 2 подтверждённых P3 findings**.
+- [Полный результат и handoff Мире #6593499774](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774).
 
 ## Package 6 — утверждённый product scope
 
@@ -19,29 +20,26 @@
 5. Original Decision immutable; effective outcome выводится из initial Decision + resolved Appeals.
 6. Предпочтителен reviewer, отличный от автора initial Decision, без hard deadlock.
 
-## Final coordinator review по #279 / exact head c38b036b…
+## Подтверждённый correction package
 
-Финальный coordinator whole-PR review завершён.
+- **P6-UI-01 / P3:** Appeal review не показывает already-available target kind/current topic title; group2 также теряет target kind. Actual Worker SSR visible-text check на post/title Cases и P4 control подтвердили потерю существующего контекста. Исправление локально в presentation/регрессиях, без схемы/новых прав.
+- **P6-UI-02 / P3:** обе новые формы отображают typed unavailable/forbidden/notFound как invalid reason/explanation. Rendered React Router/jsdom с реальными actions подтвердил unavailable503 → “Check the reason and explanation.” Требуется localized Appeal feedback по server classification с сохранением draft/nonce/status.
+- Previous coordinator findings P6-RTL-01 / P6-VERIFY-01 / P6-VERIFY-02 закрыты; повторно открытыми не считаются.
+- Иных подтверждённых current-scope дефектов на проверенном head не найдено.
 
-- Exact head: `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`.
-- Base/current main: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
-- Exact-head CI #41559889094: **SUCCESS**, attempt 1.
-- Последняя correction после предыдущего review была test-only: один файл `tests/database/complaints-foundation.test.ts`; production code не менялся.
-- Cross-reporter concurrency gap закрыт: два разных actual reporters на independent PostgreSQL connections конкурируют за один Decision; test подтверждает один accepted Appeal, один conflict, один pending ordinal-1 slot и один `appealed` event.
-- `P6-RTL-01`, `P6-VERIFY-01`, `P6-VERIFY-02` закрыты.
-- Новых current-scope дефектов не выявлено.
-- Browser/owner visual acceptance не считается отдельным blocker по текущей developer restriction и предыдущей coordinator-классификации.
+## Проверенная evidence и ограничения
 
-**Coordinator verdict: PASS. Подтверждённых current-scope дефектов — 0.**
+Лёва локально выполнил115 application/route tests,73 native PostgreSQL17 tests, production build; дополнительные independent probes проверили28-row queue,60-row mixed inbox и concurrent resolution двумя разными reviewers. Actual Worker+session+PermissionResolver+PostgreSQL HTTP проверил three-slot flow, repeated reporter, outcome flips, replay, participant/appeal-only/privacy/resource boundaries и notification targets/dedup. Implementation не менялся.
 
-Следующий этап — независимая technical whole-PR проверка Лёвы **того же exact head**. До её завершения implementation не менять.
+Browser/owner visual acceptance не выполнялись и не заявляются; сохранена coordinator-классификация этого ограничения. Full CI independently verified через exact-head GitHub API; локально не заявляется повтор полного CI. Preview/PG/temporary auth vars/dependency symlinks удалены.
 
-## Назначения
+## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: coordinator whole-PR review завершён PASS.
-- Лира — ChatGPT-6: implementation/corrections завершены; без нового назначения.
-- Лёва — Codex-6.1 Sol: **назначен independent technical whole-PR review PR #279 exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`**.
+- Мира — ChatGPT-5.6 Sol: проверить единый technical findings package и назначить Лире bounded corrections в #279.
+- Лира — ChatGPT-6: ожидает coordinator assignment, нового назначения ещё нет.
+- Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
+- После corrections — новый coordinator whole-PR review stable exact head; после PASS — independent technical review того же head. Package7+, merge и production вне этого handoff.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
