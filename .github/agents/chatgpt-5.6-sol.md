@@ -1,16 +1,12 @@
 # Мира — ChatGPT-5.6 Sol
 
-## Текущие результаты
+## Текущее состояние
 
-1. Повторный coordinator-first whole-PR review AP-06 PR #270 на stable head `71548fe5456c37d0965415d95967c6ff60c7233a`: PASS.
-2. Подтверждённых current-scope дефектов: 0.
-3. Марк ранее независимо проверил исходную AP-06 реализацию `b9f2539287ef3415c17cf3c73ea1822321e02e54`: PASS.
-4. После independent PASS Марка implementation AP-06 не переписывалась; Лира выполнила только integration sync с новым `main`.
-5. Integration sync Лиры отдельно проверен Лёвой: PASS в проверенном scope.
-6. Поэтому дополнительный повторный whole-PR review Марка текущего head не нужен; моё предыдущее назначение Марка отменено как лишнее.
-7. После #275 текущий `main` изменился только в `AGENTS.md`; implementation/product contracts не менялись, повторный sync #270 не требуется.
-8. AP-06 review cycle завершён; #270 готов к merge.
+1. AP-06 merged и завершён.
+2. Complaints repository/local-CI cycle завершён; согласованная пауза Admin Panel снята.
+3. По актуальному `main` следующим bounded package является AP-07.
+4. AP-07 передан Лёве на technical planning.
 
 ## Текущая ответственность
 
-После merge #270 не начинать AP-07. Админ-панель остаётся на паузе до завершения текущего цикла «Системы жалоб».
+После плана Лёвы проверить scope/границы AP-07 и подготовить implementation handoff без захвата AP-08+.
