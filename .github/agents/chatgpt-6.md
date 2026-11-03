@@ -120,3 +120,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - In PR #279 added native PostgreSQL test that injects a local notification-insert trigger failure during Appeal resolution, asserts Appeal remains pending, no resolved event or notification exists, then retries the same operation successfully after removing the trigger. Commit `21589f252ec54f9c5c442f544b12d1551bd44483`.
 - At last observation earlier CI #41553467018 was still in progress. New exact-head CI not yet confirmed; the added test is **unverified** until execution.
 - Still missing explicit submit↔resolve race acceptance and populated 0054→0055 upgrade test. No review handoff/PASS.
+
+## Package 6 — submit/resolve race test checkpoint
+
+- Prior CI #41553467018 SUCCESS on head `b7b3aa8fe3a076cf8976dae9bf648253c08d258a`; #41553314326 SUCCESS on RTL fixture correction head. Rollback test CI #41553648917 was in progress at observation.
+- Added native PG submit↔resolve regression exercising concurrent resolved first Appeal and subsequent eligible reporter submission. Checks legal serialization outcomes, ordinal/pending state and fanout recipients. Implementation PR #279 commit `1502c1b38dd1898dd7be37b408843bd63f595088`; new exact-head CI pending.
+- Populated 0054→0055 migration upgrade acceptance P6-VERIFY-02 remains missing; no coordinator handoff.
