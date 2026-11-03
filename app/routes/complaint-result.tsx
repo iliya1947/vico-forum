@@ -6,6 +6,7 @@ import {readAppealForm} from "../complaints/appeal.server";
 import {complaintHttpError,complaintCommandFailure,complaintPrivateHeaders} from "../complaints/queue.server";
 import {complaintId,ComplaintInputError} from "../../db/complaints-domain";
 import {ForumShell,ForumRouteError} from "../forum/ui";
+import {appealFeedbackKey,type AppealCommandError} from "../complaints/appeal-feedback";
 import {useTranslation} from "react-i18next";
 export function headers(){return complaintPrivateHeaders;}
 export function shouldRevalidate({actionStatus,formData,defaultShouldRevalidate}:ShouldRevalidateFunctionArgs){
@@ -35,7 +36,7 @@ export async function action({request,params,context}:{request:Request;params:{c
 }
 export default function ComplaintResultRoute(){
  const {locale,result}=useLoaderData<typeof loader>();const {t}=useTranslation("common");
- const appeal=useFetcher<{ok?:true;appealId?:string;operationId?:string;error?:string}>();
+ const appeal=useFetcher<{ok?:true;appealId?:string;operationId?:string;error?:AppealCommandError}>();
  const [argument,setArgument]=useState("");const nonce=useRef("");const ack=useRef("");
  useEffect(()=>{if(appeal.data?.ok&&appeal.data.operationId===nonce.current&&ack.current!==nonce.current){
    ack.current=nonce.current;nonce.current="";setArgument("");
@@ -73,7 +74,7 @@ export default function ComplaintResultRoute(){
     <button type="submit" disabled={appeal.state!=="idle"}>{t("complaintAppealSubmit")}</button>
   </appeal.Form>:<p role="status">{result.pending?t("complaintAppealPending"):
     result.remaining===0?t("complaintAppealLimit"):t("complaintAppealOtherSide")}</p>}
-  {appeal.data?.error?<p role="alert">{t(appeal.data.error==="conflict"?"complaintError_conflict":"complaintError_invalid")}</p>:null}
+  {appeal.data?.error?<p role="alert">{t(appealFeedbackKey(appeal.data.error,"submit"))}</p>:null}
   {appeal.data?.ok?<p role="status">{t("complaintAppealSubmitted")}</p>:null}
  </section></ForumShell>;
 }
