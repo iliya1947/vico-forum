@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0054`;
+- repository migration history: `0000`–`0055`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
