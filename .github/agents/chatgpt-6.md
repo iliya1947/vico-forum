@@ -159,3 +159,11 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Repeat coordinator review of #279 head `0d6bdbb465148875e02663c4c27c56e099a415e4` returned one remaining blocker: concurrent Appeal submission test previously used a single actor, so actor mutex rather than Case mutex could serialize commands. Coordinator comment #6592959445.
 - Updated existing native PostgreSQL test in implementation PR #279 to submit concurrently from real `reporter-one` and `reporter-two` in the same Case/Decision using separate pool connections. Explicitly assert one accepted Appeal, one `ComplaintConflictError`, exactly one ordinal-1 pending slot and one `appealed` event; preserve competing resolve check and fanout expectations for all reporters.
 - Implementation commit `c38b036b2ecb080735e6eaf4fcca5416a7aebc62` (test-only). Exact-head CI not yet confirmed. Do not claim correction PASS or coordinator handoff until CI success.
+
+## Package 6 — final P6-VERIFY-01 evidence completed; handoff to Мира
+
+- Native PostgreSQL test-only correction in implementation PR #279 at stable exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`. Two **different** actual reporters of one Case submit Appeals concurrently to the same initial Decision through separate PostgreSQL pool connections.
+- Assertions: exactly one accepted Appeal, second `ComplaintConflictError`, exactly one pending ordinal-1 slot, exactly one `appealed` lifecycle event; no consumed additional slot or event. Existing concurrent resolution and notification fanout assertions retained.
+- [Exact-head CI #41559889094](https://github.com/iliya1947/vico-forum/actions/runs/41559889094): **SUCCESS, attempt 1**, jobs `checks` and `database`. No production code changed in this final correction.
+- Earlier P6-RTL-01 and P6-VERIFY-02 were closed by coordinator on prior head `0d6bdbb465148875e02663c4c27c56e099a415e4`; remaining P6-VERIFY-01 concurrency evidence is now submitted for **fresh coordinator verification**, not coordinator-accepted yet.
+- Author handoff completed through service PR #254. Мира to repeat coordinator whole-PR review on current exact head; Лёва only after coordinator PASS. Browser/production deployment/merge not performed.
