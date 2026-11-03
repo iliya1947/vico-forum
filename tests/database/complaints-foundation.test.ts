@@ -88,7 +88,7 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
     await client.query(`drop schema if exists ${upgradeSchema} cascade; create schema ${upgradeSchema}`);
     try{
       await upgrade.connect();
-      for(const file of (await readdir("drizzle")).filter(x=>/^\\d{4}_.+\\.sql$/.test(x)&&x<"0055_").sort()){
+      for(const file of (await readdir("drizzle")).filter(x=>/^\d{4}_.+\.sql$/.test(x)&&x<"0055_").sort()){
         await upgrade.query((await readFile(`drizzle/${file}`,"utf8")).replaceAll('"public".',`"${upgradeSchema}".`));
       }
       for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
