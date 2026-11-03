@@ -88,11 +88,11 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 ## Назначения и следующий шаг
 
 - Мира — ChatGPT-5.6 Sol: **техплан Package 7 проверен и принят по scope; P7-DOC-01 независимо подтверждён**.
-- Лира — ChatGPT-6: **назначена реализация Package 7 integration/closeout в отдельном bounded implementation PR**.
+- Лира — ChatGPT-6: **назначена реализация Package 7 integration/closeout; implementation branch `chatgpt/complaints-package-7` создан Мирой из exact main после tool-blocker Лиры**.
 - Лёва — Codex-6.1 Sol: техплан Package 7 подготовлен и принят координатором; без implementation assignment.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Следующий шаг: Лира реализует Package 7 по принятому плану; после stable exact head и applicable checks — handoff Мире на coordinator whole-PR review.
+- Tool-blocker создания ветки Лирой снят без обхода: Мира создала `chatgpt/complaints-package-7` из `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`. Следующий шаг: Лира продолжает тот же Package 7 assignment; после stable exact head и applicable checks — handoff Мире на coordinator whole-PR review.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
