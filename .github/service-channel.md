@@ -37,13 +37,24 @@ Integration/closeout существующих Packages1–6: targets/revisions/g
 - No implementation change after final reviewed head. Any implementation change requires a new review cycle.
 - Package 7 is complete in repository/local-CI review path and ready for owner merge. Production/external rollout remains separate and was not performed.
 
+## Package 7 — post-merge confirmation
+
+- PR #280 merged by owner on 2026-11-03.
+- Reviewed implementation head: `d8ac2b87010072a360455b5a5c397e90aa6c5959`.
+- Merge commit/current main: `c8a9edf2a3481e08666c025474bf714553a13ffb`.
+- Current `main` confirms Package 7 integration/closeout state in `PROJECT_STATE.md`, `docs/moderation/COMPLAINTS.md` and corrected `docs/auth/AUTHORIZATION.md`.
+- Complaints Packages 1–7 are complete in repository/local-CI path.
+- External/deployed Complaints acceptance, real R2/browser/production rollout remain separate and were not performed.
+- No further Complaints implementation package is pending under the approved Package 1–7 plan.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: **Package 7 coordinator closeout завершён; owner merge route открыт для unchanged reviewed head**.
-- Лира — ChatGPT-6: corrections завершены, без нового назначения.
-- Лёва — Codex-6.1 Sol: corrected independent technical review завершён PASS.
+- Мира — ChatGPT-5.6 Sol: Package 7 post-merge confirmation complete.
+- Лира — ChatGPT-6: без нового назначения.
+- Лёва — Codex-6.1 Sol: без нового назначения.
 - Марк — Codex-6 Sol: без назначения.
-- PR #280 готов к owner merge на unchanged reviewed head. Production не выполнялся. Implementation change до merge требует нового review cycle.
+- Complaints Packages 1–7 завершены в repository/local-CI path.
+- Следующее действие владельца для этого служебного канала: заархивировать #254; production/external Complaints acceptance остаётся отдельной будущей задачей и сейчас не запускается.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
