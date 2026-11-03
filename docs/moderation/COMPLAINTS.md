@@ -1,8 +1,10 @@
 # Complaints
 
 This is the permanent complaints-domain contract. Product decisions and staged
-delivery are recorded in service PR #254. It describes the Complaints implementation through Package 6 in the
-repository/local-CI path. External production rollout remains separate.
+delivery are recorded in service PR #254. Packages 1–6 implement the Complaints
+capabilities described below. Package 7 adds cross-package integration verification
+and closeout documentation, not new domain behavior. External production rollout
+remains separate.
 
 ## Domain and boundaries
 
@@ -405,3 +407,20 @@ and repository web ACL contracts. Tests use disposable local PostgreSQL 17, incl
 native concurrency, rollback, permission freshness, evidence retention and privacy.
 Repository ACL changes are not external GRANTs. No production migration, credential,
 bucket, provider, deployment, shared Quick actions or public rollout is implied.
+
+Package 7 integration verification connects actual route actions/loaders, the
+Complaints service and disposable PostgreSQL 17 through submission, Case grouping,
+immutable evidence across edits, initial Decision, three Appeal slots, History and
+the existing unified notifications inbox. Native tests additionally verify fresh
+permission resolution and identity projection, retained-resource membership,
+independent bounded pagination/counts and the separation of canonical Admin Quick
+actions/History from Complaint outcomes.
+
+A local built-Worker HTTP smoke checks Better Auth session issuance, authorization
+revalidation on subsequent requests, the same lifecycle, protected resources and
+EN/RU/HE SSR including source direction for `und`. Its database and credentials
+are disposable test resources. Retained attachment bytes are tested with an
+in-memory bucket; local Worker HTTP without an R2 binding verifies the controlled
+unavailable response, not successful real R2 delivery. Browser acceptance,
+external OAuth/provider calls, production deployment and external database/GRANT
+acceptance remain outside this repository/local-CI evidence.
