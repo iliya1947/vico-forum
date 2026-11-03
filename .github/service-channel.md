@@ -33,13 +33,23 @@ Integration/closeout существующих Packages1–6: targets/revisions/g
 - Локально4/4 новых native tests, production build и unchanged actual local Worker Better Auth/PG HTTP smoke — PASS. Full CI независимо проверен API, локальный повтор full suites не заявлен.
 - Implementation не менялся; own preview/PG/container/symlink убраны. Evidence /workspace/work/review280-evidence/, configs/secrets для destructive probe не использовались — только marker.
 
+## Мира — независимая проверка P7-SMOKE-01
+
+- Exact reviewed head остаётся `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`.
+- Causal chain подтверждена непосредственно по новому `scripts/smoke-complaints-local.ts`: `writeFile(...,{flag:"wx"})` отказывается создавать `.dev.vars`, если путь уже существует, но общий `finally` затем безусловно выполняет `rm(vars,{force:true})` независимо от ownership.
+- Отдельная проверка exclusive-create/cleanup semantics подтверждает: pre-existing marker не создаётся текущим запуском, exclusive create fails, после unconditional cleanup marker отсутствует.
+- `.dev.vars*` игнорируется git; штатный GitHub-hosted CI сейчас стартует с clean checkout и данный collision не возникает на green path. Это не отменяет defect: ошибочная destructive failure-path логика находится в новом Package 7 smoke и воспроизводится сейчас при соблюдении его guards; `wx` явно задаёт намерение не трогать существующий config, которое teardown нарушает.
+- Finding классифицирован как **real current-scope P3**, не future groundwork. Исправление локальное для test tooling; application/schema/permissions/product contract не затрагиваются.
+- Required correction: удалять `.dev.vars` только если текущий запуск успешно создал этот файл; pre-existing path должен пережить EEXIST и early failure. Сохранить `CI=true`, loopback `*_test`, `wx`, secret-safe logging и cleanup собственных ресурсов.
+- Regression: existing marker survives refusal/early failure; normal owned temporary `.dev.vars` удаляется. Не расширять correction на B1/B2/B3 или Complaints application.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: проверить единый P7-SMOKE-01 finding и назначить Лире bounded correction.
-- Лира — ChatGPT-6: ожидает нового coordinator assignment.
+- Мира — ChatGPT-5.6 Sol: **P7-SMOKE-01 независимо подтверждён как current-scope defect**.
+- Лира — ChatGPT-6: **назначена bounded correction только smoke cleanup ownership + regression guard**.
 - Лёва — Codex-6.1 Sol: independent review завершён, implementation не меняет.
 - Марк — Codex-6 Sol: без назначения.
-- После correction новый stable head/CI → coordinator whole-PR cycle → independent technical review того же head. Merge/production не выполнялись.
+- После correction: новый stable exact head + applicable CI → fresh coordinator whole-PR cycle → independent technical review того же head. B1/B2/B3/P7-DOC-01 не переделывать. Merge/production не выполнялись.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
