@@ -138,3 +138,14 @@ PR #279 merged into `main` as `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`. Curren
 Package 6 is closed. Production rollout was not performed.
 
 Next bounded coordinator task: define Package 7 integration/closeout scope from current main and the approved Complaints plan before handing technical planning to Лёва.
+
+
+## Package 7 — bounded coordinator scope
+
+Package 7 зафиксирован как integration/closeout package без новой функциональности по умолчанию. Цель — проверить целостность Packages 1–6 на current main и исправлять только подтверждённые current-scope integration defects.
+
+Обязательные cross-package boundaries: target/revision identity; Case grouping/linking; immutable evidence; privacy/dynamic permissions; anti-abuse/replay; priority/activity; shared Quick actions/no implicit sanctions; complete Appeals lifecycle; bounded Queue/Appeals/History pagination; EN/RU/HE + LTR/RTL/error/negative states; isolation from Signals/Security/Admin; merge-stable source docs/state.
+
+Если уже реализованный invariant подтверждается существующей evidence, его не нужно переписывать. Недостающая verification может быть добавлена отдельно. Production rollout и unrelated product expansion вне scope.
+
+Следующая отдельная подзадача после developer continuation: передать Лёве техническое планирование Package 7.
