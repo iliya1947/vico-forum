@@ -9,6 +9,19 @@ import {ComplaintsService} from "../../db/complaints-service";
 import {DrizzleComplaintsRepository} from "../../db/complaints-repository";
 import {PostgresAuthorizationRepository} from "../../db/authorization-repository";
 import {createAuthorizationCapability} from "../../db/authorization-service";
+import {AuthorizationService} from "../../db/authorization-service";
+import {registryLoaderContext} from "../localization/request-context";
+import {localeRegistry} from "../localization/registry";
+import {privateAttachmentBucketContext} from "../forum/attachment-request-context";
+import {createHyperdriveComplaintReview} from "../../db/hyperdrive-complaint-review";
+import {createHyperdriveComplaintAppeal} from "../../db/hyperdrive-complaint-appeal";
+import {loader as reviewLoader} from "../routes/complaint-review";
+import {loader as appealReviewLoader} from "../routes/complaint-appeal-review";
+import {loader as appealContextLoader} from "../routes/complaint-appeal-context";
+import {loader as appealEvidenceLoader} from "../routes/complaint-appeal-evidence";
+import {loader as caseContextLoader} from "../routes/complaint-review-context";
+import {loader as caseEvidenceLoader} from "../routes/complaint-review-evidence";
+import {ComplaintForbiddenError} from "../../db/complaints-domain";
 import {DrizzleForumRepository} from "../../db/forum-repository";
 import {ComplaintNotFoundError} from "../../db/complaints-domain";
 import {authSessionContext} from "../auth/request-context";
@@ -270,6 +283,183 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
     await expect(historyLoader({params:{caseId,locale:"en"},context:context(reporterA),
       url:new URL("https://forum.test/en/attention/complaints/"+caseId+"/history")}))
       .rejects.toMatchObject({status:403});
+  },30000);
+
+  it("links dynamic reviewer grants to private Appeal DTO and retained-resource routes",async()=>{
+    const reporter=await quotaActor(),reviewOnly=await quotaActor(),appealOnly=await quotaActor();
+    const identityOnly=await quotaActor(),priorityOnly=await quotaActor(),outsider=await quotaActor();
+    const managerId=await quotaActor();
+    await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-admin')",[managerId]);
+    const manager=new AuthorizationService(new PostgresAuthorizationRepository(pool));
+    const slug="p7-review-"+randomUUID().slice(0,8);
+    await manager.createCustomRole(managerId,{slug,displayName:"P7 Appeal reviewer"});
+    const roleId=(await client.query<{id:string}>(
+      "select id from authz_roles where slug=$1",[slug])).rows[0]!.id;
+    await manager.replaceRoleGrants(managerId,roleId,["forum.complaint.appeal.review"]);
+    await manager.assignUserRole(managerId,appealOnly,roleId);
+    await manager.setUserOverride(managerId,reviewOnly,"forum.complaint.review","allow");
+    await manager.setUserOverride(managerId,identityOnly,"forum.complaint.reporterIdentity.read","allow");
+    await manager.setUserOverride(managerId,priorityOnly,"forum.complaint.priority.manage","allow");
+
+    const original=await content("B2 immutable reported evidence");
+    const retained=await asset(original.post.postId),domain=service();
+    const saved=await domain.submit(reporter,{target:original.post,reason:"spam",
+      explanation:null,operationId:randomUUID()});
+    const decisionId=await domain.decide("reviewer",{caseId:saved.caseId,expectedVersion:1,
+      outcome:"not-confirmed",reasoning:"Initial reporter outcome",operationId:randomUUID()});
+    const appealId=await domain.appeal(reporter,{caseId:saved.caseId,decisionId,
+      argument:"Private appellant reasoning",operationId:randomUUID()});
+    const unrelated=await content("B2 unrelated post"),foreignAsset=await asset(unrelated.post.postId);
+    const other=await domain.submit(reporter,{target:unrelated.post,reason:"spam",
+      explanation:null,operationId:randomUUID()});
+    const otherDecision=await domain.decide("reviewer",{caseId:other.caseId,expectedVersion:1,
+      outcome:"not-confirmed",reasoning:"Other result",operationId:randomUUID()});
+    const otherAppeal=await domain.appeal(reporter,{caseId:other.caseId,decisionId:otherDecision,
+      argument:"Other Appeal",operationId:randomUUID()});
+    await forum.editPublishedPost({topicId:original.post.topicId,postId:original.post.postId,
+      actorId:"content-author",expectedRevisionId:original.post.revisionId,
+      body:"B2 new current body",draftId:randomUUID(),attachmentIds:[],retainedAttachmentIds:[]});
+
+    const bucketCalls:string[]=[];
+    const bucket={get:async(key:string,range:{range:{offset:number;length:number}})=>{
+      bucketCalls.push(key);expect(range).toEqual({range:{offset:0,length:4}});
+      return {size:4,body:new Response("data").body!};
+    }};
+    // New RouterContextProvider per request; real SQL + auth snapshots, not fake DTOs.
+    const context=(actor:string|null,withBucket=true)=>{
+      const c=new RouterContextProvider();
+      c.set(authSessionContext,actor?{user:{id:actor}} as never:null);
+      c.set(authorizationContext,authorization as never);
+      c.set(registryLoaderContext,async()=>({registry:localeRegistry}) as never);
+      c.set(complaintReviewContext,createHyperdriveComplaintReview(databaseUrl!,authorization,
+        ()=>new Client({connectionString:databaseUrl,options})));
+      c.set(complaintAppealContext,createHyperdriveComplaintAppeal(databaseUrl!,authorization,
+        ()=>new Client({connectionString:databaseUrl,options})));
+      if(withBucket)c.set(privateAttachmentBucketContext,bucket as never);
+      return c;
+    };
+    const review=(actor:string|null)=>reviewLoader({
+      request:new Request("https://forum.test/en/attention/complaints/"+saved.caseId+"/review"),
+      url:new URL("https://forum.test/en/attention/complaints/"+saved.caseId+"/review"),
+      params:{caseId:saved.caseId,locale:"en"},context:context(actor)
+    });
+    const appeal=(actor:string|null,caseId=saved.caseId,id=appealId)=>appealReviewLoader({
+      url:new URL("https://forum.test/en/attention/complaints/"+caseId+"/appeals/"+id),
+      params:{caseId,appealId:id,locale:"en"},context:context(actor)
+    });
+    const aEvidence=(actor:string|null,caseId=saved.caseId,id=appealId,assetId=retained,
+      withBucket=true)=>appealEvidenceLoader({
+      params:{caseId,appealId:id,attachmentId:assetId},context:context(actor,withBucket)
+    });
+    const cEvidence=(actor:string|null,caseId=saved.caseId,assetId=retained)=>
+      caseEvidenceLoader({params:{caseId,attachmentId:assetId},context:context(actor)});
+
+    const plainCase=(await review(reviewOnly)).data.item;
+    expect(plainCase).toMatchObject({reported:{originalContent:"B2 immutable reported evidence"},
+      current:{originalContent:"B2 new current body"},evidence:{items:[{id:retained}]},
+      permissions:{identity:false}});
+    expect(plainCase.reports.items[0]).not.toHaveProperty("reporter");
+    await expect(appeal(reviewOnly)).rejects.toMatchObject({status:403});
+    await expect(review(appealOnly)).rejects.toMatchObject({status:403});
+    for(const actor of [identityOnly,priorityOnly,outsider])
+      await expect(appeal(actor)).rejects.toMatchObject({status:403});
+    await expect(appeal(null)).rejects.toMatchObject({status:401});
+    expect((await domain.readPrioritySettings(priorityOnly)).weights).toBeDefined();
+    await expect(domain.readPrioritySettings(appealOnly)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+
+    const plain=await appeal(appealOnly);
+    expect(plain.init.headers).toMatchObject({"Cache-Control":"private, no-store"});
+    const dto=plain.data.result;
+    expect(dto.appeal).toMatchObject({id:appealId,argument:"Private appellant reasoning"});
+    expect(dto.caseReview).toMatchObject({reports:{total:1},
+      evidence:{total:1,items:[{id:retained}]},permissions:{identity:false},
+      reported:{originalContent:"B2 immutable reported evidence",direction:"ltr"}});
+    expect(dto.appeal).not.toHaveProperty("appellant");
+    expect(dto.appeals[0]).not.toHaveProperty("appellant");
+    expect(dto.caseReview.reports.items[0]).not.toHaveProperty("reporter");
+    expect(JSON.stringify(plain.data)).not.toContain(reporter);
+    for(const forbidden of ["objectKey","operationId","@p7.test"])
+      expect(JSON.stringify(plain.data)).not.toContain(forbidden);
+
+    await manager.setUserOverride(managerId,appealOnly,"forum.complaint.reporterIdentity.read","allow");
+    const identified=(await appeal(appealOnly)).data.result;
+    expect(identified.appeal.appellant).toEqual({id:reporter,name:reporter});
+    expect(identified.appeals[0].appellant).toEqual({id:reporter,name:reporter});
+    expect(identified.caseReview.reports.items[0].reporter).toEqual({id:reporter,name:reporter});
+    expect(JSON.stringify(identified)).not.toContain("@p7.test");
+    await manager.setUserOverride(managerId,appealOnly,"forum.complaint.reporterIdentity.read",null);
+    expect((await appeal(appealOnly)).data.result.appeal).not.toHaveProperty("appellant");
+    expect((await appeal(appealOnly)).data.result.caseReview.reports.items[0])
+      .not.toHaveProperty("reporter");
+    await manager.setUserOverride(managerId,appealOnly,"forum.complaint.appeal.review","deny");
+    await expect(appeal(appealOnly)).rejects.toMatchObject({status:403});
+    await manager.setUserOverride(managerId,appealOnly,"forum.complaint.appeal.review",null);
+    expect((await appeal(appealOnly)).data.result.appeal.id).toBe(appealId);
+    await manager.setUserOverride(managerId,reviewOnly,"forum.complaint.review","deny");
+    await expect(review(reviewOnly)).rejects.toMatchObject({status:403});
+    await manager.setUserOverride(managerId,reviewOnly,"forum.complaint.review","allow");
+    expect((await review(reviewOnly)).data.item.id).toBe(saved.caseId);
+
+    const aContext=await appealContextLoader({params:{caseId:saved.caseId,appealId,
+      postId:original.post.postId},context:context(appealOnly)});
+    expect(aContext.data.source).toMatchObject({originalContent:"B2 new current body",direction:"ltr"});
+    const cContext=await caseContextLoader({params:{caseId:saved.caseId,
+      postId:original.post.postId},context:context(reviewOnly)});
+    expect(cContext.data.source.originalContent).toBe("B2 new current body");
+
+    const bytes=await aEvidence(appealOnly);
+    expect(bytes.status).toBe(200);
+    expect(await bytes.text()).toBe("data");
+    expect(bytes.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(bytes.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(bytes.headers.get("Content-Disposition")).toContain("attachment");
+    expect(bytes.headers.get("Content-Security-Policy")).toBe("sandbox");
+    expect(bytes.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    const caseBytes=await cEvidence(reviewOnly);
+    expect(caseBytes.status).toBe(200);
+    expect(await caseBytes.text()).toBe("data");
+    expect(bucketCalls).toEqual(["private/"+retained,"private/"+retained]);
+    for(const call of [
+      ()=>aEvidence(reviewOnly),()=>aEvidence(identityOnly),
+      ()=>aEvidence(outsider),()=>cEvidence(appealOnly)
+    ])await expect(call()).rejects.toMatchObject({status:403});
+    for(const call of [
+      ()=>aEvidence(appealOnly,saved.caseId,appealId,foreignAsset),
+      ()=>aEvidence(appealOnly,saved.caseId,otherAppeal,retained),
+      ()=>aEvidence(appealOnly,other.caseId,appealId,retained),
+      ()=>cEvidence(reviewOnly,other.caseId,retained)
+    ])await expect(call()).rejects.toMatchObject({status:404});
+    expect(bucketCalls).toHaveLength(2);
+    await expect(appealContextLoader({params:{caseId:saved.caseId,appealId,
+      postId:unrelated.post.postId},context:context(appealOnly)}))
+      .rejects.toMatchObject({status:404});
+    await expect(appealContextLoader({params:{caseId:saved.caseId,appealId:otherAppeal,
+      postId:original.post.postId},context:context(appealOnly)}))
+      .rejects.toMatchObject({status:404});
+    const unavailable=await aEvidence(appealOnly,saved.caseId,appealId,retained,false);
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get("Cache-Control")).toBe("private, no-store");
+
+    // Participant Appeal is membership-based, not a side effect of create/review grants.
+    const eligibleSource=await content("B2 eligible reporter");
+    const eligible=await domain.submit(reporter,{target:eligibleSource.post,reason:"spam",
+      explanation:null,operationId:randomUUID()});
+    const eligibleDecision=await domain.decide("reviewer",{caseId:eligible.caseId,
+      expectedVersion:1,outcome:"not-confirmed",reasoning:"Appeal eligible",
+      operationId:randomUUID()});
+    await manager.setUserOverride(managerId,reporter,"forum.complaint.create","deny");
+    await manager.setUserOverride(managerId,reporter,"forum.complaint.review","deny");
+    expect((await participantLoader({params:{caseId:eligible.caseId,locale:"en"},
+      context:context(reporter)})).result).toMatchObject({canAppeal:true,reporter:true});
+    await expect(participantLoader({params:{caseId:eligible.caseId,locale:"en"},
+      context:context(outsider)})).rejects.toMatchObject({status:404});
+    const appealRequest=new Request("https://forum.test/en/complaints/"+eligible.caseId+"/result",{
+      method:"POST",headers:{Origin:"https://forum.test"},
+      body:new URLSearchParams({intent:"appeal",decisionId:eligibleDecision,
+        operationId:randomUUID(),argument:"Eligible even after deny"})
+    });
+    expect(await appealAction({params:{caseId:eligible.caseId},
+      context:context(reporter),request:appealRequest})).toMatchObject({ok:true});
   },30000);
 });
 
