@@ -1556,7 +1556,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
               <ul className="attention-case-list">{complaintAppeals.appeals.map(appeal=><li key={appeal.id}>
                 <article className="attention-case">
                   <p>{t("complaintHistoryAppealOrdinal",{number:appeal.ordinal})}</p>
-                  <p dir="auto">{appeal.excerpt}</p>
+                  <p dir={appeal.sourceDirection??"auto"} lang={appeal.sourceLocale==="und"?undefined:appeal.sourceLocale}>{appeal.excerpt}</p>
                   <p>{appeal.effectiveOutcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
                   {appeal.ownInitialDecision?<p>{t("complaintAppealPreferOther")}</p>:null}
                   <Link to={appealReviewUrl(locale,appeal.caseId,appeal.id)}>{t("complaintAppealOpen")}</Link>
