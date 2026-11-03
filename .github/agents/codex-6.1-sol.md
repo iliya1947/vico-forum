@@ -11,15 +11,15 @@
 - Package 3 сохраняет Queue/triage, configurable reason priorities, manual override и non-exclusive expiring reviewer activity.
 - Packages 4–5 merged; shared Admin Quick actions и complaint Decisions остаются отдельными доменами.
 - Reporter identity проецируется server-side по отдельному permission; обычный reviewer её не получает.
-- Packages1–6 merged; migration chain0000–0055. Current main020cbafe… совпадает tree с accepted final Package6 head5494fe92…. Package7 реализован Лирой в #280; текущий independent technical review выявил один smoke cleanup finding.
+- Packages1–6 merged; migration chain0000–0055. Current main020cbafe… совпадает tree с accepted final Package6 head5494fe92…. Package7 реализован Лирой в #280; smoke cleanup finding исправлен, final independent technical review завершён PASS.
 
 ## Текущий этап
 
-Independent technical whole-PR review Package7 / PR #280 завершён на exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`: **CHANGES REQUIRED, один P3 P7-SMOKE-01** — unconditional cleanup удаляет pre-existing .dev.vars после EEXIST. [Полный результат/handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598371097).
+Independent technical whole-PR review corrected Package7 / PR #280 завершён на exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959`: **PASS, 0 подтверждённых current-scope дефектов**. P7-SMOKE-01 CLOSED; B1/B2/B3/P7-DOC-01 остаются принятыми. [Полный результат/handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6609493730).
 
-B1/B2/B3 и P7-DOC-01 приняты; local4/4 native PG tests, production build, normal actual Worker HTTP smoke прошли; exact-head CI независимо подтверждён. Ownership failure воспроизведён на marker без секретов. Implementation не менял, checkout/resources чисты.
+Локально ownership probe1/1, normal actual Worker Better Auth/PG HTTP smoke, build и отсутствие owned temp files после успеха — PASS. Exact-head CI independently verified. Unchanged B1/B2/B3/docs evidence учитывается отдельно; full local suite/browser/R2/production не заявляются. Implementation не менял, ресурсы убраны.
 
-Следующий шаг — Мира проверяет finding и назначает Лире bounded smoke cleanup correction, затем новый coordinator/independent cycle. Packages1–6 merged; старые планы/результаты ниже — история.
+Следующий шаг — Мира фиксирует coordinator closeout Package7 и owner merge route для unchanged reviewed head. Packages1–6 merged; прежние планы/результаты ниже — история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -842,3 +842,46 @@ Package7 готов к closeout, когда:
 - Checkout чист; свои PG/container/dependency symlink убраны, preview завершён штатным smoke; реальные конфиги/секреты не использовались и не удалялись.
 
 **Handoff Мире:** перепроверить P7-SMOKE-01 и назначить Лире одну bounded correction нового smoke cleanup/guard regression. Не переделывать принятые B1/B2/B3 или Complaints application. Затем stable exact head/checks → новый coordinator cycle → independent technical review того же head. Merge/production не выполнялись.
+
+## Package7 corrected independent technical review — 2026-11-03
+
+Продолжение independent цикла [#6598203673](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598203673) после correction и [fresh coordinator PASS #6609291105](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6609291105).
+
+Проверен final stable exact head **`d8ac2b87010072a360455b5a5c397e90aa6c5959`** против current main/base **`020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`**. Head повторно проверен после verification и не изменился. Implementation не менял.
+
+**Вердикт: PASS — 0 подтверждённых current-scope дефектов. P7-SMOKE-01 CLOSED.**
+
+### Correction — independently verified
+
+Прочитан весь delta от ранее reviewed headcc9f42a…: ровно3 файла — smoke, ownership probe и CI. `ownedVars` устанавливается только после успешного exclusive wx creation; finally удаляет .dev.vars только при ownership текущего запуска. Preview log cleanup также conditional. CI/loopback/*_test guards и отказ от overwrite сохранены.
+
+На собственной disposable PostgreSQL17 schema0055 локально выполнен **неизменённый actual-script ownership probe — 1/1 PASS**:
+- pre-existing non-secret marker переживает EEXIST без изменения;
+- тот же marker переживает early DB connection refusal;
+- probe убирает собственный marker после проверки.
+
+Затем на новом production build выполнен **штатный actual Worker → Better Auth session → PermissionResolver → PostgreSQL HTTP smoke — PASS**. После успеха independently проверены отсутствие .dev.vars, включая symlink, и preview log; preview не остался запущен. Таким образом закрыта исходная destructive failure path при сохранении normal cleanup.
+
+### Whole Package7 scope
+
+Сопоставлен весь current scope с принятым technical plan и [предыдущим независимым whole-PR review #6598371097](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598371097). B1/B2/B3 suite, database config, PROJECT_STATE/AUTHORIZATION/COMPLAINTS/history и весь production application/schema/permissions code **идентичны** прежнему проверенному head.
+
+Предыдущая самостоятельная acceptance этих неизменившихся частей сохраняется:
+- B1 — connected route/service/PG lifecycle, раздельные targets/grouping/edit/successor/immutable evidence, Decision/three Appeals/History/inbox/privacy/replay;
+- B2 — current role/grants/overrides, actual Appeal reviewer DTO identity grant/revoke, independent capabilities, retained context/evidence membership/headers и in-memory bytes;
+- B3 — native25/50 pagination/independent totals, common inbox/legacy split, canonical Quick action и отдельный Admin History без implicit sanctions;
+- P7-DOC-01 CLOSED, source docs merge-stable, CI/history snapshots вынесены из PROJECT_STATE;
+- A-invariants Packages1–6 остаются покрыты accepted existing tests/evidence, scope не расширен.
+
+Новых подтверждённых current-scope дефектов в остальном Package7 не найдено. Это завершение Complaints integration/closeout в repository/local-CI path; production и общий UI/UX product acceptance этим не объявляются.
+
+### Checks/evidence и ограничения
+
+- Ownership probe1/1 PASS, normal authenticated Worker/PG HTTP smoke PASS и build PASS — выполнены локально на новом exact head.
+- Exact-head [CI #41667933728](https://github.com/iliya1947/vico-forum/actions/runs/41667933728), attempt1 SUCCESS: независимо проверены SHA, checks/database и successful smoke step с ownership regression.
+- Прежние4/4 native integration tests PASS относятся к прошлому independently reviewed head и неизменившейся suite. В этом correction pass full native/application suites локально повторно не запускались; новый full exact-head CI указан отдельно.
+- Browser/owner visual acceptance, real R2 и external/production действия не выполнялись и не заявляются; current bounded scope/restrictions сохранены.
+- Evidence: `/workspace/work/review280-final-evidence/` — ownership.log, http-smoke.log, build.log, cleanup.json. Предыдущая unchanged-code evidence: `/workspace/work/review280-evidence/`.
+- Checkout чист, temporary PG/container/dependency symlink убраны, реальные конфиги/секреты для negative probe не использовались.
+
+**Handoff Мире:** independent technical review того же final exact head завершён PASS. Зафиксировать coordinator closeout Package7 и дальнейший owner merge route при unchanged reviewed implementation. Merge/production не выполнялись.
