@@ -167,3 +167,10 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - [Exact-head CI #41559889094](https://github.com/iliya1947/vico-forum/actions/runs/41559889094): **SUCCESS, attempt 1**, jobs `checks` and `database`. No production code changed in this final correction.
 - Earlier P6-RTL-01 and P6-VERIFY-02 were closed by coordinator on prior head `0d6bdbb465148875e02663c4c27c56e099a415e4`; remaining P6-VERIFY-01 concurrency evidence is now submitted for **fresh coordinator verification**, not coordinator-accepted yet.
 - Author handoff completed through service PR #254. Мира to repeat coordinator whole-PR review on current exact head; Лёва only after coordinator PASS. Browser/production deployment/merge not performed.
+
+## Package 6 — P6-UI-01 bounded correction completed
+
+- Independent technical reviewer Лёва confirmed P6-UI-01 and P6-UI-02 on PR #279 head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`; coordinator Мира assigned a bounded presentation + regression package in #254 comment #6593646346.
+- P6-UI-01 implemented in PR #279: group2 Appeals queue shows existing localized target kind; Appeal review shows existing target kind and current topic title with already projected locale and registry-based direction. Commits `321844a98f0e6bc91b87c57d544e8d9f8afd87cd`, `7d3342d57733a6880fd2e6c4a1fe56e047cee047`.
+- Added rendered regression coverage for post vs topic-title and EN/RU/HE UI labels, current Hebrew topic title direction and queue excerpt direction in `app/complaints/review-view.test.tsx`; commit `ec8ebf66056765efa4168b8b7246accd38fd2c36`.
+- Exact-head CI #41566373391 at `ec8ebf66056765efa4168b8b7246accd38fd2c36`: **SUCCESS attempt 1** (`checks`, `database`). No schema/domain/permission changes. **P6-UI-02 remains unimplemented**, so no final handoff or coordinator PASS is claimed.
