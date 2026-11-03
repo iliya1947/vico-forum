@@ -216,3 +216,10 @@ Package 4 после коррекций прошёл coordinator/technical revie
 
 - The replacement does **not** change authorization grants, DB schema, or domain policy; the remaining authorization document is untouched.
 - GitHub `create_branch` was blocked by a safety restriction; a subsequent branch search still returned no `chatgpt/complaints-package-7`. This is preparation only: no implementation branch/PR, code changes or CI. The creation blocker is recorded in service PR #254 comment #6595526435.
+
+## Package 7 — first bounded subtask: implementation Draft and P7-DOC-01
+
+- After the branch creation safety blocker, Мира created `chatgpt/complaints-package-7` from current main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8` and recorded it in #254. Verified branch SHA matches base.
+- Modified `docs/auth/AUTHORIZATION.md` only, removing stale deferred Appeals/notifications/History wording and describing the implemented capability/membership boundaries. No code, grants, schema or permission policy changes; checked one-file diff.
+- Opened [Draft PR #280](https://github.com/iliya1947/vico-forum/pull/280), initial exact head `4c8f5954afb01836cfbb85f6897a458a3ceb43f4`. Exact-head CI #41580997525 initially queued.
+- **P7-DOC-01 author correction complete**, no coordinator acceptance claimed. B1/B2/B3 connected native/runtime verification still open. Do not update PROJECT_STATE to Package 7 complete until verification is actually accepted; do not start coordinator review before final evidence/CI.
