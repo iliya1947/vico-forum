@@ -13,6 +13,7 @@ import {
 import { authSessionContext } from "../auth/request-context";
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { complaintQueueContext } from "../complaints/queue-context";
+import {complaintAppealContext} from "../complaints/appeal-context";
 import { authorizationContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -1119,9 +1120,10 @@ describe("Help & solutions modes and authoring", () => {
     const calls = readQueue.mock.calls.length;
     const priorAuthorization=managerContext.get(authorizationContext);
     managerContext.set(authorizationContext,{...priorAuthorization,forUser:(id:string)=>{
-      const resolver=priorAuthorization.forUser(id);return {...resolver,has:async(key: Parameters<typeof resolver.has>[0])=>key==="forum.complaint.review"||await resolver.has(key)};
+      const resolver=priorAuthorization.forUser(id);return {...resolver,has:async(key: Parameters<typeof resolver.has>[0])=>key==="forum.complaint.review"||key==="forum.complaint.appeal.review"||await resolver.has(key)};
     }});
     managerContext.set(complaintQueueContext,{readQueue:vi.fn(async()=>({cases:[],total:0,page:0,hasMore:false}))} as never);
+    managerContext.set(complaintAppealContext,{pendingQueue:vi.fn(async(_actor:string,page:number)=>({appeals:[],total:0,page,hasMore:false}))} as never);
     const complaints = await attentionLoader({
       request: new Request("https://forum.example/en/attention?mode=complaints&group=group2"),
       params: { locale: "en" }, context: managerContext,
@@ -1132,7 +1134,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(readQueueCounts).toHaveBeenCalledTimes(calls);
     const complaintView = renderRoute(AttentionRoute, complaints, "/en/attention?mode=complaints&group=group2", "en", "ltr");
     expect(await screen.findByRole("link", { name: "Appeals" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByText("This section is not connected yet.")).toBeVisible();
+    expect(screen.getByText("Pending appeals: 0")).toBeVisible();
     complaintView.unmount();
 
     const readSecurityEvents = vi.fn(async (page: number) => ({

@@ -1,3 +1,5 @@
+import type {PendingAppealsPage} from "../../db/complaint-appeal-read";
+import {appealReviewUrl} from "../complaints/appeal-review-view";
 import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-read";
 import { ComplaintResolvedHistoryList } from "../complaints/history-view";
 import type { ForumNotificationSummary } from "../../db/forum-repository";
@@ -406,17 +408,17 @@ export function NotificationsView({
                     <input type="hidden" name="intent" value="open" />
                     <input type="hidden" name="notificationId" value={notification.id} />
                     <button
-                      className={[ "notification-card", unread?"is-unread":null, notification.kind==="complaint-decision"?"is-system":null ].filter(Boolean).join(" ")}
+                      className={[ "notification-card", unread?"is-unread":null, (notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result")?"is-system":null ].filter(Boolean).join(" ")}
                       type="submit"
-                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.topicTitle??""}`}
+                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
                     >
-                      {notification.kind!=="complaint-decision"?<span className="notification-avatar" aria-hidden="true">
+                      {notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
                         {(notification.actorName??"").trim().slice(0, 1).toUpperCase()}
                       </span>:null}
                       <span className="notification-copy">
                         <span className="notification-summary">
-                          {notification.kind==="complaint-decision"?
-                            <strong>{t("notificationDecisionResult")}</strong>:
+                          {notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
+                            <strong>{t(notification.kind==="complaint-decision"?"notificationDecisionResult":"complaintAppealNotification")}</strong>:
                             <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:notification.actorName??""})}</span>
                             <strong dir="auto">{notification.topicTitle}</strong></>}
                         </span>
@@ -1461,7 +1463,7 @@ type SecurityAttachmentQueuePresentation = {
 };
 
 export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
-  complaintQueue = null, complaintHistory = null, canManageComplaintPriorities = false, canReviewComplaints = false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
+  complaintQueue = null, complaintHistory = null,complaintAppeals=null, canManageComplaintPriorities = false, canReviewComplaints = false,canReviewAppeals=false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
   mode: AttentionMode;
   group: AttentionGroup;
@@ -1471,6 +1473,8 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
   canViewHelpAttention?: boolean;
   canReadSecurityAttachments?: boolean;
   canReviewComplaints?: boolean;
+  canReviewAppeals?: boolean;
+  complaintAppeals?:PendingAppealsPage|null;
   canManageComplaintPriorities?: boolean;
   complaintQueue?: ComplaintQueuePage | null;
   complaintHistory?: ComplaintResolvedHistoryPage | null;
@@ -1511,7 +1515,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
           <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
           <nav className="help-solutions-modes attention-mode-nav" aria-label={t("attentionModeNavigation")}>
             {(["signals", "complaints", "security"] as const)
-              .filter(item => item === "security" ? canReadSecurityAttachments : item === "complaints" ? canReviewComplaints || canManageComplaintPriorities : canViewHelpAttention)
+              .filter(item => item === "security" ? canReadSecurityAttachments : item === "complaints" ? canReviewComplaints || canReviewAppeals || canManageComplaintPriorities : canViewHelpAttention)
               .map(item => (
               <Link key={item}
                 className={"help-solutions-mode" + (mode === item ? " is-active" : "")}
@@ -1524,7 +1528,8 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
         </header>
         <div className="attention-center-toolbar">
           <nav className="help-solutions-modes attention-group-nav" aria-label={t("attentionGroupNavigation")}>
-            {groups.map(item => (
+            {groups.filter(item=>mode!=="complaints"||(
+              item.id==="group2"?canReviewAppeals:canReviewComplaints)).map(item => (
               <Link key={item.id}
                 className={"help-solutions-mode" + (activeGroup.id === item.id ? " is-active" : "")}
                 to={pathFor(mode, item.id)} aria-current={activeGroup.id === item.id ? "page" : undefined}>
@@ -1545,6 +1550,24 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
           {mode === "complaints" && canManageComplaintPriorities && <Link to={`/${encodeURIComponent(locale)}/attention/complaints/settings`}>{t("complaintPrioritySettingsHeading")}</Link>}
           {mode === "complaints" && group === "group1" && complaintQueue ? (
             <ComplaintQueueList locale={locale} queue={complaintQueue}/>
+          ) : mode==="complaints" && group==="group2" && complaintAppeals ? (
+            <div className="complaint-appeals-queue">
+              <p>{t("complaintAppealQueueTotal",{number:complaintAppeals.total})}</p>
+              <ul className="attention-case-list">{complaintAppeals.appeals.map(appeal=><li key={appeal.id}>
+                <article className="attention-case">
+                  <p>{t("complaintHistoryAppealOrdinal",{number:appeal.ordinal})}</p>
+                  <p>{t(appeal.kind==="post"?"complaintTargetPost":"complaintTargetTitle")}</p>
+                  <p dir={appeal.sourceDirection??"auto"} lang={appeal.sourceLocale==="und"?undefined:appeal.sourceLocale}>{appeal.excerpt}</p>
+                  <p>{appeal.effectiveOutcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
+                  {appeal.ownInitialDecision?<p>{t("complaintAppealPreferOther")}</p>:null}
+                  <Link to={appealReviewUrl(locale,appeal.caseId,appeal.id)}>{t("complaintAppealOpen")}</Link>
+                </article>
+              </li>)}</ul>
+              {(complaintAppeals.page>0||complaintAppeals.hasMore)?<nav aria-label={t("attentionCasePagination")} className="attention-case-pagination">
+                {complaintAppeals.page>0?<Link to={pathFor(mode,group,complaintAppeals.page-1)}>{t("attentionCasePrevious")}</Link>:null}
+                {complaintAppeals.hasMore?<Link to={pathFor(mode,group,complaintAppeals.page+1)}>{t("attentionCaseNext")}</Link>:null}
+              </nav>:null}
+            </div>
           ) : mode==="complaints" && group==="group3" && complaintHistory ? (
             <ComplaintResolvedHistoryList locale={locale} history={complaintHistory}/>
           ) : mode === "security" && group === "attachments" ? (

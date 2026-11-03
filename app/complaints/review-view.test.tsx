@@ -6,6 +6,10 @@ import {afterEach,describe,it,expect,vi} from "vitest";
 import {canonicalEnglishCatalog} from "../localization/catalog";
 import {hebrewCommonValues,russianCommonValues} from "../localization/manual-values";
 import {ComplaintReviewView} from "./review-view";
+import {ComplaintAppealReviewView} from "./appeal-review-view";
+import {AttentionCenterView} from "../forum/views";
+import type {AppealReviewPage,PendingAppealsPage} from "../../db/complaint-appeal-read";
+import type {ReactElement} from "react";
 import {shouldRevalidate} from "../routes/complaint-review";
 import type {ReviewCase} from "./review-contract";
 const time="2026-11-02T10:20:00.000Z";
@@ -169,6 +173,72 @@ describe("Decision conflict revalidation with the real Router",()=>{
    expect(loader).toHaveBeenCalledTimes(2);
    expect(screen.queryByRole("button",{name:i18n.t("complaintReviewResolve")})).toBeNull();
    expect(screen.queryByRole("button",{name:i18n.t("complaintReviewAcceptChanges")})).toBeNull();
+  }finally{router.dispose();}
+ });
+});
+
+async function mountLocalizedAppealSurface(locale:string,view:ReactElement,entry:string){
+ const i18n=createInstance();
+ const common=locale==="ru"?russianCommonValues:locale==="he"?hebrewCommonValues:
+  Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([k,v])=>[k,v.source]));
+ await i18n.init({lng:locale,resources:{[locale]:{common}},defaultNS:"common",initAsync:false});
+ const router=createMemoryRouter([{path:"*",element:view}],{initialEntries:[entry]});
+ render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>);
+ return {router,i18n};
+}
+function appealReviewFixture(kind:"post"|"topic-title"):AppealReviewPage{
+ const item=fixture();
+ item.kind=kind;
+ item.currentTopicTitle=source("כותרת נוכחית","he");
+ item.reported=source(kind==="post"?"Post evidence":"Title evidence");
+ const appeal={
+  id:"appeal-one",caseId:item.id,decisionId:"decision-one",ordinal:1,
+  side:"reporter" as const,argument:"Reason for Appeal",status:"pending" as const,
+  outcome:null,reasoning:null,createdAt:new Date(time),resolvedAt:null,
+  initialOutcome:"confirmed" as const,effectiveOutcome:"confirmed" as const,ownInitialDecision:false,
+ };
+ return {appeal,caseReview:item,appeals:[appeal]};
+}
+describe("Package 6 Appeal target metadata presentation",()=>{
+ it.each(["en","ru","he"] as const)("shows localized kind and current RTL topic title on post Appeal (%s)",async locale=>{
+  const {i18n,router}=await mountLocalizedAppealSurface(locale,
+   <ComplaintAppealReviewView locale={locale} result={appealReviewFixture("post")}/>,
+   "/"+locale+"/attention/complaints/case-one/appeals/appeal-one");
+  try{
+   expect(await screen.findByText(i18n.t("complaintTargetPost"))).toBeTruthy();
+   expect(screen.queryByText(i18n.t("complaintTargetTitle"))).toBeNull();
+   expect(screen.getByRole("heading",{name:i18n.t("complaintReviewTopicTitle")})).toBeTruthy();
+   const title=screen.getByText("כותרת נוכחית");
+   expect(title.closest('[lang="he"]')?.getAttribute("dir")).toBe("rtl");
+   expect(screen.getByText("Post evidence")).toBeTruthy();
+  }finally{router.dispose();}
+ });
+ it.each(["en","ru","he"] as const)("distinguishes topic-title Appeal from post (%s)",async locale=>{
+  const {i18n,router}=await mountLocalizedAppealSurface(locale,
+   <ComplaintAppealReviewView locale={locale} result={appealReviewFixture("topic-title")}/>,
+   "/"+locale+"/attention/complaints/case-one/appeals/appeal-one");
+  try{
+   expect(await screen.findByText(i18n.t("complaintTargetTitle"))).toBeTruthy();
+   expect(screen.queryByText(i18n.t("complaintTargetPost"))).toBeNull();
+   expect(screen.getByText("Title evidence")).toBeTruthy();
+  }finally{router.dispose();}
+ });
+ it.each(["en","ru","he"] as const)("labels post and topic-title queue rows in the UI language (%s)",async locale=>{
+  const appeals:PendingAppealsPage={page:0,total:2,hasMore:false,appeals:
+   (["post","topic-title"] as const).map((kind,index)=>({
+    id:"appeal-"+index,caseId:"case-"+index,ordinal:1,kind,
+    createdAt:new Date(time),excerpt:"Evidence "+index,sourceLocale:"he",sourceDirection:"rtl",
+    initialOutcome:"confirmed" as const,effectiveOutcome:"confirmed" as const,ownInitialDecision:false,
+   }))};
+  const {router,i18n}=await mountLocalizedAppealSurface(locale,
+   <AttentionCenterView locale={locale} mode="complaints" group="group2" queue={null}
+    complaintAppeals={appeals} canViewHelpAttention={false} canReviewAppeals={true} canReviewComplaints={false}/>,
+   "/"+locale+"/attention?mode=complaints&group=group2");
+  try{
+   expect(await screen.findByText(i18n.t("complaintTargetPost"))).toBeTruthy();
+   expect(screen.getByText(i18n.t("complaintTargetTitle"))).toBeTruthy();
+   expect(screen.getByText("Evidence 0").closest("[dir]")?.getAttribute("dir")).toBe("rtl");
+   expect(screen.getByText("Evidence 1").closest("[dir]")?.getAttribute("dir")).toBe("rtl");
   }finally{router.dispose();}
  });
 });

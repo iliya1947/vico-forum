@@ -30,6 +30,8 @@ import { complaintQueueContext } from "../app/complaints/queue-context";
 import { createHyperdriveComplaintQueue } from "../db/hyperdrive-complaint-queue";
 import { complaintReviewContext } from "../app/complaints/review-context";
 import { createHyperdriveComplaintReview } from "../db/hyperdrive-complaint-review";
+import {complaintAppealContext} from "../app/complaints/appeal-context";
+import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal";
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
 
 const requestHandler = createRequestHandler(
@@ -72,6 +74,7 @@ export default {
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
     context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, authorization));
     context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, authorization));
+    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,authorization));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);

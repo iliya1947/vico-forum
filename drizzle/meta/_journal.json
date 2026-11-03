@@ -386,6 +386,13 @@
       "when": 1793650200000,
       "tag": "0054_complaint_history_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793660000000,
+      "tag": "0055_complaint_appeal_notifications",
+      "breakpoints": true
     }
   ]
 }

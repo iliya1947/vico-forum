@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0054`;
+- repository migration history: `0000`–`0055`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -101,14 +101,14 @@ Stage 5 завершён в repository/local-CI path.
 
 ### Complaints
 
-По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–5 в repository/local-CI path:
+По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–6 в repository/local-CI path:
 
 - domain/evidence foundation;
 - пользовательская submission с immutable revision evidence, grouping и rate limits;
 - open Queue/triage, configurable automatic priority, manual override и non-exclusive reviewer activity;
 - protected full Case review с постраничными reports, notes, retained evidence и context; initial Decision и shared Admin Quick actions.
 
-Package 5 добавляет resolved History и приватную timeline событий, `review-started`, result notifications в общий inbox и member-only result. Подача и обработка Appeals через UI, Appeal notifications и effective-outcome policy остаются Package 6; подтверждение административных мер требует фактической связи Case→action.
+Package 5 добавляет resolved History и приватную timeline событий, `review-started`, result notifications в общий inbox и member-only result. Package 6 добавляет participant Appeal flow, effective-outcome policy, Appeals review queue и уведомления о результатах Appeal. Подтверждение административных мер требует фактической связи Case→action.
 
 ## CI и migration state
 
@@ -159,7 +159,7 @@ External topology является mutable state и должна перепро�
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
 - Admin Panel имеет реализованные AP-01–06, но последующие object/action packages ещё не завершены.
-- Complaints реализованы через Package 5 в repository/local-CI path; Package 6+ остаётся будущей работой.
+- Complaints Packages 1–6 реализованы в repository/local-CI path; Package 7 пока не реализован.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
 - Stage 6 external integration остаётся paused.

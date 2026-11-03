@@ -20,7 +20,7 @@ function context(){
  ctx.set(authorizationContext,{forUser:()=>({
   has:async(key:string)=>key==="forum.complaint.review",
  })} as never);
- ctx.set(complaintQueueContext,{readResolvedHistory} as never);
+ ctx.set(complaintQueueContext,{readResolvedHistory,readQueue:vi.fn(async(_actor:string,page:number)=>({cases:[],total:0,page,hasMore:false}))} as never);
  return {ctx,readResolvedHistory};
 }
 function request(search:string){
@@ -54,12 +54,12 @@ describe("Package 5 History query boundary",()=>{
   }
   expect(readResolvedHistory).not.toHaveBeenCalled();
  });
- it("does not change legacy unrelated Attention group pagination fallback",async()=>{
+ it("does not change legacy Queue pagination fallback",async()=>{
   const {ctx,readResolvedHistory}=context();
-  const result=await loader({request:request("?mode=complaints&group=group2&page=oops"),
-   url:new URL("https://forum.example/en/attention?mode=complaints&group=group2&page=oops"),
+  const result=await loader({request:request("?mode=complaints&group=group1&page=oops"),
+   url:new URL("https://forum.example/en/attention?mode=complaints&group=group1&page=oops"),
    params:{locale:"en"},context:ctx});
-  expect(result.group).toBe("group2");
+  expect(result.group).toBe("group1");
   expect(result.complaintHistory).toBeNull();
   expect(readResolvedHistory).not.toHaveBeenCalled();
  });

@@ -5,7 +5,7 @@ import { Client, Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
-import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError, ComplaintPolicyRequiredError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
+import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError, ComplaintRateLimitError, type ComplaintTarget } from "../../db/complaints-domain";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
@@ -79,6 +79,77 @@ afterAll(async () => {
   await pool.end();
   await client.query(`drop schema ${schema} cascade`);
   await client.end();
+});
+
+describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
+  it("backfills resolved Appeals only, preserves timestamps and read states on repeat",async()=>{
+    const upgradeSchema="complaint_appeal_upgrade_test";
+    const upgrade=new Client({connectionString:databaseUrl,options:`-c search_path=${upgradeSchema}`});
+    await client.query(`drop schema if exists ${upgradeSchema} cascade; create schema ${upgradeSchema}`);
+    try{
+      await upgrade.connect();
+      for(const file of (await readdir("drizzle")).filter(x=>/^\d{4}_.+\.sql$/.test(x)&&x<"0055_").sort()){
+        await upgrade.query((await readFile(`drizzle/${file}`,"utf8")).replaceAll('"public".',`"${upgradeSchema}".`));
+      }
+      for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
+        await upgrade.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,`${id}@test.invalid`]);
+      const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()});
+      await forumUpgrade.createCategory({id:"upgrade-category",name:"Upgrade"});
+      await forumUpgrade.createSection({id:"upgrade-section",categoryId:"upgrade-category",name:"Upgrade"});
+      await forumUpgrade.createTopicWithInitialPost({
+        id:"upgrade-topic",sectionId:"upgrade-section",authorId:"upgrade-author",
+        titleRevision:{id:"upgrade-title",originalContent:"Upgrade title",sourceLocale:"en"},
+        initialPost:{id:"upgrade-post",topicId:"upgrade-topic",authorId:"upgrade-author",
+          bodyRevision:{id:"upgrade-revision",originalContent:"Upgrade evidence",sourceLocale:"en"}}
+      });
+      await upgrade.query(`insert into forum_complaint_targets
+        (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
+        values ('upgrade-target','post','upgrade-topic','upgrade-post','upgrade-revision','upgrade-author')`);
+      await upgrade.query(`insert into forum_complaint_cases(id,target_id)
+        values('upgrade-case','upgrade-target')`);
+      await upgrade.query(`insert into forum_complaint_decisions(id,case_id,outcome,reviewer_user_id,reasoning)
+        values('upgrade-decision','upgrade-case','not-confirmed','upgrade-reviewer','Initial result')`);
+      await upgrade.query(`update forum_complaint_cases set state='resolved',
+        initial_decision_id='upgrade-decision',resolved_at=now() where id='upgrade-case'`);
+      await upgrade.query(`insert into forum_complaints(id,case_id,target_id,reporter_user_id,reason)
+        values('upgrade-report-one','upgrade-case','upgrade-target','upgrade-reporter-one','spam'),
+        ('upgrade-report-two','upgrade-case','upgrade-target','upgrade-reporter-two','spam')`);
+      await upgrade.query(`insert into forum_complaint_appeals
+        (id,case_id,decision_id,appellant_user_id,side,argument,ordinal,status,outcome,reasoning,reviewer_user_id,created_at,resolved_at)
+        values ('upgrade-resolved','upgrade-case','upgrade-decision','upgrade-reporter-one','reporter','Historical appeal',1,'resolved','upheld','Historical result','upgrade-reviewer','2026-01-01','2026-01-02'),
+        ('upgrade-pending','upgrade-case','upgrade-decision','upgrade-reporter-two','reporter','Pending appeal',2,'pending',null,null,null,'2026-01-03',null)`);
+      await upgrade.query(`insert into forum_reply_notifications
+        (id,recipient_user_id,complaint_decision_id,kind,created_at,read_at)
+        values('upgrade-initial-notification','upgrade-reporter-one','upgrade-decision','complaint-decision','2026-01-01','2026-01-04')`);
+      const upgradeSql=(await readFile("drizzle/0055_complaint_appeal_notifications.sql","utf8"))
+        .replaceAll('"public".',`"${upgradeSchema}".`);
+      await upgrade.query(upgradeSql);
+      const rows=await upgrade.query<{recipient_user_id:string;kind:string;created_at:Date;read_at:Date|null}>(`
+        select recipient_user_id,kind,created_at,read_at from forum_reply_notifications
+        where complaint_appeal_id='upgrade-resolved' order by recipient_user_id`);
+      expect(rows.rows.map(x=>x.recipient_user_id))
+        .toEqual(["upgrade-author","upgrade-reporter-one","upgrade-reporter-two"]);
+      expect(rows.rows.every(x=>x.kind==="complaint-appeal-result"&&
+        x.created_at.toISOString()==="2026-01-02T00:00:00.000Z"&&x.read_at===null)).toBe(true);
+      expect((await upgrade.query(`select count(*)::int as total from forum_reply_notifications
+        where complaint_appeal_id='upgrade-pending'`)).rows[0].total).toBe(0);
+      await upgrade.query(`update forum_reply_notifications set read_at='2026-01-05'
+        where complaint_appeal_id='upgrade-resolved' and recipient_user_id='upgrade-reporter-one'`);
+      const backfill=upgradeSql.slice(upgradeSql.indexOf("INSERT INTO forum_reply_notifications("));
+      await upgrade.query(backfill);
+      expect((await upgrade.query(`select count(*)::int as total from forum_reply_notifications
+        where complaint_appeal_id='upgrade-resolved'`)).rows[0].total).toBe(3);
+      const read=await upgrade.query<{read_at:Date}>(`select read_at from forum_reply_notifications
+        where complaint_appeal_id='upgrade-resolved' and recipient_user_id='upgrade-reporter-one'`);
+      expect(read.rows[0].read_at.toISOString()).toBe("2026-01-05T00:00:00.000Z");
+      const initial=await upgrade.query<{read_at:Date}>(`select read_at from forum_reply_notifications
+        where id='upgrade-initial-notification'`);
+      expect(initial.rows[0].read_at.toISOString()).toBe("2026-01-04T00:00:00.000Z");
+    }finally{
+      await upgrade.end().catch(()=>undefined);
+      await client.query(`drop schema if exists ${upgradeSchema} cascade`);
+    }
+  });
 });
 
 describe("complaints domain foundation / real PostgreSQL", () => {
@@ -324,14 +395,14 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     await expectCode(client.query("update forum_complaint_cases set initial_decision_id=$1 where id=$2",[randomUUID(),c.caseId]),"23503");
     expect((await service().readCase("reviewer",c.caseId)).events.items.map(e=>e.kind)).toEqual(["submitted","decided"]);
   });
-  it("persists first appeals in both directions and preserves unspecified later transition policy", async () => {
+  it("persists first Appeals in both directions with pending lock and exact replay", async () => {
     for (const outcome of ["confirmed","not-confirmed"] as const) {
       const c = await decision(outcome), actor = outcome === "confirmed" ? "content-author" : "reporter-one";
       const input = {caseId:c.caseId,decisionId:c.decisionId,argument:"Please reconsider",operationId:randomUUID()};
       await expect(service().appeal("outsider",input)).rejects.toBeInstanceOf(ComplaintForbiddenError);
       const appealId = await service().appeal(actor,input);
       expect(await service().appeal(actor,input)).toBe(appealId);
-      await expect(service().appeal(actor,{...input,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintPolicyRequiredError);
+      await expect(service().appeal(actor,{...input,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
       const resolution = {caseId:c.caseId,appealId,outcome:"overturned" as const,reasoning:"Appeal result",operationId:randomUUID()};
       expect(await service().resolveAppeal("appeal-reviewer",resolution)).toBe(appealId);
       expect(await service().resolveAppeal("appeal-reviewer",resolution)).toBe(appealId);
@@ -341,14 +412,163 @@ describe("complaints domain foundation / real PostgreSQL", () => {
       await expectCode(client.query("update forum_complaint_appeals set argument='changed' where id=$1",[appealId]),"55000");
     }
   });
-  it("has a database-enforced three-appeal total and same-case ownership without imposing one-pending uniqueness", async () => {
+  it("enforces one pending Appeal and three-slot ordinal bounds", async () => {
     const c = await decision(), other = await decision();
     const insert = (ordinal: number, caseId = c.caseId, decisionId = c.decisionId) => client.query(`insert into forum_complaint_appeals
       (id,case_id,decision_id,appellant_user_id,side,argument,ordinal) values ($1,$2,$3,'reporter-one','reporter','Argument',$4)`,[randomUUID(),caseId,decisionId,ordinal]);
-    await insert(1); await insert(2); await insert(3);
+    await insert(1);
+    await expectCode(insert(2),"23505");
     await expectCode(insert(4),"23514");
-    await expectCode(insert(3),"23505");
+    await expectCode(insert(1),"23505");
     await expectCode(insert(1,c.caseId,other.decisionId),"23503");
+  });
+  it("Package 6 flips effective outcomes through 3 slots, blocks pending and notifies every participant",async()=>{
+    const c=await decision("confirmed");
+    const one={caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"First Appeal"};
+    const id1=await service().appeal("content-author",one);
+    expect(await service().appeal("content-author",one)).toBe(id1);
+    await expect(service().appeal("content-author",{...one,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
+    const afterOne=await service().readOwnResult("content-author",c.caseId);
+    expect(afterOne).toMatchObject({outcome:"confirmed",effectiveOutcome:"confirmed",pending:true,remaining:2,canAppeal:false});
+    const res=(id:string,outcome:"upheld"|"overturned")=>service().resolveAppeal("appeal-reviewer",{
+      caseId:c.caseId,appealId:id,operationId:randomUUID(),reasoning:"Public Appeal result",outcome});
+    await res(id1,"overturned");
+    expect(await service().readOwnResult("reporter-one",c.caseId)).toMatchObject({
+      outcome:"confirmed",effectiveOutcome:"not-confirmed",canAppeal:true,remaining:2});
+    const id2=await service().appeal("reporter-one",{caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"Second Appeal"});
+    await res(id2,"overturned");
+    expect(await service().readOwnResult("content-author",c.caseId)).toMatchObject({effectiveOutcome:"confirmed",canAppeal:true,remaining:1});
+    const id3=await service().appeal("content-author",{caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"Third Appeal"});
+    await res(id3,"upheld");
+    const end=await service().readOwnResult("content-author",c.caseId);
+    expect(end).toMatchObject({outcome:"confirmed",effectiveOutcome:"confirmed",remaining:0,used:3,canAppeal:false});
+    expect(end.appeals.map(a=>a.ordinal)).toEqual([1,2,3]);
+    expect(end.appeals.every(a=>a.status==="resolved")).toBe(true);
+    await expect(service().appeal("content-author",{...one,operationId:randomUUID()})).rejects.toBeInstanceOf(ComplaintConflictError);
+    const rows=await client.query<{recipient_user_id:string;complaint_appeal_id:string}>(`
+      select recipient_user_id,complaint_appeal_id from forum_reply_notifications
+      where complaint_appeal_id=any($1::text[]) order by complaint_appeal_id,recipient_user_id`,[[id1,id2,id3]]);
+    expect(rows.rows).toHaveLength(6);
+    expect([...new Set(rows.rows.map(x=>x.recipient_user_id))].sort()).toEqual(["content-author","reporter-one"]);
+    const own=rows.rows.find(x=>x.recipient_user_id==="reporter-one")!;
+    const open=await forum.markNotificationRead("reporter-one",(await client.query<{id:string}>(`
+      select id from forum_reply_notifications where complaint_appeal_id=$1 and recipient_user_id='reporter-one'`,[own.complaint_appeal_id])).rows[0]!.id);
+    expect(open).toMatchObject({kind:"complaint-appeal-result",caseId:c.caseId,appealId:own.complaint_appeal_id});
+    await expect(service().readOwnResult("outsider",c.caseId)).rejects.toBeInstanceOf(ComplaintNotFoundError);
+  });
+  it("serializes concurrent Package 6 submissions and resolutions on native PostgreSQL",async()=>{
+    const source=await content();
+    const first=await service().submit("reporter-one",report(source.post));
+    await service().submit("reporter-two",report(source.post));
+    const decisionId=await service().decide("reviewer",{
+      caseId:first.caseId,operationId:randomUUID(),expectedVersion:2,
+      outcome:"not-confirmed",reasoning:"Concurrent reporters' initial result"
+    });
+    const a=await pool.connect(),b=await pool.connect();
+    try{
+      const input=(argument:string)=>({caseId:first.caseId,decisionId,operationId:randomUUID(),argument});
+      const submitted=await Promise.allSettled([
+        service(a as never).appeal("reporter-one",input("Concurrent first")),
+        service(b as never).appeal("reporter-two",input("Concurrent second"))
+      ]);
+      const accepted=submitted.filter((r):r is PromiseFulfilledResult<string>=>r.status==="fulfilled");
+      expect(accepted).toHaveLength(1);
+      const rejected=submitted.filter((r):r is PromiseRejectedResult=>r.status==="rejected");
+      expect(rejected).toHaveLength(1);
+      expect(rejected[0]!.reason).toBeInstanceOf(ComplaintConflictError);
+      const appealId=accepted[0]!.value;
+      const slots=await client.query<{id:string;ordinal:number;status:string}>(`
+        select id,ordinal,status from forum_complaint_appeals
+        where decision_id=$1 order by ordinal`,[decisionId]);
+      expect(slots.rows).toEqual([{id:appealId,ordinal:1,status:"pending"}]);
+      const appealed=await client.query<{appeal_id:string}>(`
+        select appeal_id from forum_complaint_events
+        where case_id=$1 and kind='appealed'`,[first.caseId]);
+      expect(appealed.rows.map(row=>row.appeal_id)).toEqual([appealId]);
+      const resolution=(connection:PoolClient)=>service(connection as never).resolveAppeal("appeal-reviewer",{
+        caseId:first.caseId,appealId,operationId:randomUUID(),outcome:"upheld",reasoning:"Concurrent resolution"
+      });
+      const resolved=await Promise.allSettled([resolution(a),resolution(b)]);
+      expect(resolved.filter(r=>r.status==="fulfilled")).toHaveLength(1);
+      expect(resolved.filter(r=>r.status==="rejected")).toHaveLength(1);
+      const rows=await client.query<{recipient_user_id:string}>(`
+        select recipient_user_id from forum_reply_notifications where complaint_appeal_id=$1 order by recipient_user_id`,[appealId]);
+      expect(rows.rows.map(x=>x.recipient_user_id)).toEqual(["content-author","reporter-one","reporter-two"]);
+      const events=await client.query<{kind:string}>(`
+        select kind from forum_complaint_events where appeal_id=$1 order by created_at`,[appealId]);
+      expect(events.rows.filter(x=>x.kind==="appeal-resolved")).toHaveLength(1);
+    }finally{a.release();b.release();}
+  });
+  it("serializes a new Appeal submission racing with resolution of the pending Appeal",async()=>{
+    const source=await content();
+    const first=await service().submit("reporter-one",report(source.post));
+    await service().submit("reporter-two",report(source.post));
+    const decisionId=await service().decide("reviewer",{
+      caseId:first.caseId,operationId:randomUUID(),expectedVersion:2,
+      outcome:"not-confirmed",reasoning:"Initial rejected report"
+    });
+    const firstAppeal=await service().appeal("reporter-one",{
+      caseId:first.caseId,decisionId,operationId:randomUUID(),argument:"First pending Appeal"
+    });
+    const a=await pool.connect(),b=await pool.connect();
+    try{
+      const attempts=await Promise.allSettled([
+        service(a as never).resolveAppeal("appeal-reviewer",{
+          caseId:first.caseId,appealId:firstAppeal,operationId:randomUUID(),
+          outcome:"upheld",reasoning:"Preserve reporter eligibility"
+        }),
+        service(b as never).appeal("reporter-two",{
+          caseId:first.caseId,decisionId,operationId:randomUUID(),
+          argument:"Next reporter Appeal"
+        })
+      ]);
+      expect(attempts[0].status).toBe("fulfilled");
+      if(attempts[1].status==="rejected")
+        expect(attempts[1].reason).toBeInstanceOf(ComplaintConflictError);
+      const rows=await client.query<{ordinal:number;status:string}>(`
+        select ordinal,status from forum_complaint_appeals
+        where decision_id=$1 order by ordinal`,[decisionId]);
+      expect(rows.rows[0]).toMatchObject({ordinal:1,status:"resolved"});
+      expect(rows.rows.length).toBe(attempts[1].status==="fulfilled"?2:1);
+      if(rows.rows.length===2)expect(rows.rows[1]).toMatchObject({ordinal:2,status:"pending"});
+      const notifications=await client.query<{recipient_user_id:string}>(`
+        select recipient_user_id from forum_reply_notifications
+        where complaint_appeal_id=$1 order by recipient_user_id`,[firstAppeal]);
+      expect(notifications.rows.map(row=>row.recipient_user_id))
+        .toEqual(["content-author","reporter-one","reporter-two"]);
+    }finally{a.release();b.release();}
+  });
+  it("rolls back Appeal resolution and lifecycle event when notification fanout fails",async()=>{
+    const c=await decision("not-confirmed");
+    const appealId=await service().appeal("reporter-one",{
+      caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"Rollback proof"
+    });
+    const operationId=randomUUID();
+    await client.query(`create function complaint_test_reject_appeal_notification() returns trigger
+      language plpgsql as 'begin\n        if new.kind=''complaint-appeal-result'' then raise exception ''intentional notification failure''; end if;\n        return new;\n      end'`);
+    await client.query(`create trigger complaint_test_reject_appeal_notification
+      before insert on forum_reply_notifications for each row
+      execute function complaint_test_reject_appeal_notification()`);
+    try{
+      await expect(service().resolveAppeal("appeal-reviewer",{
+        caseId:c.caseId,appealId,operationId,outcome:"upheld",reasoning:"Should roll back"
+      })).rejects.toThrow();
+      const state=await client.query<{status:string;outcome:string|null}>(`
+        select status,outcome from forum_complaint_appeals where id=$1`,[appealId]);
+      expect(state.rows[0]).toMatchObject({status:"pending",outcome:null});
+      const event=await client.query(`
+        select id from forum_complaint_events where appeal_id=$1 and kind='appeal-resolved'`,[appealId]);
+      expect(event.rowCount).toBe(0);
+      const notifications=await client.query(`
+        select id from forum_reply_notifications where complaint_appeal_id=$1`,[appealId]);
+      expect(notifications.rowCount).toBe(0);
+    }finally{
+      await client.query("drop trigger complaint_test_reject_appeal_notification on forum_reply_notifications");
+      await client.query("drop function complaint_test_reject_appeal_notification()");
+    }
+    expect(await service().resolveAppeal("appeal-reviewer",{
+      caseId:c.caseId,appealId,operationId,outcome:"upheld",reasoning:"Should roll back"
+    })).toBe(appealId);
   });
   it("permits a later revision after resolution", async () => {
     const c = await decision();
