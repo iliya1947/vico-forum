@@ -402,7 +402,7 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
 
     const aContext=await appealContextLoader({params:{caseId:saved.caseId,appealId,
       postId:original.post.postId},context:context(appealOnly)});
-    expect(aContext.data.source).toMatchObject({originalContent:"B2 new current body",direction:"ltr"});
+    expect(aContext.data.source).toMatchObject({originalContent:"B2 new current body",sourceLocale:"und",direction:"auto"});
     const cContext=await caseContextLoader({params:{caseId:saved.caseId,
       postId:original.post.postId},context:context(reviewOnly)});
     expect(cContext.data.source.originalContent).toBe("B2 new current body");
