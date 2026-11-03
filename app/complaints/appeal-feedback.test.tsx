@@ -52,7 +52,7 @@ function reviewFixture():AppealReviewPage{
  return {appeal,appeals:[appeal],caseReview:{
   id:"case-one",kind:"post",reported:source,current:source,currentTopicTitle:source,
   decision:null,reports:page(),notes:page(),evidence:page(),context:page()
- } as AppealReviewPage["caseReview"]};
+ } as unknown as AppealReviewPage["caseReview"]};
 }
 function ReviewFromLoader(){
  const loaded=useLoaderData() as {locale:string;result:AppealReviewPage};
