@@ -385,6 +385,36 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     expect(open).toMatchObject({kind:"complaint-appeal-result",caseId:c.caseId,appealId:own.complaint_appeal_id});
     await expect(service().readOwnResult("outsider",c.caseId)).rejects.toBeInstanceOf(ComplaintNotFoundError);
   });
+  it("serializes concurrent Package 6 submissions and resolutions on native PostgreSQL",async()=>{
+    const c=await decision("not-confirmed");
+    const a=await pool.connect(),b=await pool.connect();
+    try{
+      const input=(argument:string)=>({caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument});
+      const submitted=await Promise.allSettled([
+        service(a as never).appeal("reporter-one",input("Concurrent first")),
+        service(b as never).appeal("reporter-one",input("Concurrent second"))
+      ]);
+      const accepted=submitted.filter((r):r is PromiseFulfilledResult<string>=>r.status==="fulfilled");
+      expect(accepted).toHaveLength(1);
+      expect(submitted.filter(r=>r.status==="rejected")).toHaveLength(1);
+      const appealId=accepted[0]!.value;
+      const pending=await client.query<{id:string}>(`
+        select id from forum_complaint_appeals where decision_id=$1 and status='pending'`,[c.decisionId]);
+      expect(pending.rows.map(x=>x.id)).toEqual([appealId]);
+      const resolution=(connection:PoolClient)=>service(connection as never).resolveAppeal("appeal-reviewer",{
+        caseId:c.caseId,appealId,operationId:randomUUID(),outcome:"upheld",reasoning:"Concurrent resolution"
+      });
+      const resolved=await Promise.allSettled([resolution(a),resolution(b)]);
+      expect(resolved.filter(r=>r.status==="fulfilled")).toHaveLength(1);
+      expect(resolved.filter(r=>r.status==="rejected")).toHaveLength(1);
+      const rows=await client.query<{recipient_user_id:string}>(`
+        select recipient_user_id from forum_reply_notifications where complaint_appeal_id=$1 order by recipient_user_id`,[appealId]);
+      expect(rows.rows.map(x=>x.recipient_user_id)).toEqual(["content-author","reporter-one"]);
+      const events=await client.query<{kind:string}>(`
+        select kind from forum_complaint_events where appeal_id=$1 order by created_at`,[appealId]);
+      expect(events.rows.filter(x=>x.kind==="appeal-resolved")).toHaveLength(1);
+    }finally{a.release();b.release();}
+  });
   it("permits a later revision after resolution", async () => {
     const c = await decision();
     await forum.editPublishedPost({topicId:c.post.topicId,postId:c.post.postId,actorId:"content-author",expectedRevisionId:c.post.revisionId,
