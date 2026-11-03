@@ -583,8 +583,7 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
     expect(inbox1).toMatchObject({total:expectedTotal,page:1,hasMore:false});
     expect(inbox1.items).toHaveLength(expectedTotal-50);
     expect(new Set(all.map(x=>x.id)).size).toBe(expectedTotal);
-    expect(all.filter(x=>x.kind==="complaint-decision")).toHaveLength(
-      beforeInbox?all.filter(x=>x.kind==="complaint-decision").length:28);
+    expect(all.filter(x=>x.kind==="complaint-decision").length).toBeGreaterThanOrEqual(28);
     expect(all.filter(x=>x.kind==="complaint-appeal-result").length).toBeGreaterThanOrEqual(28);
     expect(all.some(x=>x.id===legacyId&&x.kind==="reply")).toBe(true);
     expect(await forum.countUnreadNotifications("content-author")).toBe(expectedTotal);
@@ -611,5 +610,80 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
     expect(await forum.countUnreadReplyNotifications("content-author")).toBe(0);
     expect(await forum.countUnreadNotifications("content-author")).toBe(expectedTotal-2);
   },60000);
+
+  it("keeps canonical inline pin authority and Admin History independent of Complaint decisions",async()=>{
+    const reporter=await quotaActor(),reviewOnly=await quotaActor();
+    await client.query("insert into authz_user_permission_overrides "+
+      "(user_id,permission_key,effect) values ($1,'forum.complaint.review','allow')",
+      [reviewOnly]);
+    const target=await content("P7 canonical Quick action boundary"),domain=service();
+    const saved=await domain.submit(reporter,{target:target.post,
+      reason:"spam",explanation:null,operationId:randomUUID()});
+    const topicId=target.post.topicId;
+    const facts=async()=>{
+      const row=(await client.query<{
+        is_solved:boolean;best_answer_post_id:string|null
+      }>("select is_solved,best_answer_post_id from forum_topics where id=$1",[topicId])).rows[0]!;
+      const pin=await forum.readTopicPinState(topicId);
+      const admin=(await client.query<{action:string}>(
+        "select action from admin_history where target_id=$1 order by position",[topicId])).rows;
+      const reports=(await client.query<{n:number}>(
+        "select count(*)::int n from forum_complaints where case_id=$1",[saved.caseId])).rows[0]!.n;
+      const signals=(await client.query<{n:number}>(
+        "select count(*)::int n from forum_help_signals where topic_id=$1",[topicId])).rows[0]!.n;
+      return {row,pin,admin,reports,signals};
+    };
+    const initial=await facts();
+    expect(initial).toMatchObject({row:{is_solved:false,best_answer_post_id:null},
+      pin:false,admin:[],reports:1,signals:0});
+    const route=async()=>{
+      const ctx=new RouterContextProvider();
+      ctx.set(authSessionContext,{user:{id:reviewOnly}} as never);
+      ctx.set(authorizationContext,authorization as never);
+      ctx.set(forumWriterContext,createHyperdriveForumWriter(databaseUrl!,
+        ()=>new Client({connectionString:databaseUrl,options})));
+      const body=new FormData();
+      body.set("intent","pinTopic");body.set("inlineQuickAction","1");
+      return topicAction({request:new Request("https://forum.test/en/topics/"+topicId,{
+        method:"POST",headers:{Origin:"https://forum.test"},body}),
+        params:{topicId,locale:"en"},context:ctx});
+    };
+    // Complaint review permission alone cannot invoke an administrative operation.
+    expect(await route()).toMatchObject({init:{status:403}});
+    expect(await facts()).toEqual(initial);
+    const reviewed=await domain.readReview(reviewOnly,saved.caseId,{
+      reports:0,notes:0,evidence:0,context:0});
+    expect(reviewed.permissions.pin).toBe(false);
+    await client.query("insert into authz_user_permission_overrides "+
+      "(user_id,permission_key,effect) values ($1,'forum.topic.pin','allow')",
+      [reviewOnly]);
+    expect(await route()).toMatchObject({data:{ok:true}});
+    const afterPin=await facts();
+    expect(afterPin).toMatchObject({pin:true,reports:1,signals:0,
+      admin:[{action:"topic.pinned"}],row:{is_solved:false,best_answer_post_id:null}});
+    expect((await domain.readReview(reviewOnly,saved.caseId,{
+      reports:0,notes:0,evidence:0,context:0})).permissions.pin).toBe(true);
+    expect(await client.query("select id from forum_complaint_decisions where case_id=$1",
+      [saved.caseId]).then(x=>x.rows)).toHaveLength(0);
+    expect(await client.query("select id from forum_complaint_appeals where case_id=$1",
+      [saved.caseId]).then(x=>x.rows)).toHaveLength(0);
+
+    const decisionId=await domain.decide(reviewOnly,{caseId:saved.caseId,expectedVersion:1,
+      outcome:"not-confirmed",reasoning:"Complaint outcome is not pin",
+      operationId:randomUUID()});
+    const appealId=await domain.appeal(reporter,{caseId:saved.caseId,decisionId,
+      operationId:randomUUID(),argument:"Appeal independent of pin"});
+    await domain.resolveAppeal("appeal-reviewer",{caseId:saved.caseId,appealId,
+      operationId:randomUUID(),outcome:"upheld",reasoning:"No admin action"});
+    const afterModeration=await facts();
+    expect(afterModeration).toEqual(afterPin);
+    const participant=await domain.readOwnResult(reporter,saved.caseId);
+    expect(participant).toMatchObject({outcome:"not-confirmed",effectiveOutcome:"not-confirmed",
+      used:1,remaining:2});
+    expect((await client.query<{n:number}>("select count(*)::int n from "+
+      "forum_complaint_events where case_id=$1",[saved.caseId])).rows[0]!.n).toBe(4);
+    expect((await client.query<{n:number}>("select count(*)::int n from "+
+      "admin_history where target_id=$1",[topicId])).rows[0]!.n).toBe(1);
+  },30000);
 });
 
