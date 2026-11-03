@@ -95,7 +95,7 @@ describe("Complaints deterministic SSR/hydration timestamps",()=>{
     const previousZone=process.env.TZ;
     const element=document.createElement("div");
     let hydrated:Root|undefined;
-    document.body.append(element);
+    document.body.appendChild(element);
     try{
       process.env.TZ="UTC";
       const rawUtc=new Intl.DateTimeFormat(locale,{dateStyle:"medium",timeStyle:"short"})
