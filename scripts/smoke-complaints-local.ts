@@ -99,7 +99,7 @@ async function run(){
   ]);
   for(const user of [author,reporter,reviewer])
     await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-user') on conflict do nothing",[user.id]);
-  await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-moderator') on conflict do nothing",[reviewer.id]);
+  await client.query("update authz_user_roles set role_id='builtin-moderator' where user_id=$1",[reviewer.id]);
   await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) "+
     "values ($1,'forum.complaint.appeal.review','deny')",[reviewer.id]);
 
