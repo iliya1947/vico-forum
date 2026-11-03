@@ -70,7 +70,7 @@ async function ready(){
     try{
       const response=await http("/he/");
       if(response.status===200)return;
-    }catch{}
+    }catch{ /* Local preview may not be ready yet. */ }
     await new Promise(resolve=>setTimeout(resolve,1000));
   }
   throw new Error("Local Worker did not reach ready state");
@@ -211,7 +211,7 @@ try{
   process.exitCode=1;
 }finally{
   if(worker?.pid){
-    try{process.kill(-worker.pid,"SIGTERM");}catch{}
+    try{process.kill(-worker.pid,"SIGTERM");}catch{ /* Preview may already have exited. */ }
   }
   await client.end().catch(()=>{});
   await rm(vars,{force:true});
