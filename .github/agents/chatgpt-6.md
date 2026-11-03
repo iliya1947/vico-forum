@@ -132,3 +132,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Head `1502c1b38dd1898dd7be37b408843bd63f595088` CI #41553847290 was in progress at observation. Prior #41553648917 failed database test: native PostgreSQL rollback fixture's PL/pgSQL trigger function had malformed dollar delimiter, yielding SQL syntax error `42601` before exercising rollback; checks job passed.
 - Corrected fixture to SQL single-quoted PL/pgSQL body with escaped embedded quotes. PR #279 commit `11f352f3d948a7770aefbf654320ac49f7dd8aff`. Fresh exact-head CI not yet verified.
 - P6-VERIFY-02 populated 0054→0055 migration acceptance remains missing. Correction package not complete; coordinator handoff remains blocked.
+
+## Package 6 — populated upgrade test checkpoint
+
+- P6-VERIFY-02: added a native PostgreSQL test that applies 0000–0054 to a disposable schema, seeds actual Case/Decision, two real reporters, one resolved and one pending Appeal, existing read Decision notification, applies 0055, asserts resolved-only recipients/timestamps, reruns idempotent backfill and verifies preserved Appeal/Decision `read_at`. PR #279 commit `604b9bc86a821f91ebffb45951c5e2d2c439ba05`.
+- Rollback fixture PL/pgSQL quoting was corrected in `11f352f3d948a7770aefbf654320ac49f7dd8aff` after exact CI failure. Both newer changes require exact-head CI; **no PASS yet**.
+- Next is to inspect CI results and correct any confirmed failures before returning to Mira. No browser/deployment/merge.
