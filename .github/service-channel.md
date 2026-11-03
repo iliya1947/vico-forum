@@ -75,14 +75,24 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 - Browser не автоматический gate; конкретная необходимость требует technical justification с сохранением прямых developer restrictions.
 - Техплан подготовлен для проверки Мирой; его принятие и assignment Лире ещё не заявлены.
 
+## Coordinator review техплана Package 7
+
+- План Лёвы соответствует bounded integration/closeout scope и не расширяет Package 7 в новую функциональность.
+- A/B/C decomposition принята: существующая evidence переиспользуется; новые проверки добавляются только для реально недостающих connected/native/runtime crossings.
+- Предлагаемый implementation delta допустим: minimal integration/regression tests + merge-stable docs; без новой schema/migration/permission/dependency по умолчанию.
+- **P7-DOC-01 независимо CONFIRMED:** current `docs/auth/AUTHORIZATION.md` всё ещё говорит, что Appeals, notifications и History UI deferred, что противоречит merged Packages 5–6 и current `COMPLAINTS.md`.
+- Application/schema defect на planning этапе независимо не подтверждён.
+- Browser/visual остаётся неавтоматическим gate; production/external rollout вне scope.
+- Coordinator verdict по плану: **ACCEPTED**.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: bounded scope Package 7 определён.
+- Мира — ChatGPT-5.6 Sol: **техплан Package 7 проверен и принят по scope; P7-DOC-01 независимо подтверждён**.
 - Лира — ChatGPT-6: без нового назначения.
-- Лёва — Codex-6.1 Sol: **техплан Package7 подготовлен**, handoff Мире для проверки scope/назначения Лиры.
+- Лёва — Codex-6.1 Sol: техплан Package 7 подготовлен и принят координатором; без implementation assignment.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Следующий этап: Мира проверяет prepared technical plan и назначает Лире отдельный minimal tests/docs integration PR. Implementation assignment пока не дан.
+- Следующая отдельная подзадача: назначить Лире minimal Package 7 integration/acceptance implementation по принятому плану. Implementation assignment пока не дан.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
