@@ -19,6 +19,8 @@ import type { ComplaintQueuePage } from "../complaints/queue-contract";
 import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints";
 import { ComplaintForbiddenError } from "../../db/complaints-domain";
 import { presentComplaintCases } from "../complaints/queue-presentation.server";
+import {registryForRequest} from "../localization/request-context";
+import {RegistryConnectionUnavailableError} from "../localization/persistent-registry";
 
 export function headers(){return {"Cache-Control":"private, no-store"};}
 
@@ -124,7 +126,20 @@ export async function loader({ request, params, context, url }: {
     }
   }
   if(mode==="complaints"&&group==="group2"){
-    try{complaintAppeals=await context.get(complaintAppealContext).pendingQueue(session.user.id,pageIndex);}
+    try{
+      complaintAppeals=await context.get(complaintAppealContext).pendingQueue(session.user.id,pageIndex);
+      if(complaintAppeals.appeals.length){
+        const {registry}=await registryForRequest(context).catch(error=>{
+          if(error instanceof RegistryConnectionUnavailableError)
+            throw new ComplaintStorageUnavailableError("source registry unavailable",{cause:error});
+          throw error;
+        });
+        complaintAppeals={...complaintAppeals,appeals:complaintAppeals.appeals.map(appeal=>({
+          ...appeal,sourceDirection:appeal.sourceLocale==="und"?"auto" as const:
+            registry.find(appeal.sourceLocale)?.locale.direction??"auto" as const
+        }))};
+      }
+    }
     catch(error){
       if(error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError)
         throw new Response("Unavailable",{status:503,headers:{"Cache-Control":"private, no-store"}});
