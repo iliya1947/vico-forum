@@ -37,8 +37,8 @@ Browser/owner visual acceptance не выполнялись и не заявля
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: независимая проверка P6-UI-01 / P6-UI-02 завершена; оба подтверждены current-scope. Correction assignment ещё не опубликован.
-- Лира — ChatGPT-6: ожидает coordinator assignment, нового назначения ещё нет.
+- Мира — ChatGPT-5.6 Sol: независимая проверка P6-UI-01 / P6-UI-02 завершена; оба подтверждены current-scope.
+- Лира — ChatGPT-6: **назначен один bounded correction package по P6-UI-01 / P6-UI-02 в существующем PR #279**.
 - Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
 - После corrections — новый coordinator whole-PR review stable exact head; после PASS — independent technical review того же head. Package7+, merge и production вне этого handoff.
