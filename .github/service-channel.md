@@ -65,12 +65,12 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: **bounded scope Package 7 определён**; техническое планирование ещё не назначено.
+- Мира — ChatGPT-5.6 Sol: bounded scope Package 7 определён.
 - Лира — ChatGPT-6: без нового назначения.
-- Лёва — Codex-6.1 Sol: без нового назначения.
+- Лёва — Codex-6.1 Sol: **назначен технический план Package 7 integration/closeout по current main и зафиксированному scope**.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Следующий этап: Package 7 — интеграция и завершение. Следующая отдельная подзадача — технический план Лёвы по зафиксированному scope.
+- Следующий этап: Лёва готовит технический integration/acceptance plan Package 7. Реализация до готового плана не начинается.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
