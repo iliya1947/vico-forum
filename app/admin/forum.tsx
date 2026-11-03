@@ -1,11 +1,11 @@
 import {Form,Link} from "react-router";
 import {useTranslation} from "react-i18next";
-import type {AdminBrowseQuery,AdminBrowsePage,AdminForumCategory,AdminForumSection} from "../../db/admin-forum";
+import type {AdminBrowseQuery,AdminBrowsePage,AdminForumCategory,AdminForumSection,AdminForumTopic} from "../../db/admin-forum";
 import {HELP_SOLUTIONS_CATEGORY_ID} from "../../db/forum-identifiers";
 import {forumCategoryPath,forumSectionPath} from "../forum/paths";
 import {AdminShell} from "./shell";
 import type {AdminAccess} from "./access";
-import {adminForumPath,adminCategoryPath,adminSectionPath,adminBrowsePath} from "./forum-paths";
+import {adminForumPath,adminCategoryPath,adminSectionPath,adminTopicPath,adminBrowsePath} from "./forum-paths";
 
 function Counts({locale,category,section}:{locale:string;category?:AdminForumCategory;section?:AdminForumSection}) {
   const {t}=useTranslation("common");const number=new Intl.NumberFormat(locale);
@@ -69,8 +69,8 @@ export function AdminCategoryView({locale,access,category,sections,query}:{local
     </section>
   </AdminShell>;
 }
-export function AdminSectionView({locale,access,section}:{locale:string;access:AdminAccess;section:AdminForumSection}) {
-  const {t}=useTranslation("common");
+export function AdminSectionView({locale,access,section,topics,query}:{locale:string;access:AdminAccess;section:AdminForumSection;topics:AdminBrowsePage<AdminForumTopic>;query:AdminBrowseQuery}) {
+  const {t}=useTranslation("common");const path=adminSectionPath(locale,section.id);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-section-heading">
       <nav className="admin-forum-trail" aria-label={t("adminForumLocation")}>
@@ -84,6 +84,13 @@ export function AdminSectionView({locale,access,section}:{locale:string;access:A
       <Link to={section.service?forumCategoryPath(locale,HELP_SOLUTIONS_CATEGORY_ID):forumSectionPath(locale,section.id)}>
         {t(section.service?"adminForumPublicCategory":"adminForumPublicSection")}
       </Link>
+      <h3>{t("topicsHeading")}</h3>
+      <BrowseControls path={path} query={query} page={topics} locale={locale}/>
+      {topics.items.length?<ul className="admin-forum-objects">{topics.items.map(topic=><li key={topic.id}>
+        <h4><Link to={adminTopicPath(locale,topic.id)}><bdi lang={topic.sourceLocale==="und"?undefined:topic.sourceLocale} dir="auto">{topic.title}</bdi></Link></h4>
+        <dl className="admin-forum-counts"><div><dt>{t("adminPostCount")}</dt><dd>{new Intl.NumberFormat(locale).format(topic.postCount)}</dd></div></dl>
+      </li>)}</ul>:<p>{t("adminForumEmpty")}</p>}
+      <Paging path={path} query={query} next={topics.next}/>
     </section>
   </AdminShell>;
 }
