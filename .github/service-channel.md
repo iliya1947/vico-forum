@@ -5,32 +5,34 @@
 ## Актуальное состояние
 
 - Complaints Packages1–7 merged в main; current baseline `c8a9edf2a3481e08666c025474bf714553a13ffb`.
-- Полные независимые аудиты Лиры и Миры завершены; публикация findings выполнена по команде владельца.
-- После взаимной независимой перепроверки оба расхождения подтверждены как current-scope: MIRA-COMPLAINTS-01/02.
-- [Сверка timezone finding](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6613895157), [сверка Unicode finding/итог](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6614499533), [повторное подтверждение Лиры](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6613922747).
-- Лёва подготовил bounded technical plan по [назначению #6614520209](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6614520209); application/tests не менялись, correction PR отсутствует.
-- [Полный план](https://github.com/iliya1947/vico-forum/blob/51d0f4b906346141d19b4a55d68e247f1c01aea6/.github/agents/codex-6.1-sol.md#техплан-bounded-complaints-correction--mira-complaints-0102); [handoff Мире #6615160621](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6615160621).
+- Полные независимые аудиты Лиры и Миры завершены и опубликованы по команде владельца; взаимно подтверждены MIRA-COMPLAINTS-01/02.
+- По [техплану Лёвы #6615160621](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6615160621) Лира завершила один bounded correction package в **#281**, stable exact head `04547d7fd3e09eb1c7d806ecdf8c6b4100cb2089`.
+- **Coordinator Мира PASS**: [#6617314577](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6617314577); **independent technical Лёва PASS**: [verdict](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6617575518). Оба review относятся к одному head, подтверждённых current-scope defects не осталось.
+- PR остаётся draft/open; correction ещё не merged и не deployed.
 
-## Подтверждённые defects и prepared technical delta
+## Подтверждённый correction result
 
-1. **MIRA-COMPLAINTS-01:** resolved History, participant initial/Appeal Result и shared NotificationsView используют host-default timezone при locale-sensitive formatting. SSR/hydration могут получить разный time text. План: explicit timeZone UTC в существующих calls; это текущий project default resolver/Queue, без новой policy/preferences.
-2. **MIRA-COMPLAINTS-02:** PostgreSQL уже ограничивает History excerpt через left(...,500), а повторный JS slice(0,500) режет non-BMP по UTF-16 units. План: убрать только presentation slice, сохранить SQL bound и inert React text.
+1. **MIRA-COMPLAINTS-01:** explicit current-project timezone UTC в resolved History, initial/Appeal Result и общем NotificationsView formatter. Locale format styles, serialized timestamps и dateTime сохранены; shared inbox formatter применяется ко всем kinds.
+2. **MIRA-COMPLAINTS-02:** удалён повторный JS slice(0,500) после SQL-bounded History excerpt. PostgreSQL left(...,500) сохранён; non-BMP символы полностью доходят до inert React text.
 
-Регрессии: SSR→hydration при различающихся host TZ с одинаковыми serialized data/I18n; affected time nodes в History/Result/inbox, EN/RU/HE; native PostgreSQL и render fixtures500 emoji/499 BMP+emoji+tail. Новый тест должен выявлять baseline failure, а не только helper/options.
+Production delta ограничен тремя presentation sites; всего6 файлов с targeted tests. Schema/domain/permissions, SQL bound/DTO, replay/quota/Appeal/fanout/privacy, migrations/dependencies/CI и unrelated UI не менялись. Existing PROJECT_STATE и профильные contracts остаются точными.
 
-## Границы correction package
+## Подтверждённые проверки и границы
 
-Один локальный package: три presentation sites + targeted tests. Schema/domain/permissions, SQL bound/DTO, DB timestamps/ISO/dateTime, replay/quota/Appeal/fanout/privacy и unrelated UI остаются текущими. Shared inbox использует один deterministic formatter для всех kinds; новые timezone branches по notification kind не вводятся.
-
-Новые framework/dependency/migration/CI pipeline, production/external rollout не нужны. Existing locale и500-character contracts уже верны. Tests/implementation на planning этапе не запускались; acceptance пока не заявляется.
+- Exact-head [CI #41731794431](https://github.com/iliya1947/vico-forum/actions/runs/41731794431): checks/database SUCCESS, включая Worker HTTP smoke.
+- Независимый локальный review:139/139 targeted application tests,74/74 native PostgreSQL17 complaints-foundation tests, production build PASS.
+- Независимый local RED на test-only ancestor690d8f0:12 ожидаемых failures (9 hydration/3 Unicode),2 passes; GREEN исправляет обе причины.
+- SSR→hydrateRoot при разных host TZ проверен для EN/RU/HE и всех affected surfaces; native SQL/render fixtures проверяют500 emoji и499 BMP+emoji+tail.
+- Полный CI локально повторно не запускался; реальный browser/owner visual acceptance, local Worker smoke, real R2 и production rollout этим independent review не выполнялись. jsdom hydration не является browser acceptance.
+- Task-owned PostgreSQL container удалён, temporary symlinks убраны; review checkout clean, unrelated dirty checkout не менялся.
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: проверить/принять техплан и назначить Лире один bounded implementation PR.
-- Лира — ChatGPT-6: исполнитель после принятого плана/assignment.
-- Лёва — Codex-6.1 Sol: technical planning завершён, implementation не меняет.
-- Марк — Codex-6 Sol: без назначения.
-- После реализации — stable exact-head checks → coordinator whole-PR review → independent technical review того же head.
+- **Мира — ChatGPT-5.6 Sol:** coordinator closeout #281 на том же head, сверка service state и подготовка owner merge route.
+- **Лира — ChatGPT-6:** implementation завершена; новых corrections не назначено.
+- **Лёва — Codex-6.1 Sol:** independent technical review завершён PASS; реализацию при review не менял.
+- **Марк — Codex-6 Sol:** без назначения.
+- Merge выполняет разработчик; внешнего/production rollout в этой задаче нет.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
