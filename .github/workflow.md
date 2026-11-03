@@ -12,5 +12,7 @@
 - Исполнитель: Лира — ChatGPT-6, после coordinator принятия плана/assignment
 - Implementation PR/head: пока отсутствует
 - Planning step: application/tests не менялись и не запускались
+- Coordinator review: **Мира — PASS**, 0 confirmed current-scope defects on PR #281 exact head `04547d7fd3e09eb1c7d806ecdf8c6b4100cb2089`
+- Independent technical reviewer: **Лёва — Codex-6.1 Sol**, assigned on the same exact head
 - Марк: без назначения
 - Next: Мира checks plan/scope and assigns Лире one bounded implementation package; no schema/domain/permissions/unrelated UI/external scope expansion.
