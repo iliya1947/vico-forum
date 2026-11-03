@@ -94,3 +94,15 @@ Verdict: **PASS — 0 confirmed current-scope defects**.
 2. `P6-UI-02` — **CONFIRMED current-scope**. Server action через `complaintCommandFailure` сохраняет typed `forbidden/notFound/invalid/conflict/unavailable` и соответствующие HTTP statuses, но обе P6 формы presentation сводят всё кроме conflict к `complaintError_invalid`. Тем самым 503/403/404 получают неверный пользовательский смысл. P6 plan требует protected errors 401/403/404/409/503 и устойчивые draft/nonce/target boundaries; defect находится только в presentation mapping.
 
 Оба исправления локальны для Package 6 presentation/tests; schema/repository/permissions менять не требуется по установленной причине. Correction package пока не назначен.
+
+
+## Package 6 — fresh coordinator review head e2e43316…
+
+Reviewed exact head `e2e43316165b49d2b9fbf724138c9c7d07f71a60`; CI #41567459036 SUCCESS.
+
+- P6-UI-01 closed.
+- P6-UI-02 closed.
+- No new functional/domain/schema/permission/concurrency/notification defects confirmed.
+- **P6-DOC-01 confirmed:** Package 6 diff changes `PROJECT_STATE.md` to contain transient implementation-PR/review/merge status. Current AGENTS explicitly forbids PR/CI/review/corrections snapshots in PROJECT_STATE; the text would also become false immediately after merge. This is a current-scope documentation defect introduced by #279, not future work.
+
+Verdict: **FAIL only on P6-DOC-01**. Correction can be doc-only; no implementation cycle restart is required if code/requirements remain unchanged.
