@@ -26,7 +26,7 @@ function Post({locale,caseId,appealId,post}:{locale:string;caseId:string;appealI
  const {t}=useTranslation("common");const fetcher=useFetcher<ReviewFullPost>();
  const url=appealReviewUrl(locale,caseId,appealId)+"/context/"+encodeURIComponent(post.id);
  return <li><strong>#{post.number} · {post.author.name}</strong>
-   <p dir={post.direction??"auto"}>{post.excerpt}{post.truncated?"…":""}</p>
+   <p dir={post.direction??"auto"} lang={post.sourceLocale==="und"?undefined:post.sourceLocale}>{post.excerpt}{post.truncated?"…":""}</p>
    <button type="button" onClick={()=>fetcher.load(url)} disabled={fetcher.state!=="idle"}>{t("complaintReviewExpand")}</button>
    {fetcher.data?.source?<Source source={fetcher.data.source}/>:null}
  </li>;
