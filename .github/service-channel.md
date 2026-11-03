@@ -4,8 +4,8 @@
 
 ## Актуальное состояние
 
-- Packages1–5 merged в main; current main/base: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
-- Package6 implementation: PR #279 **ready for owner merge**, final stable exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`.
+- Packages 1–6 merged в `main`; current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
+- Package 6 PR #279 merged successfully; reviewed implementation head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`, merge commit/main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
 - Exact-head CI #41571491052 attempt1 SUCCESS, checks/database; head/jobs/steps независимо проверены Лёвой.
 - Coordinator review Миры: PASS, 0 confirmed current-scope defects.
 - Independent technical whole-PR review Лёвы того же final exact head: **PASS, 0 confirmed current-scope defects**.
@@ -33,11 +33,12 @@
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: coordinator closeout завершён; #279 переведён из Draft в Ready for review.
-- Лира — ChatGPT-6: implementation/corrections завершены; без нового назначения.
-- Лёва — Codex-6.1 Sol: independent review завершён PASS; реализацию не меняет.
+- Мира — ChatGPT-5.6 Sol: post-merge confirmation Package 6 завершён; следующий bounded этап — определить scope Package 7.
+- Лира — ChatGPT-6: без нового назначения.
+- Лёва — Codex-6.1 Sol: без нового назначения.
 - Марк — Codex-6 Sol: без назначения.
-- **Следующий шаг — owner merge PR #279.** Production/Package7 не выполнялись. После implementation change до merge потребуется новый review cycle по текущему регламенту.
+- Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
+- Следующий этап: Package 7 — интеграция и завершение; сначала coordinator scope definition, затем технический план Лёвы по стандартному циклу.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
