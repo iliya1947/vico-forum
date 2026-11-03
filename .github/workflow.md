@@ -2,13 +2,13 @@
 
 - Служебный PR: #254
 - План: `COMPLAINTS_IMPLEMENTATION_PLAN.md`
-- Этап: **Package 7 — coordinator scope definition pending**
+- Этап: **Package 7 — bounded scope fixed / technical planning pending**
 - Current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`
-- Package 6 implementation PR #279: **merged**
-- Package 6 reviewed head: `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`
-- Package 6 merge commit/main: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`
-- Package 6 final verdicts: coordinator PASS + independent technical PASS, 0 confirmed current-scope defects
-- Current source-of-truth `PROJECT_STATE.md`: Complaints Packages 1–6 implemented in repository/local-CI path; Package 7 not yet implemented
-- Current coordinator: **Мира — ChatGPT-5.6 Sol**
-- Next step: define bounded Package 7 integration/closeout scope from current main and approved plan. Only after that hand off technical planning to Лёва.
-- Production rollout remains out of scope.
+- Packages 1–6: merged
+- Package 7 nature: integration/closeout; no new feature work by default
+- Coordinator scope: full cross-package verification of target/revision identity, Case grouping/linking, evidence retention, permissions/privacy, anti-abuse/replay, priority/activity, shared Quick actions/no implicit sanctions, Appeals lifecycle, bounded pagination, localization/RTL, domain separation and merge-stable docs
+- Implementation rule: prove already-correct behavior; change code only for confirmed current-scope defects or genuinely missing integration verification
+- Production/external rollout and unrelated Admin/Signals/Security work: out of scope
+- Current coordinator: Мира — ChatGPT-5.6 Sol
+- Technical planner: not yet assigned
+- Next step after developer continuation: assign **Лёва — Codex-6.1 Sol** to produce the Package 7 technical integration/acceptance plan from current main and this bounded scope.
