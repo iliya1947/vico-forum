@@ -6,6 +6,7 @@
 
 - Packages 1–6 merged в `main`; current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
 - Package 6 PR #279 merged successfully; reviewed implementation head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`, merge commit/main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
+- Package 7 implementation: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, initial head `4c8f5954afb01836cfbb85f6897a458a3ceb43f4`. P7-DOC-01 correction authored in `docs/auth/AUTHORIZATION.md`; B1/B2/B3 verification remains pending. Exact-head CI #41580997525 pending. No Package 7 PASS claimed.
 - Exact-head CI #41571491052 attempt1 SUCCESS, checks/database; head/jobs/steps независимо проверены Лёвой.
 - Coordinator review Миры: PASS, 0 confirmed current-scope defects.
 - Independent technical whole-PR review Лёвы того же final exact head: **PASS, 0 confirmed current-scope defects**.
@@ -92,7 +93,7 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 - Лёва — Codex-6.1 Sol: техплан Package 7 подготовлен и принят координатором; без implementation assignment.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Tool-blocker создания ветки Лирой снят без обхода: Мира создала `chatgpt/complaints-package-7` из `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`. Следующий шаг: Лира продолжает тот же Package 7 assignment; после stable exact head и applicable checks — handoff Мире на coordinator whole-PR review.
+- Tool-blocker создания ветки снят: Мира создала branch, Лира открыла Draft PR #280. Следующий шаг: Лира закрывает missing B1/B2/B3 integration verification, затем source docs/state/history, exact-head CI и handoff Мире для coordinator whole-PR review.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
