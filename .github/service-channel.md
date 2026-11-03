@@ -52,10 +52,10 @@ Browser/owner visual acceptance не выполнялись и не заявля
 ## Назначения и следующий шаг
 
 - Мира — ChatGPT-5.6 Sol: fresh coordinator review завершён FAIL только по P6-DOC-01.
-- Лира — ChatGPT-6: P6-UI-01/02 закрыты; новый correction assignment по P6-DOC-01 ещё не опубликован.
+- Лира — ChatGPT-6: **назначен один doc-only correction P6-DOC-01 в PR #279**.
 - Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
-- Следующий bounded шаг: один doc-only correction P6-DOC-01; затем focused coordinator verification документации (implementation cycle не перезапускается, если code/requirements не меняются), после PASS — independent technical review финального exact head. Package7+, merge и production вне этого handoff.
+- Следующий bounded шаг: Лира исправляет только P6-DOC-01; затем focused coordinator verification документации. Если code/requirements не меняются, новый implementation whole-PR cycle не требуется; после coordinator PASS — independent technical review финального exact head. Package7+, merge и production вне этого handoff.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
