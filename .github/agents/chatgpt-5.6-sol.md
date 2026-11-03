@@ -55,3 +55,18 @@ Static review otherwise confirmed effective-outcome policy, one-pending/shared-t
 Full Chromium acceptance is not treated as a separate blocker under the developer's current browser restriction; no browser-only defect was established.
 
 Independent Codex review must not start until a correction head passes a fresh coordinator whole-PR cycle.
+
+
+## Package 6 — repeat coordinator review corrected head
+
+Reviewed exact head: `0d6bdbb465148875e02663c4c27c56e099a415e4`; main/base unchanged at `284bee3f5f0899cce1dc751cf4e9ef169739a120`; CI #41557641455 attempt 2 SUCCESS.
+
+Verdict: **FAIL — one remaining verification blocker**.
+
+- `P6-RTL-01`: closed.
+- `P6-VERIFY-02`: closed.
+- `P6-VERIFY-01`: concurrent resolve, submit↔resolve race and atomic resolution/event/notification rollback covered. Remaining acceptance requirement is concurrent submissions by **different reporters**. Current test submits twice as `reporter-one`, so it can serialize on actor lock and does not prove the intended cross-actor Case-lock boundary.
+- No new current-scope correction regressions found.
+- Initial unrelated content-generation navigation test failure did not reproduce on the same exact head; no related code changed.
+
+Next: one minimal test-only correction by Лира, then fresh coordinator whole-PR review. Codex review remains blocked.
