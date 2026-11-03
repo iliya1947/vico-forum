@@ -114,3 +114,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Added one PostgreSQL integration regression in PR #279 for simultaneous Appeal submissions and simultaneous resolutions, asserting one accepted result, one pending slot, one resolved event and deduplicated participant notification rows. Commit `b7b3aa8fe3a076cf8976dae9bf648253c08d258a`.
 - CI #41553467018 was queued at observation. Test correctness and CI PASS **not yet verified**.
 - This does not yet establish the required submit↔resolve race or atomic rollback of result/event/fanout. Populated 0054→0055 migration upgrade acceptance remains outstanding. No coordinator handoff.
+
+## Package 6 — notification failure rollback regression checkpoint
+
+- In PR #279 added native PostgreSQL test that injects a local notification-insert trigger failure during Appeal resolution, asserts Appeal remains pending, no resolved event or notification exists, then retries the same operation successfully after removing the trigger. Commit `21589f252ec54f9c5c442f544b12d1551bd44483`.
+- At last observation earlier CI #41553467018 was still in progress. New exact-head CI not yet confirmed; the added test is **unverified** until execution.
+- Still missing explicit submit↔resolve race acceptance and populated 0054→0055 upgrade test. No review handoff/PASS.
