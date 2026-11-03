@@ -368,7 +368,7 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
     await expect(domain.readPrioritySettings(appealOnly)).rejects.toBeInstanceOf(ComplaintForbiddenError);
 
     const plain=await appeal(appealOnly);
-    expect(plain.init.headers).toMatchObject({"Cache-Control":"private, no-store"});
+    expect(plain.init?.headers).toMatchObject({"Cache-Control":"private, no-store"});
     const dto=plain.data.result;
     expect(dto.appeal).toMatchObject({id:appealId,argument:"Private appellant reasoning"});
     expect(dto.caseReview).toMatchObject({reports:{total:1},
