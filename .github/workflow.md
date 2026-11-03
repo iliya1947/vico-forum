@@ -11,7 +11,7 @@
 - P7-SMOKE-01: author-corrected; coordinator acceptance pending
 - B1/B2/B3 + P7-DOC-01 unchanged
 - Executor Лира: implementation handoff complete
-- Next reviewer: **Мира — ChatGPT-5.6 Sol**, fresh coordinator whole-PR cycle on new exact head
+- Fresh coordinator review by **Мира — ChatGPT-5.6 Sol**: part 1/2 PASS; P7-SMOKE-01 correction verified CLOSED, 0 new current-scope defects. Part 2/2 whole Package 7 scope/final verdict pending
 - Only after coordinator PASS: Лёва — Codex-6.1 Sol independent technical review of same head
 - Марк: без назначения
 - Merge/production/browser/real R2/external actions not performed
