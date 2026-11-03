@@ -7,7 +7,7 @@
 - Packages 1–5 merged в main; current main/base: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
 - Package 6 implementation: Draft PR #279, **current stable exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`** (last implementation whole-PR reviewed head `e2e43316165b49d2b9fbf724138c9c7d07f71a60`).
 - Current exact-head **CI #41571491052 attempt 1 SUCCESS**, both `checks` and `database`. Previous doc-only CI #41570619722 and last implementation whole-PR reviewed head CI #41567459036 also passed.
-- Last coordinator whole-PR review Миры на previous implementation head закрыл P6-UI-01/02. P6-DOC-01 закрыт focused verification; **P6-DOC-02 автором исправлен и ожидает focused coordinator verification**.
+- Coordinator review chain завершён на final exact head: **PASS, 0 confirmed current-scope defects**. P6-UI-01/02, P6-DOC-01/02 закрыты.
 - Independent technical review Лёвы предыдущего head выявил два P3 finding; обе авторские correction внесены на новом head и ожидают повторной coordinator/independent приёмки.
 - [Полный результат и handoff Мире #6593499774](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774).
 
@@ -63,6 +63,14 @@
 - Коммит `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731` изменил **ровно одну строку `PROJECT_STATE.md`** (1 addition / 1 deletion). Code/schema/requirements не менялись.
 - CI #41571491052 **SUCCESS**, attempt 1, `checks` и `database`. **Coordinator focused verification pending**; PASS на этом head ещё не получен.
 
+## Final coordinator PASS — exact head 5494fe92…
+
+- P6-DOC-02 focused verification: PASS. Diff от предыдущего doc head — ровно одна строка `PROJECT_STATE.md`, migration history `0000`–`0054` → `0000`–`0055`.
+- Exact-head CI #41571491052: SUCCESS, attempt 1, `checks` + `database`.
+- Code/schema/permissions/domain requirements после последнего implementation whole-PR review не менялись.
+- P6-UI-01, P6-UI-02, P6-DOC-01, P6-DOC-02 закрыты.
+- **Coordinator verdict: PASS — 0 confirmed current-scope defects.**
+
 ## Проверенная evidence и ограничения
 
 Лёва локально выполнил115 application/route tests,73 native PostgreSQL17 tests, production build; дополнительные independent probes проверили28-row queue,60-row mixed inbox и concurrent resolution двумя разными reviewers. Actual Worker+session+PermissionResolver+PostgreSQL HTTP проверил three-slot flow, repeated reporter, outcome flips, replay, participant/appeal-only/privacy/resource boundaries и notification targets/dedup. Implementation не менялся.
@@ -71,11 +79,11 @@ Browser/owner visual acceptance не выполнялись и не заявля
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, focused verification исправления P6-DOC-02 на exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`.
-- Лира — ChatGPT-6: **завершила doc-only correction P6-DOC-02 в PR #279**, exact-head CI SUCCESS; handoff Мире.
-- Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
+- Мира — ChatGPT-5.6 Sol: coordinator review завершён PASS.
+- Лира — ChatGPT-6: implementation/corrections завершены; без нового назначения.
+- Лёва — Codex-6.1 Sol: **назначен independent technical whole-PR review final exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`**.
 - Марк — Codex-6 Sol: без назначения.
-- Следующий шаг: Мира проводит focused verification P6-DOC-02; code/requirements не менялись, новый implementation whole-PR cycle не требуется. После coordinator PASS — independent technical review Лёвы финального exact head. Package7+, merge и production вне этого handoff.
+- Следующий шаг: Лёва проводит independent technical whole-PR review final exact head. Implementation не менять до verdict. Package7+, merge и production вне этого handoff.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
