@@ -215,7 +215,7 @@ Queue показывает Cases, а не отдельные строки Compla
 
 Реализация разбита на отдельные ограниченные implementation PR. Каждый зависимый пакет начинается после review и merge в `main` необходимого предыдущего пакета.
 
-**Текущий progress:** Packages 1–5 завершены и merged в `main`; Package 6 реализован, прошёл coordinator и independent technical review без оставшихся current-scope дефектов и готов к owner merge в `main`. Package 7 начинается только после merge Package 6.
+**Текущий progress:** Packages 1–6 завершены и merged в `main`. Следующий bounded этап — Package 7 (интеграция и завершение).
 
 ### Пакет 1 — контракт жалоб и основа домена
 
