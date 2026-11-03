@@ -2,14 +2,13 @@
 
 - Служебный PR: #254
 - План: `COMPLAINTS_IMPLEMENTATION_PLAN.md`
-- Этап: **Package 6 — accepted / owner merge pending**
-- Current main/base: `284bee3f5f0899cce1dc751cf4e9ef169739a120`
-- Implementation PR: #279, branch `chatgpt/complaints-package-6`, **Ready for review**
-- Final reviewed exact head: `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`
-- Exact-head CI #41571491052: SUCCESS, attempt 1, checks/database
-- Coordinator verdict Миры: **PASS, 0 confirmed current-scope defects**
-- Independent technical verdict Лёвы: **PASS, 0 confirmed current-scope defects**
-- Implementation must remain unchanged until owner merge; any implementation change requires a new review cycle
-- Лира/Лёва/Марк: без нового назначения
-- Next step: **developer/owner merges PR #279**. После merge Мира подтверждает новый main, обновляет service progress и только затем открывает Package 7 bounded cycle.
-- Production rollout не выполняется.
+- Этап: **Package 7 — coordinator scope definition pending**
+- Current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`
+- Package 6 implementation PR #279: **merged**
+- Package 6 reviewed head: `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`
+- Package 6 merge commit/main: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`
+- Package 6 final verdicts: coordinator PASS + independent technical PASS, 0 confirmed current-scope defects
+- Current source-of-truth `PROJECT_STATE.md`: Complaints Packages 1–6 implemented in repository/local-CI path; Package 7 not yet implemented
+- Current coordinator: **Мира — ChatGPT-5.6 Sol**
+- Next step: define bounded Package 7 integration/closeout scope from current main and approved plan. Only after that hand off technical planning to Лёва.
+- Production rollout remains out of scope.
