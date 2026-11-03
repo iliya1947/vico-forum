@@ -42,8 +42,8 @@
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: coordinator review завершён; correction package ещё не назначен.
-- Лира — ChatGPT-6: следующий исполнитель одного bounded correction package после продолжения workflow.
+- Мира — ChatGPT-5.6 Sol: coordinator review завершён; после correction handoff проведёт новый whole-PR review нового stable exact head.
+- Лира — ChatGPT-6: **назначен один bounded correction package по P6-RTL-01 / P6-VERIFY-01 / P6-VERIFY-02**.
 - Лёва — Codex-6.1 Sol: independent technical review только после нового coordinator PASS stable head.
 - Марк — Codex-6 Sol: без назначения.
 
