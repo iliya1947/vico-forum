@@ -11,15 +11,15 @@
 - Package 3 сохраняет Queue/triage, configurable reason priorities, manual override и non-exclusive expiring reviewer activity.
 - Packages 4–5 merged; shared Admin Quick actions и complaint Decisions остаются отдельными доменами.
 - Reporter identity проецируется server-side по отдельному permission; обычный reviewer её не получает.
-- Packages 1–5 merged; Package 6 реализован Лирой в #279 и прошёл независимую техническую проверку Лёвы с двумя findings.
+- Packages 1–5 merged; Package 6 реализован Лирой в #279, previous technical findings исправлены и final independent review завершён PASS.
 
 ## Текущий этап
 
-Independent technical whole-PR review Package 6 / PR #279 завершён на exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`: **CHANGES REQUIRED, 2 подтверждённых P3 findings** — P6-UI-01 (target kind/current topic title потеряны в Appeal presentation), P6-UI-02 (typed failures отображаются как invalid reason/explanation). [Полный результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774).
+Independent technical whole-PR review final Package6 / PR #279 завершён на exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`: **PASS, 0 подтверждённых current-scope дефектов**. P6-UI-01/02 и P6-DOC-01/02 закрыты. [Полный результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6594813068).
 
-Реализацию не менял. Локально115 application tests,73 native PostgreSQL tests, build, actual Worker/PG HTTP и дополнительные queue/inbox/concurrent-reviewer probes прошли. Browser/owner visual acceptance не заявляются. Следующий шаг — Мира оценивает единый findings package и назначает Лире bounded corrections; затем новый coordinator cycle.
+Локально164 application/route/rendered tests, build и actual Worker/PG HTTP прошли; exact-head CI независимо подтверждён. DB/drizzle/workers идентичны прежнему проверенному head; прежняя native evidence учитывается отдельно. Browser/owner visual acceptance не заявляются. Implementation не менял. Следующий шаг — coordinator closeout Миры и дальнейший owner merge route для unchanged implementation head.
 
-Package 5 merged; старые планы/результаты ниже — история.
+Package5 merged; старые планы/результаты ниже сохраняются как история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -607,3 +607,53 @@ Reviewer DTO уже содержит `caseReview.kind` и `currentTopicTitle`, q
 Evidence: `/workspace/work/review279-evidence/` (application/database/build/http/native-extra/ui-errors/target-metadata logs и reproduction scripts). Checkout чист, temporary preview/PG/dependency symlinks/local auth vars убраны.
 
 **Handoff Мире:** проверить этот единый bounded package P6-UI-01/02 и назначить Лире corrections в #279; затем новый coordinator whole-PR cycle на новом stable exact head и после PASS новая independent technical проверка. Package7+, merge/production не выполнялись.
+
+## Package6 final independent technical review — 2026-11-03
+
+Назначение: [#6594738872](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6594738872).
+
+Проверен final stable exact head **`5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`** против current main/base **`284bee3f5f0899cce1dc751cf4e9ef169739a120`**. Head повторно проверен после verification и не изменился; implementation не менял.
+
+**Вердикт: PASS — 0 подтверждённых current-scope дефектов. P6-UI-01/02 и P6-DOC-01/02 закрыты.**
+
+### Самостоятельная проверка corrections
+
+**P6-UI-01 — CLOSED.** Existing target kind показан в group2 и Appeal review, currentTopicTitle восстановлен через Source с existing registry lang/dir. Actual built Worker → Better Auth session → PermissionResolver → PostgreSQL → SSR visible text:
+- реальные post и topic-title Appeals открываются200;
+- current topic title виден на обоих видах цели, включая post Case;
+- source title `lang=he, dir=rtl` сохраняется в EN/RU/HE UI;
+- group2 показывает Topic title label;
+- rendered regressions дополнительно различают оба kinds и проверяют localized labels EN/RU/HE.
+
+**P6-UI-02 — CLOSED.** Presentation mapping сохраняет invalid/conflict/forbidden/notFound/unavailable; submission и resolution имеют отдельные validation/conflict тексты. Проверены реальные rendered React Router forms → route actions → typed failure: все5 classifications × обе формы × EN/RU/HE, плюс503 retry. HTTP statuses400/409/403/404/503, draft, nonce и target сохраняются. Старое misleading “Check the reason and explanation” больше не подставляется вместо503. Все7 новых canonical source fingerprints независимо вычислены и совпали с committed reviewed fingerprints.
+
+**P6-DOC-01/02 — CLOSED.** PROJECT_STATE.md прочитан целиком: transient PR/review/merge snapshots удалены; repository/local-CI Packages1–6 и ещё не реализованный Package7 отражены без объявления внешнего rollout. Repository migration history0055 соответствует фактической forward migration/schema.
+
+### Whole-PR scope и runtime regression
+
+Полный main→head scope сопоставлен с утверждённым техпланом и предыдущей независимой проверкой [#6593499774](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774). Delta от ранее проверенного `c38b036…` ограничен10 файлами presentation/localization/tests/PROJECT_STATE. **Git tree hashes db, drizzle и workers идентичны**: domain/replay/locks/permissions/read projections/migration/fanout/Worker authority не менялись.
+
+Результаты прежней native verification учитываются как evidence неизменившегося кода, а не приписываются новому запуску:73 PostgreSQL17 tests, populated0054→0055 upgrade, cross-reporter and cross-reviewer concurrency, result/event/fanout rollback,28-row queue и60-row inbox/legacy/read-state probes. Прежние findings RTL/VERIFY остаются закрытыми.
+
+На **новом build exact head** повторно исполнен actual Worker+PostgreSQL HTTP end-to-end:
+- participant submission → appeal-only review → upheld → повтор того же reporter → overturned → переход права affected author → третья Appeal/result → общий лимит;
+- initial Decision immutable, successful exact submit/resolve retries, fresh pending409;
+- каждый result уведомляет всех3 фактических участников без дублей; old notification302 открывает свой result#appeal-ID, чужое open404;
+- appeal-only reviewer получает review/context, не получает P4 Case review; обычный участник не получает reviewer surface;
+- foreign context/evidence404, normalized .data/_routes paging200, private/no-store;
+- participant result EN/RU/HE не раскрывает чужие arguments, structured reporter identities или private notes;
+- исправленная metadata presentation проверена на post и topic-title в EN/RU/HE.
+
+Новых подтверждённых дефектов остального Package6 scope не найдено. Admin/Signals/Security boundaries, existing permissions и common inbox остаются прежними; Package7+ не реализовывался.
+
+### Tests/checks и границы evidence
+
+- **164/164 локальных application/route/rendered tests,11 files PASS**.
+- Production client/Worker build exact head PASS; whitespace diff PASS.
+- Exact-head [CI #41571491052](https://github.com/iliya1947/vico-forum/actions/runs/41571491052), attempt1: **SUCCESS**. Независимо проверены head SHA и jobs/steps checks/database: migrations/metadata/schema parity/runtime privileges/builds/Worker smoke включены в successful run.
+- Full local CI/native suites в этом correction pass повторно не запускались: unchanged lower-layer evidence и новый exact-head CI указаны раздельно.
+- Chromium/browser и owner visual acceptance не выполнялись и не заявляются; действующая developer restriction/coordinator classification сохранены. HTTP SSR + rendered jsdom не выдаются за browser visual acceptance.
+- Evidence: `/workspace/work/review279-final-evidence/`; предыдущая unchanged-code evidence: `/workspace/work/review279-evidence/`.
+- Implementation checkout чист; свои preview/PG/container/dependency symlink/local auth vars убраны.
+
+**Handoff Мире:** независимая technical проверка того же final exact head завершена PASS. Зафиксировать coordinator closeout и дальнейший owner merge route при неизменившемся implementation head. Merge/production/Package7 не выполнялись.
