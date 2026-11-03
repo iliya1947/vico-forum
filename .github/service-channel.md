@@ -5,9 +5,9 @@
 ## Актуальное состояние
 
 - Packages 1–5 merged в main; current main/base: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
-- Package 6 implementation: Draft PR #279, **current stable exact head `e2e43316165b49d2b9fbf724138c9c7d07f71a60`** (previous reviewed head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`).
-- Current exact-head **CI #41567459036 attempt 1 SUCCESS**, both `checks` and `database`. Previous reviewed head CI #41559889094 also passed.
-- Fresh coordinator whole-PR review Миры current head завершён: **FAIL из-за одного current-scope documentation finding; P6-UI-01/02 закрыты.**
+- Package 6 implementation: Draft PR #279, **current stable exact head `df33f134fcd49c01258b95b02e34b726bc9b845f`** (last whole-PR reviewed head `e2e43316165b49d2b9fbf724138c9c7d07f71a60`).
+- Current exact-head **CI #41570619722 attempt 1 SUCCESS**, both `checks` and `database`. Previous whole-PR reviewed head CI #41567459036 also passed.
+- Last coordinator whole-PR review Миры on previous head: **FAIL из-за P6-DOC-01; P6-UI-01/02 закрыты**. Doc-only author correction внесён на новом head, focused coordinator verification pending.
 - Independent technical review Лёвы предыдущего head выявил два P3 finding; обе авторские correction внесены на новом head и ожидают повторной coordinator/independent приёмки.
 - [Полный результат и handoff Мире #6593499774](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774).
 
@@ -43,6 +43,13 @@
 - **P6-DOC-01 — CONFIRMED current-scope documentation defect.** PROJECT_STATE.md в #279 добавляет transient PR/review state (текущий implementation PR, не merged, не прошли coordinator/independent review, требует review/merge). Это прямо противоречит текущему AGENTS.md, который запрещает хранить PR/CI/review/corrections snapshots в PROJECT_STATE.md, и после merge текст немедленно станет ложным. Finding внесён самим Package 6 diff и должен быть исправлен до финального PASS.
 - Иных подтверждённых current-scope дефектов на current head не найдено.
 
+## P6-DOC-01 — author correction на финальном head
+
+- В `PROJECT_STATE.md` удалены transient упоминания текущего implementation PR, неслитого статуса, review verdict и необходимости review/merge; оставлен merge-stable repository/local-CI статус Complaints Packages 1–6 и нереализованный Package 7.
+- Коммит `df33f134fcd49c01258b95b02e34b726bc9b845f` изменил **только `PROJECT_STATE.md`** (3 additions / 3 deletions). Code, schema, permissions, contracts и CI setup не менялись.
+- Exact-head CI #41570619722 **SUCCESS** (attempt 1, `checks`/`database`).
+- **Focused coordinator verification pending.** Никакого coordinator PASS или новой independent technical проверки этого head пока не заявлено.
+
 ## Проверенная evidence и ограничения
 
 Лёва локально выполнил115 application/route tests,73 native PostgreSQL17 tests, production build; дополнительные independent probes проверили28-row queue,60-row mixed inbox и concurrent resolution двумя разными reviewers. Actual Worker+session+PermissionResolver+PostgreSQL HTTP проверил three-slot flow, repeated reporter, outcome flips, replay, participant/appeal-only/privacy/resource boundaries и notification targets/dedup. Implementation не менялся.
@@ -51,11 +58,11 @@ Browser/owner visual acceptance не выполнялись и не заявля
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: fresh coordinator review завершён FAIL только по P6-DOC-01.
-- Лира — ChatGPT-6: **назначен один doc-only correction P6-DOC-01 в PR #279**.
+- Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, focused verification P6-DOC-01 на stable exact head `df33f134fcd49c01258b95b02e34b726bc9b845f`.
+- Лира — ChatGPT-6: **завершила doc-only correction P6-DOC-01 в PR #279**, exact-head CI SUCCESS; handoff Мире.
 - Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
-- Следующий bounded шаг: Лира исправляет только P6-DOC-01; затем focused coordinator verification документации. Если code/requirements не меняются, новый implementation whole-PR cycle не требуется; после coordinator PASS — independent technical review финального exact head. Package7+, merge и production вне этого handoff.
+- Следующий шаг: Мира проводит focused coordinator verification P6-DOC-01; поскольку код и requirements не менялись, новый implementation whole-PR cycle не требуется. После coordinator PASS — independent technical review Лёвы финального exact head. Package7+, merge и production вне этого handoff.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
