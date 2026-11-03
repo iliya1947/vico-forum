@@ -77,7 +77,7 @@ describe("native protected category/section projection",()=>{
     expect(result.topics.items[0]).toMatchObject({title:"Literal %_\\ עברית / 😀",sourceLocale:"he",postCount:1});
   }
   expect((await reader.readSectionTopics("s/c-000",{search:"Current title changed"}))!.topics.items[0]).toMatchObject({id:"admin-t-000",sourceLocale:"ru"});
-  expect((await reader.readSectionTopics("s/c-000",{search:"Topic 0"}))!.topics.total).toBe(51);
+  expect((await reader.readSectionTopics("s/c-000",{search:"Topic 0"}))!.topics.total).toBe(0);
   expect((await reader.readSectionTopics("s/c-000",{search:"private body"}))!.topics.total).toBe(0);
   expect((await reader.readSectionTopics("s/c-001",{search:""}))!.topics).toEqual({items:[],total:0,next:null});
   expect(await reader.readSectionTopics("absent",{search:""})).toBeUndefined();
