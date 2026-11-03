@@ -27,13 +27,23 @@ Integration/closeout существующих Packages1–6: targets/revisions/g
 - Source docs merge-stable, CI/review snapshots отделены от PROJECT_STATE; integration closeout не объявляет production/UI-UX project complete.
 - Implementation не менялся; temporary preview/PG/container/symlink убраны. Evidence /workspace/work/review280-final-evidence/; предыдущая unchanged-code evidence /workspace/work/review280-evidence/.
 
+## Package 7 — final closeout
+
+- Final stable exact head: `d8ac2b87010072a360455b5a5c397e90aa6c5959`.
+- Exact-head CI #41667933728: SUCCESS attempt 1.
+- Fresh coordinator whole-PR review Мира: PASS, 0 confirmed current-scope defects.
+- Corrected independent technical whole-PR review Лёва: PASS, 0 confirmed current-scope defects.
+- `P7-SMOKE-01` CLOSED; `P7-DOC-01` CLOSED; B1/B2/B3 accepted.
+- No implementation change after final reviewed head. Any implementation change requires a new review cycle.
+- Package 7 is complete in repository/local-CI review path and ready for owner merge. Production/external rollout remains separate and was not performed.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: coordinator closeout Package7 и дальнейший owner merge route для unchanged reviewed head.
+- Мира — ChatGPT-5.6 Sol: **Package 7 coordinator closeout завершён; owner merge route открыт для unchanged reviewed head**.
 - Лира — ChatGPT-6: corrections завершены, без нового назначения.
 - Лёва — Codex-6.1 Sol: corrected independent technical review завершён PASS.
 - Марк — Codex-6 Sol: без назначения.
-- Merge/production не выполнялись. Implementation change требует нового review cycle по актуальному регламенту.
+- PR #280 готов к owner merge на unchanged reviewed head. Production не выполнялся. Implementation change до merge требует нового review cycle.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
