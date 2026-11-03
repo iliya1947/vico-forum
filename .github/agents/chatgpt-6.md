@@ -126,3 +126,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Prior CI #41553467018 SUCCESS on head `b7b3aa8fe3a076cf8976dae9bf648253c08d258a`; #41553314326 SUCCESS on RTL fixture correction head. Rollback test CI #41553648917 was in progress at observation.
 - Added native PG submit↔resolve regression exercising concurrent resolved first Appeal and subsequent eligible reporter submission. Checks legal serialization outcomes, ordinal/pending state and fanout recipients. Implementation PR #279 commit `1502c1b38dd1898dd7be37b408843bd63f595088`; new exact-head CI pending.
 - Populated 0054→0055 migration upgrade acceptance P6-VERIFY-02 remains missing; no coordinator handoff.
+
+## Package 6 — rollback test CI diagnosis
+
+- Head `1502c1b38dd1898dd7be37b408843bd63f595088` CI #41553847290 was in progress at observation. Prior #41553648917 failed database test: native PostgreSQL rollback fixture's PL/pgSQL trigger function had malformed dollar delimiter, yielding SQL syntax error `42601` before exercising rollback; checks job passed.
+- Corrected fixture to SQL single-quoted PL/pgSQL body with escaped embedded quotes. PR #279 commit `11f352f3d948a7770aefbf654320ac49f7dd8aff`. Fresh exact-head CI not yet verified.
+- P6-VERIFY-02 populated 0054→0055 migration acceptance remains missing. Correction package not complete; coordinator handoff remains blocked.
