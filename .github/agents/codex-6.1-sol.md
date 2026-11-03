@@ -15,11 +15,11 @@
 
 ## Текущий этап
 
-Independent technical whole-PR review corrected Package7 / PR #280 завершён на exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959`: **PASS, 0 подтверждённых current-scope дефектов**. P7-SMOKE-01 CLOSED; B1/B2/B3/P7-DOC-01 остаются принятыми. [Полный результат/handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6609493730).
+По назначению Миры #6614520209 подготовлен технический план одного bounded correction package для MIRA-COMPLAINTS-01/02 на main `c8a9edf2a3481e08666c025474bf714553a13ffb`. Packages1–7 merged. Полный план ниже: explicit current project timezone UTC в affected History/Result/shared Notifications formatter и удаление повторного UTF-16 slice после корректного SQL500-character excerpt; targeted SSR/hydration/non-BMP regressions.
 
-Локально ownership probe1/1, normal actual Worker Better Auth/PG HTTP smoke, build и отсутствие owned temp files после успеха — PASS. Exact-head CI independently verified. Unchanged B1/B2/B3/docs evidence учитывается отдельно; full local suite/browser/R2/production не заявляются. Implementation не менял, ресурсы убраны.
+Это planning step: application/tests не менялись и не запускались; implementation PR correction package не создан. Следующий шаг — Мира принимает план и назначает Лире реализацию. Findings обоих независимых аудитов уже опубликованы по команде владельца и взаимно подтверждены; ограничения до публикации к текущему handoff больше не применяются.
 
-Следующий шаг — Мира фиксирует coordinator closeout Package7 и owner merge route для unchanged reviewed head. Packages1–6 merged; прежние планы/результаты ниже — история.
+Прежние Package7 review/closeout результаты ниже — история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -885,3 +885,63 @@ Package7 готов к closeout, когда:
 - Checkout чист, temporary PG/container/dependency symlink убраны, реальные конфиги/секреты для negative probe не использовались.
 
 **Handoff Мире:** independent technical review того же final exact head завершён PASS. Зафиксировать coordinator closeout Package7 и дальнейший owner merge route при unchanged reviewed implementation. Merge/production не выполнялись.
+## Техплан bounded Complaints correction — MIRA-COMPLAINTS-01/02
+
+Основание: [назначение #6614520209](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6614520209), опубликованные и взаимно подтверждённые результаты аудитов. Baseline: main **c8a9edf2a3481e08666c025474bf714553a13ffb**, Packages1–7 merged. Main tree совпадает с ранее принятым head Package7. Это план для реализации Лирой; application/tests не менялись, новый implementation PR не создавался.
+
+### 1. MIRA-COMPLAINTS-01 — детерминированный timezone
+
+Проверены LOCALES.md «Locale-aware formatting boundary», runtime resolver и точные call sites. Resolver задаёт project default **UTC**; Complaint Queue уже передаёт timeZone:"UTC". В затронутых History/Result/Notifications options этот аргумент отсутствует, поэтому одинаковый timestamp зависит от host timezone при SSR и повторном client render.
+
+Минимальный fix — явно передать **timeZone:"UTC"** в существующие форматирующие вызовы, сохранив locale и прочие текущие options:
+- app/complaints/history-view.tsx: resolvedAt в ComplaintResolvedHistoryList;
+- app/routes/complaint-result.tsx: decidedAt и каждый resolved Appeal resolvedAt;
+- app/forum/views.tsx: только formatter внутри NotificationsView.
+
+Это применение принятого project default, не новая timezone policy и не выбор Asia/Jerusalem по языку/местоположению пользователя. Новые preferences, resolver/provider API, locale route wiring или общий formatter framework не нужны. Достаточно локальных options; новый helper необязателен.
+
+NotificationsView — общая поверхность: timezone явно задаётся её единственному существующему formatter для всех kinds. Это минимально необходимая правка shared call site, используемого complaint-decision/complaint-appeal-result; не вводить разные timezone по notification kind. Reply/mention markup, targets/read semantics/counts остаются прежними.
+
+Не менять ISO значения в loaders, HTML dateTime, DB timestamps/time ordering или reference time. Уже детерминированные ISO/UTC presentation в timeline, reviewer и Queue не переписывать. Другие Intl/toLocaleString в том же большом views.tsx относятся к другим surfaces и в этот пакет не входят. suppressHydrationWarning, перенос всего вывода в client-only effect и изменение TZ процесса вместо явных options не устраняют требуемую границу.
+
+### 2. MIRA-COMPLAINTS-02 — сохранить SQL-bounded Unicode excerpt
+
+db/complaint-history-read.ts уже делает PostgreSQL left(...,500) до serialization. Удалить только повторный item.text.slice(0,500) в ComplaintResolvedHistoryList и вывести item.text целиком как обычный инертный React text.
+
+Не переносить ограничение из SQL в браузер и не заменять лишний slice новым JS clamp. Нативный boundary остаётся 500 Unicode characters PostgreSQL, а не 500 UTF-16 units/bytes/grapheme clusters. Схема, query bounds, DTO, pagination/count, reported revision identity, privacy и source lang/dir не меняются.
+
+### 3. Регрессии, которые закрывают обе causal chains
+
+**Timezone / SSR→hydration:**
+- На реальных затронутых components проверить resolved History, participant initial Decision + resolved Appeal и общий inbox с complaint-decision/complaint-appeal-result; один legacy reply/mention рядом — control shared formatting.
+- Использовать фиксированные ISO timestamps, включая 2026-11-03T18:00:00Z и момент возле смены UTC-даты. Проверить EN/RU/HE без hard-coded locale universe в production code.
+- SSR render под host TZ=UTC, повторный client render/hydration того же serialized route/I18n fixture под host TZ=Asia/Jerusalem. Сначала контрольным Intl без timeZone подтвердить, что environments действительно дают разные default results; затем affected time text должен совпасть, соответствовать explicit UTC и сохранить исходный dateTime.
+- Нужен хотя бы один настоящий renderToString→hydrateRoot regression с onRecoverableError, а не только test helper/проверка наличия option. Fixtures должны держать одинаковые route data, locale и translation resources. Остальные affected time nodes можно проверить в том же routed fixture/параметризованной матрице. Убедиться, что тест падает на исходном коде из-за timezone/text mismatch.
+- Допустим jsdom/Node с контролируемым host TZ для обеих фаз; такой тест — проверка hydration boundary, не browser/owner visual acceptance. TZ changes изолировать и восстанавливать в finally, не запускать их конкурентно с другими cases. Если test runner не меняет Intl default при таком переключении, использовать раздельные процессы для render phases плюс hydration fixture; не оставлять ложноположительный тест с одинаковой фактической timezone.
+- Проверять содержимое time nodes/UTC semantics, не full-page platform-specific locale snapshots. Не менять секунды/dateStyle/timeStyle ради теста.
+
+**Unicode / PostgreSQL→presentation:**
+- Расширить native fixture существующего теста «bounds resolved History snippets before returning rows…» в tests/database/complaints-foundation.test.ts: original source длиннее500 characters, содержащий (a) 500 emoji + tail, (b) 499 BMP characters + emoji + tail. Достаточно направленно охватить post/title ветки существующего read model.
+- Assert: readResolvedHistory возвращает именно первые500 Unicode characters; tail не попадает в DTO, last emoji целый. SQL left остаётся ответственным за bound.
+- В app/complaints/history-view.test.tsx добавить populated History render с этими уже bounded DTO строками. DOM/text ровно равен DTO:500 emoji не превращаются в250; строка499 BMP+emoji сохраняет завершающий non-BMP character, без lone surrogate/replacement. Проверить неповреждённую строку после SSR/serialization/render, а не только Array.from(input).length.
+- Existing BMP excerpt/total/permission tests сохранить. Новые fixtures закрывают различие PostgreSQL character count и JS UTF-16 units, которое ASCII fixture не выявлял.
+
+### 4. Boundaries и предполагаемый delta
+
+Один отдельный bounded implementation PR Лиры из актуального main: три presentation файла выше + targeted rendered/hydration/native regression tests. При изменении main сначала сверить delta именно этих boundaries.
+
+Нет оснований менять schema/migrations, domain/service/repository commands, authorization/identity projection, locks/replay, quotas, Appeal eligibility/limits, retention, events/notifications fanout, Admin/Signals/Security или shared inbox mutations. SQL excerpt уже корректен; его production query не требует правки.
+
+LOCALES.md и Complaints500-character contract уже задают нужные требования. Не переписывать их ради исправления реализации и не устраивать полный documentation audit. Если documentation/state update необходим по текущему регламенту, фиксировать только фактическое состояние; PR/CI/review/finding history не помещать в PROJECT_STATE.md.
+
+### 5. Stable-head проверки и handoff
+
+Лира:
+1. Воспроизвести обе ошибки targeted regressions на baseline; внести локальные fixes; получить PASS тех же regressions.
+2. Выполнить applicable lint/typecheck/application tests, affected native PostgreSQL suite и build; затем штатный exact-head CI (checks/database, schema/history guards, runtime/Worker smoke). Новые migrations/dependencies/CI framework не нужны.
+3. Проверить на built local Worker/SSR положительный History/participant/inbox output и корректный Unicode payload; existing Package7 local HTTP smoke использовать как общий regression. Внешние deployment/provider/R2/production действия не нужны. Реальный browser не automatic gate.
+4. Зафиксировать stable exact head, результаты и ограничения в #254; затем Мира coordinator whole-PR review, после PASS Лёва independent technical review того же head.
+
+Готовность: timezone/initial text не зависят от разных host TZ на всех затронутых surfaces, History показывает полный SQL-bounded Unicode excerpt без повреждений, regression/CI проходят, перечисленные domain/privacy boundaries не менялись. Исправления закрывают ровно два audit findings одним пакетом.
+
+**Следующий шаг:** Мира принимает bounded техплан/передаёт Лире implementation assignment. На этапе планирования implementation не выполнялся.
