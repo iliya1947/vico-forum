@@ -19,8 +19,9 @@ Git history и PR остаются первичными историческим
 5. [`PROJECT_HISTORY_05.md`](./PROJECT_HISTORY_05.md) — 2026-10-27 — 2026-10-28: attachment journal, Markdown/literal-text, Editor и localization corrections.
 6. [`PROJECT_HISTORY_06.md`](./PROJECT_HISTORY_06.md) — 2026-10-29 — 2026-10-31: Admin Panel AP-01–05, Complaints Packages 1–3 и поздние Editor/discovery/i18n/a11y corrections.
 7. [`PROJECT_HISTORY_07.md`](./PROJECT_HISTORY_07.md) — snapshot 2026-10-31: полный остаточный `PROJECT_STATE.md` перед его нормализацией 2026-11-02.
+8. [`PROJECT_HISTORY_08.md`](./PROJECT_HISTORY_08.md) — 2026-11-02: Complaints Package 5 implementation/CI checkpoint; independent review тогда ещё ожидался.
+9. [`PROJECT_HISTORY_09.md`](./PROJECT_HISTORY_09.md) — 2026-11-03: Complaints Package 7 integration и локальный Worker HTTP smoke, авторский CI snapshot до независимых review.
 
 ## Архивные снимки
 
 Каталог [`doc_old/`](../../doc_old/) сохраняется отдельно как набор старых полных снимков документов. Он не входит в последовательность `PROJECT_HISTORY_##.md` и используется только когда нужен конкретный исторический snapshot.
-8. [`PROJECT_HISTORY_08.md`](./PROJECT_HISTORY_08.md) — 2026-11-02: Complaints Package 5 implementation/CI checkpoint; independent review still pending.

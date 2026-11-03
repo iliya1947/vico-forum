@@ -86,21 +86,26 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 проверяет effective permission server-side.
 
 Complaint permissions protect the server-only domain capabilities documented in
-[`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits submission;
-`forum.complaint.review` permits Case review/notes/initial decisions;
-`forum.complaint.appeal.review` permits appeal Case review/resolution.
-`forum.complaint.priority.manage` separately permits reading/changing the persisted global
-reason-priority mapping through the protected settings UI. It does not grant Case reads;
-Case review does not grant settings access. The Attention header admits management-only
-actors and directs them to settings without reading Cases; global admin admission is unchanged. Reporter/appellant
-structured identity requires the additional `forum.complaint.reporterIdentity.read` key,
-which is not seeded to any built-in role, including admin. Identity permission alone
-never grants Case access. Participant result/first-appeal calls separately recheck actual
-content-author/reporter membership and direction. Package 2 enables only the topic-context
-submission UI and authenticated same-origin POST action using `forum.complaint.create`;
-Package 3 additionally enables protected open Queue/triage, priority override and
-non-exclusive activity using `forum.complaint.review`, with independent loader/action
-checks. Package 4 exposes protected full review, internal notes and initial Decisions, with separately gated reporter identity; appeals, notifications and History UI remain deferred.
+[`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits
+authenticated Complaint submission. `forum.complaint.review` independently permits
+the open Case Queue/triage, resolved History, protected Case review/context/evidence,
+notes and initial Decisions. `forum.complaint.appeal.review` independently permits
+the pending Appeals Queue, protected Appeal review/context/evidence and Appeal
+resolution; it does not grant ordinary Case review. `forum.complaint.priority.manage`
+separately permits reading/changing persisted reason-priority settings and grants
+no Case reads; Case review does not grant settings access. The Attention header
+routes management-only actors to settings without reading Cases; global admin
+admission remains unchanged.
+
+Structured reporter/appellant identity additionally requires
+`forum.complaint.reporterIdentity.read`, which is not seeded to any built-in
+role, including admin. This permission is additive to the relevant Case/Appeal
+review capability and never independently grants access. Participant Decision
+results, effective outcomes and Appeal submission independently check actual
+affected-author/reporter membership and current Appeal eligibility, without
+requiring complaint creation or reviewer permissions. Initial Decision and Appeal
+result notifications use the existing shared inbox. Shared Admin Quick actions
+retain their own permissions and do not follow from complaint review.
 
 ## Initial role defaults
 

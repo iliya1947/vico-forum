@@ -115,3 +115,8 @@ jobs:
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           ./scripts/smoke-workers.sh http://127.0.0.1:4173
+      - name: Worker Better Auth Complaints local HTTP smoke
+        run: |
+          node --test scripts/smoke-complaints-ownership.probe.mjs
+          pnpm exec tsx scripts/smoke-complaints-local.ts
+          test ! -e .dev.vars && test ! -L .dev.vars
