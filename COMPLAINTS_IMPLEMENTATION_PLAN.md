@@ -215,7 +215,7 @@ Queue показывает Cases, а не отдельные строки Compla
 
 Реализация разбита на отдельные ограниченные implementation PR. Каждый зависимый пакет начинается после review и merge в `main` необходимого предыдущего пакета.
 
-**Текущий progress:** Packages 1–6 завершены и merged в `main`. Следующий bounded этап — Package 7 (интеграция и завершение).
+**Текущий progress:** Packages 1–7 завершены и merged в `main`. Полный независимый аудит завершён; два подтверждённых current-scope дефекта исправлены bounded correction PR #281 и merged. Repository/local-CI lifecycle системы жалоб завершён; external/deployed acceptance остаётся отдельной будущей границей Stage 6.
 
 ### Пакет 1 — контракт жалоб и основа домена
 
