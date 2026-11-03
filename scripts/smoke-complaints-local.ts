@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
 import {randomBytes,randomUUID} from "node:crypto";
-import {readdir,readFile,rm,writeFile} from "node:fs/promises";
+import {rm,writeFile} from "node:fs/promises";
 import {openSync,closeSync} from "node:fs";
 import {resolve} from "node:path";
 import {drizzle} from "drizzle-orm/node-postgres";
@@ -19,11 +19,8 @@ if(process.env.CI!=="true"||!connectionString)throw new Error("CI disposable tes
 const dbUrl=new URL(connectionString);
 if(!["127.0.0.1","localhost"].includes(dbUrl.hostname)||!dbUrl.pathname.endsWith("_test"))
   throw new Error("Only loopback *_test PostgreSQL is allowed");
-const schema="complaints_p7_http_smoke";
-const client=new Client({connectionString,options:"-c search_path="+schema});
-const bindingsUrl=new URL(connectionString);
-bindingsUrl.searchParams.set("options","-c search_path="+schema);
-const localConnectionString=bindingsUrl.toString();
+// Existing CI PostgreSQL service is disposable; the built Worker already uses its public schema.
+const client=new Client({connectionString});
 const vars=resolve(".dev.vars");
 const previewLog=resolve(".vico-p7-preview.log");
 let worker:ReturnType<typeof spawn>|undefined;
@@ -62,14 +59,13 @@ async function signUp(role:string){
 }
 async function setupDatabase(){
   await client.connect();
-  const existing=await client.query<{existing:string|null}>(
-    "select to_regnamespace($1)::text as existing",[schema]);
-  assert.equal(existing.rows[0]?.existing,null,"Refusing to reuse an existing smoke schema");
-  await client.query("create schema "+schema);
-  const files=(await readdir("drizzle")).filter(name=>/^\d{4}_.+\.sql$/.test(name)).sort();
-  assert.ok(files.length>=55,"Expected accepted migration history in disposable database");
-  for(const file of files)await client.query((await readFile("drizzle/"+file,"utf8"))
-    .replaceAll('"public".','"'+schema+'".'));
+  // Earlier CI PostgreSQL steps provision this ephemeral public schema; never rewrite it.
+  for(const table of ["user","session","authz_user_roles","forum_topics","forum_complaint_cases",
+    "forum_complaint_decisions","forum_complaint_appeals","forum_reply_notifications"]){
+    const result=await client.query<{present:string|null}>(
+      "select to_regclass($1)::text as present",["public."+table]);
+    assert.ok(result.rows[0]?.present,"Disposable CI schema missing table: "+table);
+  }
 }
 async function ready(){
   for(let i=0;i<90;i++){
@@ -94,11 +90,7 @@ async function run(){
   ].join("\n"),{mode:0o600,flag:"wx"});
   const fd=openSync(previewLog,"w",0o600);
   worker=spawn("pnpm",["exec","vite","preview","--host","127.0.0.1",
-    "--port","4181","--strictPort"],{stdio:["ignore",fd,fd],detached:true,env:{
-      ...process.env,
-      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE:localConnectionString,
-      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE:localConnectionString
-    }});
+    "--port","4181","--strictPort"],{stdio:["ignore",fd,fd],detached:true,env:process.env});
   closeSync(fd);
   await ready();
 
