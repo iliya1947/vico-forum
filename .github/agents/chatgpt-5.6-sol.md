@@ -129,3 +129,12 @@ Final reviewed exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731` получ�
 PR #279 переведён из Draft в Ready for review. Implementation не должен меняться до owner merge; при изменении требуется новый review cycle.
 
 Следующий маршрут: owner merge #279 → post-merge main confirmation → Package 7 bounded cycle. Production rollout отдельно и не выполняется.
+
+
+## Package 6 — post-merge confirmation
+
+PR #279 merged into `main` as `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`. Current main source-of-truth confirms Complaints Packages 1–6 implemented in repository/local-CI path, repository migration history through `0055`, and Package 7 not yet implemented.
+
+Package 6 is closed. Production rollout was not performed.
+
+Next bounded coordinator task: define Package 7 integration/closeout scope from current main and the approved Complaints plan before handing technical planning to Лёва.
