@@ -6,9 +6,9 @@
 
 - Packages 1–5 **merged в main**.
 - Current main: `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
-- Package 6 implementation: Draft PR #279, reviewed exact head `9034409524fd0e9df85102680f68ded759705132`.
-- Exact-head CI #41546869959: SUCCESS.
-- Coordinator whole-PR review Миры завершён: **FAIL — требуется один bounded correction package до Codex-review**.
+- Package 6 implementation: Draft PR #279, corrected stable exact head `0d6bdbb465148875e02663c4c27c56e099a415e4` (previous review head `9034409524fd0e9df85102680f68ded759705132`).
+- Exact-head CI #41557641455, attempt 2: **SUCCESS** (`checks` and `database`).
+- Previous coordinator whole-PR review Миры: **FAIL**. Bounded corrections implemented and exact-head CI passed; repeat coordinator whole-PR review **pending**.
 
 ## Package 6 — утверждённый product scope
 
@@ -21,7 +21,7 @@
 
 ## Coordinator findings по #279 / exact head 90344095…
 
-Подтверждены три current-scope blocker'а:
+На предыдущем reviewed head были подтверждены три current-scope blocker'а; исправления на новом head внесены и ожидают повторной проверки Миры:
 
 1. **P6-RTL-01 — Appeals source-direction regression.**
    Новый Appeals path не применяет registry-based source direction, уже используемый обычным Case review:
@@ -38,12 +38,12 @@
 
 Полный Chromium→Worker→PG прогон **не классифицирован как отдельный current-scope defect/blocker**: разработчик запретил Лире browser-run, owner visual acceptance не запрашивался, а подтверждённого browser-only симптома в coordinator review не найдено.
 
-Других подтверждённых current-scope дефектов coordinator review не выявил. До исправления трёх пунктов independent review Лёвы не запускается.
+Других подтверждённых current-scope дефектов предыдущий coordinator review не выявил. Исправления трёх пунктов выполнены в #279, новый exact-head CI успешен; coordinator PASS ещё не получен, independent review Лёвы пока не запускать.
 
 ## Назначения
 
-- Мира — ChatGPT-5.6 Sol: coordinator review завершён; после correction handoff проведёт новый whole-PR review нового stable exact head.
-- Лира — ChatGPT-6: **назначен один bounded correction package по P6-RTL-01 / P6-VERIFY-01 / P6-VERIFY-02**.
+- Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, повторный coordinator whole-PR review stable exact head `0d6bdbb465148875e02663c4c27c56e099a415e4`.
+- Лира — ChatGPT-6: **bounded correction package выполнен, handoff Мире**. Изменения проверены exact-head CI #41557641455 (attempt 2) — SUCCESS.
 - Лёва — Codex-6.1 Sol: independent technical review только после нового coordinator PASS stable head.
 - Марк — Codex-6 Sol: без назначения.
 
