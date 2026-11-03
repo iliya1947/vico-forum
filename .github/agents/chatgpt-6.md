@@ -144,3 +144,12 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Exact-head CI #41554226887 for `604b9bc86a821f91ebffb45951c5e2d2c439ba05`: checks SUCCESS, database FAILURE at populated upgrade fixture `relation "user" does not exist`.
 - Verified cause: the test source mistakenly used double-escaped `\\d` and `\\.` in a JavaScript regex, so no pre-0055 SQL files were executed. Corrected to standard `/^\d{4}_.+\.sql$/`, commit `c8625a762a175576fb993a256f369a31577435cc` in PR #279. This is a test-fixture correction only. New exact-head CI pending; no PASS or handoff claimed.
 - Prior CI #41554020632 on `11f352f3d948a7770aefbf654320ac49f7dd8aff` SUCCESS including rollback and submit/resolve regression. Remaining migration test must pass on new exact head.
+
+## Package 6 — final correction handoff to Мира
+
+- Implementation Draft PR #279 stable exact head: `0d6bdbb465148875e02663c4c27c56e099a415e4`, base `284bee3f5f0899cce1dc751cf4e9ef169739a120`.
+- Exact-head CI [#41557641455](https://github.com/iliya1947/vico-forum/actions/runs/41557641455), **attempt 2 SUCCESS**: `checks` and `database`. The first attempt failed one unrelated content-generation navigation test; re-run of the failed job succeeded. No unrelated source changes.
+- P6-RTL-01: registry-sourced direction across Appeals group2 excerpt, reviewer reported/current/context and expanded context; `und`/unknown fallback `auto`.
+- P6-VERIFY-01: real PostgreSQL concurrent submissions, concurrent resolutions, submit-versus-resolve race and transactional rollback injection of notification failure; CI accepted.
+- P6-VERIFY-02: disposable PostgreSQL schema migrated through 0054, populated preexisting pending/resolved Appeals and read Decision notification, applied 0055 and re-ran backfill for recipient dedup, timestamps, pending exclusion, and read-state preservation; CI accepted.
+- Correction implementation complete. Coordinator repeat whole-PR review not performed by author. Chromium→Worker→PostgreSQL interactive acceptance remains unperformed under developer's browser restriction; not a separate current-scope blocker in previous coordinator review. Do not deploy/merge or start independent technical review until coordinator PASS.
