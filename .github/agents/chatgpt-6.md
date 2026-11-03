@@ -108,3 +108,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Post-RTL head `9e725fe1d462761d8098686a8003d7a4a2ee8cda` CI #41550490614 FAILED in app tests (database job SUCCESS). Logs identify missing `registryLoaderContext` in `complaint-appeal-review.test.ts` fixture, not a proven production failure.
 - Test fixture now supplies a locale registry and asserts Hebrew rtl / `und` auto source presentation; new head `170cec82f749351981464430cc861716220a64d3`, CI #41553314326 pending at observation.
 - P6-VERIFY-01 and P6-VERIFY-02 remain outstanding. Correction package incomplete; no stable head/coordinator handoff.
+
+## Package 6 — native PG concurrency coverage checkpoint
+
+- Added one PostgreSQL integration regression in PR #279 for simultaneous Appeal submissions and simultaneous resolutions, asserting one accepted result, one pending slot, one resolved event and deduplicated participant notification rows. Commit `b7b3aa8fe3a076cf8976dae9bf648253c08d258a`.
+- CI #41553467018 was queued at observation. Test correctness and CI PASS **not yet verified**.
+- This does not yet establish the required submit↔resolve race or atomic rollback of result/event/fanout. Populated 0054→0055 migration upgrade acceptance remains outstanding. No coordinator handoff.
