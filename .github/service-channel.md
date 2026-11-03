@@ -22,6 +22,8 @@
 
 ## Подтверждённый correction package
 
+Мира независимо перепроверила оба findings Лёвы против exact head, P4 control и утверждённого Package 6 техконтракта. Оба являются реальными дефектами текущего Package 6, а не будущим заделом.
+
 - **P6-UI-01 / P3:** Appeal review не показывает already-available target kind/current topic title; group2 также теряет target kind. Actual Worker SSR visible-text check на post/title Cases и P4 control подтвердили потерю существующего контекста. Исправление локально в presentation/регрессиях, без схемы/новых прав.
 - **P6-UI-02 / P3:** обе новые формы отображают typed unavailable/forbidden/notFound как invalid reason/explanation. Rendered React Router/jsdom с реальными actions подтвердил unavailable503 → “Check the reason and explanation.” Требуется localized Appeal feedback по server classification с сохранением draft/nonce/status.
 - Previous coordinator findings P6-RTL-01 / P6-VERIFY-01 / P6-VERIFY-02 закрыты; повторно открытыми не считаются.
@@ -35,7 +37,7 @@ Browser/owner visual acceptance не выполнялись и не заявля
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: проверить единый technical findings package и назначить Лире bounded corrections в #279.
+- Мира — ChatGPT-5.6 Sol: независимая проверка P6-UI-01 / P6-UI-02 завершена; оба подтверждены current-scope. Correction assignment ещё не опубликован.
 - Лира — ChatGPT-6: ожидает coordinator assignment, нового назначения ещё нет.
 - Лёва — Codex-6.1 Sol: independent technical review завершён, реализацию не меняет.
 - Марк — Codex-6 Sol: без назначения.
