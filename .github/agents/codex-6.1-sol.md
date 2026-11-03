@@ -11,13 +11,15 @@
 - Package 3 сохраняет Queue/triage, configurable reason priorities, manual override и non-exclusive expiring reviewer activity.
 - Packages 4–5 merged; shared Admin Quick actions и complaint Decisions остаются отдельными доменами.
 - Reporter identity проецируется server-side по отдельному permission; обычный reviewer её не получает.
-- Packages1–6 merged; migration chain0000–0055. Current main020cbafe… совпадает tree с accepted final Package6 head5494fe92…. Текущая задача — технический план Package7 integration/closeout.
+- Packages1–6 merged; migration chain0000–0055. Current main020cbafe… совпадает tree с accepted final Package6 head5494fe92…. Package7 реализован Лирой в #280; текущий independent technical review выявил один smoke cleanup finding.
 
 ## Текущий этап
 
-Технический план Package7 integration/closeout подготовлен на main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8` по назначению Миры #6595096543. Полный план ниже. Составлена A/B/C карта existing evidence, недостающей connected/native/runtime verification и одной подтверждённой doc correction AUTHORIZATION.md:103. Application/schema defect при планировании не подтверждён; новые features/schema/permissions не планируются.
+Independent technical whole-PR review Package7 / PR #280 завершён на exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`: **CHANGES REQUIRED, один P3 P7-SMOKE-01** — unconditional cleanup удаляет pre-existing .dev.vars после EEXIST. [Полный результат/handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598371097).
 
-Implementation/tests не менял и не запускал; Package7 implementation PR отсутствует. Следующий шаг — Мира проверяет scope/план и назначает Лире minimal integration tests/docs package. Package6 завершён и merged после coordinator+independent PASS; прежние результаты ниже — история.
+B1/B2/B3 и P7-DOC-01 приняты; local4/4 native PG tests, production build, normal actual Worker HTTP smoke прошли; exact-head CI независимо подтверждён. Ownership failure воспроизведён на marker без секретов. Implementation не менял, checkout/resources чисты.
+
+Следующий шаг — Мира проверяет finding и назначает Лире bounded smoke cleanup correction, затем новый coordinator/independent cycle. Packages1–6 merged; старые планы/результаты ниже — история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -791,3 +793,52 @@ Package7 готов к closeout, когда:
 Это завершение **Complaints в repository/local-CI path**. Оно не завершает Stage6/production, весь Admin panel или UI/UX product acceptance.
 
 **Сейчас:** technical plan подготовлен, application/schema/tests не менялись, implementation PR Package7 отсутствует. **Следующий шаг Миры:** проверить соответствие bounded scope, принять план и назначить Лире minimal tests/docs integration package с указанными criteria. Лёва не реализует без технической эскалации.
+
+
+## Package7 independent technical review — 2026-11-03
+
+Назначение: [#6598203673](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598203673). Проверен stable exact head **`cc9f42a8e0944da053fe5bef8cda1cb1113cd492`** против current main/base **`020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`**. Head повторно проверен после verification, не изменился; implementation не менял.
+
+**Вердикт: CHANGES REQUIRED — один подтверждённый current-scope P3: P7-SMOKE-01.** B1/B2/B3 coverage и P7-DOC-01 приняты технической проверкой.
+
+### P7-SMOKE-01 / P3 — smoke удаляет существующий .dev.vars, который не создавал
+
+[scripts/smoke-complaints-local.ts:234](https://github.com/iliya1947/vico-forum/blob/cc9f42a8e0944da053fe5bef8cda1cb1113cd492/scripts/smoke-complaints-local.ts#L234), создание с exclusive flag на [строке84](https://github.com/iliya1947/vico-forum/blob/cc9f42a8e0944da053fe5bef8cda1cb1113cd492/scripts/smoke-complaints-local.ts#L84).
+
+Скрипт делает writeFile(.dev.vars,…,{flag:"wx"}), чтобы не перезаписать существующий local config, но finally безусловно вызывает rm(vars,{force:true}). Если файл уже существует или setupDatabase падает до его создания, cleanup всё равно удаляет чужой файл. Exclusive creation protection фактически отменяется teardown.
+
+**Фактическое воспроизведение exact head**, без секретов и без изменения реализации:
+1. Disposable PostgreSQL17 на loopback, DB *_test с нужной public schema0055; CI=true, то есть все guard preconditions соблюдены.
+2. До запуска создан marker .dev.vars с одной несекретной строкой.
+3. Запущен неизменённый scripts/smoke-complaints-local.ts.
+4. Процесс завершился1 с ожидаемым EEXIST; **после завершения pre-existing marker file отсутствует**: preexisting_file_preserved=false.
+5. Контрольный обычный запуск без pre-existing файла затем прошёл целиком и корректно убрал собственный временный файл.
+
+Это конкретный destructive failure-path дефект нового local/CI tooling, а не недостаток production acceptance или изменение Complaints domain. Пользовательский/ранее подготовленный .dev.vars должен оставаться неизменным при отказе exclusive creation; он может содержать локальную конфигурацию, которую smoke не вправе удалять.
+
+**Минимальная correction:** cleanup только ресурсов, созданных текущим запуском; сохранить existing .dev.vars при EEXIST и при early setup failure. Сохранить CI/loopback/*_test guards и flag wx, не заменять на overwrite. Не требуется общий filesystem framework или изменение application/schema. Regression/guard probe: existing marker survives refusal; normal owned temp file удаляется; early failure не удаляет pre-existing config.
+
+### Остальной whole-PR scope
+
+Полностью прочитаны новый689-line connected native suite,236-line HTTP smoke и все9 changed files. Diff ограничен tests/CI/docs, production application/schema/migrations/permissions не менялись.
+
+- **B1 — PASS:** реальные route actions/loaders→service→PG связывают post/title Case identity, grouping/replay, priority/activity/note/stale Decision409, edit→successor/retained evidence, initial Decision, три Appeals/current outcome/eligibility, all-participant notifications, History/inbox и membership/privacy. Fake successful DTO не используется как domain proof.
+- **B2 — PASS:** реальные grants/custom role/overrides, fresh per-operation authorization, именно новый Appeal reviewer DTO и identity projection/revocation, independent review/appeal/priority/participant capabilities; retained resource checks перед deterministic bucket,403/404/503 и download/private headers. In-memory bucket не выдаётся за R2.
+- **B3 — PASS:** native25/50 limits и independent totals для Appeals/History/timeline/mixed inbox; canonical pin handler permission и ровно один отдельный Admin History event; Complaint/Decision/Appeal не создают implicit admin effect.
+- **P7-DOC-01 — CLOSED:** AUTHORIZATION paragraph согласован с merged P1–6; COMPLAINTS.md и PROJECT_STATE merge-stable, integration coverage/external limits описаны корректно; author CI snapshot вынесен в indexed project history, coordinator/independent PASS там не предвосхищён.
+- Existing A-invariants Packages1–6 остаются покрыты принятой native/route/rendered/runtime evidence; production behavior PR не меняет. Недостающие B crossings закреплены новой suite.
+- Других подтверждённых current-scope дефектов не найдено. Browser/real R2/external rollout не являются добавленными gate и не заявляются.
+
+### Выполненные checks и границы evidence
+
+- Локально **4/4 новых native PostgreSQL17 integration tests PASS**.
+- Production client/Worker build exact head — PASS.
+- **Штатный неизменённый local Worker/Better Auth/PermissionResolver/PostgreSQL HTTP smoke — PASS** на собственной disposable DB.
+- Независимо проверен exact-head [CI #41593385331](https://github.com/iliya1947/vico-forum/actions/runs/41593385331), attempt1 SUCCESS; checks/database и все шаги, включая новый authenticated HTTP smoke, успешны.
+- Collision/ownership probe — подтверждённая потеря pre-existing marker; обычный happy path/CI этот failure path не покрывают.
+- Full application/database CI локально повторно не запускался; CI result и собственные targeted/native/runtime проверки указаны отдельно.
+- Browser/visual acceptance, реальный R2, external/production действия не выполнялись.
+- Evidence: `/workspace/work/review280-evidence/`: database/build/http-smoke logs, ownership-probe.log/json, cleanup-state.json.
+- Checkout чист; свои PG/container/dependency symlink убраны, preview завершён штатным smoke; реальные конфиги/секреты не использовались и не удалялись.
+
+**Handoff Мире:** перепроверить P7-SMOKE-01 и назначить Лире одну bounded correction нового smoke cleanup/guard regression. Не переделывать принятые B1/B2/B3 или Complaints application. Затем stable exact head/checks → новый coordinator cycle → independent technical review того же head. Merge/production не выполнялись.
