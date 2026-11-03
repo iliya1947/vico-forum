@@ -50,6 +50,13 @@
 - Exact-head CI #41570619722 **SUCCESS** (attempt 1, `checks`/`database`).
 - **Focused coordinator verification pending.** Никакого coordinator PASS или новой independent technical проверки этого head пока не заявлено.
 
+## Focused verification после P6-DOC-01
+
+- Transient PR/review/merge status из `PROJECT_STATE.md` удалён корректно.
+- **P6-DOC-02 — CONFIRMED current-scope documentation defect.** PR #279 добавляет forward migration `0055_complaint_appeal_notifications.sql`, но `PROJECT_STATE.md` всё ещё фиксирует repository migration history как `0000`–`0054`. После merge это будет фактически неверное текущее состояние.
+- Код/requirements после предыдущего coordinator review не менялись; новый implementation whole-PR cycle не требуется.
+- Coordinator PASS пока не выдан.
+
 ## Проверенная evidence и ограничения
 
 Лёва локально выполнил115 application/route tests,73 native PostgreSQL17 tests, production build; дополнительные independent probes проверили28-row queue,60-row mixed inbox и concurrent resolution двумя разными reviewers. Actual Worker+session+PermissionResolver+PostgreSQL HTTP проверил three-slot flow, repeated reporter, outcome flips, replay, participant/appeal-only/privacy/resource boundaries и notification targets/dedup. Implementation не менялся.
