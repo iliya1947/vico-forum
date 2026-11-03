@@ -4,6 +4,7 @@ import {useTranslation} from "react-i18next";
 import type {AppealReviewPage} from "../../db/complaint-appeal-read";
 import type {ReviewPages,ReviewPage,ReviewContextPost,ReviewFullPost} from "./review-contract";
 import {ForumShell} from "../forum/ui";
+import {appealFeedbackKey,type AppealCommandError} from "./appeal-feedback";
 
 export const appealReviewUrl=(locale:string,caseId:string,appealId:string)=>
  `/${encodeURIComponent(locale)}/attention/complaints/${encodeURIComponent(caseId)}/appeals/${encodeURIComponent(appealId)}`;
@@ -35,7 +36,7 @@ export function ComplaintAppealReviewView({locale,result}:{locale:string;result:
  const {t}=useTranslation("common");const {appeal,caseReview:item}=result;
  const pages:ReviewPages={reports:item.reports.page,notes:item.notes.page,evidence:item.evidence.page,context:item.context.page};
  const base=appealReviewUrl(locale,item.id,appeal.id);
- const resolve=useFetcher<{ok?:true;operationId?:string;error?:string}>();
+ const resolve=useFetcher<{ok?:true;operationId?:string;error?:AppealCommandError}>();
  const [outcome,setOutcome]=useState<"upheld"|"overturned">("upheld");
  const [reasoning,setReasoning]=useState("");const nonce=useRef("");const acknowledged=useRef("");
  useEffect(()=>{if(resolve.data?.ok&&resolve.data.operationId===nonce.current&&acknowledged.current!==nonce.current){
@@ -104,7 +105,7 @@ export function ComplaintAppealReviewView({locale,result}:{locale:string;result:
       value={reasoning} onChange={e=>setReasoning(e.target.value)}/></label>
     <button type="submit" disabled={resolve.state!=="idle"}>{t("complaintAppealResolve")}</button>
    </resolve.Form>:<p>{t("complaintHistoryAppealResolved")}</p>}
-   {resolve.data?.error?<p role="alert">{t(resolve.data.error==="conflict"?"complaintError_conflict":"complaintError_invalid")}</p>:null}
+   {resolve.data?.error?<p role="alert">{t(appealFeedbackKey(resolve.data.error,"resolve"))}</p>:null}
    {resolve.data?.ok?<p role="status">{t("complaintAppealResolved")}</p>:null}
   </section>
  </ForumShell>;
