@@ -415,6 +415,41 @@ describe("complaints domain foundation / real PostgreSQL", () => {
       expect(events.rows.filter(x=>x.kind==="appeal-resolved")).toHaveLength(1);
     }finally{a.release();b.release();}
   });
+  it("rolls back Appeal resolution and lifecycle event when notification fanout fails",async()=>{
+    const c=await decision("not-confirmed");
+    const appealId=await service().appeal("reporter-one",{
+      caseId:c.caseId,decisionId:c.decisionId,operationId:randomUUID(),argument:"Rollback proof"
+    });
+    const operationId=randomUUID();
+    await client.query(`create function complaint_test_reject_appeal_notification() returns trigger
+      language plpgsql as $ begin
+        if new.kind='complaint-appeal-result' then raise exception 'intentional notification failure'; end if;
+        return new;
+      end $`);
+    await client.query(`create trigger complaint_test_reject_appeal_notification
+      before insert on forum_reply_notifications for each row
+      execute function complaint_test_reject_appeal_notification()`);
+    try{
+      await expect(service().resolveAppeal("appeal-reviewer",{
+        caseId:c.caseId,appealId,operationId,outcome:"upheld",reasoning:"Should roll back"
+      })).rejects.toThrow();
+      const state=await client.query<{status:string;outcome:string|null}>(`
+        select status,outcome from forum_complaint_appeals where id=$1`,[appealId]);
+      expect(state.rows[0]).toMatchObject({status:"pending",outcome:null});
+      const event=await client.query(`
+        select id from forum_complaint_events where appeal_id=$1 and kind='appeal-resolved'`,[appealId]);
+      expect(event.rowCount).toBe(0);
+      const notifications=await client.query(`
+        select id from forum_reply_notifications where complaint_appeal_id=$1`,[appealId]);
+      expect(notifications.rowCount).toBe(0);
+    }finally{
+      await client.query("drop trigger complaint_test_reject_appeal_notification on forum_reply_notifications");
+      await client.query("drop function complaint_test_reject_appeal_notification()");
+    }
+    expect(await service().resolveAppeal("appeal-reviewer",{
+      caseId:c.caseId,appealId,operationId,outcome:"upheld",reasoning:"Should roll back"
+    })).toBe(appealId);
+  });
   it("permits a later revision after resolution", async () => {
     const c = await decision();
     await forum.editPublishedPost({topicId:c.post.topicId,postId:c.post.postId,actorId:"content-author",expectedRevisionId:c.post.revisionId,
