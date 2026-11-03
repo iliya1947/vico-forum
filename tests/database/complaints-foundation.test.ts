@@ -744,7 +744,10 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
       } as never);
       c.set(complaintQueueContext,domain as never);
       c.set(forumReaderContext,forum as never);
-      c.set(forumWriterContext,forum as never);
+      c.set(forumWriterContext,{
+        markNotificationRead:({userId,notificationId}:{userId:string;notificationId:string})=>
+          forum.markNotificationRead(userId,notificationId)
+      } as never);
       return c;
     };
     const post=(url:string,fields:Record<string,string>)=>new Request(url,{
