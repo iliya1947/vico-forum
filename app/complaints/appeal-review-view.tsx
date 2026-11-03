@@ -60,8 +60,10 @@ export function ComplaintAppealReviewView({locale,result}:{locale:string;result:
    <p dir="auto">{appeal.argument}</p>
    {appeal.appellant?<p>{appeal.appellant.name}</p>:null}
    <h2>{t("complaintReviewEvidence")}</h2>
+   <p>{t(item.kind==="post"?"complaintTargetPost":"complaintTargetTitle")}</p>
    <h3>{t("complaintReviewReported")}</h3><Source source={item.reported}/>
    <h3>{t("complaintReviewCurrent")}</h3><Source source={item.current}/>
+   <h3>{t("complaintReviewTopicTitle")}</h3><Source source={item.currentTopicTitle}/>
    <section><h2>{t("complaintReviewReports")}</h2>
     <ul>{item.reports.items.map(r=><li key={r.id}><strong>{t(("complaintReason_"+r.reason) as "complaintReason_spam")}</strong>
      {r.reporter?<span> · {r.reporter.name}</span>:null}
