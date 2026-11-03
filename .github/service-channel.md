@@ -6,7 +6,7 @@
 
 - Packages 1–6 merged в `main`; current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
 - Package 6 PR #279 merged successfully; reviewed implementation head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`, merge commit/main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Package 7 implementation: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, stable head `444be574063cc00b639f560b693d175252864234`. P7-DOC-01 author-corrected; **B1 native connected lifecycle PASS**. B2/B3 and final documentation/whole-PR review pending. Exact-head CI #41583586320 **SUCCESS** (checks/database, attempt 1). No Package 7 coordinator PASS claimed.
+- Package 7: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, stable head `3cd46b6583a40db5e48f317d2c798584f9e8eded`. P7-DOC-01 author-corrected; **B1/B2/B3 native regression + local authenticated Worker HTTP smoke PASS**. Exact-head CI #41591646928 **SUCCESS** (checks/database, attempt 1). Merge-stable docs/history and coordinator review pending; Package 7 PASS not yet claimed.
 - Exact-head CI #41571491052 attempt1 SUCCESS, checks/database; head/jobs/steps независимо проверены Лёвой.
 - Coordinator review Миры: PASS, 0 confirmed current-scope defects.
 - Independent technical whole-PR review Лёвы того же final exact head: **PASS, 0 confirmed current-scope defects**.
@@ -32,12 +32,14 @@
 - Browser/Chromium и owner visual acceptance не выполнялись и не заявляются; developer restriction/coordinator classification сохранены. Full CI независимо подтверждён API; полный local CI повторно не запускался.
 - Implementation не менялся. Temporary preview/PG/container/symlink/auth vars убраны.
 
-## Package 7 — B1 connected integration evidence
+## Package 7 — verified integration evidence (author-side)
 
-- Draft PR #280 includes `app/complaints/connected-lifecycle.dbtest.tsx`, executed by the native PostgreSQL Vitest runner. It connects real HTTP route actions/loaders, the authoritative Complaints service, disposable PostgreSQL17, and unified inbox on shared persisted Case/Decision/Appeal IDs; only test/run configuration changed besides P7-DOC-01.
-- The executed regression verifies independent post/title Cases, two reporters in one Case, exact replay and no extra report, activity/priority/note, stale Decision rejection, immutable retained evidence after edit, linked successor Case with participant isolation, initial Decision and three Appeals with eligibility/outcome/slot boundaries, recipient dedup/read-at replay, protected History and unified notifications/open deep link.
-- CI #41583586320 **SUCCESS** on stable exact head `444be574063cc00b639f560b693d175252864234`: `checks` + `database`, attempt 1. Previous intermediate CI failures were test fixture and TypeScript project-boundary issues, corrected without production changes. No actual Worker/Better Auth HTTP smoke or browser acceptance is claimed from this native route test.
-- **B2/B3 remain pending; Package 7 not accepted/complete.** Next bounded step: B2 reviewer projection and protected resource bridge.
+- B1: `app/complaints/connected-lifecycle.dbtest.tsx` couples actual React Router actions/loaders, Complaints service and PostgreSQL17 Case/Decision/Appeal/History/inbox IDs, immutable evidence after edit, successor Case, three Appeals and notification replay.
+- B2: native PostgreSQL-backed role grants/overrides, reviewer DTO identity projection/revocation, independent Case/Appeal resource access and retained attachment membership with in-memory bucket; **not actual R2 acceptance**.
+- B3: native 25/50 page boundaries, independent totals for pending Appeals, resolved History, timeline and mixed inbox; canonical `topicAction` pin + exactly one Admin History event, no implicit sanction from Complaints.
+- Built local Worker with real Better Auth sign-up/session cookies, same-origin HTTP, PostgreSQL `*_test`, permission revoke/regrant across requests, protected resource responses, EN/RU/HE SSR and `und` source direction `auto`. Positive retained bytes require R2 and were not claimed; no browser/deployment.
+- Current head `3cd46b6583a40db5e48f317d2c798584f9e8eded`, exact-head CI #41591646928 **SUCCESS attempt 1** (`checks` + `database`, new HTTP script reports PASS). No production code/schema/permission changes.
+- **Next:** merge-stable domain docs/current state/history, then final CI and coordinator whole-PR handoff; no Package 7 coordinator PASS yet.
 
 ## Package 7 — bounded coordinator scope
 
@@ -100,7 +102,7 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 - Лёва — Codex-6.1 Sol: техплан Package 7 подготовлен и принят координатором; без implementation assignment.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Tool-blocker создания ветки снят. Draft #280 открыт, B1 verified; **следующий шаг Лиры — B2**, затем B3 и merge-stable source docs/state/history, final exact-head CI и handoff Мире для coordinator whole-PR review.
+- Tool-blocker создания ветки снят. Draft #280 содержит зелёные B1/B2/B3 и real local Worker HTTP smoke. **Следующий шаг Лиры — merge-stable source docs/state/history**, затем final exact-head CI и handoff Мире для coordinator whole-PR review.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
