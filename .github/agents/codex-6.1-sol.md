@@ -15,11 +15,11 @@
 
 ## Текущий этап
 
-По назначению Миры #6614520209 подготовлен технический план одного bounded correction package для MIRA-COMPLAINTS-01/02 на main `c8a9edf2a3481e08666c025474bf714553a13ffb`. Packages1–7 merged. Полный план ниже: explicit current project timezone UTC в affected History/Result/shared Notifications formatter и удаление повторного UTF-16 slice после корректного SQL500-character excerpt; targeted SSR/hydration/non-BMP regressions.
+Независимый technical whole-PR review correction #281 завершён **PASS**, 0 подтверждённых current-scope defects. Exact head `04547d7fd3e09eb1c7d806ecdf8c6b4100cb2089`, current main/base `c8a9edf2a3481e08666c025474bf714553a13ffb`; после coordinator PASS Миры #6617314577. [Полный verdict](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6617575518).
 
-Это planning step: application/tests не менялись и не запускались; implementation PR correction package не создан. Следующий шаг — Мира принимает план и назначает Лире реализацию. Findings обоих независимых аудитов уже опубликованы по команде владельца и взаимно подтверждены; ограничения до публикации к текущему handoff больше не применяются.
+MIRA-COMPLAINTS-01/02 закрыты в рамках подготовленного ниже техплана. Локально139/139 targeted application tests,74/74 native PostgreSQL tests и production build PASS; test-only ancestor690d8f0 независимо даёт12 ожидаемых failures/2 passes. Exact-head GREEN CI подтверждён через API. Реализацию во время review не менял.
 
-Прежние Package7 review/closeout результаты ниже — история.
+Следующий шаг — Мира: coordinator closeout того же head и подготовка owner merge route. Correction PR draft/open, merge/deploy не выполнялись. Прежние plans/reviews ниже сохраняются как технический контекст.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -945,3 +945,16 @@ LOCALES.md и Complaints500-character contract уже задают нужные 
 Готовность: timezone/initial text не зависят от разных host TZ на всех затронутых surfaces, History показывает полный SQL-bounded Unicode excerpt без повреждений, regression/CI проходят, перечисленные domain/privacy boundaries не менялись. Исправления закрывают ровно два audit findings одним пакетом.
 
 **Следующий шаг:** Мира принимает bounded техплан/передаёт Лире implementation assignment. На этапе планирования implementation не выполнялся.
+
+
+## Independent technical review — bounded correction #281
+
+Проверен весь delta:6 файлов,3 production presentation sites. Explicit UTC сохраняет текущий project default и existing locale styles в History/Result/shared Notifications; removal presentation slice сохраняет native SQL500-character bound и complete non-BMP text. Schema/domain/permissions/SQL/dependencies/CI без изменений. Действующие PROJECT_STATE/профильные contracts точны.
+
+Локальный GREEN:139/139 tests в6 application files; real renderToString→hydrateRoot (UTC→Asia/Jerusalem), EN/RU/HE, affected surfaces, recoverable errors и expected UTC text/dateTime; mixed notification kinds. PostgreSQL17 foundation74/74, включая500emoji и499BMP+emoji+tail; production build PASS.
+
+Локальный RED ancestor `690d8f034f160b37bfaf4dd221741a66fb5ebe57`:12 ожидаемых failures (9 hydration mismatches,3 Unicode rendering),2 passes. CI GREEN41731794431 и RED41724596943 проверены через API; head/base повторно сверены перед verdict.
+
+Границы: полный CI локально не повторял, local Worker smoke/real browser/owner visual acceptance/real R2/production не выполнялись. CI Worker smoke подтверждён в exact-head CI. Временный PostgreSQL container и node_modules symlinks удалены; checkout clean; evidence /workspace/work/review281-evidence/. Unrelated dirty checkout не менялся.
+
+Verdict **PASS**, 0 findings: [#6617575518](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6617575518). Handoff Мире: coordinator closeout и owner merge route на том же exact head. Реализация не менялась, merge/deploy не выполнялись.
