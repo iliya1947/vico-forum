@@ -11,15 +11,13 @@
 - Package 3 сохраняет Queue/triage, configurable reason priorities, manual override и non-exclusive expiring reviewer activity.
 - Packages 4–5 merged; shared Admin Quick actions и complaint Decisions остаются отдельными доменами.
 - Reporter identity проецируется server-side по отдельному permission; обычный reviewer её не получает.
-- Packages 1–5 merged; Package 6 реализован Лирой в #279, previous technical findings исправлены и final independent review завершён PASS.
+- Packages1–6 merged; migration chain0000–0055. Current main020cbafe… совпадает tree с accepted final Package6 head5494fe92…. Текущая задача — технический план Package7 integration/closeout.
 
 ## Текущий этап
 
-Independent technical whole-PR review final Package6 / PR #279 завершён на exact head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`: **PASS, 0 подтверждённых current-scope дефектов**. P6-UI-01/02 и P6-DOC-01/02 закрыты. [Полный результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6594813068).
+Технический план Package7 integration/closeout подготовлен на main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8` по назначению Миры #6595096543. Полный план ниже. Составлена A/B/C карта existing evidence, недостающей connected/native/runtime verification и одной подтверждённой doc correction AUTHORIZATION.md:103. Application/schema defect при планировании не подтверждён; новые features/schema/permissions не планируются.
 
-Локально164 application/route/rendered tests, build и actual Worker/PG HTTP прошли; exact-head CI независимо подтверждён. DB/drizzle/workers идентичны прежнему проверенному head; прежняя native evidence учитывается отдельно. Browser/owner visual acceptance не заявляются. Implementation не менял. Следующий шаг — coordinator closeout Миры и дальнейший owner merge route для unchanged implementation head.
-
-Package5 merged; старые планы/результаты ниже сохраняются как история.
+Implementation/tests не менял и не запускал; Package7 implementation PR отсутствует. Следующий шаг — Мира проверяет scope/план и назначает Лире minimal integration tests/docs package. Package6 завершён и merged после coordinator+independent PASS; прежние результаты ниже — история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -657,3 +655,139 @@ Evidence: `/workspace/work/review279-evidence/` (application/database/build/http
 - Implementation checkout чист; свои preview/PG/container/dependency symlink/local auth vars убраны.
 
 **Handoff Мире:** независимая technical проверка того же final exact head завершена PASS. Зафиксировать coordinator closeout и дальнейший owner merge route при неизменившемся implementation head. Merge/production/Package7 не выполнялись.
+## Технический план Package 7 — integration и closeout
+
+Автор: Лёва. Дата: 2026-11-03. Назначение: [#6595096543](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6595096543); bounded coordinator scope: [#6595046599](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6595046599).
+
+Baseline: main **020cbafe1a1c872773c7e3c41e79c7c7f81eabe8**, Packages1–6 merged, migrations0000–0055. Main tree fe274279375c7d899a4d131e1088b971466fd013 **идентичен** tree принятого Package6 head5494fe92…; post-merge implementation delta нет. Прочитаны текущие scope/workflow, профильные контракты и относящиеся tests. На этом шаге выполнено планирование/чтение, новые tests/implementation не запускались и не создавались.
+
+### 1. Решение по объёму
+
+Package7 — проверяемое завершение интеграции существующих capabilities. Базовый implementation delta: минимальные интеграционные regression tests и локальная актуализация документации. Новая application logic, schema, migration, permission, dependency, универсальный test framework или новая продуктовая поверхность **не планируются**.
+
+Уже есть значительная native/route/rendered/runtime evidence. Не повторять её отдельной новой реализацией каждого invariant. Недостающий результат — воспроизводимая связанная цепочка на одном наборе Case/Decision/Appeal IDs плюс проверки нескольких границ, которые сейчас доказаны отдельными тестами или вне repository CI.
+
+При планировании не подтверждён application/schema defect. Подтверждён один ограниченный documentation defect, описанный в п.3. Это не утверждение, что будущая integration verification не может обнаружить другой дефект.
+
+### 2. Карта cross-package invariants
+
+Обозначения: **A** — поведение уже подтверждено существующей evidence; **B** — нужна именно недостающая связанная/долговременная проверка; **C** — подтверждён дефект и нужен локальный fix. B не означает, что текущая функция сломана.
+
+Основной native источник ниже — tests/database/complaints-foundation.test.ts на указанном main. Названия tests приведены для поиска независимо от сдвига строк.
+
+| Invariant | Существующая доказательная база | Классификация и минимальное дополнение |
+| --- | --- | --- |
+| Раздельные title/first-post targets, authoritative revision/author | Native «groups independent reports but separates topic title and first post», «validates reasons…target-revision ownership», «uses authoritative … author rather than revision editor»; rendered P6 target-kind regressions | A. В связанном сценарии сохранить разные IDs и проверить их после Decision/Appeals. Не создавать ещё один matrix всех invalid revision cases. |
+| Grouping, новый incident/revision, predecessor links | Native «links successive … Cases and preserves lifetime duplicates», «links a new … revision immediately while previous Case stays open», concurrent successor tests для post/title | A; B только сквозная проверка, что UI/read/notifications старого Case остаются привязаны к нему после successor. Принадлежность successor не должна давать доступ к предыдущему result. |
+| Immutable reported source и retained evidence после edit | Native «reads protected full Case evidence…», «retains reported text and attachment evidence after a real edit and cleanup», cleanup claim/two-writer fences; P4 protected download headers tests | A на storage/P4; B на том же retained asset через новые Appeal context/evidence adapters и последующую History. |
+| Пять Complaints permissions, grants/overrides/privacy | Native next-call grants/allow/deny/inherit; consistent snapshot matrix postgres/hyperdrive для readCase/readAppealCase; priority-only tests; P4 HTTP negatives; P6 appeal-only HTTP | A на общую модель; B для фактически используемого P6 readAppealCaseForReviewer + context/evidence и его reporter/appellant projection при identity grant/revoke. Старый foundation readAppealCase не заменяет этот DTO test. |
+| Anti-abuse/duplicate/replay | Native default10/10min,50/24h, expired history, last-slot race across targets; exact replay/lifetime duplicate/changed retry; route Unicode/origin/body limits | A. В связанной цепочке один exact replay/duplicate и корректный другой target внутри свободного бюджета; квоты заново не реализовывать. |
+| Priority/manual override/activity | Native default weights, singleton CAS, recalculation, override→automatic, concurrent overrides/rollback, multi-reviewer90s expiry/no version bump, review-started→History | A. B только переход того же Case из Queue в History: override/note/Decision version и recorded review-started не теряются, resolved Case не продолжает open heartbeat. |
+| Shared Quick actions и отдельные sanctions/Admin History | app/admin/quick-actions.test.tsx canonical/inline transport, app/forum/write-actions.test.ts; native tests/database/forum-admin-history.test.ts | A на canonical operation; B маленькая связанная проверка на Complaint fixture: review alone не pin, отдельный pin grant даёт canonical pin/admin event, Complaint/Decision/Appeal сами не создают pin/санкцию/admin event. |
+| Appeal eligibility/one-pending/shared3/current outcome/notifications | Native P6 first directions, pending/ordinal, flips, cross-reporter/concurrent resolve/submit race/rollback; P6 actual Worker HTTP upheld→overturned→overturned, repeat reporter и все3 recipients | A. B связать route commands, History и participant inbox на одном Case; не переписывать policy reducer или повторять все гонки. |
+| Queue/Appeals/History pagination/count | Native open Queue >25 и empty totals, reports/notes >50; route strict parsers/normalized URLs; P5 real58-event Next; P6 native probes28 Appeals и60 notifications | A для проверенного поведения; B для durable CI native Appeals/History list totals и timeline/notification pages в интегрированном fixture. Сейчас group2/History route mocks не доказывают SQL counts. |
+| EN/RU/HE, source lang/dir, negative/error states | P4/P5/P6 rendered/route coverage; P6 corrected target metadata actual Worker SSR EN/RU/HE;30 classified-form combinations +2 retries, seven fingerprints | A. Переиспользовать существующие render/feedback tests; B только убедиться, что новые integrated DTO/links проходят те же protected routes/locale presentation. Новый full visual matrix не нужен. |
+| Изоляция Signals/Security/Admin | Existing distinct capabilities/routes/producer tests, P1–6 review и shared canonical handler | A по архитектурной границе; B точечные before/after assertions по fixture targets в связанном lifecycle, без инвентаризации чужих подсистем или новых функций. |
+| Постоянные документы/PROJECT_STATE | COMPLAINTS.md и PROJECT_STATE отражают Packages1–6/0055; P6 DOC corrections приняты | C: устаревший defer в AUTHORIZATION.md:103. B: merge-stable Package7 closeout после фактических проверок. |
+| Repository CI и независимый цикл | P6 exact-head CI41571491052 SUCCESS; independent PASS и merge подтверждены | A как baseline evidence; B новый CI/checks на exact head Package7 и coordinator→independent review его delta + всего closeout scope. P6 CI нельзя назвать CI нового PR. |
+
+Существующие тесты вызываются штатными application/database suites; при изменении связанного кода повторяется соответствующая группа. Само наличие старого PASS не освобождает от checks нового PR, но не требует писать дубликаты native tests.
+
+### 3. Подтверждённый documentation delta
+
+**P7-DOC-01:** docs/auth/AUTHORIZATION.md:98–103 всё ещё описывает participant first-appeal и заканчивается «appeals, notifications and History UI remain deferred». Это противоречит merged Packages5–6, действующим routes и COMPLAINTS.md. Дефект подтверждён чтением exact main, не предположением о будущем поведении.
+
+Локальный fix после assignment: заменить только устаревший status/связанные capability формулировки актуальной краткой матрицей: review→Queue/History/Case/notes/initial Decision; appeal.review→Appeals reviewer/context/evidence/resolve независимо от review; participant result/submission→actual membership/current eligibility, без требования review/create; identity additive. Детальную domain policy не дублировать — ссылка на COMPLAINTS.md.
+
+Это не пересмотр принятой authorization модели и не основание менять grants/permissions/schema. Разработчик уведомлён о расхождении. Весь auth документ вне Complaints не переписывать.
+
+PROJECT_STATE: после фактической acceptance убрать только ограничение «Package7 пока не реализован», зафиксировать завершённый repository/local-CI lifecycle и оставшийся внешний маршрут. Не писать PR/head/CI/review snapshots и не объявлять production или общий UI/UX product pass завершёнными.
+
+Завершённую integration evidence и значимые результаты сохранить компактно в docs/PROJECT_HISTORY/ по действующему формату с записью в docs/PROJECT_HISTORY/PROJECT_HISTORY.md. Постоянные contracts остаются в профильных docs. Не создавать историю заранее как состоявшийся PASS. docs/UI_UX_PASS.md содержит хронологический scaffold контекст: не превращать это в полный аудит/переписывание UI/UX плана; при необходимости достаточно точной ссылки на текущий COMPLAINTS contract, не нового scope.
+
+### 4. B1 — один connected lifecycle regression
+
+Рекомендуемый дом для добавления — небольшой отдельный describe в существующем native complaints-foundation.test.ts с его fixture helpers/локальной schema, либо один tests/database/complaints-integration.test.ts, если повторное использование возможно без общего framework/refactor. Выбрать один вариант, не поддерживать параллельные suites с одинаковой цепочкой.
+
+Использовать реальные route action/loaders, ComplaintsService/repository, PermissionResolver и disposable PostgreSQL17 через existing adapters. Capability с fake success/empty data не доказывает интеграцию. Session в route integration может быть trusted fixture; настоящую Better Auth→Worker wiring проверить ограниченным HTTP smoke ниже, не подменять её fixture session evidence.
+
+Для основной цепочки использовать один связанный test с короткими phase helpers; дополнительные negative/count сценарии независимы и получают fresh fixture. Не создавать зависимые от порядка it-блоки или общий test framework:
+1. Создать тему с отдельными title/first-post revisions, небольшой retained attachment. Два reporters отправляют реальные bounded same-origin commands на post и получают только existing acknowledgement/nonce. Отдельный title report остаётся отдельным Case. Public response не расширять до Case ID; тест получает private Case ID из reviewer queue или fixture-only DB observation.
+2. На post Case проверить independent reports/grouping и Queue; manual override, private note и supplemental activity. Реальный edit меняет current source/refs, reported immutable source+retained asset остаются. Отправка на новую revision создаёт linked Case, пока прежний open; старый не изменяется. Логика predecessor already tested для обоих kinds, здесь достаточно одного connected proof.
+3. Сохранить reviewed version, внести допустимое изменение через existing command; stale Decision409 без result/fanout. Явно reread/acknowledge current version, затем один initial Decision. Старый Case исчезает из open Queue и появляется в History, successor остаётся самостоятельным; initial result/notifications принадлежат старому Case. Existing UI version-conflict test переиспользовать, не менять version semantics.
+4. Подключить participant result/Appeal POST и appeal-only reviewer routes. Для initial confirmed: author Appeal1→overturned→reporter Appeal2→upheld→тот же reporter Appeal3→overturned. Проверить current outcome/eligible side, pending rejection, used/remaining, fourth rejection, immutable initial Decision/arguments/results. Оба initial directions уже доказаны existing matrix; второй полный сквозной сценарий не обязателен.
+5. После initial Decision и каждого actual Appeal result проверить всех affected author + actual reporters, dedup recipients, same nonce replay без новых events/notifications/slot и read_at reset. Другой reporter, не являющийся appellant, тоже получает result. Участник successor не становится участником старого Case автоматически.
+6. History timeline содержит реальные submitted/priority-changed/noted/review-started/decided/appealed/appeal-resolved нужного Case. Inbox open ведёт на participant result; старое Appeal notification после следующих results ведёт на свой immutable anchor. Outsider/nonparticipant404; reporter без review403 на private History; private notes/чужие arguments/reporter identities в participant DTO отсутствуют.
+7. До/после complaint-only transitions сохранить относящиеся к fixture content/admin/Help/Security facts: отсутствует implicit pin/solution/visibility/sanction/Admin producer. Проверять существующие реальные поля/tables, не создавать fake санкции или будущие объекты.
+
+Работать ниже default квот на свежих actors. Если pagination fixtures требуют массового seed, отделить этот controlled bulk fixture от anti-abuse acceptance; production limits не менять ради теста.
+
+### 5. B2 — permissions/privacy и retained resource bridge
+
+Добавить короткую native/route integration матрицу только для недостающих crossings, преимущественно переиспользуя fixture B1:
+
+- Fresh request contexts на каждый шаг; actual role grant → allow/deny/inherit → следующий request. Не называть смену DB grants внутри старого request доказательством freshness.
+- Один review-only actor, один appeal-only, identity-only, priority-only, ordinary participant, outsider. Нужная capability проходит, смежные отсутствующие capabilities не наследуются. Initial role names не authority.
+- Особое недостающее покрытие: readAppealCaseForReviewer (не старый foundation readAppealCase), его reports/appellant DTO и context/evidence. При identity grant structured id/name появляются только authorized reviewer; следующий revoke убирает их из DTO/serialized loader/resource. Identity-only остаётся403; email/operation fingerprint/object keys не выходят в client responses.
+- Participant submission/result работают по membership/current side без complaint.create/review. Deny review не лишает actual participant собственного result, deny create не должен становиться новым запретом Appeal.
+- Retained attachment после detach/edit всё ещё читается через protected Case и Appeal membership. Свой asset → download-only response; чужие asset/post/Appeal↔Case substitutions →404 **до bucket fetch**. Для route bytes допустим deterministic in-memory bucket fixture при реальной DB membership; такой тест не объявлять реальным R2 acceptance.
+- Проверить private,no-store и classified401/403/404/409/503 на затронутых document/data/resource/action boundaries. Existing body/duplicate/origin/Unicode matrices и P6 feedback EN/RU/HE не дублировать.
+
+Existing authorization snapshot tests уже проверяют postgres/hyperdrive internally consistent read. Если подключение нового DTO требует дополнительной assertion, добавить её к существующему test helper, не менять resolver API/cache model.
+
+### 6. B3 — minimal pagination и domain separation regressions
+
+**Pagination.** Reuse open Queue >25 test. Добавить/закрепить в native CI:
+- pending Appeals: >25 →25+остаток, независимый total, unique IDs, preference чужого initial reviewer перед own, затем createdAt/id; после resolve selected запись исчезает;
+- resolved History list: >25 actual resolved Cases →25+остаток, independent total; отсутствие open Cases; page beyond end сохраняет total;
+- на одном Case >50 actual lifecycle events →50+остаток, independent total; old report/notes/event pages не меняют чужие totals;
+- общий mixed inbox >50 →50+остаток, unread/count всех kinds; legacy read/count/mark остаются только reply/mention, owner read idempotent.
+
+Не создавать отдельные bulk fixtures для каждой строки, если одна последовательная pending→resolved collection покрывает Appeals и History; использовать baseline deltas вместо предположения, что shared schema пуста. Точные page sizes25/50 и max page10000 уже приняты. Cross-request reorder при изменении pending/priority/read state допустим; тест стабильного обхода выполняется без конкурентных изменений.
+
+Обычные strict/normalized query tests уже есть. Добавить максимум один real normalized-loader navigation bridge к этим paged PostgreSQL данным при найденном gap, не новый parser. Прежний P5 real58-event/Next и P6 HTTP .data evidence сохраняются, но mock route totals не выдавать за native SQL proof.
+
+**Quick action separation.** В connected fixture один canonical topicAction с inlineQuickAction:
+- actor с complaint.review без forum.topic.pin →403 и content/admin facts без изменения;
+- отдельный pin grant → реальный pin и ровно один canonical Admin History event;
+- Complaint counters/Decision/effective outcome не меняются из-за pin; subsequent Decision/Appeal не создаёт дополнительный Admin event.
+Переиспользовать existing AP05 handler/adapter из forum-admin-history.test.ts и descriptors test; не добавлять complaint-specific mutation или копию Admin backend. Остальные AP05 operations покрываются своими existing suites, весь Admin panel заново не проверять.
+
+### 7. Минимальный runtime/локализация маршрут
+
+Одного bounded HTTP smoke на exact Package7 build достаточно для связности Framework→session→authorization→PG:
+- local Better Auth session, submit через реальный topic complaints POST;
+- reviewer Queue→Case/Decision→participant notification/result→Appeal→appeal-only review→result notification/open;
+- один successor/edit retained evidence check и normalized positive pagination/resource GET; foreign resource denied;
+- EN/RU/HE на ключевых reviewer/participant surfaces, source lang/dir из registry, unknown/und auto fallback. Реальные HTTP data/SSR/private headers отдельно от rendered interaction tests.
+
+Переиспользовать existing smoke/local adapter conventions; не запускать внешний OAuth/provider, deploy, production migrations/R2 или management credentials. Если добавляется небольшой script, он получает только loopback *_test DB и local URL, изолирует свои fixture data/ephemeral accounts, корректно закрывает clients/preview; в логи не попадают session tokens, passwords или bucket keys. Не коммитить личные локальные scripts/evidence paths как переносимую среду.
+
+**Browser по умолчанию не нужен:** native DB доказывает transactions, HTTP — Worker/session/routes, existing rendered React Router — forms/nonce/revalidation/error feedback. Layout/hydration/focus/реальную видимость нельзя объявлять проверенными этими средствами. Если возникнет конкретный такой симптом или путь, который ими не воспроизводится надёжно, Лира фиксирует точную техническую причину/минимальный browser scenario Мире в #254 и сохраняет действующие прямые ограничения разработчика. Не превращать отсутствие нового browser/owner visual run в автоматический blocker и не заявлять visual acceptance.
+
+### 8. Anti-abuse: важное ограничение трактовки
+
+Фраза scope «корректная жалоба на другой target» применяется **внутри свободного общего user budget** и к отсутствию ошибочного lifetime-duplicate переноса между targets/revisions. Утверждённые10/10min и50/24h глобальны для authenticated actor: после исчерпания новый другой target тоже429. Это уже реализовано/доказано; Package7 не меняет quota на per-target и не предоставляет обход через новую revision. Exact replay/lifetime duplicate не тратит новый бюджет и не блокирует другую допустимую новую жалобу при наличии остатка.
+
+### 9. Предполагаемый file delta и ход работы Лиры
+
+После принятия плана Мирой:
+1. В отдельном bounded PR из актуального main составить короткий mapping invariant→existing test/evidence→new assertion. Сначала сверить main delta; если tree изменился, не переносить старый PASS на изменённую границу.
+2. Добавить B1/B2/B3 в существующие relevant native/route tests или один узкий integration file; reuse helpers, без unrelated refactor. Возможный небольшой local HTTP smoke только если существующий путь не даёт воспроизводимого wire-level proof.
+3. Исправить P7-DOC-01; после фактической acceptance обновить COMPLAINTS.md/PROJECT_STATE и компактный project-history record по их назначениям. Нет причины менять accepted migrations/runtime ACL/dependencies.
+4. Если проверка выявила реальный code defect: воспроизвести весь trigger→command/read→SQL→observed response, сверить штатный путь, записать expected/actual и scope в #254. Исправлять локально с regression; существенный пересмотр схемы/permissions/public contract передать Лёве. Не «улучшать» прошедшую функцию по гипотезе.
+5. Выполнить applicable repository CI/checks на stable head: accepted migration guards, lint/typecheck, application+database, build/UI-preview build, metadata/schema manifest/runtime privilege checks, Worker/Hyperdrive smoke. Новые native tests попадают в штатную database suite; новый bespoke CI pipeline не нужен.
+6. Опубликовать в #254 exact head, checks/evidence и закрытие пунктов карты; затем Мира whole-PR review, после PASS Лёва independent technical review того же stable head.
+
+### 10. Критерии готовности и handoff
+
+Package7 готов к closeout, когда:
+- каждый пункт coordinator scope имеет проверяемую A/B/C disposition, B gaps закрыты repeatable tests/runtime evidence, C defect исправлен;
+- submission→Case/Decision→Appeal→History/inbox связан реальными persisted IDs и permission boundaries; original source/Decision/history сохраняются через edit/successor;
+- scopes/quota/privacy/retention/domain separation не ослаблены;
+- новый stable exact head имеет applicable green checks, source docs merge-stable; история verification отделена от PROJECT_STATE;
+- coordinator и independent cycles завершены без confirmed current-scope defects.
+
+Это завершение **Complaints в repository/local-CI path**. Оно не завершает Stage6/production, весь Admin panel или UI/UX product acceptance.
+
+**Сейчас:** technical plan подготовлен, application/schema/tests не менялись, implementation PR Package7 отсутствует. **Следующий шаг Миры:** проверить соответствие bounded scope, принять план и назначить Лире minimal tests/docs integration package с указанными criteria. Лёва не реализует без технической эскалации.
