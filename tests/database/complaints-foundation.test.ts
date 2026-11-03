@@ -415,6 +415,45 @@ describe("complaints domain foundation / real PostgreSQL", () => {
       expect(events.rows.filter(x=>x.kind==="appeal-resolved")).toHaveLength(1);
     }finally{a.release();b.release();}
   });
+  it("serializes a new Appeal submission racing with resolution of the pending Appeal",async()=>{
+    const source=await content();
+    const first=await service().submit("reporter-one",report(source.post));
+    await service().submit("reporter-two",report(source.post));
+    const decisionId=await service().decide("reviewer",{
+      caseId:first.caseId,operationId:randomUUID(),expectedVersion:2,
+      outcome:"not-confirmed",reasoning:"Initial rejected report"
+    });
+    const firstAppeal=await service().appeal("reporter-one",{
+      caseId:first.caseId,decisionId,operationId:randomUUID(),argument:"First pending Appeal"
+    });
+    const a=await pool.connect(),b=await pool.connect();
+    try{
+      const attempts=await Promise.allSettled([
+        service(a as never).resolveAppeal("appeal-reviewer",{
+          caseId:first.caseId,appealId:firstAppeal,operationId:randomUUID(),
+          outcome:"upheld",reasoning:"Preserve reporter eligibility"
+        }),
+        service(b as never).appeal("reporter-two",{
+          caseId:first.caseId,decisionId,operationId:randomUUID(),
+          argument:"Next reporter Appeal"
+        })
+      ]);
+      expect(attempts[0].status).toBe("fulfilled");
+      if(attempts[1].status==="rejected")
+        expect(attempts[1].reason).toBeInstanceOf(ComplaintConflictError);
+      const rows=await client.query<{ordinal:number;status:string}>(`
+        select ordinal,status from forum_complaint_appeals
+        where decision_id=$1 order by ordinal`,[decisionId]);
+      expect(rows.rows[0]).toMatchObject({ordinal:1,status:"resolved"});
+      expect(rows.rows.length).toBe(attempts[1].status==="fulfilled"?2:1);
+      if(rows.rows.length===2)expect(rows.rows[1]).toMatchObject({ordinal:2,status:"pending"});
+      const notifications=await client.query<{recipient_user_id:string}>(`
+        select recipient_user_id from forum_reply_notifications
+        where complaint_appeal_id=$1 order by recipient_user_id`,[firstAppeal]);
+      expect(notifications.rows.map(row=>row.recipient_user_id))
+        .toEqual(["content-author","reporter-one","reporter-two"]);
+    }finally{a.release();b.release();}
+  });
   it("rolls back Appeal resolution and lifecycle event when notification fanout fails",async()=>{
     const c=await decision("not-confirmed");
     const appealId=await service().appeal("reporter-one",{
