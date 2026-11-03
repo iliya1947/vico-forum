@@ -24,6 +24,8 @@ const client=new Client({connectionString});
 const vars=resolve(".dev.vars");
 const previewLog=resolve(".vico-p7-preview.log");
 let worker:ReturnType<typeof spawn>|undefined;
+let ownedVars=false;
+let openedPreviewLog=false;
 
 function expectStatus(response:Response,status:number,path:string){
   assert.equal(response.status,status,"Unexpected HTTP status for "+path);
@@ -88,7 +90,9 @@ async function run(){
     "GOOGLE_CLIENT_SECRET=local-test-unused",
     ""
   ].join("\n"),{mode:0o600,flag:"wx"});
+  ownedVars=true;
   const fd=openSync(previewLog,"w",0o600);
+  openedPreviewLog=true;
   worker=spawn("pnpm",["exec","vite","preview","--host","127.0.0.1",
     "--port","4181","--strictPort"],{stdio:["ignore",fd,fd],detached:true,env:process.env});
   closeSync(fd);
@@ -231,6 +235,6 @@ try{
     try{process.kill(-worker.pid,"SIGTERM");}catch{ /* Preview may already have exited. */ }
   }
   await client.end().catch(()=>{});
-  await rm(vars,{force:true});
-  await rm(previewLog,{force:true});
+  if(ownedVars)await rm(vars,{force:true});
+  if(openedPreviewLog)await rm(previewLog,{force:true});
 }
