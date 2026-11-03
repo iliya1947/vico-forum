@@ -193,6 +193,10 @@ async function run(){
     "select status,outcome from forum_complaint_appeals where id=$1",[appeal[0]!.id])).rows[0];
   assert.deepEqual(resolved,{status:"resolved",outcome:"overturned"});
   const timeline="/en/attention/complaints/"+caseId+"/history?page=0";
+  response=await http(timeline,{},reviewer.cookie);expectStatus(response,403,timeline);
+  // Regrant the Case-review capability; a fresh HTTP request must observe it.
+  await client.query("update authz_user_permission_overrides set effect='allow' "+
+    "where user_id=$1 and permission_key='forum.complaint.review'",[reviewer.id]);
   response=await http(timeline,{},reviewer.cookie);expectStatus(response,200,timeline);
   response=await http(timeline,{},reporter.cookie);expectStatus(response,403,timeline);
   const inbox="/en/notifications?page=0";
