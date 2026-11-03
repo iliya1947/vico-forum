@@ -96,3 +96,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Author source inspection covered reducer, Appeal policy/read, participant submit/result, appeal-only Attention admission, reviewer route, notification fanout, migration and documentation; examined relevant route/policy test names. No confirmed defect identified in inspected paths. This is not an independent whole-PR review or proof of every test case.
 - Browser/Chromium→built Worker→PostgreSQL interactive acceptance **not performed**: developer prohibited browser use by Лира. Owner visual acceptance not requested. No production/deploy/merge. No implementation changes after CI head.
 - **Author handoff complete**. Мира is next for coordinator whole-PR review of exact head; after coordinator PASS, Лёва independent technical review. No Codex review before coordinator PASS.
+
+## Package 6 — coordinator FAIL correction in progress
+
+- Мира FAIL на prior head `9034409524fd0e9df85102680f68ded759705132`; назначены P6-RTL-01, P6-VERIFY-01, P6-VERIFY-02 в [#6591717263](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6591717263).
+- P6-RTL-01: changes committed in PR #279 to registry-based locale direction for Appeals group2, review source/current/context and expanded context language. Latest commit `9e725fe1d462761d8098686a8003d7a4a2ee8cda`; verification still pending. No PASS claimed.
+- Native PG Appeal concurrency/rollback and populated 0054→0055 upgrade regressions remain pending. No browser/deploy actions, independent reviewer not started.
