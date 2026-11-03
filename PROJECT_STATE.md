@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-02
+Последнее обновление: 2026-11-03
 
 ## Назначение
 
@@ -101,7 +101,7 @@ Stage 5 завершён в repository/local-CI path.
 
 ### Complaints
 
-По `docs/moderation/COMPLAINTS.md` реализованы Packages 1–6 в repository/local-CI path:
+По `docs/moderation/COMPLAINTS.md` реализована функциональность Complaints Packages 1–6 в repository/local-CI path:
 
 - domain/evidence foundation;
 - пользовательская submission с immutable revision evidence, grouping и rate limits;
@@ -109,6 +109,8 @@ Stage 5 завершён в repository/local-CI path.
 - protected full Case review с постраничными reports, notes, retained evidence и context; initial Decision и shared Admin Quick actions.
 
 Package 5 добавляет resolved History и приватную timeline событий, `review-started`, result notifications в общий inbox и member-only result. Package 6 добавляет participant Appeal flow, effective-outcome policy, Appeals review queue и уведомления о результатах Appeal. Подтверждение административных мер требует фактической связи Case→action.
+
+Package 7 добавляет integration/closeout coverage без новых domain capabilities: connected submission→Case→Decision→Appeal→History/inbox, immutable evidence, permission/identity/resource boundaries, pagination и независимость Admin Quick actions. В repository/local-CI path это проверяется на PostgreSQL 17 и через локальный Worker с настоящими Better Auth sessions и HTTP; real R2, browser и production acceptance из этого не следуют.
 
 ## CI и migration state
 
@@ -121,7 +123,7 @@ Package 5 добавляет resolved History и приватную timeline с�
 - clean PostgreSQL 17 migration/integration suite;
 - full-schema manifest parity;
 - runtime privilege/provisioning boundaries;
-- Workers build и local Hyperdrive smoke.
+- Workers build и local Hyperdrive smoke, включая authenticated Complaints HTTP flow в disposable test database.
 
 Accepted migrations в `main` не переписываются; correction выполняется новой forward migration.
 
@@ -159,7 +161,7 @@ External topology является mutable state и должна перепро�
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
 - Admin Panel имеет реализованные AP-01–06, но последующие object/action packages ещё не завершены.
-- Complaints Packages 1–6 реализованы в repository/local-CI path; Package 7 пока не реализован.
+- Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
 - Stage 6 external integration остаётся paused.
