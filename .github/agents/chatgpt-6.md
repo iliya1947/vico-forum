@@ -153,3 +153,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - P6-VERIFY-01: real PostgreSQL concurrent submissions, concurrent resolutions, submit-versus-resolve race and transactional rollback injection of notification failure; CI accepted.
 - P6-VERIFY-02: disposable PostgreSQL schema migrated through 0054, populated preexisting pending/resolved Appeals and read Decision notification, applied 0055 and re-ran backfill for recipient dedup, timestamps, pending exclusion, and read-state preservation; CI accepted.
 - Correction implementation complete. Coordinator repeat whole-PR review not performed by author. Chromium→Worker→PostgreSQL interactive acceptance remains unperformed under developer's browser restriction; not a separate current-scope blocker in previous coordinator review. Do not deploy/merge or start independent technical review until coordinator PASS.
+
+## Package 6 — final P6-VERIFY-01 test-only correction
+
+- Repeat coordinator review of #279 head `0d6bdbb465148875e02663c4c27c56e099a415e4` returned one remaining blocker: concurrent Appeal submission test previously used a single actor, so actor mutex rather than Case mutex could serialize commands. Coordinator comment #6592959445.
+- Updated existing native PostgreSQL test in implementation PR #279 to submit concurrently from real `reporter-one` and `reporter-two` in the same Case/Decision using separate pool connections. Explicitly assert one accepted Appeal, one `ComplaintConflictError`, exactly one ordinal-1 pending slot and one `appealed` event; preserve competing resolve check and fanout expectations for all reporters.
+- Implementation commit `c38b036b2ecb080735e6eaf4fcca5416a7aebc62` (test-only). Exact-head CI not yet confirmed. Do not claim correction PASS or coordinator handoff until CI success.
