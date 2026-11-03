@@ -11,13 +11,15 @@
 - Package 3 сохраняет Queue/triage, configurable reason priorities, manual override и non-exclusive expiring reviewer activity.
 - Packages 4–5 merged; shared Admin Quick actions и complaint Decisions остаются отдельными доменами.
 - Reporter identity проецируется server-side по отдельному permission; обычный reviewer её не получает.
-- Packages 1–5 merged; текущий bounded scope — технический план Package 6 (Appeals), без реализации.
+- Packages 1–5 merged; Package 6 реализован Лирой в #279 и прошёл независимую техническую проверку Лёвы с двумя findings.
 
 ## Текущий этап
 
-Технический план Package 6 подготовлен против main `284bee3f5f0899cce1dc751cf4e9ef169739a120` по назначению Миры #6589373781. Полный план ниже в разделе «Технический план Package 6 — Appeals». Следующий шаг — Мира проверяет соответствие scope и назначает Лире отдельную реализацию. Implementation PR отсутствует; application/schema/production не менялись.
+Independent technical whole-PR review Package 6 / PR #279 завершён на exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`: **CHANGES REQUIRED, 2 подтверждённых P3 findings** — P6-UI-01 (target kind/current topic title потеряны в Appeal presentation), P6-UI-02 (typed failures отображаются как invalid reason/explanation). [Полный результат и handoff Мире](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593499774).
 
-Package 5 завершён: PR #277 merged в указанный main после coordinator и independent technical PASS. Результаты предыдущих этапов ниже сохраняются как история.
+Реализацию не менял. Локально115 application tests,73 native PostgreSQL tests, build, actual Worker/PG HTTP и дополнительные queue/inbox/concurrent-reviewer probes прошли. Browser/owner visual acceptance не заявляются. Следующий шаг — Мира оценивает единый findings package и назначает Лире bounded corrections; затем новый coordinator cycle.
+
+Package 5 merged; старые планы/результаты ниже — история.
 
 
 ## Технический план Package 4 — Case review, notes, initial Decision
@@ -562,3 +564,46 @@ Actual local Worker + PostgreSQL + Chromium:
 ### 12. Handoff
 
 Product policy уже принята, новых owner questions для старта нет. Техплан подготовлен; следующий шаг Миры — проверить bounded scope и дать Лире отдельное implementation assignment с этим планом. Лира пока не назначена, implementation PR отсутствует. Лёва не реализует пакет без технической эскалации.
+
+
+## Package 6 independent technical review — 2026-11-03
+
+Назначение: [#6593187042](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6593187042). Проверен весь current Package 6 scope на stable exact head **`c38b036b2ecb080735e6eaf4fcca5416a7aebc62`**, base/current main **`284bee3f5f0899cce1dc751cf4e9ef169739a120`**. Head повторно проверен после verification, не изменился. Implementation не менял.
+
+**Вердикт: CHANGES REQUIRED — 2 подтверждённых current-scope findings, оба P3.** Domain/schema/concurrency defects не подтверждены.
+
+### P6-UI-01 — reviewer теряет target identity/context, уже доступные в P4
+
+[appeal-review-view.tsx:62–64](https://github.com/iliya1947/vico-forum/blob/c38b036b2ecb080735e6eaf4fcca5416a7aebc62/app/complaints/appeal-review-view.tsx#L62), [group2 rows views.tsx:1558](https://github.com/iliya1947/vico-forum/blob/c38b036b2ecb080735e6eaf4fcca5416a7aebc62/app/forum/views.tsx#L1558).
+
+Reviewer DTO уже содержит `caseReview.kind` и `currentTopicTitle`, queue DTO — `kind`. Новая presentation их не выводит: evidence сразу начинается с reported/current source. Ни тип цели Message/Topic title, ни current topic title в Appeal review не видны; group2 также не показывает kind.
+
+**Подтверждение через built Worker → PostgreSQL → SSR DOM text:** открыты реальные post и topic-title Appeals, оба200. В visible text нет соответствующего target label и Current topic title. Для post Case текущий заголовок `Topic279` вообще отсутствует в видимом review, хотя присутствует в DTO. Control: обычный P4 review того же Case показывает правильный тип и заголовок. Это потеря уже существующего контекста при переходе на Appeal surface: одинаковые/похожие title и first-post source нельзя однозначно отнести к обжалуемой цели, reviewer не видит заголовка окружающей темы. Appeal-only reviewer не может компенсировать это переходом в P4: ему403, что само по себе правильно.
+
+**Локальное исправление:** показать existing localized target kind в group2 и Appeal review; в review — existing currentTopicTitle с source lang/direction по P4 contract. Использовать готовые DTO/labels/read boundary, без новой схемы или расширения прав. Regression: post и topic-title presentation различаются; current topic title виден при body Case; EN/RU/HE/source direction.
+
+### P6-UI-02 — typed unavailable/forbidden/notFound отображаются как неверный reason/explanation
+
+[appeal-review-view.tsx:105](https://github.com/iliya1947/vico-forum/blob/c38b036b2ecb080735e6eaf4fcca5416a7aebc62/app/complaints/appeal-review-view.tsx#L105), [complaint-result.tsx:76](https://github.com/iliya1947/vico-forum/blob/c38b036b2ecb080735e6eaf4fcca5416a7aebc62/app/routes/complaint-result.tsx#L76).
+
+Обе формы выбирают только conflict либо complaintError_invalid для **любого** другого server error. complaintCommandFailure корректно различает unavailable503, forbidden403, notFound404 и invalid400, но presentation уничтожает это различие.
+
+**Rendered React Router/jsdom diagnostic через реальные route actions:** injected typed ComplaintStorageUnavailableError → response `{error:"unavailable"}`, status503 → обе формы показывают **“Check the reason and explanation.”** при валидных Appeal argument/public reasoning. Draft сохраняется. Таким образом временный отказ хранилища выдаётся за ошибку пользовательского ввода, пользователь получает неверный следующий шаг; аналогичная ветка обслуживает отказ permission и отсутствие цели. Conflict тоже использует complaint-submission текст про report/topic, а не Appeal target.
+
+**Локальное исправление:** сохранить классификацию server errors в localized Appeal feedback (unavailable/retry, forbidden, notFound, invalid argument/reasoning, stale/pending conflict), сохранить draft/nonce/target и existing HTTP statuses. Не менять repository или availability classification. Tests должны submit реальные rendered формы и проверять response code/error → видимый текст, а не только shouldRevalidate=true.
+
+### Whole-scope verification и прошедшие границы
+
+- Независимо проверен exact-head CI [#41559889094](https://github.com/iliya1947/vico-forum/actions/runs/41559889094), attempt1 SUCCESS; jobs checks/database и все их шаги PASS.
+- Локально **115/115 application/route tests (9 files)**, **73/73 native PostgreSQL17 tests**, production client/Worker build и diff whitespace PASS.
+- Native suite реально исполнила populated0054→0055 pending/resolved upgrade, backfill recipients/timestamps/read-state/dedup, cross-reporter submission race, resolve/submit race, result+event+fanout rollback; previous coordinator correction gaps не остались открытыми.
+- Дополнительные independent native probes: **28 pending Appeals** →25+3 rows, independent total28 и empty page10000/total28; bounded500 excerpts, оба kinds и reviewer preference order; **два разных reviewer actors на разных connections** →один result/event; **60 mixed system notifications** →50+10, legacy read/count/mark exclusion и idempotent read_at.
+- **Actual built Worker + Better Auth session + PermissionResolver + PostgreSQL HTTP**, без browser: цепочка upheld→overturned→overturned, повтор того же reporter после upheld, смена eligible side, общий three-slot limit, initial Decision immutable; exact submit/resolve retries и pending409; по3 actual recipients на каждый result; old notification302 к своему result#appeal-ID; чужое open404.
+- HTTP подтвердил independent appeal-only review/context, P4 review403, participant/outsider boundaries, foreign context/evidence404 до bucket, normalized .data/_routes paging200, private/no-store, participant EN/RU/HE200, отсутствие чужих arguments/notes/structured reporter identities.
+- По коду проверены bounded policy/replay/lock order, forward migration/schema/manifest, consistent permission snapshots, resource membership, common inbox/legacy split, registry RTL projection и сохранение Admin/Signals/Security границ. Других подтверждённых current-scope findings не найдено.
+
+**Границы evidence:** браузер/Chromium и owner visual acceptance не выполнялись и не заявляются; restriction/coordinator classification сохранены. UI failure diagnostic — React Router/jsdom, target metadata — actual Worker SSR visible text, а не визуальная browser acceptance. Полные локальные CI suites повторно не запускались: full applicable checks подтверждены exact-head GitHub CI. Новые тесты/diagnostics только вне implementation checkout.
+
+Evidence: `/workspace/work/review279-evidence/` (application/database/build/http/native-extra/ui-errors/target-metadata logs и reproduction scripts). Checkout чист, temporary preview/PG/dependency symlinks/local auth vars убраны.
+
+**Handoff Мире:** проверить этот единый bounded package P6-UI-01/02 и назначить Лире corrections в #279; затем новый coordinator whole-PR cycle на новом stable exact head и после PASS новая independent technical проверка. Package7+, merge/production не выполнялись.
