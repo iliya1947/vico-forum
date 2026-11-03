@@ -4,127 +4,42 @@
 
 ## Актуальное состояние
 
-- Packages 1–6 merged в `main`; current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Package 6 PR #279 merged successfully; reviewed implementation head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`, merge commit/main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Package 7: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, stable head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`. P7-DOC-01 author-corrected; **B1/B2/B3 native regression + local authenticated Worker HTTP smoke PASS**. Merge-stable `COMPLAINTS.md`, `PROJECT_STATE.md` и `PROJECT_HISTORY_09.md`/index обновлены. Exact-head CI #41593385331 **SUCCESS** (checks/database, attempt 1). **Author handoff to Mira for coordinator whole-PR review on current exact head; coordinator PASS not yet issued.**
-- Exact-head CI #41571491052 attempt1 SUCCESS, checks/database; head/jobs/steps независимо проверены Лёвой.
-- Coordinator review Миры: PASS, 0 confirmed current-scope defects.
-- Independent technical whole-PR review Лёвы того же final exact head: **PASS, 0 confirmed current-scope defects**.
-- [Полный independent результат и handoff Мире #6594813068](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6594813068).
+- Packages1–6 merged в main; base/current main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
+- Package7: Draft PR #280, reviewed stable exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`.
+- Exact-head CI #41593385331 attempt1 SUCCESS (checks/database, включая authenticated Worker HTTP smoke), независимо проверен Лёвой.
+- Coordinator review Миры этого head: PASS.
+- Independent technical whole-PR review Лёвы: **CHANGES REQUIRED — один P3 P7-SMOKE-01**.
+- [Полный verdict и handoff Мире #6598371097](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598371097).
 
-## Утверждённый Package6 scope
+## Утверждённый Package7 scope
 
-1. Одна pending Appeal на initial Decision.
-2. Eligibility по current effective outcome: confirmed→author, not-confirmed→reporters; upheld сохраняет, overturned меняет текущий итог.
-3. Общий лимит3 Appeal на initial Decision; повтор того же eligible reporter разрешён.
-4. Каждый result атомарно уведомляет affected author и всех actual reporters через общий inbox с dedup.
-5. Initial Decision immutable, effective outcome выводится из resolved Appeals.
-6. Другой initial reviewer предпочтителен, hard deadlock не допускается.
+Integration/closeout существующих Packages1–6: targets/revisions/grouping/successors, immutable retained evidence, все Complaints permissions/privacy/overrides, global quotas/duplicate/replay, priority/non-exclusive expiring activity, shared Quick actions/domain separation, Appeal policy/notifications, bounded pagination/count, EN/RU/HE/source direction/error states, merge-stable docs и repository checks/review.
 
-## Закрытые findings и доказательства
+[Принятый technical plan](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6595305997) использует A existing evidence / B missing crossings / C confirmed defects. Новые features/schema/permissions, unrelated Admin/Signals/Security и production/external rollout не входят. Browser/real R2/owner visual acceptance не automatic gate и не заявляются.
 
-- P6-UI-01 CLOSED: target kind в group2/review и current topic title с registry lang/dir восстановлены; actual Worker SSR и rendered EN/RU/HE regressions прошли.
-- P6-UI-02 CLOSED: обе формы показывают отдельные localized invalid/conflict/forbidden/notFound/unavailable, сохраняя status/draft/nonce/target; rendered actions/errors/retry regressions прошли.
-- P6-DOC-01/02 CLOSED: PROJECT_STATE без transient PR/review snapshots, repository migration history0055 соответствует forward migration.
-- Previous P6-RTL/VERIFY findings остаются закрытыми.
-- Новый локальный pass:164 application/route/rendered tests, production build, actual Worker+session+PermissionResolver+PostgreSQL HTTP three-slot flow и corrected metadata EN/RU/HE — PASS.
-- DB/drizzle/workers tree hashes совпадают с прежним reviewed head c38b036. Previous native73 tests, populated upgrade/concurrency/rollback и дополнительные28-row queue/60-row inbox probes учитываются как unchanged-code evidence; повторно выполненными в final pass не заявляются.
-- Browser/Chromium и owner visual acceptance не выполнялись и не заявляются; developer restriction/coordinator classification сохранены. Full CI независимо подтверждён API; полный local CI повторно не запускался.
-- Implementation не менялся. Temporary preview/PG/container/symlink/auth vars убраны.
+## Подтверждённый correction package
 
-## Package 7 — verified integration evidence (author-side)
+**P7-SMOKE-01 / P3:** scripts/smoke-complaints-local.ts делает exclusive write .dev.vars с flag wx, но finally234 безусловно удаляет этот путь. При pre-existing файле отказ EEXIST заканчивается его удалением.
 
-- B1: `app/complaints/connected-lifecycle.dbtest.tsx` couples actual React Router actions/loaders, Complaints service and PostgreSQL17 Case/Decision/Appeal/History/inbox IDs, immutable evidence after edit, successor Case, three Appeals and notification replay.
-- B2: native PostgreSQL-backed role grants/overrides, reviewer DTO identity projection/revocation, independent Case/Appeal resource access and retained attachment membership with in-memory bucket; **not actual R2 acceptance**.
-- B3: native 25/50 page boundaries, independent totals for pending Appeals, resolved History, timeline and mixed inbox; canonical `topicAction` pin + exactly one Admin History event, no implicit sanction from Complaints.
-- Built local Worker with real Better Auth sign-up/session cookies, same-origin HTTP, PostgreSQL `*_test`, permission revoke/regrant across requests, protected resource responses, EN/RU/HE SSR and `und` source direction `auto`. Positive retained bytes require R2 and were not claimed; no browser/deployment.
-- Author-verified head `3cd46b6583a40db5e48f317d2c798584f9e8eded` CI #41591646928 **SUCCESS**. After docs-only closeout, current stable head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492` exact-head CI #41593385331 **SUCCESS attempt 1** (`checks` + `database`, local HTTP smoke PASS). No production code/schema/permission changes.
-- Source docs closeout: `docs/moderation/COMPLAINTS.md` describes actual integration and limits; `PROJECT_STATE.md` records repository/local-CI state without PR/CI/review history; `docs/PROJECT_HISTORY/PROJECT_HISTORY_09.md` archives the pre-review author/CI snapshot and index links it.
-- **Next:** final handoff to Мира in #254 for coordinator whole-PR review; only after her PASS independent technical review by Лёва. No Package 7 coordinator PASS yet.
+Независимый exact-head probe: valid CI=true + disposable loopback *_test PG/schema0055, pre-existing несекретный marker → exit1/EEXIST → preexisting_file_preserved=false. Normal run без collision затем PASS. Нужен cleanup только owned resources; сохранить existing config при EEXIST/early failure, не ослаблять guards или wx. Локальная correction+guard regression без изменения Complaints application/schema.
 
-## Package 7 — bounded coordinator scope
+## Принятые технической проверкой результаты
 
-Package 7 является **integration/closeout package**, а не новым feature package. Его задача — доказать целостность уже реализованных Packages 1–6 на current `main` и закрыть только реальные cross-package/current-scope дефекты, если они обнаружатся.
-
-### В scope
-
-1. End-to-end проверить разделение `topic-title` и first-post targets и корректную immutable revision identity.
-2. Проверить grouping/lifecycle Cases: разные reporters → отдельные Complaint в одном применимом open Case; новая revision или новый инцидент → отдельный связанный Case без изменения предыдущего.
-3. Проверить сохранность reported evidence при последующих изменениях контента и границы retained evidence.
-4. Проверить privacy и dynamic permissions всей цепочки Complaints: create, review, reporter identity, priority manage, appeal review; включая role grants, per-user allow/deny и negative states.
-5. Проверить complaint-specific anti-abuse, duplicate/replay boundaries и отсутствие влияния лимитов на корректную жалобу на другой target.
-6. Проверить priority lifecycle, manual override и reviewer presence как non-exclusive/expiring activity, а не assignment/lock.
-7. Проверить shared Admin Quick actions boundary и отсутствие неявных санкций из Complaint/Decision/Appeal.
-8. Проверить полный Appeal lifecycle: eligibility обеих сторон, один pending, общий лимит 3, effective outcome и participant notifications.
-9. Проверить bounded pagination/count и empty/out-of-range behavior для Queue, Appeals и History на интегрированном состоянии.
-10. Проверить применимые EN/RU/HE, source `lang/dir`, LTR/RTL и negative permission/error presentation на ключевых Complaints surfaces.
-11. Проверить, что Complaints не дублируют и не расширяют домены Signals, Security или Admin panel.
-12. Закрыть постоянную документацию и `PROJECT_STATE.md` только фактически подтверждённым merge-stable состоянием.
-13. Выполнить применимые repository CI/checks и стандартный coordinator → independent technical review cycle.
-
-### Правило реализации
-
-- Не добавлять функциональность ради самого Package 7.
-- Если current `main` уже удовлетворяет инварианту, использовать существующую evidence либо добавить только недостающую regression/integration verification.
-- Production/external rollout, новые административные возможности, новые типы жалоб, Signals/Security integration и Package 7+ отсутствуют.
-- Browser/visual acceptance не является автоматическим требованием: использовать только если конкретный integration path нельзя надёжно проверить существующими repository/local runtime средствами или разработчик отдельно запросит visual acceptance.
-- Новая schema/migration/permission/public contract допустима только если техническая проверка выявит реальный current-scope дефект, который нельзя исправить локальнее.
-
-### Готовность Package 7
-
-Package 7 готов, когда весь lifecycle Complaints от submission до Case/Decision/Appeal/History/notifications проходит как единая система, все перечисленные cross-package invariants подтверждены, документация отражает фактическое состояние, repository checks зелёные и после coordinator + independent review не остаётся confirmed current-scope defects.
-
-## Package7 — технический план подготовлен
-
-[Полный план Лёвы](https://github.com/iliya1947/vico-forum/blob/b07228406189154853ac521ceedbfeb79eb38b96/.github/agents/codex-6.1-sol.md#технический-план-package-7--integration-и-closeout); [handoff Мире #6595305997](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6595305997).
-
-- Main020cbafe… tree совпадает с accepted final P6 head5494fe92…; post-merge implementation delta отсутствует.
-- A/B/C карта отделяет уже доказанные native/route/runtime invariants от недостающих connected/CI crossings; базовый delta — минимальные tests/docs, без новых features/schema/permissions/dependencies.
-- B gaps: connected submission→Case/Decision→Appeal→History/inbox; P6 reviewer DTO/privacy + retained resources; integrated pagination и canonical Quick action/domain separation. Existing proofs не переписываются.
-- **P7-DOC-01 подтверждён:** docs/auth/AUTHORIZATION.md:103 сохраняет устаревшее deferred-утверждение про Appeals/notifications/History UI. Нужна локальная актуализация Complaints capability paragraph по действующему COMPLAINTS.md, без изменения grants/authorization policy.
-- Application/schema defect при planning не подтверждён. Новые checks/implementation не выполнялись; Package7 PR отсутствует.
-- Browser не автоматический gate; конкретная необходимость требует technical justification с сохранением прямых developer restrictions.
-- Техплан подготовлен для проверки Мирой; его принятие и assignment Лире ещё не заявлены.
-
-## Coordinator review техплана Package 7
-
-- План Лёвы соответствует bounded integration/closeout scope и не расширяет Package 7 в новую функциональность.
-- A/B/C decomposition принята: существующая evidence переиспользуется; новые проверки добавляются только для реально недостающих connected/native/runtime crossings.
-- Предлагаемый implementation delta допустим: minimal integration/regression tests + merge-stable docs; без новой schema/migration/permission/dependency по умолчанию.
-- **P7-DOC-01 независимо CONFIRMED:** current `docs/auth/AUTHORIZATION.md` всё ещё говорит, что Appeals, notifications и History UI deferred, что противоречит merged Packages 5–6 и current `COMPLAINTS.md`.
-- Application/schema defect на planning этапе независимо не подтверждён.
-- Browser/visual остаётся неавтоматическим gate; production/external rollout вне scope.
-- Coordinator verdict по плану: **ACCEPTED**.
-
-## Package 7 coordinator review — подзадача 2/3
-
-- Exact reviewed head: `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`.
-- `app/complaints/connected-lifecycle.dbtest.tsx` прочитан полностью: 4 native route/service/PostgreSQL integration tests закрывают connected B1 lifecycle, B2 permission/privacy/retained-resource crossings, B3 pagination/count и canonical Quick-action/Admin-History separation.
-- B1 подтверждает post/title separation, multi-reporter grouping, replay, stale Decision conflict, edit→successor linkage, immutable reported evidence, Decision fanout/read-state replay, three Appeal slots/effective outcome, History/inbox anchors и participant/privacy boundaries.
-- B2 подтверждает independent review/appeal/identity/priority authorities, custom role + allow/deny/inherit freshness на новых requests, identity projection grant/revoke, Case/Appeal resource membership, successful retained bytes через deterministic in-memory bucket, foreign substitutions 404 before bucket fetch, controlled no-bucket 503 и participant membership independent от create/review grants.
-- B3 подтверждает native 25/50 pagination и independent totals для Appeals/History/timeline/mixed inbox, legacy notification compatibility/read semantics, а также canonical topic pin permission/Admin History без Complaint-side implicit sanction.
-- `scripts/smoke-complaints-local.ts` прочитан полностью: actual built Worker + real Better Auth email session + disposable PostgreSQL HTTP path выполняет submission→Queue/Case→Decision→participant result→Appeal→appeal-only review→History/inbox, fresh permission deny/regrant, protected resource 403/404/503, RU participant SSR, HE RTL и `und→auto`.
-- CI database job #41593385331 действительно исполнил `connected-lifecycle.dbtest.tsx` 4/4; full database suite 464/464 PASS; отдельный local Worker HTTP smoke PASS.
-- Existing Packages 1–6 evidence остаётся достаточным для не повторяемых A-invariants; новые tests не подменяют browser/R2/production acceptance и этого не заявляют.
-- **Подтверждённых current-scope дефектов на подзадаче 2/3: 0.**
-
-## Package 7 coordinator whole-PR verdict
-
-- Reviewed implementation PR #280 stable exact head: `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Part 1/3: scope/diff/docs/CI — PASS; 9-file bounded delta, no production application/schema/migration/permission changes, exact-head CI #41593385331 SUCCESS.
-- Part 2/3: B1/B2/B3 + local Worker HTTP smoke — PASS; connected DB suite 4/4 and full database suite 464/464, Worker Better Auth Complaints smoke PASS.
-- Part 3/3: all coordinator scope points classified. Unchanged A-invariants remain covered by existing main regressions: target/revision/grouping, quotas+replay, automatic/manual priority, non-exclusive 90s activity, dynamic permissions/privacy, P6 Appeal policy/localization/error boundaries and domain isolation. B gaps are closed by Package 7 connected tests/smoke. C finding P7-DOC-01 is closed.
-- Browser/real R2/external/production acceptance are not claimed and are not current Package 7 blockers under the approved scope.
-- **Coordinator verdict: PASS — 0 confirmed current-scope defects.**
+- B1 connected route→service→PG lifecycle, target/grouping/replay/edit/successor/evidence/Decision/three-Appeal/History/inbox/private membership crossings — PASS.
+- B2 dynamic role/overrides, новый Appeal reviewer DTO identity grant/revoke, Case/Appeal retained context/evidence, foreign substitutions до bucket, download/private headers и in-memory bytes — PASS; реальным R2 не являются.
+- B3 native25/50 boundaries/independent totals и canonical pin/Admin History separation — PASS.
+- P7-DOC-01 CLOSED: stale AUTHORIZATION paragraph исправлен без изменения grants/policy; COMPLAINTS/PROJECT_STATE merge-stable, CI snapshots в indexed project history.
+- Existing unchanged A-invariants остаются покрыты accepted Packages1–6 evidence; новых domain defects не подтверждено.
+- Локально4/4 новых native tests, production build и unchanged actual local Worker Better Auth/PG HTTP smoke — PASS. Full CI независимо проверен API, локальный повтор full suites не заявлен.
+- Implementation не менялся; own preview/PG/container/symlink убраны. Evidence /workspace/work/review280-evidence/, configs/secrets для destructive probe не использовались — только marker.
 
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: **coordinator whole-PR review Package 7 завершён PASS, 0 current-scope defects**.
-- Лира — ChatGPT-6: implementation завершён; без нового назначения.
-- Лёва — Codex-6.1 Sol: **назначен independent technical whole-PR review PR #280 того же exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`**.
+- Мира — ChatGPT-5.6 Sol: проверить единый P7-SMOKE-01 finding и назначить Лире bounded correction.
+- Лира — ChatGPT-6: ожидает нового coordinator assignment.
+- Лёва — Codex-6.1 Sol: independent review завершён, implementation не меняет.
 - Марк — Codex-6 Sol: без назначения.
-- Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Coordinator review завершён PASS. Следующий шаг: Лёва проводит independent technical whole-PR review того же stable exact head. Implementation не менять до verdict.
+- После correction новый stable head/CI → coordinator whole-PR cycle → independent technical review того же head. Merge/production не выполнялись.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
