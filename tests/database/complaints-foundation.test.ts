@@ -712,7 +712,6 @@ async function quotaActor() {
   return id;
 }
 
-
 describe("production complaint submission windows", () => {
   it("allows ten new reports, rejects the eleventh, and accepts a duplicate without spending budget", async () => {
     const actor=await quotaActor();let first: Awaited<ReturnType<ComplaintsService["submit"]>> | undefined;
