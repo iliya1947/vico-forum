@@ -105,10 +105,12 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
       await upgrade.query(`insert into forum_complaint_targets
         (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
         values ('upgrade-target','post','upgrade-topic','upgrade-post','upgrade-revision','upgrade-author')`);
-      await upgrade.query(`insert into forum_complaint_cases(id,target_id,state,initial_decision_id,resolved_at)
-        values('upgrade-case','upgrade-target','resolved','upgrade-decision',now())`);
+      await upgrade.query(`insert into forum_complaint_cases(id,target_id)
+        values('upgrade-case','upgrade-target')`);
       await upgrade.query(`insert into forum_complaint_decisions(id,case_id,outcome,reviewer_user_id,reasoning)
         values('upgrade-decision','upgrade-case','not-confirmed','upgrade-reviewer','Initial result')`);
+      await upgrade.query(`update forum_complaint_cases set state='resolved',
+        initial_decision_id='upgrade-decision',resolved_at=now() where id='upgrade-case'`);
       await upgrade.query(`insert into forum_complaints(id,case_id,target_id,reporter_user_id,reason)
         values('upgrade-report-one','upgrade-case','upgrade-target','upgrade-reporter-one','spam'),
         ('upgrade-report-two','upgrade-case','upgrade-target','upgrade-reporter-two','spam')`);
