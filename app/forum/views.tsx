@@ -382,6 +382,7 @@ export function NotificationsView({
   const formatter = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "UTC",
   });
 
   return (
