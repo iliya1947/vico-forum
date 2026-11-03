@@ -17,6 +17,22 @@ async function html(view:React.ReactNode,locale:"en"|"ru"|"he"="en"){
   <I18nextProvider i18n={i18n}><MemoryRouter>{view}</MemoryRouter></I18nextProvider>
  );
 }
+it.each(["en","ru","he"] as const)(
+ "renders the entire already SQL-bounded non-BMP History excerpt in %s",async locale=>{
+  const samples=["😀".repeat(500),"a".repeat(499)+"😀"];
+  for(const text of samples){
+   const markup=await html(<ComplaintResolvedHistoryList locale={locale}
+     history={{cases:[{id:"unicode-case",kind:"post",text,sourceLocale:"en",
+       resolvedAt:new Date("2026-11-03T18:00:00.000Z"),outcome:"confirmed",
+       independentReporterCount:1}],page:0,total:1,hasMore:false}}/>,locale);
+   const source=new DOMParser().parseFromString(markup,"text/html")
+     .querySelector('p[dir="auto"][lang="en"]')?.textContent;
+   expect(source).toBe(text);
+   expect(Array.from(source??"")).toHaveLength(500);
+   expect(source?.endsWith("😀")).toBe(true);
+  }
+ });
+
 const base:ComplaintTimelineEvent={
  id:"appeal-one",kind:"appealed",createdAt:new Date("2026-11-02T13:00:00.000Z"),
  moderatorName:null,reason:null,explanation:null,noteBody:null,decisionOutcome:null,

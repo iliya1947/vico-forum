@@ -33,11 +33,11 @@ const service = (connection = client) => new ComplaintsService(new DrizzleCompla
 const limitedService = (connection = client) => new ComplaintsService(new DrizzleComplaintsRepository(drizzle(connection)), authorization);
 const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
 const report = (target: ComplaintTarget, explanation: string | null = null) => ({ target, explanation, reason: "spam" as const, operationId: randomUUID() });
-async function content(originalBody="Reported body") {
+async function content(originalBody="Reported body",originalTitle="Reported title") {
   const id = randomUUID();
   const postId = randomUUID(), revisionId = randomUUID(), titleId = randomUUID();
   await forum.createTopicWithInitialPost({ id, sectionId: "complaints-section", authorId: "content-author",
-    titleRevision: { id: titleId, originalContent: "Reported title", sourceLocale: "en" },
+    titleRevision: { id: titleId, originalContent: originalTitle, sourceLocale: "en" },
     initialPost: { id: postId, topicId: id, authorId: "content-author", bodyRevision: { id: revisionId, originalContent: originalBody, sourceLocale: "en" } } });
   return { post: { kind: "post", topicId: id, postId, revisionId } as const,
     title: { kind: "topic-title", topicId: id, revisionId: titleId } as const };
@@ -169,6 +169,25 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     expect(item?.text.length).toBe(500);
     expect(await forum.countUnreadReplyNotifications("reporter-two")).toBe(legacyBefore);
     expect(await forum.countUnreadNotifications("reporter-two")).toBe(genericBefore+1);
+  });
+
+  it("preserves 500 Unicode code points in SQL-bounded post and title History excerpts",async()=>{
+    const cases=[
+      {kind:"post" as const,text:"😀".repeat(500)+" trailing content"},
+      {kind:"topic-title" as const,text:"a".repeat(499)+"😀"+" trailing content"}
+    ];
+    for(const {kind,text} of cases){
+      const target=await content(kind==="post"?text:"Reported body",kind==="topic-title"?text:"Reported title");
+      const saved=await service().submit("reporter-one",report(kind==="post"?target.post:target.title));
+      await service().decide("reviewer",{caseId:saved.caseId,operationId:randomUUID(),
+        expectedVersion:1,outcome:"not-confirmed",reasoning:"Unicode History excerpt"});
+      const item=(await service().readResolvedHistory("reviewer",0)).cases.find(c=>c.id===saved.caseId);
+      const expected=Array.from(text).slice(0,500).join("");
+      expect(item?.text).toBe(expected);
+      expect(Array.from(item?.text??"")).toHaveLength(500);
+      expect(item?.text.endsWith("😀")).toBe(true);
+      expect(item?.text).not.toContain("trailing content");
+    }
   });
 
   it("Package 5 unified result notifications fan out only to Case participants and survive exact replay",async()=>{

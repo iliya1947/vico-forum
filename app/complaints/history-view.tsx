@@ -11,9 +11,9 @@ export function ComplaintResolvedHistoryList({locale,history}:{locale:string;his
   <ul className="attention-case-list">{history.cases.map(item=><li key={item.id}>
    <article className="attention-case complaint-case">
     <p>{t(item.kind==="post"?"complaintTargetPost":"complaintTargetTitle")}</p>
-    <p dir="auto" lang={item.sourceLocale==="und"?undefined:item.sourceLocale}>{item.text.slice(0,500)}</p>
+    <p dir="auto" lang={item.sourceLocale==="und"?undefined:item.sourceLocale}>{item.text}</p>
     <p>{item.outcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}
-    {" · "}<time dateTime={new Date(item.resolvedAt).toISOString()}>{new Date(item.resolvedAt).toLocaleString(locale)}</time></p>
+    {" · "}<time dateTime={new Date(item.resolvedAt).toISOString()}>{new Date(item.resolvedAt).toLocaleString(locale,{timeZone:"UTC"})}</time></p>
     <p>{t("complaintReportCount")}: {item.independentReporterCount}</p>
     <Link to={historyPath(locale,item.id)}>{t("complaintHistoryHeading")}</Link>
     {" · "}<Link to={complaintReviewPath(locale,item.id)}>{t("complaintOpenCase")}</Link>

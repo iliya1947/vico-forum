@@ -51,7 +51,7 @@ export default function ComplaintResultRoute(){
   <h2>{t("complaintAppealInitialResult")}</h2>
   <p>{result.outcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
   <p dir="auto">{result.reasoning}</p>
-  <time dateTime={result.decidedAt}>{new Date(result.decidedAt).toLocaleString(locale)}</time>
+  <time dateTime={result.decidedAt}>{new Date(result.decidedAt).toLocaleString(locale,{timeZone:"UTC"})}</time>
   <h2>{t("complaintAppealEffectiveResult")}</h2>
   <p>{result.effectiveOutcome==="confirmed"?t("complaintReviewConfirmed"):t("complaintReviewNotConfirmed")}</p>
   <p>{t("complaintAppealRemaining",{number:result.remaining})}</p>
@@ -63,7 +63,7 @@ export default function ComplaintResultRoute(){
       a.outcome==="upheld"?t("complaintHistoryAppealUpheld"):t("complaintHistoryAppealOverturned")}</p>
     {a.ownArgument?<p dir="auto">{a.ownArgument}</p>:null}
     {a.status==="resolved"?<><p dir="auto">{a.reasoning}</p>
-      {a.resolvedAt?<time dateTime={a.resolvedAt}>{new Date(a.resolvedAt).toLocaleString(locale)}</time>:null}</>:null}
+      {a.resolvedAt?<time dateTime={a.resolvedAt}>{new Date(a.resolvedAt).toLocaleString(locale,{timeZone:"UTC"})}</time>:null}</>:null}
   </li>)}</ul>
   {result.canAppeal?<appeal.Form method="post" onSubmit={onSubmit}>
     <input type="hidden" name="intent" value="appeal"/>
