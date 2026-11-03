@@ -138,3 +138,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - P6-VERIFY-02: added a native PostgreSQL test that applies 0000–0054 to a disposable schema, seeds actual Case/Decision, two real reporters, one resolved and one pending Appeal, existing read Decision notification, applies 0055, asserts resolved-only recipients/timestamps, reruns idempotent backfill and verifies preserved Appeal/Decision `read_at`. PR #279 commit `604b9bc86a821f91ebffb45951c5e2d2c439ba05`.
 - Rollback fixture PL/pgSQL quoting was corrected in `11f352f3d948a7770aefbf654320ac49f7dd8aff` after exact CI failure. Both newer changes require exact-head CI; **no PASS yet**.
 - Next is to inspect CI results and correct any confirmed failures before returning to Mira. No browser/deployment/merge.
+
+## Package 6 — populated upgrade CI failure diagnosis
+
+- Exact-head CI #41554226887 for `604b9bc86a821f91ebffb45951c5e2d2c439ba05`: checks SUCCESS, database FAILURE at populated upgrade fixture `relation "user" does not exist`.
+- Verified cause: the test source mistakenly used double-escaped `\\d` and `\\.` in a JavaScript regex, so no pre-0055 SQL files were executed. Corrected to standard `/^\d{4}_.+\.sql$/`, commit `c8625a762a175576fb993a256f369a31577435cc` in PR #279. This is a test-fixture correction only. New exact-head CI pending; no PASS or handoff claimed.
+- Prior CI #41554020632 on `11f352f3d948a7770aefbf654320ac49f7dd8aff` SUCCESS including rollback and submit/resolve regression. Remaining migration test must pass on new exact head.
