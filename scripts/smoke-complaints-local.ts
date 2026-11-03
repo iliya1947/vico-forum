@@ -102,15 +102,14 @@ async function run(){
   closeSync(fd);
   await ready();
 
-  const [author,reporter,reviewer,appealReviewer]=await Promise.all([
-    signUp("author"),signUp("reporter"),signUp("reviewer"),signUp("appeal-reviewer")
+  const [author,reporter,reviewer]=await Promise.all([
+    signUp("author"),signUp("reporter"),signUp("reviewer")
   ]);
-  for(const user of [author,reporter,reviewer,appealReviewer])
+  for(const user of [author,reporter,reviewer])
     await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-user') on conflict do nothing",[user.id]);
   await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-moderator') on conflict do nothing",[reviewer.id]);
   await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) "+
-    "values ($1,'forum.complaint.appeal.review','deny'),($2,'forum.complaint.appeal.review','allow'),"+
-    "($2,'forum.complaint.review','deny')",[reviewer.id,appealReviewer.id]);
+    "values ($1,'forum.complaint.appeal.review','deny')",[reviewer.id]);
 
   const categoryId=randomUUID(),sectionId=randomUUID();
   const topicId=randomUUID(),postId=randomUUID(),revisionId=randomUUID(),titleId=randomUUID();
@@ -144,7 +143,7 @@ async function run(){
 
   const queue="/en/attention?mode=complaints&group=group1&page=0";
   response=await http(queue,{},reviewer.cookie);expectStatus(response,200,queue);
-  response=await http(queue,{},appealReviewer.cookie);expectStatus(response,403,queue);
+  response=await http(queue,{},reporter.cookie);expectStatus(response,403,queue);
   const review="/en/attention/complaints/"+caseId+"/review";
   response=await http(review,{},reviewer.cookie);expectStatus(response,200,review);
   expectPrivate(response,review);
@@ -171,7 +170,7 @@ async function run(){
   response=await http(result,{},reporter.cookie);expectStatus(response,200,result);
   expectPrivate(response,result);
   assert.match(await response.text(),/lang="ru"/,"Russian participant SSR must use ru");
-  response=await http(result,{},appealReviewer.cookie);expectStatus(response,404,result);
+  response=await http(result,{},reviewer.cookie);expectStatus(response,404,result);
 
   const appealPath="/en/complaints/"+caseId+"/result";
   response=await form(appealPath,reporter.cookie,{intent:"appeal",
@@ -180,16 +179,22 @@ async function run(){
   const appeal=(await client.query<{id:string}>(
     "select id from forum_complaint_appeals where case_id=$1",[caseId])).rows;
   assert.equal(appeal.length,1,"Real HTTP Appeal must persist once");
+  // Switch the same real session from Case-only to Appeal-only authorization.
+  await client.query("update authz_user_permission_overrides set effect='allow' "+
+    "where user_id=$1 and permission_key='forum.complaint.appeal.review'",[reviewer.id]);
+  await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) "+
+    "values ($1,'forum.complaint.review','deny')",[reviewer.id]);
+  response=await http(queue,{},reviewer.cookie);expectStatus(response,403,queue);
   const appealQueue="/he/attention?mode=complaints&group=group2&page=0";
-  response=await http(appealQueue,{},appealReviewer.cookie);
+  response=await http(appealQueue,{},reviewer.cookie);
   expectStatus(response,200,appealQueue);
   const he=await response.text();
   assert.match(he,/lang="he"/);assert.match(he,/dir="rtl"/);
-  response=await http(appealQueue,{},reviewer.cookie);expectStatus(response,403,appealQueue);
+  response=await http(appealQueue,{},reporter.cookie);expectStatus(response,403,appealQueue);
   const appealReview="/en/attention/complaints/"+caseId+"/appeals/"+appeal[0]!.id;
-  response=await http(appealReview,{},appealReviewer.cookie);
+  response=await http(appealReview,{},reviewer.cookie);
   expectStatus(response,200,appealReview);expectPrivate(response,appealReview);
-  response=await form(appealReview,appealReviewer.cookie,{intent:"resolve",
+  response=await form(appealReview,reviewer.cookie,{intent:"resolve",
     operationId:randomUUID(),outcome:"overturned",reasoning:"Appeal resolved by Worker"});
   expectStatus(response,200,appealReview);
   const resolved=(await client.query<{status:string;outcome:string}>(
