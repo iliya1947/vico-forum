@@ -198,3 +198,11 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Implementation exact head: `df33f134fcd49c01258b95b02e34b726bc9b845f`. GitHub commit diff confirmed one modified file, 3 additions and 3 deletions.
 - [Exact-head CI #41570619722](https://github.com/iliya1947/vico-forum/actions/runs/41570619722): **SUCCESS**, attempt 1, both `checks` and `database`.
 - Author correction complete; handoff to Мира for **focused document verification** on this exact head, not new implementation whole-PR cycle unless requirements/code change. Coordinator PASS is pending; after PASS independent technical review Лёвы of the final exact head. No merge, browser, deployment or Package 7 work.
+
+## Package 6 — P6-DOC-02 author correction and handoff
+
+- Mira's focused verification of prior P6-DOC-01 correction on head `df33f134fcd49c01258b95b02e34b726bc9b845f` closed that issue but confirmed P6-DOC-02: `PROJECT_STATE.md` repository migration history still mentioned 0054 despite new forward 0055 migration in PR #279. Assignment: service PR #254 comment #6594553314.
+- Updated **one factual line only** in `PROJECT_STATE.md`: repository migration history `0000`–`0054` → `0000`–`0055`. Independently verified `drizzle/0055_complaint_appeal_notifications.sql` exists in implementation branch.
+- Implementation stable exact head: `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`; GitHub commit diff confirms one changed file, 1 addition and 1 deletion. No source/schema/permission/product requirements changes.
+- [Exact-head CI #41571491052](https://github.com/iliya1947/vico-forum/actions/runs/41571491052): **SUCCESS**, attempt 1, both `checks` and `database`.
+- Author correction complete. Handoff to **Мира** for focused document verification of P6-DOC-02 on stable exact head; coordinator PASS pending. After coordinator PASS, independent technical whole-PR review by Лёва on final exact head. No browser, merge, deployment or Package 7 work.
