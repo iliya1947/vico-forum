@@ -102,3 +102,9 @@ Package 4 после коррекций прошёл coordinator/technical revie
 - Мира FAIL на prior head `9034409524fd0e9df85102680f68ded759705132`; назначены P6-RTL-01, P6-VERIFY-01, P6-VERIFY-02 в [#6591717263](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6591717263).
 - P6-RTL-01: changes committed in PR #279 to registry-based locale direction for Appeals group2, review source/current/context and expanded context language. Latest commit `9e725fe1d462761d8098686a8003d7a4a2ee8cda`; verification still pending. No PASS claimed.
 - Native PG Appeal concurrency/rollback and populated 0054→0055 upgrade regressions remain pending. No browser/deploy actions, independent reviewer not started.
+
+## Package 6 — RTL CI failure and correction
+
+- Post-RTL head `9e725fe1d462761d8098686a8003d7a4a2ee8cda` CI #41550490614 FAILED in app tests (database job SUCCESS). Logs identify missing `registryLoaderContext` in `complaint-appeal-review.test.ts` fixture, not a proven production failure.
+- Test fixture now supplies a locale registry and asserts Hebrew rtl / `und` auto source presentation; new head `170cec82f749351981464430cc861716220a64d3`, CI #41553314326 pending at observation.
+- P6-VERIFY-01 and P6-VERIFY-02 remain outstanding. Correction package incomplete; no stable head/coordinator handoff.
