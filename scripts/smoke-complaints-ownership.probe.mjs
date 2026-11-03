@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
 import {readFile,rm,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
+import process from "node:process";
+import {URL} from "node:url";
 import {test} from "node:test";
 
 test("Complaints smoke preserves a pre-existing config on EEXIST and early failure",async()=>{
