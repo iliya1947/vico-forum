@@ -83,3 +83,14 @@ Reviewed stable exact head: `c38b036b2ecb080735e6eaf4fcca5416a7aebc62`; base/cur
 Verdict: **PASS — 0 confirmed current-scope defects**.
 
 Следующий этап: independent technical whole-PR review Лёвы того же exact head. Implementation не менять до его verdict.
+
+
+## Package 6 — verification of independent technical findings
+
+Лёва на independent review exact head `c38b036b2ecb080735e6eaf4fcca5416a7aebc62` сообщил P6-UI-01 и P6-UI-02. Мира перепроверила их независимо.
+
+1. `P6-UI-01` — **CONFIRMED current-scope**. P6 technical plan прямо требует group2 `target kind`, а Appeal review должен переиспользовать P4 reported/current/context presentation. DTO уже содержит `caseReview.kind`, `currentTopicTitle` и queue `kind`, но Appeal UI их не выводит. P4 control выводит и target kind, и current topic title. Это потеря текущего review context, не будущая функциональность.
+
+2. `P6-UI-02` — **CONFIRMED current-scope**. Server action через `complaintCommandFailure` сохраняет typed `forbidden/notFound/invalid/conflict/unavailable` и соответствующие HTTP statuses, но обе P6 формы presentation сводят всё кроме conflict к `complaintError_invalid`. Тем самым 503/403/404 получают неверный пользовательский смысл. P6 plan требует protected errors 401/403/404/409/503 и устойчивые draft/nonce/target boundaries; defect находится только в presentation mapping.
+
+Оба исправления локальны для Package 6 presentation/tests; schema/repository/permissions менять не требуется по установленной причине. Correction package пока не назначен.
