@@ -96,6 +96,18 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 - Browser/visual остаётся неавтоматическим gate; production/external rollout вне scope.
 - Coordinator verdict по плану: **ACCEPTED**.
 
+## Package 7 coordinator review — подзадача 2/3
+
+- Exact reviewed head: `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`.
+- `app/complaints/connected-lifecycle.dbtest.tsx` прочитан полностью: 4 native route/service/PostgreSQL integration tests закрывают connected B1 lifecycle, B2 permission/privacy/retained-resource crossings, B3 pagination/count и canonical Quick-action/Admin-History separation.
+- B1 подтверждает post/title separation, multi-reporter grouping, replay, stale Decision conflict, edit→successor linkage, immutable reported evidence, Decision fanout/read-state replay, three Appeal slots/effective outcome, History/inbox anchors и participant/privacy boundaries.
+- B2 подтверждает independent review/appeal/identity/priority authorities, custom role + allow/deny/inherit freshness на новых requests, identity projection grant/revoke, Case/Appeal resource membership, successful retained bytes через deterministic in-memory bucket, foreign substitutions 404 before bucket fetch, controlled no-bucket 503 и participant membership independent от create/review grants.
+- B3 подтверждает native 25/50 pagination и independent totals для Appeals/History/timeline/mixed inbox, legacy notification compatibility/read semantics, а также canonical topic pin permission/Admin History без Complaint-side implicit sanction.
+- `scripts/smoke-complaints-local.ts` прочитан полностью: actual built Worker + real Better Auth email session + disposable PostgreSQL HTTP path выполняет submission→Queue/Case→Decision→participant result→Appeal→appeal-only review→History/inbox, fresh permission deny/regrant, protected resource 403/404/503, RU participant SSR, HE RTL и `und→auto`.
+- CI database job #41593385331 действительно исполнил `connected-lifecycle.dbtest.tsx` 4/4; full database suite 464/464 PASS; отдельный local Worker HTTP smoke PASS.
+- Existing Packages 1–6 evidence остаётся достаточным для не повторяемых A-invariants; новые tests не подменяют browser/R2/production acceptance и этого не заявляют.
+- **Подтверждённых current-scope дефектов на подзадаче 2/3: 0.**
+
 ## Назначения и следующий шаг
 
 - Мира — ChatGPT-5.6 Sol: **техплан Package 7 проверен и принят по scope; P7-DOC-01 независимо подтверждён**.
