@@ -7,7 +7,7 @@
 - Auditor 2: **Мира — ChatGPT-5.6 Sol**, full Complaints audit COMPLETE (12/12); published result: 2 confirmed current-scope defects
 - Лёва/Марк: без назначения
 - Findings publication: **ВЫПОЛНЕНА по команде владельца**
-- Findings comparison: in progress; divergence 1/2 (MIRA-COMPLAINTS-01) independently rechecked and CONFIRMED current-scope
+- Findings comparison: COMPLETE; both divergences independently rechecked and CONFIRMED current-scope
 - Implementation changes/corrections: not started; audit comparison must complete first
 - Mira audit: COMPLETE and published in #254 comment #6613701298
-- Next: independently recheck divergence 2/2 (MIRA-COMPLAINTS-02); no correction task before comparison completes
+- Combined audit verification: 2 confirmed current-scope defects (MIRA-COMPLAINTS-01, MIRA-COMPLAINTS-02). Next stage: prepare one bounded correction package; implementation not started.
