@@ -145,6 +145,11 @@ async function run(){
     attachmentIds:[],retainedAttachmentIds:[]});
   const context="/en/attention/complaints/"+caseId+"/context/"+postId;
   response=await http(context,{},reviewer.cookie);expectStatus(response,200,context);
+  expectPrivate(response,context);
+  const current=await response.json() as {source:{originalContent:string;sourceLocale:string;direction:string}};
+  assert.equal(current.source.originalContent,"P7 Worker current edited text");
+  assert.equal(current.source.sourceLocale,"und");
+  assert.equal(current.source.direction,"auto");
   const protectedAsset="/en/attention/complaints/"+caseId+"/evidence/"+attachmentId;
   response=await http(protectedAsset,{},reporter.cookie);expectStatus(response,403,protectedAsset);
   response=await http(protectedAsset,{},reviewer.cookie);
