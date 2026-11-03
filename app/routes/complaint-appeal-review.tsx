@@ -1,3 +1,6 @@
+import {registryForRequest} from "../localization/request-context";
+import {RegistryConnectionUnavailableError} from "../localization/persistent-registry";
+import {ComplaintStorageUnavailableError} from "../../db/hyperdrive-complaints";
 import {data,useLoaderData,type RouterContextProvider,type ShouldRevalidateFunctionArgs} from "react-router";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import {complaintReviewer,complaintPrivateHeaders,complaintHttpError,complaintCommandFailure} from "../complaints/queue.server";
@@ -16,7 +19,19 @@ export async function loader({url,params,context}:{url:URL;params:{caseId?:strin
   const actor=await complaintReviewer(context,"forum.complaint.appeal.review");
   const result=await context.get(complaintAppealContext).review(actor,complaintId(params.caseId),
     complaintId(params.appealId),reviewPages(url.href));
-  return data({locale:params.locale??"en",result},{headers:complaintPrivateHeaders});
+  let registry;
+  try{({registry}=await registryForRequest(context));}
+  catch(error){
+   if(error instanceof RegistryConnectionUnavailableError)throw new ComplaintStorageUnavailableError("source registry unavailable",{cause:error});
+   throw error;
+  }
+  const direction=(locale:string)=>locale==="und"?"auto" as const:registry.find(locale)?.locale.direction??"auto" as const;
+  const present=(source:typeof result.caseReview.reported)=>({...source,direction:direction(source.sourceLocale)});
+  const item=result.caseReview;
+  const presented={...result,caseReview:{...item,reported:present(item.reported),
+   current:present(item.current),currentTopicTitle:present(item.currentTopicTitle),
+   context:{...item.context,items:item.context.items.map(post=>({...post,direction:direction(post.sourceLocale)}))}}};
+  return data({locale:params.locale??"en",result:presented},{headers:complaintPrivateHeaders});
  }catch(error){return complaintHttpError(error);}
 }
 export async function action({request,params,context}:{request:Request;params:{caseId?:string;appealId?:string};context:RouterContextProvider}){
