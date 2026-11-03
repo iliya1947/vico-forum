@@ -163,3 +163,12 @@ Reviewed PR #280 stable exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492` ag
 - Browser/real R2/external/production acceptance not claimed and not required by current bounded closeout.
 
 Verdict: **PASS — 0 confirmed current-scope defects.** Next stage: independent technical whole-PR review by Лёва on the same exact head.
+
+
+## Package 7 — verification of P7-SMOKE-01
+
+Lyova reported one P3 on reviewed head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`. Mira independently confirmed it.
+
+`scripts/smoke-complaints-local.ts` protects `.dev.vars` creation with exclusive `wx`, but its shared `finally` unconditionally removes the path. Therefore an existing `.dev.vars` causes exclusive creation to fail and is nevertheless deleted by teardown. Current clean GitHub-hosted CI does not normally contain this ignored file, but the destructive failure path is present in newly introduced Package 7 tooling now and contradicts the ownership semantics implied by `wx`.
+
+Classification: **P7-SMOKE-01 CONFIRMED current-scope P3**. Correction is bounded to smoke ownership cleanup/regression; no Complaints application/schema/permission change and no rework of accepted B1/B2/B3/P7-DOC-01.
