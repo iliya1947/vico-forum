@@ -6,15 +6,15 @@
 
 - AP-01–AP-06 merged в `main`.
 - Complaints repository/local-CI cycle завершён; пауза Admin Panel снята.
-- Текущий `main`: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`.
+- Base AP-07 `main`: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`.
 - AP-07 technical plan Лёвы проверен Мирой против current main и permanent admin contract: PASS.
 - Подтверждённых current-scope product/architecture blockers AP-07 не найдено.
-- Следующий пакет: AP-07 — administrative topic page и message actions внутри topic context.
+- AP-07 implementation начат Лирой в [draft PR #282](https://github.com/iliya1947/vico-forum/pull/282). Первый subtask: защищённая section → topics навигация с bounded current-title/ID search, ID keyset, exact totals, service-section support и соответствующими тестами. Текущий head `bc864636a15165ba5e7fc8cdea53a88f39ee5871`; остальной AP-07 ещё не реализован, ready-for-review не заявляется.
 - AP-08 closure, AP-09 users, AP-10 blocking и AP-11 closeout вне текущего implementation scope.
 
 ## Назначения
 
-- Координатор: Мира.
+- Координатор: Мира — review после полного stable-head handoff.
 - Технический планировщик AP-07: Лёва — задача завершена.
 - Исполнитель AP-07: Лира.
 - У Марка активного назначения нет.
