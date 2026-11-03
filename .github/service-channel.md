@@ -6,7 +6,7 @@
 
 - Packages 1–6 merged в `main`; current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
 - Package 6 PR #279 merged successfully; reviewed implementation head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`, merge commit/main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Package 7 implementation: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, initial head `4c8f5954afb01836cfbb85f6897a458a3ceb43f4`. P7-DOC-01 correction authored in `docs/auth/AUTHORIZATION.md`; B1/B2/B3 verification remains pending. Exact-head CI #41580997525 pending. No Package 7 PASS claimed.
+- Package 7 implementation: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, stable head `444be574063cc00b639f560b693d175252864234`. P7-DOC-01 author-corrected; **B1 native connected lifecycle PASS**. B2/B3 and final documentation/whole-PR review pending. Exact-head CI #41583586320 **SUCCESS** (checks/database, attempt 1). No Package 7 coordinator PASS claimed.
 - Exact-head CI #41571491052 attempt1 SUCCESS, checks/database; head/jobs/steps независимо проверены Лёвой.
 - Coordinator review Миры: PASS, 0 confirmed current-scope defects.
 - Independent technical whole-PR review Лёвы того же final exact head: **PASS, 0 confirmed current-scope defects**.
@@ -31,6 +31,13 @@
 - DB/drizzle/workers tree hashes совпадают с прежним reviewed head c38b036. Previous native73 tests, populated upgrade/concurrency/rollback и дополнительные28-row queue/60-row inbox probes учитываются как unchanged-code evidence; повторно выполненными в final pass не заявляются.
 - Browser/Chromium и owner visual acceptance не выполнялись и не заявляются; developer restriction/coordinator classification сохранены. Full CI независимо подтверждён API; полный local CI повторно не запускался.
 - Implementation не менялся. Temporary preview/PG/container/symlink/auth vars убраны.
+
+## Package 7 — B1 connected integration evidence
+
+- Draft PR #280 includes `app/complaints/connected-lifecycle.dbtest.tsx`, executed by the native PostgreSQL Vitest runner. It connects real HTTP route actions/loaders, the authoritative Complaints service, disposable PostgreSQL17, and unified inbox on shared persisted Case/Decision/Appeal IDs; only test/run configuration changed besides P7-DOC-01.
+- The executed regression verifies independent post/title Cases, two reporters in one Case, exact replay and no extra report, activity/priority/note, stale Decision rejection, immutable retained evidence after edit, linked successor Case with participant isolation, initial Decision and three Appeals with eligibility/outcome/slot boundaries, recipient dedup/read-at replay, protected History and unified notifications/open deep link.
+- CI #41583586320 **SUCCESS** on stable exact head `444be574063cc00b639f560b693d175252864234`: `checks` + `database`, attempt 1. Previous intermediate CI failures were test fixture and TypeScript project-boundary issues, corrected without production changes. No actual Worker/Better Auth HTTP smoke or browser acceptance is claimed from this native route test.
+- **B2/B3 remain pending; Package 7 not accepted/complete.** Next bounded step: B2 reviewer projection and protected resource bridge.
 
 ## Package 7 — bounded coordinator scope
 
@@ -93,7 +100,7 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 - Лёва — Codex-6.1 Sol: техплан Package 7 подготовлен и принят координатором; без implementation assignment.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Tool-blocker создания ветки снят: Мира создала branch, Лира открыла Draft PR #280. Следующий шаг: Лира закрывает missing B1/B2/B3 integration verification, затем source docs/state/history, exact-head CI и handoff Мире для coordinator whole-PR review.
+- Tool-blocker создания ветки снят. Draft #280 открыт, B1 verified; **следующий шаг Лиры — B2**, затем B3 и merge-stable source docs/state/history, final exact-head CI и handoff Мире для coordinator whole-PR review.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
