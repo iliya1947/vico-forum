@@ -6,7 +6,7 @@
 
 - Packages 1–6 merged в `main`; current main/base: `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
 - Package 6 PR #279 merged successfully; reviewed implementation head `5494fe92dc5cc8b3fed87db5efcc9bc98b2f1731`, merge commit/main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Package 7: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, stable head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`. P7-DOC-01 author-corrected; **B1/B2/B3 native regression + local authenticated Worker HTTP smoke PASS**. Merge-stable `COMPLAINTS.md`, `PROJECT_STATE.md` и `PROJECT_HISTORY_09.md`/index обновлены. Exact-head CI #41593385331 **SUCCESS** (checks/database, attempt 1). **Coordinator review pending; Package 7 PASS not yet claimed.**
+- Package 7: **Draft PR #280**, base `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`, stable head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`. P7-DOC-01 author-corrected; **B1/B2/B3 native regression + local authenticated Worker HTTP smoke PASS**. Merge-stable `COMPLAINTS.md`, `PROJECT_STATE.md` и `PROJECT_HISTORY_09.md`/index обновлены. Exact-head CI #41593385331 **SUCCESS** (checks/database, attempt 1). **Author handoff to Mira for coordinator whole-PR review on current exact head; coordinator PASS not yet issued.**
 - Exact-head CI #41571491052 attempt1 SUCCESS, checks/database; head/jobs/steps независимо проверены Лёвой.
 - Coordinator review Миры: PASS, 0 confirmed current-scope defects.
 - Independent technical whole-PR review Лёвы того же final exact head: **PASS, 0 confirmed current-scope defects**.
@@ -103,7 +103,7 @@ Package 7 готов, когда весь lifecycle Complaints от submission �
 - Лёва — Codex-6.1 Sol: техплан Package 7 подготовлен и принят координатором; без implementation assignment.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Tool-blocker создания ветки снят. Draft #280 содержит зелёные B1/B2/B3, local Worker HTTP smoke и merge-stable docs/history. **Следующий шаг Лиры — заключительный coordinator handoff Мире по exact head `cc9f42a8…` в PR #254**; review начинается только после handoff.
+- Tool-blocker создания ветки снят. Draft #280 готов и передан Мире на coordinator whole-PR review exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`: B1/B2/B3 и local Worker HTTP smoke зелёные, docs/history обновлены, CI #41593385331 SUCCESS. **Мира — следующий исполнитель**, при current-scope findings возвращает один bounded correction package Лире; после PASS — independent technical review Лёвы того же head. Package 7 coordinator PASS пока отсутствует.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
