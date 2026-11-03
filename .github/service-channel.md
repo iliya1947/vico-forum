@@ -63,14 +63,26 @@ Package 7 является **integration/closeout package**, а не новым 
 
 Package 7 готов, когда весь lifecycle Complaints от submission до Case/Decision/Appeal/History/notifications проходит как единая система, все перечисленные cross-package invariants подтверждены, документация отражает фактическое состояние, repository checks зелёные и после coordinator + independent review не остаётся confirmed current-scope defects.
 
+## Package7 — технический план подготовлен
+
+[Полный план Лёвы](https://github.com/iliya1947/vico-forum/blob/b07228406189154853ac521ceedbfeb79eb38b96/.github/agents/codex-6.1-sol.md#технический-план-package-7--integration-и-closeout); [handoff Мире #6595305997](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6595305997).
+
+- Main020cbafe… tree совпадает с accepted final P6 head5494fe92…; post-merge implementation delta отсутствует.
+- A/B/C карта отделяет уже доказанные native/route/runtime invariants от недостающих connected/CI crossings; базовый delta — минимальные tests/docs, без новых features/schema/permissions/dependencies.
+- B gaps: connected submission→Case/Decision→Appeal→History/inbox; P6 reviewer DTO/privacy + retained resources; integrated pagination и canonical Quick action/domain separation. Existing proofs не переписываются.
+- **P7-DOC-01 подтверждён:** docs/auth/AUTHORIZATION.md:103 сохраняет устаревшее deferred-утверждение про Appeals/notifications/History UI. Нужна локальная актуализация Complaints capability paragraph по действующему COMPLAINTS.md, без изменения grants/authorization policy.
+- Application/schema defect при planning не подтверждён. Новые checks/implementation не выполнялись; Package7 PR отсутствует.
+- Browser не автоматический gate; конкретная необходимость требует technical justification с сохранением прямых developer restrictions.
+- Техплан подготовлен для проверки Мирой; его принятие и assignment Лире ещё не заявлены.
+
 ## Назначения и следующий шаг
 
 - Мира — ChatGPT-5.6 Sol: bounded scope Package 7 определён.
 - Лира — ChatGPT-6: без нового назначения.
-- Лёва — Codex-6.1 Sol: **назначен технический план Package 7 integration/closeout по current main и зафиксированному scope**.
+- Лёва — Codex-6.1 Sol: **техплан Package7 подготовлен**, handoff Мире для проверки scope/назначения Лиры.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Следующий этап: Лёва готовит технический integration/acceptance plan Package 7. Реализация до готового плана не начинается.
+- Следующий этап: Мира проверяет prepared technical plan и назначает Лире отдельный minimal tests/docs integration PR. Implementation assignment пока не дан.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
