@@ -81,6 +81,75 @@ afterAll(async () => {
   await client.end();
 });
 
+describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
+  it("backfills resolved Appeals only, preserves timestamps and read states on repeat",async()=>{
+    const upgradeSchema="complaint_appeal_upgrade_test";
+    const upgrade=new Client({connectionString:databaseUrl,options:`-c search_path=${upgradeSchema}`});
+    await client.query(`drop schema if exists ${upgradeSchema} cascade; create schema ${upgradeSchema}`);
+    try{
+      await upgrade.connect();
+      for(const file of (await readdir("drizzle")).filter(x=>/^\\d{4}_.+\\.sql$/.test(x)&&x<"0055_").sort()){
+        await upgrade.query((await readFile(`drizzle/${file}`,"utf8")).replaceAll('"public".',`"${upgradeSchema}".`));
+      }
+      for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
+        await upgrade.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,`${id}@test.invalid`]);
+      const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()});
+      await forumUpgrade.createCategory({id:"upgrade-category",name:"Upgrade"});
+      await forumUpgrade.createSection({id:"upgrade-section",categoryId:"upgrade-category",name:"Upgrade"});
+      await forumUpgrade.createTopicWithInitialPost({
+        id:"upgrade-topic",sectionId:"upgrade-section",authorId:"upgrade-author",
+        titleRevision:{id:"upgrade-title",originalContent:"Upgrade title",sourceLocale:"en"},
+        initialPost:{id:"upgrade-post",topicId:"upgrade-topic",authorId:"upgrade-author",
+          bodyRevision:{id:"upgrade-revision",originalContent:"Upgrade evidence",sourceLocale:"en"}}
+      });
+      await upgrade.query(`insert into forum_complaint_targets
+        (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
+        values ('upgrade-target','post','upgrade-topic','upgrade-post','upgrade-revision','upgrade-author')`);
+      await upgrade.query(`insert into forum_complaint_cases(id,target_id,state,initial_decision_id,resolved_at)
+        values('upgrade-case','upgrade-target','resolved','upgrade-decision',now())`);
+      await upgrade.query(`insert into forum_complaint_decisions(id,case_id,outcome,reviewer_user_id,reasoning)
+        values('upgrade-decision','upgrade-case','not-confirmed','upgrade-reviewer','Initial result')`);
+      await upgrade.query(`insert into forum_complaints(id,case_id,target_id,reporter_user_id,reason)
+        values('upgrade-report-one','upgrade-case','upgrade-target','upgrade-reporter-one','spam'),
+        ('upgrade-report-two','upgrade-case','upgrade-target','upgrade-reporter-two','spam')`);
+      await upgrade.query(`insert into forum_complaint_appeals
+        (id,case_id,decision_id,appellant_user_id,side,argument,ordinal,status,outcome,reasoning,reviewer_user_id,created_at,resolved_at)
+        values ('upgrade-resolved','upgrade-case','upgrade-decision','upgrade-reporter-one','reporter','Historical appeal',1,'resolved','upheld','Historical result','upgrade-reviewer','2026-01-01','2026-01-02'),
+        ('upgrade-pending','upgrade-case','upgrade-decision','upgrade-reporter-two','reporter','Pending appeal',2,'pending',null,null,null,'2026-01-03',null)`);
+      await upgrade.query(`insert into forum_reply_notifications
+        (id,recipient_user_id,complaint_decision_id,kind,created_at,read_at)
+        values('upgrade-initial-notification','upgrade-reporter-one','upgrade-decision','complaint-decision','2026-01-01','2026-01-04')`);
+      const upgradeSql=(await readFile("drizzle/0055_complaint_appeal_notifications.sql","utf8"))
+        .replaceAll('"public".',`"${upgradeSchema}".`);
+      await upgrade.query(upgradeSql);
+      const rows=await upgrade.query<{recipient_user_id:string;kind:string;created_at:Date;read_at:Date|null}>(`
+        select recipient_user_id,kind,created_at,read_at from forum_reply_notifications
+        where complaint_appeal_id='upgrade-resolved' order by recipient_user_id`);
+      expect(rows.rows.map(x=>x.recipient_user_id))
+        .toEqual(["upgrade-author","upgrade-reporter-one","upgrade-reporter-two"]);
+      expect(rows.rows.every(x=>x.kind==="complaint-appeal-result"&&
+        x.created_at.toISOString()==="2026-01-02T00:00:00.000Z"&&x.read_at===null)).toBe(true);
+      expect((await upgrade.query(`select count(*)::int as total from forum_reply_notifications
+        where complaint_appeal_id='upgrade-pending'`)).rows[0].total).toBe(0);
+      await upgrade.query(`update forum_reply_notifications set read_at='2026-01-05'
+        where complaint_appeal_id='upgrade-resolved' and recipient_user_id='upgrade-reporter-one'`);
+      const backfill=upgradeSql.slice(upgradeSql.indexOf("INSERT INTO forum_reply_notifications("));
+      await upgrade.query(backfill);
+      expect((await upgrade.query(`select count(*)::int as total from forum_reply_notifications
+        where complaint_appeal_id='upgrade-resolved'`)).rows[0].total).toBe(3);
+      const read=await upgrade.query<{read_at:Date}>(`select read_at from forum_reply_notifications
+        where complaint_appeal_id='upgrade-resolved' and recipient_user_id='upgrade-reporter-one'`);
+      expect(read.rows[0].read_at.toISOString()).toBe("2026-01-05T00:00:00.000Z");
+      const initial=await upgrade.query<{read_at:Date}>(`select read_at from forum_reply_notifications
+        where id='upgrade-initial-notification'`);
+      expect(initial.rows[0].read_at.toISOString()).toBe("2026-01-04T00:00:00.000Z");
+    }finally{
+      await upgrade.end().catch(()=>undefined);
+      await client.query(`drop schema if exists ${upgradeSchema} cascade`);
+    }
+  });
+});
+
 describe("complaints domain foundation / real PostgreSQL", () => {
 
   it("bounds resolved History snippets before returning rows and separates legacy/generic unread counts",async()=>{
