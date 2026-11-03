@@ -47,14 +47,24 @@ Integration/closeout существующих Packages1–6: targets/revisions/g
 - External/deployed Complaints acceptance, real R2/browser/production rollout remain separate and were not performed.
 - No further Complaints implementation package is pending under the approved Package 1–7 plan.
 
+## Полный независимый аудит Complaints — режим до публикации
+
+- Audit baseline: current `main` `c8a9edf2a3481e08666c025474bf714553a13ffb`.
+- По прямому указанию владельца два независимых аудитора работают параллельно: Лира (ChatGPT-6) и Мира (ChatGPT-5.6 Sol).
+- Это полный аудит всей реализованной системы Complaints Packages 1–7, а не review отдельного Package/PR.
+- Независимость обязательна: аудиторы не читают и не сверяют audit findings друг друга до отдельной команды владельца.
+- **До отдельной команды владельца запрещено публиковать audit findings**: не писать findings/дефекты/подозрения в #254 comments, service-channel, workflow, personal agent files или implementation PR. Разрешены только assignment, прогресс и факт завершения аудита без содержания результатов.
+- Во время аудита implementation не менять и correction-задачи не создавать.
+- Каждый возможный finding проверять по полной причинной цепочке и классифицировать как current-scope defect либо future/out-of-scope; future groundwork само по себе дефектом не считается.
+- После завершения каждый аудитор сообщает только, что аудит окончен и результаты удерживаются до команды владельца на публикацию.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: Package 7 post-merge confirmation complete.
-- Лира — ChatGPT-6: без нового назначения.
-- Лёва — Codex-6.1 Sol: без нового назначения.
+- Лира — ChatGPT-6: **полный независимый аудит Complaints current main `c8a9edf2a3481e08666c025474bf714553a13ffb`; findings не публиковать до команды владельца**.
+- Мира — ChatGPT-5.6 Sol: после фактической передачи задания Лире начинает параллельный независимый полный аудит того же baseline; findings также не публикует.
+- Лёва — Codex-6.1 Sol: без назначения.
 - Марк — Codex-6 Sol: без назначения.
-- Complaints Packages 1–7 завершены в repository/local-CI path.
-- Следующее действие владельца для этого служебного канала: заархивировать #254; production/external Complaints acceptance остаётся отдельной будущей задачей и сейчас не запускается.
+- После завершения обоих аудитов — ожидать отдельную команду владельца на публикацию; до неё findings не сравнивать.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
