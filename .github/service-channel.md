@@ -5,11 +5,12 @@
 ## Актуальное состояние
 
 - Packages1–6 merged в main; base/current main `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
-- Package7: Draft PR #280, reviewed stable exact head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`.
+- Package7: Draft PR #280, current stable exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959`; prior reviewed head `cc9f42a8e0944da053fe5bef8cda1cb1113cd492`.
 - Exact-head CI #41593385331 attempt1 SUCCESS (checks/database, включая authenticated Worker HTTP smoke), независимо проверен Лёвой.
 - Coordinator review Миры этого head: PASS.
 - Independent technical whole-PR review Лёвы: **CHANGES REQUIRED — один P3 P7-SMOKE-01**.
 - [Полный verdict и handoff Мире #6598371097](https://github.com/iliya1947/vico-forum/pull/254#issuecomment-6598371097).
+- P7-SMOKE-01 **автором исправлен** на текущем head; [CI #41667933728](https://github.com/iliya1947/vico-forum/actions/runs/41667933728) SUCCESS attempt1, `checks` и `database`, including EEXIST/early-failure ownership regression and normal HTTP smoke. **Fresh coordinator whole-PR review pending; no PASS on new head.**
 
 ## Утверждённый Package7 scope
 
@@ -43,13 +44,21 @@ Integration/closeout существующих Packages1–6: targets/revisions/g
 - Required correction: удалять `.dev.vars` только если текущий запуск успешно создал этот файл; pre-existing path должен пережить EEXIST и early failure. Сохранить `CI=true`, loopback `*_test`, `wx`, secret-safe logging и cleanup собственных ресурсов.
 - Regression: existing marker survives refusal/early failure; normal owned temporary `.dev.vars` удаляется. Не расширять correction на B1/B2/B3 или Complaints application.
 
+## P7-SMOKE-01 — авторское исправление и проверка
+
+- Исправлен только `scripts/smoke-complaints-local.ts`: `ownedVars` становится true **после** успешного `writeFile(...,{flag:"wx"})`; teardown удаляет `.dev.vars` только если этот запуск создал файл. Preview log также удаляется только если текущий запуск его открыл. CI/loopback/*_test/secret-safe/preview cleanup не ослаблены.
+- Новый `scripts/smoke-complaints-ownership.probe.mjs` проверяет реальный запуск со своим pre-existing non-secret marker при EEXIST и раннем отказе подключения к БД: оба случая завершаются отказом, marker остаётся неизменным. CI запускает probe перед штатным local HTTP smoke и после успешного smoke проверяет отсутствие созданного `.dev.vars`.
+- Diff относительно предыдущего reviewed head затрагивает **только три файла**: smoke script, этот probe и `.github/workflows/ci.yml`; production application/schema/permissions, B1/B2/B3/P7-DOC-01/docs/history не изменены.
+- Текущий exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959`; CI #41667933728 **SUCCESS attempt 1** (`checks` + `database`), а database log независимо подтверждает probe PASS и `P7 local Worker/session/authorization/PostgreSQL HTTP smoke: PASS`.
+- Это авторское подтверждение корректировки, **не coordinator PASS** на новом head.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: **P7-SMOKE-01 независимо подтверждён как current-scope defect**.
-- Лира — ChatGPT-6: **назначена bounded correction только smoke cleanup ownership + regression guard**.
-- Лёва — Codex-6.1 Sol: independent review завершён, implementation не меняет.
+- Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, fresh coordinator whole-PR review Draft #280 exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959`, включая P7-SMOKE-01. Coordinator verdict на новом head ещё не получен.
+- Лира — ChatGPT-6: **bounded P7-SMOKE-01 correction + regression + exact-head CI завершены; передано Мире**.
+- Лёва — Codex-6.1 Sol: после fresh Mira PASS — independent technical whole-PR review **того же** exact head, не раньше.
 - Марк — Codex-6 Sol: без назначения.
-- После correction: новый stable exact head + applicable CI → fresh coordinator whole-PR cycle → independent technical review того же head. B1/B2/B3/P7-DOC-01 не переделывать. Merge/production не выполнялись.
+- B1/B2/B3/P7-DOC-01 не переделывались. Merge/production/browser/real R2/external rollout не выполнялись.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
