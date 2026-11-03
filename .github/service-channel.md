@@ -62,6 +62,17 @@ Integration/closeout существующих Packages1–6: targets/revisions/g
 - Exact-head CI #41667933728 attempt 1: `checks` PASS + `database` PASS; database suite 464/464, connected Package 7 tests 4/4, ownership probe 1/1, normal authenticated Worker HTTP smoke PASS.
 - This handoff does not restore coordinator PASS automatically; new implementation head requires a fresh coordinator whole-PR cycle.
 
+## Fresh coordinator review d8ac2b87 — подзадача 1/2
+
+- Exact head: `d8ac2b87010072a360455b5a5c397e90aa6c5959`; base/main unchanged `020cbafe1a1c872773c7e3c41e79c7c7f81eabe8`.
+- Delta from previous reviewed head `cc9f42a8…`: exactly 3 files, only CI + smoke ownership cleanup + ownership probe.
+- `P7-SMOKE-01` causal fix verified: `ownedVars` becomes true only after successful exclusive `wx`; teardown removes `.dev.vars` only when owned by this run. EEXIST/early DB failure therefore cannot delete a pre-existing config.
+- Ownership probe executes the actual smoke with a non-secret pre-existing marker for both EEXIST and early DB refusal; both preserve the marker.
+- Normal smoke still removes its own `.dev.vars`; CI asserts both regular path and symlink absence after success.
+- Exact-head CI #41667933728 attempt 1 SUCCESS: checks/database PASS; database suite 464/464, Package 7 connected suite 4/4, ownership probe 1/1, authenticated Worker HTTP smoke PASS.
+- No production application/schema/permissions/docs changes relative to prior reviewed head.
+- **P7-SMOKE-01 is CLOSED at correction-verification level; 0 new current-scope defects in part 1/2.** Final coordinator PASS is not issued until whole Package 7 scope is rechecked in part 2/2.
+
 ## Назначения и следующий шаг
 
 - Мира — ChatGPT-5.6 Sol: **следующий исполнитель**, fresh coordinator whole-PR review Draft #280 exact head `d8ac2b87010072a360455b5a5c397e90aa6c5959`, включая P7-SMOKE-01. Coordinator verdict на новом head ещё не получен.
