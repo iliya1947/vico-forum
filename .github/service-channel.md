@@ -31,14 +31,46 @@
 - Browser/Chromium и owner visual acceptance не выполнялись и не заявляются; developer restriction/coordinator classification сохранены. Full CI независимо подтверждён API; полный local CI повторно не запускался.
 - Implementation не менялся. Temporary preview/PG/container/symlink/auth vars убраны.
 
+## Package 7 — bounded coordinator scope
+
+Package 7 является **integration/closeout package**, а не новым feature package. Его задача — доказать целостность уже реализованных Packages 1–6 на current `main` и закрыть только реальные cross-package/current-scope дефекты, если они обнаружатся.
+
+### В scope
+
+1. End-to-end проверить разделение `topic-title` и first-post targets и корректную immutable revision identity.
+2. Проверить grouping/lifecycle Cases: разные reporters → отдельные Complaint в одном применимом open Case; новая revision или новый инцидент → отдельный связанный Case без изменения предыдущего.
+3. Проверить сохранность reported evidence при последующих изменениях контента и границы retained evidence.
+4. Проверить privacy и dynamic permissions всей цепочки Complaints: create, review, reporter identity, priority manage, appeal review; включая role grants, per-user allow/deny и negative states.
+5. Проверить complaint-specific anti-abuse, duplicate/replay boundaries и отсутствие влияния лимитов на корректную жалобу на другой target.
+6. Проверить priority lifecycle, manual override и reviewer presence как non-exclusive/expiring activity, а не assignment/lock.
+7. Проверить shared Admin Quick actions boundary и отсутствие неявных санкций из Complaint/Decision/Appeal.
+8. Проверить полный Appeal lifecycle: eligibility обеих сторон, один pending, общий лимит 3, effective outcome и participant notifications.
+9. Проверить bounded pagination/count и empty/out-of-range behavior для Queue, Appeals и History на интегрированном состоянии.
+10. Проверить применимые EN/RU/HE, source `lang/dir`, LTR/RTL и negative permission/error presentation на ключевых Complaints surfaces.
+11. Проверить, что Complaints не дублируют и не расширяют домены Signals, Security или Admin panel.
+12. Закрыть постоянную документацию и `PROJECT_STATE.md` только фактически подтверждённым merge-stable состоянием.
+13. Выполнить применимые repository CI/checks и стандартный coordinator → independent technical review cycle.
+
+### Правило реализации
+
+- Не добавлять функциональность ради самого Package 7.
+- Если current `main` уже удовлетворяет инварианту, использовать существующую evidence либо добавить только недостающую regression/integration verification.
+- Production/external rollout, новые административные возможности, новые типы жалоб, Signals/Security integration и Package 7+ отсутствуют.
+- Browser/visual acceptance не является автоматическим требованием: использовать только если конкретный integration path нельзя надёжно проверить существующими repository/local runtime средствами или разработчик отдельно запросит visual acceptance.
+- Новая schema/migration/permission/public contract допустима только если техническая проверка выявит реальный current-scope дефект, который нельзя исправить локальнее.
+
+### Готовность Package 7
+
+Package 7 готов, когда весь lifecycle Complaints от submission до Case/Decision/Appeal/History/notifications проходит как единая система, все перечисленные cross-package invariants подтверждены, документация отражает фактическое состояние, repository checks зелёные и после coordinator + independent review не остаётся confirmed current-scope defects.
+
 ## Назначения и следующий шаг
 
-- Мира — ChatGPT-5.6 Sol: post-merge confirmation Package 6 завершён; следующий bounded этап — определить scope Package 7.
+- Мира — ChatGPT-5.6 Sol: **bounded scope Package 7 определён**; техническое планирование ещё не назначено.
 - Лира — ChatGPT-6: без нового назначения.
 - Лёва — Codex-6.1 Sol: без нового назначения.
 - Марк — Codex-6 Sol: без назначения.
 - Package 6 закрыт в repository/local-CI path. Production rollout не выполнялся.
-- Следующий этап: Package 7 — интеграция и завершение; сначала coordinator scope definition, затем технический план Лёвы по стандартному циклу.
+- Следующий этап: Package 7 — интеграция и завершение. Следующая отдельная подзадача — технический план Лёвы по зафиксированному scope.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Утверждённый продуктовый план: [COMPLAINTS_IMPLEMENTATION_PLAN.md](../COMPLAINTS_IMPLEMENTATION_PLAN.md).
