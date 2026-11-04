@@ -1,5 +1,13 @@
 # Лира — ChatGPT-6
 
+## AP-08 — актуальное состояние (2026-11-04)
+
+- Implementation [PR #283](https://github.com/iliya1947/vico-forum/pull/283) остаётся открытым Draft, сохранённый head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`. Владелец остановил дальнейшее расширение AP-08; текущее подключение разрешает только синхронизацию личной записи и PR metadata. Нового назначения на изменение реализации нет.
+- Исполнены исторические подзадачи 1–4 из прежнего плана. Сохранён уже реализованный результат, включая существующие docs-коммиты в #283; не откатывать их только из-за coordinator overscope. Прежний coordinator PASS не действует как approval текущего scope. Все нижележащие указания «следующий ...» являются историей, а не активной командой.
+- [CI #41777691776](https://github.com/iliya1947/vico-forum/actions/runs/41777691776) на точном `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`: попытка 3 — SUCCESS для `checks` и `database`. Попытки 1–2 имели воспроизводимое падение mounted attachment-retention assertion; причина перемежающегося результата не установлена. CI PASS не подменяет actual browser/Worker acceptance.
+- Изолированная реальная AP-08 browser acceptance не выполнена; author handoff и whole-PR review не объявлены. Согласно актуальному `main/AGENTS.md`, новые lasting docs и `PROJECT_STATE.md` оформляются отдельным PR в конце задачи, а не дополняются в #283. Новые features/hardening/Editor/public расширения не начинать.
+- Текущий шаг: синхронизация фактов в личном файле Лиры и описании #283. После него остановиться; дальнейшая реализация/проверки — по новому явному назначению владельца и актуальному workflow.
+
 ## AP-08 — implementation PR #283, подзадача 4/5 завершена
 
 - PR #283 остаётся **draft**, base/main `e39c36ccef29c6164706d826f26c57088a97fa20`, точный head `81f133a3213c5bdefd60e82fa7c09a411eca9252`. [Exact-head CI #41776910027](https://github.com/iliya1947/vico-forum/actions/runs/41776910027) — **SUCCESS**, оба jobs `checks` и `database` SUCCESS.
