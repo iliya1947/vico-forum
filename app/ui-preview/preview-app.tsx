@@ -11,6 +11,8 @@ import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog
 import { CredentialView } from "../auth/credential-view";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
 import { AuthorizationAdminView } from "../authorization/admin-view";
+import { AdminTopicView } from "../admin/topic";
+import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -44,7 +46,7 @@ import { localeRegistry } from "../localization/registry";
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
-type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "admin-topic" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
@@ -152,6 +154,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager"] },
+  { id: "admin-topic", label: "Admin topic & messages", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["manager"] },
   { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["manager"] },
   { id: "admin-conflict", label: "Authorization · conflict", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict", allowedIdentities: ["manager"] },
   { id: "empty-section", label: "Empty section", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
@@ -1801,6 +1804,18 @@ function previewElement(scenario: Scenario) {
       );
     case "topic":
       return <TopicView {...primaryTopicScenarioData(scenario)} />;
+    case "admin-topic": {
+      const data = primaryTopicScenarioData(scenario);
+      return <AdminTopicView locale={scenario.locale}
+        access={{canEnter:true,canReadForum:true,canManageAuthorization:true,canReadHistory:true}}
+        topic={projectAdminTopic(data.topic, false)}
+        titlePresentation={data.titlePresentation}
+        postPresentations={data.postPresentations}
+        actorId="maya"
+        canManagePin canManageAnySolution canCorrectAnySourceLocale canReadPostHistory
+        canManageHelpDuplicate={false} canModerateHelpSolution={false}
+        pendingDuplicateAppeal={null}/>;
+    }
     case "admin": {
       const data = authorizationData(scenario.locale);
       const result = scenario.variant === "admin-success"
