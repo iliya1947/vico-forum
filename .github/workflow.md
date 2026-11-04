@@ -2,14 +2,13 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-07 — implementation
-- Статус: в работе; первый bounded subtask section → topics закоммичен, полный AP-07 ещё не реализован
-- Base `main` при начале: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`
+- Текущий этап: AP-07 — implementation, subtask 2/3 выполнен в draft
+- Статус: protected section topics + dedicated admin topic реализованы; per-message actions и итоговая проверка остаются
+- Base `main`: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`
 - Реализовано в `main`: AP-01–AP-06
-- Технический планировщик AP-07: Лёва — план завершён
-- Coordinator review плана: Мира — PASS
-- Исполнитель AP-07: Лира — ChatGPT-6
-- Implementation PR AP-07: #282 (draft), ветка `feat/admin-topic-message-ap07`
-- Текущий implementation head: `bc864636a15165ba5e7fc8cdea53a88f39ee5871`
-- First-subtask CI: [#41742485116](https://github.com/iliya1947/vico-forum/actions/runs/41742485116) — in_progress, без итогового verdict; не является AP-07 acceptance
-- Следующий шаг: Лира реализует dedicated admin topic route/view в том же #282, затем shared message actions/transport/privacy и весь AP-07 verification; после полного stable-head handoff Мира проводит coordinator-first whole-PR review
+- Технический планировщик AP-07: Лёва — план завершён, принят Мирой
+- Исполнитель: Лира — ChatGPT-6
+- Implementation PR: #282 (draft), ветка `feat/admin-topic-message-ap07`
+- Текущий implementation head: `9c200dc3e998448d9b0aab1a0b815f31aa18d87a`
+- Subtask-2 CI: [#41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411) — in progress; итог пока не установлен; не whole-PR acceptance
+- Следующий шаг: Лира выполняет subtask 3/3 — message Quick actions, inline/history privacy transport, необходимые tests, docs, окончательную verification и stable-head handoff; только затем Мира проводит coordinator-first whole-PR review
