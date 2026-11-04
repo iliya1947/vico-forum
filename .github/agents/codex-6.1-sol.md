@@ -1,13 +1,5 @@
 # Лёва — AP-08: bounded technical plan для topic close/reopen
 
-## Текущее состояние AP-08
-
-- Technical plan Лёвы завершён; implementation по нему уже существует в PR #283.
-- Работа по #283 остановлена владельцем на сохранённом head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
-- У Лёвы сейчас нет активного назначения по AP-08.
-- Обнаруженный coordinator reasoning failure относится к постановке/approval Миры и сам по себе не является finding к технической работе Лёвы.
-- Текст ниже сохраняется как технический план/контекст и не является текущей командой начать implementation.
-
 Статус: техническое предложение для coordinator review Миры; implementation не начат.
 Baseline: `main` `e39c36ccef29c6164706d826f26c57088a97fa20`, AP-07 #282 merged.
 Задача и product decisions: [#6621219729](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6621219729).
