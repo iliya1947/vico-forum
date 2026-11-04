@@ -18,6 +18,9 @@ beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
   for (const tag of migrations) await client.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${schema}".`));
+  // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
+  // Supply only AP-08 columns here without changing the historical migration sequence.
+  await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
   for (const id of ["profile-owner", "profile-helper", "profile-newcomer"]) {
     await client.query(`insert into "user" (id,name,email,image) values ($1,$1,$2,$3)`, [id, `${id}@private.test`, "https://example.com/avatar.png"]);
   }
