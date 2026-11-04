@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0056_topic_closure",
+  "targetMigration": "0057_admin_users_read",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "79c3d1f21f92930af1f0134121956d292724ab1563ed7196d28f48c2df7fc0c7"
+          "definitionSha256": "c1a0befb69be72b1fb555cdb90d4d37ca51ed212ceb264b2cad9363cffabd73c"
         }
       ],
       "indexes": []
