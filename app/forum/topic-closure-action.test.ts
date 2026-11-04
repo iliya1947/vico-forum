@@ -127,7 +127,7 @@ describe("AP-08 canonical closure HTTP", () => {
       w.setTopicClosed.mockRejectedValueOnce(error);
       const response = await submit(form(), context(w));
       expect(response).toMatchObject({ init: { status }, data: { error: code } });
-      expect(JSON.stringify(response)).not.toContain("private");
+      expect(JSON.stringify((response as { data: unknown }).data)).not.toContain("private");
     }
     const w = writer();
     const ctx = context(w);
@@ -151,7 +151,7 @@ describe("AP-08 canonical closure HTTP", () => {
       init: { status: 409, headers: { "Cache-Control": "private, no-store" } },
       data: { error: "topicClosed" },
     });
-    expect(JSON.stringify(response)).not.toContain("private");
+    expect(JSON.stringify((response as { data: unknown }).data)).not.toContain("private");
     expect(w.createReply).toHaveBeenCalledOnce();
     const replay = await submit(form({ intent: "reply", body: "committed replay" }), context(w, ["forum.reply.create"]));
     expect(replay).toBeInstanceOf(Response);
