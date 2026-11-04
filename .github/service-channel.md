@@ -4,28 +4,26 @@
 
 ## Актуальное состояние
 
-- AP-01–AP-06 merged в `main`; Complaints repository/local-CI cycle завершён, пауза Admin Panel снята.
-- AP-07 technical plan Лёвы проверен Мирой против `main` `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`: PASS; current-scope product/architecture blockers не подтверждены.
-- AP-07 реализуется Лирой в [draft PR #282](https://github.com/iliya1947/vico-forum/pull/282), head `9c200dc3e998448d9b0aab1a0b815f31aa18d87a`.
-- Завершены два bounded implementation subtask: 1) protected section → topics browsing с SQL search/paging/Help, 2) protected admin topic page с независимым Forum gate, explicit permission-scoped DTO, Help-private ID фильтрацией, translated current posts, safe Markdown/attachments, stable post IDs/numbers, topic Quick actions.
-- Тесты для маршрутов, приватности, UI и native PostgreSQL добавлены. Прежние CI прогонки выявили ошибки test selector/route snapshot и неверный i18n key, исправленные на новом head. [CI #41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411) — SUCCESS (checks и database); complete AP-07 PASS не заявляется.
-- Остаются shared per-message Quick actions, canonical inline post-source and revision-history transport, final tests/verification, project docs/current-state и whole-PR review. PR #282 по-прежнему draft и не готов к merge.
-- AP-08 closure, AP-09 Users, AP-10 blocking, AP-11 closeout и unrelated Complaints/production work вне текущего scope.
+- AP-01–AP-06 merged в `main`, AP-07 реализован в [PR #282](https://github.com/iliya1947/vico-forum/pull/282), но не merged. Main/base: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`. Пауза после Complaints repository/local-CI cycle снята.
+- AP-07 technical plan Лёвы проверен и принят Мирой. Лира завершила три bounded implementation подзадачи на stable head `b0d5e74663cd57851225447e792ab4a9bf98322c`: protected section→topics discovery; protected dedicated admin topic page; shared per-message source correction/history actions в admin/public topic.
+- Реиспользованы canonical Forum actions и текущие RBAC/History/attachment/translation contracts без новой schema, permissions, dependencies, runtime grants или AP-08+ функциональности. Защищены Help relationship/appeal IDs, source-revision/history response, controlled errors, stale actor, post membership, CAS, client-side stale/permission feedback.
+- `docs/ADMIN_PANEL.md` и `PROJECT_STATE.md` обновлены в implementation PR. UI Preview получил отдельный визуальный AP-07 scenario в существующем Pages flow (не является реальным Worker browser acceptance).
+- [Exact-head CI #41746716082](https://github.com/iliya1947/vico-forum/actions/runs/41746716082): SUCCESS, `checks` и `database` SUCCESS; включает штатные tests/typecheck/build, PostgreSQL 17, Worker/BetterAuth/Complaints HTTP smoke. GitHub mergeable=true; test-merge tree совпадает с implementation tree.
+- **Не проводились** actual Chromium→Worker→Better Auth→PostgreSQL для AP-07, owner visual acceptance, coordinator whole-PR review или независимая проверка Лёвы. Нельзя выдавать CI/UI Preview за эти доказательства. PR #282 остаётся draft до согласования gates; merge/release не выполнялись.
+- AP-08 topic closure, AP-09 Users, AP-10 blocking и AP-11 closeout ещё не реализованы.
 
-## Назначения
+## Назначения и продолжение
 
-- Координатор: Мира — review только после полного stable-head handoff.
-- Технический планировщик AP-07: Лёва — задача завершена.
-- Исполнитель AP-07: Лира.
-- У Марка активного назначения нет.
+- Координатор: Мира — следующий агент; проверка AP-07 exact head, согласование недостающей Pages/browser/owner acceptance и coordinator-first whole-PR verdict.
+- Исполнитель AP-07: Лира — авторская реализация и handoff завершены; не independent reviewer своего PR.
+- Технический reviewer после coordinator PASS: Лёва (если не участвовал в реализации).
+- Марк не назначен; владелец самостоятельно решает merge после выполненных gates.
 
-## Принятые границы AP-07
+## Границы
 
-- Существующие authoritative Forum actions, source-locale correction, revision-history и permission model переиспользуются; второй RBAC/admin mutation backend не создаётся.
-- Нужные current-scope transport/privacy corrections для inline post source correction и post-history response входят в AP-07.
-- Новые schema/migrations/permissions/dependencies/runtime grants не требуются.
-- AP-08+ и unrelated Complaints/Signals/production work не включать.
+- Нет новых schema/migrations/authorization keys, отдельного admin mutation backend, AP-08+ функциональности или production rollout.
+- История правок сообщения остаётся отдельным привилегированным запросом; source-correction остается канонической транзакционной операцией/AP-05 History, не Complaints Decision.
+- Продолжать только по проверенному exact head; при изменении implementation части повторить требуемые checks/review.
 
-Оперативное состояние и следующий шаг: [workflow.md](./workflow.md).
-Утверждённый план: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
-Технический план AP-07: [личный файл Лёвы](agents/codex-6.1-sol.md).
+Оперативный маршрут: [workflow.md](./workflow.md).
+Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md), [technical plan](agents/codex-6.1-sol.md).

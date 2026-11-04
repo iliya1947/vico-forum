@@ -1,25 +1,27 @@
 # Лира — ChatGPT-6
 
-## Активная задача — AP-07 implementation
+## AP-07 — итог реализации и author handoff
 
-Основание: назначение в workflow #251, принятый technical plan Лёвы `codex-6.1-sol.md`.
-Base `main`: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`.
-Draft implementation PR: [#282](https://github.com/iliya1947/vico-forum/pull/282).
+Основание: принятый план Лёвы в service PR #251. Base/main: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`.
+Implementation: [draft PR #282](https://github.com/iliya1947/vico-forum/pull/282), stable exact head `b0d5e74663cd57851225447e792ab4a9bf98322c`.
 
-### Subtask 1/3 — section → topics
+### Завершённая реализация
 
-- Protected `AdminForumReader.readSectionTopics()`: literal current-title/ID search до LIMIT, ID keyset 25 + lookahead, exact count, Help service-section; Hyperdrive, loader, section view, navigation и route/PG/UI tests.
-- Первоначальный CI выявил устаревший DOM selector в тесте; поправлен без изменения рабочего поведения.
+1. Section → topics: protected literal current-title/ID SQL search before LIMIT, 25+lookahead ID-keyset, exact totals, Help internal section, loader/page navigation.
+2. Dedicated `/:locale/admin/forum/topics/:topicId`: independent effective Forum gate, narrow DTO, Help-private ID gate, translation/original, author/time, safe Markdown/attachment presentation, original post order numbering, best-answer promotion and public permalinks; один AdminShell.
+3. Shared `MessageQuickActions` в admin/public topic: отдельные `forum.sourceLocale.correctAny` и `forum.post.history.read` gates; canonical POST to topic with ID/revision CAS/Any/actor expectation; inline correction stays in place, ordinary redirect retained; revision bodies on demand only; private/no-store success/error responses; stale permission/actor/409 revalidation without silent retry.
+4. Added route/native PG/UI/authz/HTTP privacy/error/race/identity tests; permanent `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md` changes; opt-in static UI Preview scenario for visual review.
 
-### Subtask 2/3 — admin topic page
+### Проверенная evidence
 
-- Текущий head `9c200dc3e998448d9b0aab1a0b815f31aa18d87a`.
-- Новый `app/routes/admin-topic.tsx` (GET `/:locale/admin/forum/topics/:topicId`), независимый `requireAdminForumAccess` до private read/ID validation, typed controlled 400/401/403/404/503 и private/no-store.
-- Новый explicit DTO `app/admin/topic-model.ts` строго проецирует текущую тему и current post revisions, авторов, время и опубликованные attachments; `duplicateRelationshipId` и pending appeal ID только при current `forum.helpDuplicate.manage`. Private explanation/Case/History payload не читается и не сериализуется.
-- `app/admin/topic.tsx` повторно использует source `ContentTranslationPresentationService.readCurrent`, safe Markdown, attachment display и `TopicQuickActions inline` в одном AdminShell. Source lang/dir, original fallback, оригинальная нумерация `#post-id` и best-answer reorder сохранены. `TopicTitlePresentation` расширен необязательным h2.
-- Добавлены focused route/presentation tests; две поправки test expectations для canonical encoded permalink и route-shape, а также замена несуществующего Help i18n key на действующий. PostgreSQL job предыдущего head SUCCESS, application checks старого head выявили test-only regressions.
-- Current exact-head [CI #41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411): SUCCESS (checks и database); не выдавать за полный AP-07 review. Реальный browser Worker/Better Auth/PostgreSQL в этой среде не запускался.
+- Final head `b0d5e74663cd57851225447e792ab4a9bf98322c`, current main `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`, PR mergeable=true.
+- [CI #41746716082](https://github.com/iliya1947/vico-forum/actions/runs/41746716082) SUCCESS, both `checks` and `database` SUCCESS on exact head.
+- GitHub test-merge `942ef78b489a1ca92b383d95de8033d2c9807365` (parents main+head) tree `8d4213bd763462360f33caa02ff91bb2caaca30a` identical implementation tree.
+- No new DB schema/migration, permissions, dependency, privileged grant, AP-08+ implementation. Prior red CI from intermediate heads were fixed; final CI success.
 
-### Следующая подзадача 3/3
+### Не проведено / следующий агент
 
-Подключить shared per-message Quick actions к admin/public topic, исправить current inline post-source response и revision-history private/no-store/fetcher behavior. Проверить permissions, race/stale, UI/PG/browser и Complaints regressions. Обновить permanent docs/current state только фактическим итогом, получить stable exact head и выполнить author handoff Мире в #251. AP-08+ не начинать.
+- Actual Chromium→Worker→Better Auth→PostgreSQL AP-07 browser matrix, owner visual acceptance. UI Preview is visual-only, local Worker HTTP smoke in CI is not browser acceptance. Информация о реальном браузерном результате **не проверена**.
+- No independent whole-PR verdict by Лира (author). Mира next for coordinator-first review and remaining acceptance gates; after PASS Лёва technical independent review. PR #282 still draft/not merged. No external rollout.
+
+Задача Лиры AP-07 implementation и author handoff завершена. Служебный #251 — точка передачи для следующего агента.
