@@ -4,26 +4,36 @@
 
 ## Актуальное состояние
 
-- AP-01–AP-07 merged в `main`. AP-07 merged через PR #282; current main `e39c36ccef29c6164706d826f26c57088a97fa20`.
-- AP-07 прошёл coordinator whole-PR review Миры и independent technical whole-PR review Лёвы на stable head `985160867001fd42b3ad2614262927aab3edfb3e`; confirmed open current-scope defects: 0.
-- AP07-ACC-01/02 закрыты actual Worker/Better Auth/PostgreSQL/Chromium evidence. Отдельных действий по AP-07 больше нет.
-- Следующий bounded package по permanent `docs/ADMIN_PANEL.md` — **AP-08: topic closure**.
-- AP-08 имеет обязательный product gate до technical planning. Уже утверждено только базовое поведение: закрытая тема не принимает новые ответы; закрытие само по себе не меняет solved/best answer/duplicate state и не удаляет сообщения; persisted closed-state и reply admission должны быть authoritative/concurrency-safe; committed publication replay сохраняется.
-- До implementation необходимо решение владельца по четырём пунктам:
-  1. существует ли reopening вообще;
-  2. если существует — использует ли reopen ту же capability, что close, либо отдельную;
-  3. требуется ли причина отдельно для close и отдельно для reopen;
-  4. есть ли actor exception, позволяющее кому-либо отвечать в закрытой теме; implicit moderator bypass запрещён.
-- Эти решения в проверенных source-of-truth и комментариях #251 ранее не зафиксированы. До них Лёве не передаётся technical planning и AP-08 implementation не начинается.
-- AP-09 Users, AP-10 blocking, AP-11 closeout и production rollout не начинать раньше соответствующей очереди/решений.
+- AP-01–AP-07 merged в `main`. Current main: `e39c36ccef29c6164706d826f26c57088a97fa20`.
+- Следующий bounded package — **AP-08: topic closure/reopen**.
+- Product gate AP-08 закрыт решением владельца:
+  1. **Reopen поддерживается.**
+  2. **Close и reopen используют одну code-backed capability.**
+  3. **Обязательная причина не требуется** ни для close, ни для reopen.
+  4. **Closed topic не принимает новые replies ни от кого**, включая администратора/модератора; чтобы ответить, тему нужно сначала reopen. Actor exceptions нет.
+- Уже утверждённые invariants сохраняются: close/reopen не меняют solved/best answer/duplicate relationships и не удаляют сообщения; persisted closed-state и reply admission должны иметь одну authoritative concurrency boundary; reply, уже committed по publication receipt, при replay должен вернуть прежний результат без нового reply или duplicate History event.
+- AP-08 не должен вводить implicit moderator bypass, второй RBAC или admin-only mutation semantics; точный технический способ определяет Лёва по текущему main.
+- AP-09 Users, AP-10 blocking, AP-11 closeout и production rollout пока не начинать.
 
 ## Назначения и следующий шаг
 
-- Мира — зафиксировала merge AP-07 и AP-08 product gate.
-- Лёва — будет назначен на bounded technical planning AP-08 сразу после решений владельца.
-- Лира — implementation после проверки/утверждения плана.
+- Мира — product scope/gate AP-08 закрыт.
+- **Лёва — следующий агент: bounded technical planning AP-08 на актуальном main.**
+- Лира — implementation только после coordinator review/утверждения технического плана.
 - Марк — не назначен.
-- **Следующий шаг: решения владельца по четырём пунктам AP-08.**
+
+### Задача Лёве
+
+Подготовь bounded technical plan AP-08 для topic close/reopen по актуальному `main`.
+
+Требуемый результат:
+- определить минимальный scope реализации closure/reopen;
+- привязать его к существующим forum mutation, authorization, reply/publication, History и admin/public Quick actions boundaries;
+- определить необходимые schema/migration/catalog/grant изменения только если они действительно требуются;
+- определить concurrency/CAS/replay/error/privacy/localization/UI/test acceptance для этого пакета;
+- не включать AP-09+, blocking, structural forum CRUD, production rollout или несвязанный рефакторинг.
+
+Готовность плана: он должен быть достаточно конкретным, чтобы Лира могла реализовать AP-08 отдельным bounded implementation PR без дополнительных продуктовых решений.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
