@@ -6,12 +6,13 @@ export const ADMIN_FORUM_PERMISSIONS = [
   "forum.sourceLocale.correctAny", "forum.post.history.read",
 ] as const satisfies readonly PermissionKey[];
 export const ADMIN_ADMISSION_PERMISSIONS = [
-  "access.authorization.manage", "admin.history.read", ...ADMIN_FORUM_PERMISSIONS,
+  "access.authorization.manage", "admin.history.read", "admin.users.read", ...ADMIN_FORUM_PERMISSIONS,
 ] as const;
 
 export interface AdminAccess {
   canEnter: boolean;
   canReadHistory?: boolean;
+  canReadUsers?: boolean;
   canReadForum: boolean;
   canManageAuthorization: boolean;
 }
@@ -19,6 +20,8 @@ export function adminAccess(permissions: ReadonlySet<PermissionKey>): AdminAcces
   const canReadForum = ADMIN_FORUM_PERMISSIONS.some(key => permissions.has(key));
   const canManageAuthorization = permissions.has("access.authorization.manage");
   const canReadHistory = permissions.has("admin.history.read");
-  return { canEnter: canReadForum || canManageAuthorization || canReadHistory, canReadForum, canManageAuthorization,
-    ...(canReadHistory ? { canReadHistory: true } : {}) };
+  const canReadUsers = permissions.has("admin.users.read");
+  return { canEnter: canReadForum || canManageAuthorization || canReadHistory || canReadUsers, canReadForum, canManageAuthorization,
+    ...(canReadHistory ? { canReadHistory: true } : {}),
+    ...(canReadUsers ? { canReadUsers: true } : {}) };
 }
