@@ -81,7 +81,8 @@ describe("PostgreSQL 17 locale migrations", () => {
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
     expect(applied.rows[0]?.count).toBe("57");
-    // Temporary exact-hash capture for the new AP-08 production schema manifest.
+    // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
+    // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
       select 'check:' || rel.relname || '.' || constraint_row.conname as key,
         pg_catalog.pg_get_expr(constraint_row.conbin, constraint_row.conrelid, false) as definition
@@ -101,9 +102,25 @@ describe("PostgreSQL 17 locale migrations", () => {
       where n.nspname = 'public' and rel.relname = 'forum_topics' and a.attname = 'closure_version'
     `);
     const { createHash } = await import("node:crypto");
-    console.info("AP08_SCHEMA_DEFINITION_HASHES", JSON.stringify(Object.fromEntries(
-      definitions.rows.map(r => [r.key, createHash("sha256").update(r.definition).digest("hex")])
-    )));
+    const { readFile } = await import("node:fs/promises");
+    const manifest = JSON.parse(await readFile(".github/production-schema-manifest.json", "utf8")) as {
+      tables: Record<string, {
+        columns: Array<{ name: string; defaultSha256: string | null }>;
+        checks: Array<{ name: string; definitionSha256: string }>;
+      }>;
+    };
+    const checkHash = (table: string, name: string) =>
+      manifest.tables[table]?.checks.find(row => row.name === name)?.definitionSha256;
+    const versionHash = manifest.tables.forum_topics.columns.find(row => row.name === "closure_version")?.defaultSha256;
+    expect(definitions.rows).toHaveLength(4);
+    expect(Object.fromEntries(definitions.rows.map(row =>
+      [row.key, createHash("sha256").update(row.definition).digest("hex")]
+    ))).toEqual({
+      "check:forum_topics.forum_topics_closure_version_check": checkHash("forum_topics", "forum_topics_closure_version_check"),
+      "check:authz_permissions.authz_permissions_catalog_check": checkHash("authz_permissions", "authz_permissions_catalog_check"),
+      "check:admin_history.admin_history_action_target_check": checkHash("admin_history", "admin_history_action_target_check"),
+      "default:forum_topics.closure_version": versionHash,
+    });
 
   });
 

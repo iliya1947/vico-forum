@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "79c3d1f21f92930af1f0134121956d292724ab1563ed7196d28f48c2df7fc0c7"
         }
       ],
       "indexes": []
@@ -3948,7 +3948,7 @@
           "name": "closure_version",
           "type": "integer",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
         }
       ],
       "primaryKeys": [
@@ -4028,7 +4028,7 @@
           "columns": [
             "closure_version"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9491d6e43c450af20799a9ae8324870c053b2bb1254af6daae644f251d3f77df"
         }
       ],
       "indexes": [
@@ -7065,7 +7065,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "92f539658048cc735cc9354d92f3e0cc55f58d513d208a25dd741dc42c729b42"
         },
         {
           "name": "admin_history_context_check",
