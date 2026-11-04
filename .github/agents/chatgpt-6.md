@@ -1,5 +1,14 @@
 # Лира — ChatGPT-6
 
+## AP-09 — этап 2/4 завершён: Users browse/detail (2026-11-05)
+
+- Implementation [Draft PR #287](https://github.com/iliya1947/vico-forum/pull/287), branch `feat/admin-users-ap09`, stable partial-scope exact head `42d212eda1660fe0bc9b882c97238de509d30239` (base `2651d2bf7de7212068c54674dca7d90716ea92c3`).
+- Добавлены независимые route gates `admin.users.read` до query/target validation и private reads; Users index/search c 25+lookahead, C-order raw-ID cursor, exact total из одного SQL statement и только `id,name,image,joinedAt` (без email, grants, overrides). Read-only user detail использует существующий public `readProfile` и explicit projection публичной части. Typed availability / 401/403/400/404/503, private/no-store, unexpected errors propagate. Header/Overview/nav и old placeholder routing скорректированы с сохранением management-only `/admin/authorization` subset.
+- Применены EN/RU/HE reviewed labels/fingerprints, safe public link/RTL/UTC presentation, route/permission/privacy/native PG search and mounted UI regressions. Тесты проверяют Unicode/slash raw IDs, literal `%_\\`, cursor/count/privacy and legacy routes; никаких role/override writers, нового inline protocol, AP-10 features или production changes не внесено.
+- [Exact-head CI #41926774562](https://github.com/iliya1947/vico-forum/actions/runs/41926774562) **SUCCESS**: `checks` 142/142 suites, 1877/1877 app tests; `database` 40/40 suites, 480/480 PostgreSQL tests; lint/typecheck/build/schema parity and existing Worker smoke. Предшествующие TypeScript/test expectations в текущем PR локально скорректированы до этого stable head. Это **не** полный AP-09 handoff.
+- Следующий этап по явному `...`: AP-09 этап 3/4 — targeted management-only read выбранного пользователя и UI reuse имеющихся assignment/override controls через прежний canonical `/:locale/admin/authorization` fetcher. Никаких `inlineUserAuthorization`/`editorActorId` без подтверждённого blocker. После него остановиться до команды на этап 4/4.
+- **Информация не проверена:** real authenticated browser/Worker/PostgreSQL AP-09 flow, deployed acceptance. Owner visual acceptance не запрашивалась. Новую lasting documentation/PROJECT_STATE не трогать до separate closeout PR.
+
 ## AP-09 — этап 1/4: catalog, migration, initial grant (2026-11-05)
 
 - Назначение Миры [#6643435013](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643435013), утверждённый план [#6642731589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642731589) с корректировкой [#6643363040](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643363040). AP-08 implementation #283/documentation #286 merged; AP-09 base main `2651d2bf7de7212068c54674dca7d90716ea92c3`.
