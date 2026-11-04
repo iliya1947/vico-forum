@@ -1,5 +1,25 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 coordinator whole-PR review — подзадача 2/4: permission / migration / DB / read privacy
+
+**Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Проверено:
+- `admin.users.read` добавлен в code-backed catalog и schema CHECK; initial grant есть только у built-in admin, отсутствует у user/moderator; dynamic role/override semantics сохраняются;
+- forward migration `0057_admin_users_read` не переписывает accepted history: расширяет catalog constraint, вставляет permission и exact built-in-admin grant;
+- Drizzle schema и production manifest переведены на 0057; exact-head CI подтвердил migration/schema/manifest parity;
+- `PostgresAdminUsersReader` выбирает только `id/name/image/created_at`, не email/session/account/authz state; search по name/ID параметризован, literal wildcard escaping есть, email не участвует;
+- paging: 25 + lookahead, C-collated ID keyset, exact total считается по полному matching set в том же SQL statement;
+- targeted `readUserManagementState(userId)` выполняется в existing REPEATABLE READ READ ONLY snapshot, возвращает role choices без grants и authorization только выбранного target; другие users/email не читаются;
+- target grants/overrides/effective permissions присутствуют только в manager-targeted read и используют существующую resolution formula;
+- typed DB availability mapping для Users reader сохраняет controlled unavailable, unexpected errors не маскируются;
+- current web runtime contract уже имеет SELECT на `user` и необходимые authz relations; AP-09 не требует новых runtime relation grants;
+- PostgreSQL tests подтверждают >50 users paging, Unicode/slash IDs, literal `%_\\`, no-email search/projection, targeted snapshot consistency, allow/deny/inherit, lockout, no-op History и rollback при History failure.
+
+Следующая подзадача: routes/authz reuse/UI lifecycle.
+
 ## AP-09 coordinator whole-PR review — подзадача 1/4: stable head / scope / CI
 
 **Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
