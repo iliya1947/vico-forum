@@ -1,5 +1,38 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-08 coordinator review restart — подзадача 4: Quick actions / Closed UI / mounted reply editor / AP08-MIRA-01
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0. AP08-MIRA-01 закрыт.**
+
+Повторно проверено:
+- shared public/admin closure Quick actions используют canonical topic endpoint, isolated fetcher, CAS version и no automatic retry;
+- stale/denied closure responses revalidate once; actor/topic/grant/version lifetime изолирует старый fetcher state;
+- Closed status независим от Solved/duplicate;
+- изначально закрытая тема не монтирует новый reply composer и не показывает Reply/Quote controls;
+- уже смонтированный reply editor сохраняет тот же form/textarea, text, Undo/Redo и Cancel при closure/revalidation;
+- publication блокируется одновременно на form и MarkdownEditor layers; reopen не вызывает автоматическую публикацию;
+- `topicClosed` 409 revalidates once без replay/resubmit и без потери editor buffer;
+- editor scope остаётся `[accountId, contextKey, locale]`; closure не меняет owner/context identity;
+- attachment operation identity `[ownerId, contextKey, draftId]` не меняется из-за closure; operation cleanup abort выполняется только при identity change/unmount.
+
+### AP08-MIRA-01 correction
+
+Commit `7b6adbf8c92e1706064cb5845248813668a287d0` меняет только `app/forum/public-read.test.tsx` (19+/3-):
+- тест ждёт enabled Attach и реальный UUID `editorOperationId` до выбора файла;
+- XHR сохраняет фактически отправленный `X-Vico-Operation-Id`;
+- тест доказывает совпадение request operation с mounted editor operation;
+- `aborted === false` проверяется уже **до** closure, затем после close и reopen;
+- проверяются неизменность mounted form и operation ID через обе revalidation;
+- assertions не ослаблены и runtime implementation не изменён.
+
+CI #41904456264:
+- attempt 1: `app/forum/public-read.test.tsx` 84/84 PASS; application 140/140 files, 1863/1863 tests PASS;
+- attempt 2: тот же файл 84/84 PASS; application 140/140 files, 1863/1863 tests PASS.
+
+Точная причина старого abort на `381a046b...` остаётся не доказанной, но это больше не меняет выбранное исправление: тест теперь начинает проверку только после подтверждённой готовности upload operation и дважды стабильно проходит на неизменном corrected head. Product/runtime defect по старой нестабильности не подтверждён.
+
 ## AP-08 coordinator review restart — подзадача 3: authorization/HTTP/read boundaries
 
 **Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
