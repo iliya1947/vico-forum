@@ -1,5 +1,19 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 coordinator whole-PR review — подзадача 1/4: stable head / scope / CI
+
+**Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+**Baseline/current main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+- PR #287 Draft/open/mergeable; ahead 53, behind 0.
+- Diff: 36 files, 8082 additions / 69 deletions; lasting docs/PROJECT_STATE отсутствуют.
+- Changed scope соответствует AP-09: permission/catalog/migration/manifest, Users reader/routes/views, targeted authorization read, shared user controls, navigation/localization/tests/wiring.
+- Exact-head CI #41931562275 SUCCESS.
+- Независимо подтверждены summaries: application 143/143 files, 1884/1884 tests; database 41/41 files, 483/483 tests.
+- Lint, typecheck, build, UI preview build, migration history/metadata, Drizzle parity, PostgreSQL migrations/manifest/runtime probes и Worker smoke steps SUCCESS.
+- Actual authenticated Chromium→Worker→PostgreSQL AP-09 browser flow не выполнялся. **Информация не проверена.** По approved plan отдельным mandatory gate он не назначен.
+- На этой подзадаче implementation correctness ещё не оценивается; findings отсутствуют только по stable-head/scope/CI boundary.
+
 ## AP-09 technical plan review — итог
 
 Baseline `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`.
