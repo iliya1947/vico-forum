@@ -10,5 +10,5 @@
 - Исполнитель: Лира — ChatGPT-6
 - Implementation PR: #282 (draft), ветка `feat/admin-topic-message-ap07`
 - Текущий implementation head: `9c200dc3e998448d9b0aab1a0b815f31aa18d87a`
-- Subtask-2 CI: [#41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411) — in progress; итог пока не установлен; не whole-PR acceptance
+- Subtask-2 CI: [#41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411) — SUCCESS (checks и database); не whole-PR acceptance
 - Следующий шаг: Лира выполняет subtask 3/3 — message Quick actions, inline/history privacy transport, необходимые tests, docs, окончательную verification и stable-head handoff; только затем Мира проводит coordinator-first whole-PR review

@@ -18,7 +18,7 @@ Draft implementation PR: [#282](https://github.com/iliya1947/vico-forum/pull/282
 - Новый explicit DTO `app/admin/topic-model.ts` строго проецирует текущую тему и current post revisions, авторов, время и опубликованные attachments; `duplicateRelationshipId` и pending appeal ID только при current `forum.helpDuplicate.manage`. Private explanation/Case/History payload не читается и не сериализуется.
 - `app/admin/topic.tsx` повторно использует source `ContentTranslationPresentationService.readCurrent`, safe Markdown, attachment display и `TopicQuickActions inline` в одном AdminShell. Source lang/dir, original fallback, оригинальная нумерация `#post-id` и best-answer reorder сохранены. `TopicTitlePresentation` расширен необязательным h2.
 - Добавлены focused route/presentation tests; две поправки test expectations для canonical encoded permalink и route-shape, а также замена несуществующего Help i18n key на действующий. PostgreSQL job предыдущего head SUCCESS, application checks старого head выявили test-only regressions.
-- Current exact-head [CI #41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411): in progress; итог пока не установлен; не выдавать за полный AP-07 review. Реальный browser Worker/Better Auth/PostgreSQL в этой среде не запускался.
+- Current exact-head [CI #41744388411](https://github.com/iliya1947/vico-forum/actions/runs/41744388411): SUCCESS (checks и database); не выдавать за полный AP-07 review. Реальный browser Worker/Better Auth/PostgreSQL в этой среде не запускался.
 
 ### Следующая подзадача 3/3
 
