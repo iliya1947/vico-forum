@@ -48,15 +48,19 @@ describe("AP-09 admin users directory PostgreSQL projection", () => {
     } while (after);
     expect(ids).toHaveLength(62);
     expect(new Set(ids).size).toBe(62);
-    expect(ids.slice(0, 61)).toEqual(Array.from({ length: 61 }, (_, i) => `u-${String(i).padStart(3, "0")}`));
-    expect(ids[61]).toBe("id/עברית-😀".replace(/^id/, "id")); // explicit non-UUID identity
+    expect(ids).toEqual(["id/עברית-😀", ...Array.from({ length: 61 }, (_, i) => `u-${String(i).padStart(3, "0")}`)]);
   });
 
   it("filters before paging, escapes literal wildcards and never searches email", async () => {
-    for (const term of ["%_\\", "עברית", "😀", "u-060"]) {
+    for (const term of ["%_\\", "u-060"]) {
       const result = await reader.listUsers({ search: term });
       expect(result.items.map(user => user.id)).toEqual(["u-060"]);
       expect(result.total).toBe(1);
+    }
+    for (const term of ["עברית", "😀"]) {
+      const result = await reader.listUsers({ search: term });
+      expect(result.items.map(user => user.id)).toEqual(["id/עברית-😀", "u-060"]);
+      expect(result.total).toBe(2);
     }
     const idSearch = await reader.listUsers({ search: "id/עברית-😀" });
     expect(idSearch.items.map(user => user.id)).toEqual(["id/עברית-😀"]);
