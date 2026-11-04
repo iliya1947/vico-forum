@@ -81,6 +81,30 @@ describe("PostgreSQL 17 locale migrations", () => {
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
     expect(applied.rows[0]?.count).toBe("57");
+    // Temporary exact-hash capture for the new AP-08 production schema manifest.
+    const definitions = await client.query<{ key: string; definition: string }>(`
+      select 'check:' || rel.relname || '.' || constraint_row.conname as key,
+        pg_catalog.pg_get_expr(constraint_row.conbin, constraint_row.conrelid, false) as definition
+      from pg_catalog.pg_constraint constraint_row
+      join pg_catalog.pg_class rel on rel.oid = constraint_row.conrelid
+      join pg_catalog.pg_namespace n on n.oid = rel.relnamespace
+      where n.nspname = 'public'
+        and constraint_row.conname in ('authz_permissions_catalog_check',
+          'admin_history_action_target_check', 'forum_topics_closure_version_check')
+      union all
+      select 'default:forum_topics.closure_version',
+        pg_catalog.pg_get_expr(d.adbin, d.adrelid, false)
+      from pg_catalog.pg_attrdef d
+      join pg_catalog.pg_class rel on rel.oid = d.adrelid
+      join pg_catalog.pg_namespace n on n.oid = rel.relnamespace
+      join pg_catalog.pg_attribute a on a.attrelid = rel.oid and a.attnum = d.adnum
+      where n.nspname = 'public' and rel.relname = 'forum_topics' and a.attname = 'closure_version'
+    `);
+    const { createHash } = await import("node:crypto");
+    console.info("AP08_SCHEMA_DEFINITION_HASHES", JSON.stringify(Object.fromEntries(
+      definitions.rows.map(r => [r.key, createHash("sha256").update(r.definition).digest("hex")])
+    )));
+
   });
 
   it("rejects partial NULL allowance occurrence metadata", async () => {
