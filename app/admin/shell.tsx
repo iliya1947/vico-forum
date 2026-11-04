@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell, Breadcrumbs } from "../forum/ui";
 import {adminForumPath} from "./forum-paths";
+import {adminUsersPath} from "./users-paths";
 import { underDevelopmentPath } from "../forum/paths";
 import type { AdminAccess } from "./access";
 
@@ -12,16 +13,15 @@ export function adminDestinations(locale: string, access: AdminAccess) {
   return [
     { id: "overview", label: "adminOverview" as const, href: base, pending: false },
     ...(access.canReadForum ? [{ id: "forum", label: "adminForum" as const, href: adminForumPath(locale), pending: false }] : []),
-    ...(access.canManageAuthorization ? [
-      { id: "users", label: "adminUsers" as const, href: underDevelopmentPath(locale,"admin-users"), pending: true },
-      { id: "roles", label: "adminRoles" as const, href: `${base}/authorization`, pending: false },
-    ] : []),
+    ...(access.canReadUsers ? [{ id: "users", label: "adminUsers" as const, href: adminUsersPath(locale), pending: false }]
+      : access.canManageAuthorization ? [{ id: "users", label: "adminUsers" as const, href: `${base}/authorization#authorization-users-heading`, pending: false }] : []),
+    ...(access.canManageAuthorization ? [{ id: "roles", label: "adminRoles" as const, href: `${base}/authorization`, pending: false }] : []),
     ...(access.canReadHistory ? [{ id: "history", label: "adminHistory" as const, href: `${base}/history`, pending: false }] : []),
     { id: "settings", label: "adminSettings" as const, href: underDevelopmentPath(locale,"admin-settings"), pending: true },
   ];
 }
 
-export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles" | "forum"}) {
+export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles" | "forum" | "users"}) {
   const {t} = useTranslation("common");
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel">
