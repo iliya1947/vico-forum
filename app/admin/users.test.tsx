@@ -92,4 +92,35 @@ describe("AP-09 read-only Users presentation", () => {
     expect(manager.find(x => x.id === "users")?.href).toBe("/he/admin/authorization#authorization-users-heading");
     expect(manager.find(x => x.id === "roles")?.href).toBe("/he/admin/authorization");
   });
+
+  it.each(["en", "ru", "he"])("renders the existing role/override controls on detail in %s without a second action", locale => {
+    const management = {
+      userId: id,
+      roles: [{ id: "builtin-user", slug: "user", displayName: "User", isSystem: true }],
+      authorization: {
+        role: { id: "builtin-user", slug: "user", displayName: "User", isSystem: true },
+        explicitAssignment: false, grants: ["forum.reply.create" as const],
+        overrides: {}, effectivePermissions: ["forum.reply.create" as const],
+      },
+    };
+    const element = <AdminUserDetail locale={locale}
+      access={adminAccess(new Set(["admin.users.read", "access.authorization.manage"]))} user={user}
+      management={management} managerActorId="manager"
+      permissions={["forum.reply.create", "admin.users.read"]}/>;
+    const router = createMemoryRouter([{ path: "*", element }], {
+      initialEntries: [`/${locale}/admin/users/${encodeURIComponent(id)}`],
+    });
+    dispose = () => router.dispose();
+    const root = render(<I18nextProvider i18n={localized(locale)}><RouterProvider router={router}/></I18nextProvider>).container;
+    expect(root.querySelectorAll("main")).toHaveLength(1);
+    expect(root.querySelectorAll("h1")).toHaveLength(1);
+    expect(root.querySelector("#authorization h3")?.textContent).not.toBe("authorizationHeading");
+    const forms = [...root.querySelectorAll<HTMLFormElement>("#authorization form")];
+    expect(forms).toHaveLength(3);
+    expect(forms.every(form => form.getAttribute("action") === `/${locale}/admin/authorization`)).toBe(true);
+    expect(forms.every(form => form.querySelector<HTMLInputElement>('input[name="userId"]')?.value === id)).toBe(true);
+    expect(root.querySelector('select[name="effect"] option[value="inherit"]')?.textContent).not.toBe("overrideInherit");
+    expect(root.querySelector('input[name="inlineUserAuthorization"]')).toBeNull();
+  });
+
 });
