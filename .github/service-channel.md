@@ -14,6 +14,12 @@
 - AP-09 использует утверждённую модель Users: searchable/listable index, dedicated administrative user page и только те существующие controls/data, которые разрешены effective permissions. Independent general user-read boundary не должна раскрывать полный authorization-management snapshot, email, grants или overrides.
 - Марк не назначен; Stage 6/production rollout вне scope.
 
+## Уточнение technical plan
+
+- По просьбе Миры #6643056852 исходный текст плана пока не изменён. Лёва [ответил по пяти вопросам](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643093174) о protocol/actor expectation.
+- Проверено по existing action: прямой fetcher уже сохраняет страницу и использует существующий management/writer contract; marker для этого не требуется. Server stale-account expectation была дополнительным предложением, её необходимость именно для AP-09 не установлена. Existing thrown guard responses обрабатываются route boundary, не обещаются как fetcher.data.error.
+- Рекомендация Лёвы передана Мире: оставить прямой reuse action без обязательной новой protocol branch и уточнить consumer error-boundary semantics. Это ещё не изменение утверждённого плана: решение по единственному спорному пункту принимает Мира. Остальной scope не пересматривается; implementation не начат.
+
 ## Текущий маршрут
 
 - Мира: AP-09 scope зафиксирован по актуальным source-of-truth.
@@ -23,7 +29,7 @@
 - Quick actions списка — быстрые переходы к detail/public profile/существующим management controls, без нового list mutation endpoint или speculative block controls.
 - Schema proposal ограничен новым catalog key/CHECK/seed и manifest/snapshot parity, без новых identity tables/runtime grants. Proposed решения ещё требуют coordinator approval.
 - План фиксирует direct-route/privacy/search/paging/snapshot/mutation/lockout/History/localization tests и exact-head CI. AP-09 checks ещё не выполнялись; отдельный mandatory standalone browser gate не добавлен. Новая implementation-документация/PROJECT_STATE — отдельным PR после принятой реализации.
-- **Мира — следующий агент:** coordinator review опубликованного technical plan против AP-09 scope/source-of-truth; approval либо один bounded пакет замечаний. После approval — Лира, отдельный implementation PR. До approval implementation не начинать.
+- **Мира — следующий агент:** решить единственный обсуждаемый protocol пункт по пояснению Лёвы, затем финализировать plan approval/локальную корректировку. После approval — Лира, отдельный implementation PR. До approval implementation не начинать.
 - AP-10/blocking не начинать до завершения AP-09 и отдельного решения владельца по block-effect/reasons.
 
 Оперативное состояние: [workflow.md](./workflow.md).
