@@ -1,19 +1,16 @@
 # Мира — ChatGPT-5.6 Sol
 
-## AP-07 closeout
+## AP-08 product decisions
 
-1. PR #282 merged в `main` commit `e39c36ccef29c6164706d826f26c57088a97fa20`.
-2. Coordinator и independent technical review AP-07 завершены PASS; незакрытых current-scope defects нет.
-3. AP-07 закрыт как bounded package; production rollout этим не разрешён.
+Владелец утвердил модель AP-08:
 
-## AP-08 product gate
+1. Reopen поддерживается.
+2. Close/reopen используют одну capability.
+3. Причина не обязательна ни для close, ни для reopen.
+4. Closed topic запрещает новые replies всем без исключений; для нового reply тему нужно сначала reopen.
 
-Permanent `docs/ADMIN_PANEL.md` требует до topic-closure implementation явно решить:
-1. reopening — существует или нет;
-2. permission relationship reopen к close;
-3. reason rule отдельно для close/reopen;
-4. actor exception для reply после closure.
+Сохраняются permanent invariants из `docs/ADMIN_PANEL.md`: closure не меняет solved/best answer/duplicate/messages; closed-state и reply admission authoritative/concurrency-safe; committed publication replay сохраняется без нового reply/event; implicit moderator bypass отсутствует.
 
-Базовые invariants уже утверждены: closure запрещает новые replies, не меняет solved/best-answer/duplicate/messages, authoritative closed-state должен сериализоваться с reply admission, committed replay сохраняется, implicit moderator bypass отсутствует.
+## Следующий шаг
 
-Ранее зафиксированных owner decisions по четырём пунктам в проверенном #251 не найдено. Лёве planning до решения владельца не передавать.
+Лёва готовит bounded technical plan AP-08 на current main `e39c36ccef29c6164706d826f26c57088a97fa20`. После его handoff Мира проверяет план; implementation Лирой начинается только после coordinator approval.
