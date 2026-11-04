@@ -108,6 +108,21 @@ describe("AP-07 shared message Quick actions",()=>{
     expect(router.state.location.pathname).toContain("/en/admin/forum/topics/");
   });
 
+  it("refreshes revoked history permissions after 403 without replaying the private read",async()=>{
+    const loader=vi.fn(async()=>({ok:true}));
+    const {container,action}=mount({
+      source:false,history:true,loader,
+      onAction:()=>data({error:"forbidden"},{status:403,headers:{"Cache-Control":"private,no-store"}}),
+    });
+    await waitFor(()=>expect(container.querySelector(".message-history-action button")).not.toBeNull());
+    fireEvent.click(container.querySelector("summary")!);
+    fireEvent.click(container.querySelector(".message-history-action button")!);
+    await waitFor(()=>expect(container.querySelector('[role="alert"]')?.textContent)
+      .toContain("unavailable"));
+    await waitFor(()=>expect(loader.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
   it("never displays a late history result after changing the viewer",async()=>{
     let release: ((value:unknown)=>void) | null=null;
     const {container}=mount({

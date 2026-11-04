@@ -28,6 +28,7 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
   const history = useFetcher<HistoryResponse>();
   const revalidator = useRevalidator();
   const lastRefreshedConflict = useRef<unknown>(null);
+  const lastRefreshedDenial = useRef<unknown>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRevision, setHistoryRevision] = useState<string | null>(null);
   const path = forumTopicPath(locale, topicId);
@@ -40,6 +41,19 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
     lastRefreshedConflict.current = correction.data;
     void revalidator.revalidate();
   }, [correction.state, correction.data, revalidator]);
+
+  // A revoked capability also needs an explicit refresh: 401/403 actions do
+  // not revalidate the protected loader automatically.
+  useEffect(() => {
+    const sourceDenied = correction.state === "idle" &&
+      (correction.data?.error === "forbidden" || correction.data?.error === "unauthenticated");
+    const historyDenied = history.state === "idle" && history.data && "error" in history.data &&
+      (history.data.error === "forbidden" || history.data.error === "unauthenticated");
+    const response = sourceDenied ? correction.data : historyDenied ? history.data : null;
+    if (!response || lastRefreshedDenial.current === response) return;
+    lastRefreshedDenial.current = response;
+    void revalidator.revalidate();
+  }, [correction.state, correction.data, history.state, history.data, revalidator]);
 
   function toggleHistory() {
     if (history.state !== "idle") return;
