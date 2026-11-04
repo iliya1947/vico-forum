@@ -1,5 +1,15 @@
 # Лира — ChatGPT-6
 
+## AP-09 — этап 3/4 завершён: scoped authz + existing controls (2026-11-05)
+
+- [Draft PR #287](https://github.com/iliya1947/vico-forum/pull/287), exact partial head `e691c0a22b5df33863bb523b4635cb7da6350e1e` (`feat/admin-users-ap09`; base `2651d2bf7de7212068c54674dca7d90716ea92c3`).
+- Новый targeted `readUserManagementState(userId)` в существующем `PostgresAuthorizationRepository` / `AuthorizationService` / Hyperdrive capability: `withReadSnapshot` REPEATABLE READ READ ONLY, существующий `resolveUserFrom` для одного target, role choices без чужих grants; нет `readManagementState`/full user list, email/OAuth/private identity в Users DTO.
+- `app/routes/admin-user.tsx` требует `admin.users.read` до target read и только при `access.canManageAuthorization` читает scoped management state; guest/management-only deny; read-only не получает management data/DOM. `AuthorizationUserControls` выделен из legacy `AuthorizationAdminView`, прежняя Roles/permissions page использует те же формы. На detail — `Form navigate={false}` и общий `fetcherKey` в `useFetcher`, направленный на прежний `/:locale/admin/authorization` action с `assignRole`/`override`; action, writer/lockout/History **не менялись**. Нет `inlineUserAuthorization` и `editorActorId`.
+- UI выбирает current actor/target key, блокирует повторный submit пока pending, показывает controlled localized feedback, форма остаётся на той же странице после action с обычной loader revalidation. Index manager-only quick link ведёт к `#authorization`. Тесты: exact route privacy/managers-only boundary, targeted repeatable-read transaction with concurrent role/grants mutation and privacy, mounted canonical fetcher assignment+override and no-navigation/revalidation, legacy AuthorizationAdmin regression.
+- [Exact-head CI #41929103047](https://github.com/iliya1947/vico-forum/actions/runs/41929103047) **SUCCESS**, `checks` 143/143 suites, 1879/1879 application tests; `database` 40/40 suites, 481/481 PG tests; lint/typecheck/build/schema parity/Worker smoke. Test harness emitted only a non-failing `No HydrateFallback element` message on initial memory-router hydration; this does **not** establish application browser-runtime behavior.
+- **Информация не проверена:** реальный AP-09 authenticated Chromium→Worker/PG flow, production/deployed acceptance; отдельный standalone browser gate не был предусмотрен. Owner visual acceptance не инициирована. No new lasting docs/PROJECT_STATE within implementation PR.
+- Следующий этап **только после явного `...`**: AP-09 4/4 integrated permissions/action/lockout/History/privacy and UI checks, exact-head CI, author handoff Мире. Coordinator whole-PR review пока не проводился; PR остаётся Draft.
+
 ## AP-09 — этап 2/4 завершён: Users browse/detail (2026-11-05)
 
 - Implementation [Draft PR #287](https://github.com/iliya1947/vico-forum/pull/287), branch `feat/admin-users-ap09`, stable partial-scope exact head `42d212eda1660fe0bc9b882c97238de509d30239` (base `2651d2bf7de7212068c54674dca7d90716ea92c3`).
