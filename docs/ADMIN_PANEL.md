@@ -9,8 +9,9 @@ aggregate counts. The existing `/:locale/admin/authorization` UI remains indepen
 protected at its original URL and, in AP-04, reuses the common shell/navigation.
 AP-03 adds authorization-change History and protected Overview recent actions. AP-05 reuses
 existing topic operations in shared Quick actions and connects their forum/Help History producers. AP-06 adds
-protected category/section browsing and dedicated object pages. Topic admin pages, topic closure
-and user blocking remain unimplemented. AP-02 itself added no schema
+protected category/section browsing and dedicated object pages. AP-07 adds administrative topic detail
+and shared source-locale/history actions for individual messages. Topic closure and user blocking
+remain unimplemented. AP-02 itself added no schema
 or permission keys; AP-03 adds the independent `admin.history.read` capability.
 
 Other routes and capabilities described below as delivery targets become available only
@@ -120,6 +121,57 @@ topic navigation/message actions belong to AP-07. Structural create/rename/move/
 closure, Users and blocking are outside AP-06. There is no speculative Quick actions menu
 without an approved category/section operation. EN/RU/HE, shared AdminShell, logical CSS,
 keyboard search/navigation and responsive/RTL behavior apply to these pages.
+
+## Topic detail and message actions (AP-07)
+
+The protected `/:locale/admin/forum/sections/:sectionId` page additionally lists that
+section's topics. Discovery is a scoped PostgreSQL current-title/ID search, literal
+case-insensitive and filtered before LIMIT; each 25-topic ID-keyset page has lookahead and
+an independent matching total. Current title/source locale and real post count are projected,
+not message bodies or prior revisions. The internal Help service section stays protected;
+no public service-section destination is created. Empty, missing, malformed and unavailable
+states retain the existing AP-06 semantics.
+
+`/:locale/admin/forum/topics/:topicId` is a dedicated protected topic page, reached from
+a section or directly. Its loader independently checks the existing five Forum admission
+permissions before target validation/private reads; it rechecks the individual Quick action
+permissions for the current actor. It reuses the current `ForumReader.readTopicPage()` rather
+than adding another writer, topic domain model or history-paging API. An explicit private
+admin DTO exposes current title and messages, their revision identities, author labels,
+timestamps, relationships, current solution/Help states and published attachment metadata.
+The private Help duplicate relationship ID and pending appeal ID are present only with
+current `forum.helpDuplicate.manage`; no private appeal explanation, complaint Case data,
+prior revision bodies, email or session data is serialized.
+
+The page uses one `AdminShell`, Forum navigation and category → section → topic hierarchy,
+with safe Markdown, revision-bound current translations/original fallback, source language
+direction, attachment URLs from existing post-asset membership, and canonical public links.
+Post IDs and numbered anchors stay stable in chronological original ordering even when
+the best answer is visually promoted. It adds no publishing, arbitrary edit-any, deletion,
+attachment lifecycle or closure capability.
+
+Topic-level Quick actions reuse `TopicQuickActions inline`. A shared per-message disclosure
+is used by admin and public topic pages: correction of the current post source locale requires
+`forum.sourceLocale.correctAny` in admin scope, while viewing previous published revisions
+requires the independent `forum.post.history.read` permission. History is fetched only on
+explicit demand, bound to the canonical topic/post and current session. Viewer/target/grant
+changes isolate cached fetcher responses; old revision bodies cannot be reused across another
+context. Display preserves exact stored revision text, source language and UTC timestamps.
+
+Both message operations POST to the existing canonical `/:locale/topics/:topicId` action,
+not a second admin API. The source-correction form transmits current `postId`,
+`expectedRevisionId`, `operationScope=any`, source locale and stale-account expectation.
+The server still authorizes the session, origin, effective capability, post/topic membership,
+non-`und` locale and revision CAS. Its inline response stays on the current admin/public
+page while the ordinary caller retains its old redirect. A stale 409 refreshes the view but
+never automatically retries the write. History responses and controlled mutation errors
+use `private, no-store`; reader failure/denial never degrades into an unprotected result.
+These paths preserve the existing significant-action History producer and do not create
+a separate event for history reads or duplicate a Complaints action/Decision.
+
+No new RBAC keys, database migrations, runtime grants, separate message route, closure,
+Users, blocking or Settings operations are part of AP-07. External deployment/production
+acceptance remains a separate release boundary.
 
 ## Authorization and admission matrix
 

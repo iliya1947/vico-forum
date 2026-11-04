@@ -9857,3 +9857,14 @@ a.topic-tag:focus-visible {
 .complaint-review button,.complaint-review a{min-block-size:44px}
 .complaint-review-pagination{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;padding-block:.5rem}
 .complaint-review-source small{display:block;padding-block:.3rem}
+
+/* AP-07: per-message action controls and safe, exact revision text. */
+.message-admin-tools { margin-block: .75rem; max-width: 100%; }
+.message-admin-panel { display: grid; gap: .75rem; padding-block: .5rem; min-width: 0; }
+.message-source-correction label { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.message-source-correction input[name="sourceLocale"] { max-width: 100%; min-width: 0; }
+.message-history-source { overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+
+/* AP-07: keep long valid author labels/content inside the admin topic grid. */
+.admin-topic { min-inline-size: 0; overflow-wrap: anywhere; }
+.admin-topic .topic-message { min-inline-size: 0; }

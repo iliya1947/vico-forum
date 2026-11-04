@@ -11,5 +11,5 @@ export function createHyperdriveAdminForum(connectionString:string):AdminForumRe
       throw error;
     }finally{bestEffortDiscardClient(pool);}
   }
-  return {listCategories:query=>read(r=>r.listCategories(query)),readCategory:(id,query)=>read(r=>r.readCategory(id,query)),readSection:id=>read(r=>r.readSection(id))};
+  return {listCategories:query=>read(r=>r.listCategories(query)),readCategory:(id,query)=>read(r=>r.readCategory(id,query)),readSection:id=>read(r=>r.readSection(id)),readSectionTopics:(id,query)=>read(r=>r.readSectionTopics(id,query))};
 }

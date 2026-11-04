@@ -197,7 +197,14 @@ export async function topicAction({ request, params, context }: {
   if (changedIdentity) return changedIdentity;
   const intent = requiredFormText(formData, "intent") ?? "reply";
   const inlineMarker=formData.get("inlineQuickAction");
-  if(inlineMarker!==null&&inlineMarker!=="1")return mutationFailure("invalid",400);
+  if(formData.getAll("inlineQuickAction").length>1 || (inlineMarker!==null&&inlineMarker!=="1"))
+    return mutationFailure("invalid",400);
+  if (intent === "correctPostSourceLocale" || intent === "readPostHistory") {
+    const ambiguous = ["intent", "postId", "expectedRevisionId", "sourceLocale", "operationScope", "editorActorId"]
+      .some((field) => formData.getAll(field).length > 1);
+    if (ambiguous) return intent === "correctPostSourceLocale"
+      ? sourceLocaleCorrectionFailure("invalid", 400) : mutationFailure("invalid", 400);
+  }
   const inline=inlineMarker==="1";
   const completed=(path:string)=>inline?data({ok:true},{headers:{"Cache-Control":"private, no-store"}}):redirect(path);
   if (intent === "pinTopic" || intent === "unpinTopic") {
@@ -476,7 +483,7 @@ export async function topicAction({ request, params, context }: {
         actorId,
         scope: authorization.scope,
       });
-      return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
+      return completed(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });
   }
   if (intent === "readPostHistory") {
@@ -493,7 +500,7 @@ export async function topicAction({ request, params, context }: {
         revisions: revisions.map((revision) => ({
           ...revision, createdAt: revision.createdAt.toISOString(),
         })),
-      }, { status: 200 });
+      }, { status: 200, headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {
       if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
       throw error;

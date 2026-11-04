@@ -22,6 +22,13 @@ describe("UI preview state catalog", () => {
     }
   });
 
+  it("includes the protected AP-07 topic page as a manager-only visual fixture", () => {
+    expect(scenarios).toContainEqual(expect.objectContaining({
+      id: "admin-topic", view: "admin-topic",
+      allowedIdentities: ["manager"],
+    }));
+  });
+
   it("keeps dedicated editor states for create-topic, reply, and Help draft review", () => {
     expect(scenarios).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "editor-create-topic", view: "section" }),
@@ -57,6 +64,14 @@ describe("UI preview state catalog", () => {
 
 
 describe("embedded preview routing", () => {
+  it("renders one admin shell with topic and message Quick actions in the AP-07 fixture", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic" />);
+    expect(await screen.findByRole("heading", { name: "Admin panel" })).toBeInTheDocument();
+    expect(document.querySelectorAll("main")).toHaveLength(1);
+    expect(document.querySelectorAll(".admin-topic .topic-message").length).toBeGreaterThan(0);
+    expect(document.querySelector(".message-admin-tools")).not.toBeNull();
+  });
+
   it("opens the real section view directly from the homepage category map", async () => {
     render(<EmbeddedPreview scenarioId="home-guest" />);
 

@@ -47,7 +47,7 @@ export interface SourceLocaleCorrectionMutationError {
 }
 
 export function mutationFailure(error: ForumMutationError["error"], status: number, headers?: Record<string, string>) {
-  return data<ForumMutationError>({ error }, { status, headers });
+  return data<ForumMutationError>({ error }, { status, headers: { "Cache-Control": "private, no-store", ...headers } });
 }
 
 export function sourceLocaleCorrectionFailure(
@@ -56,7 +56,7 @@ export function sourceLocaleCorrectionFailure(
 ) {
   return data<SourceLocaleCorrectionMutationError>(
     { error, operation: "sourceLocaleCorrection" },
-    { status },
+    { status, headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -81,7 +81,7 @@ export function editorIdentityGuard(form: FormData, context: RouterContextProvid
   if (form.has("editorActorId") && form.get("editorActorId") !== authSessionForRequest(context)?.user.id) {
     return data<ForumMutationError>({ error: "conflict",
       ...(form.get("intent") === "editPost" ? { intent: "editPost" as const } : {}),
-    }, { status: 409 });
+    }, { status: 409, headers: { "Cache-Control": "private, no-store" } });
   }
 }
 

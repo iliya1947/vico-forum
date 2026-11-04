@@ -7,7 +7,7 @@ import {canonicalEnglishCatalog} from "../localization/catalog";
 import {russianCommonValues,hebrewCommonValues} from "../localization/manual-values";
 import {AdminForumView,AdminCategoryView,AdminSectionView} from "./forum";
 import {adminAccess} from "./access";
-import {adminCategoryPath,adminSectionPath} from "./forum-paths";
+import {adminCategoryPath,adminSectionPath,adminTopicPath} from "./forum-paths";
 const access=adminAccess(new Set(["forum.post.history.read"]));
 const category={id:"c/slash עברית",name:"Category עברית",sectionCount:2,topicCount:3,postCount:4,reserved:false};
 const section={id:"help-solutions-questions",name:"Internal Help",category,topicCount:1,postCount:1,service:true};
@@ -21,7 +21,7 @@ async function mount(locale:string,kind:"index"|"category"|"section",empty=false
   const i18n=createTranslationRuntime({locale:{translationLocale:locale,direction:locale==="he"?"rtl":"ltr",formatting:{locale,timeZone:"UTC"},fallbackLocales:locale==="en"?[]:["en"],nativeName:locale,presentationMetadata:{}},
     fallbackLocales:locale==="en"?[]:["en"],resourcesByLocale:{en:{common},[locale]:{common:flatten(resources)}},bundleVersions:{en:{common:"test"},[locale]:{common:"test"}},staleKeys:{}});
   const page={items:empty?[]:[category],total:empty?0:26,next:empty?null:"cursor/slash"};const query={search:"%_ עברית",after:"previous"};
-  const element=kind==="index"?<AdminForumView locale={locale} access={access} page={page} query={query}/>:kind==="category"?<AdminCategoryView locale={locale} access={access} category={category} sections={{...page,items:empty?[]:[section]}} query={query}/>:<AdminSectionView locale={locale} access={access} section={section}/>;
+  const element=kind==="index"?<AdminForumView locale={locale} access={access} page={page} query={query}/>:kind==="category"?<AdminCategoryView locale={locale} access={access} category={category} sections={{...page,items:empty?[]:[section]}} query={query}/>:<AdminSectionView locale={locale} access={access} section={section} topics={{items:empty?[]:[{id:"t/עברית",title:"נושא",sourceLocale:"he",postCount:1,isSolved:false}],total:empty?0:1,next:null}} query={query}/>;
   const router=createMemoryRouter([{path:"*",element}],{initialEntries:[`/${locale}/admin/forum`]});dispose=()=>router.dispose();
   return render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>).container;
 }
@@ -36,7 +36,9 @@ describe("localized protected browsing presentation",()=>{
  });
  it("shows service section only with explicit internal badge and public category link",async()=>{
   let node=await mount("he","category");expect(node.querySelector('.admin-forum-objects a')?.getAttribute("href")).toBe(adminSectionPath("he",section.id));expect(node.querySelector('.admin-forum-reserved')).toBeTruthy();
-  cleanup();dispose();node=await mount("he","section");expect(node.querySelector('.admin-forum > a')?.getAttribute("href")).toBe("/he/categories/help-solutions");expect(node.querySelector('a[href*="/sections/help-solutions-questions"]')).toBeNull();
+  cleanup();dispose();node=await mount("he","section");expect(node.querySelector('.admin-forum > a')?.getAttribute("href")).toBe("/he/categories/help-solutions");expect(node.querySelector('.admin-forum > a[href*="/sections/help-solutions-questions"]')).toBeNull();
+  expect(node.querySelector('.admin-forum-objects a')?.getAttribute("href")).toBe(adminTopicPath("he","t/עברית"));
+  expect(node.querySelector('.admin-forum-objects bdi')?.getAttribute("lang")).toBe("he");
  });
  it("renders truthful empty results with no fabricated objects or next page",async()=>{
   const node=await mount("ru","category",true);expect(node.querySelector('.admin-forum-objects')).toBeNull();expect(node.textContent).toContain("Подходящих объектов нет.");expect(node.querySelectorAll('.admin-forum-paging a')).toHaveLength(1);
