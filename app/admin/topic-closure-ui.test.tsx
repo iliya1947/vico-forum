@@ -148,6 +148,23 @@ describe("AP-08 shared topic closure Quick actions", () => {
     } finally { router.dispose(); }
   });
 
+  it.each(["forbidden", "unauthenticated"] as const)("revalidates once on %s denial without replay", async error => {
+    const loader = vi.fn(() => topic);
+    const action = vi.fn(async () => data({ error }, { status: error === "forbidden" ? 403 : 401 }));
+    const router = createMemoryRouter([{
+      path: "/en/topics/:topicId", element: <Page />, loader, action,
+    }], { initialEntries: ["/en/topics/topic%2F1"] });
+    try {
+      render(<I18nextProvider i18n={i18n()}>
+        <HeaderAuthProvider initialUser={actor}><RouterProvider router={router}/></HeaderAuthProvider>
+      </I18nextProvider>);
+      fireEvent.click(await screen.findByRole("button", { name: "Close topic" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent("This action is no longer available");
+      await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(1));
+      expect(action).toHaveBeenCalledTimes(1);
+    } finally { router.dispose(); }
+  });
+
   it("keeps all new EN/RU/HE values aligned with reviewed source fingerprints", async () => {
     const keys = [
       "topicClosedStatus", "topicClosedNotice", "topicClose", "topicReopen",
