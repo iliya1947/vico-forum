@@ -1,5 +1,13 @@
 # Лира — ChatGPT-6
 
+## AP-09 — этап 1/4: catalog, migration, initial grant (2026-11-05)
+
+- Назначение Миры [#6643435013](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643435013), утверждённый план [#6642731589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642731589) с корректировкой [#6643363040](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643363040). AP-08 implementation #283/documentation #286 merged; AP-09 base main `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+- Создан [Draft PR #287](https://github.com/iliya1947/vico-forum/pull/287), branch `feat/admin-users-ap09`, exact head `c26f0418c1128f044770b9704842a185d0a0b5aa`.
+- Этап 1 завершён: code-backed `admin.users.read`, разрешён только initial built-in admin (`user`/`moderator`/custom initial grants неизменны); forward SQL `0057_admin_users_read.sql` (расширение existing `authz_permissions_catalog_check`, insert permission и admin grant), Drizzle schema/journal/snapshot, structural manifest и целевой PostgreSQL migration/grants regression. Схема пользовательских данных, existing role writes, runtime privileges и lasting docs не менялись.
+- [CI #41924294863](https://github.com/iliya1947/vico-forum/actions/runs/41924294863) exact head, attempt 1: **SUCCESS** `checks` (140/140 suites, 1863/1863 tests, lint/typecheck/build/schema parity) и `database` (39/39 PostgreSQL test files, 477/477 tests; `migrations.test.ts` 52 tests). Никакого standalone real browser AP-09 flow пока не выполнялось — **Информация не проверена**.
+- Дальше по явному продолжению владельца: этап 2/4 — минимальный `AdminUsersReader`, независимые защищённые index/detail routes и public-field DTO, с разделением read-only и manager-only boundaries. Этап 3 — reuse existing canonical authz action через fetcher без нового marker/actor-expectation; этап 4 — integrated tests/CI/author handoff. Работа будущих этапов не начиналась. PR остаётся Draft.
+
 ## AP08-MIRA-01 — verification PASS and handoff (2026-11-04)
 
 - Implementation [PR #283](https://github.com/iliya1947/vico-forum/pull/283) stable exact head `7b6adbf8c92e1706064cb5845248813668a287d0` (Draft). Один commit по finding: `app/forum/public-read.test.tsx` **19 additions/3 deletions**, runtime Editor/closure **не менялся**. При выборе вложения test ждёт `editorOperationId` и enabled Attach, проверяет `X-Vico-Operation-Id` и non-aborted XHR до изменения состояния и после close/reopen; assertions не удалялись.
