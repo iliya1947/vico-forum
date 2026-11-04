@@ -193,9 +193,25 @@ export async function topicAction({ request, params, context }: {
   if (denied) return denied;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const intent = requiredFormText(formData, "intent") ?? "reply";
+  const isClosureAction = intent === "closeTopic" || intent === "reopenTopic";
+  let closureVersion: number | undefined;
+  if (isClosureAction) {
+    // Closure requires a canonical, unique CAS version and an explicit actor expectation.
+    if (["intent", "expectedClosureVersion", "editorActorId", "inlineQuickAction"].some(
+      (field) => formData.getAll(field).length > 1,
+    ) || formData.has("operationScope")) return mutationFailure("invalid", 400);
+    const rawVersion = formData.get("expectedClosureVersion");
+    const actorExpectation = formData.get("editorActorId");
+    if (typeof rawVersion !== "string" || !/^(?:0|[1-9][0-9]*)$/u.test(rawVersion)
+      || Number(rawVersion) > 2_147_483_647
+      || typeof actorExpectation !== "string" || actorExpectation.length === 0) {
+      return mutationFailure("invalid", 400);
+    }
+    closureVersion = Number(rawVersion);
+  }
   const changedIdentity = editorIdentityGuard(formData, context);
   if (changedIdentity) return changedIdentity;
-  const intent = requiredFormText(formData, "intent") ?? "reply";
   const inlineMarker=formData.get("inlineQuickAction");
   if(formData.getAll("inlineQuickAction").length>1 || (inlineMarker!==null&&inlineMarker!=="1"))
     return mutationFailure("invalid",400);
@@ -207,6 +223,19 @@ export async function topicAction({ request, params, context }: {
   }
   const inline=inlineMarker==="1";
   const completed=(path:string)=>inline?data({ok:true},{headers:{"Cache-Control":"private, no-store"}}):redirect(path);
+  if (isClosureAction) {
+    const forbidden = await requireForumPermission(context, "forum.topic.close");
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.setTopicClosed({
+        topicId, actorId, isClosed: intent === "closeTopic",
+        expectedClosureVersion: closureVersion!,
+      });
+      return inline
+        ? data({ ok: true }, { headers: { "Cache-Control": "private, no-store" } })
+        : redirect(forumTopicPath(locale, topicId), { headers: { "Cache-Control": "private, no-store" } });
+    });
+  }
   if (intent === "pinTopic" || intent === "unpinTopic") {
     const forbidden = await requireForumPermission(context, "forum.topic.pin");
     if (forbidden) return forbidden;

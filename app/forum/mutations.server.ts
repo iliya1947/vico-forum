@@ -6,6 +6,7 @@ import {
   ForumAuthorizationError,
   ForumEntityNotFoundError,
   ForumStateConflictError,
+  ForumTopicClosedError,
 } from "../../db/forum-repository";
 import { InvalidForumContentError } from "../../db/forum-service";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -15,7 +16,7 @@ import { authorizationForRequest } from "../authorization/request-context";
 import type { PermissionKey } from "../authorization/catalog";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
-export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" | "unexpected" }
+export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "topicClosed" | "rateLimited" | "unavailable" | "unexpected" }
 
 export interface HelpQuestionDraft {
   title: string;
@@ -110,6 +111,7 @@ export async function runForumMutation<T>(
     if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError) return mutationFailure("forbidden", 403);
+    if (error instanceof ForumTopicClosedError) return mutationFailure("topicClosed", 409);
     if (error instanceof ForumStateConflictError || error instanceof ConcurrentRevisionError) return mutationFailure("conflict", 409);
     if (error instanceof ForumWriteRateLimitError) {
       return mutationFailure("rateLimited", 429, {

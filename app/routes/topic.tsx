@@ -97,7 +97,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let canReply = false, canManageSolution = false, canModerateHelpSolution = false;
   let canManageHelpDuplicate = false;
   let canConfirmOwnSolution = false;
-  let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
+  let canCorrectTitleSourceLocale = false, canManagePin = false, canManageClosure = false, canGenerateTranslations = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
   let editablePostIds: string[] = [];
@@ -113,7 +113,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, editOwn, historyRead, complaintCreate] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -122,6 +122,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
         resolver.has("forum.sourceLocale.correctOwn"),
         resolver.has("forum.translation.generate"),
         resolver.has("forum.topic.pin"),
+        resolver.has("forum.topic.close"),
         resolver.has("forum.post.editOwn"),
         resolver.has("forum.post.history.read"),
         resolver.has("forum.complaint.create"),
@@ -139,7 +140,8 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       canCorrectAnySourceLocale = sourceAny;
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
       canManagePin = pin;
-      canUseAdminPanel = solutionAny || canManageHelpDuplicate || sourceAny || pin;
+      canManageClosure = closure;
+      canUseAdminPanel = solutionAny || canManageHelpDuplicate || sourceAny || pin || closure;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
@@ -219,6 +221,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canCorrectTitleSourceLocale,
     canCorrectAnySourceLocale,
     canManagePin,
+    canManageClosure,
     canUseAdminPanel,
     correctablePostIds,
     editablePostIds,

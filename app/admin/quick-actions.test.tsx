@@ -9,7 +9,7 @@ import {canonicalEnglishCatalog} from "../localization/catalog";
 import {topicQuickActionDescriptors,TopicQuickActions,type TopicQuickActionInput} from "./quick-actions";
 const topic:ForumTopicPage={
  id:"topic/1",sectionId:HELP_SOLUTIONS_SERVICE_SECTION_ID,authorId:"author",authorName:"Author",createdAt:new Date(),
- isSolved:true,isPinned:false,bestAnswerPostId:"third",needsDetails:false,duplicateOf:null,duplicateDisputed:false,
+ isSolved:true,isClosed:false,closureVersion:0,isPinned:false,bestAnswerPostId:"third",needsDetails:false,duplicateOf:null,duplicateDisputed:false,
  title:{id:"title-r1",originalContent:"Question",sourceLocale:"en"},tags:[],
  section:{id:HELP_SOLUTIONS_SERVICE_SECTION_ID,name:"Help",category:{id:"help",name:"Help"}},
  posts:["first","second","third"].map(id=>({id,topicId:"topic/1",authorId:"author",authorName:"Author",createdAt:new Date(),parentPostId:null,
