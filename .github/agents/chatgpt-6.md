@@ -1,5 +1,13 @@
 # Лира — ChatGPT-6
 
+## AP08-MIRA-01 — verification PASS and handoff (2026-11-04)
+
+- Implementation [PR #283](https://github.com/iliya1947/vico-forum/pull/283) stable exact head `7b6adbf8c92e1706064cb5845248813668a287d0` (Draft). Один commit по finding: `app/forum/public-read.test.tsx` **19 additions/3 deletions**, runtime Editor/closure **не менялся**. При выборе вложения test ждёт `editorOperationId` и enabled Attach, проверяет `X-Vico-Operation-Id` и non-aborted XHR до изменения состояния и после close/reopen; assertions не удалялись.
+- [CI #41904456264](https://github.com/iliya1947/vico-forum/actions/runs/41904456264): **attempt 1 SUCCESS**, **attempt 2 SUCCESS** on the same SHA. `checks` 140/140 files, 1863/1863 application tests including AP-08 mounted test; `database` SUCCESS 39/39 PostgreSQL test files, 477/477 tests, builds/migrations/runtime/Worker smoke. No more repeats needed on this evidence for author handoff.
+- Причина старых abort на `381a046b` **не доказана**; наиболее правдоподобная проверяемая гипотеза — прежний тест мог начать upload до стабилизации operation identity. На новом head тест контролирует этот precondition. Два последовательных PASS демонстрируют успешные запуски, не математическую гарантию отсутствия flakiness. Product defect не установлен.
+- **Информация не проверена:** actual authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 acceptance. Мира в [#6640050148](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6640050148) исключила отдельный gate из обязательных для этого pre-release package. Owner visual acceptance не инициировалась. Новая documentation в #283 не добавлялась.
+- Следующий этап: author handoff Мире для coordinator-first whole-PR review на новом stable exact head. Лира не проводит собственный whole-PR review; AP-09+ и дальнейшее расширение Editor/public scope не выполнялись.
+
 ## AP08-MIRA-01 — test-layer correction submitted (2026-11-04)
 
 - Мира вернула confirmed current-scope issue в новом AP-08 mounted-test: same-head `app/forum/public-read.test.tsx:3919` failed on two CI attempts and passed on third ([coordinator finding #6640853988](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6640853988)). Старый head: `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
