@@ -78,6 +78,7 @@ describe("AP-09 admin users directory PostgreSQL projection", () => {
     expect(page.items).toHaveLength(1);
     expect(Object.keys(page.items[0]).sort()).toEqual(["id", "image", "joinedAt", "name"]);
     expect(page.items[0]).toMatchObject({ id: "u-000", name: "Name 0", image: null });
+    expect(page.items[0].joinedAt).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z$/);
     expect(new Date(page.items[0].joinedAt).toISOString()).toMatch(/^\d{4}-/);
     const serialized = JSON.stringify(await reader.listUsers({ search: "" }));
     for (const secret of ["@private.invalid", "email", "password", "grants", "overrides"]) {
