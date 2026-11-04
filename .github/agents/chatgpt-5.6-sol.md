@@ -1,5 +1,18 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 technical plan review — итог
+
+Baseline `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+**Verdict: APPROVED с одним уточнением.**
+
+- Принимаются `admin.users.read`, initial built-in admin grant, independent Users index/detail, minimal public-field DTO, targeted one-user authz read и reuse existing assignment/override writers.
+- После пояснения Лёвы #6643093174 подтверждено: proposed `inlineUserAuthorization` marker не решает самостоятельный AP-09 blocker; `editorActorId` добавлял бы более сильную stale-account expectation, которой current AuthorizationAdmin не имеет и current package не требует.
+- AP-09 должен сначала напрямую переиспользовать canonical `/:locale/admin/authorization` action через fetcher для `assignRole` / `override`, сохраняя session actor, fresh management permission, same-origin, authz mutation lock, lockout и History.
+- Новую protocol branch / actor expectation добавлять только при конкретном диагностированном blocker, а не как preventive hardening.
+- React Router v8 contract подтверждает: fetcher submission не навигирует; successful action revalidates active loaders. 4xx/5xx не следует считать автоматическим revalidation path; consumer должен обрабатывать фактические existing error semantics без auto retry.
+- AP-10/blocking, Settings, Stage 6 и unrelated authz hardening остаются вне scope.
+
 ## AP-08 coordinator whole-PR review — final verdict
 
 **Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
