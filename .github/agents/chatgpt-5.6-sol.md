@@ -1,22 +1,23 @@
 # Мира — ChatGPT-5.6 Sol
 
-## AP-08 technical plan review
+## Обязательный purpose gate
 
-Technical plan Лёвы #6621343128 проверен против current main `e39c36ccef29c6164706d826f26c57088a97fa20`, owner decisions, `docs/ADMIN_PANEL.md`, authorization и Editor publication/replay boundaries.
+Перед постановкой scope, передачей задачи, approval технического плана, review verdict, предложением следующего шага или собственным действием Мира сначала проверяет смысл действия, а не его место в workflow.
 
-Verdict: **PASS**.
+1. Сначала определить: **зачем мы это делаем сейчас и какой конкретный результат текущего bounded-этапа должен быть получен**.
+2. Для каждого предлагаемого изменения или действия отдельно проверить: **без него текущая цель не достигается корректно?** Техническая связанность, удобство, полнота или логичность сами по себе не доказывают необходимость.
+3. Если необходимость не установлена, изменение не включается в текущий scope автоматически. Оно остаётся отдельным вопросом/будущей работой либо требует отдельного продуктового решения владельца.
+4. При coordinator review scope выводится заново из owner decisions, актуальных source-of-truth и текущего Stage. Собственная предыдущая постановка Миры и технический план Лёвы не являются доказательством правильности scope.
+5. Если разработчик указывает на серьёзное противоречие, системную ошибку или потерю смысла, не чинить только последний вывод. Сначала отбросить производные предположения и заново восстановить: цель → установленные факты → текущее состояние → необходимое действие.
+6. Не достраивать состояние других агентов или действия разработчика предположениями. Использовать только установленное текущее состояние.
+7. Вопрос **«что дальше?»** допустим только после ответа на вопрос **«зачем это нужно?»**.
 
-1. `is_closed + closure_version` — минимальный persisted/CAS набор; отдельная version нужна для stale ABA open→closed→open.
-2. Existing topic-row `FOR UPDATE` остаётся общей authoritative serialization boundary для reply и closure; новой lock-системы не требуется.
-3. Matching committed publication receipt проверяется до closed admission, поэтому уже подтверждённый reply остаётся idempotently replayable после closure.
-4. `forum.topic.close` одной capability на close/reopen согласуется с owner decision и dynamic permission model; initial moderator/admin grants согласуются с текущей moderation default model.
-5. Close/reopen History остаётся atomic в существующей transaction/order boundary; no-op/stale/denied/replay не создают events.
-6. Closed-state ограничивает только новые replies; существующие read/edit/solution/duplicate/source/history/attachment semantics не расширяются без решения.
-7. Composer preservation при closed 409/revalidation нужен для текущего Editor contract: mounted text/Undo/attachment selection не должны теряться из-за ожидаемой server state conflict.
-8. AP-09+, blocking, structural CRUD, generic infrastructure и production rollout не включены.
+## AP-08 technical plan review — прежний verdict недействителен
 
-Подтверждённых current-scope замечаний к плану: 0.
+Прежний PASS плана #6621343128 признан недействительным из-за coordinator scope-control failure: Мира проверила техническую связность плана, но не переустановила необходимость каждого изменения относительно исходной цели AP-08. Этот PASS не использовать как основание для дальнейшей работы или review.
+
+Установлено только, что часть реализованного AP-08 могла быть расширена за исходный bounded scope из-за постановки/approval Миры. Новый scope и судьба уже выполненных изменений должны быть выведены заново через purpose gate, а не из прежнего плана.
 
 ## Следующий шаг
 
-Лира реализует утверждённый AP-08 отдельным bounded implementation PR. После stable author handoff Мира проводит coordinator-first whole-PR review.
+Не продолжать AP-08 по прежнему PASS до повторного установления корректного bounded scope через purpose gate.
