@@ -2,7 +2,7 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-08 — final author handoff preparation
+- Текущий этап: AP-08 — coordinator whole-PR review
 - Coordinator: Мира; technical planner/reviewer: Лёва; исполнитель: Лира
 - Implementation baseline: `e39c36ccef29c6164706d826f26c57088a97fa20`
 - Implementation PR: #283
@@ -10,7 +10,7 @@
 - Exact-head CI: #41777691776 attempt 3 — checks/database SUCCESS
 - Полезный уже реализованный overscope сохраняется, но дальше не развивается.
 - Отдельный authenticated browser run не блокирует текущий package; фактическое browser/DB поведение не проверено.
-- Следующий шаг: Лира обновляет только PR metadata/body и публикует author handoff; затем Мира начинает coordinator whole-PR review.
+- Author handoff Лиры завершён. Мира проводит coordinator whole-PR review exact head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
 - Новую документацию в #283 не добавлять; documentation PR — отдельно в конце задачи.
 - Лёва и Марк сейчас не назначены.
 - AP-09+, blocking и production rollout не начинать.
