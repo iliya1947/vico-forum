@@ -42,6 +42,7 @@ Permission key означает существующую capability прилож
 - `forum.post.editOwn`;
 - `forum.post.history.read`;
 - `forum.topic.pin`;
+- `forum.topic.close`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -84,6 +85,15 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 являются authorization evidence. `forum.topic.pin` — отдельная capability без ownership-исключения:
 авторство темы само по себе не даёт права закреплять или откреплять её; каждый mutation повторно
 проверяет effective permission server-side.
+
+`forum.topic.close` independently permits **both** close and reopen for ordinary and
+Help topics. It does not grant `forum.reply.create` and has no Own/author/role
+exception. Every command uses the fresh server-side effective permission and
+the existing topic route with `closure_version` CAS. Closed topics refuse all
+new replies regardless of actor permissions; reopening retains the independent
+confirmed-duplicate reply restriction and never changes solved/best-answer.
+The authoritative transaction, no-op/History and preserved receipt replay
+are specified in `../ADMIN_PANEL.md`.
 
 Complaint permissions protect the server-only domain capabilities documented in
 [`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits
@@ -133,6 +143,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
+- `forum.topic.close`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -154,6 +165,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
+- `forum.topic.close`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;

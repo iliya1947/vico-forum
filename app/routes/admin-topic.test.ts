@@ -13,7 +13,7 @@ function topicFixture() {
   return {
     id: "topic/עברית", title: { id: "title-r1", originalContent: "Hebrew original", sourceLocale: "he" },
     section: { id: "help-solutions-questions", name: "Internal Help", category: { id: "help-solutions", name: "Help" } },
-    authorId: "author", authorName: "Author", isPinned: true, isSolved: false,
+    authorId: "author", authorName: "Author", isPinned: true, isSolved: false, isClosed: true, closureVersion: 7,
     bestAnswerPostId: null, needsDetails: false, duplicateDisputed: true,
     duplicateOf: { id: "original", title: "Original" }, duplicateRelationshipId: "private-relationship",
     createdAt: new Date("2026-01-01T00:00:00Z"), tags: [{ key: "react", name: "React" }],
@@ -86,6 +86,8 @@ describe("AP-07 private admin topic loader", () => {
     expect(e.readTopicPage).toHaveBeenCalledWith("topic/עברית");
     expect(result.data.access.canReadForum).toBe(true);
     expect(result.data.canManagePin).toBe(permission === "forum.topic.pin");
+    expect(result.data.canManageClosure).toBe(permission === "forum.topic.close");
+    expect(result.data.topic).toMatchObject({ isClosed: true, closureVersion: 7 });
     expect(result.data.canCorrectAnySourceLocale).toBe(permission === "forum.sourceLocale.correctAny");
     expect(result.data.canManageAnySolution).toBe(permission === "forum.solution.manageAny");
     expect(result.data.canReadPostHistory).toBe(permission === "forum.post.history.read");

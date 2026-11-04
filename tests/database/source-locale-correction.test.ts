@@ -124,6 +124,9 @@ beforeAll(async () => {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
+  // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
+  // Supply only AP-08 columns here without changing the historical migration sequence.
+  await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
 });
 
 beforeEach(async () => {

@@ -226,6 +226,18 @@ export class ForumService {
     return this.repository.readTopicPinState(topicId);
   }
 
+  setTopicClosed(input: {
+    topicId: string; actorId: string; isClosed: boolean; expectedClosureVersion: number;
+  }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.isClosed !== "boolean"
+      || !Number.isInteger(input.expectedClosureVersion)
+      || input.expectedClosureVersion < 0
+      || input.expectedClosureVersion > 2_147_483_647)
+      throw new InvalidForumContentError("invalid closure state/version");
+    return this.repository.setTopicClosed(input);
+  }
+
   pinTopic(topicId: string, actorId: string) {
     validateEntity(topicId, actorId);
     return this.repository.pinTopic(topicId, actorId);

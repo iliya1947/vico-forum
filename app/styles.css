@@ -9868,3 +9868,24 @@ a.topic-tag:focus-visible {
 /* AP-07: keep long valid author labels/content inside the admin topic grid. */
 .admin-topic { min-inline-size: 0; overflow-wrap: anywhere; }
 .admin-topic .topic-message { min-inline-size: 0; }
+
+/* AP-08: status and already-open reply feedback stay legible across LTR/RTL and narrow widths. */
+.topic-closed-notice,
+.topic-reply-paused {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  align-items: baseline;
+  min-inline-size: 0;
+  margin: 0 1rem 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--color-border-strong);
+  border-inline-start: 0.25rem solid var(--color-accent);
+  border-radius: 0.45rem;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.topic-reply-paused { margin: 0.5rem 0; }
+.topic-closed-notice strong { color: var(--color-text); }
+.topic-closure-form button:disabled { cursor: wait; opacity: 0.65; }

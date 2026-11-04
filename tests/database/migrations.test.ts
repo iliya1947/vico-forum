@@ -80,7 +80,48 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("56");
+    expect(applied.rows[0]?.count).toBe("57");
+    // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
+    // rather than assumed from SQL formatting or hand-entered normalized forms.
+    const definitions = await client.query<{ key: string; definition: string }>(`
+      select 'check:' || rel.relname || '.' || constraint_row.conname as key,
+        pg_catalog.pg_get_expr(constraint_row.conbin, constraint_row.conrelid, false) as definition
+      from pg_catalog.pg_constraint constraint_row
+      join pg_catalog.pg_class rel on rel.oid = constraint_row.conrelid
+      join pg_catalog.pg_namespace n on n.oid = rel.relnamespace
+      where n.nspname = 'public'
+        and constraint_row.conname in ('authz_permissions_catalog_check',
+          'admin_history_action_target_check', 'forum_topics_closure_version_check')
+      union all
+      select 'default:forum_topics.closure_version',
+        pg_catalog.pg_get_expr(d.adbin, d.adrelid, false)
+      from pg_catalog.pg_attrdef d
+      join pg_catalog.pg_class rel on rel.oid = d.adrelid
+      join pg_catalog.pg_namespace n on n.oid = rel.relnamespace
+      join pg_catalog.pg_attribute a on a.attrelid = rel.oid and a.attnum = d.adnum
+      where n.nspname = 'public' and rel.relname = 'forum_topics' and a.attname = 'closure_version'
+    `);
+    const { createHash } = await import("node:crypto");
+    const { readFile } = await import("node:fs/promises");
+    const manifest = JSON.parse(await readFile(".github/production-schema-manifest.json", "utf8")) as {
+      tables: Record<string, {
+        columns: Array<{ name: string; defaultSha256: string | null }>;
+        checks: Array<{ name: string; definitionSha256: string }>;
+      }>;
+    };
+    const checkHash = (table: string, name: string) =>
+      manifest.tables[table]?.checks.find(row => row.name === name)?.definitionSha256;
+    const versionHash = manifest.tables.forum_topics.columns.find(row => row.name === "closure_version")?.defaultSha256;
+    expect(definitions.rows).toHaveLength(4);
+    expect(Object.fromEntries(definitions.rows.map(row =>
+      [row.key, createHash("sha256").update(row.definition).digest("hex")]
+    ))).toEqual({
+      "check:forum_topics.forum_topics_closure_version_check": checkHash("forum_topics", "forum_topics_closure_version_check"),
+      "check:authz_permissions.authz_permissions_catalog_check": checkHash("authz_permissions", "authz_permissions_catalog_check"),
+      "check:admin_history.admin_history_action_target_check": checkHash("admin_history", "admin_history_action_target_check"),
+      "default:forum_topics.closure_version": versionHash,
+    });
+
   });
 
   it("rejects partial NULL allowance occurrence metadata", async () => {

@@ -2,7 +2,7 @@ import type { PermissionKey } from "../authorization/catalog";
 
 /** Implemented AP-01 admission matrix. These are capabilities, never role names. */
 export const ADMIN_FORUM_PERMISSIONS = [
-  "forum.topic.pin", "forum.solution.manageAny", "forum.helpDuplicate.manage",
+  "forum.topic.pin", "forum.topic.close", "forum.solution.manageAny", "forum.helpDuplicate.manage",
   "forum.sourceLocale.correctAny", "forum.post.history.read",
 ] as const satisfies readonly PermissionKey[];
 export const ADMIN_ADMISSION_PERMISSIONS = [

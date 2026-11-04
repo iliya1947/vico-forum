@@ -42,6 +42,7 @@ const allForumPermissions = [
   "forum.topic.create",
   "forum.reply.create",
   "forum.topic.pin",
+  "forum.topic.close",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
   "forum.helpSignal.create",
@@ -189,6 +190,9 @@ function writer() {
     markNotificationRead: vi.fn(async () => ({ kind:"reply" as const,topicId:"topic-1",postId:"post-1" })),
     pinTopic: vi.fn(async () => undefined),
     unpinTopic: vi.fn(async () => undefined),
+    setTopicClosed: vi.fn(async (input) => ({
+      isClosed: input.isClosed, closureVersion: input.expectedClosureVersion + 1, changed: true,
+    })),
   } satisfies ForumWriter;
 }
 

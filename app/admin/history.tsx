@@ -7,6 +7,7 @@ const actionLabels = {
   "role.grantsChanged": "historyGrantsChanged", "user.roleAssigned": "historyRoleAssigned", "user.overrideChanged": "historyOverrideChanged",
   "help.signalReviewed": "historySignalReviewed",
   "topic.pinned": "historyTopicPinned", "topic.unpinned": "historyTopicUnpinned", "topic.solved": "historyTopicSolved",
+  "topic.closed": "historyTopicClosed", "topic.reopened": "historyTopicReopened",
   "topic.bestAnswerChanged": "historyBestAnswerChanged", "help.solutionModerationChanged": "historySolutionModerationChanged",
   "help.duplicateConfirmed": "historyDuplicateConfirmed", "help.duplicateRemoved": "historyDuplicateRemoved",
   "help.duplicateAppealResolved": "historyDuplicateAppealResolved", "topic.sourceLocaleCorrected": "historySourceLocaleCorrected", "post.sourceLocaleCorrected": "historySourceLocaleCorrected",

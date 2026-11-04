@@ -437,6 +437,8 @@ export interface ForumTopic {
   authorId: string;
   title: ForumRevisionContent;
   isSolved: boolean;
+  isClosed: boolean;
+  closureVersion: number;
   bestAnswerPostId: string | null;
 }
 
@@ -487,6 +489,7 @@ export class ConcurrentRevisionError extends Error {}
 export class ForumEntityNotFoundError extends Error {}
 export class ForumAuthorizationError extends Error {}
 export class ForumStateConflictError extends Error {}
+export class ForumTopicClosedError extends ForumStateConflictError {}
 export class ForumPublicationReplayConflictError extends ForumStateConflictError {}
 export type SolutionManagementScope = "own" | "any";
 
@@ -602,6 +605,8 @@ export class DrizzleForumRepository {
         authorId: input.authorId,
         title: input.titleRevision,
         isSolved: false,
+        isClosed: false,
+        closureVersion: 0,
         bestAnswerPostId: null,
       };
     });
@@ -622,10 +627,16 @@ export class DrizzleForumRepository {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
         if (existing) {
+          // Receipt replay may follow closure: project persisted closure, not a default.
+          const [persisted] = await tx.select({
+            isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
+          }).from(forumTopics).where(eq(forumTopics.id, existing.topicId));
+          if (!persisted) throw new ForumEntityNotFoundError("replayed topic does not exist");
           return {
             topic: {
               id: existing.topicId, sectionId: input.sectionId, authorId: input.authorId,
               title: input.titleRevision, isSolved: false, bestAnswerPostId: null,
+              isClosed: persisted.isClosed, closureVersion: persisted.closureVersion,
             },
             post: {
               id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
@@ -686,6 +697,8 @@ export class DrizzleForumRepository {
           authorId: input.authorId,
           title: input.titleRevision,
           isSolved: false,
+          isClosed: false,
+          closureVersion: 0,
           bestAnswerPostId: null,
         },
         post: {
@@ -722,10 +735,11 @@ export class DrizzleForumRepository {
           };
         }
       }
-      const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId }).from(forumTopics)
+      const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId, isClosed: forumTopics.isClosed }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId))
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.isClosed) throw new ForumTopicClosedError("topic is closed to new replies");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
         .from(forumHelpDuplicateRelationships)
@@ -1523,6 +1537,38 @@ export class DrizzleForumRepository {
       .from(forumTopicPins)
       .where(eq(forumTopicPins.topicId, topicId));
     return Boolean(pin);
+  }
+
+  /** Uses the same topic row lock as reply admission; append History last. */
+  async setTopicClosed(input: {
+    topicId: string; actorId: string; isClosed: boolean; expectedClosureVersion: number;
+  }): Promise<{ isClosed: boolean; closureVersion: number; changed: boolean }> {
+    return this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({
+        isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
+      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.closureVersion !== input.expectedClosureVersion)
+        throw new ForumStateConflictError("topic closure state changed");
+      if (topic.isClosed === input.isClosed)
+        return { isClosed: topic.isClosed, closureVersion: topic.closureVersion, changed: false };
+      if (topic.closureVersion >= 2_147_483_647)
+        throw new ForumStateConflictError("topic closure version exhausted");
+
+      const version = topic.closureVersion + 1;
+      await tx.update(forumTopics).set({
+        isClosed: input.isClosed, closureVersion: version,
+      }).where(eq(forumTopics.id, input.topicId));
+      await appendForumHistory(tx, input.actorId, {
+        action: input.isClosed ? "topic.closed" : "topic.reopened",
+        targetType: "topic", targetId: input.topicId,
+        context: {
+          before: topic.isClosed, after: input.isClosed,
+          previousVersion: topic.closureVersion, version,
+        },
+      });
+      return { isClosed: input.isClosed, closureVersion: version, changed: true };
+    });
   }
 
   async pinTopic(topicId: string, pinnedByUserId: string): Promise<void> {
@@ -2688,6 +2734,7 @@ export class DrizzleForumRepository {
         authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
+        isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
         needsDetails: forumTopics.needsDetails,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
       })
@@ -2741,6 +2788,7 @@ export class DrizzleForumRepository {
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
+      isClosed: topic.isClosed, closureVersion: topic.closureVersion,
       needsDetails: topic.needsDetails,
       duplicateOf: duplicatePresentation?.duplicateOf ?? null,
       duplicateRelationshipId: duplicatePresentation?.duplicateRelationshipId ?? null,
@@ -2814,6 +2862,8 @@ export class DrizzleForumRepository {
         originalContent: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved,
+        isClosed: forumTopics.isClosed,
+        closureVersion: forumTopics.closureVersion,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
       })
       .from(forumTopics)
@@ -2830,6 +2880,8 @@ export class DrizzleForumRepository {
       sectionId: row.sectionId,
       authorId: row.authorId,
       isSolved: row.isSolved,
+      isClosed: row.isClosed,
+      closureVersion: row.closureVersion,
       bestAnswerPostId: row.bestAnswerPostId,
       title: { id: row.revisionId, originalContent: row.originalContent, sourceLocale: row.sourceLocale },
     };

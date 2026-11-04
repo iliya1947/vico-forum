@@ -25,6 +25,8 @@ export interface AdminTopic {
   authorName: string;
   isPinned: boolean;
   isSolved: boolean;
+  isClosed: boolean;
+  closureVersion: number;
   bestAnswerPostId: string | null;
   needsDetails: boolean;
   duplicateOf: ForumTopicPage["duplicateOf"];
@@ -40,6 +42,8 @@ export function projectAdminTopic(topic: ForumTopicPage, canManageHelpDuplicate:
     authorName: topic.authorName,
     isPinned: topic.isPinned,
     isSolved: topic.isSolved,
+    isClosed: topic.isClosed,
+    closureVersion: topic.closureVersion,
     bestAnswerPostId: topic.bestAnswerPostId,
     needsDetails: topic.needsDetails,
     duplicateOf: topic.duplicateOf,

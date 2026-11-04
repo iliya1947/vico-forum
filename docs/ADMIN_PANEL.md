@@ -10,8 +10,9 @@ protected at its original URL and, in AP-04, reuses the common shell/navigation.
 AP-03 adds authorization-change History and protected Overview recent actions. AP-05 reuses
 existing topic operations in shared Quick actions and connects their forum/Help History producers. AP-06 adds
 protected category/section browsing and dedicated object pages. AP-07 adds administrative topic detail
-and shared source-locale/history actions for individual messages. Topic closure and user blocking
-remain unimplemented. AP-02 itself added no schema
+and shared source-locale/history actions for individual messages. AP-08 implements
+shared topic close/reopen in its implementation branch; user blocking remains
+unimplemented. AP-02 itself added no schema
 or permission keys; AP-03 adds the independent `admin.history.read` capability.
 
 Other routes and capabilities described below as delivery targets become available only
@@ -60,7 +61,7 @@ context and through Quick actions; they do not get a separate administrative pag
 An object page does not authorize unspecified create, rename, move, delete, bulk or edit-any
 operations. Each new operation needs concrete behavior, an authoritative backend contract,
 its applicable permission, state validation, reason rule and tests before implementation.
-Topic closure to new replies is approved; its remaining decisions are listed below.
+Topic closure/reopening to new replies follows the approved AP-08 boundary below.
 
 Three boundaries remain distinct:
 
@@ -133,7 +134,7 @@ no public service-section destination is created. Empty, missing, malformed and 
 states retain the existing AP-06 semantics.
 
 `/:locale/admin/forum/topics/:topicId` is a dedicated protected topic page, reached from
-a section or directly. Its loader independently checks the existing five Forum admission
+a section or directly. Its loader independently checks the implemented Forum admission
 permissions before target validation/private reads; it rechecks the individual Quick action
 permissions for the current actor. It reuses the current `ForumReader.readTopicPage()` rather
 than adding another writer, topic domain model or history-paging API. An explicit private
@@ -147,8 +148,8 @@ The page uses one `AdminShell`, Forum navigation and category → section → to
 with safe Markdown, revision-bound current translations/original fallback, source language
 direction, attachment URLs from existing post-asset membership, and canonical public links.
 Post IDs and numbered anchors stay stable in chronological original ordering even when
-the best answer is visually promoted. It adds no publishing, arbitrary edit-any, deletion,
-attachment lifecycle or closure capability.
+the best answer is visually promoted. It adds no publishing, arbitrary edit-any, deletion or attachment lifecycle capability.
+AP-08 subsequently adds shared closure controls; AP-07 itself added no closure capability.
 
 Topic-level Quick actions reuse `TopicQuickActions inline`. A shared per-message disclosure
 is used by admin and public topic pages: correction of the current post source locale requires
@@ -188,7 +189,7 @@ grant global admission either. Each section and action independently checks its 
 | Surface | Admission/read boundary | Action boundary |
 | --- | --- | --- |
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
-| Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`; later the implemented topic-closure capability | Exact operation permission and authoritative object/resource conditions, as below |
+| Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` | Same existing permission, management validation and atomic lockout invariants |
 | Users | Future independent administrative-user-read capability for general index/detail; `access.authorization.manage` for its existing authorization subset; future block-management capability for minimal target/block lookup | Authorization controls only with `access.authorization.manage`; block/lift only with the implemented block capability |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
@@ -224,7 +225,7 @@ reused without creating a second identity store.
 | Review Help signal in its existing workflow | `forum.helpNeedsDetails.manage` for needs-details; `forum.helpDuplicate.manage` for duplicate; `forum.solution.manageAny` for solution kinds | Persisted signal kind selects permission; current case/target identity and applicability are rechecked |
 | Correct topic-title or post-body source locale | `forum.sourceLocale.correctAny`, or `forum.sourceLocale.correctOwn` with authoritative ownership | Existing current-revision CAS, canonical non-`und` source-locale validation; no general content-edit right |
 | Read message revision history | `forum.post.history.read` | Post belongs to target topic; read independently before loading revision bodies |
-| Close topic / proposed reopen | Future topic-closure capability | New replies obey persisted closed-state; remaining product decisions below precede implementation |
+| Close/reopen topic | `forum.topic.close` for both commands | Existing ordinary/Help topic, authoritative closure-version CAS and state transition; no author/role bypass or required reason |
 | Block/lift block on user | Future block-management capability | Approved block-effect, target, expiry and stale-block rules below precede implementation |
 | Other category/section/topic/message mutations | Not authorized by page visibility | Define concrete behavior and capability in a separately bounded package first |
 
@@ -374,7 +375,7 @@ security-upload events, notification inboxes and the future full owner audit sur
 The following matrix defines coverage to connect with the relevant implementation packages.
 AP-03 records the authorization-management rows. AP-05 connects the existing topic/Help
 rows through administrative source-locale correction, including both topic-title and post
-correction service paths. Closure/blocking rows await their respective producer packages. A reason marked “not required” preserves the
+correction service paths. Closure records real state transitions through the AP-08 producer; blocking awaits its producer package. A reason marked “not required” preserves the
 current operation contract; it does not introduce a new reason form or persistence field.
 
 | Operation | Significant event when coverage is connected | Administrative reason rule |
@@ -388,7 +389,7 @@ current operation contract; it does not introduce a new reason form or persisten
 | Confirm/remove duplicate; resolve duplicate appeal | Actual relationship or appeal-resolution change | No new mandatory reviewer reason; author's required appeal explanation remains in its own private workflow |
 | Review Help signal | Actual persisted review outcome and applicable effect | No new mandatory reviewer reason; existing kind-specific submission explanations remain unchanged |
 | Administrative source-locale correction | Actual new revision/source-metadata change | Not required by current contract |
-| Close/reopen topic | Actual closed-state transition | Per-action reason decision required before closure implementation |
+| Close/reopen topic | Actual closed-state transition, recording before/after and previous/new closure versions | Not required by the approved AP-08 contract |
 | Temporary/permanent block; explicit lift | Actual block-state transition, including configured expiry and lifted block identity | Per-action reason decision required before blocking implementation |
 
 “Administrative” is determined by the authoritative operation/scope, not by actor role or
@@ -431,18 +432,70 @@ ceases to exist. Do not copy passwords, tokens, sessions, full requests, complet
 snapshots, message bodies or private case explanations into ordinary History. History-read
 does not implicitly grant access to private target data or the original case workflow.
 
-## Topic closure boundary
+## Topic closure and reopening (AP-08)
 
-Closing a topic prevents new replies. It does not imply solved, remove a selected answer,
-change duplicate relationships or delete existing messages. Persisted closed-state and
-reply admission must share the existing authoritative topic-row serialization boundary.
-Concurrent reply either commits before closure or is rejected after closure; hiding a form
-alone is insufficient. Preserve the result of replaying a reply already committed under its
-publication receipt; replay must not create a new reply or duplicate event.
+`forum.topic.close` is one independent permission for **both** closing and reopening
+existing ordinary and Help topics. The initial grant is for built-in moderator/admin;
+custom roles and per-user allow/deny/inherit retain their dynamic semantics. The
+author of the topic has no implicit close/reopen right. This capability by itself
+admits an authenticated actor to the global admin Forum area, without granting
+History reads, Help-private details, solution controls or reply creation. Neither
+transition requires a reason.
 
-Before the closure package, explicitly settle reopening, its permission relationship to
-closing, per-action reasons and any actor exception. Reopening is proposed in the technical
-plan, not an already implemented capability. No implicit moderator bypass is authorized.
+The existing `forum_topics` row stores `is_closed` (initially false) and
+`closure_version` (nonnegative integer, initially zero). A real transition
+increments the version exactly once; a request already at its desired state is
+a no-op **only with the current expected version**. Older versions, including
+open→closed→open ABA, and version overflow fail closed as conflicts. Closure
+does not alter solved, best answer, pin, Help duplicate/moderation, existing
+messages/revisions or published attachments, and does not prevent public reading
+or existing own-published-post edits.
+
+The public and protected administrative topic detail use the same
+`TopicQuickActions` and canonical `/:locale/topics/:topicId` POST with
+`closeTopic`/`reopenTopic`. Each form sends the current
+`expectedClosureVersion`, a stale-account `editorActorId` expectation and
+inline marker. The route validates unique canonical inputs, same origin and
+fresh `forum.topic.close`; only the session supplies actor authority, only
+route parameters supply target authority. No second admin-only API or Own
+closure scope exists. Inline success/error and ordinary locale redirect
+are no-store. Pending state prevents double submit; controlled stale or
+authentication/permission errors revalidate once, without automatically
+retrying. Stale fetcher feedback cannot cross actor/topic/grant/version context.
+Actual public/admin DTO state is `isClosed` and `closureVersion`; each view
+shows a separate localized **Closed** label, never conflated with **Solved**.
+
+`setTopicClosed` locks the existing topic row in one repository transaction,
+checks the expected version and appends a `topic.closed` or `topic.reopened`
+significant History event only for a real transition. Context is limited to
+`before`, `after`, `previousVersion`, `version` and the established
+bounded topic identity/label. Append failure rolls back the state and version.
+Denied, no-op, stale, rolled-back and replayed operations emit no new event;
+reading these events still requires independent `admin.history.read`.
+
+A closed topic prohibits **all new replies**, including those from the author,
+moderators, admins or the closing actor. Reopening does not bypass
+`forum.reply.create` or confirmed-duplicate restrictions. The authoritative
+check occurs after existing committed publication-receipt replay and the shared
+topic-row `FOR UPDATE`, before cooldown, post/revision writes, notifications
+and attachment publication. This serializes competing close/reply transactions:
+a reply locked first may commit before close; a new reply locked after close
+is denied. A matching committed reply remains idempotently replayable even
+after closing; fresh text and attachment-only replies return private/no-store
+`409 topicClosed` with no partial effects or loss of temporary upload selection.
+
+Initially closed topics do not show new Reply, Quote or composer controls.
+When closure arrives while an editor is already mounted, it retains its text,
+Undo/Redo and selected/in-flight attachments and keeps Cancel available,
+but prevents Publish and its keyboard shortcut. A server `topicClosed`
+409 triggers one loader revalidation with no automatic retry or unmount.
+After reopening, publication requires another explicit user action and still
+obeys current permissions/duplicate rules. Buffers are isolated by actor/topic;
+closure does not introduce drafts, autosave or new attachment policies.
+
+These are repository/local-CI implementation contracts, not evidence of
+production deployment, independent review, real-browser acceptance or owner
+visual approval.
 
 ## User blocking boundary and unresolved product gate
 
@@ -492,7 +545,7 @@ The technical sequence agreed for bounded delivery is:
 | AP-05 | Shared Quick actions on existing topic operations and their history producers after AP-04 |
 | AP-06 | Category/section administrative browsing after AP-05 |
 | AP-07 | Topic page and message actions within topic context after AP-06 |
-| AP-08 | Topic closure after AP-07 and closure decisions above |
+| AP-08 | Shared topic close/reopen, persisted closure CAS and reply admission after AP-07 |
 | AP-09 | Users index/page reusing existing authz controls after AP-08 and earlier shared foundations |
 | AP-10 | Block/lift and all affected enforcement after AP-09 and approved block-effect/reason matrix |
 | AP-11 | Integration and factual closeout of delivered scope |
