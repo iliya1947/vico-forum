@@ -20,7 +20,8 @@
 
 - Мира выполняет coordinator-first whole-PR review #287 на exact head `f5117f22bd891d3892357fc984009388481001f7`.
 - Подзадача 1/4 завершена: stable head, diff/scope и exact-head CI подтверждены; implementation docs в PR отсутствуют, что соответствует текущему отдельному docs-closeout процессу.
-- Следующие подзадачи coordinator review: 2) permission/migration/DB/read privacy; 3) routes/authz reuse/UI lifecycle; 4) gap-sweep/final verdict.
+- Подзадача 2/4 завершена PASS: permission/catalog/migration, DB directory, targeted authorization read, snapshot/privacy и runtime privilege boundaries проверены; подтверждённых current-scope дефектов 0.
+- Следующие подзадачи coordinator review: 3) routes/authz reuse/UI lifecycle; 4) gap-sweep/final verdict.
 - При confirmed current-scope findings они возвращаются Лире одним bounded пакетом до Codex review.
 - Лёва подключается к independent technical review только после coordinator PASS того же stable exact head.
 
