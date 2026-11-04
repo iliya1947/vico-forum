@@ -99,7 +99,7 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(assignment).toBeDefined();
     expect(assignment.querySelector<HTMLInputElement>('input[name="userId"]')?.value).toBe(userId);
     expect(assignment.getAttribute("action")).toBe("/en/admin/authorization");
-    const role = assignment.querySelector('select[name="roleId"]') as HTMLSelectElement;
+    const role = assignment.querySelector('select[name="roleId"]') as unknown as HTMLSelectElement;
     fireEvent.change(role, { target: { value: "builtin-moderator" } });
     fireEvent.submit(assignment);
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(1));
@@ -111,7 +111,7 @@ describe("AP-09 canonical fetcher composition", () => {
 
     const overrideForm = formFor(mounted.container, "override", "forum.topic.pin")!;
     expect(overrideForm.getAttribute("action")).toBe("/en/admin/authorization");
-    fireEvent.change(overrideForm.querySelector('select[name="effect"]') as HTMLSelectElement, { target: { value: "allow" } });
+    fireEvent.change(overrideForm.querySelector('select[name="effect"]') as unknown as HTMLSelectElement, { target: { value: "allow" } });
     fireEvent.submit(overrideForm);
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(
