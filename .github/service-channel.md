@@ -17,8 +17,8 @@
 
 ## Текущий маршрут
 
-- Лира: author handoff #283 завершён; implementation не менять во время coordinator review.
-- Мира: coordinator whole-PR review начат на exact head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+- Мира: coordinator review на exact head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd` остановлен после finding AP08-MIRA-01 — новый AP-08 in-flight attachment retention test дважды упал на неизменном head и только с третьей попытки прошёл.
+- Лира: диагностировать и минимально устранить AP08-MIRA-01; не расширять AP-08 и не считать нестабильность доказательством product defect без подтверждённой причины.
 - Лёва: активной задачи по AP-08 сейчас нет; Codex не расходуется на переписывание старого техплана или browser acceptance.
 - Марк не назначен.
 
