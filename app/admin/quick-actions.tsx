@@ -3,7 +3,8 @@ import {Form,useFetcher,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {ForumTopicPage} from "../../db/forum-repository";
 import {useHeaderAuthUser} from "../auth/auth-controls";
-type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"isClosed"|"closureVersion"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> & {
+type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> &
+  Partial<Pick<ForumTopicPage,"isClosed"|"closureVersion">> & {
   duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
   posts:Array<Pick<ForumTopicPage["posts"][number],"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
@@ -38,7 +39,8 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
   const actions:TopicQuickActionDescriptor[]=[];
   const add=(intent:TopicIntent,label:UiKey<"common">,fields:Record<string,string>={})=>actions.push({key:intent,intent,label,fields:{...(intent==="markSolved"||intent==="correctTitleSourceLocale"?{operationScope:"any"}:{}),...fields}});
   if(input.canManagePin)add(topic.isPinned?"unpinTopic":"pinTopic",topic.isPinned?"unpinTopic":"pinTopic");
-  if(input.canManageClosure&&input.actorId){
+  if(input.canManageClosure&&input.actorId&&typeof topic.isClosed==="boolean"
+    &&typeof topic.closureVersion==="number"&&Number.isInteger(topic.closureVersion)){
     add(topic.isClosed?"reopenTopic":"closeTopic",topic.isClosed?"topicReopen":"topicClose",{
       expectedClosureVersion:String(topic.closureVersion),editorActorId:input.actorId,
     });
