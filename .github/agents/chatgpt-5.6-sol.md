@@ -1,5 +1,31 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-08 coordinator whole-PR review — final verdict
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Coordinator verdict: PASS. Подтверждённых current-scope implementation-дефектов: 0.**
+
+Проверен весь changed-file scope #283, включая:
+- schema/migration/meta/production manifest;
+- permission catalog/grants, public/admin authorization and canonical HTTP boundaries;
+- repository transaction, closure CAS/History, reply admission, receipt replay and deterministic PostgreSQL races;
+- public/admin Quick actions, Closed presentation, mounted reply editor, Undo/Redo/attachments and topicClosed revalidation;
+- History action typing/presentation;
+- EN/RU/HE localization values and reviewed fingerprints;
+- Hyperdrive/ForumWriter/service boundaries, UI preview and historical DB fixtures;
+- corrected AP08-MIRA-01 test stabilization.
+
+Exact-head CI #41904456264 attempts 1 and 2: checks SUCCESS and database SUCCESS; application 140/140 files, 1863/1863 tests; PostgreSQL 39/39 suites, 477/477 tests.
+
+### Verification boundary
+
+Actual isolated authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 behavior was not performed. По актуальному contract это не mandatory blocker текущего pre-release package. **Информация не проверена:** фактическое поведение этой real-browser/runtime цепочки.
+
+### Documentation closeout
+
+Существующие documentation commits вошли в #283 до нового правила #285 и не откатываются ретроактивно только ради смены процесса. При этом `PROJECT_STATE.md` на head #283 содержит stale формулировку, называющую real Worker/browser acceptance обязательным для AP-08. Это не implementation defect и не исправляется внутри #283: по актуальному `AGENTS.md` документация задачи корректируется отдельным documentation PR в конце задачи. Финальный documentation PR должен привести PROJECT_STATE/source-of-truth к фактическому принятому состоянию AP-08 и текущей verification boundary.
+
 ## AP-08 coordinator review restart — подзадача 4: Quick actions / Closed UI / mounted reply editor / AP08-MIRA-01
 
 **Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
