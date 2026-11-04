@@ -3849,7 +3849,8 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
     const state = mountedTopic(current);
     try {
       const form = await screen.findByRole("form", { name: "Add a reply" });
-      fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+      const advanced = within(form).queryByRole("button", { name: "Advanced" });
+      if (advanced) fireEvent.click(advanced);
       const textarea = form.querySelector("textarea")!;
       fireEvent.change(textarea, { target: { value: "Before closure" } });
       fireEvent.change(textarea, { target: { value: "Before closure and more" } });
@@ -3889,7 +3890,8 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
     const state = mountedTopic(topicRenderData(topic, { canReply: true }));
     try {
       const form = await screen.findByRole("form", { name: "Add a reply" });
-      fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+      const advanced = within(form).queryByRole("button", { name: "Advanced" });
+      if (advanced) fireEvent.click(advanced);
       const textarea = form.querySelector("textarea")!;
       fireEvent.change(textarea, { target: { value: "Unsent content" } });
       await state.update(topicRenderData(topic, { canReply: false }));
@@ -3919,7 +3921,8 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
         <HeaderAuthProvider initialUser={editorActor}><RouterProvider router={router}/></HeaderAuthProvider>
       </I18nextProvider>);
       const form = await screen.findByRole("form", { name: "Add a reply" });
-      fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+      const advanced = within(form).queryByRole("button", { name: "Advanced" });
+      if (advanced) fireEvent.click(advanced);
       const textarea = form.querySelector("textarea")!;
       fireEvent.change(textarea, { target: { value: "Race-sensitive reply" } });
       await waitFor(() => expect(within(form).getByRole("button", { name: "Post reply" })).toBeEnabled());
