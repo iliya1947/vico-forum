@@ -6,6 +6,7 @@ import type { ContentTranslationPresentation } from "../localization/content-tra
 import { AdminShell } from "./shell";
 import { adminForumPath, adminCategoryPath, adminSectionPath } from "./forum-paths";
 import { TopicQuickActions } from "./quick-actions";
+import { MessageQuickActions } from "./message-quick-actions";
 import { TopicTitlePresentation, PostBodyPresentation } from "../forum/content-translation-view";
 import { ForumAttachmentDisplay } from "../forum/attachment-presentation";
 import { ForumInlineAttachmentProvider } from "../forum/markdown";
@@ -21,6 +22,8 @@ interface AdminTopicViewProps {
   canManageAnySolution: boolean;
   canManageHelpDuplicate: boolean;
   canCorrectAnySourceLocale: boolean;
+  canReadPostHistory?: boolean;
+  actorId?: string;
   canModerateHelpSolution: boolean;
   pendingDuplicateAppeal: { id: string } | null;
 }
@@ -28,6 +31,7 @@ interface AdminTopicViewProps {
 export function AdminTopicView({
   locale, access, topic, titlePresentation, postPresentations,
   canManagePin, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale,
+  canReadPostHistory = false, actorId,
   canModerateHelpSolution, pendingDuplicateAppeal,
 }: AdminTopicViewProps) {
   const { t } = useTranslation("common");
@@ -119,6 +123,9 @@ export function AdminTopicView({
                     url={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`}
                   />)}
                 </div> : null}
+                <MessageQuickActions locale={locale} topicId={topic.id} postId={post.id}
+                  revisionId={post.body.id} sourceLocale={post.body.sourceLocale} actorId={actorId}
+                  canCorrectAnySourceLocale={canCorrectAnySourceLocale} canReadPostHistory={canReadPostHistory}/>
                 {post.parentPostId && numbers.has(post.parentPostId) ? <a
                   className="topic-message-parent-link" href={`#post-${encodeURIComponent(post.parentPostId)}`}>
                   {t("replyToMessageNumberCompact", { number: numbers.get(post.parentPostId)! })}

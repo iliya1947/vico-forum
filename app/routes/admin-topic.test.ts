@@ -88,6 +88,8 @@ describe("AP-07 private admin topic loader", () => {
     expect(result.data.canManagePin).toBe(permission === "forum.topic.pin");
     expect(result.data.canCorrectAnySourceLocale).toBe(permission === "forum.sourceLocale.correctAny");
     expect(result.data.canManageAnySolution).toBe(permission === "forum.solution.manageAny");
+    expect(result.data.canReadPostHistory).toBe(permission === "forum.post.history.read");
+    expect(result.data.actorId).toBe("actor");
     expect(result.data.canManageHelpDuplicate).toBe(permission === "forum.helpDuplicate.manage");
     expect(result.data.topic.duplicateRelationshipId).toBe(permission === "forum.helpDuplicate.manage" ? "private-relationship" : null);
     expect(result.data.pendingDuplicateAppeal).toEqual(permission === "forum.helpDuplicate.manage" ? { id: "private-appeal" } : null);

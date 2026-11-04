@@ -104,7 +104,8 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
 
 /** Changing actor, target or permission unmounts private fetchers and their responses. */
 export function MessageQuickActions(props: MessageQuickActionsProps) {
-  const actorId = props.actorId ?? useHeaderAuthUser()?.id ?? null;
+  const headerActorId = useHeaderAuthUser()?.id ?? null;
+  const actorId = props.actorId ?? headerActorId;
   if (!actorId || (!props.canCorrectAnySourceLocale && !props.canReadPostHistory)) return null;
   const key = JSON.stringify([
     actorId, props.topicId, props.postId, props.canCorrectAnySourceLocale, props.canReadPostHistory,

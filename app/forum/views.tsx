@@ -4,6 +4,7 @@ import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-re
 import { ComplaintResolvedHistoryList } from "../complaints/history-view";
 import type { ForumNotificationSummary } from "../../db/forum-repository";
 import {TopicQuickActions} from "../admin/quick-actions";
+import {MessageQuickActions} from "../admin/message-quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
 import { ComplaintQueueList } from "../complaints/queue-view";
@@ -2060,13 +2061,6 @@ export function SectionView({
   );
 }
 
-type PostHistoryActionData =
-  | { operation: "postHistory"; postId: string; revisions: Array<{
-      id: string; authorId: string; authorName: string; originalContent: string;
-      sourceLocale: string; createdAt: string;
-    }> }
-  | ForumMutationError;
-
 export type TopicViewActionData =
   | PostEditConflictData
   | ForumMutationError
@@ -2243,9 +2237,7 @@ export function TopicView({
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBaseRevisionId, setEditBaseRevisionId] = useState<string | null>(null);
   const [editReady, setEditReady] = useState(false);
-  const [historyPostId, setHistoryPostId] = useState<string | null>(null);
   const editEditorRef = useRef<MarkdownEditorHandle>(null);
-  const historyFetcher = useFetcher<PostHistoryActionData>();
   const editPublicationRef = useRef<{
     postId: string; expectedRevisionId: string;
   } | null>(null);
@@ -2274,7 +2266,6 @@ export function TopicView({
     editPublicationRef.current = null;
     setEditingPostId(null);
     setEditBaseRevisionId(null);
-    setHistoryPostId(null);
   }, [topic.id]);
 
   useEffect(() => {
@@ -2387,16 +2378,6 @@ export function TopicView({
   const isReplySubmitting = navigation.state !== "idle"
     && (navigation.formData?.get("intent") === "reply"
       || (navigation.state === "loading" && replyPublicationRef.current !== null));
-
-  function openPostHistory(postId: string) {
-    if (!canReadPostHistory) return;
-    if (historyPostId === postId) {
-      setHistoryPostId(null);
-      return;
-    }
-    setHistoryPostId(postId);
-    void historyFetcher.submit({ intent: "readPostHistory", postId }, { method: "post" });
-  }
 
   async function copyMessageLink(postId: string) {
     const requestId = ++messageLinkRequestId.current;
@@ -2730,11 +2711,6 @@ export function TopicView({
                                 {t("postEdit")}
                               </button>
                             )}
-                            {canReadPostHistory && (
-                              <button type="button" onClick={() => openPostHistory(post.id)}>
-                                {t("postHistory")}
-                              </button>
-                            )}
                             {quoteSelectionErrorPostId === post.id && (
                               <span className="topic-message-mobile-action-feedback" role="status" aria-live="polite">
                                 {t("quoteSelectionRequired")}
@@ -2852,29 +2828,6 @@ export function TopicView({
                       </Form>
                     ) : null}
 
-                    {canReadPostHistory && historyPostId === post.id ? (
-                      <section className="topic-post-history" aria-label={t("postHistoryHeading")}>
-                        <h3>{t("postHistoryHeading")}</h3>
-                        {historyFetcher.state !== "idle" ? (
-                          <p role="status">{t("postHistoryLoading")}</p>
-                        ) : historyFetcher.data && "operation" in historyFetcher.data
-                          && historyFetcher.data.operation === "postHistory"
-                          && historyFetcher.data.postId === post.id ? (
-                          <ol>
-                            {historyFetcher.data.revisions.map((revision) => (
-                              <li key={revision.id}>
-                                <strong>{t("postRevisionBy", {
-                                  author: revision.authorName,
-                                  date: new Date(revision.createdAt).toLocaleString(locale),
-                                })}</strong>
-                                <pre dir="auto">{revision.originalContent}</pre>
-                              </li>
-                            ))}
-                          </ol>
-                        ) : <p role="alert">{t("postHistoryUnavailable")}</p>}
-                      </section>
-                    ) : null}
-
                     {post.attachments && post.attachments.length > 0 ? (
                       <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
                         {post.attachments.map((attachment) => (
@@ -2921,6 +2874,10 @@ export function TopicView({
                       </div>
 
                       <PostBodyTranslationControls presentation={postPresentation} />
+                      <MessageQuickActions locale={locale} topicId={topic.id} postId={post.id}
+                        revisionId={post.body.id} sourceLocale={post.body.sourceLocale}
+                        canCorrectAnySourceLocale={canCorrectAnySourceLocale}
+                        canReadPostHistory={canReadPostHistory}/>
                       <div className="topic-message-desktop-actions">
                         <MessagePermalinkControl
                           postId={post.id}
@@ -2931,11 +2888,6 @@ export function TopicView({
                         {editablePostIds.includes(post.id) && (
                           <button type="button" onClick={() => openPostEditor(post.id, post.body.id)}>
                             {t("postEdit")}
-                          </button>
-                        )}
-                        {canReadPostHistory && (
-                          <button type="button" onClick={() => openPostHistory(post.id)}>
-                            {t("postHistory")}
                           </button>
                         )}
                         {canParticipate && (

@@ -26,13 +26,15 @@ export async function loader({ params, context }: {
   let canManageAnySolution: boolean;
   let canManageHelpDuplicate: boolean;
   let canCorrectAnySourceLocale: boolean;
+  let canReadPostHistory: boolean;
   try {
     const resolver = authorizationForRequest(context).forUser(session.user.id);
-    [canManagePin, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale] = await Promise.all([
+    [canManagePin, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale, canReadPostHistory] = await Promise.all([
       resolver.has("forum.topic.pin"),
       resolver.has("forum.solution.manageAny"),
       resolver.has("forum.helpDuplicate.manage"),
       resolver.has("forum.sourceLocale.correctAny"),
+      resolver.has("forum.post.history.read"),
     ]);
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
@@ -107,6 +109,8 @@ export async function loader({ params, context }: {
     canManageAnySolution,
     canManageHelpDuplicate: canManageHelp,
     canCorrectAnySourceLocale,
+    canReadPostHistory,
+    actorId: session.user.id,
     canModerateHelpSolution: canManageAnySolution && loaded.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID,
     pendingDuplicateAppeal,
   }, { headers: adminPrivateHeaders });
