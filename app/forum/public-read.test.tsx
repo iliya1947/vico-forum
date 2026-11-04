@@ -3899,7 +3899,10 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       onabort: null | (() => void) = null;
       constructor() { HeldUpload.instances.push(this); }
       open() {}
-      setRequestHeader() {}
+      operationId = "";
+      setRequestHeader(name: string, value: string) {
+        if (name === "X-Vico-Operation-Id") this.operationId = value;
+      }
       send() {}
       abort() { this.aborted = true; this.onabort?.(); }
     }
@@ -3908,19 +3911,32 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
     try {
       const form = await screen.findByRole("form", { name: "Add a reply" });
       const attach = await within(form).findByLabelText("Attach");
+      // The file picker can appear before the attachment operation has initialized.
+      // Select only after its real operation ID is ready, not merely after DOM mount.
+      const operation = await waitFor(() => {
+        expect(attach).toBeEnabled();
+        const id = form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')?.value;
+        expect(id).toMatch(/^[0-9a-f-]{36}$/i);
+        return id!;
+      });
       fireEvent.change(attach, {
         target: { files: [new File(["unsent bytes"], "notes.txt", { type: "text/plain" })] },
       });
       expect(HeldUpload.instances).toHaveLength(1);
+      const upload = HeldUpload.instances[0]!;
+      expect(upload.operationId).toBe(operation);
+      expect(upload.aborted).toBe(false);
       expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
       await state.update(topicRenderData({ ...topic, isClosed: true, closureVersion: 1 }, { canReply: true }));
       expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operation);
       expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
-      expect(HeldUpload.instances[0]?.aborted).toBe(false);
+      expect(upload.aborted).toBe(false);
       expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
       await state.update(topicRenderData({ ...topic, isClosed: false, closureVersion: 2 }, { canReply: true }));
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operation);
       expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
-      expect(HeldUpload.instances[0]?.aborted).toBe(false);
+      expect(upload.aborted).toBe(false);
       expect(state.mutation).not.toHaveBeenCalled();
     } finally { state.router.dispose(); }
   });
