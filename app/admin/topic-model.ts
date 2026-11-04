@@ -13,6 +13,7 @@ export interface AdminTopicPost {
   body: SourcePost["body"];
   solutionModerationStatus: SourcePost["solutionModerationStatus"];
   solutionOutdatedReason: SourcePost["solutionOutdatedReason"];
+  solutionOutdatedReasonKind: SourcePost["solutionOutdatedReasonKind"];
   attachments: NonNullable<SourcePost["attachments"]>;
 }
 
@@ -54,6 +55,7 @@ export function projectAdminTopic(topic: ForumTopicPage, canManageHelpDuplicate:
       body: post.body,
       solutionModerationStatus: post.solutionModerationStatus,
       solutionOutdatedReason: post.solutionOutdatedReason,
+      solutionOutdatedReasonKind: post.solutionOutdatedReasonKind,
       attachments: post.attachments ?? [],
     })),
   };

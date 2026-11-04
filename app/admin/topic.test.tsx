@@ -20,7 +20,7 @@ const topic: AdminTopic = {
     authorImage: null, parentPostId: index === 0 ? null : "p1",
     createdAt: `2026-01-0${index+1}T00:00:00.000Z`, editedAt: null,
     body: { id: `rev-${id}`, originalContent: index === 0 ? "Safe **bold**" : "Reply", sourceLocale: index === 0 ? "en" : "he" },
-    solutionModerationStatus: null, solutionOutdatedReason: null,
+    solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
     attachments: index === 0 ? [{
       id: "123e4567-e89b-12d3-a456-426614174000", fileName: "image.png", byteSize: 16, detectedType: "png",
     }] : [],

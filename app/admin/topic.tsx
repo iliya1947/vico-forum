@@ -58,7 +58,7 @@ export function AdminTopicView({
         {topic.isPinned ? <span>{t("pinnedHeading")}</span> : null}
         {topic.isSolved ? <span>{t("solved")}</span> : null}
         {topic.duplicateOf ? <span>{t("helpDuplicateBadge")}</span> : null}
-        {topic.needsDetails ? <span>{t("helpNeedsDetailsBadge")}</span> : null}
+        {topic.needsDetails ? <span>{t("helpSolutionsFilterNeedsDetails")}</span> : null}
       </div>
       <p><Link to={publicTopic}>{t("topicLabel")}</Link></p>
       <TopicQuickActions
@@ -86,6 +86,10 @@ export function AdminTopicView({
                 </Link>
                 {post.id === original?.id ? <strong className="original-question-label">{t("originalQuestion")}</strong> : null}
                 {post.id === topic.bestAnswerPostId ? <strong className="best-answer-label">{t("bestAnswer")}</strong> : null}
+                {canModerateHelpSolution && post.solutionModerationStatus === "needs-review"
+                  ? <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong> : null}
+                {post.solutionModerationStatus === "outdated"
+                  ? <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong> : null}
                 <a className="topic-message-anchor" href={`${publicTopic}#post-${encodeURIComponent(post.id)}`}>
                   {t("postNumber", { number })}
                 </a>
@@ -98,6 +102,14 @@ export function AdminTopicView({
                 }))}>
                   <PostBodyPresentation presentation={presentation}/>
                 </ForumInlineAttachmentProvider>
+                {post.solutionModerationStatus === "outdated" && (
+                  post.solutionOutdatedReasonKind === "best-answer-replaced" || post.solutionOutdatedReason
+                ) ? <p className="help-solution-outdated-reason">
+                  {t("helpSolutionOutdatedReasonLabel")}: {
+                    post.solutionOutdatedReasonKind === "best-answer-replaced"
+                      ? t("helpSolutionOutdatedReasonBestAnswerReplaced") : post.solutionOutdatedReason
+                  }
+                </p> : null}
                 {post.editedAt ? <small className="topic-message-edited">
                   {t("postEditedAt", { date: timestamp(post.editedAt) })}
                 </small> : null}
