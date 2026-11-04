@@ -2,6 +2,11 @@ import { data, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireAdminUsersAccess, adminObjectId, adminPrivateHeaders } from "../admin/users.server";
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { authSessionForRequest } from "../auth/request-context";
+import { authorizationForRequest } from "../authorization/request-context";
+import { AuthorizationNotFoundError } from "../../db/authorization-repository";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { AdminUserDetail } from "../admin/users";
 import { ForumRouteError } from "../forum/ui";
 export { headers, meta } from "./admin";
@@ -21,8 +26,21 @@ export async function loader({ params, context }: {
       role: { slug: profile.role.slug, displayName: profile.role.displayName, isSystem: profile.role.isSystem },
       messageCount: profile.messageCount, bestAnswerCount: profile.bestAnswerCount,
     };
-    return data({ locale: params.locale ?? "en", access, user }, { headers: adminPrivateHeaders });
+    // The independent admin.users.read gate never grants access to authorization management data.
+    if (!access.canManageAuthorization) {
+      return data({ locale: params.locale ?? "en", access, user }, { headers: adminPrivateHeaders });
+    }
+    const management = await authorizationForRequest(context).readUserManagementState(id);
+    const managerActorId = authSessionForRequest(context)!.user.id;
+    return data({ locale: params.locale ?? "en", access, user,
+      management, managerActorId, permissions: PERMISSION_CATALOG }, { headers: adminPrivateHeaders });
   } catch (error) {
+    if (error instanceof AuthorizationNotFoundError) {
+      throw new Response("Not found", { status: 404, headers: adminPrivateHeaders });
+    }
+    if (error instanceof AuthorizationUnavailableError) {
+      throw new Response("Unavailable", { status: 503, headers: adminPrivateHeaders });
+    }
     if (error instanceof ForumStorageUnavailableError) {
       throw new Response("Unavailable", { status: 503, headers: adminPrivateHeaders });
     }
