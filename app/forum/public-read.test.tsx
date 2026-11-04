@@ -3885,6 +3885,46 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
     } finally { state.router.dispose(); }
   });
 
+  it("preserves a selected in-flight attachment and its upload operation while closing and reopening", async () => {
+    stubUploads();
+    class HeldUpload {
+      static instances: HeldUpload[] = [];
+      aborted = false;
+      status = 0;
+      responseText = "";
+      responseType: XMLHttpRequestResponseType = "";
+      upload = { onprogress: null };
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      onabort: null | (() => void) = null;
+      constructor() { HeldUpload.instances.push(this); }
+      open() {}
+      setRequestHeader() {}
+      send() {}
+      abort() { this.aborted = true; this.onabort?.(); }
+    }
+    vi.stubGlobal("XMLHttpRequest", HeldUpload as unknown as typeof XMLHttpRequest);
+    const state = mountedTopic(topicRenderData(topic, { canReply: true }));
+    try {
+      const form = await screen.findByRole("form", { name: "Add a reply" });
+      const attach = await within(form).findByLabelText("Attach");
+      fireEvent.change(attach, {
+        target: { files: [new File(["unsent bytes"], "notes.txt", { type: "text/plain" })] },
+      });
+      expect(HeldUpload.instances).toHaveLength(1);
+      expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
+      await state.update(topicRenderData({ ...topic, isClosed: true, closureVersion: 1 }, { canReply: true }));
+      expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
+      expect(HeldUpload.instances[0]?.aborted).toBe(false);
+      expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      await state.update(topicRenderData({ ...topic, isClosed: false, closureVersion: 2 }, { canReply: true }));
+      expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
+      expect(HeldUpload.instances[0]?.aborted).toBe(false);
+      expect(state.mutation).not.toHaveBeenCalled();
+    } finally { state.router.dispose(); }
+  });
+
   it("keeps an open composer on fresh permission revocation without permitting publish", async () => {
     stubUploads();
     const state = mountedTopic(topicRenderData(topic, { canReply: true }));
