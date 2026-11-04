@@ -6,32 +6,19 @@
 
 - AP-01–AP-07 merged в main; current main `e39c36ccef29c6164706d826f26c57088a97fa20`.
 - AP-08 product decisions владельца зафиксированы: reopen есть; close/reopen одной capability; mandatory reason нет; closed topic запрещает новые replies всем без actor exceptions.
-- Лёва подготовил bounded technical plan AP-08: [#6621343128](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6621343128).
-- Мира завершила coordinator review плана: **PASS**. Подтверждённых противоречий product decisions/current main/source-of-truth не найдено; дополнительных продуктовых решений не требуется.
-- `closure_version` принят как текущая stale-form/CAS защита от реальной ABA-гонки open→closed→open, а не future-only foundation. Новая closure table, generic lock/event subsystem или второй mutation API не требуются.
-- `forum.topic.close` с initial moderator/admin grants принят как единая close/reopen capability в рамках существующей dynamic permission model; custom roles/overrides сохраняют обычную семантику.
-- План сохраняет existing publication receipt replay до closed admission, topic-row serialization для close/reply, atomic History, public/admin shared Quick actions и in-memory editor buffer при closed 409/revalidation.
-- AP-09 Users, AP-10 blocking, AP-11 closeout и production rollout вне текущего implementation scope.
+- Лёва подготовил technical plan AP-08: [#6621343128](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6621343128).
+- Лира реализовала AP-08 в implementation PR #283; текущий сохранённый head: `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+- Работа Лиры не считается дефектной из-за того, что coordinator scope Миры оказался шире необходимого. Overscope сам по себе не является основанием удалять, откатывать или переписывать уже корректно реализованное.
+- Владелец остановил дальнейшее продолжение Лиры до завершения разбора coordinator-сбоя Миры. #283 сохраняется как есть; новых code/docs/tests/acceptance изменений по этой причине не делать.
+- Прежний coordinator PASS Миры не использовать как доказательство того, что каждое изменение было необходимо именно для AP-08; это процессный дефект координации, а не установленный дефект реализации.
+- AP-09+, blocking и production rollout вне текущего scope.
 
-## Назначения и следующий шаг
+## Текущий маршрут
 
-- Лёва — technical planning AP-08 завершён; implementation не выполняет.
-- Мира — technical plan review завершён: PASS.
-- **Лира — следующий агент: реализовать утверждённый AP-08 отдельным bounded implementation PR.**
+- Лира: работа по #283 остановлена владельцем; текущий head сохраняется без переделки.
+- Лёва: новых задач по AP-08 сейчас нет.
+- Мира: устраняет только последствия собственного coordinator-сбоя в служебном состоянии и не меняет реализацию #283 без отдельного подтверждённого current-scope дефекта.
 - Марк не назначен.
-
-### Задача Лире
-
-Реализуй утверждённый technical plan AP-08 из #6621343128 на актуальном `main` `e39c36ccef29c6164706d826f26c57088a97fa20`.
-
-Scope: topic close/reopen и только необходимые для него schema/capability/History/reply-admission/shared-UI/documentation/test изменения.
-
-Готовность:
-- утверждённые product/technical invariants реализованы без AP-09+ и несвязанного refactor;
-- applicable repository/PG/runtime/browser checks выполнены в доступной среде и фактически описаны;
-- отдельный implementation PR имеет stable exact head;
-- `PROJECT_STATE.md` и lasting source-of-truth обновлены только фактически реализованным состоянием;
-- author handoff опубликован в #251 для coordinator-first review Миры.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
