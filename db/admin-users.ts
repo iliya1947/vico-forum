@@ -27,7 +27,7 @@ export class PostgresAdminUsersReader implements AdminUsersReader {
         where $1::text = '' or u.name ilike $2 escape '\\' or u.id ilike $2 escape '\\'
       ),
       paged as (
-        select u.id, u.name, u.image, u.created_at as "joinedAt"
+        select u.id, u.name, u.image, to_char(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "joinedAt"
         from "user" u join matching m on m.id = u.id
         where ($3::text is null or u.id collate "C" > $3 collate "C")
         order by u.id collate "C" limit 26
