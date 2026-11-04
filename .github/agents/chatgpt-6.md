@@ -1,5 +1,14 @@
 # Лира — ChatGPT-6
 
+## AP-08 — implementation PR #283, подзадача 1/5
+
+- Base/main: `e39c36ccef29c6164706d826f26c57088a97fa20`, current implementation head `c8ff6f9539915397c0cf2d340468b59c5efcce1b`, PR draft, no review/merge.
+- Исполнена только подзадача 1: миграция `0056_topic_closure`, `is_closed`/nonnegative `closure_version`, permission `forum.topic.close` в DB constraint/TS catalog, grants moderator/admin и History actions, Drizzle snapshot/journal, schema manifest с реальными pg_get_expr SHA-256.
+- Исторические PostgreSQL fixtures до 0056 не содержали новых столбцов и давали `42703` при нынешнем Drizzle insert; обновлены только тестовые схемы. Legacy migrations не изменены.
+- [CI #41769348020](https://github.com/iliya1947/vico-forum/actions/runs/41769348020): migrations.test.ts 52/52 PASS, 37 из 38 suites PG PASS (470/472 tests). Два failing assertions в незавершённых серверных closure tests; TypeScript падает на History UI labels и writer fixtures от следующих подзадач.
+- Полные CI, schema-manifest verification job, HTTP и browser acceptance не пройдены и не объявляются PASS. `PROJECT_STATE.md` ещё не обновлён, так как AP-08 не завершён.
+- Предварительная серверная реализация уже присутствует в draft #283, но подзадача 2 не завершена и не принималась; не менять scope или задачи других агентов.
+
 ## AP-07 bounded correction — завершено, author handoff
 
 - PR #282, new stable exact head `985160867001fd42b3ad2614262927aab3edfb3e` (base `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`).
