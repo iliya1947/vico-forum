@@ -91,6 +91,7 @@ describe("AP-08 canonical closure HTTP", () => {
       form({ intent: "closeTopic", editorActorId: "viewer" }),
       form({ intent: "closeTopic", expectedClosureVersion: "4" }),
       form({ ...canonical, editorActorId: "" }),
+      form({ ...canonical, editorActorId: "   " }),
       form({ ...canonical, operationScope: "own" }),
       form({ ...canonical, inlineQuickAction: "bogus" }),
       ...["", "-1", "+1", "01", "1.0", " 1", "1 ", "1e2", "2147483648", "NaN", "０"].map(
@@ -101,6 +102,9 @@ describe("AP-08 canonical closure HTTP", () => {
       duplicate.append(field, "tampered");
       invalid.push(duplicate);
     }
+    const maskedIntent = form({ ...canonical, intent: "reply", body: "sneaked" });
+    maskedIntent.append("intent", "closeTopic");
+    invalid.push(maskedIntent);
     const file = form();
     file.set("expectedClosureVersion", new File(["1"], "version.txt"));
     invalid.push(file);

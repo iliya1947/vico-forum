@@ -195,6 +195,11 @@ export async function topicAction({ request, params, context }: {
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
   const isClosureAction = intent === "closeTopic" || intent === "reopenTopic";
+  // An ambiguous form cannot hide a closure command behind another first intent.
+  if (formData.getAll("intent").some((value) => value === "closeTopic" || value === "reopenTopic")
+    && (formData.getAll("intent").length !== 1 || !isClosureAction)) {
+    return mutationFailure("invalid", 400);
+  }
   let closureVersion: number | undefined;
   if (isClosureAction) {
     // Closure requires a canonical, unique CAS version and an explicit actor expectation.
@@ -205,7 +210,7 @@ export async function topicAction({ request, params, context }: {
     const actorExpectation = formData.get("editorActorId");
     if (typeof rawVersion !== "string" || !/^(?:0|[1-9][0-9]*)$/u.test(rawVersion)
       || Number(rawVersion) > 2_147_483_647
-      || typeof actorExpectation !== "string" || actorExpectation.length === 0) {
+      || typeof actorExpectation !== "string" || actorExpectation.trim().length === 0) {
       return mutationFailure("invalid", 400);
     }
     closureVersion = Number(rawVersion);
