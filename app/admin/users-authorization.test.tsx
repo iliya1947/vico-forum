@@ -41,9 +41,10 @@ const profile = {
 let router: ReturnType<typeof createMemoryRouter> | undefined;
 afterEach(() => { cleanup(); router?.dispose(); router = undefined; });
 
-function mount() {
+function mount(options: { revokeManagementOnSubmit?: boolean } = {}) {
   let currentRole: AuthorizationRole = roles[0]!;
   let override: "allow" | "deny" | undefined;
+  let canManage = true;
   const action = vi.fn(async ({ request }: { request: Request }) => {
     const form = await request.formData();
     const intent = form.get("intent");
@@ -57,6 +58,7 @@ function mount() {
     } else {
       throw Error("unexpected intent");
     }
+    if (options.revokeManagementOnSubmit) canManage = false;
     return { ok: true };
   });
   const loader = vi.fn(async () => {
@@ -68,13 +70,10 @@ function mount() {
         ? ["forum.reply.create", "forum.topic.pin"] : ["forum.reply.create"],
     };
     return {
-    locale: "en", access, user: { ...profile, role: currentRole },
-    managerActorId: actorId, permissions,
-    management: {
-      userId, roles,
-      authorization,
-    },
-  };
+      locale: "en", access: canManage ? access : adminAccess(new Set(["admin.users.read"])),
+      user: { ...profile, role: currentRole },
+      ...(canManage ? { managerActorId: actorId, permissions, management: { userId, roles, authorization } } : {}),
+    };
   });
   function Detail() { return <AdminUserDetail {...useLoaderData<typeof loader>()} />; }
   router = createMemoryRouter([
@@ -132,4 +131,19 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(formFor(view.container, "override", "forum.topic.pin")).toBeUndefined();
     expect(view.container.textContent).toContain("Public details");
   });
+
+  it("drops the privileged DOM after the next loader snapshot revokes management permission", async () => {
+    const mounted = mount({ revokeManagementOnSubmit: true });
+    await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+    fireEvent.submit(formFor(mounted.container, "assignRole")!);
+    await waitFor(() => expect(mounted.action).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mounted.container.querySelector("#authorization")).toBeNull());
+    expect(mounted.loader).toHaveBeenCalledTimes(2);
+    expect(formFor(mounted.container, "assignRole")).toBeUndefined();
+    expect(formFor(mounted.container, "override", "forum.topic.pin")).toBeUndefined();
+    expect(mounted.container.textContent).not.toContain("Changes saved");
+    expect(mounted.container.textContent).toContain("Public details");
+    expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
+  });
+
 });
