@@ -1,5 +1,24 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-08 coordinator review restart — подзадача 3: authorization/HTTP/read boundaries
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Повторно проверено:
+- `forum.topic.close` остаётся отдельной code-backed capability; initial grants — moderator/admin, user не получает её;
+- close/reopen требуют одну fresh capability без role/owner bypass;
+- canonical topic action берёт target из route и actor из authenticated session; submitted actor/topic fields не становятся authority;
+- closure form строго валидирует intent, single CAS version, stale actor expectation и не принимает operationScope;
+- same-origin/session boundary и error mapping сохраняют controlled 400/401/403/404/409/503, private no-store и propagation неожиданных ошибок;
+- rejected fresh reply получает отдельный `topicClosed` 409; HTTP layer не делает preflight, authoritative closure admission остаётся в repository;
+- public topic loader разрешает closure presentation отдельно и при classified authz outage fail-closed скрывает actions, не ломая публичное чтение;
+- global/admin Forum admission включает closure capability; closure-only actor допускается к Forum surface, но не получает pin/solution/duplicate/source/history actions;
+- private admin loader авторизует до target validation/private reads и не сериализует protected duplicate explanation;
+- persisted `isClosed/closureVersion` проходят public/admin read DTO;
+- correction commit `7b6adbf...` затрагивает только AP-08 UI test и эту runtime authorization/HTTP/read цепочку не меняет.
+
 ## AP-08 coordinator review restart — подзадача 2: schema/DB/concurrency/reply admission
 
 **Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
