@@ -43,7 +43,7 @@ export type HelpSimilarQuestionsActionData = {
 export type HelpQuestionActionData = ForumMutationError | HelpSimilarQuestionsActionData;
 
 export interface SourceLocaleCorrectionMutationError {
-  error: Exclude<ForumMutationError["error"], "rateLimited" | "unexpected">;
+  error: Exclude<ForumMutationError["error"], "rateLimited" | "unexpected" | "topicClosed">;
   operation: "sourceLocaleCorrection";
 }
 

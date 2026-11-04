@@ -14,7 +14,7 @@ const access = adminAccess(new Set(["forum.post.history.read"]));
 const topic: AdminTopic = {
   id: "t/עברית", title: { id: "tr", originalContent: "Original", sourceLocale: "he" },
   section: { id: "s/help", name: "Internal", category: { id: "help-solutions", name: "Help" } },
-  authorName: "Author", isPinned: false, isSolved: true, bestAnswerPostId: "p3",
+  authorName: "Author", isPinned: false, isSolved: true, isClosed: false, closureVersion: 0, bestAnswerPostId: "p3",
   needsDetails: false, duplicateOf: null, duplicateRelationshipId: null,
   posts: ["p1", "p2", "p3"].map((id, index) => ({
     id, authorId: index === 0 ? "author" : "other", authorName: index === 0 ? "Author" : "Other",

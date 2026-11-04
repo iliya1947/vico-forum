@@ -42,6 +42,8 @@ const topic = {
   createdAt: new Date("2026-01-01"),
   isPinned: false,
   isSolved: false,
+  isClosed: false,
+  closureVersion: 0,
   bestAnswerPostId: null,
   needsDetails: false,
   duplicateOf: null,
