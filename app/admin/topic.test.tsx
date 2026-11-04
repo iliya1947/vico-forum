@@ -36,7 +36,7 @@ const presentation = (contentId: string, content: string, dir: "ltr" | "rtl") =>
 let dispose = () => {};
 afterEach(() => { cleanup(); dispose(); });
 
-function mount(longAuthorName?: string) {
+function mount(longAuthorName?: string, closed = false) {
   const values = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key, v]) => [key, v.source]));
   const common = Object.fromEntries(Object.entries(values).flatMap(([key, v]) =>
     typeof v === "string" ? [[key, v]] : Object.entries(v as Record<string, string>).map(([kind, text]) => [`${key}_${kind}`, text])));
@@ -48,7 +48,7 @@ function mount(longAuthorName?: string) {
   const fixture = longAuthorName ? {
     ...topic, authorName: longAuthorName,
     posts: topic.posts.map((post) => ({ ...post, authorName: longAuthorName })),
-  } : topic;
+  } : { ...topic, isClosed: closed, closureVersion: closed ? 5 : 0 };
   const element = <AdminTopicView locale="en" access={access} topic={fixture}
     titlePresentation={presentation(topic.id, "נושא", "rtl")}
     postPresentations={[
@@ -92,6 +92,15 @@ describe("AP-07 admin topic presentation", () => {
     expect(posts[1]?.querySelector("a.topic-message-anchor")?.getAttribute("href"))
       .toBe(forumTopicPath("en", topic.id) + "#post-p3");
     expect(node.querySelector("strong")).not.toBeNull();
+  });
+
+  it("displays Closed independently from Solved without affecting message identity or attachments", () => {
+    const node = mount(undefined, true);
+    const statuses = node.querySelector(".admin-topic-status");
+    expect(statuses?.textContent).toContain("Closed");
+    expect(statuses?.textContent).toContain("Solved");
+    expect(node.querySelectorAll(".admin-topic .topic-message")).toHaveLength(3);
+    expect(node.querySelector(".topic-message-attachments a")?.getAttribute("href")).toContain("post=p1");
   });
 
   it("reuses safe markdown and canonical attachment membership URLs", () => {
