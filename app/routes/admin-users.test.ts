@@ -11,6 +11,16 @@ import { loader as detail } from "./admin-user";
 import { loader as legacy } from "./under-development";
 
 const secret = "never-serialize@example.invalid";
+const management = {
+  userId: "user/עברית",
+  roles: [{ id: "builtin-user", slug: "user", displayName: "User", isSystem: true }],
+  authorization: {
+    role: { id: "builtin-user", slug: "user", displayName: "User", isSystem: true },
+    explicitAssignment: false, grants: ["forum.reply.create"],
+    overrides: { "forum.topic.create": "deny" },
+    effectivePermissions: ["forum.reply.create"],
+  },
+};
 const profile = {
   id: "user/עברית", name: "Name עברית", image: null, joinedAt: new Date("2026-10-01T10:00:00Z"),
   bio: "Public bio", githubUrl: "https://github.com/example", websiteUrl: null,
@@ -21,14 +31,18 @@ function environment(permissions: string[] = [], signedIn = true) {
   const context = new RouterContextProvider();
   context.set(authSessionContext, signedIn ? { user: { id: "actor", email: secret } } as never : null);
   const has = vi.fn(async (key: string) => permissions.includes(key));
-  context.set(authorizationContext, { forUser: () => ({ has }), readManagementState: vi.fn() } as never);
+  const readManagementState = vi.fn();
+  const readUserManagementState = vi.fn(async () => management);
+  context.set(authorizationContext, {
+    forUser: () => ({ has }), readManagementState, readUserManagementState,
+  } as never);
   const listUsers = vi.fn(async () => ({ items: [
     { id: profile.id, name: profile.name, image: profile.image, joinedAt: profile.joinedAt.toISOString() },
   ], total: 1, next: null }));
   const readProfile = vi.fn(async () => profile);
   context.set(adminUsersContext, { listUsers });
   context.set(forumReaderContext, { readProfile } as never);
-  return { context, has, listUsers, readProfile };
+  return { context, has, listUsers, readProfile, readManagementState, readUserManagementState };
 }
 function indexArgs(context: RouterContextProvider, query = "") {
   return { request: new Request(`https://vico.test/he/admin/users${query}`), params: { locale: "he" }, context };
@@ -48,10 +62,11 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
       await expect(detail(detailArgs(e.context, ""))).rejects.toMatchObject({ status });
       expect(e.listUsers).not.toHaveBeenCalled();
       expect(e.readProfile).not.toHaveBeenCalled();
+      expect(e.readUserManagementState).not.toHaveBeenCalled();
     }
   });
 
-  it("admits users-read only and both-permission actors without management reads or private data", async () => {
+  it("keeps public DTO minimal and reads one user's management data only for both capabilities", async () => {
     for (const permissions of [["admin.users.read"], ["admin.users.read", "access.authorization.manage"]]) {
       const e = environment(permissions);
       const indexResult = await index(indexArgs(e.context, "?q=%20Name%20&after=cursor"));
@@ -69,8 +84,18 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
       expect(detailResult.init?.headers).toEqual({ "Cache-Control": "private, no-store" });
       expect(e.readProfile).toHaveBeenCalledWith(profile.id);
       expect(JSON.stringify(indexResult.data) + JSON.stringify(detailResult.data)).not.toContain(secret);
-      expect(JSON.stringify(detailResult.data)).not.toContain("grants");
-      expect(JSON.stringify(detailResult.data)).not.toContain("overrides");
+      expect(e.readManagementState).not.toHaveBeenCalled();
+      if (permissions.includes("access.authorization.manage")) {
+        expect(e.readUserManagementState).toHaveBeenCalledTimes(1);
+        expect(e.readUserManagementState).toHaveBeenCalledWith(profile.id);
+        expect(detailResult.data).toMatchObject({ management, managerActorId: "actor" });
+        expect(JSON.stringify(detailResult.data)).not.toContain("email");
+      } else {
+        expect(e.readUserManagementState).not.toHaveBeenCalled();
+        expect(JSON.stringify(detailResult.data)).not.toContain("grants");
+        expect(JSON.stringify(detailResult.data)).not.toContain("overrides");
+        expect(JSON.stringify(detailResult.data)).not.toContain("managerActorId");
+      }
     }
   });
 
@@ -101,6 +126,13 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
     const unexpected = new Error("unexpected SQL");
     lost.listUsers.mockRejectedValueOnce(unexpected);
     await expect(index(indexArgs(lost.context))).rejects.toBe(unexpected);
+    const managerLost = environment(["admin.users.read", "access.authorization.manage"]);
+    managerLost.readUserManagementState.mockRejectedValueOnce(new AuthorizationUnavailableError());
+    await expect(detail(detailArgs(managerLost.context))).rejects.toMatchObject({ status: 503 });
+    const readFailure = new Error("unexpected management SQL");
+    const unexpectedManager = environment(["admin.users.read", "access.authorization.manage"]);
+    unexpectedManager.readUserManagementState.mockRejectedValueOnce(readFailure);
+    await expect(detail(detailArgs(unexpectedManager.context))).rejects.toBe(readFailure);
     const denied = environment(["admin.users.read"]);
     denied.has.mockRejectedValueOnce(new AuthorizationUnavailableError());
     await expect(index(indexArgs(denied.context))).rejects.toMatchObject({ status: 503 });
