@@ -17,8 +17,8 @@
 
 ## Текущий маршрут
 
-- Лира: обновить только body/метаданные #283 до фактического состояния и опубликовать author handoff на exact head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`; implementation не расширять.
-- После author handoff: Мира проводит coordinator whole-PR review.
+- Лира: author handoff #283 завершён; implementation не менять во время coordinator review.
+- Мира: coordinator whole-PR review начат на exact head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
 - Лёва: активной задачи по AP-08 сейчас нет; Codex не расходуется на переписывание старого техплана или browser acceptance.
 - Марк не назначен.
 
