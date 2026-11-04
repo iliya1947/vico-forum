@@ -53,7 +53,7 @@ describe("AP-09 read-only Users presentation", () => {
     expect(root.querySelectorAll("h1")).toHaveLength(1);
     expect(root.querySelector('.admin-panel-nav [aria-current="page"]')?.getAttribute("href")).toBe(adminUsersPath(locale));
     expect(root.querySelector('label[for="admin-users-query"]')?.textContent).not.toBe("adminUsersSearch");
-    expect(root.querySelector('form[method="get"] input[name="q"]')).toHaveValue("%_ עברית");
+    expect((root.querySelector('form[method="get"] input[name="q"]') as HTMLInputElement)?.value).toBe("%_ עברית");
     expect(root.querySelector('.admin-forum-objects h3 a')?.getAttribute("href")).toBe(adminUserPath(locale, id));
     const actions = [...root.querySelectorAll<HTMLAnchorElement>('.admin-forum-objects nav a')].map(a => a.getAttribute("href"));
     expect(actions).toContain(adminUserPath(locale, id));
