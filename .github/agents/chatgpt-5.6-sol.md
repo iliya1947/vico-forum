@@ -1,5 +1,31 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-08 coordinator review — подзадача 4: Quick actions / Closed UI / mounted reply editor
+
+**Exact head:** `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+
+**Verdict: 1 current-scope defect in the new AP-08 test layer; no confirmed closure/UI implementation defect found in this subtask.**
+
+### AP08-MIRA-01 — flaky in-flight attachment retention test
+
+Confirmed evidence on the same unchanged head:
+- CI run #41777691776 attempt 1: `checks` FAIL at `app/forum/public-read.test.tsx:3919`; expected `HeldUpload.instances[0].aborted === false`, received `true`.
+- attempt 2: identical failure at the same assertion.
+- attempt 3: SUCCESS without implementation-head change.
+
+The test creates the upload immediately after `findByLabelText("Attach")`; the established attachment UI test waits for Attach to become enabled before starting an upload. `useEditorAttachments` initializes/rotates operation identity in effects, and identity cleanup aborts outstanding XHR. This makes an initialization race a plausible explanation, but **the exact abort cause is not yet verified**.
+
+Current-scope classification: this test was added by #283 to prove AP-08 preservation of an in-flight attachment, and it caused two real CI failures. Therefore the instability itself must be resolved before coordinator PASS. Do not treat it as proof of a product defect until diagnosis distinguishes test-harness timing from runtime behavior.
+
+Other checked UI behavior in this subtask:
+- shared public/admin closure Quick actions use isolated fetcher + CAS and no automatic retry;
+- stale/denied closure responses revalidate once;
+- Closed status remains independent of Solved/duplicate;
+- initially closed topics expose no new Reply/Quote/composer;
+- an already-mounted composer remains mounted across closure, publication is disabled at form and editor layers, Cancel remains enabled, and reopen requires explicit submit;
+- topicClosed 409 revalidates once without resubmission;
+- actor/topic editor scope resets are backed by existing editor/attachment scope isolation.
+
 ## AP-08 coordinator review — подзадача 3: authorization/HTTP/read boundaries
 
 **Exact head:** `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
