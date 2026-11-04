@@ -37,6 +37,8 @@ export default [
     route("attention", "routes/attention.tsx"),
     route("tags", "routes/tags.tsx"),
     route("tags/:tagKey", "routes/tag.tsx"),
+    route("admin/users", "routes/admin-users.tsx"),
+    route("admin/users/:userId", "routes/admin-user.tsx"),
     route("admin/forum", "routes/admin-forum.tsx"),
     route("admin/forum/categories/:categoryId", "routes/admin-category.tsx"),
     route("admin/forum/sections/:sectionId", "routes/admin-section.tsx"),
