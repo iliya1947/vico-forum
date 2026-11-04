@@ -2,18 +2,13 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-08 — coordinator и independent technical PASS; merge владельцем
-- Coordinator: Мира; technical planner/reviewer: Лёва; исполнитель: Лира
-- Implementation baseline: `e39c36ccef29c6164706d826f26c57088a97fa20`
-- Current main: `853ccde096ba56c3b3147122bb1d5dd284c2d186` (после baseline изменён только AGENTS.md)
-- Implementation PR: #283 (Ready, mergeable; ещё не merged)
-- Stable exact head: `7b6adbf8c92e1706064cb5845248813668a287d0`
-- Exact-head CI #41904456264 attempts 1 и 2: checks/database SUCCESS
-- Coordinator whole-PR review Миры: PASS (#6641563954)
-- Независимая whole-PR technical review Лёвы: [PASS](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642078061) на том же head; confirmed open current-scope defects: 0
-- Локально: 5 целевых files / 110 tests PASS; implementation не менялся
-- Полезный реализованный scope сохраняется; дальнейшего expansion нет
-- Actual authenticated browser/DB flow не проверен; отдельный browser run не mandatory blocker этого package
-- Новую документацию в #283 не добавлять; stale PROJECT_STATE и документация — отдельный PR в конце задачи
-- Следующий шаг: проверить/merge documentation PR #286; затем AP-08 закрыт и можно переходить к следующему bounded package.
-- Марк не назначен; AP-09+, blocking и production rollout не начинались
+- Текущий этап: AP-09 — technical planning
+- Coordinator: Мира
+- Technical planner/reviewer: Лёва
+- Исполнитель: Лира после утверждения technical plan
+- Current main: `2651d2bf7de7212068c54674dca7d90716ea92c3`
+- AP-08: implementation #283 + documentation closeout #286 merged; package закрыт
+- AP-09 scope: Users index/search + dedicated admin user page + reuse existing applicable authorization controls
+- AP-09 excludes: block/lift, block enforcement, AP-10, Settings, Stage 6/production rollout
+- Следующий шаг: Лёва готовит bounded technical plan AP-09 по актуальному repository/source-of-truth
+- Марк не назначен
