@@ -6,10 +6,15 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { adminAccess } from "./access";
 import { AdminUserDetail } from "./users";
+import type { AuthorizationRole, UserAuthorization } from "../../db/authorization-repository";
+import type { PermissionKey } from "../authorization/catalog";
 
 function i18n() {
-  const resources = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).flatMap(([key, d]) =>
-    typeof d.source === "string" ? [[key, d.source]] : Object.entries(d.source).map(([part, val]) => [`${key}_${part}`, val])));
+  const resources: Record<string, string> = {};
+  for (const [key, descriptor] of Object.entries(canonicalEnglishCatalog.common)) {
+    if (typeof descriptor.source === "string") resources[key] = descriptor.source;
+    else for (const [part, value] of Object.entries(descriptor.source)) resources[`${key}_${part}`] = value;
+  }
   return createTranslationRuntime({
     locale: { translationLocale: "en", direction: "ltr", formatting: { locale: "en", timeZone: "UTC" },
       fallbackLocales: [], nativeName: "English", presentationMetadata: {} },
@@ -20,11 +25,11 @@ function i18n() {
 
 const actorId = "admin-actor";
 const userId = "target/עברית";
-const roles = [
+const roles: AuthorizationRole[] = [
   { id: "builtin-user", slug: "user", displayName: "User", isSystem: true },
   { id: "builtin-moderator", slug: "moderator", displayName: "Moderator", isSystem: true },
 ];
-const permissions = ["forum.reply.create", "forum.topic.pin"] as const;
+const permissions: PermissionKey[] = ["forum.reply.create", "forum.topic.pin"];
 const access = adminAccess(new Set(["admin.users.read", "access.authorization.manage"]));
 const profile = {
   id: userId, name: "Target עברית", image: null, joinedAt: "2026-10-01T10:00:00.000Z",
@@ -54,20 +59,23 @@ function mount() {
     }
     return { ok: true };
   });
-  const loader = vi.fn(async () => ({
+  const loader = vi.fn(async () => {
+    const authorization: UserAuthorization = {
+      role: currentRole, explicitAssignment: currentRole !== roles[0],
+      grants: ["forum.reply.create"],
+      overrides: override ? { "forum.topic.pin": override } : {},
+      effectivePermissions: override === "allow"
+        ? ["forum.reply.create", "forum.topic.pin"] : ["forum.reply.create"],
+    };
+    return {
     locale: "en", access, user: { ...profile, role: currentRole },
     managerActorId: actorId, permissions,
     management: {
       userId, roles,
-      authorization: {
-        role: currentRole, explicitAssignment: currentRole !== roles[0],
-        grants: ["forum.reply.create"],
-        overrides: override ? { "forum.topic.pin": override } : {},
-        effectivePermissions: override === "allow"
-          ? ["forum.reply.create", "forum.topic.pin"] : ["forum.reply.create"],
-      },
+      authorization,
     },
-  }));
+  };
+  });
   function Detail() { return <AdminUserDetail {...useLoaderData<typeof loader>()} />; }
   router = createMemoryRouter([
     { path: "/en/admin/users/:userId", loader, element: <Detail /> },
@@ -86,28 +94,28 @@ describe("AP-09 canonical fetcher composition", () => {
   it("sends existing assignment and override intents without leaving detail, then revalidates the selected user", async () => {
     const mounted = mount();
     await screen.findByRole("heading", { name: "Authorization management", level: 3 });
-    expect(mounted.container.querySelectorAll('form[input="inlineUserAuthorization"]')).toHaveLength(0);
+    expect(mounted.container.querySelector('input[name="inlineUserAuthorization"]')).toBeNull();
     const assignment = formFor(mounted.container, "assignRole")!;
     expect(assignment).toBeDefined();
     expect(assignment.querySelector<HTMLInputElement>('input[name="userId"]')?.value).toBe(userId);
     expect(assignment.getAttribute("action")).toBe("/en/admin/authorization");
-    const role = assignment.querySelector<HTMLSelectElement>('select[name="roleId"]')!;
+    const role = assignment.querySelector('select[name="roleId"]') as HTMLSelectElement;
     fireEvent.change(role, { target: { value: "builtin-moderator" } });
     fireEvent.submit(assignment);
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(
-      formFor(mounted.container, "assignRole")?.querySelector<HTMLSelectElement>('select[name="roleId"]')?.value,
+      formFor(mounted.container, "assignRole")?.querySelector('select[name="roleId"]')?.getAttribute("value"),
     ).toBe("builtin-moderator"));
     expect(mounted.loader).toHaveBeenCalledTimes(2);
     expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
 
     const overrideForm = formFor(mounted.container, "override", "forum.topic.pin")!;
     expect(overrideForm.getAttribute("action")).toBe("/en/admin/authorization");
-    fireEvent.change(overrideForm.querySelector('select[name="effect"]')!, { target: { value: "allow" } });
+    fireEvent.change(overrideForm.querySelector('select[name="effect"]') as HTMLSelectElement, { target: { value: "allow" } });
     fireEvent.submit(overrideForm);
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(
-      formFor(mounted.container, "override", "forum.topic.pin")?.querySelector<HTMLSelectElement>('select[name="effect"]')?.value,
+      formFor(mounted.container, "override", "forum.topic.pin")?.querySelector('select[name="effect"]')?.getAttribute("value"),
     ).toBe("allow"));
     expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
     expect(mounted.container.querySelector('form input[name="editorActorId"]')).toBeNull();
