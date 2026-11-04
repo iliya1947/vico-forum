@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-08 — implementation PR #283, подзадача 2/5 завершена
+
+- PR #283 draft, main baseline `e39c36ccef29c6164706d826f26c57088a97fa20`, implementation head `aec33bc90f4e41f25472cfdd4f18c6196725672b` (CI [#41771668824](https://github.com/iliya1947/vico-forum/actions/runs/41771668824)).
+- Существующий canonical repository/topic-row path: `setTopicClosed` из `ForumService` → `DrizzleForumRepository` в одной транзакции, `SELECT ... FOR UPDATE`, CAS `closureVersion`, no-op без event, History append last, rollback при History failure, overflow conflict. `ForumWriter.setTopicClosed` подключён к `createHyperdriveForumWriter` как одна write capability; fresh route RBAC/HTTP ещё не реализованы.
+- `createPost`: существующий attachment-scope lock / committed receipt fingerprint replay **сохраняется**; затем locked topic row и typed `ForumTopicClosedError` для новых ответов до cooldown/post/revision/notifications/attachment publication. Нет исключений по actor/role; Help поддерживается. Rejected temporary attachment-only operation и refs сохраняются, после reopen новый explicit reply возможен.
+- Исправлены две причины native PG тестовых failures: sync throwing `ForumService` validator и SQL error wrapper при History failure (тест проверяет `cause`). Не меняли domain logic ради исправления assert.
+- Новые deterministic PG races: reply held topic row → close waits; close held row → reply waits and sees closed; History failure → close rollback and queued reply success; concurrent stale close commands yield exactly one transition. Все фактические wait barriers через `pg_stat_activity`, не sleep-only.
+- Native PG **39/39 suites, 477/477 tests PASS**; GitHub Actions database job **SUCCESS** на `aec33bc90f4e41f25472cfdd4f18c6196725672b`. Existing runtime credential/smoke stages завершились. `checks` FAILURE на TS missing History UI labels и ForumWriter mocks — неполный HTTP/UI слой последующих подзадач, не объявлять full CI PASS.
+- Подзадача 1 (миграция/catalog/schema parity) ранее завершена. Следующий work item после explicit `...`: подзадача 3/5 — canonical HTTP guards/error/privacy и read DTO; UI/visual/whole-PR review до своего этапа не начинать. `PROJECT_STATE.md` и permanent docs обновить при фактическом завершении AP-08.
+- Не менялись назначение Миры/Лёвы, workflow/communication, production и пользовательский браузер; авторская проверка не считается independent review.
+
 ## AP-08 — implementation PR #283, подзадача 1/5
 
 - Base/main: `e39c36ccef29c6164706d826f26c57088a97fa20`, current implementation head `c8ff6f9539915397c0cf2d340468b59c5efcce1b`, PR draft, no review/merge.
