@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-03
+Последнее обновление: 2026-11-04
 
 ## Назначение
 
@@ -98,7 +98,9 @@ Stage 5 завершён в repository/local-CI path.
 - AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой;
 - AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий).
 
-Ещё не реализованы страницы пользователей, topic closure, user blocking и реальные Settings operations.
+AP-08 — close/reopen тем реализован в текущей implementation-ветке, **ещё не merged в main**. В ней появились независимое разрешение `forum.topic.close` (первоначально moderator/admin, далее динамические grants/overrides), persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого редактора при закрытии. Новые ответы не публикуются в закрытую тему; ранее подтверждённая публикация сохраняет idempotent replay. Полный repository/local-CI путь проверен, но обязательная изолированная реальная Worker/browser-приёмка и independent review пока не завершены; acceptance AP-08 не объявлена.
+
+Ещё не реализованы страницы пользователей, user blocking и реальные Settings operations.
 
 ### Complaints
 
@@ -161,7 +163,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- Admin Panel имеет реализованные AP-01–07, но последующие object/action packages ещё не завершены.
+- В `main` Admin Panel реализована до AP-07; AP-08 подготовлен в implementation-ветке, но не принят и не merged. Следующие object/action packages ещё не завершены.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
