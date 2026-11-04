@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0055`;
+- repository migration history: `0000`–`0056`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -96,9 +96,10 @@ Stage 5 завершён в repository/local-CI path.
 - AP-04 — существующий Roles & permissions UI внутри общего admin shell;
 - AP-05 — shared topic Quick actions и forum/Help History producers.
 - AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой;
-- AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий).
+- AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий);
+- AP-08 — close/reopen тем: независимое разрешение `forum.topic.close`, persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого reply editor при закрытии. Matching committed publication receipt сохраняет idempotent replay после closure.
 
-AP-08 — close/reopen тем реализован в текущей implementation-ветке, **ещё не merged в main**. В ней появились независимое разрешение `forum.topic.close` (первоначально moderator/admin, далее динамические grants/overrides), persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого редактора при закрытии. Новые ответы не публикуются в закрытую тему; ранее подтверждённая публикация сохраняет idempotent replay. Полный repository/local-CI путь проверен, но обязательная изолированная реальная Worker/browser-приёмка и independent review пока не завершены; acceptance AP-08 не объявлена.
+AP-08 merged в `main`; repository/local-CI implementation и stable-head coordinator/technical review завершены. Отдельный authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 flow не выполнялся и не заявляется как выполненная acceptance; production/deployed acceptance остаётся отдельной release boundary.
 
 Ещё не реализованы страницы пользователей, user blocking и реальные Settings operations.
 
@@ -163,7 +164,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` Admin Panel реализована до AP-07; AP-08 подготовлен в implementation-ветке, но не принят и не merged. Следующие object/action packages ещё не завершены.
+- В `main` Admin Panel реализована до AP-08 включительно; следующие object/action packages ещё не завершены.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.

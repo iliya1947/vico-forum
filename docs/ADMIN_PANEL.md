@@ -10,9 +10,8 @@ protected at its original URL and, in AP-04, reuses the common shell/navigation.
 AP-03 adds authorization-change History and protected Overview recent actions. AP-05 reuses
 existing topic operations in shared Quick actions and connects their forum/Help History producers. AP-06 adds
 protected category/section browsing and dedicated object pages. AP-07 adds administrative topic detail
-and shared source-locale/history actions for individual messages. AP-08 implements
-shared topic close/reopen in its implementation branch; user blocking remains
-unimplemented. AP-02 itself added no schema
+and shared source-locale/history actions for individual messages. AP-08 adds
+shared topic close/reopen; user blocking remains unimplemented. AP-02 itself added no schema
 or permission keys; AP-03 adds the independent `admin.history.read` capability.
 
 Other routes and capabilities described below as delivery targets become available only
