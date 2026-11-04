@@ -60,17 +60,19 @@ function OriginalDisclosure({
 
 export function TopicTitlePresentation({
   presentation,
+  as: Heading = "h1",
 }: {
   presentation: ContentTranslationPresentation;
+  as?: "h1" | "h2";
 }) {
   return (
     <>
-      <h1
+      <Heading
         lang={presentation.contentLocale}
         dir={presentation.contentDirection}
       >
         {presentation.content}
-      </h1>
+      </Heading>
       <TranslationProvenance presentation={presentation} />
       <OriginalDisclosure presentation={presentation} markdown={false} />
     </>

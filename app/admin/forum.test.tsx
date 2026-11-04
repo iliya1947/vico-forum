@@ -36,7 +36,7 @@ describe("localized protected browsing presentation",()=>{
  });
  it("shows service section only with explicit internal badge and public category link",async()=>{
   let node=await mount("he","category");expect(node.querySelector('.admin-forum-objects a')?.getAttribute("href")).toBe(adminSectionPath("he",section.id));expect(node.querySelector('.admin-forum-reserved')).toBeTruthy();
-  cleanup();dispose();node=await mount("he","section");expect(node.querySelector('.admin-forum > a')?.getAttribute("href")).toBe("/he/categories/help-solutions");expect(node.querySelector('a[href*="/sections/help-solutions-questions"]')).toBeNull();
+  cleanup();dispose();node=await mount("he","section");expect(node.querySelector('.admin-forum > a')?.getAttribute("href")).toBe("/he/categories/help-solutions");expect(node.querySelector('.admin-forum > a[href*="/sections/help-solutions-questions"]')).toBeNull();
   expect(node.querySelector('.admin-forum-objects a')?.getAttribute("href")).toBe(adminTopicPath("he","t/עברית"));
   expect(node.querySelector('.admin-forum-objects bdi')?.getAttribute("lang")).toBe("he");
  });
