@@ -1,5 +1,35 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 coordinator whole-PR review — подзадача 3/4: routes / canonical authz reuse / UI lifecycle
+
+**Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+
+**Verdict: 1 confirmed current-scope defect.**
+
+### AP09-MIRA-01 — failed fresh management gate cannot recover to still-authorized read-only detail
+
+Подтверждённая цепочка:
+- Users detail loader допускает actor с `admin.users.read`; management section добавляется только при одновременно effective `access.authorization.manage`.
+- Inline assignment/override forms корректно переиспользуют canonical `/:locale/admin/authorization` через `Form navigate={false}` + scoped `fetcherKey`; новый protocol/writer отсутствует.
+- Если после loader snapshot у actor отозван только `access.authorization.manage`, но `admin.users.read` сохранён, следующий canonical action вызывает fresh `manager(context)` и **бросает 403** до mutation.
+- React Router 8.3.1 для fetcher action error вызывает `setFetcherError(key, routeId, ...)`; boundary выбирается по route, владеющему fetcher. Здесь это current `admin-user` route.
+- `admin-user` экспортирует `ForumRouteError`; он безопасно снимает весь detail/privileged DOM, но показывает terminal 403 с единственной ссылкой «назад на форум» и не имеет revalidate/retry.
+- Failed submission 4xx сам по себе loader revalidation не запускает. Поэтому actor, который всё ещё имеет `admin.users.read`, не переходит к корректному read-only snapshot и теряет доступный ему detail до отдельной навигации/ручного reload.
+- Это противоречит approved AP-09 lifecycle: fresh grant loss должен убрать management data/controls из нового snapshot, а Users-read остаётся независимым правом на detail.
+
+Existing mounted test покрывает только success→revalidation с simulated management revocation; canonical fresh-gate 403 path не смонтирован, поэтому дефект CI не ловит.
+
+Остальное проверено без дополнительных confirmed defects:
+- successful canonical `assignRole`/`override` revalidate current detail и не навигируют;
+- actor/target-specific fetcher key изолирует late feedback при target/actor lifecycle change;
+- controlled returned 409/other domain errors имеют explicit revalidate control;
+- read-only actor не получает management DOM/payload; management-only actor сохраняет старый AuthorizationAdmin subset и не получает новый directory;
+- extracted `AuthorizationUserControls` сохраняет legacy Roles writer/intents и не создаёт второй authz backend;
+- Users/roles/history/forum navigation остаётся capability-distinct;
+- EN/RU/HE mounted presentation и existing responsive primitives проверены; отдельный owner visual/browser gate для AP-09 не назначен.
+
+Следующая подзадача: gap-sweep/final verdict.
+
 ## AP-09 coordinator whole-PR review — подзадача 2/4: permission / migration / DB / read privacy
 
 **Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
