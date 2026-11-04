@@ -1,5 +1,14 @@
 # Лира — ChatGPT-6
 
+## AP-09 — этап 4/4 завершён, author handoff (2026-11-05)
+
+- [Implementation PR #287](https://github.com/iliya1947/vico-forum/pull/287) — Draft/open, stable exact head `f5117f22bd891d3892357fc984009388481001f7`, база `main` `2651d2bf7de7212068c54674dca7d90716ea92c3`. AP-09 implementation scope выполнен; это авторская передача, **не** independent whole-PR PASS.
+- Этап 4 добавил только тестовое покрытие: `tests/database/admin-users-authorization.test.ts` (динамические Users-read/manage grants/overrides `allow/deny/inherit`, next-read revocation, один целевой snapshot, manager-only operation, lockout, no-op/History, rollback на failed event append); `app/routes/authorization-admin.test.ts` (существующий canonical role/override action, session-authoritative actor, independent manager gate, origin/409); `app/admin/users-authorization.test.tsx` (удаление management UI после revalidation/revocation); `app/admin/users.test.tsx` (EN/RU/HE shared manager controls на user detail и canonical submit URL).
+- Была устранена только test-layer ошибка: native PG TS config не принимает прямые импорты TSX routes (`TS6142`), поэтому PG writer/service integration и route action tests оставлены в соответствующих существующих suites. Затем исправлен assert, ожидавший `canReadUsers:false`: действующий `adminAccess` корректно *опускает* false optional field. Production behavior не менялось.
+- [Exact-head CI #41931562275](https://github.com/iliya1947/vico-forum/actions/runs/41931562275) — **SUCCESS**: `checks` 143/143 files, 1884/1884 application tests; `database` 41/41 files, 483/483 native PostgreSQL tests. Lint/typecheck/build, migration/schema manifest parity, runtime role/credential checks и existing Worker HTTP smoke PASS.
+- **Информация не проверена:** actual authenticated AP-09 Chromium→Worker→PostgreSQL browser path, deployed/production acceptance. Standalone browser gate не назначался; owner visual acceptance не запрашивалась. Никаких production/merge действий, AP-10, новых writers/History action kinds, mutation protocols или lasting docs в #287.
+- Body #287 актуализирован; следующий этап — coordinator-first whole-PR review Миры **этого exact head**, затем независимый technical review Лёвы по действующему workflow. Лира прекращает изменение реализации до подтверждённых current-scope findings; документация и `PROJECT_STATE.md` — отдельным closeout PR после acceptance.
+
 ## AP-09 — этап 3/4 завершён: scoped authz + existing controls (2026-11-05)
 
 - [Draft PR #287](https://github.com/iliya1947/vico-forum/pull/287), exact partial head `e691c0a22b5df33863bb523b4635cb7da6350e1e` (`feat/admin-users-ap09`; base `2651d2bf7de7212068c54674dca7d90716ea92c3`).
