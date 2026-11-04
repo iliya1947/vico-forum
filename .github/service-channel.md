@@ -4,33 +4,25 @@
 
 ## Актуальное состояние
 
-- AP-01–AP-08 merged в `main`.
-- AP-08 implementation PR #283 merged commit `65707c69a7a15b2b594eca88f0a6ad0683f1e23e`; documentation closeout PR #286 merged commit `2651d2bf7de7212068c54674dca7d90716ea92c3`.
-- AP-08 coordinator whole-PR review Миры и independent technical review Лёвы завершены PASS на exact head `7b6adbf8c92e1706064cb5845248813668a287d0`; open current-scope implementation-дефектов 0.
-- Отдельный authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 flow не выполнялся и не заявляется проверенным; production/deployed acceptance остаётся отдельной release boundary.
-- Текущий `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`.
-- Следующий bounded package по `docs/ADMIN_PANEL.md` — AP-09: Users index/page после AP-08.
-- AP-09 не включает block/lift: блокировки и их effect/reason matrix относятся к AP-10 и остаются отдельным product gate.
-- AP-09 использует утверждённую модель Users: searchable/listable index, dedicated administrative user page и только те существующие controls/data, которые разрешены effective permissions. Independent general user-read boundary не должна раскрывать полный authorization-management snapshot, email, grants или overrides.
-- Марк не назначен; Stage 6/production rollout вне scope.
-
-## Уточнение technical plan
-
-- По просьбе Миры #6643056852 исходный текст плана пока не изменён. Лёва [ответил по пяти вопросам](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643093174) о protocol/actor expectation.
-- Проверено по existing action: прямой fetcher уже сохраняет страницу и использует существующий management/writer contract; marker для этого не требуется. Server stale-account expectation была дополнительным предложением, её необходимость именно для AP-09 не установлена. Existing thrown guard responses обрабатываются route boundary, не обещаются как fetcher.data.error.
-- Рекомендация Лёвы передана Мире: оставить прямой reuse action без обязательной новой protocol branch и уточнить consumer error-boundary semantics. Это ещё не изменение утверждённого плана: решение по единственному спорному пункту принимает Мира. Остальной scope не пересматривается; implementation не начат.
+- AP-01–AP-08 merged в `main`; AP-08 documentation closeout завершён.
+- AP-09 implementation PR #287 открыт как Draft.
+- Stable exact head для coordinator whole-PR review: `f5117f22bd891d3892357fc984009388481001f7`.
+- Baseline/current `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`; #287 ahead 53 / behind 0 / mergeable.
+- AP-09 scope: `admin.users.read`, protected Users index/search/detail, minimal public-field DTO, targeted one-user authorization read, reuse existing assignment/override controls and canonical authz writers.
+- Approved mutation boundary: direct reuse `/:locale/admin/authorization` via fetcher for `assignRole` / `override`; no new `inlineUserAuthorization` or mandatory `editorActorId` without diagnosed blocker.
+- AP-10/blocking, Settings, Stage 6/production rollout и unrelated authz hardening вне scope.
+- Лира завершила author handoff; реализация после final CI не менялась.
+- Exact-head CI #41931562275 SUCCESS: application 143/143 files, 1884/1884 tests; PostgreSQL 41/41 files, 483/483 tests; lint/typecheck/build/migration/schema/manifest/runtime probes/Worker smoke PASS.
+- Информация не проверена: actual authenticated Chromium→Worker→PostgreSQL AP-09 browser flow и deployed/production acceptance; отдельный browser gate/owner visual для AP-09 не назначались.
+- Марк не назначен.
 
 ## Текущий маршрут
 
-- Мира: AP-09 scope зафиксирован по актуальным source-of-truth.
-- Лёва: bounded technical plan AP-09 подготовлен от `2651d2bf7de7212068c54674dca7d90716ea92c3`; [полный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642731589) и личный файл. Implementation не начат.
-- План предлагает `admin.users.read` с initial admin-only grant, отдельный bounded name/ID directory (25+lookahead, exact matching total), explicit public-field DTO и reuse public profile. General read не получает email/target grants/overrides.
-- Для actor с обеими capabilities dedicated page переиспользует existing assignment/override controls и canonical authz mutation/lockout/History; targeted management read возвращает только выбранного user. Старый authz URL/subset сохраняет доступ management-only actor без нового read gate.
-- Quick actions списка — быстрые переходы к detail/public profile/существующим management controls, без нового list mutation endpoint или speculative block controls.
-- Schema proposal ограничен новым catalog key/CHECK/seed и manifest/snapshot parity, без новых identity tables/runtime grants. Proposed решения ещё требуют coordinator approval.
-- План фиксирует direct-route/privacy/search/paging/snapshot/mutation/lockout/History/localization tests и exact-head CI. AP-09 checks ещё не выполнялись; отдельный mandatory standalone browser gate не добавлен. Новая implementation-документация/PROJECT_STATE — отдельным PR после принятой реализации.
-- **Мира — следующий агент:** решить единственный обсуждаемый protocol пункт по пояснению Лёвы, затем финализировать plan approval/локальную корректировку. После approval — Лира, отдельный implementation PR. До approval implementation не начинать.
-- AP-10/blocking не начинать до завершения AP-09 и отдельного решения владельца по block-effect/reasons.
+- Мира выполняет coordinator-first whole-PR review #287 на exact head `f5117f22bd891d3892357fc984009388481001f7`.
+- Подзадача 1/4 завершена: stable head, diff/scope и exact-head CI подтверждены; implementation docs в PR отсутствуют, что соответствует текущему отдельному docs-closeout процессу.
+- Следующие подзадачи coordinator review: 2) permission/migration/DB/read privacy; 3) routes/authz reuse/UI lifecycle; 4) gap-sweep/final verdict.
+- При confirmed current-scope findings они возвращаются Лире одним bounded пакетом до Codex review.
+- Лёва подключается к independent technical review только после coordinator PASS того же stable exact head.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
