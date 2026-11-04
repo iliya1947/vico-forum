@@ -6,25 +6,28 @@
 
 - AP-01–AP-06 merged в `main`.
 - AP-07 реализован в draft PR #282 на stable exact head `b0d5e74663cd57851225447e792ab4a9bf98322c`.
-- Exact-head CI #41746716082 SUCCESS; GitHub mergeable=true.
-- Мира провела статический whole-PR разбор всего AP-07 scope против current main, technical plan и permanent admin contract. Подтверждённых current-scope code/document defects не найдено.
-- Coordinator PASS пока не фиксируется: принятый AP-07 plan требует actual Worker/auth/PostgreSQL browser verification изменённых interactive flows, а такой evidence на текущем exact head отсутствует.
-- Это verification gate, не подтверждённый дефект реализации.
-- Лира выполнила диагностику доступного isolated runtime без дальнейшего обращения к пользовательскому браузеру: Chromium 144 и Python Playwright присутствуют; репозитория/зависимостей и Node 24.21.0 нет (доступен только Node 22.16.0), PostgreSQL 17 server/psql и container runtime отсутствуют, GitHub/npm недоступны по DNS. Проверены существующие `.github/workflows`: стандартный CI имеет PostgreSQL и Worker HTTP smoke, но не browser E2E; другой разрешённой готовой workflow для AP-07 нет. Actual AP-07 browser acceptance НЕ выполнялась и PASS не заявляется. Это ограничение окружения, не finding к implementation.
-- Owner visual acceptance отдельно не запускается без явного запроса владельца.
-- AP-08+ и production rollout вне текущего scope.
+- Exact-head CI #41746716082 SUCCESS; PR mergeable=true.
+- Мира провела static/code/document whole-PR review: подтверждённых current-scope defects не найдено.
+- Лира проверила доступный isolated runtime и подтвердила environment blocker для actual Chromium→Worker→Better Auth→PostgreSQL: Chromium/Playwright есть, но нет checkout/dependencies, Node 24.21.0, PostgreSQL 17 server/container runtime; GitHub/npm недоступны по DNS. Actual AP-07 browser run не выполнялся.
+- Implementation #282 при этой диагностике не менялся.
+- Вопрос теперь технический: нужно определить применимость browser gate именно к текущему AP-07 coordinator cycle и допустимый способ его закрытия при реальных ограничениях. Это передано Лёве как техническому руководителю.
+- Owner visual acceptance не запрашивался. AP-08+ и production rollout вне scope.
 
 ## Назначения
 
-- Координатор: Мира.
-- Исполнитель/acceptance: Лира — доступность изолированного стенда проверена; выполнить обязательный browser E2E в данном runtime невозможно, пользовательский браузер не использовать.
-- Следующий: Мира — определить допустимый независимый disposable browser/Worker/Better Auth/PostgreSQL стенд или пересогласовать обязательный gate; до действительного evidence coordinator verdict не выдаётся.
-- Лёва подключается только после coordinator PASS.
+- Координатор: Мира — ожидает technical acceptance decision.
+- Лира — implementation и диагностика доступности browser runtime завершены; активной задачи сейчас нет.
+- Лёва — active technical acceptance decision по AP-07.
 - Марк не назначен.
 
-## Browser acceptance scope
+## Граница решения
 
-Проверить на actual built Worker + Better Auth session + disposable PostgreSQL изменённые AP-07 цепочки: section→topic, protected admin topic, per-message source correction/history, stay/revalidation/error/revocation behavior, public-topic shared Quick actions и применимые EN/RU/HE/RTL/responsive состояния. Не добавлять новый GitHub Actions browser workflow ради этой проверки. Implementation во время acceptance не менять; обнаруженный дефект сначала зафиксировать как finding.
+Лёва должен определить по текущим AGENTS/SOT и фактическому AP-07 diff:
+1. обязательна ли actual browser evidence до coordinator verdict именно в этом bounded cycle;
+2. если обязательна — существует ли реально доступный изолированный способ получить её без пользовательского браузера и без добавления нового browser workflow/step в GitHub Actions;
+3. если доступного способа нет — какое состояние gate корректно фиксировать и где должен продолжиться workflow.
+
+Implementation #282 в рамках этого решения не менять.
 
 Оперативный маршрут: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md), [technical plan](agents/codex-6.1-sol.md).
