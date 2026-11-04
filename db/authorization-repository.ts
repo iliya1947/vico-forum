@@ -16,6 +16,7 @@ export interface AuthorizationUserSummary { id: string; name: string; email: str
 export interface AuthorizationRoleDetails extends AuthorizationRole { grants: PermissionKey[] }
 export interface AuthorizationUserDetails extends AuthorizationUserSummary { authorization: UserAuthorization }
 export interface AuthorizationManagementState { roles: AuthorizationRoleDetails[]; users: AuthorizationUserDetails[] }
+export interface AuthorizationUserManagementState { userId: string; roles: AuthorizationRole[]; authorization: UserAuthorization }
 
 export class AuthorizationForbiddenError extends Error {}
 export class AuthorizationLockoutError extends Error {}
@@ -85,6 +86,15 @@ export class PostgresAuthorizationRepository {
         }),
       };
     });
+  }
+
+  /** One target and role choices in a single consistent read-only snapshot; no other users or role grants. */
+  async readUserManagementState(userId: string): Promise<AuthorizationUserManagementState> {
+    return this.withReadSnapshot(async (database) => ({
+      userId,
+      roles: await this.readRoles(database),
+      authorization: await this.resolveUserFrom(userId, database),
+    }));
   }
 
   async readRole(roleId: string): Promise<(AuthorizationRole & { grants: PermissionKey[] }) | undefined> {
