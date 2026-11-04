@@ -42,7 +42,7 @@ let router: ReturnType<typeof createMemoryRouter> | undefined;
 afterEach(() => { cleanup(); router?.dispose(); router = undefined; });
 
 function mount() {
-  let currentRole = roles[0];
+  let currentRole: AuthorizationRole = roles[0]!;
   let override: "allow" | "deny" | undefined;
   const action = vi.fn(async ({ request }: { request: Request }) => {
     const form = await request.formData();
@@ -104,7 +104,7 @@ describe("AP-09 canonical fetcher composition", () => {
     fireEvent.submit(assignment);
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(
-      formFor(mounted.container, "assignRole")?.querySelector('select[name="roleId"]')?.getAttribute("value"),
+      (formFor(mounted.container, "assignRole")?.querySelector('select[name="roleId"]') as HTMLSelectElement | null)?.value,
     ).toBe("builtin-moderator"));
     expect(mounted.loader).toHaveBeenCalledTimes(2);
     expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
@@ -115,7 +115,7 @@ describe("AP-09 canonical fetcher composition", () => {
     fireEvent.submit(overrideForm);
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(
-      formFor(mounted.container, "override", "forum.topic.pin")?.querySelector('select[name="effect"]')?.getAttribute("value"),
+      (formFor(mounted.container, "override", "forum.topic.pin")?.querySelector('select[name="effect"]') as HTMLSelectElement | null)?.value,
     ).toBe("allow"));
     expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
     expect(mounted.container.querySelector('form input[name="editorActorId"]')).toBeNull();
