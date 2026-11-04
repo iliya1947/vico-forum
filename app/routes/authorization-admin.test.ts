@@ -18,6 +18,7 @@ function capability(manage: boolean | Error = true) {
     }),
     listRoles: vi.fn(async () => []), listUsers: vi.fn(async () => []), readRole: vi.fn(), resolveUser: vi.fn(),
     readManagementState: vi.fn(async () => ({ roles: [], users: [] })),
+    readUserManagementState: vi.fn(),
     createCustomRole: vi.fn(), renameCustomRole: vi.fn(), replaceRoleGrants: vi.fn(), deleteCustomRole: vi.fn(),
     assignUserRole: vi.fn(), setUserOverride: vi.fn(),
   };
