@@ -21,7 +21,8 @@
 - Мира выполняет coordinator-first whole-PR review #287 на exact head `f5117f22bd891d3892357fc984009388481001f7`.
 - Подзадача 1/4 завершена: stable head, diff/scope и exact-head CI подтверждены; implementation docs в PR отсутствуют, что соответствует текущему отдельному docs-closeout процессу.
 - Подзадача 2/4 завершена PASS: permission/catalog/migration, DB directory, targeted authorization read, snapshot/privacy и runtime privilege boundaries проверены; подтверждённых current-scope дефектов 0.
-- Следующие подзадачи coordinator review: 3) routes/authz reuse/UI lifecycle; 4) gap-sweep/final verdict.
+- Подзадача 3/4 завершена: routes/canonical authz reuse/UI lifecycle проверены; подтверждён 1 current-scope defect `AP09-MIRA-01` — если `access.authorization.manage` исчез между detail-loader и fetcher submit при сохранённом `admin.users.read`, canonical action бросает 403, React Router поднимает fetcher error в `admin-user` ErrorBoundary, а текущий `ForumRouteError` не даёт revalidate/retry. Пользователь теряет всё ещё разрешённый read-only detail вместо перехода на свежий snapshot без management controls. Success path, target/actor fetcher isolation, manager-only/read-only navigation и legacy Roles reuse проверены без других подтверждённых дефектов.
+- Следующая подзадача coordinator review: 4) gap-sweep/final verdict.
 - При confirmed current-scope findings они возвращаются Лире одним bounded пакетом до Codex review.
 - Лёва подключается к independent technical review только после coordinator PASS того же stable exact head.
 
