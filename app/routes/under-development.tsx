@@ -5,14 +5,15 @@ import type { RouterContextProvider } from "react-router";
 import { redirect, useLoaderData } from "react-router";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 
-export async function loader({ request, params, context }: { request: Request; params: { locale?: string }; context: RouterContextProvider }) {
+export function loader({ request, params, context }: { request: Request; params: { locale?: string }; context: RouterContextProvider }) {
   const feature = new URL(request.url).searchParams.get("feature");
   if (feature === "admin-forum") return redirect(adminForumPath(params.locale ?? "en"));
   if (feature === "admin-users") {
-    const access = await requireAdminAccess(context);
-    if (access.canReadUsers) return redirect(adminUsersPath(params.locale ?? "en"));
-    if (access.canManageAuthorization) return redirect(`/${encodeURIComponent(params.locale ?? "en")}/admin/authorization#authorization-users-heading`);
-    throw new Response("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    return requireAdminAccess(context).then(access => {
+      if (access.canReadUsers) return redirect(adminUsersPath(params.locale ?? "en"));
+      if (access.canManageAuthorization) return redirect(`/${encodeURIComponent(params.locale ?? "en")}/admin/authorization#authorization-users-heading`);
+      throw new Response("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    });
   }
   return {
     locale: params.locale ?? "en",
