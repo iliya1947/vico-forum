@@ -2,14 +2,16 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-08 — product decisions gate перед technical planning
-- Coordinator: Мира; technical planner/reviewer после закрытия gate: Лёва; исполнитель после утверждения плана: Лира
+- Текущий этап: AP-08 — bounded technical planning
+- Coordinator: Мира; technical planner/reviewer: Лёва; implementation после утверждения плана: Лира
 - Current main: `e39c36ccef29c6164706d826f26c57088a97fa20`
 - AP-07 implementation PR #282: merged в main
-- AP-07 stable implementation head: `985160867001fd42b3ad2614262927aab3edfb3e`
-- AP-07 coordinator review Миры: PASS; independent technical review Лёвы: PASS; open current-scope defects: 0
-- AP-08 scope: topic closure
-- До technical planning AP-08 владелец должен решить четыре product boundary: reopening; permission relationship close/reopen; reason rule отдельно для close и reopen; наличие actor exception для reply в закрытой теме
-- Лёве AP-08 planning пока не назначен: permanent contract прямо запрещает начинать closure package до этих решений
-- Следующий шаг: владелец фиксирует четыре решения AP-08; после этого Мира сразу передаёт Лёве bounded technical planning
-- Owner visual acceptance/production rollout не инициированы
+- AP-08 scope: topic closure/reopen
+- Product decisions владельца зафиксированы:
+  - reopening поддерживается;
+  - close и reopen используют одну capability;
+  - обязательная причина не требуется ни для close, ни для reopen;
+  - closed topic запрещает новые replies всем без actor exceptions; чтобы ответить, тему сначала нужно reopen
+- Сохраняются permanent invariants: close/reopen не меняют solved/best answer/duplicate/messages; persisted closed-state и reply admission authoritative/concurrency-safe; committed publication replay сохраняется без нового reply/event
+- Следующий шаг: Лёва готовит bounded technical plan AP-08 на актуальном main и публикует его в #251 для coordinator review Миры
+- AP-08 implementation до утверждения technical plan не начинать; AP-09+ и production rollout не начинать
