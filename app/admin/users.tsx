@@ -1,4 +1,4 @@
-import { Form, Link } from "react-router";
+import { Form, Link, useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { AdminBrowsePage, AdminBrowseQuery } from "../../db/admin-forum";
 import type { AdminUserSummary } from "../../db/admin-users";
@@ -6,6 +6,10 @@ import { ForumAvatar } from "../forum/avatar";
 import { forumProfilePath } from "../forum/paths";
 import { safeHttpUrl } from "../forum/profile";
 import type { AdminAccess } from "./access";
+import type { AuthorizationUserManagementState } from "../../db/authorization-repository";
+import type { PermissionKey } from "../authorization/catalog";
+import type { AuthorizationFailure } from "../authorization/admin-view";
+import { AuthorizationUserControls } from "../authorization/user-controls";
 import { AdminShell } from "./shell";
 import { adminUserPath, adminUsersPath, adminUsersBrowsePath } from "./users-paths";
 
@@ -48,6 +52,9 @@ export function AdminUsersIndex({ locale, access, query, page }: {
           <nav aria-label={t("quickActions")}>
             <Link to={adminUserPath(locale, user.id)}>{t("adminUsersView")}</Link>{" · "}
             <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
+            {access.canManageAuthorization ? <>{" · "}
+              <Link to={adminUserPath(locale, user.id) + "#authorization"}>{t("authorizationNav")}</Link>
+            </> : null}
           </nav>
         </li>)}
       </ul> : <p>{t("adminUsersEmpty")}</p>}
@@ -59,8 +66,11 @@ export function AdminUsersIndex({ locale, access, query, page }: {
   </AdminShell>;
 }
 
-export function AdminUserDetail({ locale, access, user }: {
+export function AdminUserDetail({ locale, access, user, management, managerActorId, permissions }: {
   locale: string; access: AdminAccess; user: AdminUserDetailData;
+  management?: AuthorizationUserManagementState;
+  managerActorId?: string;
+  permissions?: readonly PermissionKey[];
 }) {
   const { t } = useTranslation("common");
   const github = safeHttpUrl(user.githubUrl), website = safeHttpUrl(user.websiteUrl);
@@ -95,6 +105,38 @@ export function AdminUserDetail({ locale, access, user }: {
         </nav> : null}
       </section>
       <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
+      {access.canManageAuthorization && management && managerActorId && permissions
+        ? <InlineUserAuthorization key={managerActorId + ":" + user.id}
+          locale={locale} userId={user.id} actorId={managerActorId}
+          management={management} permissions={permissions}/>
+        : null}
     </section>
   </AdminShell>;
+}
+
+function InlineUserAuthorization({ locale, actorId, userId, management, permissions }: {
+  locale: string; actorId: string; userId: string;
+  management: AuthorizationUserManagementState; permissions: readonly PermissionKey[];
+}) {
+  const { t } = useTranslation("common");
+  const fetcherKey = `ap09-user-authz:${actorId}:${userId}`;
+  const fetcher = useFetcher<{ ok?: true; error?: AuthorizationFailure }>({ key: fetcherKey });
+  const revalidator = useRevalidator();
+  const pending = fetcher.state !== "idle";
+  return <section id="authorization" className="admin-section" aria-labelledby="admin-user-authorization-heading">
+    <h3 id="admin-user-authorization-heading">{t("authorizationHeading")}</h3>
+    {fetcher.data?.ok && !pending
+      ? <p className="admin-result admin-result-success" role="status">{t("authorizationSaved")}</p>
+      : null}
+    {fetcher.data?.error && !pending
+      ? <div className="admin-result admin-result-error" role="alert">
+          <p>{t(`authorizationError_${fetcher.data.error}`)}</p>
+          <button type="button" onClick={() => revalidator.revalidate()}>{t("adminRetry")}</button>
+        </div>
+      : null}
+    <AuthorizationUserControls userId={userId} authorization={management.authorization}
+      roles={management.roles} permissions={permissions}
+      inline={{ action: `/${encodeURIComponent(locale)}/admin/authorization`, fetcherKey }}
+      pending={pending}/>
+  </section>;
 }
