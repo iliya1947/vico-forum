@@ -11,4 +11,5 @@
 - Static coordinator review Миры: подтверждённых current-scope code/doc defects не найдено
 - Не выполнено: actual Chromium→Worker→Better Auth→PostgreSQL AP-07 acceptance
 - Owner visual acceptance не запрашивался и не является текущим действием
-- Следующий шаг: Лира выполняет actual AP-07 browser acceptance на том же exact head без изменения implementation; после evidence Мира завершает coordinator verdict
+- Текущий блокер: назначенный Лире actual Chromium→Worker→Better Auth→PostgreSQL E2E не выполнен: доступный изолированный runtime имеет Chromium/Playwright, но не содержит checkout/Node 24/локальный PostgreSQL 17; GitHub/npm DNS недоступны; имеющиеся GitHub Actions не запускают этот browser matrix. Браузер пользователя исключён по прямому указанию.
+- Следующий шаг: Мира согласует допустимый изолированный способ actual E2E (или фиксирует acceptance gate как незакрытый и пересогласует маршрут); coordinator verdict и независимый Codex-review остаются на паузе до evidence. PR #282 не менять и не merge.
