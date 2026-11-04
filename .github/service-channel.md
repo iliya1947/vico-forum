@@ -17,8 +17,13 @@
 ## Текущий маршрут
 
 - Мира: AP-09 scope зафиксирован по актуальным source-of-truth.
-- Лёва: подготовить bounded technical plan AP-09 от текущего `main`.
-- После плана Лёвы Мира проверяет границы и передаёт реализацию Лире отдельным implementation PR.
+- Лёва: bounded technical plan AP-09 подготовлен от `2651d2bf7de7212068c54674dca7d90716ea92c3`; [полный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642731589) и личный файл. Implementation не начат.
+- План предлагает `admin.users.read` с initial admin-only grant, отдельный bounded name/ID directory (25+lookahead, exact matching total), explicit public-field DTO и reuse public profile. General read не получает email/target grants/overrides.
+- Для actor с обеими capabilities dedicated page переиспользует existing assignment/override controls и canonical authz mutation/lockout/History; targeted management read возвращает только выбранного user. Старый authz URL/subset сохраняет доступ management-only actor без нового read gate.
+- Quick actions списка — быстрые переходы к detail/public profile/существующим management controls, без нового list mutation endpoint или speculative block controls.
+- Schema proposal ограничен новым catalog key/CHECK/seed и manifest/snapshot parity, без новых identity tables/runtime grants. Proposed решения ещё требуют coordinator approval.
+- План фиксирует direct-route/privacy/search/paging/snapshot/mutation/lockout/History/localization tests и exact-head CI. AP-09 checks ещё не выполнялись; отдельный mandatory standalone browser gate не добавлен. Новая implementation-документация/PROJECT_STATE — отдельным PR после принятой реализации.
+- **Мира — следующий агент:** coordinator review опубликованного technical plan против AP-09 scope/source-of-truth; approval либо один bounded пакет замечаний. После approval — Лира, отдельный implementation PR. До approval implementation не начинать.
 - AP-10/blocking не начинать до завершения AP-09 и отдельного решения владельца по block-effect/reasons.
 
 Оперативное состояние: [workflow.md](./workflow.md).
