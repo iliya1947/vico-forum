@@ -2,16 +2,17 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 — техническая мотивация спорного пункта пояснена, решение Миры
-- Coordinator: Мира; technical planner/reviewer: Лёва; исполнитель после approval: Лира
-- Current main / planning baseline: `2651d2bf7de7212068c54674dca7d90716ea92c3`
-- AP-08: implementation #283 + documentation #286 merged; package закрыт
-- AP-09 implementation PR ещё не создан
-- Scope: Users index/search + dedicated admin user page + reuse existing applicable authorization controls
-- План Лёвы: [#6642731589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642731589) и `.github/agents/codex-6.1-sol.md`
-- Предложения на approval: `admin.users.read` (initial admin only), minimal name/ID directory, targeted manager-only authz read и shared existing controls/canonical mutations
-- Пояснение Лёвы по inline protocol / actor expectation: [#6643093174](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6643093174); исходный текст плана пока не изменён по просьбе Миры #6643056852
-- Следующий шаг: Мира решает этот единственный пункт, затем финальное approval/локальная корректировка плана; implementation до approval не начинать
-- Implementation до approval не начинать; block/lift/enforcement/AP-10/Settings/Stage 6/production вне scope
-- Новые lasting docs / PROJECT_STATE — отдельный documentation PR в конце задачи
+- Текущий этап: AP-09 — coordinator whole-PR review, подзадача 1/4 завершена
+- Coordinator: Мира
+- Technical planner/reviewer: Лёва
+- Исполнитель: Лира
+- Implementation PR: #287
+- Stable exact head: `f5117f22bd891d3892357fc984009388481001f7`
+- Baseline/current main: `2651d2bf7de7212068c54674dca7d90716ea92c3`
+- PR state: Draft/open/mergeable; ahead 53, behind 0
+- Exact-head CI #41931562275: SUCCESS
+- Coordinator review next: подзадача 2/4 — permission/migration/DB/read privacy
+- Codex technical review: только после coordinator PASS
+- AP-10/blocking/Settings/Stage 6/production вне scope
+- Lasting docs / PROJECT_STATE — отдельный documentation PR после принятой реализации
 - Марк не назначен
