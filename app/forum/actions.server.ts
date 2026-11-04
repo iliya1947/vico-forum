@@ -476,7 +476,7 @@ export async function topicAction({ request, params, context }: {
         actorId,
         scope: authorization.scope,
       });
-      return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
+      return completed(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });
   }
   if (intent === "readPostHistory") {
@@ -493,7 +493,7 @@ export async function topicAction({ request, params, context }: {
         revisions: revisions.map((revision) => ({
           ...revision, createdAt: revision.createdAt.toISOString(),
         })),
-      }, { status: 200 });
+      }, { status: 200, headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {
       if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
       throw error;
