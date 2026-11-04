@@ -19,6 +19,7 @@ interface AdminTopicViewProps {
   titlePresentation: ContentTranslationPresentation;
   postPresentations: readonly ContentTranslationPresentation[];
   canManagePin: boolean;
+  canManageClosure?: boolean;
   canManageAnySolution: boolean;
   canManageHelpDuplicate: boolean;
   canCorrectAnySourceLocale: boolean;
@@ -30,7 +31,7 @@ interface AdminTopicViewProps {
 
 export function AdminTopicView({
   locale, access, topic, titlePresentation, postPresentations,
-  canManagePin, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale,
+  canManagePin, canManageClosure = false, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale,
   canReadPostHistory = false, actorId,
   canModerateHelpSolution, pendingDuplicateAppeal,
 }: AdminTopicViewProps) {
@@ -61,12 +62,14 @@ export function AdminTopicView({
       <div className="admin-topic-status">
         {topic.isPinned ? <span>{t("pinnedHeading")}</span> : null}
         {topic.isSolved ? <span>{t("solved")}</span> : null}
+        {topic.isClosed ? <span>{t("topicClosedStatus")}</span> : null}
         {topic.duplicateOf ? <span>{t("helpDuplicateBadge")}</span> : null}
         {topic.needsDetails ? <span>{t("helpSolutionsFilterNeedsDetails")}</span> : null}
       </div>
       <p><Link to={publicTopic}>{t("topicLabel")}</Link></p>
       <TopicQuickActions
         locale={locale} inline topic={topic} canManagePin={canManagePin}
+        canManageClosure={canManageClosure} actorId={actorId}
         canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
         canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
         pendingDuplicateAppeal={pendingDuplicateAppeal}

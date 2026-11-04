@@ -69,6 +69,7 @@ export interface MarkdownEditorProps {
   initialPublishedRevisionId?: string;
   publicationIntent?: string;
   publicationPending?: boolean;
+  publicationDisabled?: boolean;
   onPublicationReadyChange?: (ready: boolean) => void;
   actions?: ReactNode;
   existingInlineAttachments?: Array<{
@@ -104,6 +105,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       initialPublishedRevisionId,
       publicationIntent,
       publicationPending = false,
+      publicationDisabled = false,
       onPublicationReadyChange,
       actions,
       existingInlineAttachments = [],
@@ -284,7 +286,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       pendingSelectionRef.current = null;
       pendingVisualSelectionRef.current = null;
     }
-    const publicationReady = !disabled && !publicationPending && !attachments.blocking && hasPublishContent;
+    const publicationReady = !disabled && !publicationPending && !publicationDisabled && !attachments.blocking && hasPublishContent;
     useEffect(() => { onPublicationReadyChange?.(publicationReady); }, [onPublicationReadyChange, publicationReady]);
 
     useEffect(() => {
@@ -319,7 +321,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           ?? (intentField instanceof HTMLInputElement ? intentField.value : null);
         if (intent !== publicationIntent) return;
 
-        if (!hasPublishContent || attachments.blocking || disabled || publicationPending) {
+        if (!hasPublishContent || attachments.blocking || disabled || publicationPending || publicationDisabled) {
           event.preventDefault();
           if (attachments.blocking) attachments.markPublicationAttempt();
           return;

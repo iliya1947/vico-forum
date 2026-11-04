@@ -1,8 +1,9 @@
-import type {ReactNode} from "react";
-import {Form,useFetcher} from "react-router";
+import {useEffect,useRef,type ReactNode} from "react";
+import {Form,useFetcher,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {ForumTopicPage} from "../../db/forum-repository";
-type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> & {
+import {useHeaderAuthUser} from "../auth/auth-controls";
+type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"isClosed"|"closureVersion"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> & {
   duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
   posts:Array<Pick<ForumTopicPage["posts"][number],"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
@@ -15,13 +16,15 @@ export interface TopicQuickActionInput {
   topic:QuickTopic;
   postCandidates?:ReadonlyArray<{id:string;number:number}>;
   canManagePin:boolean;
+  canManageClosure?:boolean;
+  actorId?:string|null;
   canManageAnySolution:boolean;
   canManageHelpDuplicate:boolean;
   canCorrectAnySourceLocale:boolean;
   canModerateHelpSolution:boolean;
   pendingDuplicateAppeal?:{id:string}|null;
 }
-type TopicIntent = "pinTopic" | "unpinTopic" | "markSolved" | "selectBestAnswer" | "removeHelpDuplicate" | "acceptHelpDuplicateAppeal" | "rejectHelpDuplicateAppeal" | "confirmHelpDuplicate" | "correctTitleSourceLocale" | "markSolutionNeedsReview" | "markSolutionOutdated" | "clearSolutionModeration";
+type TopicIntent = "closeTopic" | "reopenTopic" | "pinTopic" | "unpinTopic" | "markSolved" | "selectBestAnswer" | "removeHelpDuplicate" | "acceptHelpDuplicateAppeal" | "rejectHelpDuplicateAppeal" | "confirmHelpDuplicate" | "correctTitleSourceLocale" | "markSolutionNeedsReview" | "markSolutionOutdated" | "clearSolutionModeration";
 export interface TopicQuickActionDescriptor {
   key:string;
   intent:TopicIntent;
@@ -35,6 +38,11 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
   const actions:TopicQuickActionDescriptor[]=[];
   const add=(intent:TopicIntent,label:UiKey<"common">,fields:Record<string,string>={})=>actions.push({key:intent,intent,label,fields:{...(intent==="markSolved"||intent==="correctTitleSourceLocale"?{operationScope:"any"}:{}),...fields}});
   if(input.canManagePin)add(topic.isPinned?"unpinTopic":"pinTopic",topic.isPinned?"unpinTopic":"pinTopic");
+  if(input.canManageClosure&&input.actorId){
+    add(topic.isClosed?"reopenTopic":"closeTopic",topic.isClosed?"topicReopen":"topicClose",{
+      expectedClosureVersion:String(topic.closureVersion),editorActorId:input.actorId,
+    });
+  }
   if(input.canManageAnySolution&&!topic.isSolved&&!topic.duplicateOf)add("markSolved","markSolved");
   if(input.canManageAnySolution&&!topic.duplicateOf)(input.postCandidates??topic.posts.slice(1).map((post,index)=>({id:post.id,number:index+2}))).forEach(post=>{
     if(post.id!==topic.bestAnswerPostId&&post.number>1)actions.push({key:`selectBestAnswer:${post.id}`,intent:"selectBestAnswer",label:"postNumber",fields:{postId:post.id,operationScope:"any"},postNumber:post.number});
@@ -90,13 +98,54 @@ function TopicQuickActionForm({locale,topic,action,best,inline}:{locale:string;t
   {inline&&fetcher.data?.error?<p role="alert">{t("complaintReviewActionFailed")}</p>:null}
  </div>;
 }
-/** All forms retain the existing canonical topic action; inline success never navigates away. */
+type ClosureResponse={ok?:boolean;error?:string};
+
+/** Closure fetchers have their own actor/topic/grant/version lifetime; 409 and denial refresh once. */
+function TopicClosureQuickActionForm({locale,topic,action}:{
+ locale:string;topic:QuickTopic;action:TopicQuickActionDescriptor;
+}){
+ const {t}=useTranslation("common");
+ const fetcher=useFetcher<ClosureResponse>();
+ const revalidator=useRevalidator();
+ const refreshed=useRef<unknown>(null);
+ useEffect(()=>{
+  if(fetcher.state!=="idle"||!fetcher.data?.error||refreshed.current===fetcher.data)return;
+  if(!["conflict","forbidden","unauthenticated"].includes(fetcher.data.error))return;
+  refreshed.current=fetcher.data;
+  void revalidator.revalidate();
+ },[fetcher.state,fetcher.data,revalidator]);
+ const errorKey=fetcher.data?.error==="conflict"?"topicClosureConflict"
+  :fetcher.data?.error==="forbidden"||fetcher.data?.error==="unauthenticated"?"topicClosureDenied"
+  :"topicClosureFailed";
+ return <div>
+  <fetcher.Form method="post" action={forumTopicPath(locale,topic.id)}
+   className="topic-admin-form topic-closure-form" aria-busy={fetcher.state!=="idle"}>
+   <input type="hidden" name="intent" value={action.intent}/>
+   <input type="hidden" name="inlineQuickAction" value="1"/>
+   {Object.entries(action.fields).map(([name,value])=><input key={name} type="hidden" name={name} value={value}/>)}
+   <button type="submit" disabled={fetcher.state!=="idle"}>{t(action.label)}</button>
+  </fetcher.Form>
+  {fetcher.state==="idle"&&fetcher.data?.ok?<p role="status">{t("topicClosureSaved")}</p>:null}
+  {fetcher.state==="idle"&&fetcher.data?.error?<p role="alert">{t(errorKey)}</p>:null}
+ </div>;
+}
+
+/** All forms retain the existing canonical topic action; closure uses an isolated inline fetcher. */
 export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActionInput&{locale:string;inline?:boolean}){
+ const headerActorId=useHeaderAuthUser()?.id??null;
+ if(input.actorId&&input.actorId!==headerActorId)return null;
+ const actorId=input.actorId??headerActorId;
  const {topic}=input;
- const actions=topicQuickActionDescriptors(input);
+ const actions=topicQuickActionDescriptors({...input,actorId});
  const best=topic.posts.find(p=>p.id===topic.bestAnswerPostId);
  if(!actions.length)return null;
- return <QuickActions>{actions.map(action=><TopicQuickActionForm
-  key={action.intent==="markSolutionOutdated"?[action.key,best?.id,best?.solutionModerationStatus,best?.solutionOutdatedReason].join("\u0000"):action.key}
-  locale={locale} topic={topic} action={action} best={best} inline={inline}/>)}</QuickActions>;
+ return <QuickActions>{actions.map(action=>
+  action.intent==="closeTopic"||action.intent==="reopenTopic"
+   ? <TopicClosureQuickActionForm
+      key={JSON.stringify([locale,topic.id,actorId,input.canManageClosure,topic.closureVersion])}
+      locale={locale} topic={topic} action={action}/>
+   : <TopicQuickActionForm
+      key={action.intent==="markSolutionOutdated"?[action.key,best?.id,best?.solutionModerationStatus,best?.solutionOutdatedReason].join("\u0000"):action.key}
+      locale={locale} topic={topic} action={action} best={best} inline={inline}/>
+ )}</QuickActions>;
 }

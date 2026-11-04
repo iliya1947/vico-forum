@@ -11,7 +11,7 @@ import { ComplaintQueueList } from "../complaints/queue-view";
 import type { ComplaintQueuePage } from "../complaints/queue-contract";
 import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation } from "react-router";
+import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
@@ -61,6 +61,7 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
+import { useHeaderAuthUser } from "../auth/auth-controls";
 import { attributedQuoteMarkdown } from "./quote-markdown";
 
 export function HomeView({
@@ -2129,6 +2130,7 @@ export function TopicView({
   canCorrectTitleSourceLocale,
   canCorrectAnySourceLocale = false,
   canManagePin,
+  canManageClosure = false,
   canUseAdminPanel = false,
   topicReadState,
   actionData,
@@ -2158,6 +2160,7 @@ export function TopicView({
   canCorrectTitleSourceLocale: boolean;
   canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
+  canManageClosure?: boolean;
   canUseAdminPanel?: boolean;
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
@@ -2191,7 +2194,7 @@ export function TopicView({
   const forumWriteError = actionData && (!("operation" in actionData) || actionData.operation === "postEdit")
     ? actionData.error
     : null;
-  const canParticipate = canReply && !topic.duplicateOf;
+  const canParticipate = canReply && !topic.duplicateOf && !topic.isClosed;
   const canShowOwnTopicTools =
     (canManageSolution && !canManageAnySolution && !topic.isSolved && !topic.duplicateOf)
     || (canCorrectTitleSourceLocale && !canCorrectAnySourceLocale);
@@ -2220,6 +2223,17 @@ export function TopicView({
   const { t } = useTranslation("common");
   const location = useLocation();
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
+  const headerActorId = useHeaderAuthUser()?.id ?? null;
+  const replyScope = JSON.stringify([topic.id, headerActorId]);
+  // Keep only an already-mounted composer across closure/revalidation, never across actor/topic.
+  const [retainedReplyScope, setRetainedReplyScope] = useState<string | null>(canParticipate ? replyScope : null);
+  useEffect(() => {
+    setRetainedReplyScope(current => canParticipate ? replyScope : current === replyScope ? current : null);
+  }, [canParticipate, replyScope]);
+  const replyEditorMounted = canParticipate || retainedReplyScope === replyScope;
+  const [closedReplyResponseVersion, setClosedReplyResponseVersion] = useState<number | null>(null);
+  const lastClosedReplyResponse = useRef<unknown>(null);
   const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
   const promptedBestAnswerPostId =
     isTopicAuthor
@@ -2252,6 +2266,17 @@ export function TopicView({
     existingPostIds: Set<string>;
   } | null>(null);
   const navigation = useNavigation();
+  // 409 does not guarantee loader revalidation. Refresh once; never resubmit the reply.
+  useEffect(() => {
+    if (navigation.state !== "idle" || forumWriteError !== "topicClosed"
+      || !actionData || lastClosedReplyResponse.current === actionData) return;
+    lastClosedReplyResponse.current = actionData;
+    setClosedReplyResponseVersion(topic.closureVersion);
+    void revalidator.revalidate();
+  }, [navigation.state, forumWriteError, actionData, topic.closureVersion, revalidator]);
+  const closedReplyErrorActive = forumWriteError === "topicClosed"
+    && (closedReplyResponseVersion === null || closedReplyResponseVersion === topic.closureVersion);
+  const replyPublicationAllowed = canParticipate && !closedReplyErrorActive;
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
   const mountedTopicIdRef = useRef(topic.id);
@@ -2260,6 +2285,7 @@ export function TopicView({
     if (mountedTopicIdRef.current === topic.id) return;
     mountedTopicIdRef.current = topic.id;
     setReplyTargetPostId(null);
+    setReplyReady(false);
     setQuoteSelectionErrorPostId(null);
     setOpenMessageActionsPostId(null);
     replyPublicationRef.current = null;
@@ -2267,6 +2293,8 @@ export function TopicView({
     setEditingPostId(null);
     setEditBaseRevisionId(null);
   }, [topic.id]);
+
+  useEffect(() => { setReplyReady(false); }, [replyScope]);
 
   useEffect(() => {
     const requested = new URLSearchParams(location.search).get("editPost");
@@ -2514,6 +2542,7 @@ export function TopicView({
 
               {canUseAdminPanel ? (
                 <TopicQuickActions locale={locale} topic={topic} canManagePin={canManagePin}
+                  canManageClosure={canManageClosure}
                   canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
                   canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
                   pendingDuplicateAppeal={pendingDuplicateAppeal}/>
@@ -2525,10 +2554,17 @@ export function TopicView({
 
         {canSubmitComplaint && <ComplaintSubmissionForm locale={locale} topicId={topic.id} revisionId={topic.title.id} />}
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
-        {forumWriteError && <p className="topic-page-alert" role="alert">{t(forumWriteError === "conflict" && actionData && (
+        {forumWriteError && (forumWriteError !== "topicClosed" || closedReplyErrorActive) && <p className="topic-page-alert" role="alert">{t(forumWriteError === "conflict" && actionData && (
           ("operation" in actionData && actionData.operation === "postEdit")
           || ("intent" in actionData && actionData.intent === "editPost"))
           ? "postEditConflict" : `forumWriteError_${forumWriteError}`)}</p>}
+
+        {topic.isClosed ? (
+          <div className="topic-closed-notice" role="status">
+            <strong>{t("topicClosedStatus")}</strong>
+            <span>{t("topicClosedNotice")}</span>
+          </div>
+        ) : null}
 
         {topic.duplicateOf ? (
           <section className="help-duplicate-notice" aria-label={t("helpDuplicateBadge")}>
@@ -2964,13 +3000,14 @@ export function TopicView({
         {canParticipate && !replyComposerOpen ? (
           <button type="button" className="forum-composer-resume" onClick={focusReplyForm}>{t("replyHeading")}</button>
         ) : null}
-        {canParticipate && (
+        {replyEditorMounted && (
           <Form
             hidden={!replyComposerOpen}
             method="post"
             className="forum-write-form topic-reply-form"
             aria-labelledby="reply-heading"
             aria-busy={isReplySubmitting}
+            onSubmit={event => { if (!replyPublicationAllowed) event.preventDefault(); }}
           >
             <input type="hidden" name="intent" value="reply" />
             {activeReplyTargetPostId && <input type="hidden" name="parentPostId" value={activeReplyTargetPostId} />}
@@ -2999,6 +3036,9 @@ export function TopicView({
               </div>
             )}
 
+            {!replyPublicationAllowed ? (
+              <p className="topic-reply-paused" role="status">{t(topic.isClosed ? "topicReplyPaused" : "topicReplyUnavailable")}</p>
+            ) : null}
             <div className="forum-write-fields">
               <div className="forum-write-field">
                 <label htmlFor="reply-body">{t("replyBodyLabel")}</label>
@@ -3008,10 +3048,11 @@ export function TopicView({
                   editorContextKey={`topic:${topic.id}:reply`} editorLocale={locale}
                   publicationIntent="reply"
                   publicationPending={isReplySubmitting}
+                  publicationDisabled={!replyPublicationAllowed}
                   onPublicationReadyChange={setReplyReady}
                   actions={<>
                     <button type="button" disabled={isReplySubmitting} onClick={() => {replyEditorRef.current?.cancelOperation();setReplyComposerOpen(false);}}>{t("postEditCancel")}</button>
-                    <button type="submit" disabled={isReplySubmitting || !replyReady}>
+                    <button type="submit" disabled={isReplySubmitting || !replyReady || !replyPublicationAllowed}>
                       {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
                     </button>
                   </>}
