@@ -16,7 +16,8 @@ const pool = new Pool({ connectionString: url, options: `-c search_path=${schema
 const repository = new PostgresAuthorizationRepository(pool);
 const service = new AuthorizationService(repository);
 async function access(userId: string) {
-  return adminAccess(new Set((await repository.resolveUser(userId)).effectivePermissions));
+  const value = adminAccess(new Set((await repository.resolveUser(userId)).effectivePermissions));
+  return { canReadUsers: value.canReadUsers === true, canManageAuthorization: value.canManageAuthorization };
 }
 function override(actorId: string, permission: string, effect: "allow" | "deny" | null, userId = "target") {
   return service.setUserOverride(actorId, userId, permission, effect);
