@@ -158,6 +158,55 @@ describe("AP-08 authoritative topic closure", () => {
     }
   });
 
+  it("keeps a rejected attachment-only reply operation and its selection usable after reopen", async () => {
+    const topicId = "closure-staged-attachment";
+    await createTopic(topicId);
+    const draftId = crypto.randomUUID(), attachmentId = crypto.randomUUID();
+    const contextKey = `topic:${topicId}:reply`;
+    await attachments.createDraftAttachment({
+      id: attachmentId, ownerId: "author", contextKey, draftId,
+      objectKey: `private/${crypto.randomUUID()}`, fileName: "staged.txt",
+      declaredMime: "text/plain", detectedType: "text", responseMime: "text/plain",
+      byteSize: 12, verificationStatus: "type-checked",
+    });
+    const input = {
+      ...reply(topicId, "attachment-after-reopen"),
+      bodyRevision: {
+        id: "attachment-after-reopen-revision", originalContent: "", sourceLocale: "en",
+      },
+      publishedDraft: { contextKey, draftId, attachmentIds: [attachmentId] },
+    };
+    const effects = async () => (await client.query<{
+      post_count: number; revision_count: number; notification_count: number; receipt_count: number;
+    }>(`select
+      (select count(*)::int from forum_posts where topic_id=$1) as post_count,
+      (select count(*)::int from forum_post_revisions r join forum_posts p on p.id=r.post_id where p.topic_id=$1) as revision_count,
+      (select count(*)::int from forum_reply_notifications where topic_id=$1) as notification_count,
+      (select count(*)::int from forum_publication_receipts where topic_id=$1) as receipt_count
+    `, [topicId])).rows[0];
+    const before = await effects();
+    await forum.setTopicClosed({ topicId, actorId: "manager", isClosed: true, expectedClosureVersion: 0 });
+    const beforeCooldown = tick;
+    await expect(forum.createPost(input)).rejects.toBeInstanceOf(ForumTopicClosedError);
+    expect(tick).toBe(beforeCooldown);
+    expect(await effects()).toEqual(before);
+    expect(await attachments.readDraftAttachment("author", contextKey, draftId, attachmentId))
+      .toMatchObject({ id: attachmentId });
+    expect((await client.query(
+      "select 1 from forum_attachment_draft_refs where draft_id=$1 and attachment_id=$2",
+      [draftId, attachmentId],
+    )).rowCount).toBe(1);
+    await forum.setTopicClosed({ topicId, actorId: "manager", isClosed: false, expectedClosureVersion: 1 });
+    const posted = await forum.createPost(input);
+    expect(posted.id).toBe(input.id);
+    expect((await client.query(
+      "select 1 from forum_post_attachments where post_id=$1 and attachment_id=$2",
+      [posted.id, attachmentId],
+    )).rowCount).toBe(1);
+    expect((await effects()).post_count).toBe(before.post_count + 1);
+    expect(await changes(topicId)).toHaveLength(2);
+  });
+
   it("preserves a committed publication receipt across closure and rejects changed retries", async () => {
     await createTopic("closure-receipt");
     const topicId = "closure-receipt", draftId = crypto.randomUUID();
