@@ -15,5 +15,5 @@
 - Полезный реализованный scope сохраняется; дальнейшего expansion нет
 - Actual authenticated browser/DB flow не проверен; отдельный browser run не mandatory blocker этого package
 - Новую документацию в #283 не добавлять; stale PROJECT_STATE и документация — отдельный PR в конце задачи
-- Следующий шаг: владелец переводит #283 из Draft и merge; затем отдельный documentation PR закрывает AP-08 docs/state.
+- Следующий шаг: проверить/merge documentation PR #286; затем AP-08 закрыт и можно переходить к следующему bounded package.
 - Марк не назначен; AP-09+, blocking и production rollout не начинались
