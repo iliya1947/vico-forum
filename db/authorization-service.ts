@@ -24,6 +24,7 @@ export interface AuthorizationManagementCapability extends AuthorizationCapabili
   listUsers(): ReturnType<AuthorizationService["listUsers"]>;
   resolveUser(userId: string): ReturnType<AuthorizationService["resolveUser"]>;
   readManagementState(): ReturnType<AuthorizationService["readManagementState"]>;
+  readUserManagementState(userId: string): ReturnType<AuthorizationService["readUserManagementState"]>;
   createCustomRole(actorId: string, input: { slug: string; displayName: string }): ReturnType<AuthorizationService["createCustomRole"]>;
   renameCustomRole(actorId: string, roleId: string, input: { displayName: string }): ReturnType<AuthorizationService["renameCustomRole"]>;
   replaceRoleGrants(actorId: string, roleId: string, permissions: unknown): ReturnType<AuthorizationService["replaceRoleGrants"]>;
@@ -37,6 +38,7 @@ export class AuthorizationService {
   listRoles() { return this.repository.listRoles(); }
   listUsers() { return this.repository.listUsers(); }
   readManagementState() { return this.repository.readManagementState(); }
+  readUserManagementState(userId: string) { return this.repository.readUserManagementState(text(userId, "user id")); }
   readRole(roleId: string) { return this.repository.readRole(text(roleId, "role id")); }
   resolveUser(userId: string) { return this.repository.resolveUser(text(userId, "user id")); }
 
