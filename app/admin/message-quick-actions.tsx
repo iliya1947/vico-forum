@@ -106,6 +106,8 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
 export function MessageQuickActions(props: MessageQuickActionsProps) {
   const headerActorId = useHeaderAuthUser()?.id ?? null;
   const actorId = props.actorId ?? headerActorId;
+  // A stale private admin loader must not keep displaying an earlier actor's history.
+  if (props.actorId && props.actorId !== headerActorId) return null;
   if (!actorId || (!props.canCorrectAnySourceLocale && !props.canReadPostHistory)) return null;
   const key = JSON.stringify([
     actorId, props.topicId, props.postId, props.canCorrectAnySourceLocale, props.canReadPostHistory,

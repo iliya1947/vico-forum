@@ -197,7 +197,14 @@ export async function topicAction({ request, params, context }: {
   if (changedIdentity) return changedIdentity;
   const intent = requiredFormText(formData, "intent") ?? "reply";
   const inlineMarker=formData.get("inlineQuickAction");
-  if(inlineMarker!==null&&inlineMarker!=="1")return mutationFailure("invalid",400);
+  if(formData.getAll("inlineQuickAction").length>1 || (inlineMarker!==null&&inlineMarker!=="1"))
+    return mutationFailure("invalid",400);
+  if (intent === "correctPostSourceLocale" || intent === "readPostHistory") {
+    const ambiguous = ["intent", "postId", "expectedRevisionId", "sourceLocale", "operationScope", "editorActorId"]
+      .some((field) => formData.getAll(field).length > 1);
+    if (ambiguous) return intent === "correctPostSourceLocale"
+      ? sourceLocaleCorrectionFailure("invalid", 400) : mutationFailure("invalid", 400);
+  }
   const inline=inlineMarker==="1";
   const completed=(path:string)=>inline?data({ok:true},{headers:{"Cache-Control":"private, no-store"}}):redirect(path);
   if (intent === "pinTopic" || intent === "unpinTopic") {
