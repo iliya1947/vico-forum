@@ -1,5 +1,16 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-08 coordinator review restart — подзадача 1: stable-head scope
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+- AP08-MIRA-01 исправлен одним commit поверх прежнего review head.
+- Delta `381a046b... → 7b6adbf...`: только `app/forum/public-read.test.tsx`, 19 additions / 3 deletions.
+- Runtime implementation, schema, authorization, routes, UI code и docs не изменялись этим correction commit.
+- CI #41904456264 attempts 1 и 2: `checks` SUCCESS, `database` SUCCESS.
+- PR #283 остаётся Draft/open/mergeable.
+- По AGENTS whole-PR cycle начат заново на новом stable exact head.
+
 ## AP-08 coordinator review — подзадача 4: Quick actions / Closed UI / mounted reply editor
 
 **Exact head:** `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
