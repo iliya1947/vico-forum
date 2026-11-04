@@ -1,5 +1,23 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-08 coordinator review restart — подзадача 2: schema/DB/concurrency/reply admission
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Повторно проверено на новом head:
+- migration/schema: persisted `is_closed`, nonnegative `closure_version`, `forum.topic.close`, moderator/admin initial grants, History actions;
+- `createPost`: matching committed publication receipt replay выполняется до topic closure admission;
+- fresh reply: authoritative topic row `FOR UPDATE` → closed rejection до cooldown/post/revision/notifications/publication receipt;
+- `setTopicClosed`: тот же topic-row serialization point, expected-version CAS, no-op, int32 exhaustion, state/version + History в одной transaction;
+- History append failure откатывает closure/version;
+- attachment-only rejected reply сохраняет operation/selection для явной публикации после reopen;
+- native PostgreSQL races покрывают reply-first, close-first, failed close rollback с queued reply и concurrent same-version closes;
+- current exact-head CI #41904456264 attempts 1 и 2: `database` SUCCESS (39/39 suites, 477/477 tests) и `checks` SUCCESS.
+
+Correction commit `7b6adbf...` меняет только `app/forum/public-read.test.tsx` и не затрагивает эту runtime/DB цепочку.
+
 ## AP-08 coordinator review restart — подзадача 1: stable-head scope
 
 **Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
