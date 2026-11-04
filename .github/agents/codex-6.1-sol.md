@@ -1,41 +1,126 @@
-# Лёва — Codex-6.1 Sol
+# Лёва — AP-09: bounded technical plan Users
 
-## Лёва — AP-08 / #283: независимая whole-PR technical review — PASS
+Статус: предложение для coordinator review Миры; implementation не начат.
+Baseline `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+Назначение: [Мира #6642571342](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642571342). AP-08 implementation #283 и documentation closeout #286 merged.
 
-**Reviewed exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
-**Implementation baseline:** `e39c36ccef29c6164706d826f26c57088a97fa20`.
-**Актуальный main:** `853ccde096ba56c3b3147122bb1d5dd284c2d186` (от baseline изменился только AGENTS.md).
-**Verdict: PASS. Подтверждённых незакрытых current-scope implementation-дефектов: 0.**
+## 1. Результат и строгий scope
 
-Проверка выполнена после [coordinator PASS Миры #6641563954](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6641563954) на том же stable head. AP-08 реализовывала Лира; я готовил технический план и проверял результат, implementation не менял. Полезный уже реализованный scope сохранён, дальнейшее расширение не выполнялось.
+AP-09 добавляет защищённый список/поиск пользователей и dedicated administrative user page. Из неё actor с существующим `access.authorization.manage` использует уже реализованные role assignment и personal allow/deny/inherit controls. Список даёт быстрые переходы к user detail, public profile и, при management permission, к этим controls выбранного пользователя.
 
-### Whole-PR результат
+Это не пакет блокировок. Не добавлять block/lift, expiry, enforcement, block permissions/stores/placeholders форм; не решать эффект блокировки. Не добавлять account deletion, impersonation, email/password/session administration, edit-any profile, bulk actions, user export, Settings, AP-10+, Stage 6 или rollout. Не переписывать существующий authz backend/role-management UI и не устранять несвязанные дефекты прошлых этапов. Общий Quick actions framework расширяется только реальным User consumer; speculative dispatcher не нужен.
 
-Проверены все 47 changed files (schema snapshot — структурным сравнением с предыдущим accepted snapshot, остальные изменения — по diff/source/test contracts).
+Минимальный принцип данных: новый directory reader возвращает только публичные identity/profile поля. Он не вызывает существующий полный authorization management snapshot. Новая user-read capability не даёт write authority и не раскрывает email, grants/overrides/effective permissions других пользователей.
 
-- **Schema/catalog/grants:** одна forward 0056, persisted open/0 defaults, nonnegative closure version; ровно одна capability `forum.topic.close` для close/reopen, initial moderator/admin grants, custom roles/overrides не заменяются. Catalog/checks/Drizzle snapshot/journal/manifest согласованы. Структурный snapshot diff содержит только два columns, closure CHECK, два расширенных existing CHECK и snapshot identity/prevId. Accepted 0000–0055 не переписаны; runtime privileges не расширены.
-- **Authoritative write:** CAS проверяется на locked topic row до no-op; ABA/stale/overflow fail closed. Меняются только closed/version, History append в той же транзакции и последним write; append failure откатывает состояние. Нет toggle, повторного события для stale/no-op и новых role exceptions.
-- **Reply/receipt:** admission нового reply использует ту же topic row `FOR UPDATE`, closed check стоит после matching committed receipt lookup и до cooldown/posts/revisions/notifications/attachment publication. Автор, moderator/admin и actor с closure capability не обходят запрет. Matching replay возвращает прежний post; changed fingerprint остаётся conflict. Reopen не снимает confirmed duplicate restriction. Дополнительный gate перед receipt не добавлен.
-- **Authorization/HTTP:** canonical route action, session actor и route target, fresh capability, same-origin, unique/canonical CAS/actor inputs, duplicate-intent protection, stale-account 409; distinct `topicClosed` 409, controlled 400/401/403/404/409/503, private/no-store и сохранённый AP-07 headers transport. Unexpected errors не превращаются в permission=false/503.
-- **Read/admission:** closure-only capability допускает Forum/shell/direct private routes, но не даёт другие action/history permissions и Help private fields. Public/admin projections читают persisted state/version. Public read, solved/best answer/pin/duplicate/messages/own-edit/attachment display не меняют своего доменного смысла.
-- **UI:** общие public/admin Quick actions используют тот же writer через canonical endpoint, mutually exclusive close/reopen, pending/CAS, actor/topic/grant/version isolation, однократный refresh при конфликте/denial без replay. Closed отделён от Solved/Duplicate. Новые Reply/Quote блокируются; mounted composer сохраняет text/Undo/Redo/current uploads, Cancel доступен, повторная публикация после reopen требует явного действия. `publicationDisabled` блокирует submit/shortcut, не обрывая upload operation. Complaint consumer без closure fields/grant не получает closure authority.
-- **Tests/localization/presentation:** native PG tests проверяют оба порядка close/reply, rollback/queued reply, concurrent CAS и receipt/attachment preservation через actual lock waits/barriers; route/mounted tests покрывают boundary/error paths и editor retention. Existing historical fixtures дополнены только требуемыми columns для current Drizzle writes. EN/RU/HE strings/fingerprints, logical CSS, existing preview fixtures и History labels согласованы с изменением. Новая review-реализация/документация в #283 не добавлялась.
+## 2. Проверенный baseline и точки интеграции
 
-### Фактические проверки
+- `docs/ADMIN_PANEL.md`: независимый general user-read boundary; `access.authorization.manage` сохраняет существующий URL и свой user-management subset без нового read gate. User DTO capability-scoped; public profile fields можно переиспользовать.
+- `app/routes/authorization-admin.tsx`: существующие loader/action самостоятельно требуют management permission; action уже выполняет `assignRole`/`override` через authorization capability. Не создавать другой domain writer.
+- `app/authorization/admin-view.tsx`: user identity/card и role/override controls сейчас находятся внутри общей `AuthorizationAdminView`/AdminShell. Для нового consumer достаточно выделить существующее тело user controls в reusable component; roles CRUD остаётся там, где есть.
+- `db/authorization-repository.ts`: `readManagementState()` читает **всех** users/email/grants/overrides в одном REPEATABLE READ READ ONLY snapshot. Его нельзя использовать для directory, а затем фильтровать в JS. Existing `resolveUserFrom` и `withReadSnapshot` пригодны для точечного management read.
+- Existing `assignUserRole`/`setUserOverride` вызывают `mutate`: общий authz row lock, повторная проверка effective management permission внутри transaction, last-manager invariant и atomic History. Эти writers и их semantics сохраняются.
+- `db/forum-repository.ts:readProfile`, `ForumProfile` и public profile route уже дают публичные name/image/joinedAt/bio/URLs/role label/messageCount/bestAnswerCount без email. Detail переиспользует этот read и explicit projection, не второй identity/profile store.
+- `app/admin/access.ts`, `shell.tsx`, Overview и `app/routes/locale-boundary.tsx` отвечают за admission/navigation/header presentation. Сейчас Users — placeholder для существующего authz subset; в header есть отдельный список presentation permissions, туда также нужно добавить новый Users-read key.
+- AP-06 уже имеет bounded `q`/`after` validation, literal search и ID-keyset paging; использовать этот подход без переделки Forum reader. `workers/app.ts` уже предоставляет WEB_HYPERDRIVE и request-scoped authorization/public profile readers.
 
-- [CI #41904456264](https://github.com/iliya1947/vico-forum/actions/runs/41904456264), **attempts 1 и 2 — SUCCESS на reviewed head**. Повторно проверены head/conclusion через GitHub API; у attempt 2 `checks` и `database` и их steps SUCCESS: application checks/builds, clean PostgreSQL 17, migration/schema/manifest/runtime checks и existing Worker HTTP smoke.
-- Независимый локальный запуск существующих целевых tests на этом head: **5 files / 110 tests PASS** — `topic-closure-action`, `topic-closure-ui`, `admin/topic`, `routes/admin-topic`, весь `public-read` (включая исправленный upload-retention case). Pinned Node/pnpm; лог: `/workspace/work/ap08-review-evidence/targeted-tests.log`. Полный CI/application/PG suite локально повторно не запускался.
-- AP08-MIRA-01: test-only correction ожидает готовую operation identity/Attach перед выбором файла и сохраняет assertions operation/form/abort до close и после close/reopen. Текущий целевой тест прошёл локально и в двух exact-head CI attempts. Источник abort на старом head этим review не объявляется установленным; реальный product abort defect не подтверждён.
-- GitHub test-merge `f43f780e4c0c5c15192e81b1abcc079770b01059`: parents current main `853ccde...` и reviewed `7b6adbf...`; от head отличается только актуальным AGENTS.md, implementation tree differences нет. PR mergeable. Worktree clean, implementation head неизменен; task dependency symlink удалён.
+План основан на актуальных AGENTS/PROJECT/PROJECT_STATE, Admin Panel и authorization contracts, существующих reader/service/route/UI boundaries. Ниже — требования будущей реализации, а не заявленные AP-09 PASS checks.
 
-### Границы и завершение
+## 3. Permission и admission matrix
 
-**Информация не проверена:** фактический authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 flow. Я такой run не выполнял и CI/mounted/native PG не выдаю за browser acceptance. По [#6640050148](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6640050148) отдельный run не является mandatory blocker текущего package. Owner visual, real R2/provider/OAuth и production rollout не выполнялись.
+Предлагаемый реальный code-backed key: **`admin.users.read`**. Initial grant — **только built-in admin**; user/moderator/custom roles не получают его автоматически. Это техническое предложение для approval Миры, не runtime role check. Existing assignments, grants и per-user overrides не заменять; новый key доступен обычному управлению permissions.
 
-Существующие docs-коммиты #283 сохраняются. Stale PROJECT_STATE формулировка про mandatory browser acceptance и итоговое фактическое состояние — контекст **отдельного documentation PR в конце задачи** по текущему AGENTS.md, не основание менять implementation #283. Полный аудит документации не заявляется.
+| Actor capabilities | General Users index/detail | Authorization controls |
+| --- | --- | --- |
+| `admin.users.read` only | Да; explicit public-field DTO | Нет, targeted management reader не вызывается |
+| `access.authorization.manage` only | Новый общий directory не разрешён | Прежний `/admin/authorization` и его users subset полностью доступны без нового read gate |
+| Обе | Да | На dedicated user page — только существующие assignment/override controls выбранного user |
+| Forum/History/Attention/Own-only или guest | Нет | Собственные существующие capabilities не повышаются до Users-read/manage |
 
-Оба whole-PR verdict относятся к одному `7b6adbf`; новых correction tasks нет. Review cycle #283 завершён, PR готов к merge владельцем. AP-09+, blocking и rollout не начинались.
+Добавить `canReadUsers` в AdminAccess и key в global admission union: он один допускает shell/Overview/Users, но не Forum/History/Roles. Каждый новый flat loader самостоятельно требует **именно** Users-read до query/target parsing и target reads; родительский shell и hidden UI не заменяют gate. `admin.history.read` не нужен ни для чтения Users, ни для разрешённой authz mutation.
 
-**Действие разработчика:** merge PR #283.
+Навигация: для Users-read Users ведёт на настоящий index; для management-only существующий Users subset можно открыть ссылкой на `/admin/authorization#authorization-users-heading`, а Roles остаётся на прежнем URL. Это не доступ management-only actor к новому directory. У остальных Users destination отсутствует. Порядок Overview→Forum→Users→Roles→History→Settings сохраняется. Header link/Overview используют новый server-resolved flag; проверка fresh на каждом request, в пределах request — существующий snapshot/cache. Не вводить `admin.access` или вторую role model.
 
-Опубликованный отчёт: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642078061
+## 4. Routes, directory reader и минимальные DTO
+
+Новые flat routes:
+
+- `/:locale/admin/users` — index/search;
+- `/:locale/admin/users/:userId` — user detail.
+
+Locale/path helpers кодируют user ID через `encodeURIComponent`, включая slash/Unicode; не считать Better Auth IDs UUID. AdminShell имеет current=`users`, один main/h1; вложенные headings — h2/h3. Public `/:locale/users/:userId` сохраняется.
+
+### Index
+
+Небольшой `AdminUsersReader.listUsers({search,after})` / PostgreSQL adapter по модели `AdminForumReader`, request context + WEB_HYPERDRIVE composition. Нужен только read capability, отдельного admin users writer не создавать.
+
+DTO `AdminUserSummary`: **id, name, image, joinedAt**. Никаких email, emailVerified, locale, session/account/password/OAuth data, IP/last-login, roles/grants/overrides, private cases/notes/complaints. Даже для management actor список использует тот же минимальный DTO. SQL явно выбирает эти columns из существующей `user`; никаких `SELECT *`, полного authz state или N+1 permission/profile reads на строку.
+
+`q` — literal case-insensitive name/ID search, trim, максимум 200 Unicode code points, NUL запрещён; не искать по email и не создавать email-existence side channel. `%`, `_`, `\` экранируются; SQL parameters. Filter выполняется **до** LIMIT. `after` — непустой raw ID, до 2048 UTF-8 bytes, без NUL; duplicates q/after отвергать. Переиспользовать/минимально вынести существующий AP-06 validator, не новый framework.
+
+Порядок и cursor: `id COLLATE "C"`, page 25 + lookahead 1; exact matching total независимо от cursor. Matching/page/total в одном statement snapshot, по образцу AP-06. Next/first сохраняют q, новая search сбрасывает cursor. Не загружать всех users в JS. Empty list/0 results и unavailable различимы. Live pagination не обещает multi-request snapshot; профиль может сменить имя между страницами. Новый search index/trigram extension для pre-release без доказанной необходимости не добавлять.
+
+### Detail
+
+После independent gate и validation ID использовать существующий `ForumReader.readProfile(userId)`; отсутствие — 404. Explicit DTO: id/name/image/joinedAt, public bio/URLs, public role display metadata, реальные messageCount/bestAnswerCount. Не расширять public profile и не показывать её own-edit controls. URLs — через существующий safe rendering; bio/name — текст, не HTML. Dates — ISO → deterministic UTC display. Без email/private fields, даже если upstream объект когда-нибудь расширится.
+
+Только при **отдельно подтверждённом management permission** загрузить optional targeted authorization section. Не вызывать для этого `readManagementState()` или `listUsers()` и не отдавать состояние других пользователей. Минимальный новый management read, например `readUserManagementState(userId)`, через existing authorization repository/service/Hyperdrive:
+
+- один existing `withReadSnapshot` REPEATABLE READ READ ONLY;
+- выбрать target existence, existing role choices (id/displayName; без grants всех ролей) и authz **одного** target через существующий resolve helper в том же snapshot;
+- вернуть target ID, role/explicitAssignment, target grants/overrides/effective permissions и role choices, необходимые прежним controls; email для нового consumer не нужен;
+- сохранить existing snapshot/error/cleanup contracts. Это reader reuse, не новая authorization resolution formula. Старый full management reader и его результат не менять.
+
+No-management actor не получает даже hidden payload/HTML/fetcher preload этой секции. Если management resolution/read typed unavailable — controlled private 503, не fake deny/empty state. После revocation следующий request не читает/не сериализует management data. Чтение public target DTO и privileged section не трактуется как единый domain mutation snapshot: writes всё равно проверяют актуальное состояние.
+
+## 5. Existing controls и один backend
+
+Выделить **только существующие user assignment/override/effective-permission controls** из AuthorizationAdminView в общий component с target ID, role options и target authorization. Existing Roles page продолжает использовать его с прежним содержимым/URL и полным существующим management gate; user-read не становится дополнительным требованием старой страницы. Не переносить role CRUD на Users и не строить новый permission editor.
+
+Новый user detail использует этот же component при обеих capabilities. Его forms явно отправляются на прежний `/:locale/admin/authorization` с existing intents **`assignRole` / `override`** и current target `userId`. Для нового inline consumer использовать fetcher: успешное действие остаётся на user detail и revalidate обновляет role/effective permissions; role assignment/override не реализуются повторно в users route.
+
+Небольшое extension canonical authz action для нового opt-in inline user consumer:
+
+- маркер `inlineUserAuthorization=1` и обязательный `editorActorId` для новых forms; отсутствие маркера сохраняет старый consumer;
+- валидировать уникальные intent/marker/actor/userId и применимые roleId/permission/effect, runtime strings/known catalog/effect; opt-in поддерживает только эти два intents;
+- actor берётся из session; expectation лишь обнаруживает смену аккаунта, mismatch 409 до mutation. Client target `userId` остаётся target existing management operation, не actor; repository повторно проверяет его existence/role/effect;
+- existing manager guard и same-origin обязательны независимо от presentation. Users-read само по себе не может POST; management-only по-прежнему может пользоваться existing endpoint без нового read gate;
+- same service/repository `mutate`, effective permission under authz lock, last-manager guard, existing History/no-op/rollback. Не добавлять отдельный CAS/generic optimistic-lock framework к существующим assignment/override semantics.
+
+Общие errors сохраняются: invalid 400, unauthenticated 401, forbidden/origin 403, missing 404, stale actor/last-manager conflict 409, typed unavailable 503. Success и controlled replies — `private, no-store`; existing admin route headers применяются к document/data/fetcher. Не отдавать private snapshots в mutation response. Unexpected errors не скрывать.
+
+Inline forms выделяются по actor/target/current grants и authoritative target authorization snapshot, чтобы старые fetcher data/default select values не переходили на другой user или после refresh. Pending запрещает двойной submit. 401/403/409 дают один explicit refresh, без automatic retry; session/grant loss убирает private controls/data из нового snapshot. Existing actor/topic editor mechanics и unrelated authz forms не переписывать.
+
+Index User Quick actions — реальные links: открыть admin detail, public profile; при management permission — detail `#authorization` к существующим изменяющим controls. Это быстрые переходы, не фиктивные выполненные mutations. In-list role/override editors, bulk writes, новый target DTO всех grants и новая mutation surface не требуются. Пустых/будущих block/delete menus не показывать. Использовать existing disclosure/visual concept, не копировать Topic intent descriptors в Users.
+
+Чтение/search/navigation не создают admin History. Реальные assignment/override изменения получают ровно existing authoritative events; no-op, denied, rejected lockout и rollback не добавляют events. Новых History action kinds или permissions не нужно.
+
+## 6. Migration, wiring и UI cleanup
+
+Нужна только forward catalog migration: при текущем main **0057** (при продвижении main — следующий номер). Расширить `authz_permissions_catalog_check`, вставить `admin.users.read`, initial grant только exact built-in admin. Согласовать TS catalog/INITIAL_ROLE_GRANTS, Drizzle check/new snapshot/journal и manifest target/check hash. Не переписывать 0000–0056. User/profile schema, rows, FKs и authz mutation lock не менять; новых tables/indexes/runtime grants нет. Existing `user SELECT` и public profile/authz reads уже разрешены web role. Проверить current privilege probes, не добавлять доступ к `authz_permissions` web runtime.
+
+Минимальные файлы/точки: users path/route/read context/adapter и 2 views; route registration; shared AdminAccess/shell/header/Overview destinations; small reusable user authz controls + targeted existing authz read/inline dispatch; catalog/migration/manifest; tests и необходимые i18n/CSS. New Worker context использует WEB_HYPERDRIVE, не HYPERDRIVE localization binding; typed connection/query-timeout classification по existing adapter.
+
+После реализации убрать только `admin-users` из списка реально недоступных features. Старый `under-development?feature=admin-users` перенаправлять на новый protected index; redirect не даёт доступа (для management-only остаётся прежний работающий authz URL/subset). Settings/drafts/прочие placeholders не объявлять готовыми.
+
+EN canonical messages + RU/HE values/reviewed fingerprints только для новых реальных labels/search/counts/no-result/read errors/inline feedback. Generic locale registry, encode helpers, logical CSS, длинные имена/ID, bdi/dir и UTC timestamps. Не редизайнить весь admin/authz UI; UI Preview переиспользует реальные components с synthetic data, без private bindings. Не создавать новый preview/browser workflow.
+
+## 7. Acceptance и scope проверки
+
+**Route/security tests:** guest/Users-read only/manage only/both/neither; custom role/override allow/deny/inherit и next-request revocation; read-only actor имеет header/shell/Users, но не Forum/Roles/History; старый authz loader/action по-прежнему работает без Users-read. До gate не вызываются target readers. Read-only loader JSON/document/data не содержит email, target grants/overrides/private cases и не вызывает privileged management reader. Invalid/duplicate q/cursor/target, 404, typed outages vs unexpected errors; конечный private/no-store envelope.
+
+**Native PostgreSQL:** full migration/catalog/grant/Drizzle/manifest parity; directory >50 users, все pages без дублей/пропусков на статическом fixture, matching total не зависит от cursor, literal `%_\\` и Unicode search, результат за первой SQL page, empty/zero/nonexistent ID, имена-двойники и slash/Unicode IDs. Privacy sentinel email/credentials не выбираются/не участвуют в search. Targeted management read возвращает ровно одного target и consistent role/grants/overrides/options в существующем snapshot, не остальных users. Existing current role/override/lockout/History integration tests должны пройти; новый canonical inline path с реальным repository доказывает shared mutation/no-op/event/rollback и revocation-under-lock, без другого writer. Новый reader работает под existing web privileges.
+
+**Mounted UI/regression:** search→list→detail→public link, query-preserving paging, honest count/empty/error. На read-only detail нет management DOM/hidden inputs. Оба capabilities дают существующие role/override controls; submit идёт canonical endpoint, успех обновляет current target без ухода/повторной команды; 401/403/409 refresh и actor/target switch не показывают чужой fetcher result. Existing Roles page controls/navigation сохраняются. EN/RU/HE, RTL/LTR, keyboard, main/h1, long names/IDs и narrow/tablet layout проверяются в применимых tests/preview.
+
+**Delivery checks:** штатный полный exact-head CI: lint/typecheck, application/route/mounted tests, builds, db:check/schema parity, PostgreSQL 17/manifest/runtime probes и existing Worker smoke. No new mandatory standalone authenticated browser gate только ради AP-09; browser/extra runtime проверка — при конкретной необходимости либо отдельном назначении. Если flow не запускался — явно «Информация не проверена», не выдавать CI/preview за real browser acceptance. Owner visual — только по явному запросу. Production/R2/OAuth/providers не нужны.
+
+## 8. Реализация и handoff
+
+1. Мира проверяет этот план, в том числе proposed key/initial admin-only grant и конкретную minimal navigation/read/control composition. Implementation до approval не начинать.
+2. Лира — отдельный bounded implementation PR от свежего main: catalog/admission + minimal SQL directory/DTO/routes; targeted manager read и выделение existing controls/canonical inline reuse; tests/localization. Не создавать additional product capabilities по ходу.
+3. Author handoff в #251 на stable exact head с CI/evidence и честными непроверенными границами. Мира coordinator-first whole-PR review; confirmed defects одним bounded пакетом Лире; после coordinator PASS — независимый technical review того же head. Merge выполняет владелец.
+4. По текущему AGENTS **не добавлять lasting docs/PROJECT_STATE в implementation PR**. После принятой реализации — отдельный documentation closeout PR: factual AP-09 state, Users permission/DTO/navigation/control contracts и history index/snapshot при необходимости. AP-10/block-effect gate и Settings остаются незакрытыми.
+
+План не реализует AP-09 и не заявляет пройденных feature tests. Worktree planning baseline clean; код/БД/production не менялись. Следующий агент — **Мира**, coordinator review плана; технический контекст передаётся через #251, разработчик только подключает агента.
+
+Опубликованный план: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6642731589
