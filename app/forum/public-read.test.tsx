@@ -3864,6 +3864,10 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       expect(within(retained).getByRole("button", { name: "Post reply" })).toBeDisabled();
       expect(within(retained).getByRole("button", { name: "Cancel" })).toBeEnabled();
       expect(within(retained).getByText(/text and attachments remain in the editor/i)).toBeVisible();
+      fireEvent.click(within(retained).getByRole("button", { name: "Undo" }));
+      expect(textarea).not.toHaveValue("Before closure and more");
+      fireEvent.click(within(retained).getByRole("button", { name: "Redo" }));
+      expect(textarea).toHaveValue("Before closure and more");
       expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
       fireEvent.submit(retained);
       expect(state.mutation).not.toHaveBeenCalled();
