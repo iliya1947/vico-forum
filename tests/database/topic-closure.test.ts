@@ -107,8 +107,8 @@ describe("AP-08 authoritative topic closure", () => {
 
   it("fails closed on invalid version, missing topic and exhausted version", async () => {
     for (const version of [-1, 1.5, 2_147_483_648]) {
-      await expect(forum.setTopicClosed({ topicId: "closure-topic", actorId: "manager",
-        isClosed: true, expectedClosureVersion: version })).rejects.toBeInstanceOf(InvalidForumContentError);
+      expect(() => forum.setTopicClosed({ topicId: "closure-topic", actorId: "manager",
+        isClosed: true, expectedClosureVersion: version })).toThrow(InvalidForumContentError);
     }
     await expect(forum.setTopicClosed({ topicId: "missing", actorId: "manager", isClosed: true,
       expectedClosureVersion: 0 })).rejects.toBeInstanceOf(ForumEntityNotFoundError);
@@ -127,7 +127,9 @@ describe("AP-08 authoritative topic closure", () => {
     await client.query("create trigger reject_ap08_closure_history before insert on admin_history for each row execute function reject_ap08_closure_history()");
     try {
       await expect(forum.setTopicClosed({ topicId: "closure-rollback", actorId: "manager",
-        isClosed: true, expectedClosureVersion: 0 })).rejects.toThrow("test History failure");
+        isClosed: true, expectedClosureVersion: 0 })).rejects.toMatchObject({
+          cause: { message: "test History failure" },
+        });
       expect(await state("closure-rollback")).toEqual({ is_closed: false, closure_version: 0 });
       expect(await changes("closure-rollback")).toEqual([]);
     } finally {
@@ -171,6 +173,10 @@ describe("AP-08 authoritative topic closure", () => {
       publishedDraft: { contextKey, draftId, attachmentIds: [attachmentId] },
     };
     const first = await forum.createPost(request);
+    const before = await client.query<{ count: string }>(
+      "select count(*)::text as count from forum_posts where topic_id=$1", [topicId]);
+    const beforeReceipts = await client.query<{ count: string }>(
+      "select count(*)::text as count from forum_publication_receipts where topic_id=$1", [topicId]);
     await forum.setTopicClosed({ topicId, actorId: "manager", isClosed: true, expectedClosureVersion: 0 });
     expect((await forum.createPost({ ...request, id: "replayed-different-id" })).id).toBe(first.id);
     await expect(forum.createPost({ ...request, id: "changed-fingerprint",
@@ -181,5 +187,9 @@ describe("AP-08 authoritative topic closure", () => {
     expect(await client.query("select post_id from forum_post_attachments where attachment_id=$1", [attachmentId]))
       .toMatchObject({ rowCount: 1 });
     expect(await changes(topicId)).toHaveLength(1);
+    expect((await client.query<{ count: string }>(
+      "select count(*)::text as count from forum_posts where topic_id=$1", [topicId])).rows).toEqual(before.rows);
+    expect((await client.query<{ count: string }>(
+      "select count(*)::text as count from forum_publication_receipts where topic_id=$1", [topicId])).rows).toEqual(beforeReceipts.rows);
   });
 });
