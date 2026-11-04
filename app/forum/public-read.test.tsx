@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -3794,5 +3794,139 @@ describe("forum read states", () => {
     expect(await screen.findByRole("heading", { name: "Forum page not found" })).toBeInTheDocument();
     expect(screen.getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
     expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
+  });
+});
+
+
+describe("AP-08 closed topic participation and mounted reply recovery", () => {
+  const editorActor = { id: "reply-closure-editor", name: "Reply author" };
+  const response = (body: unknown) => new Response(JSON.stringify(body), {
+    headers: { "Content-Type": "application/json" },
+  });
+  const stubUploads = () => vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (url.includes("mode=head")) return new Response(null, { status: 404 });
+    if (url.includes("mode=metadata")) return response({ drafts: [] });
+    if (url === "/api/attachments") return response({ attachments: [] });
+    throw new Error("Unexpected attachment request: " + url);
+  }));
+  function mountedTopic(initial: ReturnType<typeof topicRenderData>, action?: (args: { request: Request }) => Promise<unknown>) {
+    let current = initial;
+    const load = vi.fn(() => current);
+    const mutation = vi.fn(action ?? (async () => ({ error: "invalid" })));
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute, loader: load, action: mutation,
+    }], { initialEntries: ["/en/topics/typed-api"] });
+    render(<I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={editorActor}><RouterProvider router={router}/></HeaderAuthProvider>
+    </I18nextProvider>);
+    return {
+      router, load, mutation,
+      update: async (next: ReturnType<typeof topicRenderData>) => {
+        current = next;
+        await act(async () => { await router.revalidate(); });
+      },
+    };
+  }
+
+  it.each(["en", "he"] as const)("shows independent Closed status but never an initial composer or Reply/Quote in %s", async locale => {
+    const closed = { ...topic, isClosed: true, closureVersion: 3, isSolved: true };
+    const data = topicRenderData(closed, { canReply: true });
+    renderRoute(TopicRoute, { ...data, locale }, forumTopicPath(locale, closed.id), locale,
+      locale === "he" ? "rtl" : "ltr", editorActor);
+    expect(await screen.findByText("New replies are disabled until this topic is reopened.")).toBeVisible();
+    expect(screen.getByText("Closed")).toBeVisible();
+    expect(screen.queryByRole("form", { name: "Add a reply" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Quote" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Quote entire message" })).not.toBeInTheDocument();
+    // A solved topic still displays its existing persisted solution marker.
+    expect(screen.getAllByText("Solved").length).toBeGreaterThan(0);
+  });
+
+  it("retains the same in-memory editor, text, Undo and Cancel after closure and restores explicit publish on reopen", async () => {
+    stubUploads();
+    const current = topicRenderData(topic, { canReply: true });
+    const state = mountedTopic(current);
+    try {
+      const form = await screen.findByRole("form", { name: "Add a reply" });
+      fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+      const textarea = form.querySelector("textarea")!;
+      fireEvent.change(textarea, { target: { value: "Before closure" } });
+      fireEvent.change(textarea, { target: { value: "Before closure and more" } });
+      await waitFor(() => expect(within(form).getByRole("button", { name: "Post reply" })).toBeEnabled());
+
+      await state.update(topicRenderData({ ...topic, isClosed: true, closureVersion: 1 }, { canReply: true }));
+      const retained = await screen.findByRole("form", { name: "Add a reply" });
+      expect(retained).toBe(form);
+      expect(retained.querySelector("textarea")).toBe(textarea);
+      expect(textarea).toHaveValue("Before closure and more");
+      expect(textarea).not.toBeDisabled();
+      expect(within(retained).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(within(retained).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(within(retained).getByText(/text and attachments remain in the editor/i)).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
+      fireEvent.submit(retained);
+      expect(state.mutation).not.toHaveBeenCalled();
+
+      await state.update(topicRenderData({ ...topic, isClosed: false, closureVersion: 2 }, { canReply: true }));
+      expect(await screen.findByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(textarea).toHaveValue("Before closure and more");
+      await waitFor(() => expect(within(form).getByRole("button", { name: "Post reply" })).toBeEnabled());
+      expect(state.mutation).not.toHaveBeenCalled();
+
+      // The user may still cancel and discard the mounted in-memory operation.
+      fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByRole("form", { name: "Add a reply" })).not.toBeInTheDocument();
+    } finally { state.router.dispose(); }
+  });
+
+  it("keeps an open composer on fresh permission revocation without permitting publish", async () => {
+    stubUploads();
+    const state = mountedTopic(topicRenderData(topic, { canReply: true }));
+    try {
+      const form = await screen.findByRole("form", { name: "Add a reply" });
+      fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+      const textarea = form.querySelector("textarea")!;
+      fireEvent.change(textarea, { target: { value: "Unsent content" } });
+      await state.update(topicRenderData(topic, { canReply: false }));
+      expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(textarea).toHaveValue("Unsent content");
+      expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(within(form).getByText("You cannot post replies here now. Your text remains in the editor.")).toBeVisible();
+      fireEvent.submit(form);
+      expect(state.mutation).not.toHaveBeenCalled();
+    } finally { state.router.dispose(); }
+  });
+
+  it("uses a single 409 topicClosed response to revalidate without retry or editor loss", async () => {
+    stubUploads();
+    let current = topicRenderData(topic, { canReply: true });
+    const action = vi.fn(async () => {
+      current = topicRenderData({ ...topic, isClosed: true, closureVersion: 1 }, { canReply: true });
+      return data({ error: "topicClosed" }, { status: 409 });
+    });
+    const loader = vi.fn(() => current);
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute, loader, action,
+    }], { initialEntries: ["/en/topics/typed-api"] });
+    try {
+      render(<I18nextProvider i18n={runtime("en", "ltr")}>
+        <HeaderAuthProvider initialUser={editorActor}><RouterProvider router={router}/></HeaderAuthProvider>
+      </I18nextProvider>);
+      const form = await screen.findByRole("form", { name: "Add a reply" });
+      fireEvent.click(within(form).getByRole("button", { name: "Advanced" }));
+      const textarea = form.querySelector("textarea")!;
+      fireEvent.change(textarea, { target: { value: "Race-sensitive reply" } });
+      await waitFor(() => expect(within(form).getByRole("button", { name: "Post reply" })).toBeEnabled());
+      fireEvent.click(within(form).getByRole("button", { name: "Post reply" }));
+      await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(1));
+      expect(await screen.findByText("New replies are disabled until this topic is reopened.")).toBeVisible();
+      expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(textarea).toHaveValue("Race-sensitive reply");
+      expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(action).toHaveBeenCalledTimes(1);
+    } finally { router.dispose(); }
   });
 });
