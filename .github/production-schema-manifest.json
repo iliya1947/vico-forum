@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0055_complaint_appeal_notifications",
+  "targetMigration": "0056_topic_closure",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "eb79d309c18570f407bdfe00f1883ce14e653d4e27123bc73e293bbdd3bf82dd"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -3937,6 +3937,18 @@
           "type": "boolean",
           "nullable": false,
           "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "is_closed",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "closure_version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -4010,7 +4022,15 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "forum_topics_closure_version_check",
+          "columns": [
+            "closure_version"
+          ],
+          "definitionSha256": "PENDING"
+        }
+      ],
       "indexes": [
         {
           "name": "forum_topics_author_id_idx",
@@ -7045,7 +7065,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "c49804195352b8b9d8525be695cab4fa43d83af01da5205216c6754e01fcdf45"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "admin_history_context_check",

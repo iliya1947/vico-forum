@@ -46,6 +46,9 @@ export interface ForumWriter {
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
   markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<{ topicId: string; postId: string }>;
   markNotificationRead(input:{userId:string;notificationId:string}):Promise<import("./forum-repository").ForumNotificationTarget>;
+  setTopicClosed(input: {
+    topicId: string; actorId: string; isClosed: boolean; expectedClosureVersion: number;
+  }): Promise<{ isClosed: boolean; closureVersion: number; changed: boolean }>;
   pinTopic(input: { topicId: string; actorId: string }): Promise<void>;
   unpinTopic(input: { topicId: string; actorId: string }): Promise<void>;
 }
@@ -246,6 +249,7 @@ export function createHyperdriveForumWriter(
     markReplyNotificationRead: ({ userId, notificationId }) => writeCorrection(
       (forum) => forum.markReplyNotificationRead(userId, notificationId),
     ),
+    setTopicClosed: (input) => writeCorrection((forum) => forum.setTopicClosed(input)),
     pinTopic: ({ topicId, actorId }) => writeCorrection(async (forum) => {
       await forum.pinTopic(topicId, actorId);
     }),

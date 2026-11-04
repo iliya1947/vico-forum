@@ -624,7 +624,7 @@ export const authzRoles = pgTable("authz_roles", {
 export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
-  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
+  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.topic.close', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
@@ -699,6 +699,8 @@ export const forumTopics = pgTable(
     // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
     currentTitleRevisionId: text("current_title_revision_id").notNull(),
     isSolved: boolean("is_solved").notNull().default(false),
+    isClosed: boolean("is_closed").notNull().default(false),
+    closureVersion: integer("closure_version").notNull().default(0),
     bestAnswerPostId: text("best_answer_post_id"),
     needsDetails: boolean("needs_details").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -706,6 +708,7 @@ export const forumTopics = pgTable(
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
+    check("forum_topics_closure_version_check", sql`${table.closureVersion} >= 0`),
   ],
 );
 
@@ -1775,7 +1778,8 @@ export const adminHistory = pgTable("admin_history", {
   ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')
   or (${table.action} in ('topic.pinned', 'topic.unpinned', 'topic.solved', 'topic.bestAnswerChanged',
     'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',
-    'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected') and ${table.targetType} = 'topic')
+    'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected',
+    'topic.closed', 'topic.reopened') and ${table.targetType} = 'topic')
   or (${table.action} = 'post.sourceLocaleCorrected' and ${table.targetType} = 'post')`),
   check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
   check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),

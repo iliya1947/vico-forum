@@ -18,6 +18,7 @@ export type HelpSignalHistoryEffect =
 export type ForumHistoryChange =
   | (TopicTarget & { action: "help.signalReviewed"; context: { signalId: string; kind: string; resolution: "accepted" | "rejected" | "superseded"; effect?: HelpSignalHistoryEffect } })
   | (TopicTarget & { action: "topic.pinned" | "topic.unpinned" | "topic.solved"; context: { before: boolean; after: boolean } })
+  | (TopicTarget & { action: "topic.closed" | "topic.reopened"; context: { before: boolean; after: boolean; previousVersion: number; version: number } })
   | (TopicTarget & { action: "topic.bestAnswerChanged"; context: { before: string | null; after: string } })
   | (TopicTarget & { action: "help.solutionModerationChanged"; context: { postId: string; before: string | null; after: string | null; viaSignalId?: string } })
   | (TopicTarget & { action: "help.duplicateConfirmed"; context: { relationshipId: string; originalTopicId: string; viaSignalId?: string } })
