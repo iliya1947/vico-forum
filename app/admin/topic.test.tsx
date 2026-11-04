@@ -8,6 +8,7 @@ import { adminAccess } from "./access";
 import { AdminTopicView } from "./topic";
 import type { AdminTopic } from "./topic-model";
 import { adminSectionPath } from "./forum-paths";
+import { forumTopicPath } from "../forum/paths";
 
 const access = adminAccess(new Set(["forum.post.history.read"]));
 const topic: AdminTopic = {
@@ -77,7 +78,7 @@ describe("AP-07 admin topic presentation", () => {
       .toEqual(["Message #1", "Message #3", "Message #2"]);
     expect(posts[1]?.querySelector("a.topic-message-parent-link")?.getAttribute("href")).toBe("#post-p1");
     expect(posts[1]?.querySelector("a.topic-message-anchor")?.getAttribute("href"))
-      .toBe("/en/topics/t/עברית#post-p3");
+      .toBe(forumTopicPath("en", topic.id) + "#post-p3");
     expect(node.querySelector("strong")).not.toBeNull();
   });
 
