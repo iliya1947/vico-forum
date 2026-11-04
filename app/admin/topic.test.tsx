@@ -36,7 +36,7 @@ const presentation = (contentId: string, content: string, dir: "ltr" | "rtl") =>
 let dispose = () => {};
 afterEach(() => { cleanup(); dispose(); });
 
-function mount() {
+function mount(longAuthorName?: string) {
   const values = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key, v]) => [key, v.source]));
   const common = Object.fromEntries(Object.entries(values).flatMap(([key, v]) =>
     typeof v === "string" ? [[key, v]] : Object.entries(v as Record<string, string>).map(([kind, text]) => [`${key}_${kind}`, text])));
@@ -45,7 +45,11 @@ function mount() {
       fallbackLocales: [], nativeName: "English", presentationMetadata: {} },
     fallbackLocales: [], resourcesByLocale: { en: { common } }, bundleVersions: { en: { common: "test" } }, staleKeys: {},
   });
-  const element = <AdminTopicView locale="en" access={access} topic={topic}
+  const fixture = longAuthorName ? {
+    ...topic, authorName: longAuthorName,
+    posts: topic.posts.map((post) => ({ ...post, authorName: longAuthorName })),
+  } : topic;
+  const element = <AdminTopicView locale="en" access={access} topic={fixture}
     titlePresentation={presentation(topic.id, "נושא", "rtl")}
     postPresentations={[
       presentation("p1", "Safe **bold**", "ltr"),
@@ -58,6 +62,14 @@ function mount() {
   return render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>).container;
 }
 describe("AP-07 admin topic presentation", () => {
+  it("preserves valid 96-character author names in the admin message cards", () => {
+    const author = "A".repeat(96);
+    const node = mount(author);
+    expect(node.querySelector(".admin-topic .topic-message-author strong")?.textContent).toBe(author);
+    expect(node.querySelector(".admin-topic > p")?.textContent).toContain(author);
+    expect(node.querySelectorAll(".admin-topic .topic-message")).toHaveLength(3);
+  });
+
   it("uses one admin shell, translated title and bounded breadcrumb hierarchy", () => {
     const node = mount();
     expect(node.querySelectorAll("main")).toHaveLength(1);

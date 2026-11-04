@@ -1,5 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
-import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
@@ -30,6 +30,19 @@ import type { ForumTopicReadState } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 
 export { topicAction as action } from "../forum/actions.server";
+
+/** React Router does not forward action/data cache headers to document or
+ * single-fetch responses without the matching route-module headers export.
+ * Keep public GET and parent headers unchanged; propagate only the action's
+ * cache policy and retry advice, leaving framework cookies untouched. */
+export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
+  const result = new Headers(parentHeaders);
+  for (const name of ["Cache-Control", "Retry-After"] as const) {
+    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
+    if (value !== null) result.set(name, value);
+  }
+  return result;
+}
 
 export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string; topicId?: string };

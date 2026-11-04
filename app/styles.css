@@ -9864,3 +9864,7 @@ a.topic-tag:focus-visible {
 .message-source-correction label { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .message-source-correction input[name="sourceLocale"] { max-width: 100%; min-width: 0; }
 .message-history-source { overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+
+/* AP-07: keep long valid author labels/content inside the admin topic grid. */
+.admin-topic { min-inline-size: 0; overflow-wrap: anywhere; }
+.admin-topic .topic-message { min-inline-size: 0; }
