@@ -1,5 +1,12 @@
 # Лира — ChatGPT-6
 
+## Текущее состояние AP-08
+
+- Работа Лиры по PR #283 остановлена владельцем.
+- Сохранённый implementation head: `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+- Нового назначения Лире по AP-08 сейчас нет; прежние строки «следующий ...» ниже относятся к историческим подзадачам и не являются текущей командой.
+- Coordinator overscope Миры сам по себе не является finding к реализации Лиры и не требует rollback/rewrite.
+
 ## AP-08 — implementation PR #283, подзадача 4/5 завершена
 
 - PR #283 остаётся **draft**, base/main `e39c36ccef29c6164706d826f26c57088a97fa20`, точный head `81f133a3213c5bdefd60e82fa7c09a411eca9252`. [Exact-head CI #41776910027](https://github.com/iliya1947/vico-forum/actions/runs/41776910027) — **SUCCESS**, оба jobs `checks` и `database` SUCCESS.
