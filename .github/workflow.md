@@ -2,16 +2,12 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-08 — bounded technical planning
-- Coordinator: Мира; technical planner/reviewer: Лёва; implementation после утверждения плана: Лира
-- Current main: `e39c36ccef29c6164706d826f26c57088a97fa20`
-- AP-07 implementation PR #282: merged в main
-- AP-08 scope: topic closure/reopen
-- Product decisions владельца зафиксированы:
-  - reopening поддерживается;
-  - close и reopen используют одну capability;
-  - обязательная причина не требуется ни для close, ни для reopen;
-  - closed topic запрещает новые replies всем без actor exceptions; чтобы ответить, тему сначала нужно reopen
-- Сохраняются permanent invariants: close/reopen не меняют solved/best answer/duplicate/messages; persisted closed-state и reply admission authoritative/concurrency-safe; committed publication replay сохраняется без нового reply/event
-- Следующий шаг: Лёва готовит bounded technical plan AP-08 на актуальном main и публикует его в #251 для coordinator review Миры
-- AP-08 implementation до утверждения technical plan не начинать; AP-09+ и production rollout не начинать
+- Текущий этап: AP-08 — technical plan подготовлен, coordinator review Миры
+- Coordinator: Мира; technical planner/reviewer: Лёва; implementation после approval: Лира
+- Current main / planning baseline: `e39c36ccef29c6164706d826f26c57088a97fa20`
+- AP-07 #282 merged; AP-08 implementation PR ещё не создан
+- AP-08: close/reopen одной capability, без обязательной причины; closed topic запрещает новые replies всем
+- План Лёвы: [comment #6621343128](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6621343128) и `.github/agents/codex-6.1-sol.md`; новый persisted state + closure CAS version; общий topic-row lock для closure/reply, existing committed receipt replay, atomic History, canonical action/shared Quick actions, сохранение mounted composer при closed denial
+- Proposed key `forum.topic.close`, initial moderator/admin grants — часть технического плана на review, ещё не implemented
+- Следующий шаг: Мира проверяет технический план и после approval назначает bounded implementation Лире
+- Implementation до approval, AP-09+, blocking и production rollout не начинать
