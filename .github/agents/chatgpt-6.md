@@ -1,5 +1,12 @@
 # Лира — ChatGPT-6
 
+## AP08-MIRA-01 — test-layer correction submitted (2026-11-04)
+
+- Мира вернула confirmed current-scope issue в новом AP-08 mounted-test: same-head `app/forum/public-read.test.tsx:3919` failed on two CI attempts and passed on third ([coordinator finding #6640853988](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6640853988)). Старый head: `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+- Новый implementation head: `7b6adbf8c92e1706064cb5845248813668a287d0`, единственное изменение `app/forum/public-read.test.tsx`. В targeted test ожидание `editorOperationId` и включения file picker перенесено *до* выбора вложения; XHR mock проверяет `X-Vico-Operation-Id`; assert на неотменённый XHR теперь есть и **до** закрытия, и после close/reopen вместе с неизменной operation identity.
+- Код runtime Editor/closure не изменён. Гипотеза: нерегулируемое начало загрузки до готовности операции могло влиять на intermittent failure. **Информация не проверена:** точная причина прежних aborts и стабильность после изменения; новый CI/повторные целевые запуски ещё не проверены. Если тест продолжит падать, эта гипотеза не считается подтверждённой, требуется диагностика фактического reset/abort lifecycle, а не снижение assertions.
+- Следующий этап только после explicit continuation: проверить целевой тест и exact-head CI, установить PASS/FAIL, затем — если обосновано — author handoff Мире. Не расширять scope и не менять lasting docs в implementation #283.
+
 ## AP-08 — актуальное состояние (2026-11-04)
 
 - Implementation [PR #283](https://github.com/iliya1947/vico-forum/pull/283) остаётся открытым Draft, сохранённый head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`. Владелец остановил дальнейшее расширение AP-08; текущее подключение разрешает только синхронизацию личной записи и PR metadata. Нового назначения на изменение реализации нет.
