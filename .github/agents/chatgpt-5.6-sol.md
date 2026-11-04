@@ -1,15 +1,19 @@
 # Мира — ChatGPT-5.6 Sol
 
-## AP-07 coordinator final state
+## AP-07 closeout
 
-1. Coordinator whole-PR review PR #282 завершён: **PASS** на exact head `985160867001fd42b3ad2614262927aab3edfb3e`.
-2. Base/main: `d6fc875a596ca4f58e64c1d8e1373dbd2fcb67ea`.
-3. Exact-head CI #41755521661 — SUCCESS; PR #282 открыт, Ready, mergeable.
-4. В coordinator review новых confirmed current-scope defects не найдено.
-5. Лёва завершил независимую whole-PR technical review того же exact head: **PASS**, open current-scope defects: 0.
-6. По отчёту Лёвы targeted actual Worker/Better Auth/PostgreSQL/Chromium retest исправлений AP07-ACC-01/02 завершён: 19 сгруппированных проверок PASS. AP07-ACC-01 подтверждён на конечном HTTP envelope; AP07-ACC-02 — на EN/RU/HE × 320/768 без прежнего admin overflow.
-7. Implementation во время финального review не менялся. Дополнительный круг Миры не требуется.
+1. PR #282 merged в `main` commit `e39c36ccef29c6164706d826f26c57088a97fa20`.
+2. Coordinator и independent technical review AP-07 завершены PASS; незакрытых current-scope defects нет.
+3. AP-07 закрыт как bounded package; production rollout этим не разрешён.
 
-## Следующий шаг
+## AP-08 product gate
 
-Владелец выполняет merge PR #282. После merge можно переходить к AP-08; production rollout отдельно не разрешён.
+Permanent `docs/ADMIN_PANEL.md` требует до topic-closure implementation явно решить:
+1. reopening — существует или нет;
+2. permission relationship reopen к close;
+3. reason rule отдельно для close/reopen;
+4. actor exception для reply после closure.
+
+Базовые invariants уже утверждены: closure запрещает новые replies, не меняет solved/best-answer/duplicate/messages, authoritative closed-state должен сериализоваться с reply admission, committed replay сохраняется, implicit moderator bypass отсутствует.
+
+Ранее зафиксированных owner decisions по четырём пунктам в проверенном #251 не найдено. Лёве planning до решения владельца не передавать.
