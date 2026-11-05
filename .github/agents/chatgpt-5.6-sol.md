@@ -1,5 +1,25 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP09-MIRA-05 — coordinator review PR #289
+
+**Stable exact head:** `7c0f7b513e6908f98151665a6839626b91f58fac`.
+
+**Coordinator verdict: PASS. AP09-MIRA-05 CLOSED. Confirmed current-scope defects: 0.**
+
+Independent verification:
+- #289 Draft/open/mergeable; base/current main `386023ce892044e623ec3d24f8a724e92af61a31`;
+- main has no drift from base;
+- diff exactly one file, 2 additions / 2 deletions;
+- both race-prone synchronous `Public details` assertions after recovery are now positive-state `await waitFor(...)`;
+- existing loader-count, action-count, history-state, same-path, privileged-DOM and terminal both-rights-revoked assertions remain unchanged;
+- runtime code/schema/dependencies/docs untouched;
+- exact-head CI #41953193998 SUCCESS;
+- job logs: test file 6/6 PASS, application 143/143 files and 1888/1888 tests; PostgreSQL 41/41 files and 483/483 tests; all applicable steps SUCCESS.
+
+The previous service note that Codex review was unnecessary was incorrect: current AGENTS requires independent technical review after coordinator PASS even for this test-only implementation PR. Next reviewer: Лёва, same exact head.
+
+#288 remains Draft until #289 is accepted and merged.
+
 ## AP-09 documentation closeout — подзадача 3/3
 
 **Docs-content verdict: PASS. Overall closeout: BLOCKED by `AP09-MIRA-05`.**
