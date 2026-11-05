@@ -126,7 +126,8 @@
 - Appeal target — exact block/measure record. Этот flow не открывает право оспаривать unrelated Complaints Decisions, другие жалобы, другие меры или произвольные административные действия.
 - Собственная block-status/appeal surface должна оставаться достижимой при любом выбранном restriction set; иначе обязательное право апелляции стало бы недоступно.
 - Existing Complaints Appeal domain остаётся отдельным: он меняет effective outcome Complaint Decision и, по текущему контракту, не заявляет административную санкцию. AP-10 не должен смешивать эти две апелляционные сущности.
-- Ещё не зафиксированы lifecycle детали block appeal (например quota/repeat/pending/что происходит при expiry/lift во время review); их нужно определить отдельно до технического плана, если они materially влияют на implementation.
+- Для одной конкретной меры пользователь может подать до **3 block appeals**. Лимит quota/repeat закрыт owner decision и больше не является открытым вопросом.
+- Ещё не зафиксировано только поведение уже поданной/pending block appeal при изменении, expiry или explicit lift меры; это не выводить автоматически из Complaints Appeal.
 
 
 ## AP-10 owner decision — privileged moderator/admin targets
