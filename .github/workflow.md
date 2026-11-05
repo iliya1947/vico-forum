@@ -14,11 +14,10 @@
   - expiry/lift снимает restrictions этой block-записи и не меняет roles/grants/overrides;
   - возможные presets в будущем — только shortcuts для предварительного выбора галочек, не отдельная policy model
 - Approved appeal invariant: block appeal ≠ Complaint. Block appeal подаёт уже наказанный пользователь против exact administrative measure; он не является restriction и не отключается галочками; entry point на own account page рядом с соответствующей мерой; Complaint/Complaint Appeal остаются отдельным domain и не подменяют AP-10 appeal
-- Multiple active measures допустимы только как отдельные санкции за разные нарушения; effective restrictions = union активных measures; expiry/lift/overturn одной меры убирает только её вклад
 - Own block-status/appeal surface должна оставаться достижимой независимо от restriction set
 - Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
 - Техническая форма senior/head-admin authority пока не зафиксирована; не hard-code role name, сохранить permission-based model
 - Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
-- Следующий product step: определить минимальный каталог restrictions и логические группы, учитывая фактические возможности текущего продукта
+- Следующий product step: завершить минимальный каталог restrictions и логические группы, проверяя каждый пункт по цели системы и фактическим возможностям текущего продукта; не проектировать measure aggregation/appeal lifecycle заранее
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
 - После catalog/grouping: отдельно решить reason rules и access-manager/self-block safety; затем передать Лёве AP-10 technical planning
