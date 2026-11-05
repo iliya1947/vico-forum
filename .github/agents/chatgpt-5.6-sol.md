@@ -75,6 +75,59 @@ Child restrictions:
 - authoritative enforcement нужен на server/domain boundary каждого реально запрещённого действия.
 
 
+## AP-10 reason rules — purpose-first draft for owner review
+
+Не owner decision.
+
+### Зачем reason вообще нужен
+
+Reason нужен не ради формы и не ради красивого History. Он должен:
+1. объяснять наказанному пользователю, почему к нему применили меру;
+2. позволять следующему администратору понять, почему sanction была назначена/изменена/снята;
+3. сохранять смысл административного решения в History без необходимости восстанавливать его из чужих private workflows.
+
+### Кандидат правил
+
+1. **Создание temporary/permanent measure — reason обязателен.**
+   - Это user-visible объяснение, достаточное, чтобы понять основание административной меры.
+   - Не требовать существования Complaint/Case: мера может возникнуть из другого moderation context.
+   - Не копировать private Complaint explanations, reporter identity или иные закрытые данные.
+
+2. **Ручное изменение restriction set или срока — reason обязателен.**
+   - Новая причина объясняет именно изменение sanction.
+   - Исходный reason назначения не перезаписывается.
+   - History должен показывать before/after + reason конкретного изменения.
+
+3. **Explicit lift до автоматического expiry — reason обязателен.**
+   - Другой authorized admin тоже может снять меру, поэтому без объяснения History теряет смысл.
+   - Lift reason не обязан означать, что исходная мера была ошибочной: это только объяснение, почему её действие прекращено вручную.
+
+4. **Automatic expiry — нового reason нет.**
+   - Это не новое administrative decision, а заранее заданное окончание срока.
+   - Не создавать synthetic admin/system reason/event только ради expiry.
+
+5. **Denied / stale / failed / no-op / replay — нового reason/history event нет.**
+   - Reason относится к реально committed administrative transition.
+
+6. **Если в будущем authoritative workflow сам даёт persisted основание изменения**, например отдельный review/appeal result, не заставлять администратора дублировать тот же смысл ручным текстом. Точная интеграция определяется только вместе с таким workflow.
+
+### Presentation boundary
+
+- reason меры и причины её последующих изменений должны быть доступны самому санкционированному пользователю вместе с соответствующей measure/history surface;
+- ordinary Admin History сохраняет bounded useful reason;
+- private moderation evidence/notes не раскрываются через reason;
+- отдельный internal-note слой для AP-10 сейчас не нужен без подтверждённой product-задачи.
+
+### Не проектировать сейчас
+
+- глобальную taxonomy нарушений;
+- mandatory reason categories;
+- шаблоны/справочник причин;
+- отдельный private moderator-note workflow;
+- связь reason с Complaint Case как обязательное условие;
+- редактирование исторических reasons задним числом.
+
+
 ## AP-10 measure aggregation — OPEN, previous drafts withdrawn
 
 Два прежних черновика Миры были ошибочно построены от структуры данных:
