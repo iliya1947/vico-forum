@@ -20,4 +20,6 @@
 - Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
 - Следующий product step: owner review restriction catalog и reason rules; затем решить только действительно относящиеся к AP-10 self-target/target-authority вопросы
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
-- После catalog/grouping: отдельно решить reason rules и access-manager/self-block safety; затем передать Лёве AP-10 technical planning
+- После catalog/grouping: отдельно завершить reason rules и действительно относящиеся к AP-10 self-target/target-authority решения; затем передать Лёве AP-10 technical planning
+
+- Post-admin follow-up: redesign owner/authorization recovery model; current last-access-manager invariant (`AuthorizationLockoutError` / `managers_ever_existed` / manager count) owner признал ошибочной целевой архитектурой. Не менять до завершения админ-панели; затем отдельная задача.
