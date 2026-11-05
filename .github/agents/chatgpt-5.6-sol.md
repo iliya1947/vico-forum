@@ -164,7 +164,7 @@ Owner decision:
 5. Даже если measure когда-либо будет связана с Complaint Case, оба workflows сохраняют собственные identities, permissions, outcomes и history.
 6. Для одной конкретной administrative measure пользователь может подать до **3 block appeals**. Это уже owner decision; quota/repeat не считать открытым вопросом.
 7. Нельзя автоматически выводить остальные block-appeal outcomes/lifecycle из текущего Complaints Appeal contract.
-8. Поведение pending block appeal при expiry, explicit lift или изменении sanction пока OPEN и требует отдельного owner decision.
+8. Pending block appeal относится к конкретному состоянию меры: expiry или explicit lift закрывают её как утратившую предмет; существенное изменение меры закрывает её как superseded, а изменённая мера может быть оспорена отдельно.
 
 
 ## AP-10 purpose filter
