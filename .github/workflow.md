@@ -2,21 +2,19 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 — correction после второго coordinator whole-PR review
+- Текущий этап: AP-09 — третий coordinator whole-PR review, подзадача 1/3 завершена
 - Coordinator: Мира
 - Technical planner/reviewer: Лёва
 - Исполнитель correction: Лира
 - Implementation PR: #287
-- Reviewed exact head: `13bae37dd3b7d033b271788fadb7e8be63d66a43`
-- Superseded original reviewed head: `f5117f22bd891d3892357fc984009388481001f7`
+- Stable exact head: `b85c3809befe3a1dcc83fe654dde4cd093f625ba`
+- Superseded reviewed head: `13bae37dd3b7d033b271788fadb7e8be63d66a43`
 - Baseline/current main: `2651d2bf7de7212068c54674dca7d90716ea92c3`
-- PR state на reviewed head: Draft/open/mergeable
-- Exact-head CI #41939426331: SUCCESS — app 143/143 files, 1887/1887 tests; PostgreSQL 41/41 files, 483/483 tests
-- Coordinator final verdict: CHANGES REQUIRED — 1 confirmed current-scope defect `AP09-MIRA-04`
-- AP09-MIRA-02/03: closed
-- Correction package: передан Лире через #251
-- После correction: новый stable exact head + применимый full CI; coordinator whole-PR cycle начинается заново
-- Codex technical review: только после нового coordinator PASS
+- PR state: Draft/open/mergeable
+- Correction delta: 2 commits, 2 files — `app/routes/admin-user.tsx` + `app/admin/users-authorization.test.tsx`
+- Exact-head CI #41941892340: SUCCESS — app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests
+- Coordinator review next: подзадача 2/3 — verify AP09-MIRA-04 useRef recovery lifecycle and repeated denial regression
+- Codex technical review: только после coordinator PASS
 - AP-10/blocking/Settings/Stage 6/production вне scope
 - Lasting docs / PROJECT_STATE — отдельный documentation PR после принятой реализации
 - Марк не назначен
