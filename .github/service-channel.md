@@ -71,3 +71,16 @@
 - Coordinator PASS и exact-head green CI достаточны для этого correction.
 - Предыдущее назначение Лёвы #6647857514 отменено этим решением владельца.
 - PR #289 переведён из Draft в Ready; следующий шаг владельца — merge #289.
+
+
+## AP-09 documentation closeout — final PASS
+
+- PR #289 merged в `main`, merge commit `0521669eadc3b927b3f8d0651b98291ffda137a2`.
+- Docs branch #288 rebased/synchronized onto that current main and five docs changes reapplied without implementation changes.
+- Final #288 exact head: `d6ecb2005da02b4eaf4528b17f0530767ebddadd`; base: `0521669eadc3b927b3f8d0651b98291ffda137a2`.
+- Diff remains exactly five documentation files: `PROJECT_STATE.md`, `docs/ADMIN_PANEL.md`, `docs/auth/AUTHORIZATION.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY_11.md`.
+- HISTORY_11 and history index additionally record AP09-MIRA-05 / #289 test stabilization and the owner's explicit Codex-review exemption for that single test-only correction.
+- Final docs consistency/overscope verdict: **PASS**.
+- Fresh CI #41955225394 on synchronized head: **SUCCESS** — application 143/143 files, 1888/1888 tests; `app/admin/users-authorization.test.tsx` 6/6 PASS; PostgreSQL 41/41 files, 483/483 tests; lint/typecheck/build/UI preview/migration/schema/manifest/runtime/Worker checks SUCCESS.
+- #288 is **Ready/open/mergeable**.
+- Следующий шаг владельца: merge #288. После этого AP-09 closeout завершён.
