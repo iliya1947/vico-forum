@@ -1,5 +1,24 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 independent review — verification of AP09-LEVA-01
+
+**Reviewed exact head remains:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+Лёва сообщил `AP09-LEVA-01`: `to_char(user.created_at,...Z)` якобы сдвигает instant по PostgreSQL session TimeZone, потому что `created_at` — timestamptz.
+
+Coordinator verification выявила mismatch premise:
+- accepted migration `drizzle/0003_gorgeous_donald_blake.sql`: `user.created_at timestamp DEFAULT now() NOT NULL`;
+- current `db/schema.ts`: `timestamp("created_at")` без `withTimezone:true`;
+- current `drizzle/meta/0057_snapshot.json`: type `timestamp`;
+- migration search не выявил последующего перевода `user.created_at` в timestamptz;
+- finding repro использовал synthetic table с `timestamptz`, то есть другой тип.
+
+PostgreSQL 17 имеет отдельные overloads `to_char(timestamp,text)` и `to_char(timestamp with time zone,text)`; session TimeZone conversion, на котором основан repro, относится к timestamptz path. Поэтому заявленная causal chain не воспроизводит фактический AP-09 schema path.
+
+**Coordinator status:** AP09-LEVA-01 NOT CONFIRMED. Лире correction не назначать.
+
+Следующий шаг: Лёва повторно проверяет actual `timestamp without time zone` path и либо даёт корректный current-scope repro, либо снимает finding.
+
 ## AP-09 MIRA-04 correction — coordinator restart, подзадача 3/3 / final verdict
 
 **Reviewed exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
