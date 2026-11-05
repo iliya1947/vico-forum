@@ -1,76 +1,78 @@
 # Мира — ChatGPT-5.6 Sol
 
-## AP-10 restriction catalog — draft for owner review
+## AP-10 restriction catalog — purpose-first draft for owner review
 
-Не зафиксировано как owner decision. После dependency/gainularity sweep кандидат строится по понятным пользовательским действиям, а не по permission keys или внутренним route/surface деталям.
+Не owner decision. Каждый пункт проверен по вопросу: какую конкретную вредную возможность он позволяет прекратить, не отбирая у пользователя несвязанные функции.
 
-### 1. Публикация и участие
+### 1. Публикация и участие — оставить
 
-- создавать новые темы / Help-вопросы;
-- отправлять ответы;
-- загружать новые вложения.
+- **Создавать новые темы / Help-вопросы.**
+  Практический смысл: остановить спам/флуд новыми обсуждениями, не запрещая пользователю отвечать в существующих.
+- **Отправлять ответы.**
+  Практический смысл: остановить флуд, harassment и другое вредное участие в чужих/существующих темах, не обязательно запрещая создание собственных тем.
+- **Загружать новые вложения.**
+  Практический смысл: отдельно остановить вредные/нежелательные файлы и расход storage. Это должна быть самостоятельная restriction, потому что upload имеет собственный direct API lifecycle и не должен оставаться обходом при запрете публикации.
 
-Логика:
-- topic creation и reply creation остаются разными ограничениями: санкция «не создавать новые темы, но разрешить отвечать» имеет понятный продуктовый смысл;
-- Help-вопрос не требует отдельной санкции, пока он использует ту же пользовательскую сущность/способ участия, что создание темы; техническая карта enforcement может различаться;
-- upload остаётся отдельным ограничением, потому что можно разрешить текстовое участие, но запретить новые файлы.
+### 2. Изменение собственного контента — оставить только реальные санкционные цели
 
-### 2. Изменение собственного контента и профиля
+- **Редактировать свои опубликованные сообщения — оставить.**
+  Практический смысл: пользователь может менять уже опубликованный материал после модерации и снова добавлять запрещённое содержимое.
+- **Изменять публичный профиль — оставить.**
+  Практический смысл: профиль реально редактируется сейчас (bio / GitHub / website) и может использоваться для abusive/spam/phishing content.
 
-- редактировать свои опубликованные сообщения;
-- управлять решением / лучшим ответом собственной темы;
-- изменять профиль.
+Не делать отдельными restrictions:
+- **source-locale correction** — внутренняя техническая гранулярность; отдельной модерационной цели нет;
+- **управление solved / best answer своей темы** — отдельный punitive restriction сейчас не оправдан: действие не является самостоятельным каналом публикации/контакта/ресурсного abuse, а административная коррекция уже существует. Не добавлять без реального abuse-case.
 
-Не делать отдельной галочкой:
-- own source-locale correction — это слишком техническая гранулярность для sanction UI; при необходимости она следует политике изменения собственного контента, а точную enforcement-связь определяет technical plan.
+### 3. Обращения к модерации — оставить submission, не ограничивать appeals
 
-### 3. Обращения к модерации
+- **Отправлять Complaints — оставить.**
+  Практический смысл: targeted restriction против систематически ложных/злонамеренных reports. Existing rate limit ограничивает объём, но не решает сам факт устойчивого misuse.
+- **Отправлять Help signals — оставить.**
+  Практический смысл: отдельный moderation-input channel, который также может использоваться для спама/misuse.
 
-- отправлять Complaints / пользовательские жалобы;
-- отправлять Help signals;
-- подавать другие domain appeals, не относящиеся к текущей block/measure.
+Не включать в restriction catalog:
+- **Complaint Appeals, Help duplicate appeals и другие существующие domain appeals**;
+- **AP-10 block appeal**.
 
-Обязательное исключение:
-- appeal exact текущей block/measure никогда не является restriction и всегда доступен на own account page.
+Причина: appeal — путь пересмотра уже принятого решения/меры. Санкция не должна сама отключать механизм её или другого moderation decision пересмотра. Eligibility каждого appeal по-прежнему определяется его собственным domain contract.
 
-### 4. Ресурсоёмкие пользовательские функции
+### 4. Ресурсоёмкие действия — оставить
 
-- генерировать переводы.
+- **Генерировать переводы.**
+  Практический смысл: отдельная code-backed generation capability может расходовать provider/queue/allowance resources независимо от обычного чтения форума.
 
-Пока это единственная подтверждённая отдельная пользовательская функция такого типа. Не создавать группу из будущих/неimplemented возможностей.
+### 5. Служебные полномочия — оставить только для privileged target
 
-### 5. Служебные полномочия — показывать только для privileged target
+Эта группа не относится к обычным пользователям. Она нужна только когда owner/senior-head-admin authority применяет меру к пользователю с реальными moderator/admin capabilities.
 
-Эта группа вообще не показывается для обычного пользователя.
+Child restrictions:
+- **Forum / Help moderation** — forum/topic/solution/Help moderation и связанные private moderation reads;
+- **Complaints moderation** — Case/Appeal review, priority/identity access и связанные mutations;
+- **Security review** — private attachment-security review surface;
+- **Users / access administration** — Users admin read, roles/permissions management и ordinary admin History/private administration surfaces.
 
-Если target имеет модераторскую/административную authority и actor имеет повышенное право воздействовать на такой target, кандидат:
-- ограничить Forum/Help moderation;
-- ограничить Complaints moderation/review;
-- ограничить Users / roles / permissions administration.
+Правило семьи: выбранная service restriction подавляет и privileged reads, и mutations этой области; иначе пользователь сохраняет чувствительный доступ после suspension. Exact permission mapping — technical planning после owner approval, не часть product catalog.
 
-Логика:
-- restriction соответствующей служебной области должен блокировать и её privileged reads, и mutations; отдельная галочка «private admin reads» создаёт искусственную техническую гранулярность;
-- ordinary block manager не получает эту группу для moderator/admin targets;
-- owner никогда не является допустимым target;
-- exact mapping current permissions → эти продуктовые области — техническая задача после owner approval.
+### 6. Не включать в restriction catalog
 
-### Не включать в restriction catalog
-
-- login/session restriction;
+- login/session;
 - public reading;
 - notifications;
-- собственную account/block-status surface;
-- exact block/measure appeal;
-- отдельные internal permission keys, route names или implementation details;
-- future/unimplemented capabilities.
+- read-only own account / block-status surface;
+- любые appeal submission flows;
+- own solved/best-answer management;
+- source-locale correction как отдельный пункт;
+- future/unimplemented capabilities;
+- internal permission keys или route names как пользовательские checkbox labels.
 
-### Dependency rules
+### 7. Group behavior
 
-- group checkbox — только UI convenience: выбирает/снимает все child restrictions;
-- child restrictions остаются independently persisted;
-- restriction set additive и не переписывает roles/grants/overrides;
-- если одна выбранная санкция фактически делает другую временно недостижимой, это не превращает их в один тип санкции; после частичного lift остаётся точный сохранённый набор;
-- enforcement должен происходить в authoritative server/domain boundaries, а не только скрытием UI.
+- group checkbox — UI shortcut выбрать/снять все child restrictions;
+- child restrictions остаются самостоятельно выбираемыми;
+- catalog описывает продуктовые действия, а не копирует RBAC permission catalog;
+- restriction не переписывает role/grants/overrides;
+- authoritative enforcement нужен на server/domain boundary каждого реально запрещённого действия.
 
 
 ## AP-10 measure aggregation — OPEN, previous drafts withdrawn
