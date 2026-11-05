@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "33d905f654dfdcef87b5b5f5282d62795a8fa59537bd544d2518016b847aee07"
         }
       ],
       "indexes": []
@@ -7065,7 +7065,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c8d22b9f8b6c3051bfafdcd62454d0538074677c4f1232a9034838ecca1dda4b"
         },
         {
           "name": "admin_history_context_check",
