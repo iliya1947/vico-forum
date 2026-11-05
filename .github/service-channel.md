@@ -6,7 +6,7 @@
 
 - AP-01–AP-09 merged в main. AP-09 implementation #287, test stabilization #289 и documentation closeout #288 завершены; current main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, migration head 0057.
 - Actual authenticated browser/deployed AP-08/AP-09 flows не заявляются выполненными; production/release boundary остаётся отдельно.
-- AP-10 technical planning назначен Лёве в #6667343744. [Исходный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146) локально исправлен по coordinator review #6667923255 и owner decisions #6669655343/#6669734702; [revision delta](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497). Требуется повторный coordinator review; implementation не начат, code/DB/production не менялись.
+- AP-10 technical planning назначен Лёве в #6667343744. [Исходный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146) локально исправлен по coordinator review #6667923255 и owner decisions #6669655343/#6669734702; [revision delta](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497). AP10-PLAN-MIRA-01..04 приняты Мирой #6670166694; [исправления AP10-PLAN-MIRA-05..06](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257) ожидают повторного review. Implementation не начат, code/DB/production не менялись.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -39,14 +39,14 @@
 
 - Owner decision закрыл прежнюю §9 развилку: разные нарушения создают разные меры. Single-active модель не применяется; повторного owner вопроса нет.
 - Отдельные measures имеют независимые identity/reason/restrictions/expiry/lift/version/issuer floor/history/quota. Enforcement — EXISTS действующей меры с нужным restriction key; снятие/истечение A не убирает effect B. Без aggregation store/precedence engine/current-head/UNIQUE active target.
-- Последовательность appeals обеспечивается measure lock, unique ordinal и partial UNIQUE pending по measure ID. Replay не расходует слот; pending A не блокирует B; обычный edit не закрывает pending. Expired appeal при продлении меры не возобновляется.
+- Последовательность appeals обеспечивается measure lock, unique ordinal и partial UNIQUE pending по measure ID. Replay не расходует слот; pending A не блокирует B; обычный edit не закрывает pending. Expired/lifted мера terminal; её продление или возобновление запрещено. Повторное наказание создаёт новую measure с новой identity/reason/lifecycle/quota.
 - Accepted + change сохраняет identity/quota; accepted + lift не перезаписывается как moot. Fresh current version/authority, CAS, transactional History и rollback обязательны.
 - Raw own document/.data/action/fetcher/errors проверяются на отсутствие admin identity; одного сокрытия в UI недостаточно.
 - Delta для Миры: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497. Полный актуальный technical plan — личный файл Лёвы; unchanged scope исходного плана сохраняется.
 
 ## Следующий шаг
 
-- **Мира:** повторный coordinator review revision AP10-PLAN-MIRA-01..04 и актуального личного плана. Owner решения уже получены; новых owner product blockers нет. После approval назначить Лиру на реализацию.
+- **Мира:** повторный coordinator review только AP10-PLAN-MIRA-05..06: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257. AP10-PLAN-MIRA-01..04 уже приняты; terminal lifecycle и explicit-grant-only исправлены по owner #6670294050. После approval назначить Лиру на реализацию.
 - Implementation до plan approval не начинать. Лёва/агенты друг друга не вызывают; technical context передан в #251.
 - Lasting docs/PROJECT_STATE — отдельным documentation PR после принятой реализации. Общая last-manager очистка — после завершения админ-панели.
 - AP-11/Settings/Stage 6/production rollout не начинались; Марк не назначен.
@@ -78,3 +78,9 @@
 3. Доступ выдаётся только явным grant через существующую dynamic authorization model.
 4. Privileged-target elevated capability также без initial grants.
 5. Expired/lifted measure terminal; повторное наказание = новая measure.
+
+## AP-10 revision AP10-PLAN-MIRA-05..06
+
+- Terminal boundary применяется в общем transition primitive после measure lock; stale edit/review после expiry/lift не меняет меру/outcome/History. Expired→future и materialize-before-extension ветки удалены из актуального плана.
+- Обе block-management capabilities исключаются из всех built-in initial grants, включая catalog-all seed admin; никакого migration backfill. Owner binding не выдаёт capability. Доступ только через explicit dynamic grant; тестовые actors получают явные grants.
+- [Delta для Миры](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257); implementation/DB/production не менялись.
