@@ -1,5 +1,43 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 corrected head — coordinator restart, подзадача 4/4 / final verdict
+
+**Reviewed exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+
+**Final coordinator verdict: CHANGES REQUIRED. Подтверждённых current-scope defects: 1 — `AP09-MIRA-04`.**
+
+Final gap-sweep подтвердил:
+- AP09-MIRA-02 закрыт;
+- AP09-MIRA-03 закрыт;
+- других current-scope defects в correction delta и ранее проверенном неизменённом AP-09 scope не найдено;
+- actual authenticated Chromium→Worker→PostgreSQL AP-09 browser flow не выполнялся и не назначен mandatory gate. **Информация не проверена** в этой границе.
+
+### AP09-MIRA-04 — final confirmation
+
+Первый denied mutation recovery корректен, но guard lifetime неверен:
+- первый thrown management 403 → один same-URL GET;
+- mutation не replay;
+- Users-read retained → read-only detail;
+- marker `ap09AccessRechecked: true` остаётся в history location state;
+- после последующего возврата management новая loader/reload/revalidation может снова показать controls на той же history entry;
+- новый revoke + submit снова даёт canonical 403;
+- ErrorBoundary видит старый marker и не запускает fresh GET;
+- actor снова получает terminal 403 вместо всё ещё разрешённого read-only detail.
+
+Следовательно guard должен ограничивать retry **одного denial event**, а не permanently consume recovery всей history entry.
+
+### Bounded correction package Лире
+
+Исправить только `AP09-MIRA-04`:
+1. каждый независимый fresh management denial может вызвать не более одного fresh GET recovery;
+2. успешный recovery не должен блокировать последующие независимые denial cycles;
+3. если `admin.users.read` тоже отозван, fail-closed 403 остаётся terminal без loop;
+4. mutation не retry/replay;
+5. regression должен доказать минимум два независимых grant/revoke denial cycles на одной history entry и сохранить existing first-denial/both-revoked behavior;
+6. после correction предоставить новый stable exact head + применимый full CI.
+
+После implementation change coordinator whole-PR cycle начинается заново. Лёва не подключается до coordinator PASS.
+
 ## AP-09 corrected head — coordinator restart, подзадача 3/4
 
 **Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
