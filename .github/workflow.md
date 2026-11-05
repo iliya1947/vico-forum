@@ -13,6 +13,8 @@
   - temporary/permanent duration независим от restriction set;
   - expiry/lift снимает restrictions этой block-записи и не меняет roles/grants/overrides;
   - возможные presets в будущем — только shortcuts для предварительного выбора галочек, не отдельная policy model
+- Approved appeal invariant: appeal на конкретную block/measure не является restriction; его нельзя отключить галочками; entry point на собственной account page рядом со статусом block; appeal target только exact block/measure; Complaints Appeals остаются отдельным domain
+- Own block-status/appeal surface должна оставаться достижимой независимо от restriction set
 - Следующий product step: определить минимальный каталог restrictions и логические группы, учитывая фактические возможности текущего продукта
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
 - После catalog/grouping: отдельно решить reason rules и access-manager/self-block safety; затем передать Лёве AP-10 technical planning
