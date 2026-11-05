@@ -84,3 +84,22 @@
 - Fresh CI #41955225394 on synchronized head: **SUCCESS** — application 143/143 files, 1888/1888 tests; `app/admin/users-authorization.test.tsx` 6/6 PASS; PostgreSQL 41/41 files, 483/483 tests; lint/typecheck/build/UI preview/migration/schema/manifest/runtime/Worker checks SUCCESS.
 - #288 is **Ready/open/mergeable**.
 - Следующий шаг владельца: merge #288. После этого AP-09 closeout завершён.
+
+
+## AP-09 completed / AP-10 product gate
+
+- PR #288 merged в `main` 2026-11-05, merge commit `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+- AP-09 полностью завершён: implementation #287, test stabilization #289 и отдельный documentation closeout #288 находятся в `main`.
+- `PROJECT_STATE.md` теперь фиксирует Admin Panel through AP-09 и repository migration head 0057.
+- Подтверждённых незакрытых AP-09 current-scope defects нет.
+- Следующий пакет — AP-10 block/lift enforcement — **не начинается автоматически**.
+- До технического планирования владелец должен определить продуктовую blocking policy:
+  1. влияет ли block на login и уже существующие sessions;
+  2. остаётся ли public/private reading;
+  3. какие participation writes блокируются: topics, Help questions, replies;
+  4. блокируются ли own edits и profile changes;
+  5. блокируются ли signals, appeals, uploads и translation generation;
+  6. блокируются ли admin actions, допускается ли self-block и как защищаются access managers;
+  7. обязательна ли reason отдельно для temporary block, permanent block и explicit lift;
+  8. какие возможности автоматически восстанавливаются при expiry/lift.
+- Эти решения являются product gate из `docs/ADMIN_PANEL.md`, а не техническими defaults. До них Лёва не получает planning task AP-10.
