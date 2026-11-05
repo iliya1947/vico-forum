@@ -1,5 +1,36 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 MIRA-04 correction — coordinator restart, подзадача 3/3 / final verdict
+
+**Reviewed exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+**Final coordinator verdict: PASS. Confirmed current-scope defects: 0.**
+
+Final gap-sweep:
+- head не сдвинулся;
+- `main` идентичен baseline `2651d2bf7de7212068c54674dca7d90716ea92c3`;
+- correction delta ограничен двумя уже проверенными файлами;
+- `AP09-MIRA-01..04` закрыты;
+- direct loader 403 остаётся fail-closed и максимум вызывает один лишний recovery GET без loop/authority expansion;
+- exact-head CI #41941892340 остаётся SUCCESS: app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow не выполнялся. **Информация не проверена.** Отдельный mandatory browser/owner visual gate не назначен.
+
+Следующий этап: independent technical review Лёвы того же stable exact head.
+
+## AP-09 MIRA-04 correction — coordinator restart, подзадача 2/3
+
+**Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+**Verdict 2/3: PASS. `AP09-MIRA-04` CLOSED. Новых current-scope defects: 0.**
+
+Проверено:
+- первый denied canonical action вызывает один same-URL GET без mutation replay;
+- successful read-only recovery размонтирует error subtree и сбрасывает recovery guard для следующего независимого denial;
+- Users-read loss оставляет тот же mounted error boundary и `useRef=true`, поэтому второго GET/loop нет;
+- React Router 8.3.1 source подтверждает stable errorElement/error-subtree lifecycle;
+- mounted regression покрывает два независимых denial-cycle на одной history entry и terminal both-rights-revoked branch.
+
 ## AP-09 MIRA-04 correction — coordinator restart, подзадача 1/3
 
 **Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
