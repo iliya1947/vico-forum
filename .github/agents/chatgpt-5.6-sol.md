@@ -1,5 +1,54 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 coordinator whole-PR review — подзадача 4/4: gap-sweep / final verdict
+
+**Reviewed exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+
+**Final coordinator verdict: CHANGES REQUIRED. Подтверждённых current-scope дефектов: 3.**
+
+### AP09-MIRA-01 — fresh management denial loses still-authorized read-only detail
+
+Подтверждён в подзадаче 3/4. При сохранённом `admin.users.read` и отозванном `access.authorization.manage` следующий canonical fetcher submit получает thrown 403 из fresh manager gate. React Router поднимает error в boundary владельца fetcher (`admin-user`), а `ForumRouteError` не revalidate текущий detail. Привилегированный DOM безопасно исчезает, но вместе с ним теряется всё ещё разрешённый read-only user detail до отдельной навигации/reload.
+
+### AP09-MIRA-02 — permission-dependent legacy Users redirects не имеют private/no-store
+
+`app/routes/under-development.tsx` для `feature=admin-users` после protected `requireAdminAccess` выбирает разные success destinations:
+- `admin.users.read` → `/:locale/admin/users`;
+- management-only → `/:locale/admin/authorization#authorization-users-heading`.
+
+Оба success path вызывают `redirect(location)` без headers. Exact React Router 8.3.1 implementation `redirect()` при таком вызове создаёт Response с status + `Location`; `Cache-Control` сам не добавляется. Route `under-development`, parent locale boundary и root не задают private/no-store headers для этого ответа. Следовательно capability-dependent protected compatibility response выходит из AP-09 private/no-store envelope. Тест проверяет только `Location` и gap не ловит.
+
+### AP09-MIRA-03 — Users всё ещё ложно числится незавершённым
+
+Exact head сохраняет в `app/forum/under-development.ts`:
+`{ id: "admin-users", labelKey: "adminUsers" }`.
+
+`UnderDevelopmentView` безусловно рендерит весь `UNDER_DEVELOPMENT_FEATURES`, поэтому на общей странице статуса Users остаётся в списке «Still in development» после реализации AP-09. Approved AP-09 plan прямо требовал после реализации убрать только `admin-users` из реально unfinished feature list; existing homepage test этот элемент не проверяет.
+
+### Gap-sweep без дополнительных findings
+
+Проверены оставшиеся интеграционные стыки:
+- Worker context создаёт AdminUsers reader из `WEB_HYPERDRIVE`;
+- locale/header admission добавляет только `admin.users.read` в существующий union;
+- new routes зарегистрированы без конфликта с public profile/Forum routes;
+- EN/RU/HE Users labels и reviewed fingerprints согласованы;
+- Users-read / management-only / both navigation остаётся capability-distinct;
+- extracted legacy Roles controls продолжают использовать canonical writers/intents;
+- lasting docs/PROJECT_STATE отсутствуют в implementation PR по текущему process rule;
+- AP-10/blocking/Settings/Stage 6/production не затронуты.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow по-прежнему не выполнялся и не является назначенным mandatory gate. **Информация не проверена** в этой границе.
+
+### Bounded correction package
+
+Лире исправить только `AP09-MIRA-01..03`:
+1. после fresh management denial не оставлять stale privileged surface и сохранять доступ к user detail, если новый loader snapshot всё ещё разрешает `admin.users.read`; mutation не retry/replay;
+2. permission-dependent legacy Users success redirects должны иметь protected private/no-store cache policy;
+3. убрать реализованный Users из общего unfinished checklist, сохранив compatibility redirect старого URL;
+4. добавить regression coverage этих трёх цепочек и выполнить применимый full CI.
+
+После implementation changes нужен новый stable exact head и новый coordinator whole-PR cycle. Codex technical review до нового coordinator PASS не запускается.
+
 ## AP-09 coordinator whole-PR review — подзадача 3/4: routes / canonical authz reuse / UI lifecycle
 
 **Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
