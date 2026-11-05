@@ -2,7 +2,7 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 product design — purpose-first restriction catalog + reason-rules drafts completed, owner review pending
+- Текущий этап: AP-10 product design — restriction catalog, reason rules и admin-safety drafts completed, owner review pending
 - AP-09 полностью завершён и merged
 - AP-10 пока не передан Лёве на technical planning
 - Approved owner model:
@@ -18,6 +18,6 @@
 - Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
 - Техническая форма senior/head-admin authority пока не зафиксирована; не hard-code role name, сохранить permission-based model
 - Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
-- Следующий product step: owner review restriction catalog и reason rules; после owner decision перейти к access-manager/self-block safety, не проектируя measure aggregation/appeal lifecycle заранее
+- Следующий product step: owner review restriction catalog, reason rules и admin-safety draft; после owner decisions определить только оставшиеся действительно обязательные AP-10 product gaps
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
 - После catalog/grouping: отдельно решить reason rules и access-manager/self-block safety; затем передать Лёве AP-10 technical planning
