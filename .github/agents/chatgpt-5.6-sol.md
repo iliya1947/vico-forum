@@ -1,5 +1,42 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 corrected head — coordinator restart, подзадача 3/4
+
+**Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+
+**Verdict: PASS по AP09-MIRA-02/03 и оставшемуся correction delta. Новых current-scope defects: 0.**
+
+### AP09-MIRA-02 — CLOSED
+
+- `under-development?feature=admin-users` остаётся compatibility route;
+- loader сначала распознаёт literal `admin-users`, затем выполняет protected `requireAdminAccess`;
+- `admin.users.read` actor получает redirect на `/:locale/admin/users`;
+- management-only actor получает redirect на `/:locale/admin/authorization#authorization-users-heading`;
+- обе success branches передают `adminPrivateHeaders` в `redirect(...)`, то есть `Cache-Control: private, no-store`;
+- mounted/route regression проверяет оба Location и оба no-store headers;
+- guest/forbidden branches остаются controlled protected 401/403.
+
+### AP09-MIRA-03 — CLOSED
+
+- `admin-users` удалён из `UNDER_DEVELOPMENT_FEATURES`;
+- `UnderDevelopmentView` рендерит только оставшиеся реальные unfinished entries;
+- regression проверяет отсутствие `admin-users` и сохранение `admin-settings`;
+- compatibility URL не зависит от registry type: route loader перехватывает literal `admin-users` до передачи requestedFeature в view;
+- `adminDestinations` больше не генерирует Users placeholder: Users-read ведёт в real Users index, management-only — в existing authorization subset.
+
+### Remaining correction delta
+
+Шесть correction-файлов полностью распределены:
+- `admin-user.tsx` + `users-authorization.test.tsx` — проверены в 2/4;
+- `under-development.tsx` + `admin-users.test.ts` — MIRA-02, проверены в 3/4;
+- `under-development.ts` + `users.test.tsx` — MIRA-03, проверены в 3/4.
+
+Stable head не сдвинулся; #287 Draft/open/mergeable.
+
+Единственный открытый confirmed finding текущего coordinator cycle: `AP09-MIRA-04`.
+
+Следующая подзадача: 4/4 — final gap-sweep/verdict и bounded return package, если finding останется.
+
 ## AP-09 corrected head — coordinator restart, подзадача 2/4
 
 **Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
