@@ -1,5 +1,23 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 documentation closeout — подзадача 2/3
+
+Implementation #287 merged в `main`: `386023ce892044e623ec3d24f8a724e92af61a31`.
+
+Создан отдельный docs-only PR #288, Draft, head
+`c1e20a79d69918bb0bf62d9f3acec0d013ddfd45`.
+
+Изменены только пять согласованных документов:
+- `PROJECT_STATE.md`;
+- `docs/ADMIN_PANEL.md`;
+- `docs/auth/AUTHORIZATION.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_11.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`.
+
+Implementation/schema/dependencies/AP-10/Stage 6/production не менялись.
+
+Следующая подзадача 3/3: финально проверить diff #288 на factual consistency с merged main и отсутствие docs overscope; при PASS перевести PR из Draft в Ready.
+
 ## AP-09 independent review — final reconciliation
 
 **Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
