@@ -13,7 +13,7 @@
   - temporary/permanent duration независим от restriction set;
   - expiry/lift снимает restrictions этой block-записи и не меняет roles/grants/overrides;
   - возможные presets в будущем — только shortcuts для предварительного выбора галочек, не отдельная policy model
-- Approved appeal invariant: каждая block/measure назначается за конкретное нарушение; appeal относится к exact measure + этому violation basis, не является restriction и не отключается галочками; entry point на own account page рядом с соответствующей мерой; изменение restrictions/срока той же меры не создаёт новую appeal, новое нарушение создаёт новую measure и отдельную appeal; Complaints Appeals остаются отдельным domain
+- Approved appeal invariant: block appeal ≠ Complaint. Block appeal подаёт уже наказанный пользователь против exact administrative measure; он не является restriction и не отключается галочками; entry point на own account page рядом с соответствующей мерой; Complaint/Complaint Appeal остаются отдельным domain и не подменяют AP-10 appeal
 - Multiple active measures допустимы только как отдельные санкции за разные нарушения; effective restrictions = union активных measures; expiry/lift/overturn одной меры убирает только её вклад
 - Own block-status/appeal surface должна оставаться достижимой независимо от restriction set
 - Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
