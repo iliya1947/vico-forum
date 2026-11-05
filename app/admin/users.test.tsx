@@ -6,6 +6,7 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
 import { adminAccess } from "./access";
+import { UNDER_DEVELOPMENT_FEATURES } from "../forum/under-development";
 import { adminDestinations } from "./shell";
 import { adminUserPath, adminUsersPath } from "./users-paths";
 import { AdminUsersIndex, AdminUserDetail } from "./users";
@@ -121,6 +122,11 @@ describe("AP-09 read-only Users presentation", () => {
     expect(forms.every(form => form.querySelector<HTMLInputElement>('input[name="userId"]')?.value === id)).toBe(true);
     expect(root.querySelector('select[name="effect"] option[value="inherit"]')?.textContent).not.toBe("overrideInherit");
     expect(root.querySelector('input[name="inlineUserAuthorization"]')).toBeNull();
+  });
+
+  it("does not list implemented Users as an unfinished feature", () => {
+    expect(UNDER_DEVELOPMENT_FEATURES.some(feature => feature.id === "admin-users")).toBe(false);
+    expect(UNDER_DEVELOPMENT_FEATURES.some(feature => feature.id === "admin-settings")).toBe(true);
   });
 
 });
