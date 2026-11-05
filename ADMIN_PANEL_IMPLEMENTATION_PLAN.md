@@ -324,3 +324,12 @@ Reason policy:
 2. Own measure/appeal surface показывает только пользовательски значимую информацию: status, reason, restrictions, сроки, изменения меры и результат appeal.
 3. Actor/reviewer IDs, display names и иная техническая/служебная информация об администраторах не сериализуются в user-facing projection.
 4. Эта информация сохраняется для внутренней административной истории и доступна только владельцу и администраторам с соответствующим разрешением.
+
+
+## AP-10 owner decision — block-management default grants
+
+1. Capability управления административными мерами по умолчанию **не получает никто**, включая built-in moderator и built-in admin.
+2. Право назначать/изменять/снимать меры и рассматривать block appeals выдаётся только явным grant через существующую dynamic authorization model.
+3. Initial role grants не должны автоматически включать AP-10 block-management capability.
+4. Elevated capability для privileged targets также не имеет initial grants.
+5. Истёкшая или явно снятая мера terminal: её нельзя реактивировать продлением/изменением срока; повторное наказание оформляется новой measure.
