@@ -1,5 +1,48 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 corrected head — coordinator restart, подзадача 2/4
+
+**Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+
+**Verdict: 1 confirmed current-scope defect — `AP09-MIRA-04`.**
+
+### Что в AP09-MIRA-01 correction работает
+
+- thrown 403 из canonical management action действительно попадает в `admin-user` ErrorBoundary;
+- первый denial запускает одну replace-navigation на тот же URL и новый GET loader;
+- mutation не replay: mounted regression подтверждает один вызов action;
+- если `admin.users.read` ещё effective, второй loader возвращает read-only detail без management payload/controls;
+- если Users-read тоже отозван, второй loader снова 403 и из-за marker повторного GET loop нет.
+
+### AP09-MIRA-04 — recovery marker permanently consumes recovery for the history entry
+
+Correction записывает `{ ap09AccessRechecked: true }` в `location.state` через:
+`navigate(currentUrl, { replace: true, state: { ap09AccessRechecked: true } })`.
+
+После успешного recovery этот state нигде не очищается. В React Router 8.3.1:
+- navigation создаёт next location из переданного `opts.state`;
+- successful replace commit вызывает `history.replace(location, location.state)`;
+- BrowserHistory создаёт location из `window.history.state.usr`.
+
+Следовательно marker относится не к одному конкретному 403, а остаётся привязанным к session-history entry. Existing test после успешного recovery прямо утверждает, что current location state всё ещё равен `{ ap09AccessRechecked: true }`.
+
+Причинная цепочка дефекта:
+1. management effective → detail содержит controls;
+2. management revoke → submit → thrown 403;
+3. correction делает recovery GET; Users-read сохранён → read-only detail;
+4. marker остаётся `true`;
+5. management позже снова становится effective и fresh loader на этой же history entry снова может показать controls;
+6. при следующем revoke и submit canonical action снова бросает 403;
+7. ErrorBoundary видит `alreadyRechecked === true` и больше не делает GET recovery → снова terminal 403 вместо fresh read-only snapshot.
+
+Это current-scope: dynamic grants/overrides и next-request freshness уже являются контрактом AP-09; повторное grant/revoke не относится к AP-10 или future hardening.
+
+Regression tests покрывают только первый revoke/recovery и terminal branch при одновременном revoke Users-read; repeated grant→revoke cycle отсутствует.
+
+Других дефектов в рамках подзадачи 2/4 не подтверждено.
+
+Следующая подзадача: 3/4 — AP09-MIRA-02/03 corrections + remaining correction delta.
+
 ## AP-09 corrected head — coordinator restart, подзадача 1/4
 
 **Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
