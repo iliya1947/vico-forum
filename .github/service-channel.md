@@ -62,3 +62,12 @@
 - Уточнение process: прежняя запись «Codex-review не нужен» была ошибочной. Актуальный `AGENTS.md` не содержит исключения для test-only correction: после coordinator PASS Лёва должен выполнить independent technical review того же stable exact head.
 - #288 остаётся docs-only Draft и не меняется до merge #289.
 - Следующий этап: Лёва — independent technical review PR #289 exact head `7c0f7b513e6908f98151665a6839626b91f58fac`. После PASS owner merge #289, затем sync #288 на новый main и финальный docs CI.
+
+
+## Owner decision — AP09-MIRA-05 review boundary
+
+- Владелец прямо решил, что этот single test-only synchronization fix **не требует review Лёвы**.
+- Решение относится только к PR #289: один существующий regression test, 2+/2-, runtime/schema/public contract не меняются.
+- Coordinator PASS и exact-head green CI достаточны для этого correction.
+- Предыдущее назначение Лёвы #6647857514 отменено этим решением владельца.
+- PR #289 переведён из Draft в Ready; следующий шаг владельца — merge #289.
