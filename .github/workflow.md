@@ -2,7 +2,7 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 product design — restriction catalog и reason rules drafted; speculative access-manager lockout removed by owner decision
+- Текущий этап: AP-10 product design завершён; готов к technical planning
 - AP-09 полностью завершён и merged
 - AP-10 пока не передан Лёве на technical planning
 - Approved owner model:
@@ -18,9 +18,9 @@
 - Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
 - Техническая форма senior/head-admin authority пока не зафиксирована; не hard-code role name, сохранить permission-based model
 - Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
-- Следующий product step: owner review restriction catalog и reason rules; self-target и lifecycle target-authority уже закрыты
+- Restriction catalog, reason policy, self-target, target-authority и appeal lifecycle закрыты; owner product gate отсутствует
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
-- После catalog/grouping: завершить reason rules и оставшиеся реальные AP-10 product gaps; затем передать Лёве AP-10 technical planning
+- Следующий этап: Лёва — bounded technical planning AP-10
 
 - Post-admin follow-up: redesign owner/authorization recovery model; current last-access-manager invariant (`AuthorizationLockoutError` / `managers_ever_existed` / manager count) owner признал ошибочной целевой архитектурой. Не менять до завершения админ-панели; затем отдельная задача.
 
@@ -28,3 +28,5 @@
 - Target-authority hierarchy действует на весь lifecycle меры: создание, изменение и снятие; это не отдельный открытый вопрос.
 
 - Pending appeal lifecycle resolved: expiry/lift закрывает appeal как утратившую предмет; изменение restrictions/срока/reason не закрывает appeal — она остаётся привязана к той же measure, History сохраняет изменения.
+
+- Multi-measure aggregation не является текущим requirement; не проектировать заранее. Эскалировать только при доказанной неизбежной observable product-развилке.
