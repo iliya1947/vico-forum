@@ -5,27 +5,27 @@
 ## Актуальное состояние
 
 - AP-01–AP-08 merged в main; AP-08 documentation closeout завершён.
-- AP-09 implementation PR #287: Draft/open. Reviewed head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`, baseline/main `2651d2bf7de7212068c54674dca7d90716ea92c3`.
-- AP-09 scope: independent `admin.users.read`, protected minimal Users directory/detail, targeted one-user management read и direct reuse existing assignment/override canonical action. Нового mutation protocol нет.
-- Coordinator whole-PR PASS Миры #6646898897; AP09-MIRA-01..04 закрыты.
-- Лёва завершил independent whole-PR technical review того же head: **CHANGES REQUIRED**, один подтверждённый current-scope P2. [Полный report/repro](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646972798). Других confirmed findings при проверке всего changed scope не найдено.
+- AP-09 PR #287: Ready/open/mergeable, ещё не merged. Exact head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`; baseline/main `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+- Scope: independent `admin.users.read`, protected minimal Users directory/detail, targeted one-user management snapshot и direct reuse existing canonical assignment/override action. Нового mutation protocol нет.
+- Coordinator whole-PR PASS Миры #6646898897 и итоговый independent whole-PR technical PASS Лёвы относятся к одному head. [Финальный review](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6647373214).
+- Confirmed open current-scope defects: **0**. AP09-MIRA-01..04 закрыты; AP09-LEVA-01 **отозван как ошибочно диагностированный**, не исправлен реализацией.
 
-## AP09-LEVA-01 — UTC serialization Users index
+## Перепроверка AP09-LEVA-01
 
-- `db/admin-users.ts:30` вызывает `to_char(timestamptz,...literal Z)` без UTC conversion. Получается session-local clock, помеченный как UTC. Detail через pg Date/toISOString сохраняет настоящий instant.
-- Actual PostgreSQL 17 exact-reader repro: stored `2026-11-04T23:30:00.000Z`; при session `Asia/Jerusalem` index получает `2026-11-05T01:30:00.000Z`. Existing Intl UTC formatter показывает Nov 5 в index и Nov 4 в detail. В UTC session симптом скрыт; America/New_York также меняет instant.
-- Ни adapter, ни current schema/runtime contract не обеспечивают UTC session. Изменение глобального DB/session timezone не требуется: локальная UTC serialization в новом reader исправляет причину.
-- Minimal correction proposal: `AT TIME ZONE 'UTC'` перед to_char либо корректная ISO normalization с сохранением instant; targeted existing native regression на non-UTC session и boundary-of-day timestamp. Schema/permissions/protocol/readers вне finding не менять.
-- Локальный diagnostic UTC expression возвращает исходный instant во всех трёх sessions; implementation fix во время review не выполнялся.
+- Мира #6647016500 верно установила фактический тип `user.created_at`: timestamp without time zone. Прежний synthetic repro Лёвы использовал timestamptz и не доказывал дефект actual schema.
+- Лёва применил все 58 accepted migrations 0000–0057 в новой disposable PostgreSQL 17 DB, подтвердил тип через pg_catalog, вызвал exact-head directory reader и настоящий Drizzle profile reader.
+- 3 boundary-of-day timestamps × UTC/Asia-Jerusalem/America-New-York session TimeZone: **9/9 PASS**, directory ISO/detail ISO/UTC days совпадают.
+- Предложенный ранее AT TIME ZONE correction на actual type как раз создавал бы сдвиг; **не применять**. Никакого correction package Лире по этому finding не нужно.
+- Старый CHANGES REQUIRED #6646972798 явно помечен ОТОЗВАН/SUPERSEDED ссылкой на итоговый PASS. Evidence ошибочного эксперимента сохраняется только как история; текущий evidence — accepted-schema-reevaluation.mts / accepted-schema-results.json.
+- Implementation, schema и tests в PR не менялись. Новый implementation cycle не требуется из-за исправления диагноза.
 
 ## Проверки и следующий шаг
 
-- Exact-head CI #41941892340 SUCCESS подтверждён через API: checks/database SUCCESS.
-- Независимые локальные existing tests: 5 UI/route files / 37 tests PASS; 3 PostgreSQL files / 8 tests PASS. Текущие тесты не проверяют timezone conversion и не опровергают finding.
-- Evidence/scripts/logs: `/workspace/work/ap09-review-evidence/`. Task-owned PG container/volume/symlink удалены, worktree clean, head прежний.
-- Информация не проверена: actual authenticated Chromium→Worker→PostgreSQL AP-09 browser/deployed flow; browser/owner visual gate не назначался. Native repro не выдаётся за browser acceptance.
-- **Мира — следующий агент:** проверить один finding по опубликованному repro и согласовать bounded correction Лире. После исправления: новый stable exact head/checks → coordinator whole-PR cycle → independent technical review по workflow.
-- #287 не готов к merge. Lasting docs/PROJECT_STATE — отдельным documentation PR после принятой реализации.
+- Exact-head CI #41941892340 SUCCESS повторно подтверждён. Ранее локальные existing tests на том же head: 5 UI/route files / 37 tests PASS, 3 PostgreSQL files / 8 tests PASS. Без code changes заново не повторялись.
+- Whole-PR 37-file scope проверен независимо; кроме снятого finding других confirmed defects нет. Test-merge `8cce1af4f76b2758b69f070419b0cb4a6e9da57c` имеет указанные main/head parents и идентичное head дерево.
+- Task-owned PG container/volume/symlink удалены, worktree clean, head неизменен.
+- Информация не проверена: actual authenticated Chromium→Worker→PostgreSQL AP-09 browser/deployed flow; обязательный отдельный browser/owner visual gate не назначен. Никакого production rollout нет.
+- **Следующий шаг владельца: merge #287.** Lasting docs/PROJECT_STATE — отдельным documentation PR после принятой реализации.
 - AP-10/blocking/Settings/Stage 6/production вне scope; Марк не назначен.
 
 Оперативное состояние: [workflow.md](./workflow.md).
