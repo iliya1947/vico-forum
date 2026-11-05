@@ -69,3 +69,12 @@
 1. Наказанный пользователь не должен видеть, какой конкретно администратор/модератор назначил, изменил или снял меру либо рассмотрел appeal.
 2. User-facing measure timeline содержит только саму меру, reason, restrictions, сроки, изменения и результаты appeal.
 3. Actor/reviewer identity и другая служебная информация доступны только владельцу и администраторам с соответствующим доступом во внутренней administrative History.
+
+
+## AP-10 owner decision — no default block-management grants
+
+1. AP-10 block-management capability не выдаётся автоматически ни одной built-in role.
+2. Built-in admin и moderator по умолчанию не получают право создавать/изменять/снимать measures или review block appeals.
+3. Доступ выдаётся только явным grant через существующую dynamic authorization model.
+4. Privileged-target elevated capability также без initial grants.
+5. Expired/lifted measure terminal; повторное наказание = новая measure.
