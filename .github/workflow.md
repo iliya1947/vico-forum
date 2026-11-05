@@ -2,17 +2,21 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 documentation closeout — Ready for owner merge
-- AP-09 implementation PR #287: merged в `main`
-- Test-only stabilization PR #289: merged в `main`
-- Current main / #288 base: `0521669eadc3b927b3f8d0651b98291ffda137a2`
-- Documentation PR: #288 — Ready/open/mergeable
-- #288 stable exact head: `d6ecb2005da02b4eaf4528b17f0530767ebddadd`
-- #288 diff: ровно 5 docs-файлов; implementation/schema/dependencies отсутствуют
-- Docs factual consistency/overscope review: PASS
-- Exact-head CI #41955225394: SUCCESS — app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests; build/UI preview/migration/schema/Worker checks SUCCESS
-- AP09-MIRA-05 test stabilization присутствует в current main и в fresh PR merge base; regression file 6/6 PASS
-- Следующий шаг владельца: merge #288
-- После merge #288: AP-09 полностью закрыт; перед AP-10 требуется owner decision по block-effect/reason matrix из ADMIN_PANEL
-- Actual authenticated AP-09 browser/deployed acceptance не выполнялась; отдельный mandatory gate не назначен
-- AP-10/Settings/Stage 6/production вне текущего closeout scope
+- Текущий этап: AP-09 завершён; AP-10 заблокирован product decision gate владельца
+- AP-09 implementation PR #287: merged
+- AP09-MIRA-05 test-only stabilization PR #289: merged
+- AP-09 documentation PR #288: merged
+- AP-09 final docs merge commit: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
+- Current repository state: Admin Panel реализована через AP-09; blocking/AP-10 не начат
+- Следующий технический планировщик AP-10: Лёва, но только после решения владельца по blocking policy
+- Owner decision gate перед AP-10:
+  - login/existing sessions;
+  - public/private read;
+  - topic/Help/reply creation;
+  - own edits/profile changes;
+  - signals/appeals/uploads/translation generation;
+  - administrative actions, self-block и access managers;
+  - reason requirements для temporary block / permanent block / explicit lift;
+  - что именно автоматически восстанавливается после expiry/lift
+- AP-10 implementation не начинать до фиксации этих решений
+- Settings/AP-11/Stage 6/production вне текущего шага
