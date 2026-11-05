@@ -89,7 +89,7 @@ function mount(options: { revokeManagementOnSubmit?: boolean; denyManagementOnSu
     { path: "/en/admin/authorization", action, element: <p>Authorization destination</p> },
   ], { initialEntries: [`/en/admin/users/${encodeURIComponent(userId)}`] });
   const result = render(<I18nextProvider i18n={i18n()}><RouterProvider router={router} /></I18nextProvider>);
-  return { ...result, action, loader, router };
+  return { ...result, action, loader, router, grantManagement: () => { canManage = true; } };
 }
 function formFor(container: HTMLElement, intent: string, permission?: string) {
   return [...container.querySelectorAll<HTMLFormElement>("form")].find(form =>
@@ -165,15 +165,47 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(formFor(mounted.container, "assignRole")).toBeUndefined();
     expect(mounted.container.querySelector('[role="alert"][data-status="403"]')).toBeNull();
     expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
-    expect(mounted.router.state.location.state).toEqual({ ap09AccessRechecked: true });
+    expect(mounted.router.state.location.state).toBeNull();
     expect(mounted.action).toHaveBeenCalledOnce();
+  });
+
+  it("recovers two independent management revocations on the same history entry", async () => {
+    const mounted = mount({ denyManagementOnSubmit: true });
+    const path = `/en/admin/users/${encodeURIComponent(userId)}`;
+    await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+
+    fireEvent.submit(formFor(mounted.container, "assignRole")!);
+    await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mounted.container.querySelector("#authorization")).toBeNull());
+    expect(mounted.container.textContent).toContain("Public details");
+    expect(mounted.action).toHaveBeenCalledOnce();
+    expect(mounted.router.state.location.state).toBeNull();
+
+    // Another manager restores the grant; revalidation keeps the same history entry.
+    mounted.grantManagement();
+    mounted.router.revalidate();
+    await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+    expect(mounted.loader).toHaveBeenCalledTimes(3);
+    expect(mounted.router.state.location.pathname).toBe(path);
+
+    // A second fresh denial must recover, not inherit the first denial's guard.
+    fireEvent.submit(formFor(mounted.container, "assignRole")!);
+    await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(mounted.container.querySelector("#authorization")).toBeNull());
+    expect(mounted.container.textContent).toContain("Public details");
+    expect(mounted.container.querySelector('[role="alert"][data-status="403"]')).toBeNull();
+    expect(mounted.router.state.location.pathname).toBe(path);
+    expect(mounted.router.state.location.state).toBeNull();
+    expect(mounted.router.state.historyAction).toBe("REPLACE");
+    expect(mounted.action).toHaveBeenCalledTimes(2);
   });
 
   it("stays fail-closed after one GET when Users-read and management are both revoked", async () => {
     const mounted = mount({ denyManagementOnSubmit: true, revokeUsersReadOnDenied: true });
     await screen.findByRole("heading", { name: "Authorization management", level: 3 });
     fireEvent.submit(formFor(mounted.container, "assignRole")!);
-    await waitFor(() => expect(mounted.router.state.location.state).toEqual({ ap09AccessRechecked: true }));
+    await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(mounted.container.querySelector('[role="alert"][data-status="403"]')).not.toBeNull());
     expect(mounted.container.querySelector("#authorization")).toBeNull();
