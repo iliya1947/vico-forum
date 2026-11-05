@@ -4,38 +4,29 @@
 
 ## Актуальное состояние
 
-- AP-01–AP-08 merged в `main`; AP-08 documentation closeout завершён.
-- AP-09 implementation PR #287 открыт как Draft.
-- Stable exact head для третьего coordinator whole-PR review: `b85c3809befe3a1dcc83fe654dde4cd093f625ba`; superseded reviewed head: `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
-- Baseline/current `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`; #287 Draft/open/mergeable.
-- AP-09 scope: `admin.users.read`, protected Users index/search/detail, minimal public-field DTO, targeted one-user authorization read, reuse existing assignment/override controls and canonical authz writers.
-- Approved mutation boundary: direct reuse `/:locale/admin/authorization` via fetcher for `assignRole` / `override`; no new mutation backend/protocol.
-- AP-10/blocking, Settings, Stage 6/production rollout и unrelated authz hardening вне scope.
-- Лира завершила bounded correction только `AP09-MIRA-04` и author handoff.
-- Delta от предыдущего reviewed head: 2 commits / 2 files — `app/routes/admin-user.tsx` и `app/admin/users-authorization.test.tsx`.
-- Exact-head CI #41941892340 SUCCESS: application 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests; все применимые CI steps SUCCESS.
-- Информация не проверена: actual authenticated Chromium→Worker→PostgreSQL AP-09 browser flow и deployed/production acceptance; отдельный browser/owner visual gate не назначались.
-- Марк не назначен.
+- AP-01–AP-08 merged в main; AP-08 documentation closeout завершён.
+- AP-09 implementation PR #287: Draft/open. Reviewed head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`, baseline/main `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+- AP-09 scope: independent `admin.users.read`, protected minimal Users directory/detail, targeted one-user management read и direct reuse existing assignment/override canonical action. Нового mutation protocol нет.
+- Coordinator whole-PR PASS Миры #6646898897; AP09-MIRA-01..04 закрыты.
+- Лёва завершил independent whole-PR technical review того же head: **CHANGES REQUIRED**, один подтверждённый current-scope P2. [Полный report/repro](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646972798). Других confirmed findings при проверке всего changed scope не найдено.
 
-## Текущий маршрут
+## AP09-LEVA-01 — UTC serialization Users index
 
-- Третий coordinator whole-PR review #287 начат на exact head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
-- Подзадача 1/3 завершена PASS по stable-head/scope/CI boundary.
-- Correction delta от `13bae37d...`: только `admin-user.tsx` и `users-authorization.test.tsx`; schema, migrations/catalog, authz writers, dependencies, MIRA-02/03 code и lasting docs не менялись.
-- Exact-head CI #41941892340 подтверждён по job logs: app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests; lint/typecheck/build/UI preview/migration/schema/manifest/runtime probes/Worker smoke — SUCCESS.
-- Подзадача 2/3 завершена PASS: `AP09-MIRA-04` закрыт.
-- Новый `useRef` guard scoped к mounted error subtree: первый denied canonical action вызывает один same-URL GET; mutation не replay.
-- Если Users-read сохранён, successful GET возвращает read-only detail и error subtree размонтируется, поэтому следующий независимый denial получает новый guard.
-- Если Users-read тоже отозван, recovery GET снова даёт 403 при том же mounted ErrorBoundary; `useRef=true` блокирует повторную навигацию и loop.
-- React Router 8.3.1 source подтверждает эту lifecycle-модель: route ErrorBoundary один раз преобразуется в stable `errorElement`; `RenderErrorBoundary` сохраняет component subtree при error→error navigation и переключается на route children при успешном recovery.
-- Mounted regression покрывает два независимых management-denial cycles на одной history entry, отсутствие `location.state` marker, два action submit без replay и terminal both-rights-revoked branch.
-- Новых current-scope findings в 2/3 нет.
-- Подзадача 3/3 завершена; stable exact head не изменился: `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
-- Final whole-PR gap-sweep: confirmed current-scope defects **0**. `AP09-MIRA-01..04` закрыты.
-- `main` по-прежнему идентичен baseline `2651d2bf7de7212068c54674dca7d90716ea92c3`; integration drift отсутствует.
-- Direct loader 403 также может выполнить максимум один same-URL recovery GET; это остаётся fail-closed, не создаёт loop и не расширяет authority, поэтому отдельным current-scope defect не является.
-- **Coordinator final verdict: PASS** на exact head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
-- Следующий этап: Лёва выполняет independent technical review **того же exact head**. Implementation менять до его результата не требуется.
+- `db/admin-users.ts:30` вызывает `to_char(timestamptz,...literal Z)` без UTC conversion. Получается session-local clock, помеченный как UTC. Detail через pg Date/toISOString сохраняет настоящий instant.
+- Actual PostgreSQL 17 exact-reader repro: stored `2026-11-04T23:30:00.000Z`; при session `Asia/Jerusalem` index получает `2026-11-05T01:30:00.000Z`. Existing Intl UTC formatter показывает Nov 5 в index и Nov 4 в detail. В UTC session симптом скрыт; America/New_York также меняет instant.
+- Ни adapter, ни current schema/runtime contract не обеспечивают UTC session. Изменение глобального DB/session timezone не требуется: локальная UTC serialization в новом reader исправляет причину.
+- Minimal correction proposal: `AT TIME ZONE 'UTC'` перед to_char либо корректная ISO normalization с сохранением instant; targeted existing native regression на non-UTC session и boundary-of-day timestamp. Schema/permissions/protocol/readers вне finding не менять.
+- Локальный diagnostic UTC expression возвращает исходный instant во всех трёх sessions; implementation fix во время review не выполнялся.
+
+## Проверки и следующий шаг
+
+- Exact-head CI #41941892340 SUCCESS подтверждён через API: checks/database SUCCESS.
+- Независимые локальные existing tests: 5 UI/route files / 37 tests PASS; 3 PostgreSQL files / 8 tests PASS. Текущие тесты не проверяют timezone conversion и не опровергают finding.
+- Evidence/scripts/logs: `/workspace/work/ap09-review-evidence/`. Task-owned PG container/volume/symlink удалены, worktree clean, head прежний.
+- Информация не проверена: actual authenticated Chromium→Worker→PostgreSQL AP-09 browser/deployed flow; browser/owner visual gate не назначался. Native repro не выдаётся за browser acceptance.
+- **Мира — следующий агент:** проверить один finding по опубликованному repro и согласовать bounded correction Лире. После исправления: новый stable exact head/checks → coordinator whole-PR cycle → independent technical review по workflow.
+- #287 не готов к merge. Lasting docs/PROJECT_STATE — отдельным documentation PR после принятой реализации.
+- AP-10/blocking/Settings/Stage 6/production вне scope; Марк не назначен.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
