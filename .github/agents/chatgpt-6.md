@@ -1,5 +1,14 @@
 # Лира — ChatGPT-6
 
+## AP-10 — subtask 2.1 authority and elevated-grant guard (2026-11-06)
+
+- Работа продолжается в [Draft PR #290](https://github.com/iliya1947/vico-forum/pull/290) от planning `main` `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`; новый стабильный exact head **`38988d67e7118dcbf895ff0c02fcd2ca0b45d0d2`**. Ранее completed 1.1 catalog и 1.2 permissions/schema/0058/CI сохранены.
+- **Subtask 2.1**: `db/user-measure-authority.ts` выделяет raw-effective RBAC tiers 0 ordinary, 1 privileged, 2 elevated, 3 bound owner; блокирует self/owner/equal-or-higher targets, insufficient issuer floor; `blocks.manage` обязателен у owner/elevated actor, owner ID отсутствует или невалиден → typed fail closed. Assertion рассчитан на вызов после `authz_mutation_lock` в будущих measure transitions; отдельного active measure writer пока нет.
+- `db/authorization-repository.ts` в **существующей** authz-transaction (без новых last-manager проверок) блокирует nonowner mutations elevated key: роль grant added/removed, override allow/deny/inherit, role switch как в elevated role, так и **из** elevated role. Замена unrelated role grants без изменения elevated key разрешена. `workers/app.ts` передаёт server-owned optional `VICO_OWNER_USER_ID` в authz adapter; production environment/Cloudflare не менялись, без binding все elevated-key mutations fail closed.
+- Regression: `db/user-measure-authority.test.ts` 6 чистых тестов на tiers/owner/grant/floor; `tests/database/user-measure-authority.test.ts` 2 PostgreSQL теста на current role grants/override/assignment, nonowner denial+atomic History, authorized owner edits и обычные unrelated grants; `workers/database-bindings.test.ts` проверяет точный Worker wiring.
+- **[Exact-head CI #42132007322](https://github.com/iliya1947/vico-forum/actions/runs/42132007322) — SUCCESS**: `checks` **145/145 files, 1898/1898 tests**; `database` **43/43 files, 491/491 tests**; typecheck/lint/build, Drizzle parity/migration metadata, 63-table manifest/runtime probes/Worker local HTTP smoke PASS.
+- **Граница**: нет transactional measure service/appeals, Status/Admin HTTP/UI/enforcement; AP-10 **не готов к merge**. Следующая subtask 2.2 — единый транзакционный primitive create/change/lift (CAS/terminal DB time/fresh raw hierarchy under lock/atomic History/idempotent create replay). Appeals последующим отдельным логическим шагом с тем же transition primitive. AP-11/Settings/production/owner-role cleanup/lasting docs не начинались. Лира остановилась до новой команды «...».
+
 ## AP-10 — bounded subtask 1.2: permissions and 0058 schema (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), baseline `main` `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, verified **stable exact head `45f3757569274c331697fd86fe82a2ba6b7aee6a`**. Owner/coordinator-approved plan в `.github/agents/codex-6.1-sol.md`; AP-10 assignment #6671610214.
