@@ -864,3 +864,8 @@ Other checked UI behavior in this subtask:
 Не finding:
 - узкий configured owner identity boundary сам по себе допустим как минимальная техническая необходимость для owner target immunity, если не превращается в owner-role/super-admin subsystem;
 - existing AuthorizationLockoutError/countManagers не переделывать в AP-10.
+
+
+## AP-10 owner decision — administrator identity privacy
+
+Пользовательская projection меры/appeal не раскрывает identity actor/reviewer. Конкретные admin IDs/names остаются только во внутренней administrative History для owner/authorized admins. User-facing timeline показывает действия и их смысл без технической информации о конкретных администраторах.
