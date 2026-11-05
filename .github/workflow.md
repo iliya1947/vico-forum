@@ -15,3 +15,5 @@
 - Last-manager принцип НЕ применяется к AP-10: никаких manager-count veto/recovery требований. Существующий код пока не менять; комплексная очистка после админ-панели отдельной задачей
 - AP-10 own status/appeal всегда доступен; Complaint/Complaint Appeal — отдельный domain
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
+
+- Coordinator review technical plan: REVISION REQUIRED — AP10-PLAN-MIRA-01..04. Не начинать implementation до исправленного плана и coordinator approval.
