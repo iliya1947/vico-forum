@@ -18,13 +18,15 @@
 
 ## Текущий маршрут
 
-- Мира выполняет coordinator-first whole-PR review #287 на exact head `f5117f22bd891d3892357fc984009388481001f7`.
-- Подзадача 1/4 завершена: stable head, diff/scope и exact-head CI подтверждены; implementation docs в PR отсутствуют, что соответствует текущему отдельному docs-closeout процессу.
-- Подзадача 2/4 завершена PASS: permission/catalog/migration, DB directory, targeted authorization read, snapshot/privacy и runtime privilege boundaries проверены; подтверждённых current-scope дефектов 0.
-- Подзадача 3/4 завершена: routes/canonical authz reuse/UI lifecycle проверены; подтверждён 1 current-scope defect `AP09-MIRA-01` — если `access.authorization.manage` исчез между detail-loader и fetcher submit при сохранённом `admin.users.read`, canonical action бросает 403, React Router поднимает fetcher error в `admin-user` ErrorBoundary, а текущий `ForumRouteError` не даёт revalidate/retry. Пользователь теряет всё ещё разрешённый read-only detail вместо перехода на свежий snapshot без management controls. Success path, target/actor fetcher isolation, manager-only/read-only navigation и legacy Roles reuse проверены без других подтверждённых дефектов.
-- Следующая подзадача coordinator review: 4) gap-sweep/final verdict.
-- При confirmed current-scope findings они возвращаются Лире одним bounded пакетом до Codex review.
-- Лёва подключается к independent technical review только после coordinator PASS того же stable exact head.
+- Coordinator whole-PR review #287 на exact head `f5117f22bd891d3892357fc984009388481001f7` завершён. Финальный verdict: **CHANGES REQUIRED**.
+- Подзадача 1/4: stable head, diff/scope и exact-head CI подтверждены.
+- Подзадача 2/4: PASS — permission/catalog/migration, DB directory, targeted authorization read, snapshot/privacy и runtime privilege boundaries; дефектов 0.
+- Подзадача 3/4: подтверждён `AP09-MIRA-01` — fresh loss `access.authorization.manage` при сохранённом `admin.users.read` приводит fetcher submit к terminal 403 boundary вместо свежего read-only detail snapshot без privileged controls.
+- Подзадача 4/4 gap-sweep добавила `AP09-MIRA-02`: permission-dependent legacy `under-development?feature=admin-users` success redirects не имеют `Cache-Control: private, no-store`; React Router 8.3.1 `redirect()` сам добавляет только `Location` без cache policy.
+- Подзадача 4/4 также добавила `AP09-MIRA-03`: exact head всё ещё содержит `admin-users` в `UNDER_DEVELOPMENT_FEATURES`, поэтому общая страница «Still in development» ложно показывает уже реализованный Users package как незавершённый.
+- Других confirmed current-scope defects в full changed-file sweep не найдено. Worker wiring, locale/header admission, localization/fingerprints, route registration и legacy Roles reuse проверены без дополнительных findings.
+- Один bounded correction package передан Лире: исправить только `AP09-MIRA-01..03`, добавить regression coverage и выдать новый stable exact head с применимым full CI.
+- Любое implementation изменение #287 запускает новый coordinator whole-PR cycle; Лёва подключается к independent technical review только после нового coordinator PASS.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
