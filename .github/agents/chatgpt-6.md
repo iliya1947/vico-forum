@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-10 — bounded subtask 1.2: permissions and 0058 schema (2026-11-06)
+
+- [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), baseline `main` `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, verified **stable exact head `45f3757569274c331697fd86fe82a2ba6b7aee6a`**. Owner/coordinator-approved plan в `.github/agents/codex-6.1-sol.md`; AP-10 assignment #6671610214.
+- Subtask **1.1** раньше добавила 12 typed restriction child IDs и group validation.
+- Subtask **1.2** зарегистрировала `admin.users.blocks.manage` / `admin.users.blocks.managePrivileged` как code-backed permissions; `INITIAL_ROLE_GRANTS` обе **исключает у всех built-in roles**, включая `admin`/catalog-all seed. SQL forward 0058 добавляет только permission rows, не даёт grant ни роли, ни пользователю.
+- Добавлена normalized схема `user_measures`, `user_measure_restrictions`, `user_measure_appeals`: отдельные UUID identities и issuer-floor, reason/version/UTC instant/lift, enabled child membership для SELECT/INSERT/UPDATE-only ACL, 3 ordinal appeals максимум, unique one pending/measure; overlapping independent measures допустимы. Расширена `admin_history_action_target_check` для будущих atomic measure events. В `main` accepted migrations ничего не переписывалось: `0058_user_measures.sql`, matching Drizzle schema/snapshot/journal и 63-table PG structural manifest.
+- Native DB tests проверяют zero default grants/explicit grant row, реальные timestamptz(3), FK/allowlist/reasons/version/lift constraints, overlapping measures, 3 appeals/one pending, History target; runtime-privilege unit test запрещает table DELETE и localization-read permissions. Native tsconfig включил shared catalog.
+- **[Exact-head CI #42130104406](https://github.com/iliya1947/vico-forum/actions/runs/42130104406): SUCCESS**. `checks` 144/144 files, **1892/1892 tests**, `database` 42/42 files, **489/489 tests**, Drizzle generation parity, 0058 migration history, schema manifest 63 tables, least-privilege probes, Worker HTTP smoke PASS.
+- **Ограничения**: AP-10 пока **не действующая система санкций**; нет measure service/authority, enforcement, own/admin appeals UI. PR #290 Draft/open, merge запрещён до полного bounded AP-10 scope. Runtime enforcement и owner-only elevated grant gate — следующий implementation slice. AP-11, Settings, production, lasting docs/PROJECT_STATE, last-manager cleanup не начинались.
+- Лира завершила 1.2, **остановилась до явной команды продолжать**. Координаторские файлы не редактировала.
+
 ## AP-10 — первый ограниченный срез: restriction catalog (2026-11-06)
 
 - Implementation назначен Мирой в [#6671610214](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6671610214), approved technical plan Лёвы `.github/agents/codex-6.1-sol.md`. Baseline main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
