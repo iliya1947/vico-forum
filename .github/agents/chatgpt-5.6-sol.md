@@ -832,3 +832,13 @@ Other checked UI behavior in this subtask:
 ## Следующий шаг
 
 Исправлять только подтверждённые служебные последствия coordinator-сбоя; implementation #283 не трогать без отдельного current-scope дефекта.
+
+
+## AP-10 correction — hierarchy/self-target are resolved
+
+Предыдущая запись Миры, которая снова вынесла self-target и lifecycle hierarchy как вопросы owner review, была ошибочной.
+
+1. Self-target: administrative measure нельзя создавать, изменять или снимать относительно самого себя.
+2. Уже утверждённая privileged-target hierarchy распространяется на create/change/lift; отдельного owner decision для этого не требуется.
+3. Причина: если нижестоящий actor мог бы менять/снимать меру вышестоящего уровня, он обходил бы саму target-authority boundary.
+4. Эти пункты больше не считать незакрытыми AP-10 product gaps.
