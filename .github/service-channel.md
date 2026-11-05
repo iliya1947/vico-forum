@@ -43,3 +43,18 @@
 - HISTORY_11 хранит implementation/correction/review/merge snapshot, включая withdrawn AP09-LEVA-01 как diagnostic correction без code change.
 - `PROJECT.md`, `ROADMAP.md`, `docs/database/*` не меняются: подтверждённого stale AP-09 state там не найдено.
 - Следующий шаг: Мира выполняет финальную consistency review #288. Codex на documentation closeout не расходуется.
+
+
+## AP09-MIRA-05 — confirmed AP-09 test synchronization race
+
+- Documentation content review #288 на head `c1e20a79d69918bb0bf62d9f3acec0d013ddfd45` завершён PASS: пять docs-файлов фактически соответствуют merged AP-09, docs overscope не найден.
+- CI #41951777119: `database` SUCCESS; `checks` FAIL только на `app/admin/users-authorization.test.tsx > recovers two independent management revocations on the same history entry`.
+- Первый CI attempt упал после второго denial-cycle на final assertion `Public details` (line 196).
+- Failed `checks` job был rerun без изменения head и снова упал в том же test, но уже после **первого** denial-cycle на том же final assertion (line 180).
+- Тот же implementation exact head `b85c3809...` ранее прошёл CI #41941892340: этот test file 6/6 PASS, application 143/143 files и 1888/1888 tests PASS.
+- Причина подтверждена в test code: после denied action тест ждёт loader call count и `#authorization === null`. Оба условия могут стать истинными, пока route ещё показывает промежуточный ErrorBoundary: loader уже вызван, а authorization DOM в error UI отсутствует. После этого synchronous `expect(...).toContain("Public details")` иногда выполняется до commit/render успешного recovery detail.
+- Это **current-scope test-layer defect**, не future hardening и не evidence runtime defect. Runtime `useRef` recovery chain остаётся ранее проверенной; два разных места падения на неизменном code/head подтверждают race тестового terminal-state ожидания.
+- #288 не должен содержать исправление: он остаётся docs-only Draft.
+- Bounded correction Лире: отдельный test-only PR от current `main`; исправить synchronization только в repeated-revocation regression, чтобы каждый recovery-cycle ждал positive terminal read-only detail state до final assertions. Сохранить проверки: два независимых denial cycles, ровно два user submits, отсутствие mutation replay/GET loop, null history state/same history entry, terminal both-rights-revoked behavior. Runtime implementation не менять без нового evidence.
+- После correction требуется applicable full CI. Coordinator проверит exact test-only diff и CI; затем owner merge correction, после чего #288 синхронизируется на новый main и проходит финальный docs CI.
+- Codex-review для этой локальной test-only correction не нужен: технический план и runtime contract не меняются.
