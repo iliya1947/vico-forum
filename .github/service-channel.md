@@ -24,8 +24,13 @@
 - Подзадача 2/4 завершена: первый fresh management 403 корректно вызывает ровно один same-URL GET; mutation не replay; сохранённый `admin.users.read` возвращает read-only detail без privileged controls, а отзыв обоих capabilities остаётся terminal 403 после одного GET.
 - Подтверждён новый current-scope defect `AP09-MIRA-04`: recovery guard записывает `ap09AccessRechecked: true` в `location.state` через replace-navigation и после успешного recovery не очищает его. React Router 8.3.1 сохраняет этот state в history entry; BrowserHistory восстанавливает user state из `window.history.state`. Поэтому после первого revoke→recovery последующий независимый цикл grant→revoke на той же history entry уже не запускает fresh GET: ErrorBoundary видит `alreadyRechecked === true` и оставляет terminal 403. Existing regression tests покрывают только первый denial и прямо ожидают сохранённый marker.
 - Это current-scope, а не future hardening: AP-09 использует dynamic role/override semantics и next-request freshness; повторные permission changes допустимы уже сейчас.
-- Следующая подзадача 3/4: перепроверить AP09-MIRA-02/03 corrections и оставшийся correction delta.
-- До завершения 4/4 finding Лире отдельно не возвращается; после coordinator PASS Лёва проверяет тот же stable exact head.
+- Подзадача 3/4 завершена PASS по AP09-MIRA-02/03 и оставшемуся correction delta.
+- AP09-MIRA-02 закрыт: оба permission-dependent legacy Users success redirects используют `adminPrivateHeaders` и тесты подтверждают `Cache-Control: private, no-store` для read-only и management-only веток; guest/forbidden остаются protected 401/403.
+- AP09-MIRA-03 закрыт: `admin-users` удалён из `UNDER_DEVELOPMENT_FEATURES`, поэтому общий unfinished checklist больше его не показывает; `admin-settings` и прочие реальные unfinished entries сохранены.
+- Compatibility старого `under-development?feature=admin-users` не потеряна: loader обрабатывает этот literal feature до `UnderDevelopmentView` и capability-distinct redirect остаётся рабочим, хотя helper/type больше не генерируют новый placeholder URL.
+- Остальной correction delta полностью покрыт подзадачами 2/4 и 3/4; новых current-scope findings в 3/4 нет.
+- Единственный открытый confirmed finding coordinator cycle: `AP09-MIRA-04`.
+- Следующая подзадача 4/4: финальный gap-sweep/verdict; при сохранённом finding вернуть Лире один bounded correction package. Codex-review до coordinator PASS не запускается.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
