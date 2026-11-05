@@ -125,7 +125,7 @@ describe("AP-09 read-only Users presentation", () => {
   });
 
   it("does not list implemented Users as an unfinished feature", () => {
-    expect(UNDER_DEVELOPMENT_FEATURES.some(feature => feature.id === "admin-users")).toBe(false);
+    expect(UNDER_DEVELOPMENT_FEATURES.map(feature => feature.id)).not.toContain("admin-users");
     expect(UNDER_DEVELOPMENT_FEATURES.some(feature => feature.id === "admin-settings")).toBe(true);
   });
 
