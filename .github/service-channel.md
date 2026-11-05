@@ -63,3 +63,10 @@
 3. Для одной measure одновременно может быть только одна pending appeal; до 3 appeals рассматриваются последовательно.
 4. Удовлетворение appeal может привести как к full lift, так и к смягчению/изменению restrictions или срока той же measure.
 5. Такое изменение не создаёт новую measure identity; appeal/history остаются связаны с исходной measure.
+
+
+## AP-10 owner decision — admin identity is internal-only
+
+1. Наказанный пользователь не должен видеть, какой конкретно администратор/модератор назначил, изменил или снял меру либо рассмотрел appeal.
+2. User-facing measure timeline содержит только саму меру, reason, restrictions, сроки, изменения и результаты appeal.
+3. Actor/reviewer identity и другая служебная информация доступны только владельцу и администраторам с соответствующим доступом во внутренней administrative History.
