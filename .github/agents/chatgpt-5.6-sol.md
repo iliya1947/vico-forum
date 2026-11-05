@@ -162,8 +162,9 @@ Owner decision:
 3. Block appeal — действие уже наказанного пользователя против exact measure.
 4. Existing Complaint Appeal — appeal по Complaint Decision/effective outcome и не является block appeal.
 5. Даже если measure когда-либо будет связана с Complaint Case, оба workflows сохраняют собственные identities, permissions, outcomes и history.
-6. Нельзя автоматически выводить block-appeal outcomes/lifecycle из текущего Complaints Appeal contract.
-7. В частности, поведение pending block appeal при expiry, explicit lift или изменении sanction пока OPEN и требует отдельного owner decision.
+6. Для одной конкретной administrative measure пользователь может подать до **3 block appeals**. Это уже owner decision; quota/repeat не считать открытым вопросом.
+7. Нельзя автоматически выводить остальные block-appeal outcomes/lifecycle из текущего Complaints Appeal contract.
+8. Поведение pending block appeal при expiry, explicit lift или изменении sanction пока OPEN и требует отдельного owner decision.
 
 
 ## AP-10 purpose filter
