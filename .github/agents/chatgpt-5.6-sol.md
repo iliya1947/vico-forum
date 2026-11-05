@@ -841,3 +841,26 @@ Other checked UI behavior in this subtask:
 2. Уже утверждённая privileged-target hierarchy распространяется на create/change/lift; отдельного owner decision для этого не требуется.
 3. Причина: если нижестоящий actor мог бы менять/снимать меру вышестоящего уровня, он обходил бы саму target-authority boundary.
 4. Эти пункты больше не считать незакрытыми AP-10 product gaps.
+
+
+## AP-10 technical plan coordinator review — revision required
+
+Проверен план Лёвы из #6667784146 против утверждённой AP-10 модели и current main.
+
+Итог: техническая основа в целом пригодна, но до approval нужны локальные исправления плана.
+
+1. **AP10-PLAN-MIRA-01 — §9 преждевременно объявляет owner product blocker.**
+   План не доказал, что повторное наложение требует отдельной product-модели. Сначала нужно проверить минимальный current-scope вариант: одна активная measure для target, а новое санкционное решение выражается change той же measure с отдельной причиной/History. Если этот вариант реально противоречит уже утверждённым appeal/expiry/lift требованиям, Лёва должен показать конкретное противоречие; только тогда возникает owner fork. Multi-measure/aggregation нельзя вводить заранее.
+
+2. **AP10-PLAN-MIRA-02 — три одновременные pending appeals не нужны.**
+   Формулировка «не вводить one-pending, потому что владелец отдельно не задавал» ошибочно превращает отсутствие запрета в новую возможность. Утверждённые «до 3 апелляций» достаточно реализуются как максимум три последовательных submission slots; пока одна appeal pending, следующая не создаётся. Это минимальная модель и исключает дублирующие concurrent reviews.
+
+3. **AP10-PLAN-MIRA-03 — accepted appeal нельзя сводить только к full lift.**
+   Уже утверждено, что изменение measure не закрывает pending appeal. Следовательно appeal может быть удовлетворена после корректировки restrictions/срока той же measure, а не только полным снятием. План должен позволять resolution после соответствующего change и не навязывать full-lift-only semantics.
+
+4. **AP10-PLAN-MIRA-04 — own measure timeline не должна неявно раскрывать identity администратора.**
+   Owner decision гарантирует пользователю reason/status/appeal, но не утверждает публичность или subject-visible identity actor/reviewer. Если timeline читает ordinary Admin History, subject projection должна быть явным allowlist и по умолчанию не включать actorId/actorLabel, private context или другие admin-only поля.
+
+Не finding:
+- узкий configured owner identity boundary сам по себе допустим как минимальная техническая необходимость для owner target immunity, если не превращается в owner-role/super-admin subsystem;
+- existing AuthorizationLockoutError/countManagers не переделывать в AP-10.
