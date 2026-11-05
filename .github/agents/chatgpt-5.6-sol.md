@@ -73,21 +73,13 @@
 - enforcement должен происходить в authoritative server/domain boundaries, а не только скрытием UI.
 
 
-## AP-10 active measures lifecycle — corrected draft
+## AP-10 measure aggregation — OPEN, previous drafts withdrawn
 
-Предыдущий черновик «не более одной активной block/measure на пользователя» отозван после owner correction: он смешивал техническое состояние аккаунта с санкциями за отдельные нарушения.
+Два прежних черновика Миры были ошибочно построены от структуры данных:
+- сначала «не более одной active measure на пользователя»;
+- затем «несколько measures + union restrictions».
 
-Корректная модель:
-1. violation → отдельная sanction measure;
-2. measure хранит собственные restrictions, срок и историю изменений;
-3. appeal относится к этой measure в связи с её violation basis;
-4. новое нарушение создаёт новую measure, даже если предыдущая ещё активна;
-5. effective restrictions аккаунта = union всех active measures;
-6. expiry/lift/overturn одной measure убирает только её вклад;
-7. редактирование restrictions/срока той же measure не создаёт новую appeal автоматически;
-8. own account UI показывает меры раздельно и даёт appeal у каждой применимой меры.
-
-Это сохраняет причинность, историю и независимое обжалование каждого нарушения.
+Обе модели отозваны. Текущая продуктовая необходимость не требует заранее выбирать количество одновременно активных measures, правила aggregation или conflict-resolution. Эти вопросы остаются OPEN до появления конкретного санкционного сценария, который нельзя выразить минимальной моделью без такого решения.
 
 ## AP-10 block appeal boundary — corrected draft
 
@@ -101,6 +93,18 @@
 5. Даже если measure когда-либо будет связана с Complaint Case, оба workflows сохраняют собственные identities, permissions, outcomes и history.
 6. Нельзя автоматически выводить block-appeal outcomes/lifecycle из текущего Complaints Appeal contract.
 7. В частности, поведение pending block appeal при expiry, explicit lift или изменении sanction пока OPEN и требует отдельного owner decision.
+
+
+## AP-10 purpose filter
+
+Перед добавлением любого правила проверять:
+1. какую реальную проблему модерации оно решает;
+2. нужно ли оно, чтобы мера была понятной, соразмерной и реально исполнимой;
+3. нужно ли оно для защиты пользователя от произвольной/ошибочной меры;
+4. существует ли соответствующее действие в текущем продукте;
+5. нельзя ли отложить решение без дорогой переделки.
+
+Если конкретной необходимости нет — не превращать технически возможный edge case в product contract.
 
 
 ## AP-09 completion / AP-10 gate
