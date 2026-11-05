@@ -1,6 +1,6 @@
 # Мира — ChatGPT-5.6 Sol
 
-## AP-10 restriction catalog — purpose-first draft for owner review
+## AP-10 restriction catalog — purpose-first coordinator conclusion
 
 Не owner decision. Каждый пункт проверен по вопросу: какую конкретную вредную возможность он позволяет прекратить, не отбирая у пользователя несвязанные функции.
 
@@ -75,7 +75,7 @@ Child restrictions:
 - authoritative enforcement нужен на server/domain boundary каждого реально запрещённого действия.
 
 
-## AP-10 reason rules — purpose-first draft for owner review
+## AP-10 reason rules — purpose-first coordinator conclusion
 
 Не owner decision.
 
@@ -108,8 +108,6 @@ Reason нужен не ради формы и не ради красивого H
 
 5. **Denied / stale / failed / no-op / replay — нового reason/history event нет.**
    - Reason относится к реально committed administrative transition.
-
-6. **Если в будущем authoritative workflow сам даёт persisted основание изменения**, например отдельный review/appeal result, не заставлять администратора дублировать тот же смысл ручным текстом. Точная интеграция определяется только вместе с таким workflow.
 
 ### Presentation boundary
 
@@ -144,13 +142,13 @@ Owner decision:
 - должна ли target-authority проверка действовать одинаково на создание, изменение и снятие меры;
 - какие административные возможности входят в выбранную restriction-группу для privileged target.
 
-## AP-10 measure aggregation — OPEN, previous drafts withdrawn
+## AP-10 measure aggregation — not a current requirement
 
 Два прежних черновика Миры были ошибочно построены от структуры данных:
 - сначала «не более одной active measure на пользователя»;
 - затем «несколько measures + union restrictions».
 
-Обе модели отозваны. Текущая продуктовая необходимость не требует заранее выбирать количество одновременно активных measures, правила aggregation или conflict-resolution. Эти вопросы остаются OPEN до появления конкретного санкционного сценария, который нельзя выразить минимальной моделью без такого решения.
+Обе прежние модели отозваны как преждевременные. AP-10 не получает requirement на несколько одновременно активных measures, aggregation или conflict-resolution. Технический план должен выбрать минимальную модель для утверждённого поведения и не строить multi-measure subsystem заранее. Только если без пользовательски наблюдаемого выбора реализацию невозможно определить, возникает реальный owner fork.
 
 ## AP-10 block appeal boundary — corrected draft
 
