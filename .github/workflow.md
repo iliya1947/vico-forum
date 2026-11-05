@@ -2,7 +2,7 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 — третий coordinator whole-PR review, подзадача 1/3 завершена
+- Текущий этап: AP-09 — третий coordinator whole-PR review, подзадача 2/3 завершена
 - Coordinator: Мира
 - Technical planner/reviewer: Лёва
 - Исполнитель correction: Лира
@@ -13,7 +13,7 @@
 - PR state: Draft/open/mergeable
 - Correction delta: 2 commits, 2 files — `app/routes/admin-user.tsx` + `app/admin/users-authorization.test.tsx`
 - Exact-head CI #41941892340: SUCCESS — app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests
-- Coordinator review next: подзадача 2/3 — verify AP09-MIRA-04 useRef recovery lifecycle and repeated denial regression
+- Coordinator review next: подзадача 3/3 — final whole-PR gap-sweep/verdict
 - Codex technical review: только после coordinator PASS
 - AP-10/blocking/Settings/Stage 6/production вне scope
 - Lasting docs / PROJECT_STATE — отдельный documentation PR после принятой реализации
