@@ -2,21 +2,17 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 завершён; AP-10 заблокирован product decision gate владельца
-- AP-09 implementation PR #287: merged
-- AP09-MIRA-05 test-only stabilization PR #289: merged
-- AP-09 documentation PR #288: merged
-- AP-09 final docs merge commit: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
-- Current repository state: Admin Panel реализована через AP-09; blocking/AP-10 не начат
-- Следующий технический планировщик AP-10: Лёва, но только после решения владельца по blocking policy
-- Owner decision gate перед AP-10:
-  - login/existing sessions;
-  - public/private read;
-  - topic/Help/reply creation;
-  - own edits/profile changes;
-  - signals/appeals/uploads/translation generation;
-  - administrative actions, self-block и access managers;
-  - reason requirements для temporary block / permanent block / explicit lift;
-  - что именно автоматически восстанавливается после expiry/lift
-- AP-10 implementation не начинать до фиксации этих решений
-- Settings/AP-11/Stage 6/production вне текущего шага
+- Текущий этап: AP-10 product design — configurable restriction model approved, catalog/grouping pending
+- AP-09 полностью завершён и merged
+- AP-10 пока не передан Лёве на technical planning
+- Approved owner model:
+  - block не является фиксированным preset/type с единым набором последствий;
+  - каждая block-запись содержит выбранный набор restrictions;
+  - restrictions сгруппированы логически;
+  - group checkbox выбирает весь блок, child checkboxes позволяют точечно снять/добавить ограничения;
+  - temporary/permanent duration независим от restriction set;
+  - expiry/lift снимает restrictions этой block-записи и не меняет roles/grants/overrides;
+  - возможные presets в будущем — только shortcuts для предварительного выбора галочек, не отдельная policy model
+- Следующий product step: определить минимальный каталог restrictions и логические группы, учитывая фактические возможности текущего продукта
+- Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
+- После catalog/grouping: отдельно решить reason rules и access-manager/self-block safety; затем передать Лёве AP-10 technical planning
