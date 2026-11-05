@@ -1,61 +1,48 @@
 # Лёва — Codex-6.1 Sol
 
-## Лёва — AP-09 / #287: независимая whole-PR technical review — CHANGES REQUIRED
+## Лёва — AP-09 / #287: finding отозван; итоговый independent whole-PR PASS
 
 **Reviewed stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
 **Baseline/main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
-После [coordinator PASS #6646898897](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646898897) проверен весь AP-09 changed-file scope. Implementation выполняла Лира; я готовил план и проверял результат, реализацию во время review не менял.
+**Итоговый независимый verdict: PASS. Подтверждённых незакрытых current-scope defects: 0.**
 
-**Вердикт: CHANGES REQUIRED — один подтверждённый current-scope P2 дефект.** Первый finding не остановил whole-PR review; других подтверждённых current-scope findings не найдено.
+### Исправление моего предыдущего вывода
 
-### AP09-LEVA-01 / P2 — Users index меняет момент регистрации и иногда календарный день
+**AP09-LEVA-01 отзываю как неподтверждённый finding.** Мира верно указала на ошибку в [#6647016500](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6647016500): в моём прежнем synthetic repro колонка была `timestamptz`, тогда как accepted `user.created_at` имеет **timestamp without time zone**. Я не проверил тип до построения repro и выдал поведение другой schema за дефект реализации. Это моя ошибка review, не ошибка Лиры.
 
-Место: [db/admin-users.ts:30](https://github.com/iliya1947/vico-forum/blob/b85c3809befe3a1dcc83fe654dde4cd093f625ba/db/admin-users.ts#L30).
+На фактическом type boundary `to_char(created_at,...Z)` не выполняет показанного мной session-TimeZone сдвига. Поэтому **никакая correction в reader или regression package по прежнему finding не требуется**. Предложенный мной `AT TIME ZONE 'UTC'` на реальном timestamp-without-zone превратил бы значение в timestamptz и как раз создал бы неверное форматирование при non-UTC session. Его применять нельзя.
 
-Новый SQL делает:
-`to_char(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "joinedAt"`.
+Предыдущий CHANGES REQUIRED [#6646972798](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646972798) superseded настоящим PASS; исходные diagnostic scripts/results сохраняются как история ошибочного эксперимента, а не evidence дефекта current implementation.
 
-`created_at` — timestamptz. `to_char` форматирует его в TimeZone текущей PostgreSQL session, но литерал `Z` объявляет результат UTC. В `createWebPool` нет установки UTC; schema/runtime contracts не требуют UTC session. Затем `Joined` в Users index парсит строку как UTC и форматирует в UTC. Detail берёт тот же stored момент через существующий pg Date → toISOString и отображает правильный UTC день.
+### Перепроверка на accepted schema
 
-**Фактический repro на PostgreSQL 17 и exact-head PostgresAdminUsersReader**, synthetic временная `user` table, один stored instant `2026-11-04T23:30:00.000Z`:
+Без изменения implementation создана новая disposable PostgreSQL 17 DB. Применены **все 58 migrations 0000–0057** из reviewed worktree. Через pg_catalog подтверждён фактический `timestamp without time zone` — как в 0003, Drizzle schema и 0057 snapshot.
 
-| Session TimeZone | Reader joinedAt | Date в index | Date в detail |
-| --- | --- | --- | --- |
-| UTC | 2026-11-04T23:30:00.000Z | Nov 4, 2026 | Nov 4, 2026 |
-| Asia/Jerusalem | 2026-11-05T01:30:00.000Z | **Nov 5, 2026** | **Nov 4, 2026** |
-| America/New_York | 2026-11-04T18:30:00.000Z | Nov 4, 2026 | Nov 4, 2026 |
+Использованы **настоящие exact-head readers**:
+- `PostgresAdminUsersReader.listUsers()`;
+- `DrizzleForumRepository.readProfile()` → existing `joinedAt.toISOString()`;
+- тот же Intl formatter с UTC, который используют views.
 
-Для третьей строки календарный день совпал, но момент в DTO всё равно неверен. Во всех sessions обычный pg `select created_at` → `toISOString()` возвращает исходный instant. Это не UI-locale/SSR clock issue и не просьба менять инфраструктуру: ошибка создаётся конкретной новой SQL serialization.
+Три stored timestamps у границ суток (winter late/early и summer late) × session TimeZone **UTC / Asia/Jerusalem / America/New_York**: **9/9 сравнений PASS**. Во всех случаях directory ISO, detail ISO и календарные дни совпали. Например, `2026-11-04T23:30:00.000` в accepted column даёт `2026-11-04T23:30:00.000Z` и **Nov 4, 2026** обоими путями во всех трёх sessions.
 
-**Минимальная correction:** в этом reader явно сериализовать UTC, например `to_char(u.created_at AT TIME ZONE 'UTC', ...)`, либо сохранить timestamptz и ISO-normalize корректно в adapter. Не менять глобальную DB/session configuration, schema, permissions, authz protocol или остальные readers. Диагностическая UTC expression проверена на всех трёх sessions и возвращает исходный instant; implementation пока не менялась.
+Артефакты: `/workspace/work/ap09-review-evidence/accepted-schema-reevaluation.mts` и `accepted-schema-results.json`. Это настоящий PostgreSQL/Drizzle read path, не browser E2E. Временный PG container/volume и dependency symlink удалены; worktree clean, head прежний.
 
-Добавить targeted native regression в existing `tests/database/admin-users.test.ts`: non-UTC session + timestamp у границы суток, exact ISO instant и совпадение с исходным `created_at.toISOString()`; reset TimeZone/fixture в cleanup. Нынешний тест проверяет только форму строки/наличие Z, поэтому зелёный CI не обнаруживает сдвиг.
+### Whole-PR review и проверки
 
-### Остальной whole-PR scope
+Ранее весь **37-file diff** этого же exact head проверен независимо; implementation с тех пор не менялась. Остальная проверка остаётся применимой: independent Users-read/catalog/admin-only grant/admission, minimal directory SQL/DTO/search/pagination, protected profile projection, targeted consistent one-user management snapshot, direct existing canonical assignment/override reuse без нового protocol, existing lockout/History, fetcher/recovery lifecycle AP09-MIRA-01..04, legacy no-store redirects и truthful unfinished list, localization/paths/shared UI, migration/snapshot/manifest/runtime boundaries. После удаления ошибочного finding других confirmed defects не осталось.
 
-Проверены все **37 changed files**: source/route/UI/tests, schema/catalog/forward migration/manifest; новый snapshot сравнен структурно с accepted 0056 — только catalog CHECK + snapshot identity/prevId.
+Фактические проверки на этом head:
+- [CI #41941892340](https://github.com/iliya1947/vico-forum/actions/runs/41941892340) — **SUCCESS**, head/conclusion повторно проверены; checks/database SUCCESS.
+- Ранее независимо локально: **5 UI/route files / 37 tests PASS**, **3 PostgreSQL files / 8 tests PASS**. Их заново без implementation changes не повторял; полный application/PG suite локально не перезапускался.
+- Нынешняя re-evaluation: accepted-schema **9/9 date/read comparisons PASS**. Неверный прежний timestamptz repro в эту проверку не включён.
+- Source/implementation ни при review, ни при re-evaluation не исправлялись. Я участвовал в planning/review, реализацию AP-09 выполняла Лира.
 
-- Independent `admin.users.read`, admin-only initial grant, global/header/Users admission и отсутствие новых management powers. Custom roles/overrides сохраняются. Новые routes gate до target/query reads.
-- Minimal name/ID directory SQL: literal escape, filter до LIMIT, C-collation ID paging 25+lookahead, независимый matching total, empty states; email не выбирается и не участвует в search.
-- Detail explicit public profile projection; read-only actor не получает management snapshot/hidden controls; targeted manager read одного user через existing REPEATABLE READ snapshot, без email/других users/всех role grants.
-- Shared existing assignment/override controls используют прежний canonical authorization action, без `inlineUserAuthorization`/actor-expectation protocol. Existing session/fresh authorization/origin, authz mutation lock, last-manager guard и atomic History не менялись.
-- Fetcher pending/result/revalidation и актуальные default values; управленческие данные исчезают после fresh revocation. AP09-MIRA-01..04 corrections проверены: useRef ограничивает recovery GET mounted error subtree, успешный read-only recovery позволяет следующий независимый denial cycle; both-rights-revoked остаётся fail-closed без GET loop или mutation replay. No history.state marker.
-- Permission-dependent legacy redirects имеют private/no-store; Users убран из unfinished list; management-only сохраняет прежний authz subset без Users-read gate.
-- EN/RU/HE strings/fingerprints, encoded targets, public-profile URLs/safe text, общая shell composition и существующие CSS boundaries. Нет block/lift, user delete/edit-any, Settings, нового writer/RBAC, runtime grants, dependency или lasting documentation changes.
+**Информация не проверена:** actual authenticated Chromium→Worker→PostgreSQL AP-09 browser/deployed acceptance. Отдельный mandatory browser/owner visual gate не назначался; эти проверки не заявляются выполненными. Production/resources/секреты не затрагивались. Lasting docs/PROJECT_STATE — отдельный documentation PR после принятой реализации.
 
-### Проверки и границы
+### Завершение
 
-- [Exact-head CI #41941892340](https://github.com/iliya1947/vico-forum/actions/runs/41941892340): SUCCESS на reviewed head. Повторно подтверждены head/conclusion, jobs `checks`/`database` и отсутствие failed steps. CI не выдаётся за доказательство отсутствия finding выше.
-- Независимо локально: **5 UI/route files / 37 tests PASS** (`users`, `users-authorization`, `routes/admin-users`, `routes/authorization-admin`, `authorization/admin-view`).
-- Локально PostgreSQL 17: **3 files / 8 tests PASS** (`admin-users`, `admin-users-authorization`, `authorization-snapshot`); отдельно выполнен timezone repro с exact reader. Полный application/PG suite локально повторно не запускался.
-- Evidence: `/workspace/work/ap09-review-evidence/`: targeted-tests.log, native-tests.log, timezone-probe.mts, timezone-results.json, timezone-ui-dates.jsonl. Actual SQL/pg reader и тот же Intl date formatter; **не** browser E2E.
-- **Информация не проверена:** authenticated Chromium→Worker→PostgreSQL AP-09 browser flow/deployed acceptance; отдельный mandatory browser/owner visual gate не назначен. Production/секреты/внешние ресурсы не использовались.
-- Task-owned PostgreSQL container/volume и dependency symlink удалены. Worktree clean; head неизменен. Никаких implementation fixes/commits.
+Coordinator PASS Миры #6646898897 и итоговый independent technical PASS относятся к одному stable `b85c3809`. Новый implementation/correction cycle не нужен: finding снят вследствие исправления диагноза, код не менялся. #287 готов к merge владельцем; AP-10/blocking/Settings/rollout не начинались.
 
-### Следующий шаг
+**Действие разработчика:** merge PR #287.
 
-**Мира:** проверить AP09-LEVA-01 по repro и передать Лире один bounded correction package: UTC serialization + targeted native regression. После нового stable exact head/checks — coordinator whole-PR cycle заново, затем независимый technical review по workflow. План/RBAC/protocol/остальной scope не расширять. #287 остаётся Draft, merge до устранения finding не готов. Lasting docs — отдельным PR после принятой реализации.
-
-**Действие разработчика:** подключить Миру; finding и весь технический контекст переданы в #251.
-
-Опубликованный review: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646972798
+Опубликованный итог: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6647373214
