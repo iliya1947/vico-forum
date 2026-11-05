@@ -19,3 +19,5 @@
 - Coordinator review technical plan: REVISION REQUIRED — AP10-PLAN-MIRA-01..04. Не начинать implementation до исправленного плана и coordinator approval.
 
 - Different violations create different measures; one pending appeal per measure at a time; up to 3 sequential appeals; accepted appeal may lift or modify the same measure.
+
+- Admin actor/reviewer identity is internal-only: own measure/appeal UI never exposes concrete administrator identity; internal authorized History retains it.
