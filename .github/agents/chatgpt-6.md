@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-09 — bounded correction AP09-MIRA-01..03 завершён, author handoff (2026-11-05)
+
+- Координатор Мира завершила whole-PR review исходного [Draft #287](https://github.com/iliya1947/vico-forum/pull/287) на `f5117f22bd891d3892357fc984009388481001f7`: [CHANGES REQUIRED / 3 подтверждённых current-scope finding](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6645694455). Согласованный bounded correction реализован только для AP09-MIRA-01..03. Новый stable implementation exact head: `13bae37dd3b7d033b271788fadb7e8be63d66a43` (base main `2651d2bf7de7212068c54674dca7d90716ea92c3`).
+- **MIRA-01:** `app/routes/admin-user.tsx` route ErrorBoundary перехватывает thrown 403 from canonical fetcher, делает **одну** GET-навигацию/revalidation текущего detail и читает fresh effective Users-read. При сохранённом `admin.users.read` показывает read-only detail без stale management DOM/payload, при отказе Users-read остаётся guarded 403 без loop. Mutation не повторяется, existing action/writer не менялись. `app/admin/users-authorization.test.tsx` покрывает обе цепочки и отсутствие повторного submit.
+- **MIRA-02:** `app/routes/under-development.tsx` выдаёт protected `private, no-store` в обеих successful capability-dependent legacy Users redirects; `app/routes/admin-users.test.ts` проверяет headers/destinations.
+- **MIRA-03:** `app/forum/under-development.ts` больше не перечисляет готовый Users в unfinished checklist, сохраняя старый feature URL compatibility redirect. `app/admin/users.test.tsx` подтверждает список.
+- Изменены только 3 AP-09-facing runtime файла и связанные regression tests. Промежуточный TypeScript false-fail в новом test assertion устранён без изменения runtime. Не создавались новый mutation protocol, History kind, grant, data schema, AP-10 feature, lasting documentation или production changes.
+- [Exact-head CI #41939426331](https://github.com/iliya1947/vico-forum/actions/runs/41939426331) **SUCCESS**: `checks` 143/143 files, **1887/1887** application tests, `database` 41/41 files, **483/483** native PostgreSQL tests; lint/typecheck/build, migrations/manifest parity, runtime privilege/credential probes, Worker smoke PASS.
+- **Информация не проверена:** real authenticated AP-09 Chromium→Worker→PostgreSQL browser flow и deployed/production acceptance. Standalone browser/owner visual не были назначены.
+- PR #287 остаётся open/Draft и не merged; body обновлён. Следующий агент — Мира: **новый coordinator whole-PR review exact head `13bae37dd3b7d033b271788fadb7e8be63d66a43`**. Лёва не подключается до нового coordinator PASS. Лира завершила bounded correction и остановилась.
+
 ## AP-09 — этап 4/4 завершён, author handoff (2026-11-05)
 
 - [Implementation PR #287](https://github.com/iliya1947/vico-forum/pull/287) — Draft/open, stable exact head `f5117f22bd891d3892357fc984009388481001f7`, база `main` `2651d2bf7de7212068c54674dca7d90716ea92c3`. AP-09 implementation scope выполнен; это авторская передача, **не** independent whole-PR PASS.
