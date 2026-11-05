@@ -21,6 +21,7 @@ const defaultPoolFactory: AuthorizationPoolFactory = createWebPool;
 export function createHyperdriveAuthorization(
   connectionString: string,
   createPool: AuthorizationPoolFactory = defaultPoolFactory,
+  ownerUserId?: string,
 ): AuthorizationManagementCapability {
   const cache = new Map<string, ReturnType<PostgresAuthorizationRepository["resolveUser"]>>();
 
@@ -28,7 +29,7 @@ export function createHyperdriveAuthorization(
     withAuthorizationAvailability(async () => {
       const pool = createPool(connectionString);
       try {
-        return await operation(new AuthorizationService(new PostgresAuthorizationRepository(pool)));
+        return await operation(new AuthorizationService(new PostgresAuthorizationRepository(pool, ownerUserId)));
       } finally {
         bestEffortDiscardClient(pool);
       }
@@ -42,7 +43,7 @@ export function createHyperdriveAuthorization(
           value = withAuthorizationAvailability(async () => {
             const pool = createPool(connectionString);
             try {
-              return await new PostgresAuthorizationRepository(pool).resolveUser(userId);
+              return await new PostgresAuthorizationRepository(pool, ownerUserId).resolveUser(userId);
             } finally {
               bestEffortDiscardClient(pool);
             }

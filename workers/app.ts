@@ -72,7 +72,8 @@ export default {
     context.set(adminForumContext,createHyperdriveAdminForum(webConnectionString));
     context.set(adminUsersContext, createHyperdriveAdminUsers(webConnectionString));
     context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
-    const authorization = createHyperdriveAuthorization(webConnectionString);
+    const ownerUserId = (env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID;
+    const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     context.set(authorizationContext, authorization);
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
     context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, authorization));
