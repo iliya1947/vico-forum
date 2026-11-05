@@ -148,13 +148,13 @@
 - До начала этой отдельной задачи не строить спекулятивный super-admin subsystem.
 
 
-## AP-10 owner correction — violation → measure → appeal
+## AP-10 owner correction — Complaint ≠ block appeal
 
-1. Блокировка/мера назначается **из-за конкретного нарушения**. Нарушение является смысловым основанием санкции.
-2. Appeal относится к exact measure в связи с её конкретным violation basis. Он не относится к технической версии restriction set.
-3. Изменение срока или отдельных restrictions в рамках той же санкции не создаёт автоматически новую appeal: это та же мера за то же нарушение; reviewer должен видеть её текущее состояние и историю изменений.
-4. Новое отдельное нарушение требует отдельной measure identity и отдельного права апелляции. Нельзя поглощать новое нарушение редактированием старой меры.
-5. Поэтому прежний черновой вариант Миры «не более одной активной block/measure на пользователя» **отозван как логически неверный**.
-6. Несколько measures могут быть активны одновременно, если они относятся к разным нарушениям. Effective restrictions пользователя — union restrictions всех активных measures.
-7. Expiry, explicit lift или successful appeal одной меры снимает только ограничения этой меры. Если то же restriction продолжает накладываться другой активной мерой, оно остаётся эффективно.
-8. На собственной account page каждая действующая мера должна быть различима отдельно: violation/reason context, срок, restrictions и собственный appeal entry point.
+1. Жалоба/Complaint и AP-10 block appeal — разные механизмы.
+2. Complaint — входящий report о возможном нарушении другого пользователя. По текущему Complaints contract report сам по себе не является доказательством или санкцией, а Complaint Decision не применяет user blocking автоматически.
+3. AP-10 block appeal подаёт уже наказанный пользователь против конкретной administrative measure, применённой к нему.
+4. Measure сохраняет stated violation/reason context, чтобы было понятно, за что она назначена, но block appeal не является новой Complaint и не переиспользует Complaint Appeal semantics.
+5. Existing Complaint Appeal относится к Complaint Decision/effective outcome; AP-10 block appeal относится к administrative measure. Они не должны автоматически мутировать друг друга даже если в будущем measure будет связана с Complaint Case.
+6. Предыдущая формулировка Миры, описывавшая block appeal как проверку самого violation/Complaint-подобного предмета, отозвана.
+7. Что происходит с уже поданной block appeal после expiry/lift/изменения меры, **ещё не определено** и не должно выводиться автоматически из Complaint workflow.
+8. Новое отдельное нарушение может породить отдельную measure; вопрос о количестве/совмещении активных measures остаётся частью AP-10 product model, но не меняет границу Complaint ≠ block appeal.
