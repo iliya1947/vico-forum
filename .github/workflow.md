@@ -1,34 +1,17 @@
 # Admin panel — current workflow
 
-- Служебный PR: #251
-- План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 product design завершён; готов к technical planning
-- AP-09 полностью завершён и merged
-- AP-10 пока не передан Лёве на technical planning
-- Approved owner model:
-  - block не является фиксированным preset/type с единым набором последствий;
-  - каждая block-запись содержит выбранный набор restrictions;
-  - restrictions сгруппированы логически;
-  - group checkbox выбирает весь блок, child checkboxes позволяют точечно снять/добавить ограничения;
-  - temporary/permanent duration независим от restriction set;
-  - expiry/lift снимает restrictions этой block-записи и не меняет roles/grants/overrides;
-  - возможные presets в будущем — только shortcuts для предварительного выбора галочек, не отдельная policy model
-- Approved appeal invariant: block appeal ≠ Complaint. Block appeal подаёт уже наказанный пользователь против exact administrative measure; до 3 апелляций на одну конкретную меру; он не является restriction и не отключается галочками; entry point на own account page рядом с соответствующей мерой; Complaint/Complaint Appeal остаются отдельным domain и не подменяют AP-10 appeal
-- Own block-status/appeal surface должна оставаться достижимой независимо от restriction set
-- Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
-- Техническая форма senior/head-admin authority пока не зафиксирована; не hard-code role name, сохранить permission-based model
-- Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
-- Restriction catalog, reason policy, self-target, target-authority и appeal lifecycle закрыты; owner product gate отсутствует
-- Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
-- Текущий исполнитель: Лёва — bounded technical planning AP-10
-
-- Post-admin follow-up: redesign owner/authorization recovery model; current last-access-manager invariant (`AuthorizationLockoutError` / `managers_ever_existed` / manager count) owner признал ошибочной целевой архитектурой. Не менять до завершения админ-панели; затем отдельная задача.
-
-- Self-target rule: actor не создаёт, не изменяет и не снимает меру относительно самого себя.
-- Target-authority hierarchy действует на весь lifecycle меры: создание, изменение и снятие; это не отдельный открытый вопрос.
-
-- Pending appeal lifecycle resolved: expiry/lift закрывает appeal как утратившую предмет; изменение restrictions/срока/reason не закрывает appeal — она остаётся привязана к той же measure, History сохраняет изменения.
-
-- Multi-measure aggregation не является текущим requirement; не проектировать заранее. Эскалировать только при доказанной неизбежной observable product-развилке.
-
-- AP-10 planning task recorded in #251; implementation не начинать до coordinator review технического плана.
+- Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
+- Текущий этап: AP-10 — общий technical plan готов; coordinator review + одна product-развилка
+- Current main / planning baseline: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
+- AP-09 полностью merged: implementation #287, test stabilization #289, docs #288
+- Technical planner/reviewer: Лёва; coordinator: Мира; implementation после approval: Лира
+- План: [#6667784146](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146) и `.github/agents/codex-6.1-sol.md`
+- Implementation AP-10 не начат; implementation PR не создавался
+- Общая часть: configurable child restrictions; authority/reason/CAS/History; current code enforcement/replay/cleanup; own private status и exact-measure block appeals
+- Предложены на technical review: blocks.manage + отдельная elevated capability, narrow trusted owner-ID binding, минимальные measure/restriction/appeal persistence и точки integration
+- Одна выявленная развилка (§9): новое наложение при ещё активной мере — edit прежней с прежним appeal quota, новая мера с отдельным quota либо недоступность нового наложения. Модели single-active и multi-measure aggregation ранее отозваны; выбор молча не сделан
+- Следующий шаг: Мира review общей части и вынос владельцу только конкретного сценария §9; после решения — локальное завершение active-state/enforcement части, затем approval/назначение реализации
+- Закрытые catalog/reason/self-target/lifecycle hierarchy вопросы не открывать заново
+- Last-manager принцип НЕ применяется к AP-10: никаких manager-count veto/recovery требований. Существующий код пока не менять; комплексная очистка после админ-панели отдельной задачей
+- AP-10 own status/appeal всегда доступен; Complaint/Complaint Appeal — отдельный domain
+- AP-11/Settings/Stage 6/production не начинались; Марк не назначен
