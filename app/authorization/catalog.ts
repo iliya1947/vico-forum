@@ -17,6 +17,8 @@ export const PERMISSION_CATALOG = [
   "access.authorization.manage",
   "admin.history.read",
   "admin.users.read",
+  "admin.users.blocks.manage",
+  "admin.users.blocks.managePrivileged",
   "forum.complaint.create",
   "forum.complaint.review",
   "forum.complaint.priority.manage",
@@ -63,7 +65,10 @@ export const INITIAL_ROLE_GRANTS = {
     "forum.complaint.review",
     "forum.complaint.appeal.review",
   ],
-  admin: PERMISSION_CATALOG.filter((permission) => permission !== "forum.complaint.reporterIdentity.read"),
+  admin: PERMISSION_CATALOG.filter((permission) =>
+    permission !== "forum.complaint.reporterIdentity.read" &&
+    permission !== "admin.users.blocks.manage" &&
+    permission !== "admin.users.blocks.managePrivileged"),
 } as const satisfies Record<string, readonly PermissionKey[]>;
 
 export const AUTHORIZATION_MANAGE_PERMISSION: PermissionKey = "access.authorization.manage";
