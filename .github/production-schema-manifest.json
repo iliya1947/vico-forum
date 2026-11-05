@@ -7291,13 +7291,13 @@
         },
         {
           "name": "created_at",
-          "type": "timestamp (3) with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": false,
           "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
         },
         {
           "name": "expires_at",
-          "type": "timestamp (3) with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": true,
           "defaultSha256": null
         },
@@ -7309,7 +7309,7 @@
         },
         {
           "name": "lifted_at",
-          "type": "timestamp (3) with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": true,
           "defaultSha256": null
         },
@@ -7556,7 +7556,7 @@
         },
         {
           "name": "created_at",
-          "type": "timestamp (3) with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": false,
           "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
         },
@@ -7568,7 +7568,7 @@
         },
         {
           "name": "resolved_at",
-          "type": "timestamp (3) with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": true,
           "defaultSha256": null
         },
