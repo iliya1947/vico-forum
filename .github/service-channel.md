@@ -84,3 +84,13 @@
 - Terminal boundary применяется в общем transition primitive после measure lock; stale edit/review после expiry/lift не меняет меру/outcome/History. Expired→future и materialize-before-extension ветки удалены из актуального плана.
 - Обе block-management capabilities исключаются из всех built-in initial grants, включая catalog-all seed admin; никакого migration backfill. Owner binding не выдаёт capability. Доступ только через explicit dynamic grant; тестовые actors получают явные grants.
 - [Delta для Миры](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257); implementation/DB/production не менялись.
+
+
+## AP-10 technical plan — coordinator PASS
+
+- Final delta #6670909257 проверена против owner decisions и актуального полного плана Лёвы.
+- AP10-PLAN-MIRA-01..06 закрыты.
+- Expired/lifted measure terminal; повторное наказание = новая measure.
+- Block-management capabilities имеют zero initial grants across built-in roles и выдаются только explicit grant.
+- Новых current-scope blockers не найдено.
+- Technical plan AP-10 approved for implementation; implementation ещё не начат.
