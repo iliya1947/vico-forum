@@ -1,4 +1,5 @@
-import { data, useLoaderData, type RouterContextProvider } from "react-router";
+import { useEffect } from "react";
+import { data, isRouteErrorResponse, useLoaderData, useLocation, useNavigate, useRouteError, type RouterContextProvider } from "react-router";
 import { requireAdminUsersAccess, adminObjectId, adminPrivateHeaders } from "../admin/users.server";
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -50,4 +51,21 @@ export async function loader({ params, context }: {
 export default function AdminUserRoute() {
   return <AdminUserDetail {...useLoaderData<typeof loader>()} />;
 }
-export const ErrorBoundary = ForumRouteError;
+export function ErrorBoundary() {
+  const error = useRouteError();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const denied = isRouteErrorResponse(error) && error.status === 403;
+  const alreadyRechecked = (location.state as { ap09AccessRechecked?: boolean } | null)?.ap09AccessRechecked === true;
+
+  useEffect(() => {
+    if (!denied || alreadyRechecked) return;
+    // A denied canonical fetcher action does not revalidate loaders; refresh this GET once.
+    // A direct Users-read denial remains denied after the single fresh check.
+    void navigate(location.pathname + location.search + location.hash, {
+      replace: true, state: { ap09AccessRechecked: true },
+    });
+  }, [denied, alreadyRechecked, location.pathname, location.search, location.hash, navigate]);
+
+  return <ForumRouteError />;
+}
