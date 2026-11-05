@@ -177,7 +177,7 @@ describe("AP-09 canonical fetcher composition", () => {
     fireEvent.submit(formFor(mounted.container, "assignRole")!);
     await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(mounted.container.querySelector("#authorization")).toBeNull());
-    expect(mounted.container.textContent).toContain("Public details");
+    await waitFor(() => expect(mounted.container.textContent).toContain("Public details"));
     expect(mounted.action).toHaveBeenCalledOnce();
     expect(mounted.router.state.location.state).toBeNull();
 
@@ -193,7 +193,7 @@ describe("AP-09 canonical fetcher composition", () => {
     await waitFor(() => expect(mounted.action).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(4));
     await waitFor(() => expect(mounted.container.querySelector("#authorization")).toBeNull());
-    expect(mounted.container.textContent).toContain("Public details");
+    await waitFor(() => expect(mounted.container.textContent).toContain("Public details"));
     expect(mounted.container.querySelector('[role="alert"][data-status="403"]')).toBeNull();
     expect(mounted.router.state.location.pathname).toBe(path);
     expect(mounted.router.state.location.state).toBeNull();
