@@ -18,8 +18,11 @@
 - Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
 - Техническая форма senior/head-admin authority пока не зафиксирована; не hard-code role name, сохранить permission-based model
 - Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
-- Следующий product step: owner review restriction catalog и reason rules; затем решить только действительно относящиеся к AP-10 self-target/target-authority вопросы
+- Следующий product step: owner review restriction catalog и reason rules; self-target и lifecycle target-authority уже закрыты
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
-- После catalog/grouping: отдельно завершить reason rules и действительно относящиеся к AP-10 self-target/target-authority решения; затем передать Лёве AP-10 technical planning
+- После catalog/grouping: завершить reason rules и оставшиеся реальные AP-10 product gaps; затем передать Лёве AP-10 technical planning
 
 - Post-admin follow-up: redesign owner/authorization recovery model; current last-access-manager invariant (`AuthorizationLockoutError` / `managers_ever_existed` / manager count) owner признал ошибочной целевой архитектурой. Не менять до завершения админ-панели; затем отдельная задача.
+
+- Self-target rule: actor не создаёт, не изменяет и не снимает меру относительно самого себя.
+- Target-authority hierarchy действует на весь lifecycle меры: создание, изменение и снятие; это не отдельный открытый вопрос.
