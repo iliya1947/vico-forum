@@ -1,5 +1,15 @@
 # Лира — ChatGPT-6
 
+## AP-09 — correction AP09-MIRA-04 / author handoff (2026-11-05)
+
+- Второй [coordinator review Миры #6646120793](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646120793) завершился CHANGES REQUIRED по **одному** current-scope defect `AP09-MIRA-04` на прежнем head `13bae37dd3b7d033b271788fadb7e8be63d66a43`: сохранённый `ap09AccessRechecked` в browser history мешал последующему независимому grant→revoke denial на той же entry.
+- Bounded correction в [PR #287](https://github.com/iliya1947/vico-forum/pull/287): только `app/routes/admin-user.tsx` и `app/admin/users-authorization.test.tsx`; новый stable exact head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+- Убрана запись `ap09AccessRechecked` в `location.state`; одноразовый guard теперь хранится в `useRef` только пока mounted error boundary существует. После successful GET recovery boundary заменяется user detail и guard сбрасывается; отдельный будущий denial может получить свой единственный GET. Когда `admin.users.read` тоже отозван, остаётся terminal 403 после одного GET. Canonical mutation не повторяется, writer/History/permission contracts не менялись.
+- Mounted test покрывает **два последовательных** fresh management denials после промежуточного восстановления grant на той же URL/history entry: два action submits, два отдельные GET recovery, итоговый read-only detail без privileged DOM и без persisted `location.state` marker. Existing first-denial, both-revoked/fail-closed и успешные формы остаются в suite.
+- **[Exact-head CI #41941892340](https://github.com/iliya1947/vico-forum/actions/runs/41941892340) — SUCCESS**: `checks` 143/143 files, 1888/1888 application tests; `database` 41/41 files, 483/483 PostgreSQL tests; lint/typecheck/build, migrations/schema parity, runtime probes и existing Worker smoke PASS.
+- PR #287 body обновлён; Draft/open, без merge. No AP-10, Settings, infrastructure, production, lasting docs или чужих task changes. Информация не проверена: real authenticated AP-09 Chromium→Worker→PostgreSQL browser/production acceptance (не была обязательной для отдельного AP-09 CI gate).
+- **Author handoff Мире** на новый exact head `b85c3809befe3a1dcc83fe654dde4cd093f625ba` для её решения и coordinator review. Это **не** whole-PR PASS автора; Лира прекращает implementation changes до следующего confirmed bounded finding.
+
 ## AP-09 — bounded correction AP09-MIRA-01..03 завершён, author handoff (2026-11-05)
 
 - Координатор Мира завершила whole-PR review исходного [Draft #287](https://github.com/iliya1947/vico-forum/pull/287) на `f5117f22bd891d3892357fc984009388481001f7`: [CHANGES REQUIRED / 3 подтверждённых current-scope finding](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6645694455). Согласованный bounded correction реализован только для AP09-MIRA-01..03. Новый stable implementation exact head: `13bae37dd3b7d033b271788fadb7e8be63d66a43` (base main `2651d2bf7de7212068c54674dca7d90716ea92c3`).
