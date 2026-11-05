@@ -2,7 +2,7 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 — новый coordinator whole-PR review, подзадача 2/4 завершена
+- Текущий этап: AP-09 — новый coordinator whole-PR review, подзадача 3/4 завершена
 - Coordinator: Мира
 - Technical planner/reviewer: Лёва
 - Исполнитель correction: Лира
@@ -14,7 +14,7 @@
 - Correction delta: 7 commits, 6 files, only AP09-MIRA-01..03 implementation/tests
 - Exact-head CI #41939426331: SUCCESS — app 143/143 files, 1887/1887 tests; PostgreSQL 41/41 files, 483/483 tests
 - Coordinator finding: `AP09-MIRA-04` — persistent recovery marker breaks a later fresh-denial cycle
-- Coordinator review next: подзадача 3/4 — verify AP09-MIRA-02/03 corrections and remaining correction delta
+- Coordinator review next: подзадача 4/4 — final gap-sweep/verdict and one bounded return package if findings remain
 - Codex technical review: только после нового coordinator PASS
 - AP-10/blocking/Settings/Stage 6/production вне scope
 - Lasting docs / PROJECT_STATE — отдельный documentation PR после принятой реализации
