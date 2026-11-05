@@ -1,5 +1,13 @@
 # Лира — ChatGPT-6
 
+## AP-10 — первый ограниченный срез: restriction catalog (2026-11-06)
+
+- Implementation назначен Мирой в [#6671610214](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6671610214), approved technical plan Лёвы `.github/agents/codex-6.1-sol.md`. Baseline main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+- Открыт [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), current exact head `d43694bc52543312d0b392bf1b4b32f0c09c13e3`. **Bounded subtask 1a**: `app/admin/user-measure-restrictions.ts` — закрытый каталог 12 restriction child IDs и пяти групп, уникальный nonempty input validation, выделение privileged administrative restrictions, mapping existing administrative permission families (включая новые AP10-only keys для последующего этапа). Отдельный `app/admin/user-measure-restrictions.test.ts` — 4 теста на идентичность/валидацию/группы и mapping.
+- [Exact-head CI #42126095513](https://github.com/iliya1947/vico-forum/actions/runs/42126095513) **SUCCESS**, `checks` 144/144 application files, **1892/1892 tests**, `database` 41/41 PostgreSQL files, **483/483 tests**; lint/typecheck/build/runtime probes/Worker smoke PASS.
+- **Scope boundary**: catalog пока не становится DB-permission/enforcement authority; нельзя считать AP-10 санкции работающими или merge Draft partial PR. Следующий bounded slice — зарегистрировать block capabilities с zero initial grants и добавить forward schema/migration/DB constraints + metadata/native tests, затем service transitions, integrations/appeals/UI по одобренному §8 plan.
+- Ни runtime measures/DB schema, ни permission grants, ни production, ни lasting documentation/PROJECT_STATE не менялись. Лира завершила **только 1a** и остановилась до команды разработчика продолжать. Координационные файлы не редактировала.
+
 ## AP09-MIRA-05 — test-only correction / author handoff (2026-11-05)
 
 - [Задача Миры #6647586611](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6647586611): после merge AP-09 implementation #287 тест repeated management denial оказался нестабилен в docs PR #288 CI. В двух rerun failed `checks` один и тот же assertion `Public details` не дождался успешного read-only рендера, хотя `loader` уже вызван и `#authorization` исчез на промежуточном ErrorBoundary. Это test synchronization, не установленный runtime bug.
