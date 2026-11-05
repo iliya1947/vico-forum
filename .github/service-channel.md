@@ -30,7 +30,12 @@
 - React Router 8.3.1 source подтверждает эту lifecycle-модель: route ErrorBoundary один раз преобразуется в stable `errorElement`; `RenderErrorBoundary` сохраняет component subtree при error→error navigation и переключается на route children при успешном recovery.
 - Mounted regression покрывает два независимых management-denial cycles на одной history entry, отсутствие `location.state` marker, два action submit без replay и terminal both-rights-revoked branch.
 - Новых current-scope findings в 2/3 нет.
-- Следующая подзадача 3/3: final whole-PR gap-sweep/verdict. Лёва подключается только после coordinator PASS.
+- Подзадача 3/3 завершена; stable exact head не изменился: `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+- Final whole-PR gap-sweep: confirmed current-scope defects **0**. `AP09-MIRA-01..04` закрыты.
+- `main` по-прежнему идентичен baseline `2651d2bf7de7212068c54674dca7d90716ea92c3`; integration drift отсутствует.
+- Direct loader 403 также может выполнить максимум один same-URL recovery GET; это остаётся fail-closed, не создаёт loop и не расширяет authority, поэтому отдельным current-scope defect не является.
+- **Coordinator final verdict: PASS** на exact head `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+- Следующий этап: Лёва выполняет independent technical review **того же exact head**. Implementation менять до его результата не требуется.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
