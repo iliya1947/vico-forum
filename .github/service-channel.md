@@ -30,7 +30,13 @@
 - Compatibility старого `under-development?feature=admin-users` не потеряна: loader обрабатывает этот literal feature до `UnderDevelopmentView` и capability-distinct redirect остаётся рабочим, хотя helper/type больше не генерируют новый placeholder URL.
 - Остальной correction delta полностью покрыт подзадачами 2/4 и 3/4; новых current-scope findings в 3/4 нет.
 - Единственный открытый confirmed finding coordinator cycle: `AP09-MIRA-04`.
-- Следующая подзадача 4/4: финальный gap-sweep/verdict; при сохранённом finding вернуть Лире один bounded correction package. Codex-review до coordinator PASS не запускается.
+- Подзадача 4/4 завершена; exact head остался `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+- Финальный coordinator verdict второго цикла: **CHANGES REQUIRED — 1 confirmed current-scope defect `AP09-MIRA-04`**.
+- Final gap-sweep не выявил других current-scope defects. `AP09-MIRA-02` и `AP09-MIRA-03` остаются закрытыми.
+- `AP09-MIRA-04` подтверждён на полной repeated-permission цепочке: первый fresh management denial recoverable; recovery marker остаётся в history state после успешного GET; после последующего возврата management и нового fresh revoke второй denial уже не запускает GET recovery. Mutation authority/canonical writer не нарушены; дефект относится к recovery lifecycle.
+- Один bounded correction package передан Лире: исправить только lifetime recovery guard, чтобы каждый независимый fresh denial мог выполнить максимум один fresh GET, успешный recovery не отравлял будущие cycles, Users-read loss оставался fail-closed без loop, а mutation никогда не replay.
+- Добавить regression, доказывающий минимум два независимых grant/revoke denial cycles на одной history entry, плюс сохранение existing first-denial и both-rights-revoked semantics.
+- После implementation changes нужен новый stable exact head и применимый full CI; новый coordinator whole-PR cycle начинается заново. Codex-review до coordinator PASS не запускается.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
