@@ -145,10 +145,16 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
       request: new Request("https://vico.test/he/under-development?feature=admin-users") });
     expect(r).toBeInstanceOf(Response);
     expect((r as Response).headers.get("Location")).toBe("/he/admin/users");
+    expect((r as Response).headers.get("Cache-Control")).toBe("private, no-store");
     const manager = environment(["access.authorization.manage"]);
     const m = await legacy({ params: { locale: "ru" }, context: manager.context,
       request: new Request("https://vico.test/ru/under-development?feature=admin-users") });
     expect((m as Response).headers.get("Location")).toBe("/ru/admin/authorization#authorization-users-heading");
+    expect((m as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    const guest = environment([], false);
+    await expect(legacy({ params: { locale: "en" }, context: guest.context,
+      request: new Request("https://vico.test/en/under-development?feature=admin-users") }))
+      .rejects.toMatchObject({ status: 401, headers: expect.any(Headers) });
     const forbidden = environment(["forum.topic.pin"]);
     await expect(legacy({ params: { locale: "en" }, context: forbidden.context,
       request: new Request("https://vico.test/en/under-development?feature=admin-users") }))
