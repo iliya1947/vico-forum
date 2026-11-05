@@ -177,9 +177,12 @@
 4. Это решение касается только видимости причины. Остальные правила причин остаются отдельным черновиком до утверждения владельцем.
 
 
-## AP-10 existing safety boundary — usable access manager
 
-- Current main already requires a conditional lockout invariant: if the approved block effect makes authorization management unavailable, block/access-management changes must preserve at least one usable access manager, including concurrency with grant/override changes.
-- Existing effective `access.authorization.manage` count alone is insufficient because an AP-10 restriction can leave the permission granted while making the management action unusable.
-- If a measure does not restrict authorization management, this additional AP-10 lockout condition is not needed.
-- Self-target create/change/lift and lifecycle-wide target-authority rules remain product drafts pending owner approval.
+
+## AP-10 owner decision — no block-specific last-manager protection
+
+1. Не добавлять в AP-10 отдельную защиту «последнего управляющего ролями/разрешениями» от административной меры.
+2. Не проектировать блокировки вокруг требования сохранить хотя бы одного неограниченного access manager.
+3. Предыдущий вывод Миры об обязательной связи AP-10 с authorization lockout отозван как ненужное расширение scope.
+4. В принятой административной иерархии мера против администратора применяется actor с достаточной более высокой authority; отдельный recovery-слой для этого сценария не нужен.
+5. Старую условную формулировку в постоянной документации про usable access manager при блокировке нужно убрать/скорректировать в отдельном финальном documentation PR AP-10.
