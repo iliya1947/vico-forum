@@ -27,4 +27,4 @@
 - Self-target rule: actor не создаёт, не изменяет и не снимает меру относительно самого себя.
 - Target-authority hierarchy действует на весь lifecycle меры: создание, изменение и снятие; это не отдельный открытый вопрос.
 
-- Pending appeal lifecycle resolved: expiry/lift закрывает appeal как утратившую предмет; существенное изменение меры supersede-ит appeal к прежнему состоянию, изменённая мера оспаривается отдельно.
+- Pending appeal lifecycle resolved: expiry/lift закрывает appeal как утратившую предмет; изменение restrictions/срока/reason не закрывает appeal — она остаётся привязана к той же measure, History сохраняет изменения.
