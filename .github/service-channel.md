@@ -23,9 +23,14 @@
 - Подзадача 1/3 завершена PASS по stable-head/scope/CI boundary.
 - Correction delta от `13bae37d...`: только `admin-user.tsx` и `users-authorization.test.tsx`; schema, migrations/catalog, authz writers, dependencies, MIRA-02/03 code и lasting docs не менялись.
 - Exact-head CI #41941892340 подтверждён по job logs: app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests; lint/typecheck/build/UI preview/migration/schema/manifest/runtime probes/Worker smoke — SUCCESS.
-- Correctness useRef recovery guard на этой подзадаче ещё не оценивается.
-- Следующая подзадача 2/3: полная причинная проверка `AP09-MIRA-04` correction — первый denial, successful recovery, второй независимый denial, Users-read loss, отсутствие loop/replay.
-- После неё 3/3 — final whole-PR gap-sweep/verdict. Лёва подключается только после coordinator PASS.
+- Подзадача 2/3 завершена PASS: `AP09-MIRA-04` закрыт.
+- Новый `useRef` guard scoped к mounted error subtree: первый denied canonical action вызывает один same-URL GET; mutation не replay.
+- Если Users-read сохранён, successful GET возвращает read-only detail и error subtree размонтируется, поэтому следующий независимый denial получает новый guard.
+- Если Users-read тоже отозван, recovery GET снова даёт 403 при том же mounted ErrorBoundary; `useRef=true` блокирует повторную навигацию и loop.
+- React Router 8.3.1 source подтверждает эту lifecycle-модель: route ErrorBoundary один раз преобразуется в stable `errorElement`; `RenderErrorBoundary` сохраняет component subtree при error→error navigation и переключается на route children при успешном recovery.
+- Mounted regression покрывает два независимых management-denial cycles на одной history entry, отсутствие `location.state` marker, два action submit без replay и terminal both-rights-revoked branch.
+- Новых current-scope findings в 2/3 нет.
+- Следующая подзадача 3/3: final whole-PR gap-sweep/verdict. Лёва подключается только после coordinator PASS.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
