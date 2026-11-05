@@ -54,3 +54,12 @@
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+
+## AP-10 owner decision — distinct violations, sequential appeals, flexible remedy
+
+1. Два разных нарушения = две разные administrative measures.
+2. Каждая measure имеет собственные reason/restrictions/expiry/lift/history и собственный лимит до 3 appeals.
+3. Для одной measure одновременно может быть только одна pending appeal; до 3 appeals рассматриваются последовательно.
+4. Удовлетворение appeal может привести как к full lift, так и к смягчению/изменению restrictions или срока той же measure.
+5. Такое изменение не создаёт новую measure identity; appeal/history остаются связаны с исходной measure.
