@@ -869,3 +869,14 @@ Other checked UI behavior in this subtask:
 ## AP-10 owner decision — administrator identity privacy
 
 Пользовательская projection меры/appeal не раскрывает identity actor/reviewer. Конкретные admin IDs/names остаются только во внутренней administrative History для owner/authorized admins. User-facing timeline показывает действия и их смысл без технической информации о конкретных администраторах.
+
+
+## AP-10 technical plan coordinator review — second revision required
+
+Revision #6670064497 closes AP10-PLAN-MIRA-01..04. Two current-scope plan defects remain:
+
+1. **AP10-PLAN-MIRA-05 — expired/lifted measure must be terminal.**
+   The revised plan allows an expired measure to be edited to a future expiry and then tries to preserve the old appeal as moot. This reactivates restrictions under an already-ended measure identity and old appeal quota. It conflicts with the accepted lifecycle where expiry/lift ends the measure and pending appeal loses its subject. AP-10 should reject change/revival after expiry or explicit lift. Any later sanction is a new measure with its own reason/lifecycle/appeal quota.
+
+2. **AP10-PLAN-MIRA-06 — unapproved initial moderator grant.**
+   `admin.users.blocks.manage` was proposed with initial moderator/admin grants, but the approved model only defines a dynamic block-management authority and the ordinary admin-panel boundary; it does not grant user-blocking power to all built-in moderators. Minimal current-scope seed is built-in admin only. Moderator/custom-role access remains available through existing dynamic role grants/overrides.
