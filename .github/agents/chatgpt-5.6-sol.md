@@ -1,5 +1,26 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 MIRA-04 correction — coordinator restart, подзадача 1/3
+
+**Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+**Superseded reviewed head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+**Baseline/current main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+**Verdict 1/3: PASS по stable-head / scope / CI boundary. Implementation correctness ещё не оценивается.**
+
+Проверено:
+- #287 Draft/open/mergeable;
+- delta: 2 commits, 2 files;
+- изменены только `app/routes/admin-user.tsx` и `app/admin/users-authorization.test.tsx`;
+- schema, migrations/catalog, authz writers, dependencies, MIRA-02/03 implementation и lasting docs не затронуты;
+- exact-head CI #41941892340 SUCCESS;
+- job logs: application 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests;
+- lint/typecheck/build/UI preview/migration/schema/manifest/runtime privilege/credential probes/Worker smoke — SUCCESS.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow не выполнялся. **Информация не проверена.** Отдельный mandatory browser/owner visual gate не назначен.
+
+Следующая подзадача 2/3: проверить useRef recovery guard и repeated-denial lifecycle.
+
 ## AP-09 corrected head — coordinator restart, подзадача 4/4 / final verdict
 
 **Reviewed exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
