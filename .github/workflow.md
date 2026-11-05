@@ -17,3 +17,5 @@
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
 
 - Coordinator review technical plan: REVISION REQUIRED — AP10-PLAN-MIRA-01..04. Не начинать implementation до исправленного плана и coordinator approval.
+
+- Different violations create different measures; one pending appeal per measure at a time; up to 3 sequential appeals; accepted appeal may lift or modify the same measure.
