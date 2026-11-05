@@ -116,3 +116,14 @@
 - Публичное чтение нельзя надёжно запретить account-level block: публичный форум доступен без авторизации. Сетевые/device-level bans в AP-10 не добавляются.
 - После каталога отдельно остаются reason policy и safety для self-block/access managers.
 - До завершения этих продуктовых решений Лёве AP-10 technical planning не назначается.
+
+
+## AP-10 owner decision — appeal is bound to the concrete block
+
+- Заблокированный пользователь всегда должен иметь возможность оспорить **конкретную применённую к нему блокировку/меру**.
+- Это право не входит в configurable restriction catalog и не может быть отключено галочкой, группой ограничений или preset.
+- Entry point находится на собственной странице аккаунта пользователя непосредственно рядом с заметным статусом/надписью о блокировке.
+- Appeal target — exact block/measure record. Этот flow не открывает право оспаривать unrelated Complaints Decisions, другие жалобы, другие меры или произвольные административные действия.
+- Собственная block-status/appeal surface должна оставаться достижимой при любом выбранном restriction set; иначе обязательное право апелляции стало бы недоступно.
+- Existing Complaints Appeal domain остаётся отдельным: он меняет effective outcome Complaint Decision и, по текущему контракту, не заявляет административную санкцию. AP-10 не должен смешивать эти две апелляционные сущности.
+- Ещё не зафиксированы lifecycle детали block appeal (например quota/repeat/pending/что происходит при expiry/lift во время review); их нужно определить отдельно до технического плана, если они materially влияют на implementation.
