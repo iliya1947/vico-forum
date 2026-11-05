@@ -30,3 +30,16 @@
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+
+## AP-09 documentation closeout
+
+- Implementation PR #287 merged в `main` 2026-11-05, merge commit `386023ce892044e623ec3d24f8a724e92af61a31`.
+- Отдельный docs-only PR #288 создан как Draft на head `c1e20a79d69918bb0bf62d9f3acec0d013ddfd45`.
+- Scope #288 ограничен пятью файлами: `PROJECT_STATE.md`, `docs/ADMIN_PANEL.md`, `docs/auth/AUTHORIZATION.md`, новый `docs/PROJECT_HISTORY/PROJECT_HISTORY_11.md`, history index.
+- PROJECT_STATE фиксирует migration head 0057, Admin Panel through AP-09 и оставшиеся blocking/Settings boundaries.
+- ADMIN_PANEL фиксирует реализованный `admin.users.read`, Users index/detail, targeted management composition и fresh-denial recovery; AP-10 остаётся future.
+- AUTHORIZATION добавляет `admin.users.read` в implemented catalog и initial built-in admin grant, без management authority.
+- HISTORY_11 хранит implementation/correction/review/merge snapshot, включая withdrawn AP09-LEVA-01 как diagnostic correction без code change.
+- `PROJECT.md`, `ROADMAP.md`, `docs/database/*` не меняются: подтверждённого stale AP-09 state там не найдено.
+- Следующий шаг: Мира выполняет финальную consistency review #288. Codex на documentation closeout не расходуется.
