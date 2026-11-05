@@ -175,3 +175,11 @@
 2. Причина меры не является публичной информацией.
 3. Она не должна показываться другим обычным пользователям, попадать в публичный профиль или публичные страницы форума только из-за существования меры.
 4. Это решение касается только видимости причины. Остальные правила причин остаются отдельным черновиком до утверждения владельцем.
+
+
+## AP-10 existing safety boundary — usable access manager
+
+- Current main already requires a conditional lockout invariant: if the approved block effect makes authorization management unavailable, block/access-management changes must preserve at least one usable access manager, including concurrency with grant/override changes.
+- Existing effective `access.authorization.manage` count alone is insufficient because an AP-10 restriction can leave the permission granted while making the management action unusable.
+- If a measure does not restrict authorization management, this additional AP-10 lockout condition is not needed.
+- Self-target create/change/lift and lifecycle-wide target-authority rules remain product drafts pending owner approval.
