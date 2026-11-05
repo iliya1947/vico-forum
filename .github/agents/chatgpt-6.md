@@ -1,5 +1,12 @@
 # Лира — ChatGPT-6
 
+## AP09-MIRA-05 — test-only correction / author handoff (2026-11-05)
+
+- [Задача Миры #6647586611](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6647586611): после merge AP-09 implementation #287 тест repeated management denial оказался нестабилен в docs PR #288 CI. В двух rerun failed `checks` один и тот же assertion `Public details` не дождался успешного read-only рендера, хотя `loader` уже вызван и `#authorization` исчез на промежуточном ErrorBoundary. Это test synchronization, не установленный runtime bug.
+- Создан отдельный test-only [PR #289](https://github.com/iliya1947/vico-forum/pull/289) от main `386023ce892044e623ec3d24f8a724e92af61a31`, stable exact head `7c0f7b513e6908f98151665a6839626b91f58fac`. Изменён **только** `app/admin/users-authorization.test.tsx`: оба synchronous `Public details` assertions в двух независимых denial cycles теперь `await waitFor(() => expect(...).toContain("Public details"))`. Tests по двум submits, двум GET recoveries, одному same URL/history entry, отсутствию stale management DOM, null location.state и обоим revoked rights сохранены.
+- **[Exact-head CI #41953193998](https://github.com/iliya1947/vico-forum/actions/runs/41953193998): SUCCESS**: `checks` 143/143 files, **1888/1888** application tests; `database` 41/41 files, **483/483** PostgreSQL tests; lint, typecheck, builds, migration/schema/manifest checks, Workers/local PG HTTP smoke PASS. На full-suite recurrence после исправления test race не обнаружена (это не доказательство невозможности любого future flake).
+- PR #289 остаётся Draft/open и не merged; #288 docs-only PR не трогала. Runtime source/schema/dependencies/permissions/AP-10/production/docs не меняла. Author handoff Мире для её проверки test-only correction и дальнейших решений. Не проводила whole-PR coordinator review.
+
 ## AP-09 — correction AP09-MIRA-04 / author handoff (2026-11-05)
 
 - Второй [coordinator review Миры #6646120793](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6646120793) завершился CHANGES REQUIRED по **одному** current-scope defect `AP09-MIRA-04` на прежнем head `13bae37dd3b7d033b271788fadb7e8be63d66a43`: сохранённый `ap09AccessRechecked` в browser history мешал последующему независимому grant→revoke denial на той же entry.
