@@ -157,7 +157,7 @@
 4. Measure сохраняет stated violation/reason context, чтобы было понятно, за что она назначена, но block appeal не является новой Complaint и не переиспользует Complaint Appeal semantics.
 5. Existing Complaint Appeal относится к Complaint Decision/effective outcome; AP-10 block appeal относится к administrative measure. Они не должны автоматически мутировать друг друга даже если в будущем measure будет связана с Complaint Case.
 6. Предыдущая формулировка Миры, описывавшая block appeal как проверку самого violation/Complaint-подобного предмета, отозвана.
-7. Что происходит с уже поданной block appeal после expiry/lift/изменения меры, **ещё не определено** и не должно выводиться автоматически из Complaint workflow.
+7. Pending block appeal: expiry/lift закрывают её как утратившую предмет; изменение restrictions/срока/reason не закрывает её — appeal остаётся привязана к той же measure.
 8. Количество/совмещение одновременно действующих measures и aggregation их restrictions не определены. Прежний вывод Миры про обязательные отдельные active measures и union restrictions отозван как преждевременная product-модель, не требуемая текущей целью AP-10.
 
 
@@ -212,3 +212,15 @@
 4. Нижестоящий administrator/moderator не может изменить или снять меру, для которой у него недостаточно authority относительно target/issuer hierarchy; иначе он смог бы обойти уже утверждённую привилегированную target boundary.
 5. Обычный block-management authority не даёт права управлять мерами против moderator/admin targets; это остаётся только у owner и senior/head authority в рамках ранее утверждённой модели.
 6. Не возвращать self-block и lifecycle hierarchy владельцу как отдельные открытые вопросы.
+
+
+## AP-10 coordinator closeout — no remaining owner product gate
+
+1. После purpose-first фильтрации каталог restrictions и reason policy определены из уже утверждённой модели; отдельного owner fork по ним нет.
+2. Минимальный restriction catalog: темы/Help-вопросы, ответы, новые вложения, own published edits, публичный профиль, Complaints submission, Help signals, translation generation; для privileged target — соответствующие Forum/Help, Complaints, Security и Users/access administrative powers.
+3. Не входят: public reading, login/session, notifications, own block-status read surface и любые appeal submission flows; own solved/best-answer и source-locale correction не выделяются без отдельной moderation-задачи.
+4. Reason обязателен для создания меры, ручного изменения restrictions/срока и explicit lift. Automatic expiry не создаёт новую причину; failed/stale/no-op/replay не создают административное событие.
+5. Self-target запрещён; privileged-target hierarchy действует на create/change/lift; owner не target subordinate authority.
+6. До 3 block appeals на одну measure. Expiry/lift закрывают pending appeal как утратившую предмет; изменение самой measure appeal не закрывает.
+7. Multi-measure aggregation не является требованием AP-10. Не проектировать её заранее; если техническое планирование выявит неизбежную observable product-развилку, только тогда вернуть её владельцу.
+8. На текущем product уровне AP-10 готов к техническому планированию Лёвой.
