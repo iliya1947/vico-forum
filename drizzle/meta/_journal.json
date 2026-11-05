@@ -407,6 +407,13 @@
       "when": 1793846400000,
       "tag": "0057_admin_users_read",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1793932800000,
+      "tag": "0058_user_measures",
+      "breakpoints": true
     }
   ]
 }
