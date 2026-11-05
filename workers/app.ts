@@ -20,6 +20,8 @@ import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/sessi
 import { AuthSessionUnavailableError } from "../app/auth/request-context";
 import {adminForumContext} from "../app/admin/forum.server";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
+import { adminUsersContext } from "../app/admin/users.server";
+import { createHyperdriveAdminUsers } from "../db/hyperdrive-admin-users";
 import { adminHistoryContext } from "../app/admin/history.server";
 import { createHyperdriveAdminHistory } from "../db/hyperdrive-admin-history";
 import { authorizationContext } from "../app/authorization/request-context";
@@ -68,6 +70,7 @@ export default {
       ),
     );
     context.set(adminForumContext,createHyperdriveAdminForum(webConnectionString));
+    context.set(adminUsersContext, createHyperdriveAdminUsers(webConnectionString));
     context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
     const authorization = createHyperdriveAuthorization(webConnectionString);
     context.set(authorizationContext, authorization);

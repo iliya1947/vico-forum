@@ -18,6 +18,7 @@ function capability(manage: boolean | Error = true) {
     }),
     listRoles: vi.fn(async () => []), listUsers: vi.fn(async () => []), readRole: vi.fn(), resolveUser: vi.fn(),
     readManagementState: vi.fn(async () => ({ roles: [], users: [] })),
+    readUserManagementState: vi.fn(),
     createCustomRole: vi.fn(), renameCustomRole: vi.fn(), replaceRoleGrants: vi.fn(), deleteCustomRole: vi.fn(),
     assignUserRole: vi.fn(), setUserOverride: vi.fn(),
   };
@@ -110,6 +111,40 @@ describe("authorization management route", () => {
       request: request({ intent: "deleteRole", roleId: "r" }),
       context: actionBug.context,
     })).rejects.toBe(unexpectedMutation);
+  });
+
+  it("reuses canonical user assignment and override writes without Users-read, with fresh management and origin guards", async () => {
+    const managerOnly = context();
+    const resolver = managerOnly.value.forUser();
+    vi.spyOn(managerOnly.value, "forUser").mockReturnValue(resolver);
+    expect(await action({ request: request({ intent: "assignRole", userId: "target", roleId: "builtin-admin" }),
+      context: managerOnly.context })).toEqual({ ok: true });
+    expect(await action({ request: request({ intent: "override", userId: "target",
+      permission: "admin.users.read", effect: "allow" }), context: managerOnly.context })).toEqual({ ok: true });
+    expect(resolver.has).toHaveBeenCalledTimes(2);
+    expect(resolver.has).toHaveBeenCalledWith("access.authorization.manage");
+    expect(managerOnly.value.assignUserRole).toHaveBeenCalledExactlyOnceWith("manager", "target", "builtin-admin");
+    expect(managerOnly.value.setUserOverride).toHaveBeenCalledExactlyOnceWith("manager", "target", "admin.users.read", "allow");
+
+    const readerOnly = context(true, false);
+    await expect(action({ request: request({ intent: "override", userId: "target",
+      permission: "admin.users.read", effect: "allow" }), context: readerOnly.context }))
+      .rejects.toMatchObject({ status: 403 });
+    expect(readerOnly.value.setUserOverride).not.toHaveBeenCalled();
+
+    const wrongOrigin = context();
+    const rejected = await action({ request: request({ intent: "assignRole", userId: "target",
+      roleId: "builtin-admin" }, "https://other.test"), context: wrongOrigin.context });
+    expect(rejected).toBeInstanceOf(Response);
+    expect((rejected as Response).status).toBe(403);
+    expect(wrongOrigin.value.assignUserRole).not.toHaveBeenCalled();
+
+    const lockout = context();
+    lockout.value.setUserOverride.mockRejectedValueOnce(new AuthorizationLockoutError("last manager"));
+    const conflict = await action({ request: request({ intent: "override", userId: "target",
+      permission: "access.authorization.manage", effect: "deny" }), context: lockout.context });
+    expect((conflict as Response).status).toBe(409);
+    expect(await (conflict as Response).json()).toEqual({ error: "conflict" });
   });
 
 });

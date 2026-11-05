@@ -2,6 +2,7 @@ import { Form } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type { PermissionKey } from "./catalog";
+import { AuthorizationUserControls } from "./user-controls";
 import type {
   AuthorizationRoleDetails,
   AuthorizationUserDetails,
@@ -175,60 +176,8 @@ export function AuthorizationAdminView({
                   <span className="admin-badge">{user.authorization.role.displayName}</span>
                 </header>
 
-                <div className="admin-user-body">
-                  <section className="admin-user-panel">
-                    <h5>{t("assignedRole")}</h5>
-                    <Form method="post" className="admin-role-assignment">
-                      <input type="hidden" name="intent" value="assignRole" />
-                      <input type="hidden" name="userId" value={user.id} />
-                      <label>
-                        <span>{t("assignedRole")}</span>
-                        <select name="roleId" defaultValue={user.authorization.role.id}>
-                          {roles.map((role) => (
-                            <option key={role.id} value={role.id}>{role.displayName}</option>
-                          ))}
-                        </select>
-                      </label>
-                      {!user.authorization.explicitAssignment ? (
-                        <span className="admin-muted-badge">{t("defaultRole")}</span>
-                      ) : null}
-                      <button className="admin-secondary-action" type="submit">{t("save")}</button>
-                    </Form>
-                  </section>
-
-                  <section className="admin-user-panel admin-user-permissions">
-                    <h5>{t("permissionsHeading")}</h5>
-                    <div className="admin-override-list">
-                      {permissions.map((permission) => (
-                        <Form method="post" className="admin-override-row" key={permission}>
-                          <input type="hidden" name="intent" value="override" />
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input type="hidden" name="permission" value={permission} />
-                          <code>{permission}</code>
-                          <select
-                            name="effect"
-                            aria-label={`${permission}: ${t("permissionsHeading")}`}
-                            defaultValue={user.authorization.overrides[permission] ?? "inherit"}
-                          >
-                            <option value="inherit">{t("overrideInherit")}</option>
-                            <option value="allow">{t("overrideAllow")}</option>
-                            <option value="deny">{t("overrideDeny")}</option>
-                          </select>
-                          <button className="admin-compact-action" type="submit">{t("save")}</button>
-                        </Form>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="admin-user-panel">
-                    <h5>{t("effectivePermissions")}</h5>
-                    <ul className="admin-effective-permissions">
-                      {user.authorization.effectivePermissions.map((permission) => (
-                        <li key={permission}><code>{permission}</code></li>
-                      ))}
-                    </ul>
-                  </section>
-                </div>
+                <AuthorizationUserControls userId={user.id} authorization={user.authorization}
+                  roles={roles} permissions={permissions} />
               </article>
             ))}
           </div>

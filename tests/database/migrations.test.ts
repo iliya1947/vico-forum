@@ -80,7 +80,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("57");
+    expect(applied.rows[0]?.count).toBe("58");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -1788,6 +1788,9 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(builtIn.user).not.toContain("forum.topic.pin");
     expect(builtIn.moderator).toContain("forum.topic.pin");
     expect(builtIn.admin).toContain("forum.topic.pin");
+    expect(builtIn.user).not.toContain("admin.users.read");
+    expect(builtIn.moderator).not.toContain("admin.users.read");
+    expect(builtIn.admin).toContain("admin.users.read");
     await expectDatabaseCode(client.query("insert into authz_permissions (key) values ('made.up.permission')"), "23514");
     await expectDatabaseCode(client.query("delete from authz_roles where slug = 'user'"), "23514");
   });

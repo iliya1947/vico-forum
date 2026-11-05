@@ -16,6 +16,7 @@ export const PERMISSION_CATALOG = [
   "forum.translation.generate",
   "access.authorization.manage",
   "admin.history.read",
+  "admin.users.read",
   "forum.complaint.create",
   "forum.complaint.review",
   "forum.complaint.priority.manage",

@@ -317,4 +317,83 @@ describe("authorization composite snapshot consistency", () => {
       await dropSchema(schemaName);
     }
   });
+  it("AP-09 reads only the selected user's authorization and role choices in one consistent snapshot", async () => {
+    const schemaName = "authorization_snapshot_ap09_target_test";
+    await createSchema(schemaName, async setup => {
+      await insertSnapshotUser(setup);
+      await setup.query(
+        'insert into "user" (id, name, email) values ($1, $2, $3)',
+        ["other-user", "Different user", "private-other@example.invalid"],
+      );
+      await setup.query(
+        "insert into authz_role_permissions (role_id, permission_key) values ('snapshot-role-a', $1)",
+        [permission],
+      );
+      await setup.query(
+        "insert into authz_user_permission_overrides (user_id, permission_key, effect) values ('snapshot-user', $1, 'allow')",
+        [permission],
+      );
+    });
+
+    const readerPool = scopedPool(schemaName);
+    const writer = scopedWriter(schemaName);
+    const roleOptionsRead = deferred();
+    const targetHeld = deferred();
+    const releaseTarget = deferred();
+    let holdTargetOnce = true;
+    const sqlSeen: string[] = [];
+    let pending: Promise<Awaited<ReturnType<PostgresAuthorizationRepository["readUserManagementState"]>>> | undefined;
+    const pool = observedPool(readerPool, async (phase, sql) => {
+      if (phase === "before") sqlSeen.push(sql);
+      if (phase === "after" && sql.startsWith("select id, slug, display_name, is_system from authz_roles")) {
+        roleOptionsRead.resolve();
+      }
+      if (phase === "before" && holdTargetOnce && sql.includes('from "user" u') && sql.includes("where u.id = $1")) {
+        holdTargetOnce = false;
+        await roleOptionsRead.promise;
+        targetHeld.resolve();
+        await releaseTarget.promise;
+      }
+    });
+
+    await writer.connect();
+    try {
+      const repository = new PostgresAuthorizationRepository(pool);
+      pending = repository.readUserManagementState("snapshot-user");
+      await withWatchdog(targetHeld.promise, "AP-09 targeted read barrier");
+      await commitSteps(writer, [
+        { sql: "update authz_user_roles set role_id='snapshot-role-b' where user_id='snapshot-user'" },
+        { sql: "delete from authz_role_permissions where role_id='snapshot-role-a' and permission_key=$1", values: [permission] },
+        { sql: "insert into authz_role_permissions (role_id, permission_key) values ('snapshot-role-b', $1)", values: [permission] },
+      ]);
+
+      releaseTarget.resolve();
+      const before = await withWatchdog(pending, "AP-09 targeted snapshot");
+      expect(before.userId).toBe("snapshot-user");
+      expect(before.authorization).toMatchObject({
+        role: { id: "snapshot-role-a" }, grants: [permission], overrides: { [permission]: "allow" },
+        effectivePermissions: [permission],
+      });
+      expect(before.roles.some(role => role.id === "snapshot-role-b")).toBe(true);
+      expect(before.roles.every(role => !("grants" in role) && !("email" in role))).toBe(true);
+      expect(JSON.stringify(before)).not.toContain("private-other@example.invalid");
+      expect(JSON.stringify(before)).not.toContain("other-user");
+      expect(sqlSeen.every(sql => !sql.includes("u.email") && !sql.includes("select user_id, permission_key"))).toBe(true);
+      expect(sqlSeen.some(sql => sql.includes('where u.id = $1'))).toBe(true);
+
+      const after = await new PostgresAuthorizationRepository(readerPool).readUserManagementState("snapshot-user");
+      expect(after.authorization.role.id).toBe("snapshot-role-b");
+      expect(after.authorization.grants).toEqual([permission]);
+      await expect(new PostgresAuthorizationRepository(readerPool).readUserManagementState("missing-user"))
+        .rejects.toMatchObject({ name: "Error" });
+    } finally {
+      releaseTarget.resolve();
+      if (pending) await withWatchdog(pending.catch(() => undefined), "AP-09 targeted cleanup").catch(() => undefined);
+      await writer.query("ROLLBACK").catch(() => undefined);
+      await writer.end();
+      await readerPool.end();
+      await dropSchema(schemaName);
+    }
+  });
+
 });
