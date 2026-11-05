@@ -1,5 +1,50 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-10 restriction catalog — draft for owner review
+
+Не зафиксировано как owner decision. Кандидат строится по пользовательским действиям, а не по permission keys.
+
+Предлагаемая группировка:
+
+1. Публикация и участие
+   - создавать новые темы / Help-вопросы;
+   - отправлять ответы;
+   - загружать вложения.
+
+2. Изменение своего контента и профиля
+   - редактировать свои опубликованные сообщения;
+   - управлять решением/лучшим ответом в своей теме;
+   - исправлять source locale своего контента;
+   - изменять свой профиль.
+
+3. Обращения к модерации
+   - отправлять Complaints;
+   - отправлять Help signals;
+   - подавать обычные domain appeals (Complaint/Help), кроме mandatory appeal на exact block/measure.
+
+4. Ресурсоёмкие функции
+   - генерировать переводы.
+   - upload оставлен в publication, потому что он связан с публикационными flows, но остаётся отдельным selectable restriction.
+
+5. Модерация и администрирование
+   - Forum/Help moderation;
+   - Complaints moderation/review;
+   - Users / roles / permissions management;
+   - administrative private/read surfaces, если corresponding admin restriction selected.
+
+Не включать:
+- login/session restriction;
+- public reading restriction;
+- notifications/read-only own account surface;
+- exact block/measure appeal — всегда доступен на own account page;
+- future/unimplemented capabilities.
+
+Logic notes:
+- restriction set additive: если blocked parent action already makes child action unreachable, child checkbox can remain selected/cleared independently without changing semantics;
+- restrictions do not rewrite roles/grants/overrides;
+- administrative restriction should suppress both private admin reads and mutations in its selected domain, otherwise blocked moderator/admin retains privileged data access;
+- exact enforcement map must be designed by Leva only after owner approves product catalog.
+
 ## AP-09 completion / AP-10 gate
 
 PR #288 merged в main: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
