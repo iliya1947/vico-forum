@@ -1,5 +1,27 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 documentation closeout — final PASS
+
+#289 merged into main at `0521669eadc3b927b3f8d0651b98291ffda137a2`.
+
+#288 was synchronized onto that main and the same five docs changes were reapplied. Final exact head
+`d6ecb2005da02b4eaf4528b17f0530767ebddadd`.
+
+Final review:
+- diff exactly 5 docs files;
+- no implementation/schema/dependency changes;
+- factual consistency/overscope PASS;
+- HISTORY_11 includes AP09-MIRA-05/#289 closeout;
+- CI #41955225394 SUCCESS;
+- application 143/143 files, 1888/1888 tests;
+- users-authorization regression 6/6 PASS;
+- PostgreSQL 41/41 files, 483/483 tests;
+- build/UI preview/migration/schema/Worker checks SUCCESS.
+
+#288 marked Ready/open/mergeable.
+
+Next owner action: merge #288.
+
 ## AP09-MIRA-05 — coordinator review PR #289
 
 **Stable exact head:** `7c0f7b513e6908f98151665a6839626b91f58fac`.
