@@ -6,6 +6,7 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { adminAccess } from "./access";
 import { AdminUserDetail } from "./users";
+import { ErrorBoundary as AdminUserErrorBoundary } from "../routes/admin-user";
 import type { AuthorizationRole, UserAuthorization } from "../../db/authorization-repository";
 import type { PermissionKey } from "../authorization/catalog";
 
@@ -41,14 +42,20 @@ const profile = {
 let router: ReturnType<typeof createMemoryRouter> | undefined;
 afterEach(() => { cleanup(); router?.dispose(); router = undefined; });
 
-function mount(options: { revokeManagementOnSubmit?: boolean } = {}) {
+function mount(options: { revokeManagementOnSubmit?: boolean; denyManagementOnSubmit?: boolean; revokeUsersReadOnDenied?: boolean } = {}) {
   let currentRole: AuthorizationRole = roles[0]!;
   let override: "allow" | "deny" | undefined;
   let canManage = true;
+  let canReadUsers = true;
   const action = vi.fn(async ({ request }: { request: Request }) => {
     const form = await request.formData();
     const intent = form.get("intent");
     expect(form.get("userId")).toBe(userId);
+    if (options.denyManagementOnSubmit) {
+      canManage = false;
+      if (options.revokeUsersReadOnDenied) canReadUsers = false;
+      throw new Response("Forbidden", { status: 403 });
+    }
     if (intent === "assignRole") {
       currentRole = roles.find(role => role.id === form.get("roleId"))!;
     } else if (intent === "override") {
@@ -62,6 +69,7 @@ function mount(options: { revokeManagementOnSubmit?: boolean } = {}) {
     return { ok: true };
   });
   const loader = vi.fn(async () => {
+    if (!canReadUsers) throw new Response("Forbidden", { status: 403 });
     const authorization: UserAuthorization = {
       role: currentRole, explicitAssignment: currentRole !== roles[0],
       grants: ["forum.reply.create"],
@@ -77,7 +85,7 @@ function mount(options: { revokeManagementOnSubmit?: boolean } = {}) {
   });
   function Detail() { return <AdminUserDetail {...useLoaderData<typeof loader>()} />; }
   router = createMemoryRouter([
-    { path: "/en/admin/users/:userId", loader, element: <Detail /> },
+    { path: "/en/admin/users/:userId", loader, element: <Detail />, ErrorBoundary: AdminUserErrorBoundary },
     { path: "/en/admin/authorization", action, element: <p>Authorization destination</p> },
   ], { initialEntries: [`/en/admin/users/${encodeURIComponent(userId)}`] });
   const result = render(<I18nextProvider i18n={i18n()}><RouterProvider router={router} /></I18nextProvider>);
@@ -144,6 +152,33 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(mounted.container.textContent).not.toContain("Changes saved");
     expect(mounted.container.textContent).toContain("Public details");
     expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
+  });
+
+  it("recovers a fresh canonical 403 into authorized read-only detail without replaying the mutation", async () => {
+    const mounted = mount({ denyManagementOnSubmit: true });
+    await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+    fireEvent.submit(formFor(mounted.container, "assignRole")!);
+    await waitFor(() => expect(mounted.action).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mounted.container.textContent).toContain("Public details"));
+    expect(mounted.container.querySelector("#authorization")).toBeNull();
+    expect(formFor(mounted.container, "assignRole")).toBeUndefined();
+    expect(mounted.container.querySelector('[role="alert"][data-status="403"]')).toBeNull();
+    expect(mounted.router.state.location.pathname).toBe(`/en/admin/users/${encodeURIComponent(userId)}`);
+    expect(mounted.router.state.location.state).toEqual({ ap09AccessRechecked: true });
+    expect(mounted.action).toHaveBeenCalledOnce();
+  });
+
+  it("stays fail-closed after one GET when Users-read and management are both revoked", async () => {
+    const mounted = mount({ denyManagementOnSubmit: true, revokeUsersReadOnDenied: true });
+    await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+    fireEvent.submit(formFor(mounted.container, "assignRole")!);
+    await waitFor(() => expect(mounted.router.state.location.state).toEqual({ ap09AccessRechecked: true }));
+    await waitFor(() => expect(mounted.loader).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mounted.container.querySelector('[role="alert"][data-status="403"]')).not.toBeNull());
+    expect(mounted.container.querySelector("#authorization")).toBeNull();
+    expect(mounted.container.textContent).not.toContain("Public details");
+    expect(mounted.action).toHaveBeenCalledOnce();
   });
 
 });
