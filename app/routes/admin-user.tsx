@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { data, isRouteErrorResponse, useLoaderData, useLocation, useNavigate, useRouteError, type RouterContextProvider } from "react-router";
 import { requireAdminUsersAccess, adminObjectId, adminPrivateHeaders } from "../admin/users.server";
 import { forumReaderForRequest } from "../forum/request-context";
@@ -56,16 +56,15 @@ export function ErrorBoundary() {
   const location = useLocation();
   const navigate = useNavigate();
   const denied = isRouteErrorResponse(error) && error.status === 403;
-  const alreadyRechecked = (location.state as { ap09AccessRechecked?: boolean } | null)?.ap09AccessRechecked === true;
+  const recoveryAttempted = useRef(false);
 
   useEffect(() => {
-    if (!denied || alreadyRechecked) return;
-    // A denied canonical fetcher action does not revalidate loaders; refresh this GET once.
-    // A direct Users-read denial remains denied after the single fresh check.
-    void navigate(location.pathname + location.search + location.hash, {
-      replace: true, state: { ap09AccessRechecked: true },
-    });
-  }, [denied, alreadyRechecked, location.pathname, location.search, location.hash, navigate]);
+    if (!denied || recoveryAttempted.current) return;
+    recoveryAttempted.current = true;
+    // Limit a denial to one GET while this error boundary is mounted.
+    // A successful read-only detail unmounts it, allowing a later independent denial to recover.
+    void navigate(location.pathname + location.search + location.hash, { replace: true });
+  }, [denied, location.pathname, location.search, location.hash, navigate]);
 
   return <ForumRouteError />;
 }
