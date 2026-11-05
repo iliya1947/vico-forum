@@ -127,7 +127,7 @@
 - Собственная block-status/appeal surface должна оставаться достижимой при любом выбранном restriction set; иначе обязательное право апелляции стало бы недоступно.
 - Existing Complaints Appeal domain остаётся отдельным: он меняет effective outcome Complaint Decision и, по текущему контракту, не заявляет административную санкцию. AP-10 не должен смешивать эти две апелляционные сущности.
 - Для одной конкретной меры пользователь может подать до **3 block appeals**. Лимит quota/repeat закрыт owner decision и больше не является открытым вопросом.
-- Ещё не зафиксировано только поведение уже поданной/pending block appeal при изменении, expiry или explicit lift меры; это не выводить автоматически из Complaints Appeal.
+- Pending block appeal относится к конкретному состоянию меры: при expiry или explicit lift она закрывается как утратившая предмет; при существенном изменении меры — закрывается как superseded, а изменённая мера оспаривается отдельно.
 
 
 ## AP-10 owner decision — privileged moderator/admin targets
