@@ -628,7 +628,8 @@ export const authzPermissions = pgTable("authz_permissions", {
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
-  'access.authorization.manage', 'admin.history.read', 'admin.users.read', 'forum.complaint.create', 'forum.complaint.review',
+  'access.authorization.manage', 'admin.history.read', 'admin.users.read',
+  'admin.users.blocks.manage', 'admin.users.blocks.managePrivileged', 'forum.complaint.create', 'forum.complaint.review',
   'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review', 'forum.complaint.priority.manage'
 )`)]);
 
