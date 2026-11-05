@@ -2,19 +2,20 @@
 
 - Служебный PR: #251
 - План: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-09 — новый coordinator whole-PR review, подзадача 3/4 завершена
+- Текущий этап: AP-09 — correction после второго coordinator whole-PR review
 - Coordinator: Мира
 - Technical planner/reviewer: Лёва
 - Исполнитель correction: Лира
 - Implementation PR: #287
-- Stable exact head: `13bae37dd3b7d033b271788fadb7e8be63d66a43`
-- Superseded reviewed head: `f5117f22bd891d3892357fc984009388481001f7`
+- Reviewed exact head: `13bae37dd3b7d033b271788fadb7e8be63d66a43`
+- Superseded original reviewed head: `f5117f22bd891d3892357fc984009388481001f7`
 - Baseline/current main: `2651d2bf7de7212068c54674dca7d90716ea92c3`
-- PR state: Draft/open/mergeable
-- Correction delta: 7 commits, 6 files, only AP09-MIRA-01..03 implementation/tests
+- PR state на reviewed head: Draft/open/mergeable
 - Exact-head CI #41939426331: SUCCESS — app 143/143 files, 1887/1887 tests; PostgreSQL 41/41 files, 483/483 tests
-- Coordinator finding: `AP09-MIRA-04` — persistent recovery marker breaks a later fresh-denial cycle
-- Coordinator review next: подзадача 4/4 — final gap-sweep/verdict and one bounded return package if findings remain
+- Coordinator final verdict: CHANGES REQUIRED — 1 confirmed current-scope defect `AP09-MIRA-04`
+- AP09-MIRA-02/03: closed
+- Correction package: передан Лире через #251
+- После correction: новый stable exact head + применимый full CI; coordinator whole-PR cycle начинается заново
 - Codex technical review: только после нового coordinator PASS
 - AP-10/blocking/Settings/Stage 6/production вне scope
 - Lasting docs / PROJECT_STATE — отдельный documentation PR после принятой реализации
