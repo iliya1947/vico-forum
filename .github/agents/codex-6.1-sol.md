@@ -2,7 +2,7 @@
 
 Planning baseline: `main` `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`; migrations 0000–0057, Admin Panel AP-01–09 merged.
 Назначение: [#6667343744](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667343744).
-Статус: план для coordinator review; **код/implementation PR не создавались**. Revision AP10-PLAN-MIRA-01..04 выполнена по решениям владельца #6669655343/#6669734702; требуется повторный coordinator review. Прежний §9 закрыт, новых owner product blockers нет.
+Статус: план для coordinator review; **код/implementation PR не создавались**. Revision AP10-PLAN-MIRA-01..04 принята Мирой #6670166694; AP10-PLAN-MIRA-05..06 исправлены по owner correction #6670294050 и ожидают повторного coordinator review. Прежний §9 закрыт, новых owner product blockers нет.
 
 ## 1. Применимые решения владельца
 
@@ -52,8 +52,8 @@ UI отображает понятные действия, не эти internal 
 
 Техническое предложение:
 
-- обычная capability **`admin.users.blocks.manage`**: minimal target/measure lookup, create/change/lift и review block appeals; initial moderator/admin grants;
-- повышенная **`admin.users.blocks.managePrivileged`**: дополнение к manage, не отдельная mutation/read authority; initial grants **никому автоматически**. В `INITIAL_ROLE_GRANTS.admin` её явно исключить из нынешнего «все catalog keys» seed;
+- обычная capability **`admin.users.blocks.manage`**: minimal target/measure lookup, create/change/lift и review block appeals; initial grants отсутствуют у всех built-in roles, включая admin/moderator; доступ только explicit grant через dynamic authorization;
+- повышенная **`admin.users.blocks.managePrivileged`**: дополнение к manage, не отдельная mutation/read authority; initial grants **никому автоматически**. Обе новые capabilities явно исключить из `INITIAL_ROLE_GRANTS.admin` «все catalog keys» seed и всех остальных initial grants; не добавлять migration backfill. Owner binding сам по себе не выдаёт эти права;
 - один server-owned binding **`VICO_OWNER_USER_ID`** к существующему Better Auth user ID для необходимой owner target immunity/rank. Не брать owner из email, role name, form/session role claim или нового client input. Это узкая identity boundary AP-10, не owner role, bootstrap endpoint или emergency UI. Реальную production configuration не выполнять; local/CI fixtures задают synthetic owner. Без необходимого binding новые административные переходы fail closed как configuration-unavailable, не разрешают таргетировать неизвестного owner.
 
 Raw effective grants/overrides определяют privileged target, **до** suspension filtering: union существующих implemented administrative/Attention capabilities плюс новые block capabilities. User с временно подавленным admin access не превращается в обычного target. Простые participation permissions и имя built-in/custom роли не задают protected rank.
@@ -76,7 +76,7 @@ Measure хранит issuer authority level при создании; change/lift
 
 Новые timestamps — явные `timestamptz` с millisecond precision. Существующие Better Auth `timestamp without time zone` columns не менять и не моделировать другим типом в tests. End instant приходит с offset/UTC, invalid/ambiguous local dates отвергаются. Temporary presets — UI duration shortcuts, custom instant — тот же server validation; expiresAt должен быть future при create/change. Permanent не требует выдуманной далёкой даты.
 
-Active вычисляется по authoritative DB time: explicit lift отсутствует и `(expiresAt IS NULL OR expiresAt > now)`. Expiry не требует cron, public GET write или synthetic admin event. UI и policy читают effective expired status; pending appeal при истёкшей мере возвращается как moot, даже если stored row не переписан фоновым процессом. При explicit lift pending rows закрываются атомарно; при edits остаются привязаны к той же measure. Не создавать WHERE-index с `now()`.
+Active вычисляется по authoritative DB time: explicit lift отсутствует и `(expiresAt IS NULL OR expiresAt > now)`. Expiry не требует cron, public GET write или synthetic admin event. UI и policy читают effective expired status; pending appeal при истёкшей мере возвращается как moot, даже если stored row не переписан фоновым процессом. При explicit lift pending rows закрываются атомарно; при edits активной меры остаются привязаны к той же measure. Expired/lifted мера terminal: любые change/restrictions/end-time/reason/remedy отклоняются; повторное наказание — новая measure. Fresh terminal check после measure lock, committed retry не возобновляет меру. Не создавать WHERE-index с `now()`.
 
 Create/change/lift — один writer contract с exact target/measure ID и expected version, session actor, reason/restrictions/end-time. CAS до mutation; stale edit/lift не затрагивает новую/заменённую меру. Equal desired state — no-op, версия/event не меняются; exhausted version fail closed. Create retry с тем же opaque id/fingerprint возвращает existing result, changed payload — conflict. Одновременно активные меры допустимы; fresh restriction assertion — EXISTS по активным мерам target и child key (§9). Не добавлять UNIQUE active target/current-head или отдельный aggregation subsystem.
 
@@ -114,7 +114,7 @@ Own surface — private `/:locale/account/measures` с exact-measure detail/appe
 
 Administrative create/change/lift/review используют один service: same-origin, session actor, bounded unique input, fresh authority, exact IDs/CAS и private no-store responses. Markers/новый generic inline protocol не нужны только ради fetcher; reuse обычных typed intents/structured result. Controlled 400/401/403/404/409/503, typed storage/authorization outage fail closed; unexpected errors не скрывать. Pending/actor/target/version lifetime и safe refresh без automatic write replay.
 
-Appeal submit: session subject == measure target, exact measure eligible по activity/status, число committed submissions <3. Measure lock сериализует quota; caller-generated appeal id позволяет identical retry без расхода ещё одной попытки. Одновременно на measure не более одной pending appeal: measure lock и partial UNIQUE по measure_id WHERE status = 'pending'. После завершения предыдущей следующая допустима только при active measure и оставшемся quota. Expired pending при продлении не возобновляется: перед продлением материализуется moot под measure lock. Изменение measure не обнуляет ordinal/quota и не превращает старый appeal в appeal новой версии.
+Appeal submit: session subject == measure target, exact measure eligible по activity/status, число committed submissions <3. Measure lock сериализует quota; caller-generated appeal id позволяет identical retry без расхода ещё одной попытки. Одновременно на measure не более одной pending appeal: measure lock и partial UNIQUE по measure_id WHERE status = 'pending'. После завершения предыдущей следующая допустима только при active measure и оставшемся quota. Expired/lifted мера terminal; её продление и возобновление запрещены, pending effective moot. Изменение measure не обнуляет ordinal/quota и не превращает старый appeal в appeal новой версии.
 
 Reviewer outcome: reject, accept + full lift либо accept + изменение restrictions/срока той же measure. Exact appeal ID + measure ID/current expected version; pending переживает intervening edits, stale reviewer refresh. Remedy, reason, accepted resolution и History выполняются одной transaction через shared change/lift primitive с fresh authority/CAS. Accept + change требует реального изменения и сохраняет ID/quota; accept + lift сохраняет accepted outcome этой appeal, не превращая его в moot. Обычный отдельный edit оставляет pending открытой. Reject сохраняет меру и записывает explanation. Остальные меры не затрагиваются; Complaint machinery не копировать. Подробности revision ниже.
 
@@ -170,7 +170,7 @@ Owner явно решил: **два разных нарушения → две �
 
 - На одной мере одновременно не более **одной pending appeal**; до 3 committed submissions за весь lifecycle identity. После завершения предыдущей можно подать следующую, если мера ещё действует и quota не исчерпана. Разные меры имеют независимые очереди.
 - Submit: subject/session check → existing appeal-ID/fingerprint replay → exact measure lock → eligibility/expiry, отсутствие pending и committed count <3 → новый ordinal. Same retry не расходует slot; другой concurrent submit при pending возвращает typed conflict. Сохраняются unique `(measure_id, ordinal)`, CHECK ordinal 1..3; добавить partial UNIQUE `(measure_id) WHERE status = 'pending'`. В predicate только stored status, без clock.
-- Pending при natural expiry effective moot, новые appeals по истёкшей мере недопустимы. Если срок expired меры меняют на будущий, ранее утратившая предмет appeal не «оживает»: до продления под measure lock материализовать её moot status без synthetic admin event; её ordinal остаётся израсходованным. Это уточнение уже принятого expiry lifecycle, не дополнительный workflow. Explicit lift закрывает pending атомарно.
+- Pending при natural expiry effective moot, новые appeals по истёкшей мере недопустимы. Expired/lifted мера terminal; продление/возобновление не поддерживаются. Повторное наказание создаёт новую меру с отдельной identity/quota. Explicit lift закрывает pending атомарно.
 - Edit действующей меры сам по себе не закрывает pending и не обнуляет quota. Resolve использует тот же measure→appeal lock order; CAS/повторное чтение предотвращают двойное решение и гонки submit/review/lift.
 
 ### AP10-PLAN-MIRA-03 — §6/7: удовлетворение с полным снятием или изменением
@@ -195,7 +195,7 @@ Owner явно решил: **два разных нарушения → две �
 Дополнительно к прежним проверкам:
 1. A/B с разными и одинаковыми restrictions/сроками: new violation создаёт B, изменение/lift/expiry A не затрагивает B; overlap запрещён до прекращения последней применимой меры; quotas независимы.
 2. Concurrent submit даёт одну pending и один израсходованный ordinal; identical retry возвращает прежний результат; reject/accept разрешает следующий slot только при active measure; после третьего нового submission нет. Pending A не блокирует appeal B.
-3. Accept + full lift и accept + change атомарны с History и outcome, сохраняют ID/quota и не меняют другую меру. Pending переживает обычный edit; stale reviewer refresh; expiry/lift race и rollback failure. Expired→future edit не воскрешает moot appeal.
+3. Accept + full lift и accept + change атомарны с History и outcome, сохраняют ID/quota и не меняют другую меру. Pending переживает обычный edit; stale reviewer refresh; expiry/lift race и rollback failure. Terminal expired/lifted measure отклоняет edit/remedy; повторное наказание имеет новую identity/quota. Проверить expiry-vs-edit/review race и отсутствие History при отказе.
 4. Проверить raw serialized own document/.data/action/fetcher/timeline/error DTOs на отсутствие всех actor/reviewer identity fields и nested History context; authorized internal History identity сохраняет. User reason/status/result/before-after доступны.
 
 **Итог:** AP10-PLAN-MIRA-01..04 исправлены; прежний §9 заменён конкретной persistence/action semantics по owner decision. Новых owner вопросов нет. Last-manager правило не применяется и не переделывается; owner-role redesign остаётся после админ-панели. **Мира:** повторный coordinator review этой delta и актуального личного плана; implementation не начинать до approval.
@@ -203,4 +203,25 @@ Owner явно решил: **два разных нарушения → две �
 
 Исходный planning handoff: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146
 
-Последняя revision delta для повторного coordinator review: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497
+Принятая revision AP10-PLAN-MIRA-01..04: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497
+
+## 10. Локальная revision AP10-PLAN-MIRA-05..06
+
+Лёва — AP-10, только delta AP10-PLAN-MIRA-05..06 по review #6670166694 и owner correction #6670294050. Остальная принятая revision #6670064497 не расширяется.
+
+**AP10-PLAN-MIRA-05 — terminal lifecycle (§4/6/8).**
+- Natural expiry и explicit lift окончательно завершают exact measure. Change restrictions/end-time/reason и accepted-appeal remedy допустимы только пока мера active. Продлить или возобновить expired/lifted measure нельзя.
+- Проверка terminal state по authoritative DB time после получения measure lock обязательна в общем transition primitive вместе с version/authority checks. Форма, открытая до expiry/lift, получает typed conflict/refresh без изменения measure, appeal outcome или History. Identical replay уже committed операции возвращает прежний результат, не возобновляя меру.
+- Новое санкционное решение после завершения — новая UUID/reason/lifecycle и собственный лимит appeals. Старые measure/History/quota сохраняются; pending appeal завершённой меры effective moot. Для natural expiry остаётся read-derived status без cron/public-GET write/synthetic admin event.
+- Удалены expired→future edit, materialize-moot-before-extension и соответствующие acceptance tests. Вместо них: terminal change/restriction/end-time/reason/remedy rejection для expired и lifted мер, expiry-vs-edit/review race, отсутствие новых events при отказе и новая independent identity/quota при повторном наказании.
+
+**AP10-PLAN-MIRA-06 — explicit-grant-only (§3/8).**
+- Ни `admin.users.blocks.manage`, ни `admin.users.blocks.managePrivileged` не получают initial grants **ни у одной built-in role**, включая admin/moderator.
+- Обе capability явно исключаются из существующего `INITIAL_ROLE_GRANTS.admin` catalog-all seed; проверить отсутствие в остальных initial role grants. Migration не добавляет их существующим ролям/пользователям автоматически.
+- Create/change/lift/review block appeals требуют explicit `blocks.manage` через существующие dynamic role grants/overrides; privileged-target capability остаётся дополнительной. Owner identity binding сам по себе не выдаёт эти capabilities и не обходит grant requirement. Принятая owner-only граница выдачи elevated key сохраняется; нового provisioning UI/bootstrap не добавляется.
+- Acceptance: initial matrix всех built-in ролей, в том числе admin/moderator, не содержит обеих capabilities; прямые actions без grant denied; явный grant даёт только предусмотренные полномочия, revoke убирает их со следующего request. Фикстуры явно выдают права нужным actors, а не полагаются на built-in role name.
+
+**Мира:** повторно проверить только AP10-PLAN-MIRA-05..06. Implementation не начат; code/DB/production не менялись. Last-manager и post-admin owner-role redesign не затронуты.
+
+
+Последняя delta для повторного coordinator review: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257
