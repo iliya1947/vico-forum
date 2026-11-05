@@ -6,7 +6,7 @@
 
 - AP-01–AP-09 merged в main. AP-09 implementation #287, test stabilization #289 и documentation closeout #288 завершены; current main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, migration head 0057.
 - Actual authenticated browser/deployed AP-08/AP-09 flows не заявляются выполненными; production/release boundary остаётся отдельно.
-- AP-10 technical planning назначен Лёве в #6667343744. Общая часть [плана опубликована](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146); implementation не начат, code/DB/production не менялись.
+- AP-10 technical planning назначен Лёве в #6667343744. [Исходный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146) локально исправлен по coordinator review #6667923255 и owner decisions #6669655343/#6669734702; [revision delta](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497). Требуется повторный coordinator review; implementation не начат, code/DB/production не менялись.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -15,7 +15,7 @@
 - Public reading/login/session/notifications/own status и любые domain appeal submissions не входят в restriction catalog. Own solved/best answer и source-locale correction не выделяются отдельными punitive restrictions.
 - Mandatory user-visible private reason: create, manual change restrictions/срока, explicit lift. Original reason не затирается; automatic expiry не создаёт synthetic reason/admin event.
 - Self-target create/change/lift запрещён. Privileged moderator/admin target требует elevated authority; owner — верхняя authority и не target subordinate. Target/issuer hierarchy действует на create/change/lift, не hard-coded role names.
-- Block appeal — отдельный domain exact measure, не Complaint/Complaint Appeal. До 3 submissions на measure. Право не отключается restrictions; own status/reason/appeal surface всегда доступна.
+- Block appeal — отдельный domain exact measure, не Complaint/Complaint Appeal. До 3 последовательных submissions на measure, одновременно только одна pending. Право не отключается restrictions; own status/reason/appeal surface всегда доступна.
 - Edit measure не меняет её identity/quota и не закрывает pending appeal; expiry/lift делают pending appeal утратившей предмет.
 - Expiry/lift не изменяют role grants/overrides и возвращают только возможности, разрешённые актуальным RBAC/resource state.
 
@@ -32,22 +32,21 @@
 - Proposals для review: обычная blocks.manage, отдельная elevated capability без автоматического built-in grant, narrow trusted owner-ID binding для необходимой owner target boundary, отдельный raw authority snapshot и action-restriction policy.
 - Enforcement охватывает direct APIs/child private reads/active sessions; publication receipts и committed retries проверяются до fresh-action restriction, Cancel/cleanup сохраняются.
 - Минимальные persistence proposals: measures, child restrictions и exact-measure appeals; new forward migrations/manifest/runtime least privilege. Никакой implementation/прошедших AP-10 tests не заявлено.
-- Предлагаемый reviewer effect принятого block appeal — lift той же exact measure, rejected appeal не меняет restrictions; это technical proposal на review, не копия Complaint Appeal policy.
-- Known limitation: ранее отозваны обе прежние модели active-measure multiplicity/aggregation. Они не внесены как approved schema constraints.
+- Accepted appeal поддерживает full lift или изменение restrictions/срока той же measure; remedy/reason/resolution/History атомарны через общий transition primitive. Reject меру не меняет.
+- Own timeline — отдельная allowlist projection без actor/issuer/reviewer identity или raw private History context. Identity сохраняется во внутренней authorized History.
 
-## Одна конкретная продуктовая развилка (§9 плана)
+## AP-10 revision AP10-PLAN-MIRA-01..04
 
-Есть действующая measure A с запретом replies, сроком и уже исчерпанным лимитом 3 appeals. До её окончания администратор хочет наложить меру с новым upload restriction/другим сроком/reason.
-
-- Изменение A сохраняет её identity и исчерпанный quota.
-- Новая B получает отдельный exact ID/appeal quota и требует определить совместный effect A/B.
-- Недоступность нового наложения до окончания A тоже меняет наблюдаемое поведение и не должна появиться молча как UNIQUE active или скрытая форма.
-
-Эта разница влияет на утверждённые appeal identity/quota, expiry/lift и enforcement. Лёва не выбрал single-active или aggregation модель; не начал multi-measure subsystem. Это единственная выделенная развилка, остальные закрытые product decisions не пересматриваются.
+- Owner decision закрыл прежнюю §9 развилку: разные нарушения создают разные меры. Single-active модель не применяется; повторного owner вопроса нет.
+- Отдельные measures имеют независимые identity/reason/restrictions/expiry/lift/version/issuer floor/history/quota. Enforcement — EXISTS действующей меры с нужным restriction key; снятие/истечение A не убирает effect B. Без aggregation store/precedence engine/current-head/UNIQUE active target.
+- Последовательность appeals обеспечивается measure lock, unique ordinal и partial UNIQUE pending по measure ID. Replay не расходует слот; pending A не блокирует B; обычный edit не закрывает pending. Expired appeal при продлении меры не возобновляется.
+- Accepted + change сохраняет identity/quota; accepted + lift не перезаписывается как moot. Fresh current version/authority, CAS, transactional History и rollback обязательны.
+- Raw own document/.data/action/fetcher/errors проверяются на отсутствие admin identity; одного сокрытия в UI недостаточно.
+- Delta для Миры: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497. Полный актуальный technical plan — личный файл Лёвы; unchanged scope исходного плана сохраняется.
 
 ## Следующий шаг
 
-- **Мира:** coordinator review common technical plan и только конкретный owner decision по повторному наложению из §9. После решения — локально завершить persistence/active-policy часть и финализировать approval, затем назначить Лиру.
+- **Мира:** повторный coordinator review revision AP10-PLAN-MIRA-01..04 и актуального личного плана. Owner решения уже получены; новых owner product blockers нет. После approval назначить Лиру на реализацию.
 - Implementation до plan approval не начинать. Лёва/агенты друг друга не вызывают; technical context передан в #251.
 - Lasting docs/PROJECT_STATE — отдельным documentation PR после принятой реализации. Общая last-manager очистка — после завершения админ-панели.
 - AP-11/Settings/Stage 6/production rollout не начинались; Марк не назначен.
