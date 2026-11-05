@@ -71,6 +71,12 @@ describe("AP-10 owner-only elevated permission changes inside authorization tran
 
     await owner.assignUserRole("owner", "target", "ap10-elevated-role");
     expect((await owner.resolveUser("target")).effectivePermissions).toContain(elevated);
+    // An ordinary manager must not downrank an elevated subject by switching away from the protected role.
+    const afterAssignment = await historyCount();
+    await expect(owner.assignUserRole("manager", "target", "builtin-user"))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    expect((await owner.resolveUser("target")).effectivePermissions).toContain(elevated);
+    expect(await historyCount()).toBe(afterAssignment);
     await owner.setUserOverride("owner", "plain", elevated, "allow");
     expect((await owner.resolveUser("plain")).effectivePermissions).toContain(elevated);
     const afterOwner = await historyCount();

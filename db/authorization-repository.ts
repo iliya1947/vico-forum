@@ -231,10 +231,19 @@ export class PostgresAuthorizationRepository {
       const user = await this.historyUser(client, userId);
       const previous = await client.query<{role_id: string}>("select role_id from authz_user_roles where user_id = $1", [userId]);
       if (previous.rows[0]?.role_id === roleId) return;
-      // Assignment to a role carrying elevated block-management power is owner-only.
-      if ((await this.readRoleGrants(roleId, client)).includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION)) {
-        this.requireBoundOwner(actorId);
-      }
+      // Neither granting nor stripping elevated authority through a role switch may bypass the owner gate.
+      // The previous role includes the implicit built-in user role when no assignment exists.
+      const elevatedRoleSwitch = await client.query<{ protected_change: boolean }>(`
+        select exists (
+          select 1 from authz_role_permissions
+          where permission_key = $3
+            and role_id in (
+              $1, coalesce($2, (select id from authz_roles where slug = 'user'))
+            )
+        ) protected_change`,
+        [roleId, previous.rows[0]?.role_id ?? null, BLOCK_MANAGE_PRIVILEGED_PERMISSION],
+      );
+      if (elevatedRoleSwitch.rows[0]?.protected_change) this.requireBoundOwner(actorId);
       const old = previous.rows[0] ? await this.historyRole(client, previous.rows[0].role_id) : null;
       await client.query(`insert into authz_user_roles (user_id, role_id) values ($1, $2)
         on conflict (user_id) do update set role_id = excluded.role_id, assigned_at = now()`, [userId, roleId]);
