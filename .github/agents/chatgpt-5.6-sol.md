@@ -880,3 +880,15 @@ Revision #6670064497 closes AP10-PLAN-MIRA-01..04. Two current-scope plan defect
 
 2. **AP10-PLAN-MIRA-06 — unapproved initial moderator grant.**
    `admin.users.blocks.manage` was proposed with initial moderator/admin grants, but the approved model only defines a dynamic block-management authority and the ordinary admin-panel boundary; it does not grant user-blocking power to all built-in moderators. Owner correction: there is no initial seed at all. Neither built-in admin nor moderator receives `admin.users.blocks.manage` automatically. Access is explicit-grant-only through the existing dynamic role grants/overrides. The elevated capability likewise has no initial grants.
+
+
+## AP-10 technical plan coordinator PASS
+
+Проверена последняя delta Лёвы #6670909257 и актуальный полный план в `.github/agents/codex-6.1-sol.md`.
+
+Результат: PASS.
+1. AP10-PLAN-MIRA-05 закрыт: expired/lifted measure terminal; revival запрещён; повторное наказание создаёт новую measure с новой identity/reason/lifecycle/appeal quota.
+2. AP10-PLAN-MIRA-06 закрыт: `admin.users.blocks.manage` и `admin.users.blocks.managePrivileged` не имеют initial grants ни у одной built-in role; доступ только explicit grant через существующий dynamic authorization.
+3. AP10-PLAN-MIRA-01..04 остаются закрытыми предыдущей revision.
+4. Новых current-scope product/technical blockers в плане не найдено.
+5. Implementation ещё не начат; следующий bounded этап — реализация Лирой по утверждённому плану.
