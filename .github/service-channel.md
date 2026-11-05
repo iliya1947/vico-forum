@@ -137,3 +137,12 @@
 4. Текущая Vico authorization model permission-based; implementation не должна сводиться к hard-coded проверке имени роли.
 5. На текущем этапе «старший/главный администратор» зафиксирован как отдельный продуктовый уровень authority. Нужно технически определить, как он выражается в существующей RBAC-модели, не добавляя новую built-in role без необходимости.
 6. Владелец проекта — верхняя authority и не является допустимым target для block/restrictions со стороны старшего/главного администратора или любой нижестоящей administrative authority.
+
+
+## Future owner-role / super-admin design task
+
+- Владелец отдельно поручил после текущей ordinary-admin работы продумать свою owner-role и весь связанный с ней механизм.
+- Это не расширяет AP-10 и не должно тормозить текущую блокировку.
+- Будущая задача охватывает owner authority, owner-only operations, recovery/emergency controls, защиту от subordinate lockout/block/demotion, границы senior/head-admin, owner-only audit/sensitive settings и связь с текущей permission-based RBAC-моделью.
+- Инфраструктурное владение проектом и runtime/application permissions не считать автоматически одним и тем же уровнем; границу нужно спроектировать явно.
+- До начала этой отдельной задачи не строить спекулятивный super-admin subsystem.
