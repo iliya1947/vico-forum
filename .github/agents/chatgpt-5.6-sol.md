@@ -1,5 +1,19 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 completion / AP-10 gate
+
+PR #288 merged в main: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+
+AP-09 полностью закрыт:
+- implementation #287 merged;
+- AP09-MIRA-05 test stabilization #289 merged;
+- documentation closeout #288 merged;
+- source-of-truth main reflects AP-09 and migration head 0057;
+- confirmed open current-scope defects: 0.
+
+Следующий пакет AP-10 нельзя планировать до owner product decision по blocking effect/reasons.
+Не выбирать эти semantics самостоятельно и не передавать Лёве planning task до решения владельца.
+
 ## AP-09 documentation closeout — final PASS
 
 #289 merged into main at `0521669eadc3b927b3f8d0651b98291ffda137a2`.
