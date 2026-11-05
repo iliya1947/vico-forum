@@ -18,15 +18,12 @@
 
 ## Текущий маршрут
 
-- Coordinator whole-PR review #287 на exact head `f5117f22bd891d3892357fc984009388481001f7` завершён. Финальный verdict: **CHANGES REQUIRED**.
-- Подзадача 1/4: stable head, diff/scope и exact-head CI подтверждены.
-- Подзадача 2/4: PASS — permission/catalog/migration, DB directory, targeted authorization read, snapshot/privacy и runtime privilege boundaries; дефектов 0.
-- Подзадача 3/4: подтверждён `AP09-MIRA-01` — fresh loss `access.authorization.manage` при сохранённом `admin.users.read` приводит fetcher submit к terminal 403 boundary вместо свежего read-only detail snapshot без privileged controls.
-- Подзадача 4/4 gap-sweep добавила `AP09-MIRA-02`: permission-dependent legacy `under-development?feature=admin-users` success redirects не имеют `Cache-Control: private, no-store`; React Router 8.3.1 `redirect()` сам добавляет только `Location` без cache policy.
-- Подзадача 4/4 также добавила `AP09-MIRA-03`: exact head всё ещё содержит `admin-users` в `UNDER_DEVELOPMENT_FEATURES`, поэтому общая страница «Still in development» ложно показывает уже реализованный Users package как незавершённый.
-- Других confirmed current-scope defects в full changed-file sweep не найдено. Worker wiring, locale/header admission, localization/fingerprints, route registration и legacy Roles reuse проверены без дополнительных findings.
-- Один bounded correction package передан Лире: исправить только `AP09-MIRA-01..03`, добавить regression coverage и выдать новый stable exact head с применимым full CI.
-- Любое implementation изменение #287 запускает новый coordinator whole-PR cycle; Лёва подключается к independent technical review только после нового coordinator PASS.
+- Новый coordinator whole-PR review #287 начат на exact head `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+- Подзадача 1/4 завершена PASS по stable-head/scope/CI boundary: correction delta ограничен шестью файлами, относящимися только к AP09-MIRA-01..03 и regression coverage; schema/dependencies/lasting docs не менялись.
+- Exact-head CI #41939426331 подтверждён по job logs: app 143/143 files, 1887/1887 tests; PostgreSQL 41/41 files, 483/483 tests; все применимые job steps SUCCESS.
+- Implementation correctness correction на этой подзадаче ещё не оценивается.
+- Следующая подзадача 2/4: перепроверить полную причинную цепочку AP09-MIRA-01 — thrown management 403 → recovery GET → fresh Users-read → read-only detail / terminal 403 без loop.
+- После coordinator PASS Лёва проверяет тот же stable exact head.
 
 Оперативное состояние: [workflow.md](./workflow.md).
 Контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
