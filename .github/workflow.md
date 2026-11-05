@@ -17,7 +17,7 @@
 - Own block-status/appeal surface должна оставаться достижимой независимо от restriction set
 - Approved privileged-target rule: обычный block authority не может применять ограничения к модераторам/администраторам; это доступно только владельцу и старшему/главному админу через отдельную повышенную authority
 - Техническая форма senior/head-admin authority пока не зафиксирована; не hard-code role name, сохранить permission-based model
-- Открытый sub-gate: может ли senior/head admin применять block/restrictions к самому владельцу — не решено
+- Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
 - Следующий product step: определить минимальный каталог restrictions и логические группы, учитывая фактические возможности текущего продукта
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
 - После catalog/grouping: отдельно решить reason rules и access-manager/self-block safety; затем передать Лёве AP-10 technical planning
