@@ -1,5 +1,23 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 independent review — final reconciliation
+
+**Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+Лёва повторно проверил `AP09-LEVA-01` на accepted schema и **отозвал finding**.
+
+Подтверждено:
+- accepted `user.created_at` — PostgreSQL `timestamp without time zone`;
+- прежний synthetic repro использовал неверный `timestamptz`;
+- disposable PostgreSQL 17 с migrations 0000–0057 + exact-head `PostgresAdminUsersReader` + real Drizzle profile reader дала 9/9 PASS для трёх boundary timestamps × UTC/Asia-Jerusalem/America-New_York;
+- proposed `AT TIME ZONE 'UTC'` correction на actual column type применять нельзя;
+- implementation не менялась, новый coordinator cycle не нужен.
+
+**Final independent technical verdict Лёвы: PASS. Confirmed open current-scope defects: 0.**
+Coordinator PASS и independent PASS относятся к одному exact head.
+
+Следующий шаг владельца: merge PR #287. После merge — отдельный documentation closeout PR по текущему process rule.
+
 ## AP-09 independent review — verification of AP09-LEVA-01
 
 **Reviewed exact head remains:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
