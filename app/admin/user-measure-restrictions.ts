@@ -1,3 +1,5 @@
+import type { PermissionKey } from "../authorization/catalog";
+
 /**
  * AP-10 restrictions supplement effective permissions; they are not PermissionKey grants.
  * Group IDs are presentation shortcuts only. Persist and validate child IDs exclusively.
@@ -74,4 +76,4 @@ export const USER_MEASURE_ADMIN_PERMISSION_FAMILIES = {
     "admin.users.read", "access.authorization.manage", "admin.history.read",
     "admin.users.blocks.manage", "admin.users.blocks.managePrivileged",
   ],
-} as const satisfies Record<UserMeasureAdminRestrictionId, readonly string[]>;
+} as const satisfies Record<UserMeasureAdminRestrictionId, readonly PermissionKey[]>;
