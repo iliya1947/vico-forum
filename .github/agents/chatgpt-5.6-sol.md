@@ -89,63 +89,18 @@
 
 Это сохраняет причинность, историю и независимое обжалование каждого нарушения.
 
-## AP-10 violation / sanction / appeal lifecycle — draft for owner review
+## AP-10 block appeal boundary — corrected draft
 
-Не зафиксировано как owner decision.
+Предыдущая попытка описать block appeal как пересмотр «нарушения + наказания» отозвана: она смешивала AP-10 с Complaint semantics.
 
-### 1. Основание меры
-
-Каждая measure должна иметь отдельное violation basis — за что именно она назначена.
-
-Логический invariant:
-- violation basis после создания меры не переписывается как обычное редактирование;
-- если выяснилось, что основание было другим, это не «редактирование текста причины», а отмена/пересмотр исходной меры и, при необходимости, новая мера;
-- иначе уже поданная appeal могла бы незаметно начать относиться к другому обвинению.
-
-Не фиксировать пока конкретную taxonomy нарушений: это отдельный продуктовый вопрос. Но measure должна хранить достаточный immutable context, чтобы пользователь и reviewer понимали, что именно оспаривается.
-
-### 2. Наказание внутри той же меры
-
-У той же measure могут меняться:
-- restriction set;
-- temporary/permanent;
-- expiry/duration.
-
-Это не меняет violation identity.
-
-Любое реальное изменение sanction должно иметь отдельный committed history transition. Особенно важно различать:
-- усиление;
-- смягчение;
-- explicit lift.
-
-Причина изменения sanction, если она обязательна, определяется отдельно от исходного violation basis.
-
-### 3. Appeal semantics
-
-Appeal оспаривает violation + назначенную за него measure как одно дело, но reviewer должен уметь разделить два вопроса:
-- было ли нарушение / подтверждено ли основание;
-- соразмерна ли назначенная мера.
-
-Кандидат итогов appeal:
-- upheld — нарушение и текущая мера подтверждены;
-- modified — нарушение подтверждено, но наказание изменено/смягчено;
-- overturned — основание не подтверждено; measure прекращается и помечается overturned.
-
-### 4. Что если measure менялась во время pending appeal
-
-- appeal не сбрасывается и не создаётся заново только из-за изменения срока/restrictions;
-- reviewer видит initial sanction и все последующие committed changes;
-- предмет appeal остаётся тем же violation basis + связанная с ним measure;
-- если measure была explicit-lifted или успела expire, appeal не обязан автоматически исчезать: пользователь всё ещё может оспаривать сам факт нарушения/меры, поскольку запись и история уже существуют;
-- overturned appeal должен иметь семантику отмены именно этой measure; другие active measures за другие нарушения не затрагиваются.
-
-### 5. Что нельзя смешивать
-
-- violation basis ≠ administrative reason, почему другой админ позже изменил sanction;
-- appeal argument ≠ violation basis;
-- lift ≠ автоматически признание исходной меры ошибочной;
-- expiry ≠ оправдание/overturn;
-- новое нарушение ≠ изменение старой меры.
+Корректная граница:
+1. Complaint — report о возможном нарушении; это отдельный moderation domain.
+2. Administrative measure — отдельная санкция, назначенная пользователю и содержащая собственный stated reason/violation context.
+3. Block appeal — действие уже наказанного пользователя против exact measure.
+4. Existing Complaint Appeal — appeal по Complaint Decision/effective outcome и не является block appeal.
+5. Даже если measure когда-либо будет связана с Complaint Case, оба workflows сохраняют собственные identities, permissions, outcomes и history.
+6. Нельзя автоматически выводить block-appeal outcomes/lifecycle из текущего Complaints Appeal contract.
+7. В частности, поведение pending block appeal при expiry, explicit lift или изменении sanction пока OPEN и требует отдельного owner decision.
 
 
 ## AP-09 completion / AP-10 gate
