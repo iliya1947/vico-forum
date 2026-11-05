@@ -1,5 +1,41 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 documentation closeout — подзадача 3/3
+
+**Docs-content verdict: PASS. Overall closeout: BLOCKED by `AP09-MIRA-05`.**
+
+#288 exact head `c1e20a79d69918bb0bf62d9f3acec0d013ddfd45`, base/main `386023ce892044e623ec3d24f8a724e92af61a31`.
+
+Проверено:
+- diff ровно 5 docs-файлов, implementation/schema/dependencies отсутствуют;
+- PROJECT_STATE, ADMIN_PANEL, AUTHORIZATION и HISTORY_11 соответствуют merged AP-09 code/migration/catalog/routes;
+- main не сдвинулся;
+- factual docs contradictions/overscope не найдено.
+
+CI выявил новый current-scope test-layer defect:
+- run #41951777119: database SUCCESS, checks FAIL;
+- attempt 1: repeated-revocation regression падает на line 196 после второго recovery-cycle;
+- rerun same unchanged head: тот же test падает уже на line 180 после первого recovery-cycle;
+- prior implementation CI #41941892340 на том же runtime code: test file 6/6 PASS, full application 1888/1888 PASS.
+
+Root cause:
+- test ждёт loader call count и negative state `#authorization === null`;
+- ErrorBoundary также удовлетворяет negative state до завершения recovery render;
+- immediate `Public details` assertion гоняется с successful detail commit;
+- различное место failure на двух attempts подтверждает synchronization race.
+
+**AP09-MIRA-05:** test-only synchronization defect. Runtime defect не подтверждён.
+
+Correction boundary:
+- separate test-only PR;
+- only `app/admin/users-authorization.test.tsx` unless new evidence requires broader scope;
+- wait positive recovered detail state in each cycle before terminal assertions;
+- preserve semantic assertions/no replay/no loop/history identity;
+- no runtime change;
+- full applicable CI.
+
+#288 остаётся Draft до correction merge + sync + green docs CI.
+
 ## AP-09 documentation closeout — подзадача 2/3
 
 Implementation #287 merged в `main`: `386023ce892044e623ec3d24f8a724e92af61a31`.
