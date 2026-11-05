@@ -128,6 +128,63 @@ Reason нужен не ради формы и не ради красивого H
 - редактирование исторических reasons задним числом.
 
 
+## AP-10 self-target / access-manager safety — purpose-first draft for owner review
+
+Не owner decision, кроме уже утверждённых owner/privileged-target invariants и существующего lockout contract из main.
+
+### 1. Self-target
+
+Кандидат: actor не может создавать, изменять или снимать administrative measure, target которой является он сам.
+
+Почему:
+- self-sanction не решает реальную задачу модерации;
+- разрешение self-lift делает санкцию против moderator/admin бессмысленной, если у target остаётся block-management authority;
+- self-edit позволяет наказанному администратору ослабить собственную sanction без независимого административного решения.
+
+Следствие: measure на moderator/admin изменяет или снимает другой actor, который имеет authority воздействовать на этого target.
+
+### 2. Target authority должна применяться ко всему lifecycle меры
+
+Уже утверждено: ordinary block authority не может накладывать restrictions на moderator/admin; owner — верхняя authority и не является допустимым target subordinate authority.
+
+Кандидат-следствие для согласования:
+- та же target-authority проверка должна применяться не только к созданию, но и к изменению/explicit lift меры;
+- иначе lower authority, которая не может законно наказать privileged target, смогла бы отменить/ослабить уже назначенную higher-authority меру.
+
+Не определять сейчас senior/head-admin → senior/head-admin иерархию: это часть отдельной owner-role/super-admin задачи, если AP-10 не потребует конкретного правила раньше.
+
+### 3. Access-manager lockout — существующий обязательный conditional boundary
+
+Main уже требует: если effect блокировки делает authorization management недоступным, система должна сохранять хотя бы одного **usable** access manager, включая конкурирующие authorization/block mutations.
+
+Причина:
+- обычный RBAC lockout считает effective `access.authorization.manage`;
+- AP-10 restriction может оставить permission формально effective, но сделать management action недоступным;
+- поэтому одного existing effective-permission count недостаточно.
+
+Кандидат применения:
+- перед committed measure/change, который запрещает target Users/access administration и затрагивает пользователя с effective `access.authorization.manage`, проверяется, что после действия остаётся другой usable access manager;
+- эта проверка должна быть согласована с существующей authorization mutation serialization, чтобы две конкурентные операции не прошли каждая на основании одного и того же последнего manager;
+- если конкретная measure не запрещает authorization management, дополнительный lockout invariant к ней не применять.
+
+### 4. Что означает service restriction «Users / access administration»
+
+Если owner утвердит этот child restriction, техническая карта должна включать и AP-10 block-management capability itself как часть user-administration mutations. Иначе suspended admin мог бы продолжать назначать/изменять меры другим пользователям.
+
+Это не означает глобальное отключение всех admin powers: только выбранная service family.
+
+### 5. Не расширять AP-10 сейчас
+
+Не проектировать:
+- полный senior/head-admin hierarchy;
+- owner recovery/emergency UI;
+- инфраструктурный recovery path;
+- demotion/role-removal owner protection;
+- generic privileged-account framework.
+
+Эти вопросы остаются будущей owner-role/super-admin задачей, кроме минимальных invariants, без которых AP-10 sanction нельзя безопасно применить.
+
+
 ## AP-10 measure aggregation — OPEN, previous drafts withdrawn
 
 Два прежних черновика Миры были ошибочно построены от структуры данных:
