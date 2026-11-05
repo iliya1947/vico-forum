@@ -53,6 +53,7 @@ Permission key означает существующую capability прилож
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
 - `access.authorization.manage`;
+- `admin.users.read`;
 - `admin.history.read`;
 - `forum.complaint.create`;
 - `forum.complaint.review`;
@@ -176,6 +177,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
 - `access.authorization.manage`;
+- `admin.users.read`;
 - `admin.history.read`.
 
 После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
@@ -186,6 +188,16 @@ AP-03 initially grants it only to built-in admin; custom roles, moderator grants
 overrides stay explicit. It grants no management authority. Significant authorization changes
 append a minimal event in the same transaction after lockout validation; no-op and rejected
 changes do not create events. See `../ADMIN_PANEL.md` for coverage and read semantics.
+
+`admin.users.read` independently admits the ordinary admin Users index and detail. AP-09
+initially grants it only to built-in admin; custom roles, moderator grants and per-user
+allow/deny/inherit remain explicit and dynamic. It grants no authorization-management
+authority and does not expose email or a full authorization snapshot. An actor with
+`access.authorization.manage` but without `admin.users.read` retains the existing
+authorization-management user subset rather than gaining the general Users directory.
+When both permissions are effective, the Users detail may compose the selected user's targeted
+authorization state with the same canonical management action. See `../ADMIN_PANEL.md` for
+the AP-09 read and mutation-composition contract.
 
 ## Per-user overrides
 

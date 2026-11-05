@@ -10,15 +10,17 @@ protected at its original URL and, in AP-04, reuses the common shell/navigation.
 AP-03 adds authorization-change History and protected Overview recent actions. AP-05 reuses
 existing topic operations in shared Quick actions and connects their forum/Help History producers. AP-06 adds
 protected category/section browsing and dedicated object pages. AP-07 adds administrative topic detail
-and shared source-locale/history actions for individual messages. AP-08 adds
-shared topic close/reopen; user blocking remains unimplemented. AP-02 itself added no schema
-or permission keys; AP-03 adds the independent `admin.history.read` capability.
+and shared source-locale/history actions for individual messages. AP-08 adds shared topic close/reopen.
+AP-09 adds protected Users index/detail with the independent `admin.users.read` capability and reuses
+the existing authorization assignment/override controls only when the actor also has
+`access.authorization.manage`; user blocking remains unimplemented. AP-02 itself added no schema
+or permission keys; AP-03 adds `admin.history.read`, and AP-09 adds `admin.users.read`.
 
 Other routes and capabilities described below as delivery targets become available only
-through their respective bounded implementation PRs. Unfinished Users/Settings
-links explicitly use the shared Under development surface and grant no future read/action
-permission. Forum navigation is shown for Forum capabilities; the Users placeholder is
-shown with the existing authorization-user-management subset, not a new general user read.
+through their respective bounded implementation PRs. Unfinished Settings links use the shared
+Under development surface and grant no future read/action permission. Users is now a real
+destination for `admin.users.read`; an authorization-manager without that permission keeps
+the existing authorization-user-management subset rather than gaining the general Users directory.
 
 Related sources of truth:
 
@@ -190,7 +192,7 @@ grant global admission either. Each section and action independently checks its 
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` | Same existing permission, management validation and atomic lockout invariants |
-| Users | Future independent administrative-user-read capability for general index/detail; `access.authorization.manage` for its existing authorization subset; future block-management capability for minimal target/block lookup | Authorization controls only with `access.authorization.manage`; block/lift only with the implemented block capability |
+| Users | `admin.users.read` for the general index/detail; `access.authorization.manage` for the existing authorization subset; future block-management capability for minimal target/block lookup | Authorization controls only with `access.authorization.manage`; block/lift only with the implemented block capability |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
 
@@ -495,6 +497,47 @@ closure does not introduce drafts, autosave or new attachment policies.
 These are repository/local-CI implementation contracts, not evidence of
 production deployment, independent review, real-browser acceptance or owner
 visual approval.
+
+## Users index, detail and existing authorization controls (AP-09)
+
+`/:locale/admin/users` and `/:locale/admin/users/:userId` independently require the
+effective `admin.users.read` capability before query/target validation and protected reads.
+The initial grant is built-in admin only; custom roles and per-user allow/deny/inherit remain
+dynamic. This permission admits the Users section but grants no authorization-management
+mutation or private authorization snapshot. Conversely, `access.authorization.manage`
+continues to expose its existing authorization-user subset without implicitly granting the
+general Users directory.
+
+The Users index is read-only and projects only public identity fields needed by the page:
+user ID, display name, image and joined timestamp. Search is literal case-insensitive name/ID
+search, filtered in PostgreSQL before LIMIT; email is neither selected nor searchable. Results
+use stable ID keyset paging with 25 items plus lookahead and an independent matching total.
+The detail page reuses the existing public profile reader but explicitly projects only public
+profile fields, role display and public statistics. Success and controlled protected failures
+remain private/no-store.
+
+When the same actor also has `access.authorization.manage`, the detail page may additionally
+load a targeted management snapshot for that one selected user: role options plus the target
+user's assignment, grants, overrides and effective permissions under the existing consistent
+authorization-read contract. It does not load the full authorization-management user list or
+other users' state. Without the management permission, none of that management payload or UI is
+rendered.
+
+Assignment and per-permission override controls reuse the existing canonical
+`/:locale/admin/authorization` action and its `assignRole` / `override` intents. AP-09 adds
+no second writer, mutation protocol, actor authority field, lockout model or History event kind.
+The session remains actor authority, the canonical action rechecks fresh
+`access.authorization.manage`, and successful writes revalidate the current Users detail.
+If a management submit is freshly denied while `admin.users.read` still remains effective,
+the route performs at most one same-URL GET recovery and returns to read-only detail without
+replaying the denied mutation. If Users-read is also gone, the result remains fail-closed 403
+without a recovery loop. A later independent permission change can recover independently.
+
+The old `under-development?feature=admin-users` URL remains only as a compatibility redirect:
+Users-read actors go to the real Users index, management-only actors go to the existing
+authorization-user subset, and permission-dependent success redirects are private/no-store.
+Users is no longer listed as unfinished. AP-09 does not implement blocking, account deletion,
+general edit-any user operations, Settings, a second RBAC or production rollout.
 
 ## User blocking boundary and unresolved product gate
 
