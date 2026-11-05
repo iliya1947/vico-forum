@@ -73,62 +73,21 @@
 - enforcement должен происходить в authoritative server/domain boundaries, а не только скрытием UI.
 
 
-## AP-10 active block lifecycle — draft for owner review
+## AP-10 active measures lifecycle — corrected draft
 
-Не зафиксировано как owner decision.
+Предыдущий черновик «не более одной активной block/measure на пользователя» отозван после owner correction: он смешивал техническое состояние аккаунта с санкциями за отдельные нарушения.
 
-### Кандидат модели
+Корректная модель:
+1. violation → отдельная sanction measure;
+2. measure хранит собственные restrictions, срок и историю изменений;
+3. appeal относится к этой measure в связи с её violation basis;
+4. новое нарушение создаёт новую measure, даже если предыдущая ещё активна;
+5. effective restrictions аккаунта = union всех active measures;
+6. expiry/lift/overturn одной measure убирает только её вклад;
+7. редактирование restrictions/срока той же measure не создаёт новую appeal автоматически;
+8. own account UI показывает меры раздельно и даёт appeal у каждой применимой меры.
 
-1. Один пользователь имеет не более одной **активной** block/measure одновременно.
-   - новая санкция не создаёт второй параллельный блок поверх первого;
-   - если active block уже есть, authorized actor открывает и изменяет его либо явно снимает;
-   - после expiry/lift следующая санкция создаёт новую отдельную measure identity.
-
-2. Срок и restriction set редактируются независимо.
-   - temporary: preset duration либо произвольная дата/время окончания;
-   - permanent: без expiry;
-   - authorized actor может продлить, сократить, temporary→permanent и permanent→temporary;
-   - изменение применяется сразу после committed mutation.
-
-3. Restriction set активной меры можно менять частично.
-   - добавлять/снимать отдельные restrictions;
-   - group checkbox остаётся UI shortcut;
-   - пустой restriction set не хранить как «активную блокировку»: если нужно снять последний restriction, использовать explicit lift.
-
-4. Explicit lift — отдельное terminal administrative action.
-   - немедленно прекращает все restrictions текущей active measure;
-   - не меняет roles/grants/overrides;
-   - expired measure не требует synthetic lift;
-   - stale action не должна снять более новую/replaced measure.
-
-5. Authority на edit/lift следует authority на target.
-   - block creator не получает ownership/exclusive control;
-   - другой authorized admin может изменить/снять measure;
-   - moderator/admin target требует elevated owner/senior-head-admin authority;
-   - owner никогда не target.
-
-6. История должна различать реальные committed transitions:
-   - block created;
-   - restriction set changed;
-   - expiry/duration changed;
-   - explicit lift.
-   Automatic expiry — состояние по authoritative time, не выдуманный action системного actor.
-
-7. Appeal lifecycle при изменении active measure пока не решать внутри этого subtask.
-   Exact block/measure appeal уже обязателен; нужно отдельно определить, что происходит с pending appeal при изменении restriction set/duration.
-
-### Почему не stacked blocks
-
-Параллельные active blocks потребовали бы отдельной product-модели для:
-- union/intersection restrictions;
-- конкурирующих expiry;
-- частичного lift;
-- нескольких administrators/причин;
-- нескольких одновременно релевантных appeals;
-- отображения пользователю фактической причины каждого действующего ограничения.
-
-Для текущего pre-release AP-10 это лишняя сложность без подтверждённой необходимости.
-
+Это сохраняет причинность, историю и независимое обжалование каждого нарушения.
 
 ## AP-09 completion / AP-10 gate
 
