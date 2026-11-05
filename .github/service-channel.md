@@ -146,3 +146,15 @@
 - Будущая задача охватывает owner authority, owner-only operations, recovery/emergency controls, защиту от subordinate lockout/block/demotion, границы senior/head-admin, owner-only audit/sensitive settings и связь с текущей permission-based RBAC-моделью.
 - Инфраструктурное владение проектом и runtime/application permissions не считать автоматически одним и тем же уровнем; границу нужно спроектировать явно.
 - До начала этой отдельной задачи не строить спекулятивный super-admin subsystem.
+
+
+## AP-10 owner correction — violation → measure → appeal
+
+1. Блокировка/мера назначается **из-за конкретного нарушения**. Нарушение является смысловым основанием санкции.
+2. Appeal относится к exact measure в связи с её конкретным violation basis. Он не относится к технической версии restriction set.
+3. Изменение срока или отдельных restrictions в рамках той же санкции не создаёт автоматически новую appeal: это та же мера за то же нарушение; reviewer должен видеть её текущее состояние и историю изменений.
+4. Новое отдельное нарушение требует отдельной measure identity и отдельного права апелляции. Нельзя поглощать новое нарушение редактированием старой меры.
+5. Поэтому прежний черновой вариант Миры «не более одной активной block/measure на пользователя» **отозван как логически неверный**.
+6. Несколько measures могут быть активны одновременно, если они относятся к разным нарушениям. Effective restrictions пользователя — union restrictions всех активных measures.
+7. Expiry, explicit lift или successful appeal одной меры снимает только ограничения этой меры. Если то же restriction продолжает накладываться другой активной мерой, оно остаётся эффективно.
+8. На собственной account page каждая действующая мера должна быть различима отдельно: violation/reason context, срок, restrictions и собственный appeal entry point.
