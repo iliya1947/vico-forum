@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-04
+Последнее обновление: 2026-11-05
 
 ## Назначение
 
@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0056`;
+- repository migration history: `0000`–`0057`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -98,10 +98,11 @@ Stage 5 завершён в repository/local-CI path.
 - AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой;
 - AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий);
 - AP-08 — close/reopen тем: независимое разрешение `forum.topic.close`, persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого reply editor при закрытии. Matching committed publication receipt сохраняет idempotent replay после closure.
+- AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и переиспользованием существующих authorization assignment/override controls только при отдельном `access.authorization.manage`.
 
-AP-08 merged в `main`; repository/local-CI implementation и stable-head coordinator/technical review завершены. Отдельный authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 flow не выполнялся и не заявляется как выполненная acceptance; production/deployed acceptance остаётся отдельной release boundary.
+AP-08 и AP-09 присутствуют в `main` и реализованы в repository/local-CI path. Отдельный authenticated Chromium→Worker→Better Auth→PostgreSQL flow для AP-08/AP-09 не выполнялся и не заявляется как выполненная acceptance; production/deployed acceptance остаётся отдельной release boundary.
 
-Ещё не реализованы страницы пользователей, user blocking и реальные Settings operations.
+Ещё не реализованы user blocking и реальные Settings operations.
 
 ### Complaints
 
@@ -164,7 +165,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` Admin Panel реализована до AP-08 включительно; следующие object/action packages ещё не завершены.
+- В `main` Admin Panel реализована до AP-09 включительно; user blocking/AP-10, Settings и последующий closeout ещё не завершены.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
