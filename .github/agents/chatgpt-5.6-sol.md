@@ -2,48 +2,76 @@
 
 ## AP-10 restriction catalog — draft for owner review
 
-Не зафиксировано как owner decision. Кандидат строится по пользовательским действиям, а не по permission keys.
+Не зафиксировано как owner decision. После dependency/gainularity sweep кандидат строится по понятным пользовательским действиям, а не по permission keys или внутренним route/surface деталям.
 
-Предлагаемая группировка:
+### 1. Публикация и участие
 
-1. Публикация и участие
-   - создавать новые темы / Help-вопросы;
-   - отправлять ответы;
-   - загружать вложения.
+- создавать новые темы / Help-вопросы;
+- отправлять ответы;
+- загружать новые вложения.
 
-2. Изменение своего контента и профиля
-   - редактировать свои опубликованные сообщения;
-   - управлять решением/лучшим ответом в своей теме;
-   - исправлять source locale своего контента;
-   - изменять свой профиль.
+Логика:
+- topic creation и reply creation остаются разными ограничениями: санкция «не создавать новые темы, но разрешить отвечать» имеет понятный продуктовый смысл;
+- Help-вопрос не требует отдельной санкции, пока он использует ту же пользовательскую сущность/способ участия, что создание темы; техническая карта enforcement может различаться;
+- upload остаётся отдельным ограничением, потому что можно разрешить текстовое участие, но запретить новые файлы.
 
-3. Обращения к модерации
-   - отправлять Complaints;
-   - отправлять Help signals;
-   - подавать обычные domain appeals (Complaint/Help), кроме mandatory appeal на exact block/measure.
+### 2. Изменение собственного контента и профиля
 
-4. Ресурсоёмкие функции
-   - генерировать переводы.
-   - upload оставлен в publication, потому что он связан с публикационными flows, но остаётся отдельным selectable restriction.
+- редактировать свои опубликованные сообщения;
+- управлять решением / лучшим ответом собственной темы;
+- изменять профиль.
 
-5. Модерация и администрирование
-   - Forum/Help moderation;
-   - Complaints moderation/review;
-   - Users / roles / permissions management;
-   - administrative private/read surfaces, если corresponding admin restriction selected.
+Не делать отдельной галочкой:
+- own source-locale correction — это слишком техническая гранулярность для sanction UI; при необходимости она следует политике изменения собственного контента, а точную enforcement-связь определяет technical plan.
 
-Не включать:
+### 3. Обращения к модерации
+
+- отправлять Complaints / пользовательские жалобы;
+- отправлять Help signals;
+- подавать другие domain appeals, не относящиеся к текущей block/measure.
+
+Обязательное исключение:
+- appeal exact текущей block/measure никогда не является restriction и всегда доступен на own account page.
+
+### 4. Ресурсоёмкие пользовательские функции
+
+- генерировать переводы.
+
+Пока это единственная подтверждённая отдельная пользовательская функция такого типа. Не создавать группу из будущих/неimplemented возможностей.
+
+### 5. Служебные полномочия — показывать только для privileged target
+
+Эта группа вообще не показывается для обычного пользователя.
+
+Если target имеет модераторскую/административную authority и actor имеет повышенное право воздействовать на такой target, кандидат:
+- ограничить Forum/Help moderation;
+- ограничить Complaints moderation/review;
+- ограничить Users / roles / permissions administration.
+
+Логика:
+- restriction соответствующей служебной области должен блокировать и её privileged reads, и mutations; отдельная галочка «private admin reads» создаёт искусственную техническую гранулярность;
+- ordinary block manager не получает эту группу для moderator/admin targets;
+- owner никогда не является допустимым target;
+- exact mapping current permissions → эти продуктовые области — техническая задача после owner approval.
+
+### Не включать в restriction catalog
+
 - login/session restriction;
-- public reading restriction;
-- notifications/read-only own account surface;
-- exact block/measure appeal — всегда доступен на own account page;
+- public reading;
+- notifications;
+- собственную account/block-status surface;
+- exact block/measure appeal;
+- отдельные internal permission keys, route names или implementation details;
 - future/unimplemented capabilities.
 
-Logic notes:
-- restriction set additive: если blocked parent action already makes child action unreachable, child checkbox can remain selected/cleared independently without changing semantics;
-- restrictions do not rewrite roles/grants/overrides;
-- administrative restriction should suppress both private admin reads and mutations in its selected domain, otherwise blocked moderator/admin retains privileged data access;
-- exact enforcement map must be designed by Leva only after owner approves product catalog.
+### Dependency rules
+
+- group checkbox — только UI convenience: выбирает/снимает все child restrictions;
+- child restrictions остаются independently persisted;
+- restriction set additive и не переписывает roles/grants/overrides;
+- если одна выбранная санкция фактически делает другую временно недостижимой, это не превращает их в один тип санкции; после частичного lift остаётся точный сохранённый набор;
+- enforcement должен происходить в authoritative server/domain boundaries, а не только скрытием UI.
+
 
 ## AP-09 completion / AP-10 gate
 
