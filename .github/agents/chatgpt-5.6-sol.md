@@ -1,5 +1,32 @@
 # Мира — ChatGPT-5.6 Sol
 
+## AP-09 corrected head — coordinator restart, подзадача 1/4
+
+**Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+**Superseded reviewed head:** `f5117f22bd891d3892357fc984009388481001f7`.
+**Baseline/current main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+**Verdict подзадачи 1/4: PASS по stable-head / scope / CI boundary. Implementation correctness correction ещё не оценивается.**
+
+Проверено:
+- #287 остаётся Draft/open/mergeable на новом stable head;
+- correction delta от старого reviewed head: 7 commits, 6 files;
+- изменены только:
+  - `app/routes/admin-user.tsx`;
+  - `app/routes/under-development.tsx`;
+  - `app/forum/under-development.ts`;
+  - `app/admin/users-authorization.test.tsx`;
+  - `app/admin/users.test.tsx`;
+  - `app/routes/admin-users.test.ts`;
+- delta соответствует только bounded correction AP09-MIRA-01..03 и regression coverage; schema, dependencies, authz writers, migration/catalog, lasting docs/PROJECT_STATE не менялись;
+- exact-head CI #41939426331 завершён SUCCESS;
+- job logs подтверждают application 143/143 files, 1887/1887 tests; PostgreSQL 41/41 files, 483/483 tests;
+- lint, typecheck, build, UI preview build, migration history/metadata, schema parity, production manifest, runtime privilege/credential probes и Worker smoke steps SUCCESS.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow не выполнялся. **Информация не проверена.** Отдельный mandatory browser/owner visual gate для AP-09 не назначен.
+
+Следующая подзадача 2/4: AP09-MIRA-01 recovery chain и её regression coverage.
+
 ## AP-09 coordinator whole-PR review — подзадача 4/4: gap-sweep / final verdict
 
 **Reviewed exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
