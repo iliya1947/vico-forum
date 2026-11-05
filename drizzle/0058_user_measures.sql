@@ -89,7 +89,7 @@ CREATE TABLE "user_measure_appeals" (
     "user_measure_appeals"."status" = 'moot' and "user_measure_appeals"."reviewer_user_id" is null and "user_measure_appeals"."remedy" is null
   ))
 );--> statement-breakpoint
-CREATE UNIQUE INDEX "user_measure_appeals_one_pending_idx" ON "user_measure_appeals" USING btree ("measure_id") WHERE "user_measure_appeals"."status" = 'pending';--> statement-breakpoint
+CREATE UNIQUE INDEX "user_measure_appeals_one_pending_idx" ON "user_measure_appeals" USING btree ("measure_id") WHERE "status" = 'pending';--> statement-breakpoint
 CREATE INDEX "user_measure_appeals_measure_created_idx" ON "user_measure_appeals" USING btree ("measure_id","created_at","id");--> statement-breakpoint
 ALTER TABLE "user_measure_appeals" ADD CONSTRAINT "user_measure_appeals_measure_id_user_measures_id_fk" FOREIGN KEY ("measure_id") REFERENCES "public"."user_measures"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_measure_appeals" ADD CONSTRAINT "user_measure_appeals_subject_user_id_user_id_fk" FOREIGN KEY ("subject_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
