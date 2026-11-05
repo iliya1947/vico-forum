@@ -20,7 +20,7 @@
 - Owner invariant: владелец является верхней authority; senior/head admin не может применять block/restrictions к владельцу
 - Restriction catalog, reason policy, self-target, target-authority и appeal lifecycle закрыты; owner product gate отсутствует
 - Важная фактическая граница: публичное чтение нельзя надёжно запретить account-level block, потому что публичный контент доступен без авторизации; IP/device ban вне текущего ordinary-admin scope
-- Следующий этап: Лёва — bounded technical planning AP-10
+- Текущий исполнитель: Лёва — bounded technical planning AP-10
 
 - Post-admin follow-up: redesign owner/authorization recovery model; current last-access-manager invariant (`AuthorizationLockoutError` / `managers_ever_existed` / manager count) owner признал ошибочной целевой архитектурой. Не менять до завершения админ-панели; затем отдельная задача.
 
@@ -30,3 +30,5 @@
 - Pending appeal lifecycle resolved: expiry/lift закрывает appeal как утратившую предмет; изменение restrictions/срока/reason не закрывает appeal — она остаётся привязана к той же measure, History сохраняет изменения.
 
 - Multi-measure aggregation не является текущим requirement; не проектировать заранее. Эскалировать только при доказанной неизбежной observable product-развилке.
+
+- AP-10 planning task recorded in #251; implementation не начинать до coordinator review технического плана.
