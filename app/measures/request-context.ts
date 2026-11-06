@@ -10,6 +10,7 @@ import type { UserMeasureSummary, UserMeasureDetail, UserMeasureTargetView,
 
 export interface UserMeasureCapability {
   ownList(subjectId: string): Promise<UserMeasureSummary[]>;
+  activeRestrictions(subjectId: string): Promise<import("../admin/user-measure-restrictions").UserMeasureRestrictionId[]>;
   ownDetail(subjectId: string, measureId: string): Promise<UserMeasureDetail>;
   adminTarget(actorId: string, targetId: string): Promise<UserMeasureTargetView>;
   adminPendingAppeals(actorId: string, page?: number): Promise<UserMeasurePendingAppealPage>;

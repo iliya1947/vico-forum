@@ -82,6 +82,22 @@ interface HistoryRow {
 export class PostgresUserMeasureReader {
   constructor(private readonly pool: Pool, private readonly ownerUserId: string | undefined) {}
 
+  /** Only child-key hints for the authenticated viewer; no reason, issuer or History. */
+  async activeRestrictions(subjectId: string): Promise<UserMeasureRestrictionId[]> {
+    return this.read(async client => {
+      const rows = await client.query<{ restriction_key: UserMeasureRestrictionId }>(`
+        select distinct child.restriction_key
+        from user_measure_restrictions child
+        join user_measures measure on measure.id=child.measure_id
+        where measure.target_user_id=$1 and child.enabled=true
+          and measure.lifted_at is null
+          and (measure.expires_at is null or measure.expires_at>clock_timestamp())
+        order by child.restriction_key
+      `,[subjectId]);
+      return rows.rows.map(row=>row.restriction_key);
+    });
+  }
+
   async ownList(subjectId: string): Promise<UserMeasureSummary[]> {
     return this.read(client => this.listForSubject(client, subjectId));
   }

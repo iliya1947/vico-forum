@@ -31,6 +31,7 @@ export function createHyperdriveUserMeasures(connectionString: string, ownerUser
   }
   return {
     ownList: subjectId => run(reader => reader.ownList(subjectId)),
+    activeRestrictions: subjectId => run(reader => reader.activeRestrictions(subjectId)),
     ownDetail: (subjectId, measureId) => run(reader => reader.ownDetail(subjectId, measureId)),
     adminTarget: (actorId, targetId) => run(reader => reader.adminTarget(actorId, targetId)),
     adminPendingAppeals: (actorId, page) => run(reader => reader.adminPendingAppeals(actorId, page)),
