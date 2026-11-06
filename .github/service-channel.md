@@ -66,3 +66,13 @@
 - AP-11/Settings и post-admin owner-role/last-manager cleanup не начинались; Марк не назначен.
 
 Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+
+## AP-10 implementation readiness after repeated independent PASS
+
+- Repeated independent technical review Лёвы завершён **PASS** на неизменном implementation exact head `ef313919f6613c54db6ddb50765c968744101306`; подтверждённых current-scope defects не осталось.
+- Coordinator PASS и independent PASS относятся к одному exact head. PR #290 остаётся Draft/open/mergeable; implementation после review не менялся.
+- **Implementation #290 готов к owner merge.** Merge выполняет владелец.
+- Documentation PR #291 отдельно проверен на readiness до merge implementation. Он создан раньше финального review cycle и содержит фактически устаревшее current-state wording: `PROJECT_STATE.md` и PR body всё ещё говорят, что AP-10 ожидает coordinator/independent review; history file фиксирует pre-review snapshot. Это не implementation defect #290.
+- #291 не следует merge в текущем виде как финальный closeout. После фактического merge #290 Мира должна обновить documentation branch относительно нового `main`, зафиксировать AP-10 как merged repository state, сохранить значимую correction/review chain в PROJECT_HISTORY, проверить permanent contracts и выполнить applicable docs/CI review. Только после этого #291 готовится к owner merge.
+- AP-11/Settings, post-admin owner-role/last-manager cleanup, Stage 6 и production не начинать.
