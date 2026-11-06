@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Form, Link, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "../forum/ui";
@@ -108,6 +108,87 @@ function RestrictionChoices({selected=[]}:{selected?:readonly string[]}) {
       <RestrictionGroupChoices key={group.id} group={group} chosen={chosen} onToggle={onToggle}/>)}
   </div>;
 }
+type MeasureExpiryMode = "permanent" | "hour" | "day" | "week" | "month" | "duration" | "date";
+type MeasureExpiryUnit = "hours" | "days" | "weeks";
+
+/**
+ * Presentation-only duration shortcut. The server continues to receive one
+ * authoritative UTC expiresAt instant (or blank for permanent); no preset IDs.
+ */
+export function selectedMeasureExpiry(form: HTMLFormElement, now = Date.now()): string | undefined {
+  const mode = form.querySelector<HTMLSelectElement>("[data-measure-expiry-mode]")?.value as MeasureExpiryMode|undefined;
+  const presetHours: Partial<Record<MeasureExpiryMode,number>> = {
+    hour:1,day:24,week:7*24,month:30*24,
+  };
+  if(mode==="permanent")return "";
+  let hours = mode ? presetHours[mode] : undefined;
+  if(mode==="duration") {
+    const amount=form.querySelector<HTMLInputElement>("[data-measure-expiry-amount]")?.valueAsNumber;
+    const unit=form.querySelector<HTMLSelectElement>("[data-measure-expiry-unit]")?.value as MeasureExpiryUnit|undefined;
+    const multiplier=unit==="hours"?1:unit==="days"?24:unit==="weeks"?7*24:undefined;
+    if(amount===undefined || !Number.isSafeInteger(amount) || amount<=0 || multiplier===undefined)return;
+    hours=amount*multiplier;
+  }
+  let date:Date;
+  if(mode==="date") {
+    const value=form.querySelector<HTMLInputElement>("[data-measure-expiry-date]")?.value;
+    if(!value || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(value))return;
+    date=new Date(value+"Z");
+  } else {
+    if(!Number.isFinite(hours) || !hours || hours<=0)return;
+    date=new Date(now+hours*60*60*1000);
+  }
+  if(!Number.isFinite(date.getTime()) || date.getTime()<=now)return;
+  return date.toISOString();
+}
+
+function encodeMeasureExpiry(event:FormEvent<HTMLFormElement>) {
+  const expiresAt=selectedMeasureExpiry(event.currentTarget);
+  const input=event.currentTarget.querySelector<HTMLInputElement>('input[name="expiresAt"]');
+  if(expiresAt===undefined || !input) { event.preventDefault();return; }
+  input.value=expiresAt;
+}
+
+function MeasureExpiryField({initial=null}: {initial?:string|null}) {
+  const {t}=useTranslation("common");
+  const [mode,setMode]=useState<MeasureExpiryMode>(initial?"date":"permanent");
+  const choices:readonly {value:MeasureExpiryMode;label:string}[]=[
+    {value:"permanent",label:t("measuresPermanent")},
+    {value:"hour",label:t("measuresDurationHour")},
+    {value:"day",label:t("measuresDurationDay")},
+    {value:"week",label:t("measuresDurationWeek")},
+    {value:"month",label:t("measuresDurationMonth")},
+    {value:"duration",label:t("measuresDurationCustom")},
+    {value:"date",label:t("measuresDurationEnd")},
+  ];
+  return <fieldset className="profile-form">
+    <legend>{t("measuresDurationMode")}</legend>
+    <label>{t("measuresDurationMode")}
+      <select data-measure-expiry-mode value={mode}
+        onChange={event=>setMode(event.target.value as MeasureExpiryMode)}>
+        {choices.map(choice=><option key={choice.value} value={choice.value}>{choice.label}</option>)}
+      </select>
+    </label>
+    {mode==="duration"&&<>
+      <label>{t("measuresDurationAmount")}
+        <input data-measure-expiry-amount type="number" required min={1} step={1} defaultValue={1}/>
+      </label>
+      <label>{t("measuresDurationMode")}
+        <select data-measure-expiry-unit defaultValue="days">
+          <option value="hours">{t("measuresDurationUnitsHours")}</option>
+          <option value="days">{t("measuresDurationUnitsDays")}</option>
+          <option value="weeks">{t("measuresDurationUnitsWeeks")}</option>
+        </select>
+      </label>
+    </>}
+    {mode==="date"&&<label>{t("measuresDurationEnd")}
+      <input data-measure-expiry-date type="datetime-local" step={1} required
+        defaultValue={initial?new Date(initial).toISOString().slice(0,19):""} dir="ltr"/>
+    </label>}
+    <input type="hidden" name="expiresAt" defaultValue={initial??""}/>
+  </fieldset>;
+}
+
 function MeasureSummary({measure,locale,admin=false}:{
   measure:UserMeasureSummary;locale:string;admin?:boolean;
 }) {
@@ -259,17 +340,15 @@ export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget
         <p><bdi dir="ltr">{target.id}</bdi></p>
         {target.measures.length?<GroupedMeasures measures={target.measures} locale={locale} admin/>
           :<p>{t("measuresNone")}</p>}
-        <Form method="post" key={createId} className="profile-form" aria-busy={pending}>
+        <Form method="post" key={createId} className="profile-form" aria-busy={pending}
+          onSubmitCapture={encodeMeasureExpiry}>
           <h3>{t("measuresCreate")}</h3>
           <input type="hidden" name="intent" value="create"/>
           <input type="hidden" name="measureId" value={createId}/>
           <input type="hidden" name="targetId" value={target.id}/>
           <label htmlFor="measure-create-reason">{t("measuresReason")}</label>
           <textarea id="measure-create-reason" name="reason" required rows={4} maxLength={2000} dir="auto"/>
-          <label htmlFor="measure-create-expiry">{t("measuresExpires")}</label>
-          <input id="measure-create-expiry" type="text" name="expiresAt"
-            placeholder="2030-01-01T12:00:00Z" dir="ltr"/>
-          <p>{t("measuresPermanentHint")}</p>
+          <MeasureExpiryField/>
           <RestrictionChoices/>
           <button type="submit" disabled={pending}>{t("measuresCreate")}</button>
         </Form>
@@ -286,7 +365,8 @@ function AppealReviewForm({measure,appealId,ordinal,operationId,pending}:{
   const [remedy,setRemedy]=useState<""|"change"|"lift">("");
   const accepting=outcome==="accepted";
   const changing=accepting&&remedy==="change";
-  return <Form method="post" id={"measure-review-"+appealId} className="profile-form" aria-busy={pending}>
+  return <Form method="post" id={"measure-review-"+appealId} className="profile-form" aria-busy={pending}
+    onSubmitCapture={encodeMeasureExpiry}>
     <h3>{t("measuresReview")} #{ordinal}</h3>
     <input type="hidden" name="intent" value="review"/>
     <input type="hidden" name="appealId" value={appealId}/>
@@ -313,9 +393,7 @@ function AppealReviewForm({measure,appealId,ordinal,operationId,pending}:{
       <textarea name="explanation" required rows={3} maxLength={2000} dir="auto"/>
     </label>
     {changing&&<>
-      <label>{t("measuresExpires")}
-        <input type="text" name="expiresAt" defaultValue={measure.expiresAt??""} dir="ltr"/>
-      </label>
+      <MeasureExpiryField initial={measure.expiresAt}/>
       <RestrictionChoices selected={measure.restrictions}/>
     </>}
     <button type="submit" disabled={pending}>{t("measuresReview")}</button>
@@ -339,17 +417,15 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
       <FeedbackMessage feedback={feedback}/>
       <MeasureInfo measure={measure} locale={locale}/>
       {isActive&&<>
-        <Form method="post" key={changeId} className="profile-form" aria-busy={pending}>
+        <Form method="post" key={changeId} className="profile-form" aria-busy={pending}
+          onSubmitCapture={encodeMeasureExpiry}>
           <h3>{t("measuresChange")}</h3>
           <input type="hidden" name="intent" value="change"/>
           <input type="hidden" name="operationId" value={changeId}/>
           <input type="hidden" name="expectedVersion" value={measure.version}/>
           <label htmlFor="measure-change-reason">{t("measuresExplanation")}</label>
           <textarea id="measure-change-reason" name="reason" required maxLength={2000} rows={3} dir="auto"/>
-          <label htmlFor="measure-change-expiry">{t("measuresExpires")}</label>
-          <input id="measure-change-expiry" name="expiresAt" type="text"
-            defaultValue={measure.expiresAt??""} dir="ltr"/>
-          <p>{t("measuresPermanentHint")}</p>
+          <MeasureExpiryField initial={measure.expiresAt}/>
           <RestrictionChoices selected={measure.restrictions}/>
           <button type="submit" disabled={pending}>{t("measuresChange")}</button>
         </Form>
