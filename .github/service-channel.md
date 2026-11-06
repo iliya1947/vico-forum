@@ -96,3 +96,15 @@
 - applicable exact-head CI/checks и AP-10 isolated browser acceptance выполняются на новом stable head;
 - #291, AP-11/Settings, owner-role/last-manager cleanup, Stage 6 и production не трогать;
 - после завершения Лира фиксирует новый stable implementation head и фактические результаты проверок в служебном PR и останавливается. Затем Мира начинает новый coordinator cycle; Лёва повторно проверяет только после coordinator PASS.
+
+
+## AP-10 AP10-LEV-01 corrected-head coordinator pass
+
+- Лира завершила bounded correction `AP10-LEV-01` в PR #290.
+- Новый stable implementation exact head: `ef313919f6613c54db6ddb50765c968744101306`; base/main остаётся `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`. Delta относительно предыдущего reviewed head `9fecd925a256062e9892235f4ba02ed3147de1e3`: 7 commits / 5 files.
+- Exact-head CI #42218475676 — SUCCESS; exact-head isolated Chromium #42218475943 — SUCCESS. Это author engineering evidence, не independent review и не owner visual acceptance.
+- **AP10-LEV-01 закрыт по исходной причине.** Canonical create route применяет существующую target-ID validation до capability call; domain service отдельно повторно валидирует create target identity до fingerprint/repository/SQL boundary, поэтому прямой service caller также не может протащить NUL/oversized target в PostgreSQL text bind.
+- Malformed NUL и >2048-byte target дают typed private/no-store 400; valid-but-missing target сохраняет 404. Focused route/domain regressions подтверждают отсутствие capability/repository write для malformed input. Isolated browser acceptance дополнительно проверяет actual authenticated Worker POST: malformed 400, missing 404, неизменные counts `user_measures` и `admin_history`.
+- Unknown SQL/programming failures не превращены в общий 400; authorization, target hierarchy, issuer floor, replay, schema, migrations, History и permissions не менялись.
+- Correction delta проверен целиком; новых current-scope findings в пяти изменённых файлах не подтверждено.
+- Coordinator status пока не финальный PASS: следующий шаг — final regression/evidence sweep нового exact head против уже закрытого AP-10 scope. Лёву до завершения этого sweep и coordinator PASS повторно не подключать.
