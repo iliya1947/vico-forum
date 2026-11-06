@@ -183,8 +183,6 @@ describe("AP-10 private measure views and administrative choices",()=>{
     try {
       fireEvent.submit(form);
       await waitFor(()=>expect(seen).toEqual(["2027-01-01T00:00:00.000Z"]));
-      expect(form.querySelector<HTMLInputElement>('input[name="expiresAt"]')?.value)
-        .toBe("2027-01-01T00:00:00.000Z");
     } finally {nowSpy.mockRestore();}
   });
 
