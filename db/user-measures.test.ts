@@ -53,7 +53,8 @@ describe("AP-10 measure command normalization", () => {
   it("validates opaque ids, reasons, unique child restrictions and version", async () => {
     const { service, repository } = subject();
     for (const overrides of [
-      { id: "not-uuid" }, { targetUserId: " " }, { actorId: "" },
+      { id: "not-uuid" }, { targetUserId: " " }, { targetUserId: "invalid\0target" },
+      { targetUserId: "x".repeat(2049) }, { targetUserId: "💻".repeat(513) }, { actorId: "" },
       { restrictions: ["publication"] }, { restrictions: ["topics.create", "topics.create"] },
       { restrictions: [] }, { restrictions: ["alien.capability"] },
       { reason: "\0x" }, { reason: "  " }, { reason: "x".repeat(2001) },
