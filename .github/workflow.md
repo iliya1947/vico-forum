@@ -1,11 +1,11 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 AP10-LEV-01 correction cycle
+- Текущий этап: AP-10 AP10-LEV-01 corrected-head coordinator review
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
 - Implementation PR: #290 Draft/open/unmerged
 - Reviewed stable exact head: `9fecd925a256062e9892235f4ba02ed3147de1e3`
-- Technical planner/reviewer: Лёва; current executor: Лира; coordinator/reviewer next: Мира
+- Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
 - Technical plan approved; AP10-PLAN-MIRA-01..06 закрыты
 - Coordinator whole-PR PASS на reviewed head; AP10-MIRA-01..11 закрыты
 - Independent verdict: NOT PASS — AP10-LEV-01 [P3], create targetId NUL → unhandled PG 22021 / HTTP 500 вместо typed 400
@@ -21,3 +21,7 @@
 - Мира независимо перепроверила AP10-LEV-01: current-scope finding подтверждён. Create targetId с NUL проходит слабую domain identity validation и доходит до PostgreSQL text parameter, поэтому canonical create HTTP boundary выдаёт 500 вместо typed private/no-store 400; side effects не создаются
 - Bounded AP10-LEV-01 correction package зафиксирован для Лиры в service-channel.md; implementation head остаётся `9fecd925a256062e9892235f4ba02ed3147de1e3` до её изменения
 - Лёва review завершён и реализацию не меняет; Марк не назначен
+
+- AP10-LEV-01 targeted corrected-head pass complete on `ef313919f6613c54db6ddb50765c968744101306`: original cause closed; 5-file delta reviewed with no new current-scope finding
+- Exact-head CI #42218475676 and isolated Chromium #42218475943: SUCCESS
+- Next step: final regression/evidence sweep of the same stable head against the already closed AP-10 scope; only after coordinator PASS hand off the same exact head to Лёва for repeated independent technical review
