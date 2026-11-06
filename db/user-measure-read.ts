@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from "pg";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 import { assertUserMeasureAuthority, requireUserMeasureOwnerId,
-  UserMeasureForbiddenError, BLOCK_MANAGE_PERMISSION } from "./user-measure-authority";
+  UserMeasureForbiddenError, BLOCK_MANAGE_PERMISSION, type UserMeasureAuthorityLevel } from "./user-measure-authority";
 import { UserMeasureNotFoundError, UserMeasureConflictError } from "./user-measures";
 import type { UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 
@@ -125,11 +125,13 @@ export class PostgresUserMeasureReader {
     });
   }
 
-  async adminDetail(actorId: string, measureId: string): Promise<UserMeasureDetail & { targetUserId: string; targetName: string }> {
-    return this.adminRead(actorId, null, async client => {
+  async adminDetail(actorId: string, measureId: string): Promise<UserMeasureDetail & {
+    targetUserId: string; targetName: string; canMutate: boolean;
+  }> {
+    return this.adminRead(actorId, null, async (client, actorLevel) => {
       // The actual authority guard is performed inside adminRead after the target pointer.
-      const row = await client.query<{ target_user_id: string; name: string }>(
-        `select m.target_user_id, u.name from user_measures m
+      const row = await client.query<{ target_user_id: string; name: string; issuer_authority_floor: number }>(
+        `select m.target_user_id, m.issuer_authority_floor, u.name from user_measures m
           join "user" u on u.id=m.target_user_id where m.id=$1`, [measureId],
       );
       if (!row.rows[0]) throw new UserMeasureNotFoundError("measure not found");
@@ -137,6 +139,8 @@ export class PostgresUserMeasureReader {
         ...(await this.detailForMeasure(client, measureId)),
         targetUserId: row.rows[0].target_user_id,
         targetName: row.rows[0].name,
+        // Admin-only mutation hint. Read visibility stays governed by target hierarchy.
+        canMutate: actorLevel >= row.rows[0].issuer_authority_floor,
       };
     }, measureId);
   }
@@ -196,7 +200,9 @@ export class PostgresUserMeasureReader {
   }
 
   private async adminRead<T>(
-    actorId: string, targetId: string | null, task: (client: PoolClient) => Promise<T>, measureId?: string,
+    actorId: string, targetId: string | null,
+    task: (client: PoolClient, actorLevel: UserMeasureAuthorityLevel) => Promise<T>,
+    measureId?: string,
   ): Promise<T> {
     const ownerId = requireUserMeasureOwnerId(this.ownerUserId);
     return this.read(async client => {
@@ -218,12 +224,12 @@ export class PostgresUserMeasureReader {
         authorization.resolveUser(actorId, client),
         authorization.resolveUser(subject, client),
       ]);
-      assertUserMeasureAuthority({
+      const actorLevel = assertUserMeasureAuthority({
         actorId, targetUserId: subject, ownerUserId: ownerId,
         actorRawPermissions: new Set(actor.effectivePermissions),
         targetRawPermissions: new Set(target.effectivePermissions),
       });
-      return task(client);
+      return task(client, actorLevel);
     }, false);
   }
 
