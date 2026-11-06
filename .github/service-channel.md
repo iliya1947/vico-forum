@@ -116,3 +116,8 @@
 - Pass 3 (restriction enforcement) complete on the same exact head.
 - Confirmed current-scope AP10-MIRA-05: ordinary user action presentation is not restriction-aware; controls remain available and fail only after server-side denial instead of being hidden/disabled from current measure state as approved.
 - Server-side enforcement for publication/edit/profile/Complaints/Help/uploads/generation/admin families, plus replay/cleanup/expiry/overlap/private-read boundaries, passed this pass.
+
+- Pass 4 (privacy/History/routes/UI state/revalidation/localization) complete on the same exact head.
+- Confirmed current-scope AP10-MIRA-06: Admin History stores AP-10 before/after/outcome/remedy context, but `HistoryEvents` does not render any `measure.*` context; measure changes and appeal resolutions therefore do not show what changed or whether/remedy an appeal was accepted/rejected, contrary to the existing significant-History contract.
+- Confirmed current-scope AP10-MIRA-07: own measure list/detail routes hard-code browser metadata as `My measures · Vico Forum`; RU/HE therefore receive an English page title instead of catalog-driven localized metadata.
+- Subject allowlist projection, absence of issuer/actor/reviewer identity in own loader/action DTOs, internal History identity gating, private/no-store responses, 403/404/409 loader revalidation without POST replay, translated AP-10 body copy, RTL-safe direction handling and the existing 320/768/1280 browser evidence otherwise passed this pass.
