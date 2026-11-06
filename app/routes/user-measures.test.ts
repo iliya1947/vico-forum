@@ -1,7 +1,7 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext } from "../auth/request-context";
-import { authorizationContext } from "../authorization/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { userMeasureContext } from "../measures/request-context";
 import { UserMeasureConflictError, UserMeasureNotFoundError } from "../../db/user-measures";
 import { UserMeasuresUnavailableError } from "../../db/hyperdrive-user-measures";
@@ -31,6 +31,7 @@ function env(authorized=true, signedIn=true) {
     role:{slug:"user"},effectivePermissions:authorized?["admin.users.blocks.manage"]:[],
   }));
   context.set(authorizationContext,{forUser:()=>({has,resolve})} as never);
+  context.set(authorizationOwnerContext,"server-owner");
   const capability={
     ownList:vi.fn(async ()=>[detail]),
     ownDetail:vi.fn(async()=>detail),
@@ -106,6 +107,7 @@ describe("AP-10 own/private and admin measure routes",()=>{
       params:{locale:"en"},context:manager.context});
     expect(manager.capability.adminTarget).toHaveBeenCalledWith("subject","target");
     expect(page.data.access).toMatchObject({canManageMeasures:true,canEnter:true});
+    expect(page.data.maySelectAdministrativeRestrictions).toBe(false);
     expect(page.data.access.canReadUsers).toBeUndefined();
     expect(JSON.stringify(page.data)).not.toContain(secret);
     expect((await adminDetail(adminArgs(manager.context))).data.measure.targetUserId).toBe("target");
@@ -122,6 +124,30 @@ describe("AP-10 own/private and admin measure routes",()=>{
       params:{locale:"en"},context:manager.context})).rejects.toMatchObject({status:400});
     await expect(adminList({request:new Request("https://forum.test/en/admin/measures?page=1&target=target"),
       params:{locale:"en"},context:manager.context})).rejects.toMatchObject({status:400});
+  });
+
+  it("derives administrative-restriction choices from current elevated grant or bound owner",async()=>{
+    const manager=env();
+    const list=()=>adminList({request:new Request("https://forum.test/en/admin/measures?target=target"),
+      params:{locale:"en"},context:manager.context});
+    const detail=()=>adminDetail(adminArgs(manager.context));
+    expect((await list()).data.maySelectAdministrativeRestrictions).toBe(false);
+    expect((await detail()).data.maySelectAdministrativeRestrictions).toBe(false);
+    manager.resolve.mockResolvedValue({
+      role:{slug:"user"},effectivePermissions:[
+        "admin.users.blocks.manage","admin.users.blocks.managePrivileged",
+      ],
+    });
+    expect((await list()).data.maySelectAdministrativeRestrictions).toBe(true);
+    expect((await detail()).data.maySelectAdministrativeRestrictions).toBe(true);
+    manager.resolve.mockResolvedValue({
+      role:{slug:"admin"},effectivePermissions:["admin.users.blocks.manage"],
+    });
+    manager.context.set(authorizationOwnerContext,"subject");
+    expect((await list()).data.maySelectAdministrativeRestrictions).toBe(true);
+    expect((await detail()).data.maySelectAdministrativeRestrictions).toBe(true);
+    manager.context.set(authorizationOwnerContext,undefined);
+    expect((await list()).data.maySelectAdministrativeRestrictions).toBe(false);
   });
 
   it("uses session actor for create and direct change/lift/review with exact measure/version",async()=>{
