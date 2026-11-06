@@ -344,7 +344,11 @@ describe("Stage 4 connected forum authorization flow", () => {
     await expect(forum.search("_")).resolves.toEqual([]);
 
     const managementPool = scopedPool();
-    const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
+    // Historical Stage 4 migration subset predates AP-10 measure tables.
+    // Only this legacy test writer opts out; production remains fail-closed.
+    const authorization = new AuthorizationService(new PostgresAuthorizationRepository(
+      managementPool, undefined, async () => {},
+    ));
     try {
       await authorization.assignUserRole("e2e-manager", "e2e-replier", "builtin-moderator");
       const moderatorTopic = await createTopic("e2e-author", "Author", "Moderator access");
