@@ -227,3 +227,41 @@ Correct only AP11-MIRA-01..04 in PR #292. Keep scope minimal. After corrections:
 - record new stable head/evidence in #251 and stop;
 - any discovered product defect must be independently diagnosed before widening app changes;
 - after handoff, Мира restarts coordinator whole-PR review on the new exact head. Лёва is not assigned until coordinator PASS.
+
+
+## AP-11 corrected-head coordinator PASS and independent review handoff
+
+Review target: PR #292 exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`, base/main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`.
+
+Coordinator result:
+- AP11-MIRA-01..04 verified closed by actual code/evidence, not commit labels alone.
+- AP11-MIRA-01: denied stale reply is blocked immediately on the 403 render and throughout explicit revalidation; Publish/new Attach remain unavailable until fresh loader completion; mounted text/operation/Cancel and existing attachment state remain mounted; no POST replay. Focused DOM test holds the refresh pending and proves one action only.
+- AP11-MIRA-02: browser scenario now exercises open+measure, closed+measure, reopened+measure, closed+lifted and finally open+lifted; denied attempts create no posts/History and AP-08 closure CAS/History remains independent.
+- AP11-MIRA-03: manager `access.authorization.manage` deny/allow lifecycle now goes through an already-authenticated builtin-admin actor's canonical authorization UI/action and records four `user.overrideChanged` History events; stale same-session inline POST still yields 403/read-only recovery/no replay.
+- AP11-MIRA-04: protected document helper and direct denial checks require both `private` and `no-store`; public topic GET remains outside the protected helper.
+- Correction from old reviewed head `079b98e29646db2024546fb52be4076186567ece` to current head is 7 commits / 3 files; full PR remains exactly 4 files and contains no schema/migration/permission/grant/dependency/public-contract changes.
+- Verified `allowNewUploads=false` only blocks new attachment additions; existing/in-flight requests are not aborted by that flag. Request abort remains tied to editor identity change/unmount/reset.
+- Exact-head CI #42245766359 — SUCCESS: checks + database.
+- Exact-head isolated Chromium #42245766263 — SUCCESS.
+- Downloaded artifact #13517504953 belongs to exact head and records 34 case groups, `implementationHead=3f608ce9...`, zero layout failures, zero page errors and zero external requests.
+- PR #292 remains Draft/open/mergeable and implementation head remained unchanged through review.
+- No additional confirmed current-scope defects found in the full AP-11 scope.
+- **Coordinator verdict: PASS** on exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`.
+- Owner visual acceptance was not requested. Settings, owner/authorization redesign, Stage 6 and production remain outside AP-11.
+
+### AP-11 independent technical review — Лёва
+
+Review target: PR #292, exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`.
+
+Требуемый результат:
+- независимо проверить весь AP-11 implementation/verification scope против актуальных source-of-truth и approved AP-11 technical plan;
+- проверить не только status CI, но и runtime fixes, connected browser cases, no-write/History/revalidation/privacy/locale-responsive boundaries и их достаточность для Package 8;
+- любой finding доказать по полной причинной цепочке и отдельно классифицировать как current-scope defect либо future groundwork;
+- не использовать coordinator PASS как доказательство;
+- implementation не изменять во время review;
+- verdict и evidence зафиксировать в #251 и остановиться.
+
+Границы:
+- review только exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`; изменение implementation head прекращает review и возвращает cycle Мире;
+- Settings, owner/authorization redesign, Stage 6/production и owner visual acceptance не входят;
+- Марк не назначается без отдельной необходимости.
