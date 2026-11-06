@@ -140,6 +140,25 @@ describe("AP-10 purpose-limited own/admin measure read (PostgreSQL 17)",()=>{
     expect((await reader.ownDetail(subject,ordinary.id)).pendingAppeal).toBe(false);
   });
 
+  it("projects only enabled active child keys for an exact subject, without private measure data",async()=>{
+    const first=await create(subject);
+    const second=await create(subject);
+    const otherMeasure=await create(other);
+    const initial=await reader.activeRestrictions(subject);
+    expect(initial).toEqual(["replies.create"]);
+    const serialized=JSON.stringify(initial);
+    expect(serialized).not.toContain("Conduct notice");
+    expect(serialized).not.toContain(manager);
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1",[first.id]);
+    expect(await reader.activeRestrictions(subject)).toEqual(["replies.create"]);
+    await client.query("update user_measures set expires_at=clock_timestamp()-interval '1 second' where id=$1",[second.id]);
+    expect(await reader.activeRestrictions(subject)).toEqual([]);
+    expect(await reader.activeRestrictions(other)).toEqual(["replies.create"]);
+    await client.query("update user_measures set lifted_at=clock_timestamp() where id=$1",[otherMeasure.id]);
+    expect(await reader.activeRestrictions(other)).toEqual([]);
+    expect(await reader.activeRestrictions(owner)).toEqual([]);
+  });
+
   it("derives effective pending=moot on expiry without a write or History event",async()=>{
     const first=await create();
     await writer.submitAppeal({id:uuid(),measureId:first.id,actorId:subject,body:"Please review"});
