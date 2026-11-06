@@ -142,7 +142,7 @@ describe("AP-10 admin.complaints effective access and reviewer transactions", ()
     effectivePermissions: [...allRights],
   };
   const raw = {
-    forUser: (_: string) => ({
+    forUser: () => ({
       has: async (key: PermissionKey) => allRights.includes(key as typeof allRights[number]),
       resolve: async () => snapshot,
     }),
