@@ -15,6 +15,7 @@
 - Implementation/docs не merged; production/Stage 6 не менялись
 - Current reviewer: Мира; Лёва independent review не назначен до coordinator PASS
 - Owner visual acceptance: не запрошен и не инициируется
-- Следующий шаг: Мира продолжает whole-PR review PR #290 на exact head `503a5c6d...`; при findings сначала завершает весь review и возвращает Лире один подтверждённый current-scope пакет
+- Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
+- Следующий шаг: Мира продолжает whole-PR review PR #290 на exact head `503a5c6d...`; следующий pass — authority/permissions/privileged-target boundaries
 - Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
