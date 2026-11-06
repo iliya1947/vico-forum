@@ -54,7 +54,7 @@ export async function action({request,params,context}:{
       return data({error:"invalid" as const},{status:400,headers:measurePrivateHeaders});
     }
     const result=await userMeasuresForRequest(context).create({
-      id:measureFormText(form,"measureId"),actorId,targetUserId:measureFormText(form,"targetId"),
+      id:measureFormText(form,"measureId"),actorId,targetUserId:measureTargetId(measureFormText(form,"targetId")),
       reason:measureFormText(form,"reason"),expiresAt:measureOptionalInstant(form),
       restrictions:measureFormRestrictions(form),
     });
