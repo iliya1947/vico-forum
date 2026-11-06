@@ -238,3 +238,33 @@
 - Дополнительных current-scope findings в final regression/evidence sweep не подтверждено. Ранее отклонённые candidates (filtered pending-appeal page sparsity, browser matrix coverage differences) остаются non-defects/current evidence limitations, не основаниями для расширения scope.
 - **Coordinator verdict: NOT PASS, единственный открытый current-scope defect — AP10-MIRA-11.**
 - Independent Lev review не запускать. Следующий bounded stage — correction AP10-MIRA-11 Лирой на PR #290; после нового stable head и applicable exact-head checks нужен новый coordinator cycle. Documentation PR #291, AP-11/Settings, owner-role/last-manager cleanup, Stage 6 и production не трогать.
+
+
+## AP-10 bounded correction AP10-MIRA-11 — Лира
+
+Исполнитель: **Лира**. Implementation PR: **#290**. Reviewed exact head: `ad789c7bf28d4fe7896e8ddbf7757460e046da27`.
+
+Цель: исправить единственный оставшийся current-scope defect coordinator review — `AP10-MIRA-11`. `AP10-MIRA-01..10` считаются закрытыми и не должны регрессировать. Технический план AP-10 не пересматривается.
+
+### AP10-MIRA-11 — exact measure mutation presentation должна учитывать issuer floor
+
+Exact administrative measure detail может оставаться доступным actor, который по текущей target hierarchy имеет право читать target/measure. Но **Change / Lift / pending Appeal Review** должны показываться как доступные действия только когда actor в текущем authoritative snapshot действительно имеет право мутировать именно эту measure, включая stored `issuer_authority_floor`.
+
+Требуемое наблюдаемое поведение:
+
+1. Actor с `admin.users.blocks.manage`, который имеет authority над текущим target, но находится ниже `issuer_authority_floor` конкретной measure, может открыть разрешённый read-only exact detail, но не получает Change/Lift/Review controls.
+2. Crafted/direct POST из такого состояния по-прежнему запрещается authoritative server guard; presentation не заменяет server authorization.
+3. Если fresh current authority actor повышается до достаточного уровня и остальные существующие measure/target guards выполняются, следующий loader snapshot показывает применимые mutation controls.
+4. Если authority снова становится недостаточной, следующий loader/revalidation скрывает эти controls.
+5. Pending-appeal review следует той же exact-measure authority/floor boundary; queue discovery и existing appeal lifecycle не меняются.
+6. Не расширять read visibility, target hierarchy, owner immunity, issuer-floor persistence или authority model.
+
+Критерии готовности:
+
+- defect закрыт на одном новом stable exact head PR #290;
+- focused regression проверяет как минимум read-only exact detail ниже floor, отсутствие Change/Lift/Review presentation, появление controls после достаточного fresh authority и их исчезновение после её потери;
+- direct forged mutation ниже floor остаётся forbidden и не создаёт state/History change;
+- `AP10-MIRA-01..10`, privacy/identity projection, appeal lifecycle/quota, zero-default grants, replay/revalidation и server enforcement не ослаблены;
+- изменение остаётся локальным AP-10: без AP-11/Settings, owner-role redesign, last-manager cleanup, Stage 6, production и без изменений documentation PR #291;
+- выполнить применимые exact-head CI/checks и AP-10 isolated browser acceptance; owner visual acceptance не инициировать без прямого запроса владельца;
+- после завершения зафиксировать в служебном PR новый stable implementation head и фактические результаты проверок и остановиться. Следующий этап — новый coordinator review Миры; Лёву до coordinator PASS не подключать.
