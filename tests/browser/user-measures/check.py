@@ -246,7 +246,18 @@ try:
             "intent": "reply", "body": "Second measure still blocks",
         })
         assert response.status == 403 and replies(topic_id) == count + 1
-        record("appeal-lifts-only-first-measure-and-restores-admin")
+        document(manager, "/en/admin/history")
+        reviewed = manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="User measure appeal resolved")
+        ).first
+        expect(reviewed).to_contain_text(first_id)
+        expect(reviewed).to_contain_text("Accepted")
+        expect(reviewed).to_contain_text("Decision remedy")
+        expect(reviewed).to_contain_text("Lift measure")
+        expect(reviewed).to_contain_text("Version")
+        expect(reviewed).to_contain_text("Active")
+        expect(reviewed).to_contain_text("Lifted")
+        record("authorized-admin-history-shows-appeal-outcome-remedy-and-delta")
 
         # An already-open stale form must never be replayed after the other tab lifts B.
         stale = manager_ctx.new_page()
@@ -294,6 +305,15 @@ try:
                 ):
                     document(page, path)
                     assert page.locator("html").get_attribute("dir") == direction
+                    if name in ("own-list", "own-detail"):
+                        titles = {
+                            "en": ("My measures", "Measure details"),
+                            "ru": ("Мои ограничения", "Сведения о мере"),
+                            "he": ("ההגבלות שלי", "פרטי ההגבלה"),
+                        }
+                        expected_title = titles[locale][0 if name == "own-list" else 1] + " · Vico Forum"
+                        assert page.title() == expected_title, (name, locale, page.title())
+
                     layout = page.evaluate("""() => {
                         const width = innerWidth;
                         return {
