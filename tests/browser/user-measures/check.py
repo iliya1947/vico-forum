@@ -263,8 +263,34 @@ try:
                 ):
                     document(page, path)
                     assert page.locator("html").get_attribute("dir") == direction
-                    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (
-                        name, locale, width, page.evaluate("document.documentElement.scrollWidth")
+                    layout = page.evaluate("""() => {
+                        const width = innerWidth;
+                        return {
+                          width, scrollWidth: document.documentElement.scrollWidth,
+                          overflow: Array.from(document.querySelectorAll("body *"))
+                            .map(el => {
+                              const box = el.getBoundingClientRect();
+                              return {
+                                tag: el.tagName.toLowerCase(), className: typeof el.className === "string"
+                                  ? el.className.slice(0, 120) : "",
+                                right: +box.right.toFixed(1), left: +box.left.toFixed(1),
+                                width: +box.width.toFixed(1), scroll: el.scrollWidth,
+                                text: (el.textContent || "").trim().slice(0, 80),
+                              };
+                            })
+                            .filter(el => el.right > width + 0.5 || el.left < -0.5)
+                            .slice(0, 30),
+                        };
+                    }""")
+                    if layout["scrollWidth"] > width + 1:
+                        print("BROWSER_LAYOUT_OVERFLOW " + json.dumps({
+                            "surface": name, "locale": locale, **layout,
+                        }, ensure_ascii=False), flush=True)
+                        page.screenshot(path=str(args.output / (
+                            "overflow-" + name + "-" + locale + "-" + str(width) + ".png"
+                        )), full_page=True)
+                    assert layout["scrollWidth"] <= width + 1, (
+                        name, locale, width, layout["scrollWidth"]
                     )
                     assert "measuresRefresh" not in page.locator("main").inner_text()
                     refresh = page.get_by_role("button", name={
