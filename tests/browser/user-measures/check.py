@@ -159,7 +159,11 @@ try:
         )
         second_id = create_measure(
             manager, subject_id, ("replies.create",), "Second distinct violation",
+            expiry_mode="hour",
         )
+        duration = sql("select extract(epoch from (expires_at - created_at))::int as seconds from user_measures where id=$1",
+                       [second_id])[0]["seconds"]
+        assert 3500 <= duration <= 3600, ("one-hour preset", duration)
         assert first_id != second_id
         record("manager-two-independent-measures", first=first_id, second=second_id)
 
