@@ -564,6 +564,19 @@ try:
         record("ap11-reopened-and-all-reply-measures-lifted-composer-restored")
 
 
+        # AP-11: direct private admin surfaces admit only authorized sessions.
+        for private_path in (
+            "/en/admin/users/" + quote(other_id, safe=""),
+            "/en/admin/forum/topics/" + quote(topic_id, safe=""),
+        ):
+            denied_guest = document(guest, private_path, 401)
+            denied_member = document(other, private_path, 403)
+            assert "no-store" in denied_guest.headers.get("cache-control", "")
+            assert "no-store" in denied_member.headers.get("cache-control", "")
+            assert "AP10 acceptance topic" not in denied_member.text(), private_path
+            assert "AP10 acceptance topic" not in denied_guest.text(), private_path
+        record("ap11-users-topic-guest-and-member-private-denials")
+
         # Real browser reflow, current translated strings and keyboard operability.
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
             for width in (320, 768, 1280):
@@ -573,9 +586,44 @@ try:
                     (subject, "/" + locale + "/account/measures", "own-list"),
                     (subject, "/" + locale + "/account/measures/" + first_id, "own-detail"),
                     (manager, "/" + locale + "/admin/measures/" + first_id, "admin-detail"),
+                    (manager, "/" + locale + "/admin/users/" + quote(other_id, safe=""), "users-detail"),
+                    (manager, "/" + locale + "/admin/forum/topics/" + quote(topic_id, safe=""), "admin-topic"),
                 ):
                     document(page, path)
                     assert page.locator("html").get_attribute("dir") == direction
+                    assert page.locator("html").get_attribute("lang") == locale
+                    if name == "users-detail":
+                        heading = {
+                            "en": "User details",
+                            "ru": "Информация о пользователе",
+                            "he": "פרטי משתמש",
+                        }[locale]
+                        expect(page.locator("#admin-user-detail-heading")).to_have_text(heading)
+                        expect(page.locator("#authorization")).to_have_count(1)
+                        expect(page.locator("#authorization form.admin-role-assignment")).to_have_count(1)
+                        expect(page.locator('a[href="/' + locale + '/admin/users"]')).to_have_count(1)
+                        assert other_id in page.locator(".profile-identity").inner_text()
+                        # Public identity is permitted, email and global authz directory are not.
+                        assert prefix + "-other@test.invalid" not in page.content()
+                    if name == "admin-topic":
+                        expect(page.locator("#admin-topic-heading h2")).to_have_text("AP10 acceptance topic")
+                        expect(page.locator(".admin-forum-trail")).to_have_count(1)
+                        expect(page.locator(".admin-topic-status")).to_have_count(1)
+                        expect(page.locator('a[href="/' + locale + '/topics/' +
+                            quote(topic_id, safe="") + '"]')).to_have_count(1)
+                        tools = page.locator("details.topic-admin-tools")
+                        expect(tools).to_have_count(1)
+                        tools.locator("summary").focus()
+                        assert tools.locator("summary").evaluate(
+                            "node => node === document.activeElement")
+                        tools.locator("summary").click()
+                        close_form = form_for(page, "closeTopic")
+                        expect(close_form.locator('button[type="submit"]')).to_have_text({
+                            "en": "Close topic",
+                            "ru": "Закрыть тему",
+                            "he": "סגירת נושא",
+                        }[locale])
+                        expect(close_form.locator('button[type="submit"]')).to_be_enabled()
                     if name in ("own-list", "own-detail"):
                         titles = {
                             "en": ("My measures", "Measure details"),
@@ -615,6 +663,13 @@ try:
                             "surface": name, "locale": locale, **layout,
                         })
                     assert "measuresRefresh" not in page.locator("main").inner_text()
+                    if name in ("users-detail", "admin-topic"):
+                        # No measure-refresh UI is required on the newly checked admin pages.
+                        if width in (320, 1280):
+                            page.screenshot(path=str(args.output / (
+                                name + "-" + locale + "-" + str(width) + ".png"
+                            )), full_page=True)
+                        continue
                     refresh = page.get_by_role("button", name={
                         "en": "Refresh current status",
                         "ru": "Обновить состояние",
@@ -629,6 +684,7 @@ try:
                             full_page=True,
                         )
                 record("localized-reflow-" + locale + "-" + str(width))
+        record("ap11-users-topic-en-ru-he-320-768-1280-layout-and-privacy")
         assert not layout_failures, layout_failures
         assert not page_errors, page_errors
         assert not external, external
