@@ -2312,16 +2312,21 @@ export function TopicView({
   // Refresh permission/restriction presentation once without replaying the POST or
   // unmounting the already-open editor (which retains text and explicit Cancel).
   const lastDeniedReplyResponse = useRef<unknown>(null);
+  const [deniedReplyRefreshing, setDeniedReplyRefreshing] = useState(false);
+  // Prevent a repeat submit before the 403 effect runs and throughout its loader refresh.
+  const freshDeniedReply = forumWriteError === "forbidden" && !!actionData
+    && replyPublicationRef.current?.topicId === topic.id
+    && lastDeniedReplyResponse.current !== actionData;
   useEffect(() => {
-    if (navigation.state !== "idle" || forumWriteError !== "forbidden" || !actionData
-      || replyPublicationRef.current?.topicId !== topic.id
-      || lastDeniedReplyResponse.current === actionData) return;
+    if (navigation.state !== "idle" || !freshDeniedReply) return;
     lastDeniedReplyResponse.current = actionData;
-    void revalidator.revalidate();
-  }, [navigation.state, forumWriteError, actionData, topic.id, revalidator]);
+    setDeniedReplyRefreshing(true);
+    void revalidator.revalidate().finally(() => setDeniedReplyRefreshing(false));
+  }, [navigation.state, freshDeniedReply, actionData, revalidator]);
   const closedReplyErrorActive = forumWriteError === "topicClosed"
     && (closedReplyResponseVersion === null || closedReplyResponseVersion === topic.closureVersion);
-  const replyPublicationAllowed = canParticipate && !closedReplyErrorActive;
+  const replyPublicationAllowed = canParticipate && !closedReplyErrorActive
+    && !freshDeniedReply && !deniedReplyRefreshing;
   const readStateFetcher = useFetcher();
   const markedReadSnapshot = useRef<string | null>(null);
   const mountedTopicIdRef = useRef(topic.id);
@@ -3106,7 +3111,7 @@ export function TopicView({
                   ref={replyEditorRef}
                   id="reply-body"
                   editorContextKey={`topic:${topic.id}:reply`} editorLocale={locale}
-                  allowAttachmentUploads={canUploadAttachments}
+                  allowAttachmentUploads={canUploadAttachments && !freshDeniedReply && !deniedReplyRefreshing}
                   publicationIntent="reply"
                   publicationPending={isReplySubmitting}
                   publicationDisabled={!replyPublicationAllowed}
