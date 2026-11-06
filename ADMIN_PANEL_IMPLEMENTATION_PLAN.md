@@ -217,6 +217,14 @@
 10. Не инициировать owner visual acceptance без явного запроса владельца.
 11. Сохранять этот общий план в PR #251 как проектную запись реализации; отдельная implementation-работа завершается и merge через отдельные ограниченные PR.
 
+## Owner decision — Settings deferred after AP-11
+
+1. Текущий AP-11 закрывает integration/factual closeout фактически delivered ordinary-admin scope AP-01–AP-10.
+2. Settings **не входит** в текущую ordinary-admin completion и остаётся отдельной будущей фазой.
+3. После AP-11 сначала выполняется отдельно запланированная переработка owner/authorization model.
+4. Только после неё проектируется и реализуется отдельный Settings package, чтобы его permissions и owner-only/ordinary-admin boundaries опирались на целевую administrative hierarchy.
+5. AP-11 не должен придумывать Settings operations, settings storage/API или считать placeholder дефектом текущего closeout. Placeholder остаётся правдивым обозначением будущей функции.
+
 ## После завершения админ-панели — переработка owner/authorization model
 
 Это отдельная последующая задача и **не входит в AP-10/AP-11**. До завершения ordinary-admin работы текущую authorization implementation не переделывать.
