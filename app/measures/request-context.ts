@@ -14,7 +14,7 @@ export interface UserMeasureCapability {
   ownDetail(subjectId: string, measureId: string): Promise<UserMeasureDetail>;
   adminTarget(actorId: string, targetId: string): Promise<UserMeasureTargetView>;
   adminPendingAppeals(actorId: string, page?: number): Promise<UserMeasurePendingAppealPage>;
-  adminDetail(actorId: string, measureId: string): Promise<UserMeasureDetail & { targetUserId: string; targetName: string }>;
+  adminDetail(actorId: string, measureId: string): Promise<UserMeasureDetail & { targetUserId: string; targetName: string; canMutate: boolean }>;
   create(input: CreateUserMeasureInput): Promise<MeasureCreateResult>;
   change(input: ChangeUserMeasureInput): Promise<MeasureTransitionResult>;
   lift(input: LiftUserMeasureInput): Promise<MeasureTransitionResult>;
