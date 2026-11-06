@@ -153,7 +153,8 @@ try:
         topic_id = topic_fixture(other_id)
         first_id = create_measure(
             manager, subject_id,
-            ("replies.create", "admin.forum", "admin.complaints",
+            ("replies.create", "topics.create", "attachments.upload", "profile.edit",
+             "posts.edit", "complaints.submit", "admin.forum", "admin.complaints",
              "admin.security", "admin.usersAccess"),
             "First distinct violation",
         )
@@ -213,6 +214,16 @@ try:
         assert replies(topic_id) == count + 1
         record("current-session-domain-and-admin-family-denials")
 
+        topic_response = subject.goto(base + "/en/topics/" + quote(topic_id, safe=""), wait_until="networkidle")
+        assert topic_response and topic_response.status == 200
+        expect(subject.locator('form.topic-reply-form')).to_have_count(0)
+        expect(subject.locator('form:has(input[name="intent"][value="submitComplaint"])')).to_have_count(0)
+        profile_response = subject.goto(base + "/en/users/" + quote(subject_id, safe=""), wait_until="networkidle")
+        assert profile_response and profile_response.status == 200
+        expect(subject.locator('a[href*="?edit=1"]')).to_have_count(0)
+        expect(subject.locator('a[href="/en/account/measures"]')).to_have_count(1)
+        record("sanctioned-first-party-actions-hidden-own-measures-preserved")
+
         document(manager, "/en/admin/measures/" + first_id)
         review = form_for(manager, "review")
         review.locator('select[name="outcome"]').select_option("accepted")
@@ -226,6 +237,9 @@ try:
         document(subject, own_path)
         assert "Lifted" in subject.locator("main").inner_text()
         assert "Accepted" in subject.locator("main").inner_text()
+        profile_response = subject.goto(base + "/en/users/" + quote(subject_id, safe=""), wait_until="networkidle")
+        assert profile_response and profile_response.status == 200
+        expect(subject.locator('a[href*="?edit=1"]')).to_have_count(1)
         for path in forbidden:
             document(subject, path)
         response = post(subject_ctx, "/en/topics/" + topic_id, {
