@@ -1,5 +1,13 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 5.1: connected cross-domain PostgreSQL integration (2026-11-06)
+
+- [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290) exact verified head `40a4c35392d7563e43b958bbd58504700afdd3ae`. Stage 5.1 finished; AP-10 overall remains incomplete, Draft/open, no merge.
+- New single integration test in `tests/database/user-measure-forum-enforcement.test.ts` uses actual PostgreSQL 17 full schema, `UserMeasuresService`, `PostgresUserMeasureReader`, `DrizzleForumRepository`, raw DB `createAuthorizationCapability` and existing request-local `withForumAdministrativeRestrictions`. Existing built-in admin role and explicit manager grant model are exercised; no UI mock or static pages evidence substituted.
+- Owner issuer creates distinct active sanctions A and B for one privileged target. A restricts replies and four administrative families; B separately restricts replies. Fresh effective permission resolution suppresses Forum/Complaints/Security/Users rights while raw reply grant remains. A's private subject reason/status and exact pending appeal are readable/submittable; B has independent quota. Reviewer accepts and lifts A: private appeal outcome becomes accepted, family permissions return except a separately revoked raw forum grant, but B still denies new replies. Lifting B restores new publication. Other user publication, own DTO identity redaction, independent statuses and exact significant History sequence checked.
+- **[Exact-head CI #42168357331](https://github.com/iliya1947/vico-forum/actions/runs/42168357331) SUCCESS**: application 152/152 files, 1942/1942 tests; native PostgreSQL 46/46 files, 555/555 tests; lint/typecheck/build, migrations/Drizzle, runtime privileges, Worker local HTTP smoke PASS. Production code, permissions, schema and API/contracts unchanged. PR description updated.
+- **Next bounded task only after «...»**: stage 5.2 applicable isolated authenticated browser/UX acceptance and accurate evidence of active restrictions, own status/appeals and administrative family permission suppression. Do not treat local PG tests or Worker smoke as actual browser acceptance; do not open the developer's browser. Once implementation acceptance is complete, separate coordinator whole-PR and independent technical review remain. No unrelated docs/coordinator/shared files, AP-11/Settings, production or merge. Stopped after 5.1.
+
 ## AP-10 — stage 4.2: active-session refresh and stale-action recovery (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290) exact verified implementation head `a21c0bf8e8f0d259be1420f0b9d8690951e24d09`; bounded subtask 4.2 complete, AP-10 overall still incomplete, PR Draft/open without merge.
