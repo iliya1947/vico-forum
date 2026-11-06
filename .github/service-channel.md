@@ -108,3 +108,7 @@
 - Pass 1 (data model/lifecycle/reasons/appeals) complete on exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
 - Confirmed current-scope: AP10-MIRA-01 missing pending block-appeal reviewer queue/discovery; AP10-MIRA-02 missing approved temporary preset/arbitrary-duration UI (only raw end-time ISO input exists).
 - Whole-PR review is not complete. Do not start fixes or independent Codex review yet; Mira will return one consolidated package after all coordinator passes.
+
+- Pass 2 (authority/permissions/privileged targets) complete on the same exact head.
+- Confirmed current-scope: AP10-MIRA-03 ordinary manager can persist latent admin-family restrictions that later suppress newly granted privileged rights; AP10-MIRA-04 non-owner authorization UI exposes enabled elevated-authority controls although server rejects them.
+- Server-side current-target hierarchy, owner immunity, self-target denial, issuer floor, zero default grants and raw-vs-suppressed authority boundaries passed this pass.
