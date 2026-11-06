@@ -208,7 +208,7 @@ describe("AP-10 admin.forum permission projection and authoritative moderation",
       ...help, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
     });
     const signal = await forum.createHelpSignal({
-      topicId: help.id, actorId: "other", kind: "needs-details",
+      topicId: help.id, actorId: "other", kind: "needs-details", proposedOriginalTopicId: null,
       explanation: "Please explain the error.",
     });
     await createMeasure("admin.forum");
@@ -229,7 +229,7 @@ describe("AP-10 admin.forum permission projection and authoritative moderation",
       ...nextHelp, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
     });
     const ownSignal = await forum.createHelpSignal({
-      topicId: nextHelp.id, actorId: "target", kind: "needs-details",
+      topicId: nextHelp.id, actorId: "target", kind: "needs-details", proposedOriginalTopicId: null,
       explanation: "Separate new signal remains available.",
     });
     expect(ownSignal.status).toBe("pending");
