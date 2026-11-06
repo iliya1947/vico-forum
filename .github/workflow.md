@@ -1,19 +1,20 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 correction cycle
+- Текущий этап: AP-10 corrected-head coordinator whole-PR review
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
 - Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
 - Technical plan: coordinator PASS, AP10-PLAN-MIRA-01..06 closed
 - Implementation PR: #290 Draft/open/mergeable
-- Stable implementation exact head: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`
-- Implementation diff: 92 changed files
-- Exact-head CI #42171734420: SUCCESS
-- Exact-head isolated browser acceptance #42171734414: SUCCESS (author evidence, not independent/owner visual acceptance)
+- Previous reviewed implementation head: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`
+- Current stable implementation exact head: `52a1db67610357f514e8013b06f70af6bda629c6`
+- Current implementation diff: 111 changed files; correction delta from previous reviewed head: 30 commits / 45 files
+- Current exact-head CI #42191389984: SUCCESS
+- Current exact-head isolated browser acceptance #42191390039: SUCCESS (author evidence, not independent/owner visual acceptance)
 - Documentation PR: #291 Draft/open/mergeable, exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, 6 Markdown files
 - Documentation CI #42173496053: SUCCESS
 - Implementation/docs не merged; production/Stage 6 не менялись
-- Current executor: Лира; Мира ждёт новый stable exact head для повторного coordinator whole-PR review; Лёва independent review не назначен до coordinator PASS
+- Current reviewer: Мира; Лира correction package завершила; Лёва independent review не назначен до coordinator PASS
 - Owner visual acceptance: не запрошен и не инициируется
 - Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
 - Coordinator pass 2 complete: authority/permissions/privileged targets; confirmed AP10-MIRA-03..04
@@ -22,6 +23,7 @@
 - Coordinator pass 5 complete: tests/CI coverage, migration/runtime privileges, browser evidence and final gap sweep; no additional defects
 - Coordinator whole-PR review complete: NOT PASS, seven confirmed current-scope defects AP10-MIRA-01..07
 - Independent Codex review remains blocked until a corrected stable implementation head passes a new coordinator cycle
-- Correction package AP10-MIRA-01..07 зафиксирован для Лиры в service-channel.md; Лира исправляет PR #290 одним пакетом, выполняет applicable CI/browser evidence и фиксирует новый stable exact head. После этого Мира начинает новый coordinator whole-PR review exact head
+- Corrected-head coordinator pass 1 complete: AP10-MIRA-01..07 перепроверены и закрыты по исходным причинам; новых current-scope findings в correction delta не подтверждено
+- Следующий шаг: Мира выполняет regression/final gap sweep PR #290 exact head `52a1db67610357f514e8013b06f70af6bda629c6`; только после coordinator PASS Лёва получает independent technical review того же stable head
 - Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
