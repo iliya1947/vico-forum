@@ -194,11 +194,12 @@ export class PostgresUserMeasuresRepository {
           return { id: current.id, version: current.version, changed: false };
         }
         await this.requireFutureExpiry(client, change.expiresAt);
-        await client.query(`update user_measures
+        const updated = await client.query(`update user_measures
           set expires_at=$2::timestamptz, latest_change_reason=$3,
             issuer_authority_floor=greatest(issuer_authority_floor,$4), version=version+1
           where id=$1 and version=$5`,
           [current.id, change.expiresAt, change.reason, issuerLevel, current.version]);
+        if (updated.rowCount !== 1) throw new UserMeasureConflictError("measure version changed");
         await client.query(`update user_measure_restrictions set enabled=false
           where measure_id=$1 and restriction_key <> all($2::text[])`,
           [current.id, change.restrictions]);
@@ -216,11 +217,12 @@ export class PostgresUserMeasuresRepository {
         });
       } else {
         const lift = input as ValidatedLift;
-        await client.query(`update user_measures set lifted_at=clock_timestamp(),
+        const updated = await client.query(`update user_measures set lifted_at=clock_timestamp(),
           lifted_by_user_id=$2, lift_reason=$3,
           issuer_authority_floor=greatest(issuer_authority_floor,$4),
           version=version+1 where id=$1 and version=$5`,
         [current.id, input.actorId, lift.reason, issuerLevel, current.version]);
+        if (updated.rowCount !== 1) throw new UserMeasureConflictError("measure version changed");
         // Explicit lift makes pending appeals moot in the same transaction. An accepted
         // reviewer resolution will reuse this primitive in the appeal subtask.
         await client.query(`update user_measure_appeals set status='moot', resolved_at=clock_timestamp()
