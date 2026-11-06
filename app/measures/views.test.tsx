@@ -134,14 +134,14 @@ describe("AP-10 private measure views and administrative choices",()=>{
   it("shows only compatible appeal remedies and their required fields",()=>{
     const root=mount("en",adminView());
     const form=formFor(root,"review");
-    const outcome=form.querySelector<HTMLSelectElement>('select[name="outcome"]')!;
+    const outcome=form.querySelector('select[name="outcome"]')!;
     expect(new FormData(form).get("remedy")).toBe("");
     expect(form.querySelector('[name="restriction"]')).toBeNull();
     expect(form.querySelector('[name="expiresAt"]')).toBeNull();
     fireEvent.change(outcome,{target:{value:"accepted"}});
-    const remedy=form.querySelector<HTMLSelectElement>('select[name="remedy"]')!;
+    const remedy=form.querySelector('select[name="remedy"]')!;
     expect(remedy).toBeRequired();
-    expect(remedy.value).toBe("");
+    expect(new FormData(form).get("remedy")).toBe("");
     expect(form.querySelector('[name="restriction"]')).toBeNull();
     fireEvent.change(remedy,{target:{value:"change"}});
     expect(children(groupFor(form))[0]).toBeChecked();
