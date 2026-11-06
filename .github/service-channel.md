@@ -268,3 +268,16 @@ Exact administrative measure detail может оставаться доступ
 - изменение остаётся локальным AP-10: без AP-11/Settings, owner-role redesign, last-manager cleanup, Stage 6, production и без изменений documentation PR #291;
 - выполнить применимые exact-head CI/checks и AP-10 isolated browser acceptance; owner visual acceptance не инициировать без прямого запроса владельца;
 - после завершения зафиксировать в служебном PR новый stable implementation head и фактические результаты проверок и остановиться. Следующий этап — новый coordinator review Миры; Лёву до coordinator PASS не подключать.
+
+
+## AP-10 AP10-MIRA-11 corrected-head coordinator pass
+
+- Лира завершила bounded correction `AP10-MIRA-11` в PR #290.
+- Новый stable implementation exact head: `9fecd925a256062e9892235f4ba02ed3147de1e3`; base/main остаётся `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`. Delta относительно предыдущего reviewed head `ad789c7bf28d4fe7896e8ddbf7757460e046da27`: 5 commits / 5 files.
+- Exact-head CI #42213405436 — SUCCESS; exact-head isolated Chromium #42213405385 — SUCCESS. Это author engineering evidence, не independent review и не owner visual acceptance.
+- **AP10-MIRA-11 закрыт по исходной причине.** Exact admin detail сохраняет разрешённый read-only доступ по target hierarchy, но admin-only `canMutate` вычисляется внутри того же locked admin-read snapshot после authoritative actor/target resolution и сравнения current raw actor authority со stored `issuer_authority_floor`.
+- Change/Lift/pending Appeal Review forms рендерятся только для active measure с `canMutate=true`. Fresh grant до floor показывает controls на следующем read; revoke/deny снова скрывает их. Read-only measure/appeal details остаются доступны в разрешённой target boundary.
+- Direct change/lift/resolveAppeal guards не изменялись и остаются authoritative. PostgreSQL regression подтверждает: forged lower-floor mutations forbidden, version/pending appeal/History не меняются; pending queue также не выдаёт такую appeal до достаточной authority.
+- Own detail projection не получает `canMutate`, numeric issuer floor или admin identity. Новых permissions/schema/grants/History semantics/read scope нет.
+- Correction delta проверен целиком; новых current-scope findings в этих пяти файлах на targeted pass не подтверждено.
+- Coordinator status пока не финальный PASS: следующий шаг — final regression/evidence sweep нового exact head против уже закрытых AP10-MIRA-01..10 и correction interactions. Лёву до завершения этого sweep и coordinator PASS не подключать.
