@@ -23,7 +23,10 @@
 - Coordinator pass 5 complete: tests/CI coverage, migration/runtime privileges, browser evidence and final gap sweep; no additional defects
 - Coordinator whole-PR review complete: NOT PASS, seven confirmed current-scope defects AP10-MIRA-01..07
 - Independent Codex review remains blocked until a corrected stable implementation head passes a new coordinator cycle
-- Corrected-head coordinator pass 1 complete: AP10-MIRA-01..07 перепроверены и закрыты по исходным причинам; новых current-scope findings в correction delta не подтверждено
-- Следующий шаг: Мира выполняет regression/final gap sweep PR #290 exact head `52a1db67610357f514e8013b06f70af6bda629c6`; только после coordinator PASS Лёва получает independent technical review того же stable head
+- Corrected-head coordinator review complete on exact head `52a1db67610357f514e8013b06f70af6bda629c6`: исходные AP10-MIRA-01..07 закрыты, но final interaction sweep подтвердил AP10-MIRA-08..10
+- AP10-MIRA-08: ordinary blocks.manage UI всё ещё предлагает administrative restriction families, которые authoritative server запрещает без elevated authority
+- AP10-MIRA-09: floor-aware permission projection расходится с direct authoritative admin-family guards, которые игнорируют issuer floor после equal/higher raw grant
+- AP10-MIRA-10: AP-10 restriction revalidation размонтирует already-open create-topic/Help/published-edit Editor operations вместо сохранения buffer + Cancel/cleanup при запрещённом Publish/Save
+- Coordinator verdict: NOT PASS. Следующий stage — bounded correction package AP10-MIRA-08..10 Лире; Лёва independent review только после нового coordinator PASS
 - Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
