@@ -205,113 +205,274 @@ export class PostgresUserMeasuresRepository {
     return this.transition(input, "measure.lifted");
   }
 
+
+  /** Submitted-appeal identity is exact to a measure; quota remains even after resolution. */
+  async submitAppeal(input: ValidatedAppealSubmission): Promise<UserMeasureAppealSubmissionResult> {
+    return this.withLockedTransaction(async client => {
+      const { target, current } = await this.lockMeasure(client, input.measureId);
+      if (target.id !== input.actorId) throw new UserMeasureForbiddenError();
+      const prior = await client.query<LockedAppeal>(
+        "select id, measure_id, subject_user_id, ordinal, body, status from user_measure_appeals where id=$1 for update",
+        [input.id],
+      );
+      if (prior.rows[0]) {
+        const existing = prior.rows[0];
+        if (existing.measure_id !== current.id || existing.subject_user_id !== input.actorId ||
+            existing.body !== input.body) {
+          throw new UserMeasureConflictError("appeal ID is already committed with different input");
+        }
+        return { id: input.id, measureId: current.id, ordinal: existing.ordinal };
+      }
+      await this.assertActive(client, current);
+      const quota = await client.query<{ submitted: number; max_ordinal: number | null; pending: boolean }>(
+        `select count(*)::int as submitted, max(ordinal) as max_ordinal,
+          coalesce(bool_or(status = 'pending'), false) as pending
+          from user_measure_appeals where measure_id=$1`, [current.id],
+      );
+      const slots = quota.rows[0];
+      if (!slots || slots.submitted >= 3 || slots.pending || (slots.max_ordinal ?? 0) >= 3) {
+        throw new UserMeasureConflictError("appeal quota exhausted or another appeal is pending");
+      }
+      const ordinal = (slots.max_ordinal ?? 0) + 1;
+      const inserted = await client.query(
+        `insert into user_measure_appeals(id,measure_id,subject_user_id,ordinal,body)
+          values ($1,$2,$3,$4,$5)`, [input.id, current.id, input.actorId, ordinal, input.body],
+      );
+      if (inserted.rowCount !== 1) throw new UserMeasureConflictError("appeal insert failed");
+      return { id: input.id, measureId: current.id, ordinal };
+    });
+  }
+
+  /** Review shares exact-measure CAS with ordinary change/lift, never an independent remedy. */
+  async resolveAppeal(input: ValidatedAppealResolution): Promise<UserMeasureAppealResolutionResult> {
+    return this.withAuthorityTransaction(async (client, ownerId) => {
+      const { target, current } = await this.lockMeasure(client, input.measureId);
+      const issuerLevel = await this.authority(
+        client, ownerId, input.actorId, target.id, current.issuer_authority_floor,
+      );
+      const result = await client.query<LockedAppeal>(
+        `select id, measure_id, subject_user_id, ordinal, body, status
+           from user_measure_appeals where id=$1 and measure_id=$2 for update`,
+        [input.appealId, input.measureId],
+      );
+      const appeal = result.rows[0];
+      if (!appeal || appeal.subject_user_id !== current.target_user_id) {
+        throw new UserMeasureNotFoundError("appeal does not belong to this measure");
+      }
+      const prior = await this.committedOperation(client, input.measureId, input.operationId);
+      if (prior) {
+        if (prior.actor_id !== input.actorId || prior.action !== "measure.appealResolved" ||
+            prior.context.fingerprint !== input.fingerprint ||
+            prior.context.appealId !== input.appealId ||
+            !Number.isSafeInteger(prior.context.after?.version)) {
+          throw new UserMeasureConflictError("appeal review ID conflicts with a committed operation");
+        }
+        return { appealId: input.appealId, measureId: current.id,
+          outcome: input.outcome, version: prior.context.after!.version as number, remedy: input.remedy };
+      }
+      if (appeal.status !== "pending") throw new UserMeasureConflictError("appeal has already been resolved");
+      await this.assertActive(client, current);
+      if (current.version !== input.expectedVersion) {
+        throw new UserMeasureConflictError("measure version changed during review");
+      }
+
+      let before: UserMeasureHistoryState;
+      let after: UserMeasureHistoryState;
+      if (input.outcome === "rejected") {
+        before = await this.measureState(client, current);
+        after = before;
+        const updated = await client.query(
+          `update user_measure_appeals set status='rejected', reviewer_user_id=$2,
+            resolved_at=clock_timestamp(), reviewer_explanation=$3, remedy=null
+            where id=$1 and status='pending'`,
+          [appeal.id, input.actorId, input.explanation],
+        );
+        if (updated.rowCount !== 1) throw new UserMeasureConflictError("appeal no longer pending");
+      } else {
+        const transition: ValidatedChange | ValidatedLift = input.remedy === "change"
+          ? {
+              measureId: current.id, operationId: input.operationId, actorId: input.actorId,
+              expectedVersion: input.expectedVersion, reason: input.explanation,
+              restrictions: input.restrictions!, expiresAt: input.expiresAt, fingerprint: input.fingerprint,
+            }
+          : {
+              measureId: current.id, operationId: input.operationId, actorId: input.actorId,
+              expectedVersion: input.expectedVersion, reason: input.explanation, fingerprint: input.fingerprint,
+            };
+
+        // Mark accepted before the shared lift primitive makes other pending appeals moot.
+        // A later CAS/History failure rolls this status back in the same transaction.
+        const updated = await client.query(
+          `update user_measure_appeals set status='accepted', reviewer_user_id=$2,
+            resolved_at=clock_timestamp(), reviewer_explanation=$3, remedy=$4
+            where id=$1 and status='pending'`,
+          [appeal.id, input.actorId, input.explanation, input.remedy],
+        );
+        if (updated.rowCount !== 1) throw new UserMeasureConflictError("appeal no longer pending");
+        const applied = await this.applyLockedTransition(
+          client, current, input.actorId, issuerLevel, transition, input.remedy!, true,
+        );
+        before = applied.before;
+        after = applied.after;
+      }
+
+      await appendUserMeasureHistory(client, input.actorId, {
+        action: "measure.appealResolved", targetType: "user-measure", targetId: current.id,
+        targetLabel: target.name, reason: input.explanation,
+        context: {
+          targetUserId: target.id, operationId: input.operationId, fingerprint: input.fingerprint,
+          before, after, appealId: input.appealId, outcome: input.outcome,
+          ...(input.remedy ? { remedy: input.remedy } : {}),
+        },
+      });
+      return { appealId: input.appealId, measureId: current.id,
+        outcome: input.outcome, version: after.version, remedy: input.remedy };
+    });
+  }
+
+  /** Authz lock is held before target identity and exact-measure locks. */
+  private async lockMeasure(
+    client: PoolClient, measureId: string,
+  ): Promise<{ target: LockedTarget; current: LockedMeasure }> {
+    const pointer = await client.query<{ target_user_id: string }>(
+      "select target_user_id from user_measures where id=$1", [measureId],
+    );
+    if (!pointer.rows[0]) throw new UserMeasureNotFoundError("measure does not exist");
+    const target = await this.lockTarget(client, pointer.rows[0].target_user_id);
+    const found = await client.query<LockedMeasure>(
+      `select id, target_user_id, issuer_authority_floor, version, expires_at, lifted_at
+         from user_measures where id=$1 for update`, [measureId],
+    );
+    const current = found.rows[0];
+    if (!current || current.target_user_id !== target.id) {
+      throw new UserMeasureConflictError("measure target changed");
+    }
+    return { target, current };
+  }
+
+  private async assertActive(client: PoolClient, current: LockedMeasure): Promise<void> {
+    // DB clock is evaluated after measure FOR UPDATE, not at transaction start.
+    const clock = await client.query<{ checked_at: Date }>("select clock_timestamp() as checked_at");
+    if (!clock.rows[0] || current.lifted_at ||
+        (current.expires_at && current.expires_at.getTime() <= clock.rows[0].checked_at.getTime())) {
+      throw new UserMeasureConflictError("measure has already terminated");
+    }
+  }
+
+  private async measureState(client: PoolClient, current: LockedMeasure): Promise<UserMeasureHistoryState> {
+    return state(
+      current.version, await this.readRestrictions(client, current.id),
+      current.expires_at?.toISOString() ?? null, Boolean(current.lifted_at),
+    );
+  }
+
+  /** Common CAS/terminal primitive for admin transition and accepted review. No History here. */
+  private async applyLockedTransition(
+    client: PoolClient, current: LockedMeasure, actorId: string, issuerLevel: number,
+    input: ValidatedChange | ValidatedLift, kind: "change" | "lift", requireChange = false,
+  ): Promise<AppliedTransition> {
+    await this.assertActive(client, current);
+    if (current.version !== input.expectedVersion || current.version >= 2147483647) {
+      throw new UserMeasureConflictError("measure version changed or exhausted");
+    }
+    const before = await this.measureState(client, current);
+    if (kind === "change") {
+      const change = input as ValidatedChange;
+      if (sameRestrictions(before.restrictions, change.restrictions) && before.expiresAt === change.expiresAt) {
+        if (requireChange) throw new UserMeasureConflictError("accepted change must modify the measure");
+        return { changed: false, before, after: before };
+      }
+      await this.requireFutureExpiry(client, change.expiresAt);
+      const updated = await client.query(
+        `update user_measures set expires_at=$2::timestamptz, latest_change_reason=$3,
+           issuer_authority_floor=greatest(issuer_authority_floor,$4), version=version+1
+           where id=$1 and version=$5`,
+        [current.id, change.expiresAt, change.reason, issuerLevel, current.version],
+      );
+      if (updated.rowCount !== 1) throw new UserMeasureConflictError("measure version changed");
+      await client.query(
+        `update user_measure_restrictions set enabled=false
+           where measure_id=$1 and restriction_key <> all($2::text[])`,
+        [current.id, change.restrictions],
+      );
+      for (const restriction of change.restrictions) {
+        await client.query(
+          `insert into user_measure_restrictions(measure_id,restriction_key,enabled)
+             values($1,$2,true) on conflict(measure_id,restriction_key)
+             do update set enabled=true`,
+          [current.id, restriction],
+        );
+      }
+      return { changed: true, before,
+        after: state(current.version + 1, change.restrictions, change.expiresAt, false) };
+    }
+
+    const lift = input as ValidatedLift;
+    const updated = await client.query(
+      `update user_measures set lifted_at=clock_timestamp(), lifted_by_user_id=$2,
+         lift_reason=$3, issuer_authority_floor=greatest(issuer_authority_floor,$4),
+         version=version+1 where id=$1 and version=$5`,
+      [current.id, actorId, lift.reason, issuerLevel, current.version],
+    );
+    if (updated.rowCount !== 1) throw new UserMeasureConflictError("measure version changed");
+    await client.query(
+      `update user_measure_appeals set status='moot', resolved_at=clock_timestamp()
+         where measure_id=$1 and status='pending'`, [current.id],
+    );
+    return { changed: true, before,
+      after: state(current.version + 1, before.restrictions, before.expiresAt, true) };
+  }
+
+  private async committedOperation(client: PoolClient, measureId: string, operationId: string): Promise<{
+    actor_id: string; action: string; context: {
+      fingerprint?: unknown; appealId?: unknown; after?: { version?: unknown };
+    };
+  } | null> {
+    const result = await client.query<{
+      actor_id: string; action: string; context: {
+        fingerprint?: unknown; appealId?: unknown; after?: { version?: unknown };
+      };
+    }>(`select actor_id, action, context from admin_history
+      where target_type='user-measure' and target_id=$1
+        and context->>'operationId'=$2
+      order by position desc limit 1`, [measureId, operationId]);
+    return result.rows[0] ?? null;
+  }
+
   /** This primitive owns the authority→target→measure→History lock order for both transitions. */
   private async transition(
     input: ValidatedChange | ValidatedLift,
     action: "measure.changed" | "measure.lifted",
   ): Promise<MeasureTransitionResult> {
     return this.withAuthorityTransaction(async (client, ownerId) => {
-      // An unlocked pointer lookup identifies the target to lock first. The measure is then
-      // locked and rechecked; target_user_id is immutable in all service mutations.
-      const pointer = await client.query<{ target_user_id: string }>(
-        "select target_user_id from user_measures where id=$1", [input.measureId],
-      );
-      if (!pointer.rows[0]) throw new UserMeasureNotFoundError("measure does not exist");
-      const target = await this.lockTarget(client, pointer.rows[0].target_user_id);
-      const found = await client.query<LockedMeasure>(
-        `select id, target_user_id, issuer_authority_floor, version, expires_at, lifted_at
-          from user_measures where id=$1 for update`, [input.measureId],
-      );
-      const current = found.rows[0];
-      if (!current || current.target_user_id !== target.id) {
-        throw new UserMeasureConflictError("measure target changed");
-      }
+      const { target, current } = await this.lockMeasure(client, input.measureId);
       const issuerLevel = await this.authority(
         client, ownerId, input.actorId, target.id, current.issuer_authority_floor,
       );
 
-      // The already-committed exact operation returns its original result even if the
-      // measure has since expired, been lifted, or moved to a newer version.
-      const replay = await client.query<{
-        actor_id: string; action: string; context: {
-          fingerprint?: unknown; after?: { version?: unknown };
-        };
-      }>(`select actor_id, action, context from admin_history
-        where target_type='user-measure' and target_id=$1
-          and context->>'operationId'=$2
-        order by position desc limit 1`, [input.measureId, input.operationId]);
-      if (replay.rows[0]) {
-        const previous = replay.rows[0];
-        if (previous.actor_id !== input.actorId || previous.action !== action ||
-            previous.context.fingerprint !== input.fingerprint ||
-            !Number.isSafeInteger(previous.context.after?.version)) {
-          throw new UserMeasureConflictError("operation id is already committed with different input");
+      const replay = await this.committedOperation(client, input.measureId, input.operationId);
+      if (replay) {
+        if (replay.actor_id !== input.actorId || replay.action !== action ||
+            replay.context.fingerprint !== input.fingerprint ||
+            !Number.isSafeInteger(replay.context.after?.version)) {
+          throw new UserMeasureConflictError("operation ID conflicts with committed History");
         }
-        return { id: input.measureId, version: previous.context.after!.version as number, changed: true };
+        return { id: input.measureId, version: replay.context.after!.version as number, changed: true };
       }
 
-      // Clock evaluated strictly after the measure FOR UPDATE lock: no transaction-start now().
-      const dbTime = await client.query<{ checked_at: Date }>(
-        "select clock_timestamp() as checked_at",
+      const applied = await this.applyLockedTransition(
+        client, current, input.actorId, issuerLevel, input,
+        action === "measure.changed" ? "change" : "lift",
       );
-      if (!dbTime.rows[0] || current.lifted_at ||
-          (current.expires_at && current.expires_at.getTime() <= dbTime.rows[0].checked_at.getTime())) {
-        throw new UserMeasureConflictError("measure has already terminated");
-      }
-      if (current.version !== input.expectedVersion || current.version >= 2147483647) {
-        throw new UserMeasureConflictError("measure version changed or exhausted");
-      }
-      const beforeRestrictions = await this.readRestrictions(client, current.id);
-      const previousExpiry = current.expires_at?.toISOString() ?? null;
-
-      if (action === "measure.changed") {
-        const change = input as ValidatedChange;
-        if (sameRestrictions(beforeRestrictions, change.restrictions) && previousExpiry === change.expiresAt) {
-          return { id: current.id, version: current.version, changed: false };
-        }
-        await this.requireFutureExpiry(client, change.expiresAt);
-        const updated = await client.query(`update user_measures
-          set expires_at=$2::timestamptz, latest_change_reason=$3,
-            issuer_authority_floor=greatest(issuer_authority_floor,$4), version=version+1
-          where id=$1 and version=$5`,
-          [current.id, change.expiresAt, change.reason, issuerLevel, current.version]);
-        if (updated.rowCount !== 1) throw new UserMeasureConflictError("measure version changed");
-        await client.query(`update user_measure_restrictions set enabled=false
-          where measure_id=$1 and restriction_key <> all($2::text[])`,
-          [current.id, change.restrictions]);
-        for (const restriction of change.restrictions) {
-          await client.query(`insert into user_measure_restrictions(measure_id, restriction_key, enabled)
-            values($1,$2,true) on conflict(measure_id, restriction_key)
-            do update set enabled=true`, [current.id, restriction]);
-        }
+      if (applied.changed) {
         await appendUserMeasureHistory(client, input.actorId, {
           action, targetType: "user-measure", targetId: current.id, targetLabel: target.name,
-          reason: change.reason,
-          context: { targetUserId: target.id, operationId: input.operationId, fingerprint: input.fingerprint,
-            before: state(current.version, beforeRestrictions, previousExpiry, false),
-            after: state(current.version + 1, change.restrictions, change.expiresAt, false) },
-        });
-      } else {
-        const lift = input as ValidatedLift;
-        const updated = await client.query(`update user_measures set lifted_at=clock_timestamp(),
-          lifted_by_user_id=$2, lift_reason=$3,
-          issuer_authority_floor=greatest(issuer_authority_floor,$4),
-          version=version+1 where id=$1 and version=$5`,
-        [current.id, input.actorId, lift.reason, issuerLevel, current.version]);
-        if (updated.rowCount !== 1) throw new UserMeasureConflictError("measure version changed");
-        // Explicit lift makes pending appeals moot in the same transaction. An accepted
-        // reviewer resolution will reuse this primitive in the appeal subtask.
-        await client.query(`update user_measure_appeals set status='moot', resolved_at=clock_timestamp()
-          where measure_id=$1 and status='pending'`, [current.id]);
-        await appendUserMeasureHistory(client, input.actorId, {
-          action, targetType: "user-measure", targetId: current.id, targetLabel: target.name,
-          reason: lift.reason,
-          context: { targetUserId: target.id, operationId: input.operationId, fingerprint: input.fingerprint,
-            before: state(current.version, beforeRestrictions, previousExpiry, false),
-            after: state(current.version + 1, beforeRestrictions, previousExpiry, true) },
+          reason: input.reason,
+          context: { targetUserId: target.id, operationId: input.operationId,
+            fingerprint: input.fingerprint, before: applied.before, after: applied.after },
         });
       }
-      return { id: current.id, version: current.version + 1, changed: true };
+      return { id: current.id, version: applied.after.version, changed: applied.changed };
     });
   }
 
