@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 3.1: enforce active measures on topic/Help and reply publication (2026-11-06)
+
+- [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290) exact stable head **`50642524ecb3821a2ed43a77f142dcc638b42c4e`**. Stage 2.4 unchanged; AP-10 still incomplete and Draft/open.
+- `db/user-measure-policy.ts` queries active child restrictions directly within the writer's PostgreSQL transaction: enabled per-measure membership, target ID, no explicit lift, DB `clock_timestamp()` expiry, overlapping `EXISTS` semantics. Denial is typed `UserMeasureRestrictedError`. Unexpected DB/schema errors are not treated as unrestricted; default production behavior is fail-closed.
+- Connected `topics.create` to direct repository topic creation and topic-with-initial-post (ordinary and Help); `replies.create` to canonical new-reply repository transition. Each writer checks after matching committed publication receipt (for existing idempotent operations), before cooldown/content/attachment refs/notifications; reply retains topic-row closure/duplicate checks and lock. Request mutation response maps typed sanction denial to no-store 403; existing session/Origin/RBAC boundaries are independent.
+- Added 4 native PostgreSQL tests `tests/database/user-measure-forum-enforcement.test.ts`: topic/reply separation; overlap/disable/lift; replay matching committed result after sanction vs altered payload; terminal expiry by DB time, exact subject, unaffected other users and no new writes on denial.
+- CI diagnosis: early checks had 1 new test TypeScript fixture mismatch (fixed) and 36 PostgreSQL failures in six unrelated existing suites running *historical partial migration schemas* prior to `0058`, not an enforcement logic failure. Retained those historical contracts by **explicit test-fixture-only injected admission**, without catching undefined-table errors or weakening production default. `db/hyperdrive-forum.ts` and `db/forum-repository.ts` use required database restriction assertion by default.
+- **[Exact-head CI #42149121245](https://github.com/iliya1947/vico-forum/actions/runs/42149121245) — SUCCESS**: application 147/147 test files, **1910/1910 tests**; native PostgreSQL 46/46 files, **514/514 tests**; lint/typecheck/build, Drizzle/migrations parity, 63-table manifest, runtime checks and Worker local smoke PASS.
+- **Next bounded work after «...»**: enforcement on published own-post edits with committed edit receipt and retained attachments preserved; then remaining catalog entry points in separate bounded substeps. No AP-11/Settings/production, merge, permanent docs or coordinator files touched. Stopped after 3.1.
+
+
 ## AP-10 — bounded subtask 2.4: own/admin routes and private read projections (2026-11-06)
 
 - [Draft AP-10 PR #290](https://github.com/iliya1947/vico-forum/pull/290), stable exact head **`f56399707c4ba15dbeddf3e25b6a562607d0ea33`**. Earlier bounded 1.1–2.3 work unchanged; full AP-10 incomplete, no merge.
