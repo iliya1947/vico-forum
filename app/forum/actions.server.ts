@@ -20,12 +20,14 @@ import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import {
   ContentGenerationPlanningUnavailableError,
   type ContentGenerationActionResult,
 } from "../localization/content-generation-action.server";
 import {
   contentGenerationActionForRequest,
+  contentGenerationAdmissionForRequest,
   localeContext,
 } from "../localization/request-context";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
@@ -286,6 +288,7 @@ export async function topicAction({ request, params, context }: {
     const targetLocale = context.get(localeContext).translationLocale;
     try {
       if (intent === "generateTopicTitleTranslation") {
+        await contentGenerationAdmissionForRequest(context).assertAllowed(session.user.id);
         return generationResult(await runtime.capability.generateTopicTitle({
           actorId: session.user.id,
           revision: {
@@ -303,6 +306,7 @@ export async function topicAction({ request, params, context }: {
       if (!postId) return generationFailure("invalid", 400);
       const post = topic.posts.find((candidate) => candidate.id === postId);
       if (!post) return generationFailure("not-found", 404);
+      await contentGenerationAdmissionForRequest(context).assertAllowed(session.user.id);
       const input = {
         actorId: session.user.id,
         revision: {
@@ -320,6 +324,9 @@ export async function topicAction({ request, params, context }: {
           : await runtime.capability.generateAutomaticPostBody(input),
       );
     } catch (error) {
+      if (error instanceof UserMeasureRestrictedError) {
+        return generationFailure("forbidden", 403);
+      }
       if (error instanceof ContentGenerationPlanningUnavailableError) {
         return generationFailure("unavailable", 503);
       }
@@ -621,12 +628,12 @@ function generationResult(result: ContentGenerationActionResult) {
 }
 
 function generationFailure(
-  outcome: "invalid" | "not-found" | "unavailable",
+  outcome: "invalid" | "not-found" | "unavailable" | "forbidden",
   status: number,
 ) {
   return data<ContentGenerationActionResponse>(
     { operation: "contentGeneration", outcome },
-    { status },
+    { status, headers: { "Cache-Control": "private, no-store" } },
   );
 }
 

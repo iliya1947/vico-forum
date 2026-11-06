@@ -4,7 +4,7 @@ import type { LoadedLocaleRegistry } from "./persistent-registry";
 import type { UiTranslationStore } from "./persistent-sources";
 import type { TranslationBundleReader } from "./bundles";
 import type { ContentTranslationPresentationService } from "./content-translation-presentation";
-import type { ContentGenerationActionCapability } from "./content-generation-action.server";
+import { ContentGenerationPlanningUnavailableError, type ContentGenerationActionCapability } from "./content-generation-action.server";
 import type { ContentGenerationStatusReader } from "./content-generation-status";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
@@ -26,6 +26,19 @@ export const DISABLED_CONTENT_GENERATION_ACTION_RUNTIME: ContentGenerationAction
 export const contentGenerationActionContext = createContext<ContentGenerationActionRuntime>(
   DISABLED_CONTENT_GENERATION_ACTION_RUNTIME,
 );
+
+export interface ContentGenerationAdmission {
+  assertAllowed(actorId: string): Promise<void>;
+}
+
+/** Missing admission must never enable generation when a runtime is switched on. */
+export const contentGenerationAdmissionContext = createContext<ContentGenerationAdmission | null>(null);
+
+export function contentGenerationAdmissionForRequest(context: RouterContextProvider): ContentGenerationAdmission {
+  const admission = context.get(contentGenerationAdmissionContext);
+  if (!admission) throw new ContentGenerationPlanningUnavailableError();
+  return admission;
+}
 
 export class RegistryLoaderConfigurationError extends Error {
   constructor(options?: ErrorOptions) {

@@ -9,5 +9,5 @@ export type ContentGenerationActionResponse =
   | { readonly operation: "contentGeneration"; readonly outcome: "explicit-required" }
   | {
       readonly operation: "contentGeneration";
-      readonly outcome: "invalid" | "not-found" | "unavailable";
+      readonly outcome: "invalid" | "not-found" | "unavailable" | "forbidden";
     };

@@ -19,6 +19,7 @@ import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import {
   contentGenerationActionContext,
+  contentGenerationAdmissionContext,
   localeContext,
   type ContentGenerationActionRuntime,
 } from "../localization/request-context";
@@ -138,6 +139,7 @@ function generationContext(options: {
   permissions?: readonly PermissionKey[];
   locale?: string;
   topic?: typeof generationTopic | undefined;
+  admission?: { assertAllowed: (actorId: string) => Promise<void> } | null;
 }) {
   const value = context(
     writer(),
@@ -157,6 +159,9 @@ function generationContext(options: {
       topicId === options.topic?.id ? options.topic : undefined
     ),
   } as never);
+  value.set(contentGenerationAdmissionContext, options.admission === undefined
+    ? { assertAllowed: async () => {} }
+    : options.admission);
   value.set(
     contentGenerationActionContext,
     options.runtime ?? {
@@ -1572,6 +1577,76 @@ describe("forum write route actions", () => {
       expect(enqueuer.enqueue).toHaveBeenCalledWith({ translationTaskId: "translation-task-1" });
     }
     expect(detector.detect).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["generateTopicTitleTranslation", undefined, "generateTopicTitle"],
+    ["generatePostBodyTranslation", "post-1", "generateAutomaticPostBody"],
+    ["generateExplicitPostBodyTranslation", "post-1", "generateExplicitPostBody"],
+  ] as const)("denies new %s plans before budget, planner or provider calls", async (intent, postId, method) => {
+    const capability = generationCapability();
+    const admission = { assertAllowed: vi.fn(async () => {
+      throw new UserMeasureRestrictedError("translations.generate");
+    }) };
+    const contextValue = generationContext({ capability, topic: generationTopic, admission });
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent,
+        ...(postId ? { postId } : {}),
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: contextValue,
+    });
+    expect(response).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "forbidden" },
+      init: { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    });
+    expect(JSON.stringify(response)).not.toContain("translations.generate");
+    expect(admission.assertAllowed).toHaveBeenCalledExactlyOnceWith("session-user");
+    expect(capability[method]).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for missing or unavailable admission without changing disabled runtime", async () => {
+    const capability = generationCapability();
+    const missing = await topicAction({
+      request: request("/he/topics/topic-1", { intent: "generateTopicTitleTranslation" }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({ capability, topic: generationTopic, admission: null }),
+    });
+    expect(missing).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "unavailable" },
+      init: { status: 503 },
+    });
+    expect(capability.generateTopicTitle).not.toHaveBeenCalled();
+
+    const outage = { assertAllowed: vi.fn(async () => {
+      throw new ContentGenerationPlanningUnavailableError();
+    }) };
+    const unavailable = await topicAction({
+      request: request("/he/topics/topic-1", { intent: "generateTopicTitleTranslation" }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({ capability, topic: generationTopic, admission: outage }),
+    });
+    expect(unavailable).toMatchObject({ init: { status: 503 } });
+    expect(capability.generateTopicTitle).not.toHaveBeenCalled();
+
+    const disabledAdmission = { assertAllowed: vi.fn(async () => {
+      throw new Error("disabled generation guard must not execute");
+    }) };
+    const disabled = await topicAction({
+      request: request("/he/topics/topic-1", { intent: "generateTopicTitleTranslation" }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        runtime: { enabled: false },
+        topic: generationTopic,
+        admission: disabledAdmission,
+      }),
+    });
+    expect(disabled).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "unavailable" },
+      init: { status: 503 },
+    });
+    expect(disabledAdmission.assertAllowed).not.toHaveBeenCalled();
   });
 
   it("fails closed when generation is disabled and maps bounded planner outcomes", async () => {

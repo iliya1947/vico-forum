@@ -6,6 +6,7 @@ import { createHyperdriveForumAttachmentStore } from "../db/hyperdrive-forum-att
 import {
   contentTranslationPresentationContext,
   contentGenerationActionContext,
+  contentGenerationAdmissionContext,
   DISABLED_CONTENT_GENERATION_ACTION_RUNTIME,
   registryLoaderContext,
   uiTranslationStoreContext,
@@ -15,6 +16,7 @@ import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../db/
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
 import { ContentTranslationPresentationService } from "../app/localization/content-translation-presentation";
 import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
+import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-content-generation-admission";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 import { AuthSessionUnavailableError } from "../app/auth/request-context";
@@ -82,6 +84,7 @@ export default {
     context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, authorization));
     context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, authorization));
     context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,authorization));
+    context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);

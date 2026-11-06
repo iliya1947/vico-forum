@@ -13,6 +13,10 @@ import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { createHyperdriveContentGenerationAdmission } from "../../db/hyperdrive-content-generation-admission";
+import { contentGenerationAdmissionContext, contentGenerationActionContext, localeContext } from "../../app/localization/request-context";
+import { action as topicAction } from "../../app/routes/topic";
+import { ContentGenerationPlanningUnavailableError } from "../../app/localization/content-generation-action.server";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import { ComplaintConflictError } from "../../db/complaints-domain";
@@ -111,6 +115,105 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 new translation generation admission", () => {
+  function admission(searchPath = schema) {
+    return createHyperdriveContentGenerationAdmission(databaseUrl!, () =>
+      new Client({ connectionString: databaseUrl, options: "-c search_path=" + searchPath }));
+  }
+
+  it("uses the current PostgreSQL clock, independent measures and exact actor", async () => {
+    const guard = admission();
+    await guard.assertAllowed("target");
+    await createMeasure("translations.generate", "target", "2000-01-01T00:00:00Z");
+    await createMeasure("translations.generate", "other");
+    const disabled = await createMeasure("translations.generate");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    await guard.assertAllowed("target");
+
+    const first = await createMeasure("translations.generate");
+    const second = await createMeasure("translations.generate");
+    await expect(guard.assertAllowed("target")).rejects.toMatchObject({
+      restriction: "translations.generate",
+    });
+    await lift(first);
+    await expect(guard.assertAllowed("target")).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await guard.assertAllowed("issuer");
+    await lift(second);
+    await guard.assertAllowed("target");
+  });
+
+  it("fails closed if the authoritative restriction tables are missing", async () => {
+    await expect(admission("ap10_no_generation_schema").assertAllowed("target"))
+      .rejects.toThrow();
+  });
+
+  it("blocks title, automatic body and explicit body HTTP generation before any new planner work", async () => {
+    const guard = admission();
+    const context = new RouterContextProvider();
+    context.set(authSessionContext, { user: { id: "target" } } as never);
+    context.set(authorizationContext, {
+      forUser: () => ({ has: async (key: string) => key === "forum.translation.generate" }),
+    } as never);
+    context.set(forumReaderContext, {
+      readTopicPage: (id: string) => forum.readTopicPage(id),
+    } as never);
+    context.set(localeContext, { translationLocale: "he" } as never);
+    context.set(contentGenerationAdmissionContext, guard);
+    const requested: string[] = [];
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle: async () => { requested.push("title"); return { outcome: "queued" as const }; },
+        generateAutomaticPostBody: async () => { requested.push("automatic"); return { outcome: "queued" as const }; },
+        generateExplicitPostBody: async () => { requested.push("explicit"); return { outcome: "queued" as const }; },
+      },
+    });
+    const send = (intent: string, postId?: string) => topicAction({
+      context, params: { locale: "en", topicId },
+      request: new Request("https://forum.test/en/topics/" + topicId, {
+        method: "POST",
+        headers: { Origin: "https://forum.test" },
+        body: new URLSearchParams({ intent, ...(postId ? { postId } : {}) }),
+      }),
+    });
+    const measures = await createMeasure("translations.generate");
+    const existingPostId = (await forum.readTopicPage(topicId))?.posts[0]?.id;
+    if (!existingPostId) throw new Error("Help fixture initial post is missing");
+    for (const [intent, postId] of [
+      ["generateTopicTitleTranslation", undefined],
+      ["generatePostBodyTranslation", existingPostId],
+      ["generateExplicitPostBodyTranslation", existingPostId],
+    ] as const) {
+      const denied = await send(intent, postId);
+      expect(denied).toMatchObject({
+        data: { operation: "contentGeneration", outcome: "forbidden" },
+        init: { status: 403, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(denied)).not.toContain("translations.generate");
+    }
+    expect(requested).toEqual([]);
+    await lift(measures);
+    const allowed = await send("generateTopicTitleTranslation");
+    expect(allowed).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "queued" },
+      init: { status: 202 },
+    });
+    expect(requested).toEqual(["title"]);
+    await createMeasure("translations.generate");
+    await expect(guard.assertAllowed("target")).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(requested).toEqual(["title"]);
+  });
+
+  it("maps a genuine database timeout to unavailable but never treats it as permission", async () => {
+    const timedOut = createHyperdriveContentGenerationAdmission(databaseUrl!, () => ({
+      connect: async () => { throw new Error("timeout expired"); },
+      end: async () => {},
+    } as never));
+    await expect(timedOut.assertAllowed("target"))
+      .rejects.toBeInstanceOf(ContentGenerationPlanningUnavailableError);
+  });
 });
 
 describe("AP-10 Help signal submission admission", () => {
