@@ -115,11 +115,54 @@ describe("AP-10 private measure views and administrative choices",()=>{
       "topics.create","replies.create","attachments.upload",
     ]);
     expect(new FormData(form).has("publication")).toBe(false);
-    expect([...form.querySelectorAll('input:not([name])')]).toHaveLength(5);
+    expect([...form.querySelectorAll('input:not([name])')]).toHaveLength(4);
     fireEvent.click(toggle);
     expect(items.every(item=>!item.checked)).toBe(true);
     expect(toggle).toHaveProperty("indeterminate",false);
     expect(root.textContent).not.toContain("measuresGroupPublication");
+  });
+
+  it("hides administrative families from ordinary create and preserves ordinary choices",()=>{
+    const root=mount("en",<AdminMeasuresIndex locale="en"
+      target={{id:"target",name:"Target",measures:[]}} requestedTarget="target"
+      createId="create" access={access} feedback={undefined}/>);
+    const form=formFor(root,"create");
+    expect(form.querySelectorAll(".admin-forum-objects fieldset")).toHaveLength(4);
+    expect(form.querySelector('input[name="restriction"][value="admin.forum"]')).toBeNull();
+    fireEvent.click(children(groupFor(form))[0]!);
+    expect(new FormData(form).getAll("restriction")).toEqual(["topics.create"]);
+  });
+
+  it("shows administrative restrictions for the elevated creation permission hint",()=>{
+    const root=mount("en",<AdminMeasuresIndex locale="en"
+      target={{id:"target",name:"Target",measures:[]}} requestedTarget="target"
+      createId="create" access={access}
+      maySelectAdministrativeRestrictions feedback={undefined}/>);
+    const form=formFor(root,"create");
+    expect(form.querySelectorAll(".admin-forum-objects fieldset")).toHaveLength(5);
+    const admin=form.querySelector<HTMLInputElement>('input[name="restriction"][value="admin.usersAccess"]');
+    expect(admin).toBeInTheDocument();
+    fireEvent.click(admin!);
+    expect(new FormData(form).getAll("restriction")).toEqual(["admin.usersAccess"]);
+  });
+
+  it("scopes both change and accepted-appeal-change selectors by the same authority hint",()=>{
+    for(const elevated of [false,true]){
+      const root=mount("en",<AdminMeasureDetail locale="en"
+        measure={{...detail,targetUserId:"target",targetName:"Target"}}
+        access={access} changeId="change" liftId="lift" feedback={undefined}
+        reviewIds={[{appealId:detail.appeals[0]!.id,operationId:"review"}]}
+        maySelectAdministrativeRestrictions={elevated}/>);
+      const change=formFor(root,"change");
+      expect(change.querySelectorAll(".admin-forum-objects fieldset")).toHaveLength(elevated?5:4);
+      expect(Boolean(change.querySelector('input[name="restriction"][value="admin.forum"]'))).toBe(elevated);
+      const review=formFor(root,"review");
+      fireEvent.change(review.querySelector('select[name="outcome"]')!,{target:{value:"accepted"}});
+      fireEvent.change(review.querySelector('select[name="remedy"]')!,{target:{value:"change"}});
+      expect(review.querySelectorAll(".admin-forum-objects fieldset")).toHaveLength(elevated?5:4);
+      expect(Boolean(review.querySelector('input[name="restriction"][value="admin.forum"]'))).toBe(elevated);
+      cleanup();dispose();dispose=()=>{};
+    }
   });
 
   it.each(["en","ru","he"])("discovers scoped pending appeals with a link to exact review in %s",locale=>{
