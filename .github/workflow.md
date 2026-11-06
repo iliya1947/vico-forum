@@ -39,3 +39,7 @@
 
 - Second corrected-head coordinator pass 2 complete: AP10-MIRA-10 closed by cause; retained Create Topic / Help Question / Published Edit lifecycle, publication blocking and Cancel/cleanup boundaries verified; no new current-scope Editor finding
 - Next step: final regression/evidence sweep of PR #290 exact head `ad789c7bf28d4fe7896e8ddbf7757460e046da27`; AP10-MIRA-11 remains confirmed and no correction handoff starts until whole-PR review is complete
+
+- Second corrected-head coordinator final sweep complete on `ad789c7bf28d4fe7896e8ddbf7757460e046da27`: AP10-MIRA-01..10 remain closed; no additional current-scope findings confirmed
+- Coordinator verdict: NOT PASS solely because AP10-MIRA-11 remains open (exact measure detail exposes Change/Lift/Review controls when actor is below stored issuer floor although authoritative mutations reject them)
+- Next stage: one bounded AP10-MIRA-11 correction package to Лира; after new stable exact head and applicable CI/browser evidence, restart coordinator review. Лёва remains blocked until coordinator PASS
