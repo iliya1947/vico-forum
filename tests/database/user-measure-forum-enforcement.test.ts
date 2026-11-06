@@ -78,10 +78,12 @@ async function createMeasure(
   expiresAt: string | null = null,
 ) {
   const id = randomUUID();
+  const adminFamily = restriction.startsWith("admin.");
+  // Synthetic direct-fixture administrative measures represent elevated owner issuance.
   await client.query(`insert into user_measures
     (id, target_user_id, issuer_user_id, issuer_authority_floor, create_fingerprint, initial_reason, expires_at)
-    values ($1, $2, 'issuer', 1, $3, 'Test violation', $4)`,
-    [id, target, "e".repeat(64), expiresAt]);
+    values ($1, $2, 'issuer', $3, $4, 'Test violation', $5)`,
+    [id, target, adminFamily ? 3 : 1, "e".repeat(64), expiresAt]);
   await client.query(
     "insert into user_measure_restrictions(measure_id, restriction_key) values ($1, $2)",
     [id, restriction],
@@ -157,6 +159,82 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
       await client.query("delete from authz_user_roles where user_id='issuer'");
     }
   }
+
+  it("rejects ordinary-manager administrative families on create, change and accepted appeal", async () => {
+    await withIssuerManager(async pool => {
+      const svc = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, "other"));
+      const before = Number((await client.query("select count(*)::int as n from admin_history")).rows[0].n);
+      await expect(svc.create({
+        id:randomUUID(),actorId:"issuer",targetUserId:"target",
+        reason:"Unauthorized administrative restriction",restrictions:["admin.usersAccess"],expiresAt:null,
+      })).rejects.toMatchObject({name:"UserMeasureForbiddenError"});
+      expect(Number((await client.query("select count(*)::int as n from admin_history")).rows[0].n))
+        .toBe(before);
+      const created = await svc.create({
+        id:randomUUID(),actorId:"issuer",targetUserId:"target",
+        reason:"Ordinary action",restrictions:["replies.create"],expiresAt:null,
+      });
+      await expect(svc.change({
+        measureId:created.id,operationId:randomUUID(),actorId:"issuer",expectedVersion:1,
+        reason:"Escalation",restrictions:["admin.forum"],expiresAt:null,
+      })).rejects.toMatchObject({name:"UserMeasureForbiddenError"});
+      const appeal = await svc.submitAppeal({
+        id:randomUUID(),measureId:created.id,actorId:"target",body:"Request review",
+      });
+      await expect(svc.resolveAppeal({
+        measureId:created.id,appealId:appeal.id,operationId:randomUUID(),actorId:"issuer",
+        expectedVersion:1,outcome:"accepted",explanation:"Unauthorized remedy",remedy:"change",
+        restrictions:["admin.complaints"],expiresAt:null,
+      })).rejects.toMatchObject({name:"UserMeasureForbiddenError"});
+      const state = await client.query("select version from user_measures where id=$1",[created.id]);
+      expect(state.rows[0].version).toBe(1);
+      expect((await client.query("select status from user_measure_appeals where id=$1",[appeal.id])).rows[0].status)
+        .toBe("pending");
+      expect(Number((await client.query("select count(*)::int as n from admin_history")).rows[0].n))
+        .toBe(before+1);
+    });
+  });
+
+  it("stops an elevated-manager measure suppressing permissions after a new equal-rank grant", async () => {
+    await withIssuerManager(async pool => {
+      await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+        values('issuer','admin.users.blocks.managePrivileged','allow'),
+              ('target','forum.topic.pin','allow')`);
+      try {
+        const service = new UserMeasuresService(new PostgresUserMeasuresRepository(pool,"other"));
+        const created = await service.create({
+          id:randomUUID(),actorId:"issuer",targetUserId:"target",
+          reason:"Elevated manager decision",restrictions:["admin.forum"],expiresAt:null,
+        });
+        const floor = await client.query("select issuer_authority_floor from user_measures where id=$1",[created.id]);
+        expect(floor.rows[0].issuer_authority_floor).toBe(2);
+        const rawDb = createAuthorizationCapability(new PostgresAuthorizationRepository(pool,"other"));
+        const effective = () => withForumAdministrativeRestrictions(
+          rawDb as AuthorizationManagementCapability,databaseUrl!,
+          () => new Pool({connectionString:databaseUrl,options:"-c search_path="+schema,max:1}),
+          "other",
+        );
+        expect(await effective().forUser("target").has("forum.topic.pin")).toBe(false);
+        await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          values('target','admin.users.blocks.managePrivileged','allow')`);
+        // The raw grant is real, not a sanction-induced reduction of authority.
+        expect(await rawDb.forUser("target").has("forum.topic.pin")).toBe(true);
+        expect(await effective().forUser("target").has("forum.topic.pin")).toBe(true);
+        expect((await effective().forUser("target").resolve()).effectivePermissions)
+          .toContain("forum.topic.pin");
+        expect((await client.query("select lifted_at from user_measures where id=$1",[created.id])).rows[0].lifted_at)
+          .toBeNull();
+        await client.query(`delete from authz_user_permission_overrides
+          where user_id='target' and permission_key='admin.users.blocks.managePrivileged'`);
+        expect(await effective().forUser("target").has("forum.topic.pin")).toBe(false);
+      } finally {
+        await client.query(`delete from authz_user_permission_overrides where
+          (user_id='issuer' and permission_key='admin.users.blocks.managePrivileged') or
+          (user_id='target' and permission_key='forum.topic.pin') or
+          (user_id='target' and permission_key='admin.users.blocks.managePrivileged')`);
+      }
+    });
+  });
 
   it("filters all five administrative keys without changing grants, raw privileged authority, or participation", async () => {
     const initial = effective().forUser("target");
