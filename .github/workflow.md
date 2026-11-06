@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 coordinator whole-PR review
+- Текущий этап: AP-10 correction cycle
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
 - Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
 - Technical plan: coordinator PASS, AP10-PLAN-MIRA-01..06 closed
@@ -13,7 +13,7 @@
 - Documentation PR: #291 Draft/open/mergeable, exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, 6 Markdown files
 - Documentation CI #42173496053: SUCCESS
 - Implementation/docs не merged; production/Stage 6 не менялись
-- Current reviewer: Мира; Лёва independent review не назначен до coordinator PASS
+- Current executor: Лира; Мира ждёт новый stable exact head для повторного coordinator whole-PR review; Лёва independent review не назначен до coordinator PASS
 - Owner visual acceptance: не запрошен и не инициируется
 - Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
 - Coordinator pass 2 complete: authority/permissions/privileged targets; confirmed AP10-MIRA-03..04
@@ -22,6 +22,6 @@
 - Coordinator pass 5 complete: tests/CI coverage, migration/runtime privileges, browser evidence and final gap sweep; no additional defects
 - Coordinator whole-PR review complete: NOT PASS, seven confirmed current-scope defects AP10-MIRA-01..07
 - Independent Codex review remains blocked until a corrected stable implementation head passes a new coordinator cycle
-- Следующий шаг: Мира фиксирует для Лиры один consolidated correction package по AP10-MIRA-01..07; после исправлений — applicable CI/browser evidence и новый coordinator whole-PR review exact head
+- Correction package AP10-MIRA-01..07 зафиксирован для Лиры в service-channel.md; Лира исправляет PR #290 одним пакетом, выполняет applicable CI/browser evidence и фиксирует новый stable exact head. После этого Мира начинает новый coordinator whole-PR review exact head
 - Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
