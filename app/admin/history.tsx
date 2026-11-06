@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { AdminHistoryEvent, AdminHistoryPage, AdminHistoryChange, UserMeasureHistoryChange, UserMeasureHistoryState } from "../../db/admin-history";
 
@@ -38,9 +39,9 @@ function MeasureHistoryDetails({change,locale}: {change:UserMeasureHistoryChange
     ? items.length ? items.map((item,index)=><span key={item}>{index>0?", ":null}<code dir="ltr">{item}</code></span>)
       : t("historyNoValue")
     : t("historyNoValue");
-  const previous=(render:(state:UserMeasureHistoryState)=>React.ReactNode)=>
+  const previous=(render:(state:UserMeasureHistoryState)=>ReactNode)=>
     before?render(before):t("historyNoValue");
-  const compare=(left:React.ReactNode,right:React.ReactNode)=>
+  const compare=(left:ReactNode,right:ReactNode)=>
     <>{left} <span aria-hidden="true">→</span> {right}</>;
   const restrictionsChanged=!before || before.restrictions.join("\u0000")!==after.restrictions.join("\u0000");
   return <>
