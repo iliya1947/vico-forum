@@ -236,6 +236,111 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
     });
   });
 
+  it("keeps all direct administrative guards aligned with issuer floor across a raw grant and revoke", async () => {
+    await withIssuerManager(async pool => {
+      const permissions = [
+        "forum.topic.pin", "forum.complaint.priority.manage",
+        "forum.attachmentSecurity.read", "access.authorization.manage",
+        "admin.users.blocks.manage",
+      ] as const satisfies readonly PermissionKey[];
+      const ownerId = "configured-owner";
+      const roleId = randomUUID();
+      const targetTopicId = randomUUID();
+      const authz = new PostgresAuthorizationRepository(pool, ownerId);
+      const rawDb = createAuthorizationCapability(authz);
+      const projected = () => withForumAdministrativeRestrictions(
+        rawDb as AuthorizationManagementCapability, databaseUrl!,
+        () => new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 1 }),
+        ownerId,
+      );
+      const measures = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, ownerId));
+      const reader = new PostgresUserMeasureReader(pool, ownerId);
+      const complaints = new DrizzleComplaintsRepository(drizzle(client));
+      const priority = await complaints.readPrioritySettings();
+      const nextMeasure = () => ({
+        id:randomUUID(), actorId:"target", targetUserId:"other",
+        reason:"Independent ordinary measure", restrictions:["topics.create" as const], expiresAt:null,
+      });
+      await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+        values ('issuer','admin.users.blocks.managePrivileged','allow')`);
+      for (const key of permissions) {
+        await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          values ('target',$1,'allow')`, [key]);
+      }
+      try {
+        for (const family of ["admin.forum", "admin.complaints", "admin.security", "admin.usersAccess"] as const) {
+          await measures.create({
+            id:randomUUID(), actorId:"issuer", targetUserId:"target",
+            reason:"Elevated administrative measure", restrictions:[family], expiresAt:null,
+          });
+        }
+        await createMeasure("replies.create", "target");
+        await forum.createTopicWithInitialPost(newTopic(targetTopicId, "other"));
+        const visible = [
+          "forum.topic.pin", "forum.complaint.priority.manage",
+          "forum.attachmentSecurity.read", "access.authorization.manage",
+          "admin.users.blocks.manage",
+        ] as const satisfies readonly PermissionKey[];
+        for (const permission of visible) {
+          expect(await rawDb.forUser("target").has(permission)).toBe(true);
+          expect(await projected().forUser("target").has(permission)).toBe(false);
+        }
+        await expect(forum.pinTopic(targetTopicId, "target"))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(complaints.savePrioritySettings("target", priority))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(authz.createCustomRole("target", {
+          id:roleId, slug:"ap10-floor-regression", displayName:"Floor regression",
+        })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(reader.adminTarget("target", "other"))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(measures.create(nextMeasure()))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+
+        await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          values ('target','admin.users.blocks.managePrivileged','allow')`);
+        for (const permission of visible) {
+          expect(await projected().forUser("target").has(permission)).toBe(true);
+        }
+        await forum.pinTopic(targetTopicId, "target");
+        expect(await forum.readTopicPinState(targetTopicId)).toBe(true);
+        await complaints.savePrioritySettings("target", priority);
+        await authz.createCustomRole("target", {
+          id:roleId, slug:"ap10-floor-regression", displayName:"Floor regression",
+        });
+        const created = await measures.create(nextMeasure());
+        expect((await reader.adminTarget("target", "other")).measures.some(m => m.id === created.id))
+          .toBe(true);
+        // Ordinary user restrictions are not authority-floor gated.
+        await expect(forum.createPost(newReply())).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+
+        await client.query(`update authz_user_permission_overrides set effect='deny'
+          where user_id='target' and permission_key='admin.users.blocks.managePrivileged'`);
+        for (const permission of visible) {
+          expect(await projected().forUser("target").has(permission)).toBe(false);
+        }
+        await expect(forum.unpinTopic(targetTopicId, "target"))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        expect(await forum.readTopicPinState(targetTopicId)).toBe(true);
+        await expect(complaints.savePrioritySettings("target", {
+          ...priority, version:priority.version + 1,
+        })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(authz.deleteCustomRole("target", roleId))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(reader.adminTarget("target", "other"))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(measures.create(nextMeasure()))
+          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      } finally {
+        await client.query(`delete from authz_user_permission_overrides
+          where (user_id='issuer' and permission_key='admin.users.blocks.managePrivileged')
+             or (user_id='target' and permission_key = any($1::text[]))`,
+          [[...permissions, "admin.users.blocks.managePrivileged"]]);
+        await client.query("delete from authz_roles where id=$1", [roleId]);
+      }
+    });
+  });
+
   it("filters all five administrative keys without changing grants, raw privileged authority, or participation", async () => {
     const initial = effective().forUser("target");
     expect(await initial.has("access.authorization.manage")).toBe(true);
