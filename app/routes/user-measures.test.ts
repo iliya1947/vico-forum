@@ -150,6 +150,20 @@ describe("AP-10 own/private and admin measure routes",()=>{
     expect((await list()).data.maySelectAdministrativeRestrictions).toBe(false);
   });
 
+  it("rejects malformed create targetId before invoking the capability, with private typed 400",async()=>{
+    const manager=env();
+    for(const targetId of ["invalid\0target","a".repeat(2049),"💻".repeat(513)]) {
+      const form=new URLSearchParams({intent:"create",measureId,targetId,
+        reason:"Violation",expiresAt:"",restriction:"replies.create"});
+      const result=await adminCreate({params:{locale:"en"},context:manager.context,
+        request:post("admin/measures",form)});
+      expect(actionStatus(result)).toBe(400);
+      expect(result.data).toEqual({error:"invalid"});
+      expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+    }
+    expect(manager.capability.create).not.toHaveBeenCalled();
+  });
+
   it("uses session actor for create and direct change/lift/review with exact measure/version",async()=>{
     const manager=env();
     const createForm=new URLSearchParams({intent:"create",measureId,targetId:"target",
