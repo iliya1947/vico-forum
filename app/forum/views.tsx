@@ -2308,6 +2308,17 @@ export function TopicView({
     setClosedReplyResponseVersion(topic.closureVersion);
     void revalidator.revalidate();
   }, [navigation.state, forumWriteError, actionData, topic.closureVersion, revalidator]);
+  // A denied stale reply does not reliably revalidate its route on HTTP 403.
+  // Refresh permission/restriction presentation once without replaying the POST or
+  // unmounting the already-open editor (which retains text and explicit Cancel).
+  const lastDeniedReplyResponse = useRef<unknown>(null);
+  useEffect(() => {
+    if (navigation.state !== "idle" || forumWriteError !== "forbidden" || !actionData
+      || replyPublicationRef.current?.topicId !== topic.id
+      || lastDeniedReplyResponse.current === actionData) return;
+    lastDeniedReplyResponse.current = actionData;
+    void revalidator.revalidate();
+  }, [navigation.state, forumWriteError, actionData, topic.id, revalidator]);
   const closedReplyErrorActive = forumWriteError === "topicClosed"
     && (closedReplyResponseVersion === null || closedReplyResponseVersion === topic.closureVersion);
   const replyPublicationAllowed = canParticipate && !closedReplyErrorActive;
