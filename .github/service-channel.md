@@ -66,3 +66,33 @@
 - Documentation PR #291 — отдельный review/closeout; AP-11/Settings, owner-role/last-manager cleanup и production/Stage 6 не начинать в рамках этой correction.
 
 Общий утверждённый контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+
+## AP-10 bounded correction AP10-LEV-01 — Лира
+
+Исполнитель: **Лира**. Implementation PR: **#290**. Reviewed exact head: `9fecd925a256062e9892235f4ba02ed3147de1e3`.
+
+Независимый review Лёвы завершён NOT PASS с одним finding `AP10-LEV-01 [P3]`. Мира перепроверила причинную цепочку и current-scope применимость: finding подтверждён.
+
+### AP10-LEV-01 — malformed create targetId должен давать controlled 400, а не PostgreSQL 500
+
+Фактическая проблема:
+- canonical POST `/:locale/admin/measures` принимает `targetId` из form data и передаёт его в AP-10 create path;
+- lookup-boundary уже валидирует target ID и запрещает NUL/недопустимый размер, но create path использует более слабую identity validation;
+- NUL-containing target ID проходит domain input validation и доходит до PostgreSQL text parameter, где возникает low-level database error вместо typed invalid-input result;
+- наблюдаемый HTTP outcome — 500; корректно сформированный, но отсутствующий target остаётся 404;
+- measure/History при этом не создаются.
+
+Требуемый результат:
+1. Malformed client-supplied target ID на create boundary, включая подтверждённый NUL case, отклоняется как typed invalid input до DB и даёт private/no-store HTTP 400.
+2. Valid-but-missing target продолжает давать 404.
+3. Неизвестные SQL/programming failures не маскируются общим 400.
+4. Session actor authority, target hierarchy, measure lifecycle, History, schema/permissions и read boundaries не меняются.
+
+Критерии готовности:
+- локальное исправление в текущем AP-10 scope без новой архитектуры, schema/migration/dependency changes;
+- focused regression воспроизводит malformed NUL target на create path и подтверждает 400 + отсутствие measure/History side effects;
+- существующие valid create, missing target 404, authorization/issuer-floor/privacy/replay invariants не регрессируют;
+- applicable exact-head CI/checks и AP-10 isolated browser acceptance выполняются на новом stable head;
+- #291, AP-11/Settings, owner-role/last-manager cleanup, Stage 6 и production не трогать;
+- после завершения Лира фиксирует новый stable implementation head и фактические результаты проверок в служебном PR и останавливается. Затем Мира начинает новый coordinator cycle; Лёва повторно проверяет только после coordinator PASS.
