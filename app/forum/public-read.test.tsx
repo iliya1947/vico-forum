@@ -4237,7 +4237,7 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       expect(action).toHaveBeenCalledTimes(1);
 
       releaseRefresh();
-      expect(await screen.findByText("You cannot post replies here now. Your text remains in the editor.")).toBeVisible();
+      await waitFor(() => expect(screen.getByText("You cannot post replies here now. Your text remains in the editor.")).toBeVisible());
       expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
       expect(textarea).toHaveValue("Reply retained after deny");
       expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
