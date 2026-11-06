@@ -403,7 +403,7 @@ describe("AP-10 own appeals and authoritative review (PostgreSQL 17)", () => {
     await expect(decide(a.id, appeal.id, 1, {actorId:"target"}))
       .rejects.toBeInstanceOf(UserMeasureForbiddenError);
     expect((await appeals(a.id))[0].status).toBe("pending");
-    expect((await appeals(b.id)).toEqual([]);
+    expect(await appeals(b.id)).toEqual([]);
     await lift(b.id,1);
     expect((await state(a.id)).lifted_at).toBeNull();
     expect((await appeals(a.id))[0].status).toBe("pending");
