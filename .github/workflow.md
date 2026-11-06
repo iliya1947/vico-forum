@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 implementation reviews завершены PASS; coordinator readiness / отдельный docs closeout
+- Текущий этап: AP-10 implementation ready for owner merge; documentation closeout после merge
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
 - Implementation PR: #290 Draft/open/unmerged
 - Reviewed stable exact head: `ef313919f6613c54db6ddb50765c968744101306`
@@ -13,6 +13,10 @@
 - Exact-head CI #42218475676 и isolated browser #42218475943 SUCCESS (author CI)
 - Собственные reruns: 289 app/route/UI/Worker + 78 PostgreSQL tests PASS; build PASS; actual Chromium/Worker/Better Auth/PG 19 case groups PASS; собственные HTTP/domain probes PASS
 - Лёва review завершил, implementation не менял; любое изменение head требует coordinator-first cycle
-- Следующий шаг: Мира принимает independent PASS, завершает readiness/отдельный documentation closeout #291; merge выполняет владелец
+- Следующий шаг: владелец merge #290. После merge Мира обновляет #291 относительно нового main и завершает documentation closeout; затем owner merge #291
 - Documentation PR #291 отдельный Draft; этим review не одобрен/не merged
 - Owner visual acceptance не инициировалась; production/Stage 6, AP-11/Settings, post-admin owner-role/last-manager cleanup не начинались; Марк не назначен
+
+- Repeated independent technical review PASS принят: #290 exact head `ef313919f6613c54db6ddb50765c968744101306` ready for owner merge; implementation frozen
+- Documentation #291 inspected before merge: current-state wording still reflects pre-review state, so #291 is intentionally not merge-ready until #290 actually enters main and docs are refreshed against that factual state
+- Next developer action: merge #290 only. Do not merge #291 yet
