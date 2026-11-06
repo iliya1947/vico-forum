@@ -160,13 +160,44 @@ try:
             'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
         record("restriction-selector-follows-current-elevated-grant")
 
+        # The subject is an existing builtin-admin test actor and therefore has
+        # independent authorization management. Use its real UI to revoke/grant
+        # the manager; the target's inline writes remain performed by the manager.
+        manager_authorization_events_before = sql("""select count(*)::int as total
+          from admin_history where target_type='user' and target_id=$1
+          and action='user.overrideChanged'""", [manager_id])[0]["total"]
+
+        def set_manager_authz(effect):
+            document(subject, "/en/admin/authorization")
+            card = subject.locator('.admin-user-card:has(input[name="userId"][value="' +
+                                   manager_id + '"])')
+            expect(card).to_have_count(1)
+            row = card.locator('form.admin-override-row:has(input[name="permission"]'
+                               '[value="access.authorization.manage"])')
+            expect(row).to_have_count(1)
+            before_events = sql("""select count(*)::int as total from admin_history
+              where target_type='user' and target_id=$1
+              and action='user.overrideChanged'""", [manager_id])[0]["total"]
+            row.locator('select[name="effect"]').select_option(effect)
+            with subject.expect_response(lambda r: r.request.method == "POST"
+                                         and "/admin/authorization" in r.url) as changed:
+                row.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, ("manager authorization", effect, changed.value.status)
+            expect(subject.locator('.admin-user-card:has(input[name="userId"][value="' +
+                manager_id + '"]) form.admin-override-row:has(input[name="permission"]'
+                '[value="access.authorization.manage"]) select[name="effect"]')).to_have_value(effect)
+            assert sql("""select effect from authz_user_permission_overrides
+              where user_id=$1 and permission_key='access.authorization.manage'""",
+              [manager_id]) == [{"effect": effect}]
+            assert sql("""select count(*)::int as total from admin_history
+              where target_type='user' and target_id=$1
+              and action='user.overrideChanged'""", [manager_id])[0]["total"] == before_events + 1
+
         # AP-11 connected Users detail -> canonical inline authz -> History ->
         # same-session read-only recovery after fresh permission revocation.
         user_path = "/en/admin/users/" + quote(other_id, safe="")
         document(other, user_path, 403)
-        sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
-          values($1,'access.authorization.manage','deny')
-          on conflict(user_id,permission_key) do update set effect='deny'""", [manager_id])
+        set_manager_authz("deny")
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(0)
         expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
@@ -174,9 +205,7 @@ try:
         document(manager, "/en/admin/authorization", 403)
         record("ap11-users-readonly-independent-of-authz-management")
 
-        # Fixture grant only; all tested assignment/override writes use the real UI.
-        sql("""update authz_user_permission_overrides set effect='allow'
-          where user_id=$1 and permission_key='access.authorization.manage'""", [manager_id])
+        set_manager_authz("allow")
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(1)
         history_before = sql("""select count(*)::int as total from admin_history
@@ -224,8 +253,7 @@ try:
         document(manager, user_path)
         override = manager.locator(override_path)
         expect(override).to_have_count(1)
-        sql("""update authz_user_permission_overrides set effect='deny'
-          where user_id=$1 and permission_key='access.authorization.manage'""", [manager_id])
+        set_manager_authz("deny")
         override.locator('select[name="effect"]').select_option("inherit")
         with manager.expect_response(lambda r: r.request.method == "POST" and
                                      "/admin/authorization" in r.url) as denied:
@@ -239,12 +267,19 @@ try:
         assert sql("""select count(*)::int as total from admin_history
           where target_type='user' and target_id=$1""", [other_id])[0]["total"] == len(history)
 
-        sql("""update authz_user_permission_overrides set effect='allow'
-          where user_id=$1 and permission_key='access.authorization.manage'""", [manager_id])
+        set_manager_authz("allow")
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(1)
         expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
         record("ap11-users-same-session-revoke-readonly-no-replay")
+        manager_events = sql("""select action from admin_history where target_type='user'
+          and target_id=$1 and action='user.overrideChanged' order by position""", [manager_id])
+        assert [event["action"] for event in manager_events][manager_authorization_events_before:] == [
+            "user.overrideChanged", "user.overrideChanged",
+            "user.overrideChanged", "user.overrideChanged"
+        ], manager_events
+        record("ap11-canonical-manager-authz-grant-revoke-history")
+
 
         # Restore the existing participant through canonical UI before the AP-10 cases.
         restored_override = manager.locator(override_path)
