@@ -154,7 +154,7 @@ export class PostgresUserMeasureReader {
     return this.read(async client => {
       const lock = await client.query("select id from authz_mutation_lock where id=1 for update");
       if (lock.rowCount !== 1) throw new UserMeasureConflictError("authorization lock missing");
-      await assertNoActiveUserMeasureRestrictionPg(client, actorId, "admin.usersAccess");
+      await assertNoActiveUserMeasureRestrictionPg(client, actorId, "admin.usersAccess", ownerId);
       const authorization = new PostgresAuthorizationRepository(this.pool, ownerId);
       const actor = await authorization.resolveUser(actorId, client);
       const actorRawPermissions = new Set(actor.effectivePermissions);
@@ -203,7 +203,7 @@ export class PostgresUserMeasureReader {
       const lock = await client.query("select id from authz_mutation_lock where id=1 for update");
       if (lock.rowCount !== 1) throw new UserMeasureConflictError("authorization lock missing");
       // Reject before any private target/measure details, independently of raw authority.
-      await assertNoActiveUserMeasureRestrictionPg(client, actorId, "admin.usersAccess");
+      await assertNoActiveUserMeasureRestrictionPg(client, actorId, "admin.usersAccess", ownerId);
       let subject = targetId;
       if (measureId) {
         const rows = await client.query<{ target_user_id: string }>(
