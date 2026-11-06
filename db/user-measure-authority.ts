@@ -1,5 +1,6 @@
 import type { PermissionKey } from "../app/authorization/catalog";
-import { USER_MEASURE_ADMIN_PERMISSION_FAMILIES } from "../app/admin/user-measure-restrictions";
+import { hasAdministrativeUserMeasureRestrictions, USER_MEASURE_ADMIN_PERMISSION_FAMILIES,
+  type UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 
 /** A separate AP-10 authority hierarchy, not an RBAC role or permission override. */
 export const BLOCK_MANAGE_PERMISSION = "admin.users.blocks.manage" as const satisfies PermissionKey;
@@ -49,6 +50,15 @@ export function rawUserMeasureAuthorityLevel(
     if (permissions.has(permission)) return 1;
   }
   return 0;
+}
+
+/** Guard latent administrative sanctions before saving them, even for ordinary targets. */
+export function assertUserMeasureAdminRestrictionsAuthority(
+  actorLevel: UserMeasureAuthorityLevel,
+  restrictions: readonly UserMeasureRestrictionId[],
+): void {
+  if (hasAdministrativeUserMeasureRestrictions(restrictions) && actorLevel < 2)
+    throw new UserMeasureForbiddenError();
 }
 
 export interface UserMeasureAuthorityInput {

@@ -3,7 +3,8 @@ import { validateUserMeasureRestrictions, type UserMeasureRestrictionId } from "
 import { appendUserMeasureHistory, type UserMeasureHistoryState } from "./admin-history";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
-import { assertUserMeasureAuthority, requireUserMeasureOwnerId, UserMeasureForbiddenError } from "./user-measure-authority";
+import { assertUserMeasureAuthority, assertUserMeasureAdminRestrictionsAuthority,
+  requireUserMeasureOwnerId, UserMeasureForbiddenError } from "./user-measure-authority";
 
 export class InvalidUserMeasureInputError extends Error {}
 export class UserMeasureNotFoundError extends Error {}
@@ -179,6 +180,7 @@ export class PostgresUserMeasuresRepository {
         return { id: input.id, version: 1 };
       }
       await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
+      assertUserMeasureAdminRestrictionsAuthority(issuerLevel, input.restrictions);
 
       await this.requireFutureExpiry(client, input.expiresAt);
       await client.query(`insert into user_measures
@@ -381,6 +383,7 @@ export class PostgresUserMeasuresRepository {
     const before = await this.measureState(client, current);
     if (kind === "change") {
       const change = input as ValidatedChange;
+      assertUserMeasureAdminRestrictionsAuthority(issuerLevel as 0 | 1 | 2 | 3, change.restrictions);
       if (sameRestrictions(before.restrictions, change.restrictions) && before.expiresAt === change.expiresAt) {
         if (requireChange) throw new UserMeasureConflictError("accepted change must modify the measure");
         return { changed: false, before, after: before };
