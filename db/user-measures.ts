@@ -86,7 +86,7 @@ export class UserMeasuresService {
   async create(input: CreateUserMeasureInput): Promise<MeasureCreateResult> {
     const id = uuid(input.id, "measure id");
     const actorId = identity(input.actorId, "actor id");
-    const targetUserId = identity(input.targetUserId, "target id");
+    const targetUserId = createTargetIdentity(input.targetUserId);
     const reason = explanation(input.reason);
     const restrictions = restrictionSet(input.restrictions);
     const expiresAt = instant(input.expiresAt);
@@ -560,6 +560,15 @@ function identity(value: unknown, field: string): string {
     throw new InvalidUserMeasureInputError(field + " is invalid");
   }
   return value;
+}
+// The route and direct service callers must reject malformed user IDs before a
+// PostgreSQL text parameter is constructed. Lookup uses the same 2048-byte bound.
+function createTargetIdentity(value: unknown): string {
+  const targetId = identity(value, "target id");
+  if (targetId.includes("\0") || new TextEncoder().encode(targetId).length > 2048) {
+    throw new InvalidUserMeasureInputError("target id is invalid");
+  }
+  return targetId;
 }
 function uuid(value: unknown, field: string): string {
   if (typeof value !== "string" ||
