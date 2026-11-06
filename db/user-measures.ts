@@ -179,7 +179,7 @@ export class PostgresUserMeasuresRepository {
         }
         return { id: input.id, version: 1 };
       }
-      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
+      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess", ownerId);
       assertUserMeasureAdminRestrictionsAuthority(issuerLevel, input.restrictions);
 
       await this.requireFutureExpiry(client, input.expiresAt);
@@ -274,7 +274,7 @@ export class PostgresUserMeasuresRepository {
         return { appealId: input.appealId, measureId: current.id,
           outcome: input.outcome, version: prior.context.after!.version as number, remedy: input.remedy };
       }
-      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
+      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess", ownerId);
       if (appeal.status !== "pending") throw new UserMeasureConflictError("appeal has already been resolved");
       await this.assertActive(client, current);
       if (current.version !== input.expectedVersion) {
@@ -465,7 +465,7 @@ export class PostgresUserMeasuresRepository {
         }
         return { id: input.measureId, version: replay.context.after!.version as number, changed: true };
       }
-      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
+      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess", ownerId);
 
       const applied = await this.applyLockedTransition(
         client, current, input.actorId, issuerLevel, input,
