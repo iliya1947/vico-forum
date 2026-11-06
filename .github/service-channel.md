@@ -108,3 +108,31 @@
 - Unknown SQL/programming failures не превращены в общий 400; authorization, target hierarchy, issuer floor, replay, schema, migrations, History и permissions не менялись.
 - Correction delta проверен целиком; новых current-scope findings в пяти изменённых файлах не подтверждено.
 - Coordinator status пока не финальный PASS: следующий шаг — final regression/evidence sweep нового exact head против уже закрытого AP-10 scope. Лёву до завершения этого sweep и coordinator PASS повторно не подключать.
+
+
+## AP-10 post-LEV-correction coordinator PASS and repeated independent review handoff
+
+- Coordinator whole-PR cycle завершён на stable implementation exact head `ef313919f6613c54db6ddb50765c968744101306`; base/main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+- PR #290 остаётся Draft/open/mergeable. Main не изменился. Служебный PR #251 по-прежнему содержит ровно 7 рабочих файлов. Documentation PR #291 остаётся отдельным Draft exact head `e54f1b23ea8030df6171932cb640d1706867af6c` и в этой correction не менялся.
+- Exact-head CI #42218475676 — SUCCESS: lint/typecheck/application tests/build/UI preview, migration protection/metadata/Drizzle parity, PostgreSQL 17 migrations/schema manifest/runtime privilege/provisioning/Worker smoke — SUCCESS.
+- Exact-head AP-10 isolated browser acceptance #42218475943 — SUCCESS: disposable PostgreSQL + built Worker + Better Auth + authenticated Chromium. Включён actual malformed-target regression: NUL/oversized create target → private/no-store 400, valid missing target → 404, без новых user_measures/admin_history.
+- **AP10-LEV-01 закрыт по исходной причине:** canonical create route и independent domain service reject malformed target identity до SQL. Unknown SQL/programming failures не маскируются; valid create/missing-target semantics сохранены.
+- Correction delta от `9fecd925a256062e9892235f4ba02ed3147de1e3` — 7 commits / 5 files; изменения локальны create-target validation и regressions. Они не меняют schema/migrations, permissions/grants, authority/issuer-floor hierarchy, restriction enforcement, privacy/identity projection, measure/appeal lifecycle, History semantics, replay/revalidation, Editor lifecycle или localization.
+- Ранее coordinator-closed AP10-MIRA-01..11 не регрессировали по затронутым boundaries. Дополнительных current-scope findings в final regression/evidence sweep не подтверждено.
+- **Coordinator verdict: PASS** на exact head `ef313919f6613c54db6ddb50765c968744101306`.
+- Owner visual acceptance не запрашивалась и не инициировалась. Production/Stage 6, AP-11/Settings и post-admin owner-role/last-manager cleanup не начинать в рамках этого review.
+
+### Repeated independent technical review — Лёва
+
+Review target: implementation PR #290, exact head `ef313919f6613c54db6ddb50765c968744101306`.
+
+Требуемый результат: независимо проверить весь AP-10 implementation scope против актуальных source-of-truth, approved technical plan и current Stage и выдать собственный verdict по этому exact head.
+
+Критерии готовности:
+- review относится именно к `ef313919f6613c54db6ddb50765c968744101306`; любое изменение implementation head прекращает этот review и возвращает workflow к coordinator-first cycle;
+- проверить весь AP-10 scope, а не только последнюю correction delta или статус CI;
+- возможный finding доказать по полной причинной цепочке и отдельно классифицировать как current-scope defect либо future groundwork;
+- не считать предыдущие coordinator/independent findings или их закрытие доказательством текущего результата;
+- не изменять implementation во время review;
+- проверить применимые authority/issuer-floor, input/HTTP boundaries, restriction enforcement, privacy, lifecycle/appeals, History, replay/revalidation и UI/browser boundaries;
+- зафиксировать собственный verdict и evidence в служебном PR и остановиться. Марк не подключается без отдельной необходимости.
