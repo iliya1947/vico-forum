@@ -23,7 +23,7 @@ Git history и PR остаются первичными историческим
 9. [`PROJECT_HISTORY_09.md`](./PROJECT_HISTORY_09.md) — 2026-11-03: Complaints Package 7 integration и локальный Worker HTTP smoke, авторский CI snapshot до независимых review.
 10. [`PROJECT_HISTORY_10.md`](./PROJECT_HISTORY_10.md) — 2026-11-04: Admin Panel AP-08 close/reopen, coordinator/technical PASS, CI и merge #283.
 11. [`PROJECT_HISTORY_11.md`](./PROJECT_HISTORY_11.md) — 2026-11-05: Admin Panel AP-09 Users, correction cycles, merge #287 и test stabilization #289.
-12. [`PROJECT_HISTORY_12.md`](./PROJECT_HISTORY_12.md) — 2026-11-06: AP-10 measures, авторские CI и real-browser проверки до независимого review/merge.
+12. [`PROJECT_HISTORY_12.md`](./PROJECT_HISTORY_12.md) — 2026-11-06: Admin Panel AP-10 measures, correction/review cycles, final PASS и merge #290.
 
 ## Архивные снимки
 
