@@ -130,7 +130,8 @@ def replies(topic_id):
 
 try:
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True, args=["--no-sandbox"])
+        browser = playwright.chromium.launch(channel=os.environ.get("PLAYWRIGHT_CHANNEL", "chromium"),
+                                             headless=True, args=["--no-sandbox"])
         guest = browser.new_page(viewport={"width": 1280, "height": 900})
         guest.on("pageerror", lambda error: page_errors.append(str(error)))
         document(guest, "/en/account/measures", 401)

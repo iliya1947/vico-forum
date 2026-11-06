@@ -1,8 +1,8 @@
 # AP-10 isolated browser acceptance
 
 This is an opt-in real Chromium → built Worker → Better Auth → disposable PostgreSQL 17 check.
-GitHub's scoped AP-10 browser workflow provides the isolated runner, synthetic credentials,
-migrations, and exact implementation-head evidence. Browser interaction is real, not jsdom
+GitHub's scoped AP-10 browser workflow uses the installed Google Chrome from its pinned
+Ubuntu runner image, synthetic credentials, migrations, and exact implementation-head evidence. Browser interaction is real, not jsdom
 or static GitHub Pages; no user browser, production, external provider or shared database is used.
 
 Run only with a loopback application URL and a loopback database whose name ends in
