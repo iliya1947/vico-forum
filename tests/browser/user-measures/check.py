@@ -107,11 +107,11 @@ def create_measure(page, target_id, restrictions, explanation, expiry_mode="perm
     return measure_id
 
 
-def topic_fixture(author_id):
-    topic_id = prefix + "-topic"
-    title_id = prefix + "-title"
-    post_id = prefix + "-post"
-    revision_id = prefix + "-body"
+def topic_fixture(author_id, tag=""):
+    topic_id = prefix + tag + "-topic"
+    title_id = prefix + tag + "-title"
+    post_id = prefix + tag + "-post"
+    revision_id = prefix + tag + "-body"
     sql("""with topic as (
       insert into forum_topics(id,section_id,author_id,current_title_revision_id)
       values($1,'help-solutions-questions',$2,$3) returning id)
@@ -414,6 +414,79 @@ try:
         expect(manager.locator(".admin-history-events > li").filter(
             has=manager.get_by_role("heading", name="Topic reopened")).filter(has_text=topic_id)).to_have_count(1)
         record("ap11-topic-reopen-independent-history-and-version")
+
+        # Independent AP-08 closure × AP-10 measure state matrix on a separate
+        # real topic/actor. Do not disturb the original subject's two appeal cases.
+        matrix_topic_id = topic_fixture(other_id, "-closure-matrix")
+        matrix_admin_path = "/en/admin/forum/topics/" + quote(matrix_topic_id, safe="")
+        matrix_measure_id = create_measure(manager, other_id, ("replies.create",),
+                                           "Independent closure matrix violation")
+        matrix_initial_posts = replies(matrix_topic_id)
+
+        def matrix_denied_reply(expected, phase):
+            history_count = sql("""select count(*)::int as total from admin_history
+              where target_type='topic' and target_id=$1""", [matrix_topic_id])[0]["total"]
+            response = post(other_ctx, "/en/topics/" + matrix_topic_id, {
+                "intent": "reply", "body": "Forbidden matrix reply " + phase,
+            })
+            assert response.status == expected, (phase, response.status, response.text()[:160])
+            assert replies(matrix_topic_id) == matrix_initial_posts, phase
+            assert sql("""select count(*)::int as total from admin_history
+              where target_type='topic' and target_id=$1""", [matrix_topic_id])[0]["total"] == history_count
+
+        def matrix_closure(intent, expected_version, next_state):
+            document(manager, matrix_admin_path)
+            manager.locator("details.topic-admin-tools > summary").click()
+            mutation = form_for(manager, intent)
+            expect(mutation.locator('input[name="expectedClosureVersion"]')).to_have_value(
+                str(expected_version))
+            with manager.expect_response(lambda r: r.request.method == "POST"
+                                         and "/en/topics/" + matrix_topic_id in r.url) as changed:
+                mutation.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, (intent, changed.value.status)
+            assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                       [matrix_topic_id]) == [{"is_closed": next_state,
+                                                "closure_version": expected_version + 1}]
+
+        # Both independent constraints present: open+measure, closed+measure.
+        matrix_denied_reply(403, "open+measure")
+        matrix_closure("closeTopic", 0, True)
+        matrix_denied_reply(409, "closed+measure")
+        record("ap11-matrix-open-and-closed-with-active-reply-measure")
+
+        # Removing closure alone cannot restore the restricted actor.
+        matrix_closure("reopenTopic", 1, False)
+        matrix_denied_reply(403, "reopened+measure")
+        matrix_closure("closeTopic", 2, True)
+
+        # Removing the measure alone cannot restore replies to the closed topic.
+        document(manager, "/en/admin/measures/" + matrix_measure_id)
+        matrix_lift = form_for(manager, "lift")
+        matrix_lift.locator('textarea[name="reason"]').fill("Matrix violation resolved")
+        with manager.expect_response(lambda r: r.request.method == "POST"
+                                     and matrix_measure_id in r.url) as lifted:
+            matrix_lift.locator('button[type="submit"]').click()
+        assert lifted.value.status == 200, ("matrix measure lift", lifted.value.status)
+        assert sql("select lifted_at is not null as lifted from user_measures where id=$1",
+                   [matrix_measure_id]) == [{"lifted": True}]
+        matrix_denied_reply(409, "closed+lifted-measure")
+        record("ap11-matrix-reopen-cannot-override-measure-lift-cannot-override-closure")
+
+        # Only both lifted/absent constraints permit an explicit new reply.
+        matrix_closure("reopenTopic", 3, False)
+        allowed_matrix = post(other_ctx, "/en/topics/" + matrix_topic_id, {
+            "intent": "reply", "body": "Allowed only when open and unsanctioned",
+        })
+        assert allowed_matrix.status in (302, 303), (
+            "matrix reply restored", allowed_matrix.status, allowed_matrix.text()[:160])
+        assert replies(matrix_topic_id) == matrix_initial_posts + 1
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [matrix_topic_id]) == [
+            {"action": "topic.closed"}, {"action": "topic.reopened"},
+            {"action": "topic.closed"}, {"action": "topic.reopened"},
+        ]
+        record("ap11-matrix-only-open-and-unrestricted-permits-reply")
 
         # Newly reopened topic permits a fresh editor, which must remain mounted
         # when the existing AP-10 restriction is subsequently imposed.
