@@ -36,3 +36,6 @@
 
 - Second corrected-head coordinator pass 1 complete on `ad789c7bf28d4fe7896e8ddbf7757460e046da27`: AP10-MIRA-08 and AP10-MIRA-09 closed by cause; confirmed current-scope AP10-MIRA-11 (exact measure detail exposes Change/Lift/Review controls to actor below stored issuer floor although authoritative transitions reject them)
 - Next step: Мира проверяет AP10-MIRA-10 Editor lifecycle, затем final regression/evidence sweep; correction handoff не начинать до завершения whole-PR review
+
+- Second corrected-head coordinator pass 2 complete: AP10-MIRA-10 closed by cause; retained Create Topic / Help Question / Published Edit lifecycle, publication blocking and Cancel/cleanup boundaries verified; no new current-scope Editor finding
+- Next step: final regression/evidence sweep of PR #290 exact head `ad789c7bf28d4fe7896e8ddbf7757460e046da27`; AP10-MIRA-11 remains confirmed and no correction handoff starts until whole-PR review is complete
