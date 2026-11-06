@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import type { PermissionKey } from "../app/authorization/catalog";
+import type { UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 
 export interface HistoryRole { id: string; slug: string; name: string }
 type RoleTarget = { targetType: "role"; targetId: string; targetLabel: string };
@@ -26,7 +27,22 @@ export type ForumHistoryChange =
   | (TopicTarget & { action: "help.duplicateAppealResolved"; context: { relationshipId: string; appealId: string; resolution: "accepted" | "rejected"; originalTopicId: string } })
   | (TopicTarget & { action: "topic.sourceLocaleCorrected"; context: { before: string; after: string; previousRevisionId: string; revisionId: string } })
   | { targetType: "post"; targetId: string; targetLabel: string; reason?: string | null; action: "post.sourceLocaleCorrected"; context: { topicId: string; before: string; after: string; previousRevisionId: string; revisionId: string } };
-export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange;
+export interface UserMeasureHistoryState {
+  version: number;
+  restrictions: UserMeasureRestrictionId[];
+  expiresAt: string | null;
+  lifted: boolean;
+}
+export type UserMeasureHistoryChange = {
+  action: "measure.created" | "measure.changed" | "measure.lifted" | "measure.appealResolved";
+  targetType: "user-measure"; targetId: string; targetLabel: string; reason: string;
+  context: {
+    targetUserId: string; operationId?: string; fingerprint?: string;
+    before: UserMeasureHistoryState | null; after: UserMeasureHistoryState;
+    appealId?: string; outcome?: "accepted" | "rejected";
+  };
+};
+export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | UserMeasureHistoryChange;
 // Database-scoped transaction advisory lock shared by the actual pg/Drizzle producers.
 export const ADMIN_HISTORY_ORDER_LOCK_SQL = "select pg_advisory_xact_lock(1447641935, 1)";
 export interface AdminHistoryEvent {
@@ -46,13 +62,27 @@ export async function appendAuthorizationHistory(client: Pick<PoolClient, "query
   if (result.rowCount !== 1) throw new Error("History actor no longer exists");
 }
 
+/** AP-10 transactional History producer; called after all domain writes under the same client. */
+export async function appendUserMeasureHistory(
+  client: Pick<PoolClient, "query">, actorId: string, change: UserMeasureHistoryChange,
+): Promise<void> {
+  await client.query(ADMIN_HISTORY_ORDER_LOCK_SQL);
+  const result = await client.query(`insert into admin_history
+      (id,actor_id,actor_label,action,target_type,target_id,target_label,context,reason)
+    select $1,u.id,left(u.name,200),$3,$4,$5,$6,$7::jsonb,$8
+      from "user" u where u.id=$2`,
+    [crypto.randomUUID(), actorId, change.action, change.targetType, change.targetId,
+      historyLabel(change.targetLabel), JSON.stringify(change.context), change.reason]);
+  if (result.rowCount !== 1) throw new Error("History actor no longer exists");
+}
+
 export class PostgresAdminHistoryReader implements AdminHistoryReader {
   constructor(private readonly database: Pick<Pool, "query">) {}
   async read(cursor?: HistoryCursor, limit = 25): Promise<AdminHistoryPage> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Invalid history page size");
     const result = await this.database.query<{
       position: string; id: string; occurred_at: Date; actor_id: string; actor_label: string;
-      action: AdminHistoryChange["action"]; target_type: "role" | "user" | "topic" | "post"; target_id: string; target_label: string;
+      action: AdminHistoryChange["action"]; target_type: "role" | "user" | "topic" | "post" | "user-measure"; target_id: string; target_label: string;
       context: AdminHistoryChange["context"]; reason: string | null;
     }>(`select position, id, occurred_at, actor_id, actor_label, action, target_type, target_id, target_label, context, reason
       from admin_history where ($1::bigint is null or position < $1::bigint)
