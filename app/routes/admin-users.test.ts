@@ -1,7 +1,7 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext } from "../auth/request-context";
-import { authorizationContext } from "../authorization/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { forumReaderContext } from "../forum/request-context";
 import { adminUsersContext } from "../admin/users.server";
 import { AdminUsersUnavailableError } from "../../db/hyperdrive-admin-users";
@@ -30,6 +30,7 @@ const profile = {
 function environment(permissions: string[] = [], signedIn = true) {
   const context = new RouterContextProvider();
   context.set(authSessionContext, signedIn ? { user: { id: "actor", email: secret } } as never : null);
+  context.set(authorizationOwnerContext, "bound-owner");
   const has = vi.fn(async (key: string) => permissions.includes(key));
   const readManagementState = vi.fn();
   const readUserManagementState = vi.fn(async () => management);
@@ -88,7 +89,7 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
       if (permissions.includes("access.authorization.manage")) {
         expect(e.readUserManagementState).toHaveBeenCalledTimes(1);
         expect(e.readUserManagementState).toHaveBeenCalledWith(profile.id);
-        expect(detailResult.data).toMatchObject({ management, managerActorId: "actor" });
+        expect(detailResult.data).toMatchObject({ management, managerActorId: "actor", canManageElevated:false });
         expect(JSON.stringify(detailResult.data)).not.toContain("email");
       } else {
         expect(e.readUserManagementState).not.toHaveBeenCalled();

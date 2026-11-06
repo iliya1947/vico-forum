@@ -1,7 +1,7 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
-import { authorizationContext } from "../authorization/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { AuthorizationLockoutError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { action, loader } from "./authorization-admin";
@@ -26,6 +26,7 @@ function capability(manage: boolean | Error = true) {
 function context(authenticated = true, manage: boolean | Error = true) {
   const context = new RouterContextProvider(); const value = capability(manage);
   context.set(authSessionContext, authenticated ? session : null); context.set(authorizationContext, value);
+  context.set(authorizationOwnerContext, "bound-owner");
   return { context, value };
 }
 function request(fields: Record<string, string>, origin = "https://forum.example") {
@@ -53,11 +54,18 @@ describe("authorization management route", () => {
     const state = context();
     const result = await loader({ params: { locale: "en" }, context: state.context });
     expect(result).toMatchObject({ locale: "en", roles: [], users: [] });
+    expect(result.canManageElevated).toBe(false);
     expect(state.value.readManagementState).toHaveBeenCalledOnce();
     expect(state.value.listRoles).not.toHaveBeenCalled();
     expect(state.value.listUsers).not.toHaveBeenCalled();
     expect(state.value.readRole).not.toHaveBeenCalled();
     expect(state.value.resolveUser).not.toHaveBeenCalled();
+  });
+  it("offers elevated operations only to the bound owner in route data",async()=>{
+    const actor=context();
+    expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated).toBe(false);
+    actor.context.set(authorizationOwnerContext,"manager");
+    expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated).toBe(true);
   });
   it("derives navigation from the same resolver handle as the independent management gate", async () => {
     const state=context();

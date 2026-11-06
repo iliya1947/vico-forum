@@ -15,6 +15,7 @@ import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { complaintQueueContext } from "../complaints/queue-context";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import { authorizationContext } from "../authorization/request-context";
+import { userMeasureContext } from "../measures/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -301,6 +302,7 @@ function context(
 ) {
   const value = new RouterContextProvider();
   value.set(forumReaderContext, reader);
+  value.set(userMeasureContext, {activeRestrictions:async()=>[]} as never);
   value.set(forumAttachmentStoreContext, {
     readSecurityAttachmentEvents: async (page: number) => ({ events: [], hasMore: false, page }),
   } as never);

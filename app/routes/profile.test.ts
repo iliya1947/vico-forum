@@ -6,6 +6,7 @@ import { forumReaderContext, forumWriterContext } from "../forum/request-context
 import type { ForumReader } from "../../db/forum-repository";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { userMeasureContext } from "../measures/request-context";
 import { action, loader } from "./profile";
 
 const profile = { id: "owner", name: "Owner", image: null, joinedAt: new Date("2026-09-01"), bio: "", githubUrl: null, websiteUrl: null,
@@ -17,6 +18,7 @@ function setup(userId: string | null = "owner") {
   const updateProfile = vi.fn(async () => undefined);
   context.set(forumReaderContext, { readProfile } as unknown as ForumReader);
   context.set(forumWriterContext, { updateProfile } as unknown as ForumWriter);
+  context.set(userMeasureContext, {activeRestrictions:async()=>[]} as never);
   return { context, readProfile, updateProfile };
 }
 function request(fields: Record<string, string> = {}, origin: string | null = "https://forum.test") {
@@ -37,6 +39,15 @@ describe("profile route", () => {
       expect(result.profile.joinedAt).toBe("2026-09-01T00:00:00.000Z");
       expect(JSON.stringify(result)).not.toContain("private");
     }
+  });
+  it("suppresses public profile editing on an active measure but retains private own status access",async()=>{
+    const env=setup("owner");
+    env.context.set(userMeasureContext,{activeRestrictions:async()=>["profile.edit"]} as never);
+    const result=await loader({
+      params,request:new Request("https://forum.test/en/users/owner?edit=1"),context:env.context,
+    });
+    expect(result).toMatchObject({isOwner:true,canEditProfile:false,editing:false});
+    expect(JSON.stringify(result)).not.toContain("profile.edit");
   });
   it("returns 404 for missing users, 503 for availability, and preserves unexpected errors", async () => {
     const env = setup();

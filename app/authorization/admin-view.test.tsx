@@ -81,7 +81,7 @@ const users = [{
   },
 }];
 
-function renderView(result?: { ok?: boolean; error?: "conflict" }, grants: PermissionKey[] = ["access.authorization.manage"]) {
+function renderView(result?: { ok?: boolean; error?: "conflict" }, grants: PermissionKey[] = ["access.authorization.manage"], canManageElevated=false) {
   const router = createMemoryRouter([{
     path: "*",
     element: (
@@ -90,6 +90,7 @@ function renderView(result?: { ok?: boolean; error?: "conflict" }, grants: Permi
           locale="en"
           access={adminAccess(new Set(grants))}
           permissions={permissions}
+          canManageElevated={canManageElevated}
           roles={[systemRole, customRole]}
           users={users}
           result={result}
