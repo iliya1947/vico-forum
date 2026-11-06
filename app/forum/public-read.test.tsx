@@ -464,6 +464,45 @@ describe.each([
   });
 });
 
+describe("AP-10 restriction-aware first-party presentation",()=>{
+  it("removes only sanctioned fresh controls while preserving public read and owner tools",async()=>{
+    const ctx=context();
+    ctx.set(authSessionContext,{user:{id:"lin",name:"Lin"}} as never);
+    const granted=new Set([
+      "forum.topic.create","forum.reply.create","forum.post.editOwn",
+      "forum.complaint.create","forum.solution.manageOwn",
+    ]);
+    ctx.set(authorizationContext,{forUser:()=>({
+      has:async(permission:string)=>granted.has(permission),
+    })} as never);
+    const active=vi.fn(async()=>[
+      "topics.create","replies.create","posts.edit","attachments.upload",
+      "complaints.submit","translations.generate",
+    ]);
+    ctx.set(userMeasureContext,{activeRestrictions:active} as never);
+    const sectionData=await sectionLoader({params:{locale:"en",sectionId:section.id},context:ctx});
+    expect(sectionData.canCreateTopic).toBe(false);
+    expect(sectionData.canUploadAttachments).toBe(false);
+    const help=await categoryLoader({params:{locale:"en",categoryId:HELP_SOLUTIONS_CATEGORY_ID},context:ctx});
+    expect(help.kind).toBe("help-solutions");
+    if(help.kind!=="help-solutions")throw Error("expected help");
+    expect(help.canAskQuestion).toBe(false);
+    expect(help.canUploadAttachments).toBe(false);
+    const loaded=await topicLoader({params:{locale:"en",topicId:topic.id},context:ctx});
+    expect(loaded.topic.id).toBe(topic.id);
+    expect(loaded).toMatchObject({
+      canReply:false,canSubmitComplaint:false,editablePostIds:[],canUploadAttachments:false,
+    });
+    expect(loaded.canManageSolution).toBe(false); // Non-owner of the topic, not a sanction.
+    expect(active).toHaveBeenCalledWith("lin");
+    ctx.set(userMeasureContext,{activeRestrictions:async()=>[]} as never);
+    const restored=await topicLoader({params:{locale:"en",topicId:topic.id},context:ctx});
+    expect(restored).toMatchObject({
+      canReply:true,canSubmitComplaint:true,editablePostIds:["answer"],canUploadAttachments:true,
+    });
+  });
+});
+
 describe("optional homepage presence failures", () => {
   it("keeps categories available when online presence storage is temporarily unavailable", async () => {
     const ctx = context();
