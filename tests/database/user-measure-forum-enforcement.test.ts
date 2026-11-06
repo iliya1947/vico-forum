@@ -400,8 +400,8 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
 
   it("blocks new measure transitions and private admin reads, preserving committed replay and participant own appeals", async () => {
     await withIssuerManager(async pool => {
-      const svc = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, "issuer"));
-      const reader = new PostgresUserMeasureReader(pool, "issuer");
+      const svc = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, "configured-owner"));
+      const reader = new PostgresUserMeasureReader(pool, "configured-owner");
       const initial = {
         id:randomUUID(), actorId:"issuer", targetUserId:"other",
         reason:"Moderation violation", restrictions:["replies.create"], expiresAt:null,
