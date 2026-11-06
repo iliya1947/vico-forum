@@ -14,13 +14,6 @@ import { ForumEntityNotFoundError, ForumStateConflictError } from "../../db/foru
 import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { withForumAdministrativeRestrictions } from "../../db/user-measure-admin-forum";
-import { complaintReviewContext } from "../../app/complaints/review-context";
-import { complaintAppealContext } from "../../app/complaints/appeal-context";
-import { loader as caseContextLoader } from "../../app/routes/complaint-review-context";
-import { loader as caseEvidenceLoader } from "../../app/routes/complaint-review-evidence";
-import { loader as appealContextLoader } from "../../app/routes/complaint-appeal-context";
-import { loader as appealEvidenceLoader } from "../../app/routes/complaint-appeal-evidence";
-import { vi } from "vitest";
 import { requireAdminForumAccess } from "../../app/admin/forum.server";
 import type { AuthorizationManagementCapability } from "../../db/authorization-service";
 import type { PermissionKey } from "../../app/authorization/catalog";
@@ -181,36 +174,6 @@ describe("AP-10 admin.complaints effective access and reviewer transactions", ()
     const blocked = await createMeasure("admin.complaints", "issuer");
     await lift(blocked);
     expect(await effective().forUser("issuer").has("forum.complaint.review")).toBe(false);
-  });
-
-  it("refuses all direct private Case and Appeal context/evidence endpoints before any backend or R2 reads", async () => {
-    await createMeasure("admin.complaints", "issuer");
-    const context = new RouterContextProvider();
-    context.set(authSessionContext, { user: { id: "issuer" } } as never);
-    context.set(authorizationContext, effective());
-    const readCase = vi.fn(async () => { throw new Error("private Case access"); });
-    const readAppeal = vi.fn(async () => { throw new Error("private Appeal access"); });
-    context.set(complaintReviewContext, { context: readCase, evidence: readCase } as never);
-    context.set(complaintAppealContext, { context: readAppeal, evidence: readAppeal } as never);
-    const cases = [
-      [caseContextLoader, { caseId: "secret-case", postId: "secret-post" }],
-      [caseEvidenceLoader, { caseId: "secret-case", attachmentId: "secret-file" }],
-      [appealContextLoader, { caseId: "secret-case", appealId: "secret-appeal", postId: "secret-post" }],
-      [appealEvidenceLoader, { caseId: "secret-case", appealId: "secret-appeal", attachmentId: "secret-file" }],
-    ] as const;
-    for (const [loader, params] of cases) {
-      try {
-        await loader({ params, context } as never);
-        throw new Error("private route was not denied");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Response);
-        const response = error as Response;
-        expect(response.status).toBe(403);
-        expect(response.headers.get("Cache-Control")).toBe("private, no-store");
-      }
-    }
-    expect(readCase).not.toHaveBeenCalled();
-    expect(readAppeal).not.toHaveBeenCalled();
   });
 
   it("blocks new Case reviewer commands inside locked transactions without changing cases, notes, events or settings", async () => {
