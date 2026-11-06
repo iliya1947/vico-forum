@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 3.4: public profile bio/URLs enforcement (2026-11-06)
+
+- [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), exact stable head **`71e27a51a18894c721a675c2e8b0e6be2eece3aa`**. Stage 3.1–3.4 completed in bounded increments; AP-10 remains incomplete, Draft/open, not merged.
+- `db/forum-repository.ts`: `updateProfile(actorId, fields)` keeps existing server validation, puts current user existence/ownership-identity lookup, `this.measureAdmission(tx, actorId,"profile.edit")`, and `forum_profiles` upsert into one PostgreSQL transaction. New active measure blocks the public bio/GitHub/website write; DB time, independent overlapping measures, disable/lift/expiry all use the existing single policy reader. No new schema, authz permission, replay state or separate sanction rules.
+- `db/hyperdrive-forum.ts`: the standalone `updateProfile` writer passes the already configured request-scoped `measureAdmission` into its repository constructor, preventing a bypass in the canonical Worker/Hyperdrive path. Better Auth name/email/session/avatar operations, online presence and public profile reads stay outside `profile.edit`.
+- `app/routes/profile.tsx`: after existing session, same-Origin, exact owner and form-validation checks, typed `UserMeasureRestrictedError` becomes generic `forbidden` 403, `private, no-store`, with bounded unsaved draft; never serializes restriction key, issuer, reason, authority or raw measure context. Other failures preserved.
+- `app/routes/profile.test.ts`: verifies private 403 and unmodified public guest loader. `tests/database/user-measure-forum-enforcement.test.ts`: 4 native PostgreSQL scenarios verify initial denied write creates no profile row, unchanged public read, unrelated users permitted, lift restores public updates; overlapping, expired, disabled and other-subject measures; validation/not-found independent checks; actual Hyperdrive writer enforces current restriction while online presence continues.
+- **[Exact-head CI #42152803134](https://github.com/iliya1947/vico-forum/actions/runs/42152803134) SUCCESS** — application **147/147 files, 1915/1915 tests**, native PostgreSQL **46/46 files, 526/526 tests**, lint/typecheck/build, accepted migration/Drizzle/schema manifest, Worker local HTTP smoke PASS.
+- **Next bounded work only on «...»**: new Complaint submissions `complaints.submit`, respecting identical committed report replay and no unintended restrictions on existing Case/Appeal/withdraw/own status flows. Other restrictions (Help signals, translation generation, admin family private reads/writes and presentation) stay separate. No permanent documentation, PROJECT_STATE, coordinator files, AP-11/Settings/production or merge touched. Stopped after 3.4.
+
+
 ## AP-10 — stage 3.3: attachment uploads before R2 and authoritative metadata commit (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), exact stable head **`3395c84df6f618b500e06d156246fec0ae692d32`**, AP-10 3.1–3.3 bounded slices implemented; remaining AP-10 incomplete. Draft/open, no merge.
