@@ -202,7 +202,8 @@ describe("AP-10 Help signal submission admission", () => {
   it("enforces the canonical Hyperdrive writer without blocking separate Help operations", async () => {
     const current = await question("target");
     const writer = createHyperdriveForumWriter(databaseUrl, () =>
-      new Client({ connectionString: databaseUrl, options: "-c search_path=" + schema }));
+      new Client({ connectionString: databaseUrl, options: "-c search_path=" + schema }),
+      { cooldownMs: 0, now: () => new Date() });
     const measure = await createMeasure("helpSignals.submit");
     await expect(writer.createHelpSignal({
       kind: "needs-details", topicId: current.id,
