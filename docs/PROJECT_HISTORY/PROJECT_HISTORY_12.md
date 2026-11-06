@@ -1,52 +1,54 @@
-# История проекта — 2026-11-06: AP-10 measures, авторские проверки до review
+# История проекта — 2026-11-06: Admin Panel AP-10 measures завершён
 
-Датированный **implementation/author-verification snapshot**, не текущий domain
-contract. Не является свидетельством независимой проверки, owner visual
-acceptance, merge в `main` либо production rollout.
+Датированный implementation/review/merge snapshot. Не является текущим domain contract и
+не свидетельствует о production rollout или owner visual acceptance.
 
-- В `main` по-прежнему находятся AP-01–AP-09. AP-10 подготовлен отдельно в
-  [Draft PR #290](https://github.com/iliya1947/vico-forum/pull/290),
-  exact implementation head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`,
-  PR открыт, Draft, не merged.
-- Утверждённая модель: distinct measures для разных нарушений; конфигурируемые
-  дочерние ограничения и независимый срок; terminal expired/lifted; одна
-  pending appeal на меру и до трёх последовательных апелляций; accepted appeal
-  меняет или полностью снимает ту же меру. Приватная own-секция не раскрывает
-  администраторов/ревьюеров. Обе `admin.users.blocks.manage*` capability
-  без built-in initial grants; AP-10 не добавляет last-manager recovery veto.
-- PR добавляет forward migration `drizzle/0058_user_measures.sql`, сервис мер,
-  приватные read projections, atomic administrative History, права и enforcement
-  на forum/Help writes, attachments, own edits, profile, Complaints, Help signals,
-  translations и четырёх administrative permission families.
-  Matching committed publication replays не превращаются в новые
-  записи; denied fresh operations не выполняют частичных side effects.
-- Собственные и административные страницы мер работают в EN/RU/HE, группируют
-  active/expired/lifted записи. Group checkboxes выбирают только child keys,
-  review form показывает поля выбранного remedy, pending state блокирует
-  дублирование. 403/404/409 обновляют protected loader без повторного POST.
-- Интеграционный этап 5.1 проверил две одновременно действующие меры, подавление
-  четырёх административных семей, независимый subject appeal, lift только
-  первой меры и сохранение отдельного raw RBAC deny; снятие второй
-  восстановило публикацию. PostgreSQL tests покрывают atomicity, CAS и приватность.
-- Браузерный этап 5.2 использовал реальный Chrome/Playwright с Worker,
-  Better Auth email sessions и disposable PostgreSQL 17, без пользовательского
-  браузера/production. Проверены guest 401, создание двух мер, own reason/status,
-  подача/решение апелляции, fresh deny/restore, admin families, 409 stale
-  without replay и EN/RU/HE × 320/768/1280 на own list/detail/admin detail.
-  [Run #42171734414](https://github.com/iliya1947/vico-forum/actions/runs/42171734414)
-  **SUCCESS**, скриншоты/JSON — артефакт `ap10-browser-evidence`
-  (artifact 13481965971).
-- Реальный мобильный тест выявил narrow-header sign-out overflow на 320 px
-  (EN +3.5 px, RU +1.7 px). DOM bounding-box evidence локализовало
-  элемент в общей шапке. Уменьшены её горизонтальные отступы на мобильном
-  breakpoint; повторная браузерная матрица прошла без переполнения.
-  Также исправлены тестовые ожидание готовности Worker и использование
-  установленного на runner Chrome вместо отдельного скачивания Chromium.
-- На том же head [CI #42171734420](https://github.com/iliya1947/vico-forum/actions/runs/42171734420)
-  **SUCCESS**: application **152/152 files, 1942/1942 tests**;
-  native PostgreSQL **46/46 files, 555/555 tests**; lint/typecheck/build,
-  migration/Drizzle/schema/privilege checks и Worker HTTP smoke PASS.
-- Coordinator whole-PR review Миры, независимый технический review Лёвы,
-  owner visual approval/merge и deployed/production acceptance на дату
-  этого снимка **не выполнены**. AP-11, Settings, owner-role redesign
-  и Stage 6 rollout не входят в эту реализацию.
+- Implementation PR #290 реализовал AP-10 administrative measures поверх AP-09: configurable
+  temporary/permanent restrictions, независимые exact-measure lifecycle/appeals, request-scoped
+  enforcement ordinary/admin действий, приватные own/admin surfaces, atomic History и forward
+  migration `0058_user_measures`.
+- Продуктовая модель зафиксирована владельцем до реализации: разные нарушения создают разные
+  measures; одна pending appeal и до трёх последовательных appeals на measure; accepted appeal
+  либо меняет restrictions/expiry той же measure, либо полностью снимает её; expired/lifted
+  measure terminal; пользователь не видит identity администратора/reviewer; обе
+  `admin.users.blocks.manage*` capabilities имеют zero built-in initial grants.
+- Начальный coordinator whole-PR review Миры на head
+  `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13` подтвердил семь current-scope defects:
+  pending-appeal discovery, duration UX, privileged administrative-restriction authority,
+  elevated authorization UI, restriction-aware ordinary UI, AP-10 History presentation и
+  localized own-measure metadata. Один correction cycle закрыл AP10-MIRA-01..07 на
+  `52a1db67610357f514e8013b06f70af6bda629c6`.
+- Следующий coordinator sweep подтвердил AP10-MIRA-08..10: authority-aware restriction
+  selectors, consistency issuer-floor projection/direct admin-family guards и сохранение уже
+  смонтированных Create Topic / Help Question / Published Edit editor operations при свежем
+  restriction. Исправления завершены на
+  `ad789c7bf28d4fe7896e8ddbf7757460e046da27`.
+- Финальный gap-sweep того цикла нашёл AP10-MIRA-11: exact measure detail оставался читаемым
+  корректно, но Change/Lift/pending Appeal Review presentation не учитывал stored
+  `issuer_authority_floor`. Correction добавил admin-only current `canMutate` projection
+  без раскрытия floor/identity subject'у; coordinator PASS достигнут на
+  `9fecd925a256062e9892235f4ba02ed3147de1e3`.
+- Первый independent technical review Лёвы на этом head завершился NOT PASS по единственному
+  AP10-LEV-01 [P3]: canonical measure create пропускал NUL-containing `targetId` до PostgreSQL
+  text bind и получал HTTP 500 вместо typed private/no-store 400. Мира независимо подтвердила
+  причинную цепочку и current-scope применимость.
+- Локальная correction использовала bounded target-ID validation и на route boundary, и
+  независимо в domain service. NUL / >2048 UTF-8 bytes теперь отклоняются до repository/SQL;
+  valid nonexistent target остаётся 404; unknown SQL/programming failures не маскируются.
+  Final implementation exact head — `ef313919f6613c54db6ddb50765c968744101306`.
+- На final head GitHub CI #42218475676 — SUCCESS: application 1966/1966, PostgreSQL 17
+  561/561, lint/typecheck/build, migrations/Drizzle/schema/runtime privilege и Worker checks.
+  AP-10 isolated browser acceptance #42218475943 — SUCCESS на disposable PostgreSQL +
+  built Worker + Better Auth + authenticated Chromium; включён malformed-target 400 /
+  missing-target 404 / no-write regression и EN/RU/HE responsive flow.
+- Финальный coordinator regression/evidence sweep Миры завершён PASS на
+  `ef313919f6613c54db6ddb50765c968744101306`; подтверждённых current-scope defects не осталось.
+  Повторный independent technical review Лёвы того же exact head также завершён PASS.
+  Собственные reruns Лёвы: 289/289 selected application/domain/route/UI/Worker tests,
+  78/78 native PostgreSQL tests, build PASS и Chromium→Worker→Better Auth→PostgreSQL
+  19 case groups PASS с 0 layout/page errors/external browser requests.
+- PR #290 merged в `main` 2026-11-06; merge commit
+  `03c505370f44fa2640a489b647fba3929219093f`.
+- Merge AP-10 не выполнял production/deployed rollout, owner visual acceptance, AP-11/Settings
+  или отдельную post-admin owner-role/last-manager cleanup задачу. Documentation closeout
+  выполняется отдельным PR #291 после implementation merge.
