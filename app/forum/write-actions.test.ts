@@ -928,6 +928,35 @@ describe("forum write route actions", () => {
     expect(deniedSubmitWriter.createHelpSignal).not.toHaveBeenCalled();
   });
 
+  it("returns a generic private 403 for new Help signals but does not guard withdrawals", async () => {
+    const w = writer();
+    w.createHelpSignal.mockRejectedValueOnce(new UserMeasureRestrictedError("helpSignals.submit"));
+    const denied = await topicAction({
+      request: request("/en/topics/help-question", {
+        intent: "submitHelpSignal", kind: "needs-details", explanation: "Missing error output.",
+      }),
+      params: { locale: "en", topicId: "help-question" },
+      context: context(w, true, ["forum.helpSignal.create"]),
+    });
+    expect(denied).toMatchObject({
+      data: { error: "forbidden" },
+      init: { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    });
+    expect(JSON.stringify(denied)).not.toContain("helpSignals.submit");
+    expect(w.createHelpSignal).toHaveBeenCalledOnce();
+    const withdrawn = await topicAction({
+      request: request("/en/topics/help-question", {
+        intent: "withdrawHelpSignal", signalId: "previous-signal",
+      }),
+      params: { locale: "en", topicId: "help-question" },
+      context: context(w, true, []),
+    });
+    expect(withdrawn).toBeInstanceOf(Response);
+    expect(w.withdrawHelpSignal).toHaveBeenCalledExactlyOnceWith({
+      signalId: "previous-signal", topicId: "help-question", actorId: "session-user",
+    });
+  });
+
   it("routes Help duplicate management and appeals through separate server boundaries", async () => {
     const manager = writer();
     const confirmed = await topicAction({

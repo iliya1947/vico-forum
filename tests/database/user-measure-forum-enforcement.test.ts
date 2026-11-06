@@ -9,7 +9,8 @@ import {
 } from "../../db/forum-repository";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
-import { ForumEntityNotFoundError } from "../../db/forum-repository";
+import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
+import { ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { ComplaintsService } from "../../db/complaints-service";
@@ -110,6 +111,115 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 Help signal submission admission", () => {
+  async function question(authorId = "issuer") {
+    const id = randomUUID(), postId = randomUUID();
+    await forum.createTopicWithInitialPost({
+      id, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId,
+      titleRevision: { id: randomUUID(), originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId: id, authorId,
+        bodyRevision: { id: randomUUID(), originalContent: "Help details", sourceLocale: "en" },
+      },
+    });
+    return { id, postId };
+  }
+  function signal(topicId: string, kind: "needs-details"|"needs-review"|"solution-outdated"|"duplicate" = "needs-details",
+      originalId: string | null = null, actorId = "target") {
+    return {
+      topicId, actorId, kind, proposedOriginalTopicId: originalId,
+      explanation: kind === "duplicate" ? null : "Please investigate the question.",
+    };
+  }
+  async function countSignal(topicId: string) {
+    const r = await client.query<{ total: number }>(
+      "select count(*)::int as total from forum_help_signals where topic_id=$1", [topicId],
+    );
+    return r.rows[0]!.total;
+  }
+
+  it("denies new Needs-details and Duplicate signals before cooldown and inserts, leaving other users free", async () => {
+    const current = await question();
+    const original = await question();
+    const measure = await createMeasure("helpSignals.submit");
+    await expect(forum.createHelpSignal(signal(current.id)))
+      .rejects.toMatchObject({ restriction: "helpSignals.submit" });
+    await expect(forum.createHelpSignal(signal(current.id, "duplicate", original.id)))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await countSignal(current.id)).toBe(0);
+    const unblocked = await forum.createHelpSignal(signal(current.id, "needs-details", null, "other"));
+    expect(unblocked.status).toBe("pending");
+    await lift(measure);
+    const submitted = await forum.createHelpSignal(signal(current.id, "duplicate", original.id));
+    expect(submitted).toMatchObject({ kind: "duplicate", submittedByUserId: "target", status: "pending" });
+    expect(await countSignal(current.id)).toBe(2);
+  });
+
+  it("blocks solved-question solution signals while leaving own solution selection and signal withdrawal available", async () => {
+    const current = await question("issuer");
+    const answerId = randomUUID();
+    await forum.createPost({
+      id: answerId, topicId: current.id, authorId: "other",
+      bodyRevision: { id: randomUUID(), originalContent: "Working answer", sourceLocale: "en" },
+    });
+    await forum.selectBestAnswer(current.id, answerId, "issuer", "own");
+    await forum.markTopicSolved(current.id, "issuer", "own");
+    const prior = await forum.createHelpSignal(signal(current.id, "needs-review"));
+    const measure = await createMeasure("helpSignals.submit");
+    await expect(forum.createHelpSignal(signal(current.id, "solution-outdated")))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await countSignal(current.id)).toBe(1);
+    await forum.withdrawHelpSignal(prior.id, current.id, "target");
+    const persisted = await forum.readHelpSignal(prior.id);
+    expect(persisted?.status).toBe("withdrawn");
+    await lift(measure);
+    await expect(forum.createHelpSignal(signal(current.id, "solution-outdated")))
+      .resolves.toMatchObject({ kind: "solution-outdated", status: "pending" });
+  });
+
+  it("honors independent overlapping, expired and disabled measures with next-request behavior", async () => {
+    const current = await question();
+    await createMeasure("helpSignals.submit", "target", "2000-01-01T00:00:00Z");
+    await createMeasure("helpSignals.submit", "other");
+    const disabled = await createMeasure("helpSignals.submit");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    const first = await createMeasure("helpSignals.submit");
+    const second = await createMeasure("helpSignals.submit");
+    await lift(first);
+    await expect(forum.createHelpSignal(signal(current.id)))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await countSignal(current.id)).toBe(0);
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [second]);
+    await expect(forum.createHelpSignal(signal(current.id)))
+      .resolves.toMatchObject({ kind: "needs-details", status: "pending" });
+    await expect(forum.createHelpSignal(signal(current.id)))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await countSignal(current.id)).toBe(1);
+  });
+
+  it("enforces the canonical Hyperdrive writer without blocking separate Help operations", async () => {
+    const current = await question("target");
+    const writer = createHyperdriveForumWriter(databaseUrl, () =>
+      new Client({ connectionString: databaseUrl, options: "-c search_path=" + schema }));
+    const measure = await createMeasure("helpSignals.submit");
+    await expect(writer.createHelpSignal({
+      kind: "needs-details", topicId: current.id,
+      actorId: "target", explanation: "More details needed",
+    })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await countSignal(current.id)).toBe(0);
+    await writer.markTopicSolved({ topicId: current.id, actorId: "target", scope: "own" });
+    await lift(measure);
+    const created = await writer.createHelpSignal({
+      kind: "needs-details", topicId: current.id,
+      actorId: "target", explanation: "More details needed",
+    });
+    expect((await forum.readHelpSignal(created.id))?.status).toBe("pending");
+    await createMeasure("helpSignals.submit");
+    await writer.withdrawHelpSignal({ signalId: created.id, topicId: current.id, actorId: "target" });
+    expect((await forum.readHelpSignal(created.id))?.status).toBe("withdrawn");
+  });
 });
 
 describe("AP-10 new complaint submission admission", () => {

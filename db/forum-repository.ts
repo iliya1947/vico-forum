@@ -3009,6 +3009,9 @@ export class DrizzleForumRepository {
         topic = lockedTopic;
       }
 
+      // New Help signals are restricted independently of withdrawal, appeals and
+      // moderator review. Check after topic locks but before cooldown writes.
+      await this.measureAdmission(tx, input.actorId, "helpSignals.submit");
       // Keep the same lock order as reply writes: topic row(s) first, then
       // the per-user write mutex used by the signal cooldown.
       await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
