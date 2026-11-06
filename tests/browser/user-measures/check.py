@@ -177,11 +177,21 @@ try:
         assert manager_id not in subject.locator("main").inner_text()
         assert "reviewer_user_id" not in subject.content()
         appeal = form_for(subject, "appeal")
+        exact_appeal_id = appeal.locator('input[name="appealId"]').input_value()
         appeal.locator('textarea[name="body"]').fill("Please review my first measure")
         appeal.locator('button[type="submit"]').click()
         expect(subject.locator('input[name="intent"][value="appeal"]')).to_have_count(0)
         assert "Pending" in subject.locator("main").inner_text()
         record("private-status-and-independent-appeal")
+
+        document(manager, "/en/admin/measures")
+        destination = "/en/admin/measures/" + first_id + "#measure-review-" + exact_appeal_id
+        link = manager.locator('a[href="' + destination + '"]')
+        expect(link).to_have_count(1)
+        link.click()
+        manager.wait_for_url("**" + destination)
+        expect(form_for(manager, "review")).to_have_count(1)
+        record("pending-measure-appeal-review-discovery")
 
         forbidden = (
             "/en/admin/forum", "/en/admin/history", "/en/admin/users",
