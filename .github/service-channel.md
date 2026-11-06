@@ -103,3 +103,30 @@
   1. **Settings остаётся отдельной будущей фазой после AP-11** — тогда AP-11 закрывает интеграцию фактически delivered AP-01–AP-10 scope, честно оставляя Settings unfinished;
   2. **Settings входит в текущую ordinary-admin completion** — тогда перед AP-11 сначала нужен отдельный product-design/bounded implementation package для конкретных Settings operations.
 - До этого решения Лёве technical plan AP-11 не назначать; owner-role/last-manager cleanup также не начинать, потому что она зафиксирована только после завершения ordinary-admin work.
+
+
+## Owner decision — Settings sequencing and AP-11 handoff
+
+- Владелец выбрал: **Settings откладывается в отдельную будущую фазу**.
+- Последовательность зафиксирована: **AP-11 → owner/authorization redesign → отдельный Settings package**.
+- AP-11 закрывает integration/factual closeout фактически delivered ordinary-admin scope **AP-01–AP-10**. Settings placeholder не является blocker или current-scope defect AP-11; AP-11 не проектирует Settings operations/storage/API.
+- После AP-11 отдельно выполняется уже зафиксированная owner/authorization model redesign; Settings проектируется только после неё, чтобы его permissions и owner-only boundaries опирались на целевую hierarchy.
+
+### AP-11 technical planning — Лёва
+
+Задача: подготовить технический план **AP-11 / Package 8 — integration and factual closeout delivered AP-01–AP-10 scope** на актуальном `main` `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`.
+
+Требуемый результат:
+- определить минимальный bounded implementation/verification scope AP-11;
+- проверить, какие integration/acceptance gaps действительно остаются между уже merged AP-01–AP-10 mechanisms;
+- отделить реальные current-scope gaps от уже закрытого evidence и будущих задач;
+- определить конкретные files/modules/checks, которые AP-11 должен затронуть, если изменения вообще нужны;
+- сформировать критерии готовности implementation PR и последующего review cycle.
+
+Границы:
+- Settings исключён из AP-11 и остаётся будущей фазой после owner/authorization redesign;
+- owner/authorization redesign, Stage 6, production rollout и owner visual acceptance не входят;
+- не предполагать заранее, что AP-11 обязательно требует code changes: сначала установить фактические integration gaps;
+- реализацию не начинать; результат — только технический план и установленные gaps/отсутствие gaps.
+
+После планирования Лёва фиксирует план/выводы в служебном PR и останавливается. Затем Мира проводит coordinator review плана.
