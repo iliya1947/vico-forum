@@ -48,6 +48,7 @@ const permissions: PermissionKey[] = [
   "forum.topic.create",
   "forum.reply.create",
   "access.authorization.manage",
+  "admin.users.blocks.managePrivileged",
 ];
 
 const systemRole = {
@@ -63,7 +64,7 @@ const customRole = {
   slug: "reviewer",
   displayName: "Reviewer",
   isSystem: false,
-  grants: ["forum.reply.create"] as PermissionKey[],
+  grants: ["forum.reply.create","admin.users.blocks.managePrivileged"] as PermissionKey[],
 };
 
 const users = [{
@@ -137,6 +138,33 @@ describe("authorization management presentation", () => {
     expect(formByIntent(container, "roleGrants")?.querySelector('[name="permission"]')).toBeTruthy();
     expect(formByIntent(container, "assignRole")?.querySelector('[name="roleId"]')).toBeTruthy();
     expect(formByIntent(container, "override")?.querySelector('[name="effect"]')).toBeTruthy();
+  });
+
+  it("hides non-owner elevated grant and override actions without deleting an existing role grant",async()=>{
+    const {container}=renderView();
+    await screen.findByRole("heading",{name:"Authorization management",level:2});
+    expect(container.querySelectorAll('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]'))
+      .toHaveLength(0);
+    expect(container.querySelector('form.admin-override-row input[value="admin.users.blocks.managePrivileged"]'))
+      .toBeNull();
+    const roleGrants=[...container.querySelectorAll<HTMLFormElement>('form.admin-permissions-form')]
+      .find(form=>form.querySelector<HTMLInputElement>('input[name="roleId"]')?.value==="role-reviewer")!;
+    expect([...new FormData(roleGrants).getAll("permission")])
+      .toContain("admin.users.blocks.managePrivileged");
+    const assign=[...container.querySelectorAll<HTMLFormElement>('form.admin-role-assignment')][0]!;
+    expect(assign.querySelector('select[name="roleId"]')).toBeDisabled();
+    expect(assign.querySelector('button[type="submit"]')).toBeDisabled();
+  });
+
+  it("allows the bound owner to edit elevated role and per-user overrides",async()=>{
+    const {container}=renderView(undefined,["access.authorization.manage"],true);
+    await screen.findByRole("heading",{name:"Authorization management",level:2});
+    expect(container.querySelectorAll('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]'))
+      .toHaveLength(2);
+    const option=container.querySelector(
+      'form.admin-override-row input[value="admin.users.blocks.managePrivileged"]');
+    expect(option).toBeInTheDocument();
+    expect(container.querySelector('form.admin-role-assignment select')).not.toBeDisabled();
   });
 
   it("shares Overview/History destinations from the actor's effective access", async () => {
