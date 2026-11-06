@@ -1,5 +1,15 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 3.8: admin.forum (2026-11-06)
+
+- Draft PR #290 exact stable head `1074b15118b1d714d9e36728891c8606c6da485a`; stage 3.8 done, overall AP-10 still incomplete, Draft/open.
+- New `db/user-measure-admin-forum.ts` wraps request-scoped Worker authorization: seven Forum/Help administrative permissions are denied by any active `admin.forum` measure in both `.has` and `.resolve().effectivePermissions`. Raw grants, overrides, `resolveUser`, owner hierarchy and Own/participation/other administrative families remain unchanged; next request reevaluates PostgreSQL DB time and lift. No persistent role denies.
+- Direct canonical repository writer checks active `admin.forum` in existing transactions for pin/closure, Any best-answer/solved, Any source-locale corrections, Help solution/signal moderation and duplicate/appeal review. Exact-correction errors return generic private/no-store 403. Attention action checks at least one Help review right before reading any untrusted private signal ID; existing admin loaders, Topic history and other protected reads use the filtered permissions.
+- Four native PostgreSQL tests: seven-key projection/raw preservation, denied writes without new effects, own-action exceptions, expiry/overlap/lift/missing-schema; one route test confirms no guessed private read. First CI typecheck failure was only two new test fixtures missing required `proposedOriginalTopicId`; supplied null, no production change.
+- [Exact-head CI #42159020883](https://github.com/iliya1947/vico-forum/actions/runs/42159020883) SUCCESS: application 148/148 files and 1922/1922 tests; PostgreSQL 46/46 files and 543/543 tests; lint/typecheck/build, migrations/Drizzle and Worker smoke PASS.
+- Next only after «...»: bounded 3.9 `admin.complaints` for private read/review and mutations across Case/Appeal/priority/identity, including effective-permission snapshot consumers; user Complaint/Appeal preserved. No merge, coordinator files, unrelated docs or production. Stopped after 3.8.
+
+
 ## AP-10 — stage 3.7: translation generation requests (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), exact stable implementation head **`3397cb4dbf3d8d21a53744d602a0a89b16eba5c8`**. Stage 3.1–3.7 bounded enforcement slices completed; AP-10 incomplete, open/Draft, no merge.
