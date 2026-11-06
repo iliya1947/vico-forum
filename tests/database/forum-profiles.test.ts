@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository, ForumEntityNotFoundError } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { InvalidProfileError } from "../../app/forum/profile";
@@ -12,7 +13,7 @@ const url = new URL(databaseUrl);
 if (!["127.0.0.1", "localhost"].includes(url.hostname) || !url.pathname.endsWith("_test")) throw new Error("Disposable local test database required");
 const schema = "forum_profiles_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
-const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
 const migrations = ["0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage", "0003_gorgeous_donald_blake", "0004_forum_domain_foundation", "0005_calm_proemial_gods", "0006_loving_sentinels", "0021_forum_tags", "0022_forum_reply_relationships", "0024_forum_reply_notifications", "0025_forum_topic_pins", "0026_best_answer_independent_from_solved", "0027_help_solutions_foundation", "0028_help_solution_moderation", "0029_help_question_needs_details", "0030_help_duplicate_workflow", "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence", "0034_forum_editor_drafts", "0035_forum_attachments_foundation", "0036_forum_attachment_security_events", "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0040_post_edit_history_permissions", "0041_published_mentions", "0042_attachment_edit_snapshots"];
 beforeAll(async () => {
   await client.connect();
