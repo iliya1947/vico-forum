@@ -31,6 +31,7 @@ import {
   user,
 } from "./schema";
 import { ForumWriteRateLimitError, forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
+import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 import {
   ForumAttachmentDraftConflictError,
@@ -581,6 +582,7 @@ export class DrizzleForumRepository {
 
   async createTopic(input: CreateTopicInput): Promise<ForumTopic> {
     return this.database.transaction(async (tx) => {
+      await assertNoActiveUserMeasureRestriction(tx, input.authorId, "topics.create");
       await tx.insert(forumTopics).values({
         id: input.id,
         sectionId: input.sectionId,
@@ -647,6 +649,7 @@ export class DrizzleForumRepository {
           };
         }
       }
+      await assertNoActiveUserMeasureRestriction(tx, input.authorId, "topics.create");
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
         .where(eq(forumSections.id, input.sectionId));
@@ -751,6 +754,7 @@ export class DrizzleForumRepository {
       if (activeDuplicate) {
         throw new ForumStateConflictError("a confirmed duplicate cannot receive new replies");
       }
+      await assertNoActiveUserMeasureRestriction(tx, input.authorId, "replies.create");
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const parentPostId = input.parentPostId ?? null;
       let parentAuthorId: string | null = null;
