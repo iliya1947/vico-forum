@@ -51,7 +51,9 @@ def record(case, **details):
 def document(page, path, status=200):
     response = page.goto(base + path, wait_until="networkidle")
     assert response is not None and response.status == status, (path, getattr(response, "status", None))
-    assert "no-store" in response.headers.get("cache-control", ""), (path, response.headers)
+    cache_directives = {part.strip().lower() for part in
+                        response.headers.get("cache-control", "").split(",")}
+    assert {"private", "no-store"} <= cache_directives, (path, response.headers)
     return response
 
 
@@ -571,8 +573,10 @@ try:
         ):
             denied_guest = document(guest, private_path, 401)
             denied_member = document(other, private_path, 403)
-            assert "no-store" in denied_guest.headers.get("cache-control", "")
-            assert "no-store" in denied_member.headers.get("cache-control", "")
+            for denied in (denied_guest, denied_member):
+                cache = {part.strip().lower() for part in
+                         denied.headers.get("cache-control", "").split(",")}
+                assert {"private", "no-store"} <= cache, (private_path, denied.headers)
             assert "AP10 acceptance topic" not in denied_member.text(), private_path
             assert "AP10 acceptance topic" not in denied_guest.text(), private_path
         record("ap11-users-topic-guest-and-member-private-denials")
