@@ -345,8 +345,8 @@ function instant(value: unknown): string | null {
   if (!m) throw new InvalidUserMeasureInputError("expiry must be offset-qualified ISO");
   const [y, mo, d, h, mi, sec] = m.slice(1, 7).map(Number);
   const ms = Number((m[7] ?? "").padEnd(3, "0"));
-  const oh = m[9] ? Number(m[9]) : 0;
-  const om = m[10] ? Number(m[10]) : 0;
+  const oh = m[10] ? Number(m[10]) : 0;
+  const om = m[11] ? Number(m[11]) : 0;
   if (y < 100 || mo < 1 || mo > 12 || d < 1 || d > 31 ||
       h > 23 || mi > 59 || sec > 59 || oh > 14 || om > 59 || (oh === 14 && om !== 0)) {
     throw new InvalidUserMeasureInputError("expiry calendar or offset is invalid");

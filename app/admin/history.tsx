@@ -11,6 +11,10 @@ const actionLabels = {
   "topic.bestAnswerChanged": "historyBestAnswerChanged", "help.solutionModerationChanged": "historySolutionModerationChanged",
   "help.duplicateConfirmed": "historyDuplicateConfirmed", "help.duplicateRemoved": "historyDuplicateRemoved",
   "help.duplicateAppealResolved": "historyDuplicateAppealResolved", "topic.sourceLocaleCorrected": "historySourceLocaleCorrected", "post.sourceLocaleCorrected": "historySourceLocaleCorrected",
+  "measure.created": "historyMeasureCreated",
+  "measure.changed": "historyMeasureChanged",
+  "measure.lifted": "historyMeasureLifted",
+  "measure.appealResolved": "historyMeasureAppealResolved",
 } as const;
 function ModerationDetails({context}: {context:{postId:string;before:string|null;after:string|null}}) {
   const {t}=useTranslation("common");
