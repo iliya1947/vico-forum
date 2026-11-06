@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-05
+Последнее обновление: 2026-11-06
 
 ## Назначение
 
@@ -102,7 +102,16 @@ Stage 5 завершён в repository/local-CI path.
 
 AP-08 и AP-09 присутствуют в `main` и реализованы в repository/local-CI path. Отдельный authenticated Chromium→Worker→Better Auth→PostgreSQL flow для AP-08/AP-09 не выполнялся и не заявляется как выполненная acceptance; production/deployed acceptance остаётся отдельной release boundary.
 
-Ещё не реализованы user blocking и реальные Settings operations.
+В `main` AP-10/user blocking и реальные Settings operations ещё отсутствуют.
+Отдельная реализация **AP-10 находится в открытом Draft PR #290**, не merged:
+configurable temporary/permanent measures, независимые exact-measure appeals,
+request-scoped restrictions/authorization, защищённые собственные и административные
+страницы, атомарная History. На текущем implementation head пройдены обычный
+repository CI, PostgreSQL integration и изолированная **реальная браузерная**
+Chromium/Chrome → Worker → Better Auth → PostgreSQL 17 проверка EN/RU/HE на
+mobile/tablet/desktop. Это **авторские acceptance checks**, не independent
+whole-PR review, owner visual acceptance, изменение `main` или deployed/production
+rollout. Наличие PR не делает AP-10 доступным в `main`.
 
 ### Complaints
 
@@ -165,7 +174,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` Admin Panel реализована до AP-09 включительно; user blocking/AP-10, Settings и последующий closeout ещё не завершены.
+- В `main` Admin Panel реализована до AP-09 включительно; AP-10 подготовлен и авторски проверен в отдельном Draft PR, но ещё ожидает независимых review/merge. Settings и AP-11 closeout не реализованы.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -174,7 +183,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Завершить оставшиеся Admin Panel / Complaints product packages по их профильным контрактам и служебным каналам.
+2. Довести AP-10 через обязательный coordinator и независимый технический review, затем решение владельца о merge; оставшиеся Admin Panel / Complaints product packages вести по профильным контрактам и служебным каналам.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
