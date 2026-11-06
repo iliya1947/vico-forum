@@ -585,8 +585,9 @@ action/read request; they never modify raw role grants or user overrides:
 
 Public reading, login/session, notifications, the punished subject's private
 status/reasons and **all domain appeal submissions** stay outside this catalog.
-Own solved/best-answer and own source-locale correction have no separate punitive
-restriction. Expiry/lift restore only capabilities otherwise permitted by current
+`helpSignals.submit` applies only to creating a new Help signal; withdrawal of an existing
+signal remains available. Own solved/best-answer and own source-locale correction have no
+separate punitive restriction. Expiry/lift restore only capabilities otherwise permitted by current
 RBAC, resource state and other active measures; they do not rewrite permissions,
 topic closure or Complaint/Help decision state.
 
