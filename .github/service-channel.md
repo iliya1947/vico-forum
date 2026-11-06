@@ -4,9 +4,13 @@
 
 ## Актуальный baseline
 
-- AP-01–AP-09 merged в main. AP-09 implementation #287, test stabilization #289 и documentation closeout #288 завершены; current main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, migration head 0057.
-- Actual authenticated browser/deployed AP-08/AP-09 flows не заявляются выполненными; production/release boundary остаётся отдельно.
-- AP-10 technical planning назначен Лёве в #6667343744. [Исходный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146) локально исправлен по coordinator review #6667923255 и owner decisions #6669655343/#6669734702; [revision delta](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497). AP10-PLAN-MIRA-01..04 приняты Мирой #6670166694; [исправления AP10-PLAN-MIRA-05..06](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257) ожидают повторного review. Implementation не начат, code/DB/production не менялись.
+- AP-01–AP-09 merged в main; current main/base для AP-10 — `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, migration head 0057.
+- AP-10 technical plan прошёл coordinator PASS; AP10-PLAN-MIRA-01..06 закрыты.
+- Лира завершила author implementation/verification в Draft PR #290, stable exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`, base `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, 92 changed files. PR open/draft/mergeable.
+- Exact-head CI #42171734420 — SUCCESS на `503a5c6d...`.
+- Isolated browser acceptance #42171734414 — SUCCESS на том же exact head; это author evidence, не independent review и не owner visual acceptance.
+- Отдельный documentation Draft PR #291: exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, base main `5cf80f38...`, 6 Markdown files; CI #42173496053 — SUCCESS. Он не считается implementation approval/merge.
+- Coordinator whole-PR review AP-10 начат Мирой. Implementation/docs пока не merge; production/Stage 6 не трогать.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -46,9 +50,12 @@
 
 ## Следующий шаг
 
-- **Мира:** повторный coordinator review только AP10-PLAN-MIRA-05..06: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257. AP10-PLAN-MIRA-01..04 уже приняты; terminal lifecycle и explicit-grant-only исправлены по owner #6670294050. После approval назначить Лиру на реализацию.
-- Implementation до plan approval не начинать. Лёва/агенты друг друга не вызывают; technical context передан в #251.
-- Lasting docs/PROJECT_STATE — отдельным documentation PR после принятой реализации. Общая last-manager очистка — после завершения админ-панели.
+- **Мира:** coordinator whole-PR review stable exact implementation head PR #290 `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13` против approved AP-10 plan, current main и applicable source-of-truth.
+- Пока coordinator review не завершён, Лёву на independent technical review не назначать и implementation head не менять.
+- Documentation PR #291 проверяется как отдельный closeout artifact; его наличие не означает принятие implementation.
+- Owner visual acceptance не инициировать без прямого запроса владельца.
+- После coordinator PASS — Лёва проверяет тот же exact implementation head. При current-scope defects сначала один пакет Лире и новый coordinator cycle.
+- Lasting docs/PROJECT_STATE остаются отдельным PR; общая last-manager cleanup — после завершения админ-панели.
 - AP-11/Settings/Stage 6/production rollout не начинались; Марк не назначен.
 
 Оперативное состояние: [workflow.md](./workflow.md).
