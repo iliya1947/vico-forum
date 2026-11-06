@@ -6,8 +6,21 @@ import {
 } from "../measures/routes.server";
 import { OwnMeasureDetail } from "../measures/views";
 import { ForumRouteError } from "../forum/ui";
+import { canonicalEnglishCatalog } from "../localization/catalog";
+import { createTranslationRuntime } from "../localization/runtime";
+import type { Route } from "./+types/account-measure";
 
-export {headers,meta} from "./account-measures";
+export {headers} from "./account-measures";
+export function meta({matches}:Pick<Route.MetaArgs,"matches">) {
+  const localeMatch=matches.find(
+    (match):match is Route.MetaArgs["matches"][1]=>match?.id==="routes/locale-boundary",
+  );
+  const snapshot=localeMatch?.loaderData;
+  const runtime=snapshot?createTranslationRuntime(snapshot):undefined;
+  const title=runtime?.t("measuresDetail")??canonicalEnglishCatalog.common.measuresDetail.source;
+  const product=runtime?.t("productName")??canonicalEnglishCatalog.common.productName.source;
+  return [{title:`${title} · ${product}`}];
+}
 export async function loader({params,context}: {
   params:{locale?:string;measureId?:string};context:RouterContextProvider;
 }) {
