@@ -156,7 +156,7 @@ describe("AP-10 private measure views and administrative choices",()=>{
       access={access} feedback={undefined}/>,action);
     const form=formFor(root,"create");
     fireEvent.click(children(groupFor(form))[0]!);
-    const mode=form.querySelector<HTMLSelectElement>("[data-measure-expiry-mode]")!;
+    const mode=form.querySelector("[data-measure-expiry-mode]")!;
     expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("");
     fireEvent.change(mode,{target:{value:"hour"}});
     expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-11-06T11:00:00.000Z");
@@ -168,7 +168,7 @@ describe("AP-10 private measure views and administrative choices",()=>{
     fireEvent.change(form.querySelector<HTMLInputElement>("[data-measure-expiry-amount]")!,{
       target:{value:"3"},
     });
-    fireEvent.change(form.querySelector<HTMLSelectElement>("[data-measure-expiry-unit]")!,{
+    fireEvent.change(form.querySelector("[data-measure-expiry-unit]")!,{
       target:{value:"days"},
     });
     expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-11-09T10:00:00.000Z");

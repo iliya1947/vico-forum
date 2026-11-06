@@ -116,7 +116,7 @@ type MeasureExpiryUnit = "hours" | "days" | "weeks";
  * authoritative UTC expiresAt instant (or blank for permanent); no preset IDs.
  */
 export function selectedMeasureExpiry(form: HTMLFormElement, now = Date.now()): string | undefined {
-  const mode = form.querySelector<HTMLSelectElement>("[data-measure-expiry-mode]")?.value as MeasureExpiryMode|undefined;
+  const mode = (form.querySelector("[data-measure-expiry-mode]") as (Element & {value:string})|null)?.value as MeasureExpiryMode|undefined;
   const presetHours: Partial<Record<MeasureExpiryMode,number>> = {
     hour:1,day:24,week:7*24,month:30*24,
   };
@@ -124,7 +124,7 @@ export function selectedMeasureExpiry(form: HTMLFormElement, now = Date.now()): 
   let hours = mode ? presetHours[mode] : undefined;
   if(mode==="duration") {
     const amount=form.querySelector<HTMLInputElement>("[data-measure-expiry-amount]")?.valueAsNumber;
-    const unit=form.querySelector<HTMLSelectElement>("[data-measure-expiry-unit]")?.value as MeasureExpiryUnit|undefined;
+    const unit=(form.querySelector("[data-measure-expiry-unit]") as (Element & {value:string})|null)?.value as MeasureExpiryUnit|undefined;
     const multiplier=unit==="hours"?1:unit==="days"?24:unit==="weeks"?7*24:undefined;
     if(amount===undefined || !Number.isSafeInteger(amount) || amount<=0 || multiplier===undefined)return;
     hours=amount*multiplier;
