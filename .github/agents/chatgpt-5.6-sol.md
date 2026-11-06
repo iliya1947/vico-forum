@@ -946,3 +946,29 @@ Checked and not findings in this pass:
 - missing production `VICO_OWNER_USER_ID` configuration is not a current repository/local-CI defect; production rollout is outside current stage and operations fail closed without the binding.
 
 Coordinator whole-PR review remains in progress. Findings are not handed to Lira until all passes complete.
+
+
+## AP-10 coordinator whole-PR review — pass 3: restriction enforcement
+
+Reviewed stable PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Confirmed current-scope defect:
+
+1. **AP10-MIRA-05 — ordinary user action presentation is not restriction-aware.**
+   Server-side admission correctly denies restricted actions, but the normal user-facing controls are not driven by current measure state. Example: `ProfileView` still exposes the Edit link/form whenever the viewer owns the profile; the loader does not project whether `profile.edit` is currently restricted. The same AP-10 implementation does not add a restriction-aware presentation path for ordinary forum publication/edit, Complaint submit, Help signal submit or attachment upload controls; those actions remain visually available and only fail after submit/upload with generic 403. The approved technical plan explicitly requires presentation to hide/disable newly prohibited actions from a current restriction snapshot while preserving server authority/replay semantics. This is a current AP-10 UX/contract gap, not a future enhancement.
+
+Checked and not findings in this pass:
+- topic creation and topic+initial-post creation enforce `topics.create`;
+- reply creation enforces `replies.create`;
+- own published post edits enforce `posts.edit` after exact committed replay lookup;
+- public profile writes enforce `profile.edit` transactionally;
+- new Complaint submissions enforce `complaints.submit`, while exact/lifetime replay and Complaint appeals remain available;
+- new Help signals enforce `helpSignals.submit`, while withdrawal/other approved Help flows remain available;
+- attachment upload is checked both before R2 storage and before metadata/ref commit; denial uses durable cleanup and committed replay remains available;
+- new translation-generation planning checks `translations.generate`; currently disabled runtime remains disabled;
+- `admin.forum`, `admin.complaints`, `admin.security`, `admin.usersAccess` are filtered from effective private route permissions and authoritative administrative writes recheck their family restriction;
+- Users/Authorization/History/exact-measure private loaders and Complaint context/evidence child routes are denied before private reads when their family is restricted;
+- overlapping measures, natural expiry, explicit lift, disabled child membership and other-user measures are handled independently;
+- missing restriction tables fail closed rather than granting access.
+
+Coordinator whole-PR review remains in progress. Do not hand the accumulated findings to Lira until all passes complete.
