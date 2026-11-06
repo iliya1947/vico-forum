@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 3.6: new Help signals (2026-11-06)
+
+- [Draft PR #290](https://github.com/iliya1947/vico-forum/pull/290), exact head **`900bd8d5948440faca1de6a339956806a2e2999e`**. Stage 3.1–3.6 bounded enforcement slices implemented, AP-10 still incomplete and open/Draft, no merge.
+- `db/forum-repository.ts`: `createHelpSignal` uses the shared `this.measureAdmission(tx, actorId, "helpSignals.submit")` inside its existing PostgreSQL transaction, after current Help topic/proposed-original locks and authoritative duplicate-state checks, before per-user signal cooldown or new signal INSERT. Covers all four kinds: needs-details, needs-review, solution-outdated, duplicate; overlap, time, lift, enabled membership, target ID use existing DB-time reader. No new schema or ad hoc policy. Denied signal leaves no row, cooldown consumption or Case-like event.
+- No Help signal committed receipt protocol exists: already pending same-kind/same-topic signal is a conflict by existing canonical contract, not an idempotent success replay. Existing validation and `forum.helpSignal.create` RBAC are unchanged. `app/forum/mutations.server.ts` already maps typed `UserMeasureRestrictedError` to generic `forbidden` private/no-store 403, so no new route logic.
+- `withdrawHelpSignal`, `resolveHelpSignal`, duplicate appeals and own solved/best-answer remain unguarded by this specific punitive restriction. Source locale corrections and Complaints/Block appeals are separate contracts. No changes to those paths.
+- `app/forum/write-actions.test.ts`: route test ensures generic private 403 with no restriction ID exposure, and unblocked withdraw action. `tests/database/user-measure-forum-enforcement.test.ts`: 4 full native PostgreSQL cases for needs-details/duplicate denial and unaffected actor/lift, solved-answer signals/withdrawal, independent overlapping/expired/disabled/other-user measures and pending-duplicate conflict, actual scoped Hyperdrive writer with independent own-solved and withdraw. First CI #42154414393 exposed one **test-only cooldown fixture interaction** (the canonical Hyperdrive writer default 5s conflicted with immediately prior test signal). Fixed by explicitly injecting existing test's 0ms cooldown into only that test writer; production policy unaltered.
+- **[Exact-head CI #42154631900](https://github.com/iliya1947/vico-forum/actions/runs/42154631900) SUCCESS**: application **147/147 files, 1917/1917 tests**; PostgreSQL **46/46 files, 535/535 tests**; lint/typecheck/build, accepted migration/Drizzle/schema manifest, Worker local HTTP smoke PASS. Checked exact CI SHA == implementation PR SHA.
+- **Next bounded step only on «...»**: `translations.generate` on generation planning/request-budget/job admission paths, preserving previous accepted jobs and runtime generation-disabled contracts. Then four administrative families' private reads/writes and presentation separately. No permanent docs/PROJECT_STATE, shared coordinator files, AP-11/Settings/production/merge touched. Stopped after 3.6.
+
+
 ## AP-10 — stage 3.5: complaint submission restrictions (2026-11-06)
 
 - [Draft PR #290](https://github.com/iliya1947/vico-forum/pull/290), stable implementation head **`01abaf59cbb38fc988e9051dca5e3368eb9a62c4`**. Enforcement bounded slices 3.1–3.5 now implemented; AP-10 still incomplete, open/Draft, no merge.
