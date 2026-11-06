@@ -6,6 +6,7 @@ import { requireSameOrigin } from "../forum/mutations.server";
 import { InvalidUserMeasureInputError, UserMeasureConflictError, UserMeasureNotFoundError } from "../../db/user-measures";
 import { UserMeasureConfigurationUnavailableError, UserMeasureForbiddenError } from "../../db/user-measure-authority";
 import { UserMeasuresUnavailableError } from "../../db/hyperdrive-user-measures";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 export const measurePrivateHeaders = { "Cache-Control": "private, no-store" } as const;
 export type MeasureActionError = "invalid" | "unauthenticated" | "forbidden" | "notFound" | "conflict" | "unavailable";
@@ -15,7 +16,7 @@ export function measureFailure(error: MeasureActionError, status: number) {
 function mappedMeasureError(error: unknown): [MeasureActionError, number] {
   if (error instanceof Response) throw error;
   if (error instanceof InvalidUserMeasureInputError) return ["invalid",400];
-  if (error instanceof UserMeasureForbiddenError) return ["forbidden",403];
+  if (error instanceof UserMeasureForbiddenError || error instanceof UserMeasureRestrictedError) return ["forbidden",403];
   if (error instanceof UserMeasureNotFoundError) return ["notFound",404];
   if (error instanceof UserMeasureConflictError) return ["conflict",409];
   if (error instanceof UserMeasuresUnavailableError || error instanceof AuthorizationUnavailableError ||

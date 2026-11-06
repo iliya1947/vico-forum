@@ -1,6 +1,7 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { AUTHORIZATION_MANAGE_PERMISSION, type PermissionKey } from "../app/authorization/catalog";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
+import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 
 import { appendAuthorizationHistory, historyLabel, type AuthorizationHistoryChange, type HistoryRole } from "./admin-history";
 
@@ -28,7 +29,12 @@ export class AuthorizationRoleSlugConflictError extends Error {}
 type Queryable = Pick<Pool | PoolClient, "query">;
 
 export class PostgresAuthorizationRepository {
-  constructor(private readonly pool: Pool, private readonly ownerUserId?: string) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly ownerUserId?: string,
+    private readonly measureAdmission: typeof assertNoActiveUserMeasureRestrictionPg =
+      assertNoActiveUserMeasureRestrictionPg,
+  ) {}
 
   /** Guard the elevated key inside the existing serialized authorization transaction. */
   private requireBoundOwner(actorId: string): void {
@@ -338,6 +344,9 @@ export class PostgresAuthorizationRepository {
       if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
       }
+      // Keep the raw manager count and lockout invariants independent of
+      // temporary administrative suppression. Admission shares this transaction.
+      await this.measureAdmission(client, actorId, "admin.usersAccess");
       const change = await operation(client);
       const after = await countManagers(client);
       if ((state.rows[0].managers_ever_existed || before > 0) && after === 0) {

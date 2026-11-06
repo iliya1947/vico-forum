@@ -2,6 +2,7 @@ import type { Pool, PoolClient } from "pg";
 import { validateUserMeasureRestrictions, type UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 import { appendUserMeasureHistory, type UserMeasureHistoryState } from "./admin-history";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
+import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 import { assertUserMeasureAuthority, requireUserMeasureOwnerId, UserMeasureForbiddenError } from "./user-measure-authority";
 
 export class InvalidUserMeasureInputError extends Error {}
@@ -177,6 +178,7 @@ export class PostgresUserMeasuresRepository {
         }
         return { id: input.id, version: 1 };
       }
+      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
 
       await this.requireFutureExpiry(client, input.expiresAt);
       await client.query(`insert into user_measures
@@ -270,6 +272,7 @@ export class PostgresUserMeasuresRepository {
         return { appealId: input.appealId, measureId: current.id,
           outcome: input.outcome, version: prior.context.after!.version as number, remedy: input.remedy };
       }
+      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
       if (appeal.status !== "pending") throw new UserMeasureConflictError("appeal has already been resolved");
       await this.assertActive(client, current);
       if (current.version !== input.expectedVersion) {
@@ -459,6 +462,7 @@ export class PostgresUserMeasuresRepository {
         }
         return { id: input.measureId, version: replay.context.after!.version as number, changed: true };
       }
+      await assertNoActiveUserMeasureRestrictionPg(client, input.actorId, "admin.usersAccess");
 
       const applied = await this.applyLockedTransition(
         client, current, input.actorId, issuerLevel, input,

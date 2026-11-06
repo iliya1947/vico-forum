@@ -27,6 +27,8 @@ import { ComplaintConflictError, ComplaintForbiddenError } from "../../db/compla
 import { createHyperdriveComplaintSubmission } from "../../db/hyperdrive-complaints";
 import { createAuthorizationCapability } from "../../db/authorization-service";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { PostgresUserMeasuresRepository, UserMeasuresService } from "../../db/user-measures";
+import { PostgresUserMeasureReader } from "../../db/user-measure-read";
 import { action as complaintSubmitAction } from "../../app/routes/complaint-submit";
 import { complaintSubmissionContext } from "../../app/complaints/request-context";
 import { Pool } from "pg";
@@ -119,6 +121,139 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 admin.usersAccess effective roles and direct administrative writers", () => {
+  const keys = [
+    "admin.users.read", "access.authorization.manage", "admin.history.read",
+    "admin.users.blocks.manage", "admin.users.blocks.managePrivileged",
+    "forum.topic.create", "forum.complaint.create",
+  ] as const satisfies readonly PermissionKey[];
+  const snapshot = {
+    role: { id: "role", slug: "admin", displayName: "Admin", isSystem: true },
+    explicitAssignment: false, grants: [...keys], overrides: {},
+    effectivePermissions: [...keys],
+  };
+  const raw = {
+    forUser: () => ({
+      has: async (key: PermissionKey) => keys.includes(key as typeof keys[number]),
+      resolve: async () => snapshot,
+    }),
+    resolveUser: async () => snapshot,
+  } as unknown as AuthorizationManagementCapability;
+  const effective = () => withForumAdministrativeRestrictions(raw, databaseUrl!, () =>
+    new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 1 }));
+
+  async function withIssuerManager(task: (pool: Pool) => Promise<void>) {
+    const pool = new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 3 });
+    await client.query("insert into authz_user_roles(user_id,role_id) values('issuer','builtin-admin') on conflict (user_id) do update set role_id=excluded.role_id");
+    await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+      values('issuer','admin.users.blocks.manage','allow')
+      on conflict(user_id,permission_key) do update set effect=excluded.effect`);
+    try { await task(pool); }
+    finally {
+      await pool.end();
+      await client.query("delete from authz_user_permission_overrides where user_id='issuer' and permission_key='admin.users.blocks.manage'");
+      await client.query("delete from authz_user_roles where user_id='issuer'");
+    }
+  }
+
+  it("filters all five administrative keys without changing grants, raw privileged authority, or participation", async () => {
+    const initial = effective().forUser("target");
+    expect(await initial.has("access.authorization.manage")).toBe(true);
+    await createMeasure("admin.usersAccess");
+    const resolver = effective().forUser("target");
+    for (const key of keys.slice(0, 5)) expect(await resolver.has(key)).toBe(false);
+    for (const key of keys.slice(5)) expect(await resolver.has(key)).toBe(true);
+    const projected = await resolver.resolve();
+    expect(projected.effectivePermissions).toEqual([...keys.slice(5)]);
+    expect(projected.grants).toEqual([...keys]);
+    expect((await raw.forUser("target").resolve()).effectivePermissions).toEqual([...keys]);
+    expect((await effective().resolveUser("target")).effectivePermissions).toEqual([...keys]);
+    expect(await effective().forUser("other").has("access.authorization.manage")).toBe(true);
+  });
+
+  it("honors independent/overlapping/expired/lifted/disabled measures and fails closed when unavailable", async () => {
+    await createMeasure("admin.security");
+    await createMeasure("admin.forum");
+    await createMeasure("admin.complaints");
+    await createMeasure("admin.usersAccess", "other");
+    await createMeasure("admin.usersAccess", "target", "2000-01-01T00:00:00Z");
+    const disabled = await createMeasure("admin.usersAccess");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    expect(await effective().forUser("target").has("admin.users.read")).toBe(true);
+    const one = await createMeasure("admin.usersAccess"), two = await createMeasure("admin.usersAccess");
+    await lift(one);
+    expect(await effective().forUser("target").has("admin.users.read")).toBe(false);
+    await lift(two);
+    expect(await effective().forUser("target").has("admin.users.read")).toBe(true);
+    const missing = withForumAdministrativeRestrictions(raw, databaseUrl!, () =>
+      new Pool({ connectionString: databaseUrl, options: "-c search_path=ap10_missing_users_access", max: 1 }));
+    await expect(missing.forUser("target").has("admin.users.read")).rejects.toThrow();
+  });
+
+  it("denies direct authorization mutations transactionally without changing roles, History, or last-manager accounting", async () => {
+    await withIssuerManager(async pool => {
+      const repo = new PostgresAuthorizationRepository(pool);
+      const roleId = randomUUID();
+      const before = await client.query<{ total: string }>("select count(*)::text as total from admin_history");
+      const active = await createMeasure("admin.usersAccess", "issuer");
+      await expect(repo.createCustomRole("issuer", {id:roleId,slug:"sanctioned-role",displayName:"Sanctioned Role"}))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      expect((await client.query("select id from authz_roles where id=$1", [roleId])).rowCount).toBe(0);
+      expect((await client.query<{total:string}>("select count(*)::text as total from admin_history")).rows[0]?.total)
+        .toBe(before.rows[0]?.total);
+      expect((await client.query<{n:number}>("select count(*)::int as n from authz_user_permission_overrides where user_id='issuer' and permission_key='admin.users.blocks.manage'")).rows[0]?.n).toBe(1);
+      await lift(active);
+      await repo.createCustomRole("issuer", {id:roleId,slug:"sanctioned-role",displayName:"Sanctioned Role"});
+      expect((await client.query("select id from authz_roles where id=$1", [roleId])).rowCount).toBe(1);
+      await repo.deleteCustomRole("issuer", roleId);
+    });
+  });
+
+  it("blocks new measure transitions and private admin reads, preserving committed replay and participant own appeals", async () => {
+    await withIssuerManager(async pool => {
+      const svc = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, "issuer"));
+      const reader = new PostgresUserMeasureReader(pool, "issuer");
+      const initial = {
+        id:randomUUID(), actorId:"issuer", targetUserId:"other",
+        reason:"Moderation violation", restrictions:["replies.create"], expiresAt:null,
+      };
+      const created = await svc.create(initial);
+      const appeal = await svc.submitAppeal({
+        id:randomUUID(), measureId:created.id, actorId:"other", body:"Requesting reconsideration",
+      });
+      const blocked = await createMeasure("admin.usersAccess", "issuer");
+      expect(await svc.create(initial)).toEqual(created);
+      await expect(svc.create({ ...initial, id:randomUUID() }))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      const change = {measureId:created.id,operationId:randomUUID(),actorId:"issuer",
+        expectedVersion:1,reason:"Updated decision",restrictions:["topics.create"],expiresAt:null};
+      await expect(svc.change(change)).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await expect(svc.lift({measureId:created.id,operationId:randomUUID(),actorId:"issuer",
+        expectedVersion:1,reason:"Lifted"})).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await expect(reader.adminTarget("issuer","other")).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await expect(reader.adminDetail("issuer",created.id)).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      expect((await reader.ownList("other")).some(item=>item.id===created.id)).toBe(true);
+      expect((await reader.ownDetail("other",created.id)).appeals.some(item=>item.id===appeal.id)).toBe(true);
+
+      const resolution = {measureId:created.id,appealId:appeal.id,operationId:randomUUID(),
+        actorId:"issuer",expectedVersion:1,outcome:"rejected",
+        explanation:"Appeal reviewed",remedy:null,restrictions:null,expiresAt:null};
+      await expect(svc.resolveAppeal(resolution)).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await lift(blocked);
+      const accepted = await svc.resolveAppeal(resolution);
+      expect(accepted.outcome).toBe("rejected");
+      const repeated = await createMeasure("admin.usersAccess", "issuer");
+      expect(await svc.resolveAppeal(resolution)).toEqual(accepted);
+      await lift(repeated);
+      const revised = await svc.change(change);
+      expect(revised).toMatchObject({id:created.id, version:2, changed:true});
+      await createMeasure("admin.usersAccess", "issuer");
+      expect(await svc.change(change)).toEqual(revised);
+      expect((await client.query<{version:number}>("select version from user_measures where id=$1", [created.id])).rows[0]?.version).toBe(2);
+    });
+  });
 });
 
 describe("AP-10 admin.security private attachment event admission", () => {

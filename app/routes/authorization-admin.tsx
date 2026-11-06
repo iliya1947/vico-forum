@@ -6,6 +6,7 @@ import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
 import { AuthorizationForbiddenError, AuthorizationLockoutError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import {
   AuthorizationAdminView,
   type AuthorizationFailure,
@@ -17,17 +18,17 @@ export { headers, meta } from "./admin";
 type Failure = AuthorizationFailure;
 async function manager(context: RouterContextProvider) {
   const session = authSessionForRequest(context);
-  if (!session) throw new Response("Unauthenticated", { status: 401 });
+  if (!session) throw new Response("Unauthenticated", { status: 401, headers: { "Cache-Control": "private, no-store" } });
   const capability = authorizationForRequest(context);
   const resolver = capability.forUser(session.user.id);
   try {
     if (!(await resolver.has("access.authorization.manage"))) {
-      throw new Response("Forbidden", { status: 403 });
+      throw new Response("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
     }
   } catch (error) {
     if (error instanceof Response) throw error;
     if (error instanceof AuthorizationUnavailableError) {
-      throw new Response("Unavailable", { status: 503 });
+      throw new Response("Unavailable", { status: 503, headers: { "Cache-Control": "private, no-store" } });
     }
     throw error;
   }
@@ -43,7 +44,7 @@ export async function loader({ params, context }: { params: { locale?: string };
   } catch (error) {
     if (error instanceof Response) throw error;
     if (error instanceof AuthorizationUnavailableError) {
-      throw new Response("Unavailable", { status: 503 });
+      throw new Response("Unavailable", { status: 503, headers: { "Cache-Control": "private, no-store" } });
     }
     throw error;
   }
@@ -67,14 +68,14 @@ export async function action({ request, context }: { request: Request; context: 
   } catch (error) {
     const mapped: [Failure, number] | undefined =
       error instanceof InvalidAuthorizationInputError || error instanceof AuthorizationRoleSlugConflictError ? ["invalid", 400]
-      : error instanceof AuthorizationForbiddenError ? ["forbidden", 403]
+      : error instanceof AuthorizationForbiddenError || error instanceof UserMeasureRestrictedError ? ["forbidden", 403]
       : error instanceof AuthorizationNotFoundError ? ["notFound", 404]
       : error instanceof AuthorizationLockoutError || error instanceof AuthorizationRoleAssignedError ? ["conflict", 409]
       : error instanceof AuthorizationUnavailableError ? ["unavailable", 503]
       : undefined;
     if (!mapped) throw error;
     const [name, status] = mapped;
-    return Response.json({ error: name }, { status });
+    return Response.json({ error: name }, { status, headers: { "Cache-Control": "private, no-store" } });
   }
 }
 function required(form: FormData, name: string) { const value = requiredFormText(form, name); if (!value) throw new InvalidAuthorizationInputError(); return value; }
