@@ -892,3 +892,29 @@ Revision #6670064497 closes AP10-PLAN-MIRA-01..04. Two current-scope plan defect
 3. AP10-PLAN-MIRA-01..04 остаются закрытыми предыдущей revision.
 4. Новых current-scope product/technical blockers в плане не найдено.
 5. Implementation ещё не начат; следующий bounded этап — реализация Лирой по утверждённому плану.
+
+
+## AP-10 coordinator whole-PR review — pass 1: data model / lifecycle / reasons / appeals
+
+Reviewed stable PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Confirmed current-scope defects:
+
+1. **AP10-MIRA-01 — pending block appeals have no reviewer queue/discovery surface.**
+   Approved technical plan requires the measures workspace to include exact-target lookup, measures, and a queue of block appeals. Implementation exposes only `/admin/measures?target=<exact user id>` and `/admin/measures/:measureId`; routes.ts contains no AP-10 appeal queue route and repository/reader has no pending-appeal list. A subject can submit an appeal, but an administrator cannot discover pending appeals without already knowing and opening that user's exact measure. This makes the approved review workflow incomplete.
+
+2. **AP10-MIRA-02 — approved temporary-duration UX is incomplete.**
+   Product/technical plan requires temporary presets plus arbitrary duration/end-time support, with presets as UI shortcuts rather than policy types. Current create/change/accepted-change forms expose only a raw `expiresAt` ISO-with-timezone text field (or blank = permanent). There are no preset duration choices and no arbitrary-duration input. Server expiry semantics are correct; the missing part is current-scope administrative UX.
+
+Checked and not findings in this pass:
+- independent overlapping measures and EXISTS-style effect;
+- terminal natural expiry / explicit lift and new-measure repeat sanction;
+- one pending appeal and up to three sequential submissions per measure;
+- pending appeal survives ordinary active-measure edit;
+- expiry/lift effective moot handling;
+- accepted appeal supports lift or in-place change, with atomic History;
+- mandatory reasons and immutable original reason/history;
+- subject projection omits admin identity;
+- CAS, rollback and committed replay paths exercised by PostgreSQL tests.
+
+Do not hand findings to Lira yet; coordinator whole-PR review is still in progress and confirmed findings must be returned as one package after all passes.
