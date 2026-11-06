@@ -162,7 +162,7 @@ try:
         record("manager-two-independent-measures", first=first_id, second=second_id)
 
         document(subject, "/en/account/measures")
-        expect(subject.locator('section[aria-label^="Active"] li')).to_have_count(2)
+        expect(subject.locator('section[aria-label^="Active"] > ol.admin-forum-objects > li')).to_have_count(2)
         assert "First distinct violation" in subject.locator("main").inner_text()
         assert "Second distinct violation" in subject.locator("main").inner_text()
         own_path = "/en/account/measures/" + first_id

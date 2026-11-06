@@ -78,6 +78,22 @@ jobs:
           pnpm exec vite preview --host 127.0.0.1 --port 4188 --strictPort > "$RUNNER_TEMP/ap10-preview.log" 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true; rm -f .dev.vars' EXIT
+          ready=false
+          for attempt in $(seq 1 90); do
+            if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:4188/he/ > /dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then
+              tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
+            exit 1
+          fi
           "$RUNNER_TEMP/ap10-playwright/bin/python" tests/browser/user-measures/check.py \
             --url http://127.0.0.1:4188 --output "$RUNNER_TEMP/ap10-evidence" || {
               tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
