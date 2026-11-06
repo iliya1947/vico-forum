@@ -58,13 +58,6 @@
 - Предыдущий полный собственный scope review #6684522908 использован как проверенная база; новая delta и все существенные AP-10 boundaries повторно оценены, основные domain/route/UI/native/browser checks исполнены на новом head. Coordinator verdict не использовался как доказательство.
 - Реализацию не менял; tracked checkout чист. Worker остановлен, disposable DB и dummy .dev.vars удалены.
 
-## Следующий шаг
-
-- **Мира:** принять independent PASS #6685133377 и завершить readiness/отдельный documentation closeout #291 по рабочему процессу; merge выполняет владелец.
-- Лёва назначенную проверку завершил и останавливается. Любое изменение implementation head требует нового coordinator-first review cycle.
-- Documentation #291, owner visual acceptance и production/deployed acceptance не одобряются автоматически данным review.
-- AP-11/Settings и post-admin owner-role/last-manager cleanup не начинались; Марк не назначен.
-
 Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
