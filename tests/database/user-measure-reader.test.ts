@@ -154,7 +154,7 @@ describe("AP-10 purpose-limited own/admin measure read (PostgreSQL 17)",()=>{
     await client.query("update user_measures set expires_at=clock_timestamp()-interval '1 second' where id=$1",[second.id]);
     expect(await reader.activeRestrictions(subject)).toEqual([]);
     expect(await reader.activeRestrictions(other)).toEqual(["replies.create"]);
-    await client.query("update user_measures set lifted_at=clock_timestamp() where id=$1",[otherMeasure.id]);
+    await client.query("update user_measures set lifted_at=clock_timestamp(), lifted_by_user_id=$2, lift_reason=$3 where id=$1",[otherMeasure.id,manager,"Completed"]);
     expect(await reader.activeRestrictions(other)).toEqual([]);
     expect(await reader.activeRestrictions(owner)).toEqual([]);
   });
