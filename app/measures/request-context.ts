@@ -1,0 +1,24 @@
+import { createContext, type RouterContextProvider } from "react-router";
+import type {
+  CreateUserMeasureInput, ChangeUserMeasureInput, LiftUserMeasureInput,
+  SubmitUserMeasureAppealInput, ResolveUserMeasureAppealInput,
+  MeasureCreateResult, MeasureTransitionResult,
+  UserMeasureAppealResolutionResult, UserMeasureAppealSubmissionResult,
+} from "../../db/user-measures";
+import type { UserMeasureSummary, UserMeasureDetail, UserMeasureTargetView } from "../../db/user-measure-read";
+
+export interface UserMeasureCapability {
+  ownList(subjectId: string): Promise<UserMeasureSummary[]>;
+  ownDetail(subjectId: string, measureId: string): Promise<UserMeasureDetail>;
+  adminTarget(actorId: string, targetId: string): Promise<UserMeasureTargetView>;
+  adminDetail(actorId: string, measureId: string): Promise<UserMeasureDetail & { targetUserId: string; targetName: string }>;
+  create(input: CreateUserMeasureInput): Promise<MeasureCreateResult>;
+  change(input: ChangeUserMeasureInput): Promise<MeasureTransitionResult>;
+  lift(input: LiftUserMeasureInput): Promise<MeasureTransitionResult>;
+  submitAppeal(input: SubmitUserMeasureAppealInput): Promise<UserMeasureAppealSubmissionResult>;
+  resolveAppeal(input: ResolveUserMeasureAppealInput): Promise<UserMeasureAppealResolutionResult>;
+}
+export const userMeasureContext = createContext<UserMeasureCapability>();
+export function userMeasuresForRequest(context: RouterContextProvider): UserMeasureCapability {
+  return context.get(userMeasureContext);
+}

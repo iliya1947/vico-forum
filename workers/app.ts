@@ -22,6 +22,8 @@ import {adminForumContext} from "../app/admin/forum.server";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
 import { adminUsersContext } from "../app/admin/users.server";
 import { createHyperdriveAdminUsers } from "../db/hyperdrive-admin-users";
+import { userMeasureContext } from "../app/measures/request-context";
+import { createHyperdriveUserMeasures } from "../db/hyperdrive-user-measures";
 import { adminHistoryContext } from "../app/admin/history.server";
 import { createHyperdriveAdminHistory } from "../db/hyperdrive-admin-history";
 import { authorizationContext } from "../app/authorization/request-context";
@@ -75,6 +77,7 @@ export default {
     const ownerUserId = (env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID;
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     context.set(authorizationContext, authorization);
+    context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
     context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, authorization));
     context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, authorization));
