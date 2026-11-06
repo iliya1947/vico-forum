@@ -1,20 +1,20 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 — AP10-PLAN-MIRA-05..06 исправлены, повторный coordinator review
-- Current main / planning baseline: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
-- AP-09 полностью merged: implementation #287, test stabilization #289, docs #288
-- Technical planner/reviewer: Лёва; coordinator: Мира; current implementer: Лира
-- Исходный план: [#6667784146](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6667784146)
-- Локальная revision AP10-PLAN-MIRA-01..04: [#6670064497](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670064497); актуальный полный план — `.github/agents/codex-6.1-sol.md`
-- Coordinator review: PASS; AP10-PLAN-MIRA-01..06 закрыты
-- Owner decisions #6669655343/#6669734702 применены: разные нарушения → разные меры; до 3 последовательных appeals, одна pending на меру; accepted appeal → lift или change той же меры; admin identity internal-only
-- Прежняя product-развилка §9 закрыта; новых owner вопросов нет
-- Implementation AP-10 назначен Лире; implementation PR/head появятся после начала её работы; production не трогать
-- Следующий шаг: Мира проверяет только [delta AP10-PLAN-MIRA-05..06](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6670909257); после approval назначает Лиру
-- Last-manager принцип НЕ применяется к AP-10. Существующий код пока не менять; комплексная очистка после админ-панели отдельной задачей
+- Текущий этап: AP-10 coordinator whole-PR review
+- Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
+- Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
+- Technical plan: coordinator PASS, AP10-PLAN-MIRA-01..06 closed
+- Implementation PR: #290 Draft/open/mergeable
+- Stable implementation exact head: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`
+- Implementation diff: 92 changed files
+- Exact-head CI #42171734420: SUCCESS
+- Exact-head isolated browser acceptance #42171734414: SUCCESS (author evidence, not independent/owner visual acceptance)
+- Documentation PR: #291 Draft/open/mergeable, exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, 6 Markdown files
+- Documentation CI #42173496053: SUCCESS
+- Implementation/docs не merged; production/Stage 6 не менялись
+- Current reviewer: Мира; Лёва independent review не назначен до coordinator PASS
+- Owner visual acceptance: не запрошен и не инициируется
+- Следующий шаг: Мира продолжает whole-PR review PR #290 на exact head `503a5c6d...`; при findings сначала завершает весь review и возвращает Лире один подтверждённый current-scope пакет
+- Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
-
-- Block-management capabilities have no initial grants for any built-in role; authority is explicit-grant-only through existing dynamic authorization.
-
-- Актуальный полный план — `.github/agents/codex-6.1-sol.md`; expired/lifted terminal, обе capabilities explicit-grant-only. Implementation до approval не начинать.
