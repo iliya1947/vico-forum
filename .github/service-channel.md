@@ -281,3 +281,26 @@ Exact administrative measure detail может оставаться доступ
 - Own detail projection не получает `canMutate`, numeric issuer floor или admin identity. Новых permissions/schema/grants/History semantics/read scope нет.
 - Correction delta проверен целиком; новых current-scope findings в этих пяти файлах на targeted pass не подтверждено.
 - Coordinator status пока не финальный PASS: следующий шаг — final regression/evidence sweep нового exact head против уже закрытых AP10-MIRA-01..10 и correction interactions. Лёву до завершения этого sweep и coordinator PASS не подключать.
+
+
+## AP-10 coordinator final PASS and independent review handoff
+
+- Coordinator whole-PR review завершён на stable implementation exact head `9fecd925a256062e9892235f4ba02ed3147de1e3`; base/main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+- PR #290 остаётся Draft/open/mergeable. Exact-head CI #42213405436 — SUCCESS; exact-head isolated Chromium #42213405385 — SUCCESS. Owner visual acceptance не запрашивалась и не инициировалась.
+- Final coordinator regression/evidence sweep не подтвердил новых current-scope defects. Coordinator verdict: **PASS**.
+- Documentation PR #291 остаётся отдельным Draft closeout artifact и не менялся. AP-11/Settings, owner-role/last-manager cleanup, Stage 6 и production не начинать в рамках этого review.
+
+### Independent technical review — Лёва
+
+Review target: implementation PR #290, exact head `9fecd925a256062e9892235f4ba02ed3147de1e3`.
+
+Требуемый результат: независимо проверить весь AP-10 implementation scope против актуальных source-of-truth, approved technical plan и current Stage; установить, остаются ли подтверждённые current-scope defects на этом exact head.
+
+Критерии готовности:
+- review относится именно к `9fecd925a256062e9892235f4ba02ed3147de1e3`; изменение implementation head прекращает этот review и требует нового coordinator cycle;
+- проверить implementation целиком, а не только отдельные corrections или CI status;
+- отдельно проверить authority/issuer-floor boundaries, restriction enforcement, privacy/identity projection, measure/appeal lifecycle, History, route/revalidation behavior и applicable UI/browser boundaries;
+- возможный finding сначала доказать по полной причинной цепочке и классифицировать current-scope vs future groundwork;
+- не изменять implementation во время review;
+- не использовать результаты предыдущих coordinator findings как доказательство и не исходить из заранее заданного PASS/FAIL вывода;
+- зафиксировать собственный verdict и evidence в служебном PR и остановиться. Марк не подключается без отдельной необходимости.
