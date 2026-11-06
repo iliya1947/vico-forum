@@ -196,3 +196,16 @@
 - focused regressions подтверждают ordinary vs elevated restriction presentation; согласованность projection и direct authoritative boundaries при повышении/понижении raw target authority для administrative families; сохранение уже mounted Create Topic / Help Question / Published Edit state + Cancel при fresh restriction;
 - применимые exact-head CI/checks и AP-10 isolated browser acceptance выполняются на новом head; owner visual acceptance не инициировать без прямого запроса владельца;
 - после завершения Лира фиксирует в служебном PR новый stable exact head и фактические результаты проверок и останавливается. Затем Мира начинает новый coordinator whole-PR review; Лёву до coordinator PASS не подключать.
+
+
+## AP-10 second corrected-head coordinator review — pass 1
+
+- Лира завершила bounded correction package AP10-MIRA-08..10 в PR #290. Новый stable implementation exact head: `ad789c7bf28d4fe7896e8ddbf7757460e046da27`; base/main остаётся `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+- Correction delta относительно предыдущего reviewed head `52a1db67610357f514e8013b06f70af6bda629c6`: 15 commits / 13 files.
+- Exact-head CI #42209643642 — SUCCESS. Exact-head isolated browser acceptance #42209643650 — SUCCESS; это author engineering evidence, не independent review и не owner visual acceptance.
+- Coordinator pass 1 (AP10-MIRA-08..09 authority/enforcement) завершён.
+- **AP10-MIRA-08 закрыт по исходной причине:** create/change/accepted-appeal-change selector больше не предлагает administrative families ordinary blocks manager; elevated/current bound owner presentation hint вычисляется fresh loader-side, а server mutation guard остаётся authoritative.
+- **AP10-MIRA-09 закрыт по исходной причине:** shared direct policy теперь использует current raw RBAC rank и per-measure issuer floor для administrative families; ordinary restrictions остаются unconditional. Regression подтверждает одинаковое grant→restore→deny поведение permission projection и direct Forum/Complaints/Authorization/measure boundaries.
+- **AP10-MIRA-11 — confirmed current-scope:** exact admin measure detail не учитывает `issuer_authority_floor` при presentation mutation controls. `PostgresUserMeasureReader.adminRead()` для exact measure проверяет current target hierarchy, но не передаёт stored issuer floor в `assertUserMeasureAuthority`; затем `AdminMeasureDetail` для любой active measure показывает Change/Lift и pending Appeal Review forms. При этом authoritative `transition()` и `resolveAppeal()` повторно проверяют `current.issuer_authority_floor` и actor ниже floor гарантированно получает forbidden. Pending-appeal queue уже фильтрует такие меры по issuer floor, поэтому exact-detail mutation presentation расходится с той же authority model. Read-only detail само по себе finding не является; проблема — предоставление заведомо недоступных mutation controls.
+- Scope AP10-MIRA-11 текущий: approved plan прямо требует для change/lift actor authority не ниже issuer floor; reviewer resolution использует fresh authority/floor, а UI/HTTP acceptance требует capability-scoped forms. Это не owner-role redesign и не future groundwork.
+- Whole-PR coordinator verdict пока не выдан: следующий проход — AP10-MIRA-10 / Editor lifecycle на том же exact head. Лёву до полного coordinator PASS не подключать.
