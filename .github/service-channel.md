@@ -149,3 +149,14 @@
 - добавить/обновить достаточные focused tests для исправленных причин, включая regression coverage там, где текущий green CI не ловил finding;
 - выполнить применимые обычные CI/checks и AP-10 isolated browser acceptance для нового head; owner visual acceptance не инициировать без прямого запроса владельца;
 - после завершения записать в служебный PR новый exact implementation head и фактические результаты проверок, затем остановиться. Следующий этап — новый coordinator whole-PR review Миры; Лёву до coordinator PASS не подключать.
+
+
+## AP-10 corrected-head coordinator review
+
+- Лира завершила correction package AP10-MIRA-01..07 в PR #290.
+- Новый stable implementation exact head: `52a1db67610357f514e8013b06f70af6bda629c6`; base/main остаётся `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`. Correction delta относительно предыдущего reviewed head `503a5c6d...`: 30 commits / 45 files.
+- Exact-head CI #42191389984 — SUCCESS. Exact-head isolated browser acceptance #42191390039 — SUCCESS; это author engineering evidence, не independent review и не owner visual acceptance.
+- Coordinator pass 1 нового цикла завершён: причинные цепочки всех AP10-MIRA-01..07 перепроверены на новом head. Все семь исходных дефектов закрыты по своей подтверждённой причине; новых current-scope findings в correction delta на этом проходе не подтверждено.
+- В частности: pending appeal discovery существует в measures workspace; temporary duration имеет UI-only presets/custom/end-time; latent administrative-family restriction ограничен authority/floor boundary; non-owner elevated auth controls закрыты при сохранении server gate; first-party fresh-action presentation читает active restrictions без утечки measure details; Admin History отображает AP-10 before/after и appeal outcome/remedy; own list/detail metadata локализуется через locale snapshot.
+- Кандидат про удаление custom role с elevated key не считается finding: approved plan owner-gates изменения именно elevated key через grants/override/assignment и прямо не расширяет эту границу в redesign остальных role operations; назначенную роль existing authorization всё равно не даёт удалить.
+- Coordinator status пока не PASS: следующий проход — regression/final gap sweep всего исправленного exact head, включая correction interactions с ранее прошедшими authority/enforcement/privacy/revalidation boundaries и проверку exact-head CI/browser evidence. Лёву до coordinator PASS не подключать.
