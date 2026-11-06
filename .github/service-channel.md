@@ -98,3 +98,39 @@
 - После implementation/checks/stable-head coordinator+independent reviews — отдельный factual docs PR: delivered AP-01–10 closeout, Settings deferred, next owner/authorization redesign → Settings. Старый last-manager code/schema/tests не трогать до отдельной задачи.
 - Планирование read-only: implementation PR AP-11/runtime/DB changes и новая acceptance не выполнялись. Полный документационный аудит не заявлен.
 - **Следующий шаг — Мира:** review необходимости/достаточности выбранных linked cases и границ; после approval назначить Лиру. Новых owner product questions нет.
+
+
+## AP-11 coordinator plan approval and implementation handoff
+
+- Мира проверила technical plan Лёвы на current `main` `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`.
+- План **APPROVED**. Подтверждённый scope AP-11 — bounded integration verification delivered AP-01–AP-10 без новой domain functionality.
+- Проверено против repository browser harnesses:
+  - ни один current browser harness не выполняет `closeTopic/reopenTopic`;
+  - нет browser-level Users inline `assignRole/override` + fresh revoke/read-only recovery;
+  - текущий AP-10 responsive matrix покрывает measure pages, а admin-forum — category/section, но не Users detail/admin topic.
+  Поэтому proposed connected cases не являются дублированием существующего actual-browser evidence.
+- Existing route/DOM/native tests остаются valid evidence своих boundaries; AP-11 не переоткрывает AP-08/AP-09/AP-10 acceptance и не требует exhaustive cross-product.
+- Settings исключён owner decision; owner/authorization redesign, Stage 6, production и owner visual acceptance вне scope.
+- По умолчанию implementation PR должен быть **test/verification-only**: расширение существующего `tests/browser/user-measures/check.py` и при необходимости bounded workflow/path/evidence updates. Application/DB/schema/grants/public-contract edits заранее не назначены.
+- Если новый connected runtime scenario воспроизводимо выявит current-scope defect, Лира сначала подтверждает полную причинную цепочку и локальную применимость, затем исправляет только необходимое до stable head. Future groundwork не исправляется.
+
+### AP-11 implementation — Лира
+
+Требуемый результат:
+1. Реализовать approved connected browser coverage:
+   - Users → inline canonical authorization → History → fresh same-session presentation/revoke recovery;
+   - Forum hierarchy/admin topic → close/reopen → mounted reply editor × AP-10 replies restriction;
+   - bounded EN/RU/HE × 320/768/1280 checks для Users detail/admin topic и применимых privacy/no-store boundaries.
+2. Переиспользовать существующий AP-10 disposable PostgreSQL 17 + built Worker + Better Auth + Chromium harness, не создавать второй параллельный framework/job без необходимости.
+3. Все проверяемые операции выполнять через настоящий UI/canonical HTTP; SQL допустим только для fixture/setup/inspection.
+4. Сохранить существующие 19 AP-10 case groups и добавить только approved cross-package cases.
+5. Не менять Settings, owner/authorization model, Stage 6/production, schema/grants/dependencies или public contracts без подтверждённого current-scope defect.
+6. На stable head выполнить applicable full CI и exact-head integration browser evidence; зафиксировать PR/head/results в #251 и остановиться.
+
+Критерии готовности:
+- новый implementation PR создан отдельно от #251 и документации;
+- connected cases реально исполняются, не skipped/mocked;
+- no-write/History/revalidation/privacy assertions проверяют фактическое runtime поведение;
+- exact implementation SHA присутствует в evidence;
+- нет подтверждённых current-scope defects на stable head;
+- после завершения Лиры следующий шаг — coordinator whole-PR review Миры; Лёву повторно не подключать до coordinator PASS.
