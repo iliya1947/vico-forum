@@ -17,6 +17,7 @@
 - Owner visual acceptance: не запрошен и не инициируется
 - Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
 - Coordinator pass 2 complete: authority/permissions/privileged targets; confirmed AP10-MIRA-03..04
-- Следующий шаг: Мира продолжает whole-PR review PR #290 на exact head `503a5c6d...`; следующий pass — restriction enforcement across forum/profile/complaints/help/uploads/translations/admin families
+- Coordinator pass 3 complete: restriction enforcement; confirmed AP10-MIRA-05, server-side catalog enforcement otherwise passed
+- Следующий шаг: Мира продолжает whole-PR review PR #290 на exact head `503a5c6d...`; следующий pass — privacy/History/routes/UI state/revalidation and localization
 - Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
