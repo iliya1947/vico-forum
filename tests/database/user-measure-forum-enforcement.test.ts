@@ -91,6 +91,112 @@ afterAll(async () => {
 });
 
 describe("AP-10 forum publication admission under active measures", () => {
+  it("denies new own-body and attachment-removal edits atomically until lifted", async () => {
+    const postId = randomUUID(), originalRevisionId = randomUUID(), attachmentId = randomUUID();
+    await forum.createPost({
+      ...newReply(postId),
+      bodyRevision: { id: originalRevisionId, originalContent: "Original body", sourceLocale: "en" },
+    });
+    await client.query(`insert into forum_attachments
+      (id, owner_id, object_key, file_name, declared_mime, detected_type,
+       response_mime, byte_size, verification_status, created_at)
+      values ($1, 'target', $2, 'published.txt', 'text/plain', 'text',
+        'text/plain', 12, 'type-checked', clock_timestamp())`,
+    [attachmentId, "private/" + attachmentId]);
+    await client.query(
+      "insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1,$2,clock_timestamp())",
+      [postId, attachmentId],
+    );
+
+    const edit = {
+      topicId, postId, actorId: "target", expectedRevisionId: originalRevisionId,
+      body: "Updated body", draftId: randomUUID(), attachmentIds: [] as string[],
+      retainedAttachmentIds: [] as string[],
+    };
+    const restrictionId = await createMeasure("posts.edit");
+    const revisionCount = async () => Number((await client.query<{ total: string }>(
+      "select count(*)::text as total from forum_post_revisions where post_id=$1", [postId],
+    )).rows[0]?.total);
+    const before = await revisionCount();
+    await expect(forum.editPublishedPost(edit)).rejects.toMatchObject({
+      restriction: "posts.edit",
+    });
+    expect((await forum.readPost(postId))?.body).toMatchObject({
+      id: originalRevisionId, originalContent: "Original body",
+    });
+    expect(await revisionCount()).toBe(before);
+    expect((await client.query(
+      "select attachment_id from forum_post_attachments where post_id=$1", [postId],
+    )).rows).toEqual([{ attachment_id: attachmentId }]);
+    expect((await client.query(
+      "select draft_id from forum_publication_receipts where owner_id='target' and context_key=$1",
+      [`post:${postId}:edit`],
+    )).rowCount).toBe(0);
+    await forum.createPost(newReply());
+    await lift(restrictionId);
+
+    await forum.editPublishedPost(edit);
+    expect((await forum.readPost(postId))?.body.originalContent).toBe("Updated body");
+    expect(await revisionCount()).toBe(before + 1);
+    expect((await client.query(
+      "select attachment_id from forum_post_attachments where post_id=$1", [postId],
+    )).rows).toEqual([]);
+  });
+
+  it("replays exactly one previously committed edit under an active restriction", async () => {
+    const postId = randomUUID(), originalRevisionId = randomUUID();
+    await forum.createPost({
+      ...newReply(postId),
+      bodyRevision: { id: originalRevisionId, originalContent: "Before", sourceLocale: "en" },
+    });
+    const edit = {
+      topicId, postId, actorId: "target", expectedRevisionId: originalRevisionId,
+      body: "First revision", draftId: randomUUID(), attachmentIds: [] as string[],
+      retainedAttachmentIds: [] as string[],
+    };
+    await forum.editPublishedPost(edit);
+    const published = await forum.readPost(postId);
+    const before = (await client.query(
+      "select id from forum_post_revisions where post_id=$1", [postId],
+    )).rowCount;
+    await createMeasure("posts.edit");
+    await expect(forum.editPublishedPost(edit)).resolves.toBeUndefined();
+    expect((await forum.readPost(postId))?.body.id).toBe(published?.body.id);
+    await expect(forum.editPublishedPost({ ...edit, body: "Changed retry" }))
+      .rejects.toBeInstanceOf(ForumPublicationReplayConflictError);
+    await expect(forum.editPublishedPost({
+      ...edit, expectedRevisionId: published!.body.id, draftId: randomUUID(),
+    })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await client.query(
+      "select id from forum_post_revisions where post_id=$1", [postId],
+    )).rowCount).toBe(before);
+    expect((await client.query(
+      "select draft_id from forum_publication_receipts where owner_id='target' and context_key=$1",
+      [`post:${postId}:edit`],
+    )).rowCount).toBe(1);
+  });
+
+  it("treats overlapping, inactive and other-user edit restrictions independently", async () => {
+    const postId = randomUUID(), originalRevisionId = randomUUID();
+    await forum.createPost({
+      ...newReply(postId),
+      bodyRevision: { id: originalRevisionId, originalContent: "Before", sourceLocale: "en" },
+    });
+    await createMeasure("posts.edit", "other");
+    await createMeasure("posts.edit", "target", "2000-01-01T00:00:00Z");
+    const first = await createMeasure("posts.edit");
+    const second = await createMeasure("posts.edit");
+    const edit = {
+      topicId, postId, actorId: "target", expectedRevisionId: originalRevisionId,
+      body: "After", draftId: randomUUID(), attachmentIds: [] as string[],
+    };
+    await lift(first);
+    await expect(forum.editPublishedPost(edit)).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [second]);
+    await expect(forum.editPublishedPost(edit)).resolves.toBeUndefined();
+    expect((await forum.readPost(postId))?.body.originalContent).toBe("After");
+  });
+
   it("denies both direct topic and topic-with-post writes, but preserves unrelated replies", async () => {
     const id = await createMeasure("topics.create");
     const before = await postCount();

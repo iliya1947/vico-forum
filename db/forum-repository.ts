@@ -3917,6 +3917,7 @@ export class DrizzleForumRepository {
       if (post.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit post");
       if (post.revisionId !== input.expectedRevisionId)
         throw new ForumStateConflictError("post revision changed before edit");
+      await this.measureAdmission(tx, input.actorId, "posts.edit");
       const existing = await tx.select({ id: forumPostAttachments.attachmentId })
         .from(forumPostAttachments).where(eq(forumPostAttachments.postId, input.postId));
       const retained = input.retainedAttachmentIds?.map((id) => id.toLowerCase()) ?? existing.map((item) => item.id);

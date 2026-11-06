@@ -15,6 +15,7 @@ import { action as categoryAction } from "../routes/category";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import {
   contentGenerationActionContext,
@@ -241,6 +242,17 @@ describe("post edit and protected history action permissions", () => {
       expectedRevisionId: "post-r1", body: "Changed text",
       draftId: fields.editorOperationId, attachmentIds: [],
     });
+  });
+
+  it("maps an active own-post edit restriction to private 403 without leaking status", async () => {
+    const w = writer();
+    w.editPublishedPost.mockRejectedValueOnce(new UserMeasureRestrictedError("posts.edit"));
+    const result = await topicAction(input(w, ["forum.post.editOwn"]));
+    expect(result).toMatchObject({
+      data: { error: "forbidden" },
+      init: { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    });
+    expect(w.editPublishedPost).toHaveBeenCalledOnce();
   });
 
   it("rejects missing publication generation and invalid attachment manifest", async () => {
