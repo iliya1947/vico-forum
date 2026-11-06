@@ -39,7 +39,7 @@ export type UserMeasureHistoryChange = {
   context: {
     targetUserId: string; operationId?: string; fingerprint?: string;
     before: UserMeasureHistoryState | null; after: UserMeasureHistoryState;
-    appealId?: string; outcome?: "accepted" | "rejected";
+    appealId?: string; outcome?: "accepted" | "rejected"; remedy?: "change" | "lift";
   };
 };
 export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | UserMeasureHistoryChange;

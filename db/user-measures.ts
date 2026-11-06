@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from "pg";
 import { validateUserMeasureRestrictions, type UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 import { appendUserMeasureHistory, type UserMeasureHistoryState } from "./admin-history";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
-import { assertUserMeasureAuthority, requireUserMeasureOwnerId } from "./user-measure-authority";
+import { assertUserMeasureAuthority, requireUserMeasureOwnerId, UserMeasureForbiddenError } from "./user-measure-authority";
 
 export class InvalidUserMeasureInputError extends Error {}
 export class UserMeasureNotFoundError extends Error {}
@@ -21,6 +21,41 @@ export interface LiftUserMeasureInput {
   measureId: unknown; operationId: unknown; actorId: unknown;
   expectedVersion: unknown; reason: unknown;
 }
+
+export interface SubmitUserMeasureAppealInput {
+  id: unknown; measureId: unknown; actorId: unknown; body: unknown;
+}
+export interface ResolveUserMeasureAppealInput {
+  measureId: unknown; appealId: unknown; operationId: unknown; actorId: unknown;
+  expectedVersion: unknown; outcome: unknown; explanation: unknown; remedy: unknown;
+  restrictions: unknown; expiresAt: unknown;
+}
+export interface UserMeasureAppealSubmissionResult {
+  id: string; measureId: string; ordinal: number;
+}
+export interface UserMeasureAppealResolutionResult {
+  appealId: string; measureId: string; outcome: "accepted" | "rejected";
+  version: number; remedy: "change" | "lift" | null;
+}
+type AppealOutcome = "accepted" | "rejected";
+type AppealRemedy = "change" | "lift" | null;
+interface ValidatedAppealSubmission {
+  id: string; measureId: string; actorId: string; body: string;
+}
+interface ValidatedAppealResolution {
+  measureId: string; appealId: string; operationId: string; actorId: string;
+  expectedVersion: number; outcome: AppealOutcome; explanation: string;
+  remedy: AppealRemedy; restrictions: UserMeasureRestrictionId[] | null;
+  expiresAt: string | null; fingerprint: string;
+}
+interface LockedAppeal {
+  id: string; measure_id: string; subject_user_id: string; ordinal: number;
+  body: string; status: "pending" | "rejected" | "accepted" | "moot";
+}
+interface AppliedTransition {
+  changed: boolean; before: UserMeasureHistoryState; after: UserMeasureHistoryState;
+}
+
 export interface MeasureCreateResult { id: string; version: 1 }
 export interface MeasureTransitionResult { id: string; version: number; changed: boolean }
 
@@ -78,6 +113,47 @@ export class UserMeasuresService {
     const fingerprint = await digest(["lift", measureId, operationId, actorId, expectedVersion, reason]);
     return this.repository.lift({ measureId, operationId, actorId, expectedVersion, reason, fingerprint });
   }
+
+  /** Caller passes the authenticated session subject; no admin capability is needed. */
+  async submitAppeal(input: SubmitUserMeasureAppealInput): Promise<UserMeasureAppealSubmissionResult> {
+    return this.repository.submitAppeal({
+      id: uuid(input.id, "appeal id"),
+      measureId: uuid(input.measureId, "measure id"),
+      actorId: identity(input.actorId, "actor id"),
+      body: explanation(input.body),
+    });
+  }
+
+  async resolveAppeal(input: ResolveUserMeasureAppealInput): Promise<UserMeasureAppealResolutionResult> {
+    const measureId = uuid(input.measureId, "measure id");
+    const appealId = uuid(input.appealId, "appeal id");
+    const operationId = uuid(input.operationId, "operation id");
+    const actorId = identity(input.actorId, "actor id");
+    const expectedVersion = version(input.expectedVersion);
+    const outcome: AppealOutcome = input.outcome === "accepted" ? "accepted" :
+      input.outcome === "rejected" ? "rejected" : invalidAppealDecision();
+    const explanationText = explanation(input.explanation);
+    const remedy: AppealRemedy =
+      outcome === "rejected" ? null :
+      input.remedy === "lift" ? "lift" : input.remedy === "change" ? "change" : invalidAppealDecision();
+    if (outcome === "rejected" && input.remedy !== null) {
+      throw new InvalidUserMeasureInputError("rejected appeal has no remedy");
+    }
+    if (remedy !== "change" && (input.restrictions !== null || input.expiresAt !== null)) {
+      throw new InvalidUserMeasureInputError("only change remedy accepts restrictions and expiry");
+    }
+    const restrictions = remedy === "change" ? restrictionSet(input.restrictions) : null;
+    const expiresAt = remedy === "change" ? instant(input.expiresAt) : null;
+    const fingerprint = await digest([
+      "appeal.resolve", measureId, appealId, operationId, actorId, expectedVersion,
+      outcome, explanationText, remedy, restrictions, expiresAt,
+    ]);
+    return this.repository.resolveAppeal({
+      measureId, appealId, operationId, actorId, expectedVersion, outcome,
+      explanation: explanationText, remedy, restrictions, expiresAt, fingerprint,
+    });
+  }
+
 }
 
 export class PostgresUserMeasuresRepository {
@@ -280,8 +356,12 @@ export class PostgresUserMeasuresRepository {
   private async withAuthorityTransaction<T>(
     operation: (client: PoolClient, ownerUserId: string) => Promise<T>,
   ): Promise<T> {
-    // Fail closed on missing binding before taking any mutation lock.
+    // Missing binding disables admin changes, not the subject's own appeal.
     const ownerUserId = requireUserMeasureOwnerId(this.ownerUserId);
+    return this.withLockedTransaction(client => operation(client, ownerUserId));
+  }
+
+  private async withLockedTransaction<T>(operation: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
     let begun = false;
     try {
@@ -289,7 +369,7 @@ export class PostgresUserMeasuresRepository {
       begun = true;
       const locked = await client.query("select id from authz_mutation_lock where id=1 for update");
       if (locked.rowCount !== 1) throw new UserMeasureConflictError("authorization lock missing");
-      const result = await operation(client, ownerUserId);
+      const result = await operation(client);
       await client.query("commit");
       begun = false;
       return result;
@@ -304,6 +384,9 @@ export class PostgresUserMeasuresRepository {
   }
 }
 
+function invalidAppealDecision(): never {
+  throw new InvalidUserMeasureInputError("invalid appeal decision or remedy");
+}
 function identity(value: unknown, field: string): string {
   if (typeof value !== "string" || !value || value.trim() !== value) {
     throw new InvalidUserMeasureInputError(field + " is invalid");
