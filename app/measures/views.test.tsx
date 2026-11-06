@@ -282,7 +282,7 @@ describe("AP-10 live status and stale-action recovery",()=>{
     }],{initialEntries:["/"+locale+"/account/measures"]});
     const root=mountDataRouter(locale,router);
     await waitFor(()=>expect(root.querySelector("ol.admin-forum-objects")).toBeInTheDocument());
-    const refresh=root.querySelector<HTMLButtonElement>('button[type="button"]')!;
+    const refresh=root.querySelector<HTMLButtonElement>('section.profile-card > button[type="button"]')!;
     expect(refresh).toBeEnabled();
     expect(refresh.textContent).not.toContain("measuresRefresh");
     measures=[{...base,status:"expired"}];
