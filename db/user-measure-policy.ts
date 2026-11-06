@@ -53,7 +53,7 @@ function activeRestrictionQuery(
         when exists (select 1 from raw_permissions
           where permission_key = ${BLOCK_MANAGE_PRIVILEGED_PERMISSION}) then 2
         when exists (select 1 from raw_permissions
-          where permission_key = any(${rawAdministrativePermissions}::text[])) then 1
+          where permission_key = any(${sql.param(rawAdministrativePermissions)}::text[])) then 1
         else 0
       end
     )
