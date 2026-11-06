@@ -204,6 +204,7 @@ export const reviewedCommonFingerprints = {
   measuresNoAppeals: "7c26955f8621480953c88ee3f1406b1bb2838b338496d310c972523fe792a5e2",
   measuresTimeline: "494b9e6723648a37b5dc5bb73ba816ffc92961b5ce8ec0ba451aba50791116b0",
   measuresSaved: "d0f2ce4e75296dda01b3e26c837fdf898e4dbdbc9f30bfb7dcacde1058bcba42",
+  measuresRefresh: "2d474f8bc2102ab350b2c3cf7a66742238c18a08a564255538db44ab2481c824",
   measuresAppealBody: "b782575e38afc0817a6e7a46c2b063ba7ddcf5bedcec695594e59c0a8bd2f9da",
   measuresAppealSubmit: "822a33e1a229c5df796e1382e60c218354a84dd6656846b6691c24c2597da9b0",
   measuresTargetId: "ca6b178b7c743fd55b7630d7b44d4a218b74ed46286cb8066db61a7497e14d21",
