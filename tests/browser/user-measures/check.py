@@ -158,6 +158,28 @@ try:
             'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
         record("restriction-selector-follows-current-elevated-grant")
 
+        # An authenticated malformed create must fail before a PG text bind or any write.
+        before_measures = sql("select count(*)::int as total from user_measures")[0]["total"]
+        before_history = sql("select count(*)::int as total from admin_history")[0]["total"]
+        for invalid_target in ("invalid\\x00target", "x" * 2049):
+            response = post(manager_ctx, "/en/admin/measures", {
+                "intent": "create", "measureId": str(uuid4()), "targetId": invalid_target,
+                "reason": "Invalid target rejection", "expiresAt": "",
+                "restriction": "replies.create",
+            })
+            assert response.status == 400, ("invalid target create", response.status, response.text()[:180])
+            assert "no-store" in response.headers.get("cache-control", ""), response.headers
+        response = post(manager_ctx, "/en/admin/measures", {
+            "intent": "create", "measureId": str(uuid4()),
+            "targetId": "missing-" + uuid4().hex,
+            "reason": "Nonexistent target", "expiresAt": "", "restriction": "replies.create",
+        })
+        assert response.status == 404, ("missing target create", response.status, response.text()[:180])
+        assert "no-store" in response.headers.get("cache-control", ""), response.headers
+        assert sql("select count(*)::int as total from user_measures")[0]["total"] == before_measures
+        assert sql("select count(*)::int as total from admin_history")[0]["total"] == before_history
+        record("malformed-target-400-missing-target-404-no-database-write")
+
         topic_id = topic_fixture(other_id)
         first_id = create_measure(
             manager, subject_id,
